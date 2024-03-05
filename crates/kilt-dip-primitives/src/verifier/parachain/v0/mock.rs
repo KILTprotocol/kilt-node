@@ -128,7 +128,6 @@ pub(crate) const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 64;
 pub(crate) const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 1024;
 pub(crate) const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 64;
 pub type Verifier = ParachainVerifier<
-	TestRuntime,
 	RococoRuntime,
 	RelayStateRootsViaRelayStorePallet<TestRuntime>,
 	2_000,

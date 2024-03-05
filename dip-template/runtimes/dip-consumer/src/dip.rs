@@ -23,28 +23,61 @@ use frame_system::{pallet_prelude::BlockNumberFor, EnsureSigned};
 use kilt_dip_primitives::{
 	traits::DipCallOriginFilter, KiltVersionedParachainVerifier, RelayStateRootsViaRelayStorePallet, RevealedDidKey,
 };
-use pallet_dip_consumer::traits::IdentityProofVerifier;
+use pallet_dip_consumer::{benchmarking::WorstCaseOf, traits::IdentityProofVerifier};
 use rococo_runtime::Runtime as RelaychainRuntime;
 use sp_core::ConstU32;
 use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
-pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Runtime>>::VerificationResult;
-/// The verifier logic assumes the provider is a sibling KILT parachain, the
-/// relaychain is a Rococo relaychain, and that a KILT subject can provide DIP
-/// proof that reveal at most 10 DID keys and 10 linked accounts (defaults
-/// provided by the `KiltVersionedParachainVerifier` type). Calls that do not
-/// pass the [`DipCallFilter`] will be discarded early on in the verification
-/// process.
-pub type ProofVerifier = KiltVersionedParachainVerifier<
-	Runtime,
+/// The verifier logic is tied to the provider template runtime definition.
+pub type ProviderTemplateProofVerifier = KiltVersionedParachainVerifier<
 	RelaychainRuntime,
 	RelayStateRootsViaRelayStorePallet<Runtime>,
 	2_000,
 	ProviderRuntime,
 	DipCallFilter<KeyIdOf<ProviderRuntime>, BlockNumberFor<ProviderRuntime>, ProviderAccountId>,
 >;
+pub type MerkleProofVerifierInput = <ProviderTemplateProofVerifier as IdentityProofVerifier<Runtime>>::Proof;
+pub type MerkleProofVerifierOutput =
+	<ProviderTemplateProofVerifier as IdentityProofVerifier<Runtime>>::VerificationResult;
+// Wrapper around the verifier to implement the `GetWorstCase` trait.
+pub struct ProviderTemplateProofVerifierWrapper;
+
+// Delegate verification logic to the specialized version of
+// `KiltVersionedParachainVerifier`.
+impl IdentityProofVerifier<Runtime> for ProviderTemplateProofVerifierWrapper {
+	type Error = <ProviderTemplateProofVerifier as IdentityProofVerifier<Runtime>>::Error;
+	type Proof = MerkleProofVerifierInput;
+	type VerificationResult = MerkleProofVerifierOutput;
+
+	fn verify_proof_for_call_against_details(
+		call: &pallet_dip_consumer::RuntimeCallOf<Runtime>,
+		subject: &<Runtime as pallet_dip_consumer::Config>::Identifier,
+		submitter: &<Runtime as frame_system::Config>::AccountId,
+		identity_details: &mut Option<<Runtime as pallet_dip_consumer::Config>::LocalIdentityInfo>,
+		proof: Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		<ProviderTemplateProofVerifier as IdentityProofVerifier<Runtime>>::verify_proof_for_call_against_details(
+			call,
+			subject,
+			submitter,
+			identity_details,
+			proof,
+		)
+	}
+}
+
+// Implement worst-case logic for this specific verifier.
+#[cfg(feature = "runtime-benchmarks")]
+impl kilt_support::traits::GetWorstCase for ProviderTemplateProofVerifierWrapper {
+	type Output = WorstCaseOf<Runtime>;
+
+	fn worst_case(_context: ()) -> Self::Output {
+		// TODO: Proper proof based on generated fixtures.
+		unimplemented!()
+	}
+}
 
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
@@ -57,7 +90,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	// that two cross-chain operations targeting the same chain and with the same
 	// nonce cannot be both successfully evaluated.
 	type LocalIdentityInfo = u128;
-	type ProofVerifier = ProofVerifier;
+	type ProofVerifier = ProviderTemplateProofVerifierWrapper;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
 	type WeightInfo = weights::pallet_dip_consumer::WeightInfo<Runtime>;

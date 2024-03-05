@@ -2497,6 +2497,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "kilt-dip-primitives",
+ "kilt-support",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",

@@ -63,7 +63,6 @@ use crate::{
 /// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum number of leaves that can
 ///   be revealed as part of the DID Merkle proof.
 pub struct RelaychainVerifier<
-	ConsumerRuntime,
 	ConsumerBlockHashStore,
 	const KILT_PARA_ID: u32,
 	KiltRuntime,
@@ -76,16 +75,7 @@ pub struct RelaychainVerifier<
 	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
 	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
 	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
->(
-	#[allow(clippy::type_complexity)]
-	PhantomData<(
-		ConsumerRuntime,
-		ConsumerBlockHashStore,
-		KiltRuntime,
-		DidCallVerifier,
-		SignedExtra,
-	)>,
-);
+>(#[allow(clippy::type_complexity)] PhantomData<(ConsumerBlockHashStore, KiltRuntime, DidCallVerifier, SignedExtra)>);
 
 impl<
 		ConsumerRuntime,
@@ -103,7 +93,6 @@ impl<
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	> IdentityProofVerifier<ConsumerRuntime>
 	for RelaychainVerifier<
-		ConsumerRuntime,
 		ConsumerBlockHashStore,
 		KILT_PARA_ID,
 		KiltRuntime,

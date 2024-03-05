@@ -70,7 +70,6 @@ mod tests;
 /// * `MAX_DID_MERKLE_LEAVES_REVEALED`: The maximum number of leaves that can be
 ///   revealed as part of the DID Merkle proof.
 pub struct ParachainVerifier<
-	ConsumerRuntime,
 	RelaychainRuntime,
 	RelaychainStateRootStore,
 	const KILT_PARA_ID: u32,
@@ -86,7 +85,6 @@ pub struct ParachainVerifier<
 	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 >(
 	PhantomData<(
-		ConsumerRuntime,
 		RelaychainRuntime,
 		RelaychainStateRootStore,
 		KiltRuntime,
@@ -112,7 +110,6 @@ impl<
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	> IdentityProofVerifier<ConsumerRuntime>
 	for ParachainVerifier<
-		ConsumerRuntime,
 		RelaychainRuntime,
 		RelaychainStateRootStore,
 		KILT_PARA_ID,

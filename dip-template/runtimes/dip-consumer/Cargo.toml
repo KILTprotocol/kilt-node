@@ -66,6 +66,7 @@ rococo-runtime.workspace = true
 # Benchmarks
 frame-benchmarking = {workspace = true, optional = true}
 frame-system-benchmarking = {workspace = true, optional = true}
+kilt-support = { workspace = true, optional = true }
 
 [features]
 default = [
@@ -114,6 +115,7 @@ std = [
   "rococo-runtime/std",
   "frame-benchmarking?/std",
   "frame-system-benchmarking?/std",
+  "kilt-support?/std",
 ]
 
 runtime-benchmarks = [
@@ -133,4 +135,5 @@ runtime-benchmarks = [
   "rococo-runtime/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
   "frame-system-benchmarking/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks"
 ]

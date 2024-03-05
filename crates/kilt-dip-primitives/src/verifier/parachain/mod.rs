@@ -68,7 +68,6 @@ pub enum VersionedDipParachainStateProof<
 /// Versioned proof verifier. For version-specific description, refer to each
 /// verifier's documentation.
 pub struct KiltVersionedParachainVerifier<
-	ConsumerRuntime,
 	RelaychainRuntime,
 	RelaychainStateRootStore,
 	const KILT_PARA_ID: u32,
@@ -84,7 +83,6 @@ pub struct KiltVersionedParachainVerifier<
 	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 64,
 >(
 	PhantomData<(
-		ConsumerRuntime,
 		RelaychainRuntime,
 		RelaychainStateRootStore,
 		KiltRuntime,
@@ -110,7 +108,6 @@ impl<
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	> IdentityProofVerifier<ConsumerRuntime>
 	for KiltVersionedParachainVerifier<
-		ConsumerRuntime,
 		RelaychainRuntime,
 		RelaychainStateRootStore,
 		KILT_PARA_ID,
@@ -173,7 +170,6 @@ impl<
 	) -> Result<Self::VerificationResult, Self::Error> {
 		match proof {
 			VersionedDipParachainStateProof::V0(v0_proof) => <v0::ParachainVerifier<
-				ConsumerRuntime,
 				RelaychainRuntime,
 				RelaychainStateRootStore,
 				KILT_PARA_ID,
