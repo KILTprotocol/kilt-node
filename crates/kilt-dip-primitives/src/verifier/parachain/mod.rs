@@ -65,6 +65,51 @@ pub enum VersionedDipParachainStateProof<
 	),
 }
 
+impl<
+		RelayBlockNumber,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+	From<
+		ParachainDipDidProof<
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		>,
+	>
+	for VersionedDipParachainStateProof<
+		RelayBlockNumber,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+{
+	fn from(
+		value: ParachainDipDidProof<
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		>,
+	) -> Self {
+		Self::V0(value)
+	}
+}
+
 /// Versioned proof verifier. For version-specific description, refer to each
 /// verifier's documentation.
 pub struct KiltVersionedParachainVerifier<

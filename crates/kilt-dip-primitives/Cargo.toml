@@ -77,5 +77,5 @@ std = [
 runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
-  "pallet-dip-provider/runtime-benchmarks",
+  "pallet-dip-provider/runtime-benchmarks"
 ]

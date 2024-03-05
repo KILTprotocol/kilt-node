@@ -76,6 +76,40 @@ pub struct ParachainDipDidProof<
 	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
 }
 
+impl<
+		RelayBlockNumber,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+	ParachainDipDidProof<
+		RelayBlockNumber,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+{
+	pub fn new(
+		provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
+		dip_commitment_proof: DipCommitmentStateProof,
+		dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+		signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+	) -> Self {
+		Self {
+			dip_commitment_proof,
+			dip_proof,
+			provider_head_proof,
+			signature,
+		}
+	}
+}
+
 #[cfg(test)]
 impl<
 		RelayBlockNumber,

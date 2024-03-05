@@ -67,6 +67,7 @@ rococo-runtime.workspace = true
 frame-benchmarking = {workspace = true, optional = true}
 frame-system-benchmarking = {workspace = true, optional = true}
 kilt-support = { workspace = true, optional = true }
+hex-literal = { workspace = true, optional = true }
 
 [features]
 default = [
@@ -135,5 +136,6 @@ runtime-benchmarks = [
   "rococo-runtime/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
   "frame-system-benchmarking/runtime-benchmarks",
-  "kilt-support/runtime-benchmarks"
+  "kilt-support/runtime-benchmarks",
+  "hex-literal"
 ]

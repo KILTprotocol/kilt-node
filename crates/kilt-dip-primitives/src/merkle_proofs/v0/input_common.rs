@@ -34,10 +34,25 @@ pub struct ProviderHeadStateProof<RelayBlockNumber> {
 	pub(crate) proof: Vec<Vec<u8>>,
 }
 
+impl<RelayBlockNumber> ProviderHeadStateProof<RelayBlockNumber> {
+	pub fn new(relay_block_number: RelayBlockNumber, proof: Vec<Vec<u8>>) -> Self {
+		Self {
+			proof,
+			relay_block_number,
+		}
+	}
+}
+
 /// The state proof for a DIP commitment.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(test, derive(Default))]
 pub struct DipCommitmentStateProof(pub(crate) Vec<Vec<u8>>);
+
+impl DipCommitmentStateProof {
+	pub fn new(proof: Vec<Vec<u8>>) -> Self {
+		Self(proof)
+	}
+}
 
 /// The Merkle proof for a KILT DID.
 ///
@@ -134,22 +149,6 @@ where
 	fn default() -> Self {
 		Self {
 			signature: DidSignature::Ed25519(sp_core::ed25519::Signature([0u8; 64])),
-			valid_until: BlockNumber::default(),
-		}
-	}
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-impl<BlockNumber, Context> kilt_support::traits::GetWorstCase<Context> for TimeBoundDidSignature<BlockNumber>
-where
-	DidSignature: kilt_support::traits::GetWorstCase<Context, Output = DidSignature>,
-	BlockNumber: Default,
-{
-	type Output = Self;
-
-	fn worst_case(context: Context) -> Self::Output {
-		Self {
-			signature: DidSignature::worst_case(context),
 			valid_until: BlockNumber::default(),
 		}
 	}

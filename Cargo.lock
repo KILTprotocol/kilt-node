@@ -2496,6 +2496,7 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
+ "hex-literal 0.3.4",
  "kilt-dip-primitives",
  "kilt-support",
  "pallet-aura",
