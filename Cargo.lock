@@ -16502,6 +16502,7 @@ dependencies = [
  "asset-hub-polkadot-runtime",
  "cumulus-primitives-core",
  "frame-support",
+ "frame-system",
  "integration-tests-common",
  "pallet-assets",
  "pallet-im-online",
