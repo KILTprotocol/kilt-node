@@ -16,15 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{
-	did_details::{DidEncryptionKey, DidPublicKeyDetails, DidVerificationKey},
-	DidSignature, DidVerificationKeyRelationship, KeyIdOf,
-};
+use did::{DidVerificationKeyRelationship, KeyIdOf};
 use dip_provider_runtime_template::{
-	AccountId as ProviderAccountId, Runtime as ProviderRuntime, MAX_REVEALABLE_LINKED_ACCOUNTS,
-	MAX_TOTAL_KEY_AGREEMENT_KEYS,
+	AccountId as ProviderAccountId, Runtime as ProviderRuntime, MAX_PUBLIC_KEYS_PER_DID, MAX_REVEALABLE_LINKED_ACCOUNTS,
 };
-use frame_support::{pallet_prelude::ValueQuery, storage_alias, traits::Contains};
+use frame_support::traits::Contains;
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureSigned};
 use kilt_dip_primitives::{
 	parachain::{
@@ -33,22 +29,17 @@ use kilt_dip_primitives::{
 		DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT, DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
 	},
 	traits::DipCallOriginFilter,
-	DidKeyRelationship, DidMerkleProof, DipCommitmentStateProof, KiltVersionedParachainVerifier, ParachainDipDidProof,
-	ProviderHeadStateProof, RelayStateRootsViaRelayStorePallet, RevealedAccountId, RevealedDidKey, RevealedWeb3Name,
-	TimeBoundDidSignature,
+	KiltVersionedParachainVerifier, RelayStateRootsViaRelayStorePallet, RevealedDidKey,
 };
-use pallet_dip_consumer::{benchmarking::WorstCaseOf, traits::IdentityProofVerifier};
-use pallet_relay_store::RelayParentInfo;
+use pallet_dip_consumer::traits::IdentityProofVerifier;
 use rococo_runtime::Runtime as RelaychainRuntime;
 use sp_core::ConstU32;
-use sp_runtime::AccountId32;
 use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
-// 3 is the attestation, delegation, and authentication key.
-// 1 is the web3name.
-const MAX_PROVIDER_REVEALABLE_KEYS_COUNT: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS + 3 + 1 + MAX_REVEALABLE_LINKED_ACCOUNTS;
+// +1 for the web3name.
+const MAX_PROVIDER_REVEALABLE_KEYS_COUNT: u32 = MAX_PUBLIC_KEYS_PER_DID + MAX_REVEALABLE_LINKED_ACCOUNTS + 1;
 
 /// The verifier logic is tied to the provider template runtime definition.
 pub type ProviderTemplateProofVerifier = KiltVersionedParachainVerifier<
@@ -99,12 +90,23 @@ impl IdentityProofVerifier<Runtime> for ProviderTemplateProofVerifierWrapper {
 // Implement worst-case logic for this specific verifier.
 #[cfg(feature = "runtime-benchmarks")]
 impl kilt_support::traits::GetWorstCase for ProviderTemplateProofVerifierWrapper {
-	type Output = WorstCaseOf<Runtime>;
+	type Output = pallet_dip_consumer::benchmarking::WorstCaseOf<Runtime>;
 
 	fn worst_case(_context: ()) -> Self::Output {
-		use frame_support::Twox64Concat;
+		use did::{
+			did_details::{DidEncryptionKey, DidPublicKeyDetails, DidVerificationKey},
+			DidSignature,
+		};
+		use frame_support::{pallet_prelude::ValueQuery, storage_alias, Twox64Concat};
 		use hex_literal::hex;
+		use kilt_dip_primitives::{
+			DidKeyRelationship, DidMerkleProof, DipCommitmentStateProof, ParachainDipDidProof, ProviderHeadStateProof,
+			RevealedAccountId, RevealedWeb3Name, TimeBoundDidSignature,
+		};
+		use pallet_dip_consumer::benchmarking::WorstCaseOf;
+		use pallet_relay_store::RelayParentInfo;
 		use sp_core::{ed25519, sr25519, H256};
+		use sp_runtime::AccountId32;
 		use sp_std::vec;
 
 		#[storage_alias]

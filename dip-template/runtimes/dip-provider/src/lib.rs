@@ -376,10 +376,10 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 	}
 }
 
-pub const MAX_TOTAL_KEY_AGREEMENT_KEYS: u32 = 50;
+pub const MAX_PUBLIC_KEYS_PER_DID: u32 = 53;
 parameter_types! {
 	#[derive(Debug, Clone, Eq, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
+	pub const MaxTotalKeyAgreementKeys: u32 = 50;
 	#[derive(Debug, Clone, Eq, PartialEq, TypeInfo, Encode, Decode)]
 	pub const MaxNewKeyAgreementKeys: u32 = 50;
 }
@@ -398,7 +398,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfServicesPerDid = ConstU32<1>;
 	type MaxNumberOfTypesPerService = ConstU32<1>;
 	type MaxNumberOfUrlsPerService = ConstU32<1>;
-	type MaxPublicKeysPerDid = ConstU32<53>;
+	type MaxPublicKeysPerDid = ConstU32<MAX_PUBLIC_KEYS_PER_DID>;
 	type MaxServiceIdLength = ConstU32<100>;
 	type MaxServiceTypeLength = ConstU32<100>;
 	type MaxServiceUrlLength = ConstU32<100>;
