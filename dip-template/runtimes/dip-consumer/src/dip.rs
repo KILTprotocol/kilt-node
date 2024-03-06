@@ -60,7 +60,8 @@ pub type ProviderTemplateProofVerifier = KiltVersionedParachainVerifier<
 pub type MerkleProofVerifierInput = <ProviderTemplateProofVerifier as IdentityProofVerifier<Runtime>>::Proof;
 pub type MerkleProofVerifierOutput =
 	<ProviderTemplateProofVerifier as IdentityProofVerifier<Runtime>>::VerificationResult;
-// Wrapper around the verifier to implement the `GetWorstCase` trait.
+// Wrapper around the verifier to implement the `GetWorstCase` trait (required
+// due to orphan rule).
 pub struct ProviderTemplateProofVerifierWrapper;
 
 // Delegate verification logic to the specialized version of
@@ -1008,6 +1009,8 @@ mod worst_case_tests {
 
 	use crate::{dip::MAX_PROVIDER_REVEALABLE_KEYS_COUNT, ProviderTemplateProofVerifierWrapper};
 
+	// Test that the worst case actually refers to the worst case that the provider
+	// can generate.
 	#[test]
 	fn worst_case_max_limits() {
 		sp_io::TestExternalities::default().execute_with(|| {

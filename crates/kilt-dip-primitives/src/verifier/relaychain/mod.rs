@@ -32,7 +32,7 @@ use crate::{
 	merkle_proofs::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
-	DipOriginInfo,
+	DipOriginInfo, RelayDipDidProof,
 };
 
 pub mod v0;
@@ -55,7 +55,7 @@ pub enum VersionedRelaychainStateProof<
 	KiltLinkableAccountId,
 > {
 	V0(
-		crate::merkle_proofs::v0::RelayDipDidProof<
+		RelayDipDidProof<
 			ConsumerBlockNumber,
 			ConsumerBlockHasher,
 			KiltDidKeyId,
@@ -65,6 +65,51 @@ pub enum VersionedRelaychainStateProof<
 			KiltLinkableAccountId,
 		>,
 	),
+}
+
+impl<
+		ConsumerBlockNumber: Copy + Into<U256> + TryFrom<U256>,
+		ConsumerBlockHasher: Hash,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+	>
+	From<
+		RelayDipDidProof<
+			ConsumerBlockNumber,
+			ConsumerBlockHasher,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+		>,
+	>
+	for VersionedRelaychainStateProof<
+		ConsumerBlockNumber,
+		ConsumerBlockHasher,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+	>
+{
+	fn from(
+		value: RelayDipDidProof<
+			ConsumerBlockNumber,
+			ConsumerBlockHasher,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+		>,
+	) -> Self {
+		Self::V0(value)
+	}
 }
 
 pub const DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 128;
