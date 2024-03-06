@@ -229,7 +229,7 @@ impl<
 				})
 			)
 		});
-		let signing_leaves_indices = revealed_verification_keys
+		let signing_leaves_indices: Vec<_> = revealed_verification_keys
 			.enumerate()
 			.filter(|(_, revealed_verification_key)| {
 				let RevealedDidMerkleProofLeaf::DidKey(RevealedDidKey {
@@ -246,7 +246,7 @@ impl<
 				verification_key.verify_signature(payload, &self.signature).is_ok()
 			})
 			.map(|(index, _)| u32::saturated_from(index))
-			.collect::<Vec<_>>();
+			.collect();
 
 		if signing_leaves_indices.is_empty() {
 			cfg_if::cfg_if! {
