@@ -315,7 +315,7 @@ mod dip_did_proof_with_verified_relay_state_root {
 	#[test]
 	fn verify_dip_commitment_proof_for_subject_invalid_proof() {
 		let (parachain_state_root, dip_commitment_proof) = dip_commitment_proof();
-		// Remove last part of the blinded component to get an invalid proof
+		// Remove last part of the blinded component to get an invalid proof.
 		let (_, invalid_blinded_proof) = dip_commitment_proof.0.split_last().unwrap();
 		let invalid_dip_commitment_proof = DipCommitmentStateProof(invalid_blinded_proof.iter().cloned().into());
 		let proof =
@@ -389,7 +389,6 @@ mod dip_did_proof_with_verified_subject_commitment {
 		)
 	}
 
-	// TODO: Generate a valid DIP proof, and use it here.
 	#[test]
 	fn verify_dip_proof_successful() {
 		let (dip_commitment, dip_proof) = dip_proof();
