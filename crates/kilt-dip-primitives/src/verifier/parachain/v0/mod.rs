@@ -40,6 +40,13 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+const PARACHAIN_HEAD_PROOF_TOO_MANY_LEAVES_ERROR_CODE: u8 = 0;
+const PARACHAIN_HEAD_PROOF_LEAF_TOO_LARGE_ERROR_CODE: u8 = 1;
+const DIP_COMMITMENT_PROOF_TOO_MANY_LEAVES_ERROR_CODE: u8 = 2;
+const DIP_COMMITMENT_PROOF_LEAF_TOO_LARGE_ERROR_CODE: u8 = 3;
+const DIP_PROOF_TOO_MANY_LEAVES_ERROR_CODE: u8 = 4;
+const DIP_PROOF_LEAF_TOO_LARGE_ERROR_CODE: u8 = 5;
+
 /// Proof verifier configured given a specific KILT runtime implementation.
 ///
 /// The generic types
@@ -173,7 +180,9 @@ impl<
 		// 1. Verify parachain state is finalized by relay chain and fresh.
 		ensure!(
 			proof.provider_head_proof.proof.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into(),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(0)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(
+				PARACHAIN_HEAD_PROOF_TOO_MANY_LEAVES_ERROR_CODE
+			)
 		);
 		ensure!(
 			proof
@@ -181,7 +190,7 @@ impl<
 				.proof
 				.iter()
 				.all(|l| l.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into()),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(1)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(PARACHAIN_HEAD_PROOF_LEAF_TOO_LARGE_ERROR_CODE)
 		);
 		let proof_without_relaychain = proof
 			.verify_provider_head_proof::<RelaychainRuntime::Hashing, RelaychainStateRootStore, HeaderFor<KiltRuntime>>(
@@ -193,7 +202,9 @@ impl<
 		ensure!(
 			proof_without_relaychain.dip_commitment_proof.0.len()
 				<= MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into(),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(2)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(
+				DIP_COMMITMENT_PROOF_TOO_MANY_LEAVES_ERROR_CODE
+			)
 		);
 		ensure!(
 			proof_without_relaychain
@@ -201,7 +212,7 @@ impl<
 				.0
 				.iter()
 				.all(|l| l.len() <= MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into()),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(3)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(DIP_COMMITMENT_PROOF_LEAF_TOO_LARGE_ERROR_CODE)
 		);
 		let proof_without_parachain = proof_without_relaychain
 			.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime>(subject)
@@ -210,7 +221,7 @@ impl<
 		// 3. Verify DIP Merkle proof.
 		ensure!(
 			proof_without_parachain.dip_proof.blinded.len() <= MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into(),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(4)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(DIP_PROOF_TOO_MANY_LEAVES_ERROR_CODE)
 		);
 		ensure!(
 			proof_without_parachain
@@ -218,7 +229,7 @@ impl<
 				.blinded
 				.iter()
 				.all(|l| l.len() <= MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into()),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(5)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(DIP_PROOF_LEAF_TOO_LARGE_ERROR_CODE)
 		);
 		let proof_without_dip_merkle = proof_without_parachain
 			.verify_dip_proof::<KiltRuntime::Hashing, MAX_DID_MERKLE_LEAVES_REVEALED>()
