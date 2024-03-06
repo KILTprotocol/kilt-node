@@ -30,6 +30,38 @@ mod parachain_dip_did_proof {
 
 	use crate::{state_proofs::MerkleProofError, Error, ParachainDipDidProof, ProviderHeadStateProof};
 
+	impl<
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		>
+		ParachainDipDidProof<
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		> where
+		KiltDidKeyId: Default,
+		KiltBlockNumber: Default,
+		ConsumerBlockNumber: Default,
+	{
+		fn with_provider_head_proof(provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>) -> Self {
+			Self {
+				provider_head_proof,
+				dip_commitment_proof: Default::default(),
+				dip_proof: Default::default(),
+				signature: Default::default(),
+			}
+		}
+	}
+
 	// Storage proof generated at Polkadot block `19_663_508` with hash
 	// `0x6e87866fb4f412e1e691e25d294019a7695d5a756ee7bc8d012c25177b5e1e13` for
 	// storage key
@@ -163,6 +195,41 @@ mod dip_did_proof_with_verified_relay_state_root {
 	};
 
 	use crate::{state_proofs::MerkleProofError, DipCommitmentStateProof, DipDidProofWithVerifiedStateRoot, Error};
+
+	impl<
+			StateRoot,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		>
+		DipDidProofWithVerifiedStateRoot<
+			StateRoot,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		> where
+		KiltDidKeyId: Default,
+		KiltBlockNumber: Default,
+		ConsumerBlockNumber: Default,
+	{
+		fn with_state_root_and_dip_commitment_proof(
+			provider_state_root: StateRoot,
+			dip_commitment_proof: DipCommitmentStateProof,
+		) -> Self {
+			Self {
+				state_root: provider_state_root,
+				dip_commitment_proof,
+				dip_proof: Default::default(),
+				signature: Default::default(),
+			}
+		}
+	}
 
 	construct_runtime!(
 		pub enum TestProviderRuntime {
@@ -346,7 +413,47 @@ mod dip_did_proof_with_verified_subject_commitment {
 		AccountId32, BoundedVec,
 	};
 
-	use crate::{DidMerkleProof, DipDidProofWithVerifiedSubjectCommitment, Error, RevealedDidKey};
+	use crate::{
+		DidMerkleProof, DipDidProofWithVerifiedSubjectCommitment, Error, RevealedDidKey, TimeBoundDidSignature,
+	};
+
+	impl<
+			Commitment,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		>
+		DipDidProofWithVerifiedSubjectCommitment<
+			Commitment,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		> where
+		ConsumerBlockNumber: Default,
+	{
+		fn with_commitment_and_dip_proof(
+			commitment: Commitment,
+			dip_proof: DidMerkleProof<
+				KiltDidKeyId,
+				KiltAccountId,
+				KiltBlockNumber,
+				KiltWeb3Name,
+				KiltLinkableAccountId,
+			>,
+		) -> Self {
+			Self {
+				dip_commitment: commitment,
+				dip_proof,
+				signature: TimeBoundDidSignature::default(),
+			}
+		}
+	}
 
 	// DIP proof generated on Peregrine via the `dipProvider::generateProof` runtime
 	// API.

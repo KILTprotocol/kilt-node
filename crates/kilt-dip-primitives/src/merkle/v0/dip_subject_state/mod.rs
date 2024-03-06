@@ -120,40 +120,6 @@ impl<
 	}
 }
 
-#[cfg(test)]
-impl<
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-		const MAX_REVEALED_LEAVES_COUNT: u32,
-	>
-	DipRevealedDetailsAndUnverifiedDidSignature<
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-		MAX_REVEALED_LEAVES_COUNT,
-	> where
-	KiltDidKeyId: Default,
-	KiltBlockNumber: Default,
-	ConsumerBlockNumber: Default,
-{
-	pub(crate) fn with_signature_time(valid_until: ConsumerBlockNumber) -> Self {
-		Self {
-			signature: TimeBoundDidSignature {
-				valid_until,
-				..Default::default()
-			},
-			revealed_leaves: Default::default(),
-		}
-	}
-}
-
 /// A DIP proof whose information has been verified and whose signature has been
 /// verified not to be expired, but that yet does not contain information as to
 /// which of the revealed keys has generated the signature.

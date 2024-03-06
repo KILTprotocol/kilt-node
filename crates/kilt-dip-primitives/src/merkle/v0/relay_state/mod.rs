@@ -151,40 +151,6 @@ impl<
 	}
 }
 
-#[cfg(test)]
-impl<
-		RelayBlockNumber: Member + sp_std::hash::Hash + Copy + MaybeDisplay + AtLeast32BitUnsigned + Codec + Into<U256> + TryFrom<U256>,
-		RelayHasher: Hash,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-	>
-	RelayDipDidProof<
-		RelayBlockNumber,
-		RelayHasher,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-	> where
-	RelayBlockNumber: Default,
-	KiltDidKeyId: Default,
-	KiltBlockNumber: Default,
-{
-	pub(crate) fn with_header(header: Header<RelayBlockNumber, RelayHasher>) -> Self {
-		Self {
-			relay_header: header,
-			dip_commitment_proof: Default::default(),
-			dip_proof: Default::default(),
-			provider_head_proof: Default::default(),
-			signature: Default::default(),
-		}
-	}
-}
-
 /// A DIP proof submitted to a relaychain consumer that has had the proof header
 /// verified against a given block hash.
 ///
@@ -279,42 +245,5 @@ impl<
 			provider_para_id,
 			&self.relay_state_root,
 		)
-	}
-}
-
-#[cfg(test)]
-impl<
-		StateRoot,
-		RelayBlockNumber,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-	>
-	RelayDipDidProofWithVerifiedRelayStateRoot<
-		StateRoot,
-		RelayBlockNumber,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-	> where
-	RelayBlockNumber: Default,
-	KiltDidKeyId: Default,
-	KiltBlockNumber: Default,
-{
-	pub(crate) fn with_relay_state_root_and_provider_head_proof(
-		relay_state_root: StateRoot,
-		provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
-	) -> Self {
-		Self {
-			relay_state_root,
-			provider_head_proof,
-			dip_commitment_proof: Default::default(),
-			dip_proof: Default::default(),
-			signature: Default::default(),
-		}
 	}
 }

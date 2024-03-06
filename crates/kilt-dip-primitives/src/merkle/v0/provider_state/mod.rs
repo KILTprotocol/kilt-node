@@ -115,39 +115,6 @@ impl<
 	}
 }
 
-#[cfg(test)]
-impl<
-		RelayBlockNumber,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-	>
-	ParachainDipDidProof<
-		RelayBlockNumber,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-	> where
-	KiltDidKeyId: Default,
-	KiltBlockNumber: Default,
-	ConsumerBlockNumber: Default,
-{
-	pub(crate) fn with_provider_head_proof(provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>) -> Self {
-		Self {
-			provider_head_proof,
-			dip_commitment_proof: Default::default(),
-			dip_proof: Default::default(),
-			signature: Default::default(),
-		}
-	}
-}
-
 impl<
 		RelayBlockNumber,
 		KiltDidKeyId,
@@ -378,42 +345,6 @@ impl<
 	}
 }
 
-#[cfg(test)]
-impl<
-		StateRoot,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-	>
-	DipDidProofWithVerifiedStateRoot<
-		StateRoot,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-	> where
-	KiltDidKeyId: Default,
-	KiltBlockNumber: Default,
-	ConsumerBlockNumber: Default,
-{
-	pub(crate) fn with_state_root_and_dip_commitment_proof(
-		provider_state_root: StateRoot,
-		dip_commitment_proof: DipCommitmentStateProof,
-	) -> Self {
-		Self {
-			state_root: provider_state_root,
-			dip_commitment_proof,
-			dip_proof: Default::default(),
-			signature: Default::default(),
-		}
-	}
-}
-
 /// A DIP proof that has had the relaychain state and the DIP commitment
 /// verified for the provided relaychain block number.
 ///
@@ -560,38 +491,5 @@ impl<
 			revealed_leaves,
 			signature: self.signature,
 		})
-	}
-}
-
-#[cfg(test)]
-impl<
-		Commitment,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-	>
-	DipDidProofWithVerifiedSubjectCommitment<
-		Commitment,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-	> where
-	ConsumerBlockNumber: Default,
-{
-	pub(crate) fn with_commitment_and_dip_proof(
-		commitment: Commitment,
-		dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
-	) -> Self {
-		Self {
-			dip_commitment: commitment,
-			dip_proof,
-			signature: TimeBoundDidSignature::default(),
-		}
 	}
 }

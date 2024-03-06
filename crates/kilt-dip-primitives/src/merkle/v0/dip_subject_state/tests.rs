@@ -19,7 +19,40 @@
 mod dip_revealed_details_and_unverified_did_signature {
 	use frame_support::{assert_err, assert_ok};
 
-	use crate::{DipRevealedDetailsAndUnverifiedDidSignature, Error};
+	use crate::{DipRevealedDetailsAndUnverifiedDidSignature, Error, TimeBoundDidSignature};
+
+	impl<
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+			const MAX_REVEALED_LEAVES_COUNT: u32,
+		>
+		DipRevealedDetailsAndUnverifiedDidSignature<
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+			MAX_REVEALED_LEAVES_COUNT,
+		> where
+		KiltDidKeyId: Default,
+		KiltBlockNumber: Default,
+		ConsumerBlockNumber: Default,
+	{
+		fn with_signature_time(valid_until: ConsumerBlockNumber) -> Self {
+			Self {
+				signature: TimeBoundDidSignature {
+					valid_until,
+					..Default::default()
+				},
+				revealed_leaves: Default::default(),
+			}
+		}
+	}
 
 	#[test]
 	fn verify_signature_time_successful() {
