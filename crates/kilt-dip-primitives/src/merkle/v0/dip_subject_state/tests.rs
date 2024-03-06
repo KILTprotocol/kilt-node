@@ -64,7 +64,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 		let (did_key_pair, _) = ed25519::Pair::generate();
 		let did_auth_key: DidVerificationKey<AccountId32> = did_key_pair.public().into();
 		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<1>> =
-			vec![RevealedDidKey::<u32, u32, AccountId32> {
+			vec![RevealedDidKey {
 				id: 0u32,
 				relationship: DidVerificationKeyRelationship::Authentication.into(),
 				details: DidPublicKeyDetails {
@@ -95,7 +95,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 		let (did_key_pair, _) = ed25519::Pair::generate();
 		let did_auth_key: DidVerificationKey<AccountId32> = did_key_pair.public().into();
 		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<3>> = vec![
-			RevealedDidKey::<u32, u32, AccountId32> {
+			RevealedDidKey {
 				id: 0u32,
 				relationship: DidVerificationKeyRelationship::Authentication.into(),
 				details: DidPublicKeyDetails {
@@ -104,7 +104,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 				},
 			}
 			.into(),
-			RevealedDidKey::<u32, u32, AccountId32> {
+			RevealedDidKey {
 				id: 0u32,
 				relationship: DidVerificationKeyRelationship::CapabilityDelegation.into(),
 				details: DidPublicKeyDetails {
@@ -115,7 +115,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 				},
 			}
 			.into(),
-			RevealedDidKey::<u32, u32, AccountId32> {
+			RevealedDidKey {
 				id: 0u32,
 				relationship: DidVerificationKeyRelationship::AssertionMethod.into(),
 				details: DidPublicKeyDetails {
@@ -145,7 +145,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 	fn retrieve_signing_leaves_for_payload_no_key_present() {
 		let did_auth_key: DidVerificationKey<AccountId32> = ed25519::Public([0u8; 32]).into();
 		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<1>> =
-			vec![RevealedDidKey::<u32, u32, AccountId32> {
+			vec![RevealedDidKey {
 				id: 0u32,
 				relationship: DidVerificationKeyRelationship::Authentication.into(),
 				details: DidPublicKeyDetails {
