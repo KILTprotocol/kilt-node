@@ -6,6 +6,7 @@ use crate::{
 	},
 	utils::get_account_id_from_seed,
 };
+use asset_hub_polkadot_runtime::PolkadotXcm as AssetHubXcm;
 use asset_hub_polkadot_runtime::System as AssetHubSystem;
 use frame_support::dispatch::RawOrigin;
 use frame_support::{assert_err, assert_ok};
@@ -106,6 +107,58 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 
 		assert_expected_events!(
 			AssetHub,
+			vec![RuntimeEvent::XcmpQueue(XcmpQueueEvent::Fail { .. }) => {},]
+		);
+	});
+}
+
+#[test]
+fn test_reserve_asset_transfer_from_regular_asset_hub_account_to_spiritnet() {
+	MockNetwork::reset();
+
+	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
+	let bob_account_id = get_account_id_from_seed::<sr25519::Public>(BOB);
+
+	AssetHub::execute_with(|| {
+		assert_ok!(AssetHubXcm::limited_reserve_transfer_assets(
+			RawOrigin::Signed(alice_account_id.clone()).into(),
+			Box::new(ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into()),
+			Box::new(
+				X1(Junction::AccountId32 {
+					network: None,
+					id: bob_account_id.into()
+				})
+				.into()
+			),
+			Box::new((Here, 1000 * ED).into()),
+			0,
+			WeightLimit::Unlimited,
+		));
+
+		type RuntimeEvent = <AssetHub as Parachain>::RuntimeEvent;
+
+		let bla = AssetHubSystem::events();
+
+		println!("{:?}", bla);
+
+		assert_expected_events!(
+			AssetHub,
+			vec![RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
+				outcome: xcm::latest::Outcome::Complete(_)
+			}) => {},
+			]
+		);
+	});
+	// No event on the relaychain (message is meant for asset hub
+	Polkadot::execute_with(|| {
+		assert_eq!(PolkadotSystem::events().len(), 0);
+	});
+	// Fails on AssetHub since spiritnet is not a trusted registrar
+	Spiritnet::execute_with(|| {
+		type RuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+
+		assert_expected_events!(
+			Spiritnet,
 			vec![RuntimeEvent::XcmpQueue(XcmpQueueEvent::Fail { .. }) => {},]
 		);
 	});
