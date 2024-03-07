@@ -16,15 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-mod errors;
-
-/// Verification logic to integrate a sibling chain as a DIP provider.
-pub mod parachain;
-/// Verification logic to integrate a child chain as a DIP provider.
-pub mod relaychain;
-pub use parachain::{
-	DipParachainStateProofVerifierError, KiltVersionedParachainVerifier, VersionedDipParachainStateProof,
-};
-pub use relaychain::{
-	DipRelaychainStateProofVerifierError, KiltVersionedRelaychainVerifier, VersionedRelaychainStateProof,
-};
+#[repr(u8)]
+pub(crate) enum DipProofComponentTooLargeError {
+	ParachainHeadProofTooManyLeaves = 0,
+	ParachainHeadProofLeafTooLarge = 1,
+	DipCommitmentProofTooManyLeaves = 2,
+	DipCommitmentProofLeafTooLarge = 3,
+	DipProofTooManyLeaves = 4,
+	DipProofLeafTooLarge = 5,
+}

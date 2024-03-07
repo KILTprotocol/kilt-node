@@ -31,6 +31,7 @@ use crate::{
 	merkle::v0::ParachainDipDidProof,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
+	verifier::errors::DipProofComponentTooLargeError,
 	DipOriginInfo, DipParachainStateProofVerifierError, RevealedDidKey,
 };
 
@@ -39,13 +40,6 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
-
-const PARACHAIN_HEAD_PROOF_TOO_MANY_LEAVES_ERROR_CODE: u8 = 0;
-const PARACHAIN_HEAD_PROOF_LEAF_TOO_LARGE_ERROR_CODE: u8 = 1;
-const DIP_COMMITMENT_PROOF_TOO_MANY_LEAVES_ERROR_CODE: u8 = 2;
-const DIP_COMMITMENT_PROOF_LEAF_TOO_LARGE_ERROR_CODE: u8 = 3;
-const DIP_PROOF_TOO_MANY_LEAVES_ERROR_CODE: u8 = 4;
-const DIP_PROOF_LEAF_TOO_LARGE_ERROR_CODE: u8 = 5;
 
 /// Proof verifier configured given a specific KILT runtime implementation.
 ///
@@ -181,7 +175,7 @@ impl<
 		ensure!(
 			proof.provider_head_proof.proof.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into(),
 			DipParachainStateProofVerifierError::ProofComponentTooLarge(
-				PARACHAIN_HEAD_PROOF_TOO_MANY_LEAVES_ERROR_CODE
+				DipProofComponentTooLargeError::ParachainHeadProofTooManyLeaves as u8
 			)
 		);
 		ensure!(
@@ -190,7 +184,9 @@ impl<
 				.proof
 				.iter()
 				.all(|l| l.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into()),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(PARACHAIN_HEAD_PROOF_LEAF_TOO_LARGE_ERROR_CODE)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(
+				DipProofComponentTooLargeError::ParachainHeadProofLeafTooLarge as u8
+			)
 		);
 		let proof_without_relaychain = proof
 			.verify_provider_head_proof::<RelaychainRuntime::Hashing, RelaychainStateRootStore, HeaderFor<KiltRuntime>>(
@@ -203,7 +199,7 @@ impl<
 			proof_without_relaychain.dip_commitment_proof.0.len()
 				<= MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into(),
 			DipParachainStateProofVerifierError::ProofComponentTooLarge(
-				DIP_COMMITMENT_PROOF_TOO_MANY_LEAVES_ERROR_CODE
+				DipProofComponentTooLargeError::DipCommitmentProofTooManyLeaves as u8
 			)
 		);
 		ensure!(
@@ -212,7 +208,9 @@ impl<
 				.0
 				.iter()
 				.all(|l| l.len() <= MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into()),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(DIP_COMMITMENT_PROOF_LEAF_TOO_LARGE_ERROR_CODE)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(
+				DipProofComponentTooLargeError::DipCommitmentProofLeafTooLarge as u8
+			)
 		);
 		let proof_without_parachain = proof_without_relaychain
 			.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime>(subject)
@@ -221,7 +219,9 @@ impl<
 		// 3. Verify DIP Merkle proof.
 		ensure!(
 			proof_without_parachain.dip_proof.blinded.len() <= MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into(),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(DIP_PROOF_TOO_MANY_LEAVES_ERROR_CODE)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(
+				DipProofComponentTooLargeError::DipProofTooManyLeaves as u8
+			)
 		);
 		ensure!(
 			proof_without_parachain
@@ -229,7 +229,9 @@ impl<
 				.blinded
 				.iter()
 				.all(|l| l.len() <= MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into()),
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(DIP_PROOF_LEAF_TOO_LARGE_ERROR_CODE)
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(
+				DipProofComponentTooLargeError::DipProofLeafTooLarge as u8
+			)
 		);
 		let proof_without_dip_merkle = proof_without_parachain
 			.verify_dip_proof::<KiltRuntime::Hashing, MAX_DID_MERKLE_LEAVES_REVEALED>()
