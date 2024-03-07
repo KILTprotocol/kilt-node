@@ -28,7 +28,7 @@ use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{
-	merkle::v0::ParachainDipDidProof,
+	merkle_proofs::v0::ParachainDipDidProof,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
 	verifier::errors::DipProofComponentTooLargeError,

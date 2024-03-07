@@ -21,7 +21,7 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
-use crate::{merkle::v0::output_common::RevealedDidMerkleProofLeaf, utils::BoundedBlindedValue};
+use crate::{merkle_proofs::v0::output_common::RevealedDidMerkleProofLeaf, utils::BoundedBlindedValue};
 
 /// The state proof for a parachain head.
 ///

@@ -25,7 +25,7 @@ use sp_runtime::{
 };
 
 use crate::{
-	merkle::v0::{
+	merkle_proofs::v0::{
 		input_common::{DidMerkleProof, DipCommitmentStateProof, ProviderHeadStateProof, TimeBoundDidSignature},
 		provider_state::ParachainDipDidProof,
 	},

@@ -25,7 +25,7 @@ use sp_runtime::{traits::SaturatedConversion, BoundedVec};
 use sp_std::vec::Vec;
 
 use crate::{
-	merkle::v0::{
+	merkle_proofs::v0::{
 		input_common::TimeBoundDidSignature,
 		output_common::{DidKeyRelationship, DipOriginInfo, RevealedDidKey, RevealedDidMerkleProofLeaf},
 	},

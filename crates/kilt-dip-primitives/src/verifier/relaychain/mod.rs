@@ -29,7 +29,7 @@ use sp_runtime::traits::Hash;
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
 use crate::{
-	merkle::v0::RevealedDidKey,
+	merkle_proofs::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
 	DipOriginInfo,
@@ -55,7 +55,7 @@ pub enum VersionedRelaychainStateProof<
 	KiltLinkableAccountId,
 > {
 	V0(
-		crate::merkle::v0::RelayDipDidProof<
+		crate::merkle_proofs::v0::RelayDipDidProof<
 			ConsumerBlockNumber,
 			ConsumerBlockHasher,
 			KiltDidKeyId,

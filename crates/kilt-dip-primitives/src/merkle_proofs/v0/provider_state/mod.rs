@@ -28,7 +28,7 @@ use sp_std::{fmt::Debug, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
 
 use crate::{
-	merkle::v0::{
+	merkle_proofs::v0::{
 		dip_subject_state::DipRevealedDetailsAndUnverifiedDidSignature,
 		input_common::{DidMerkleProof, DipCommitmentStateProof, ProviderHeadStateProof, TimeBoundDidSignature},
 	},
