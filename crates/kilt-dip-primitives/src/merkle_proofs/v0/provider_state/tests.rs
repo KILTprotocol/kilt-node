@@ -168,7 +168,7 @@ mod parachain_dip_did_proof {
 		// Remove last part of the blinded component to get an invalid proof
 		let (_, invalid_blinded_proof) = provider_head_proof.proof.split_last().unwrap();
 		let invalid_provider_head_proof = ProviderHeadStateProof {
-			proof: invalid_blinded_proof.iter().cloned().into(),
+			proof: invalid_blinded_proof.to_owned(),
 			..provider_head_proof
 		};
 		let proof =
@@ -384,7 +384,7 @@ mod dip_did_proof_with_verified_relay_state_root {
 		let (parachain_state_root, dip_commitment_proof) = get_dip_commitment_proof();
 		// Remove last part of the blinded component to get an invalid proof.
 		let (_, invalid_blinded_proof) = dip_commitment_proof.0.split_last().unwrap();
-		let invalid_dip_commitment_proof = DipCommitmentStateProof(invalid_blinded_proof.iter().cloned().into());
+		let invalid_dip_commitment_proof = DipCommitmentStateProof(invalid_blinded_proof.to_owned());
 		let proof =
 			DipDidProofWithVerifiedStateRoot::<_, (), (), (), (), (), ()>::with_state_root_and_dip_commitment_proof(
 				parachain_state_root,
@@ -534,9 +534,9 @@ mod dip_did_proof_with_verified_subject_commitment {
 	fn verify_dip_proof_invalid_proof() {
 		let proof =
 			DipDidProofWithVerifiedSubjectCommitment::<_, (), (), (), (), (), ()>::with_commitment_and_dip_proof(
-				H256::default(),
+				H256([100; 32]),
 				DidMerkleProof {
-					blinded: Default::default(),
+					blinded: vec![vec![100; 32]],
 					revealed: Default::default(),
 				},
 			);
