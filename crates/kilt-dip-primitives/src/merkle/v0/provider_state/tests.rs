@@ -67,7 +67,7 @@ mod parachain_dip_did_proof {
 	// storage key
 	// `0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000`
 	// (`paras::heads(2_086)`)
-	fn provider_head_proof() -> (H256, ProviderHeadStateProof<u32>) {
+	fn get_provider_head_proof() -> (H256, ProviderHeadStateProof<u32>) {
 		(hex!("623b36bddae282e9fefab4707697171a594fdb27e90fd4ada4ebcc356438b070").into(), ProviderHeadStateProof {
 			relay_block_number: 19_663_508,
 			proof: vec![
@@ -83,7 +83,7 @@ mod parachain_dip_did_proof {
 
 	#[test]
 	fn verify_provider_head_proof_with_state_root_successful() {
-		let (relay_state_root, provider_head_proof) = provider_head_proof();
+		let (relay_state_root, provider_head_proof) = get_provider_head_proof();
 		// Only interested in the parachain head verification part, we skip everything
 		// else.
 		let proof = ParachainDipDidProof::<_, (), (), _, (), (), ()>::with_provider_head_proof(provider_head_proof);
@@ -137,7 +137,7 @@ mod parachain_dip_did_proof {
 
 	#[test]
 	fn verify_provider_head_proof_with_state_root_wrong_relay_hasher() {
-		let (relay_state_root, provider_head_proof) = provider_head_proof();
+		let (relay_state_root, provider_head_proof) = get_provider_head_proof();
 		let proof = ParachainDipDidProof::<_, (), (), _, (), (), ()>::with_provider_head_proof(provider_head_proof);
 		assert_err!(
 			// Using a different hasher for verification
@@ -151,7 +151,7 @@ mod parachain_dip_did_proof {
 
 	#[test]
 	fn verify_provider_head_proof_with_state_root_wrong_para_id() {
-		let (relay_state_root, provider_head_proof) = provider_head_proof();
+		let (relay_state_root, provider_head_proof) = get_provider_head_proof();
 		let proof = ParachainDipDidProof::<_, (), (), _, (), (), ()>::with_provider_head_proof(provider_head_proof);
 		assert_err!(
 			proof.verify_provider_head_proof_with_state_root::<BlakeTwo256, HeaderFor<SpiritnetRuntime>>(
@@ -164,7 +164,7 @@ mod parachain_dip_did_proof {
 
 	#[test]
 	fn verify_provider_head_proof_with_state_root_invalid_proof() {
-		let (relay_state_root, provider_head_proof) = provider_head_proof();
+		let (relay_state_root, provider_head_proof) = get_provider_head_proof();
 		// Remove last part of the blinded component to get an invalid proof
 		let (_, invalid_blinded_proof) = provider_head_proof.proof.split_last().unwrap();
 		let invalid_provider_head_proof = ProviderHeadStateProof {
@@ -280,7 +280,7 @@ mod dip_did_proof_with_verified_relay_state_root {
 	// storage key
 	// `0xb375edf06348b4330d1e88564111cb3d5bf19e4ed2927982e234d989e812f3f30d1c9ddb0ba4c0507243fb24936031b342ed12d34ad897938af6739bf519bdc2f101d67bf7dac85501a12dfa1fa4ab9a0000`
 	// (`dipProvider::identityCommitments(4qVtUbkD2xqp9cqGDjViPpFPesJNdfoJvGeSUgturBxAPyBK, 0)`)
-	fn dip_commitment_proof() -> (H256, DipCommitmentStateProof) {
+	fn get_dip_commitment_proof() -> (H256, DipCommitmentStateProof) {
 		(hex!("3a27f8d59c8bcc51bf3735ecdc0ce1304127a5b9e707e956e22633179493d55c").into(), DipCommitmentStateProof(vec![
 			hex!("7f240d1c9ddb0ba4c0507243fb24936031b342ed12d34ad897938af6739bf519bdc2f101d67bf7dac85501a12dfa1fa4ab9a0000804aba9a5555257d6477fc5a74aaad1eaa24543e7eb1b4ac5ff1c00a50f6e63b3e").to_vec(),
 			hex!("800c808052d9b1ca86bf39ca4b7d574a5bcea35625200b5ff30c4517f7f361c67376e7fd8003ab0887cbb70c4e0d8d0f738e4b05732fd8cb5da24fa5f1112e20ba3603d58a80873d542c3a85337b597f63fc7a89837909196a9f0823625af4e2c18cc5274b56").to_vec(),
@@ -291,7 +291,7 @@ mod dip_did_proof_with_verified_relay_state_root {
 
 	#[test]
 	fn verify_dip_commitment_proof_for_subject_successful() {
-		let (parachain_state_root, dip_commitment_proof) = dip_commitment_proof();
+		let (parachain_state_root, dip_commitment_proof) = get_dip_commitment_proof();
 		// Only interested in the DIP commitment verification part, we skip everything
 		// else.
 		let proof =
@@ -346,7 +346,7 @@ mod dip_did_proof_with_verified_relay_state_root {
 
 	#[test]
 	fn verify_dip_commitment_proof_for_subject_wrong_provider_hasher() {
-		let (parachain_state_root, dip_commitment_proof) = dip_commitment_proof();
+		let (parachain_state_root, dip_commitment_proof) = get_dip_commitment_proof();
 		// Only interested in the DIP commitment verification part, we skip everything
 		// else.
 		let proof =
@@ -365,7 +365,7 @@ mod dip_did_proof_with_verified_relay_state_root {
 
 	#[test]
 	fn verify_dip_commitment_proof_for_subject_different_subject() {
-		let (parachain_state_root, dip_commitment_proof) = dip_commitment_proof();
+		let (parachain_state_root, dip_commitment_proof) = get_dip_commitment_proof();
 		let proof =
 			DipDidProofWithVerifiedStateRoot::<_, (), (), (), (), (), ()>::with_state_root_and_dip_commitment_proof(
 				parachain_state_root,
@@ -381,7 +381,7 @@ mod dip_did_proof_with_verified_relay_state_root {
 
 	#[test]
 	fn verify_dip_commitment_proof_for_subject_invalid_proof() {
-		let (parachain_state_root, dip_commitment_proof) = dip_commitment_proof();
+		let (parachain_state_root, dip_commitment_proof) = get_dip_commitment_proof();
 		// Remove last part of the blinded component to get an invalid proof.
 		let (_, invalid_blinded_proof) = dip_commitment_proof.0.split_last().unwrap();
 		let invalid_dip_commitment_proof = DipCommitmentStateProof(invalid_blinded_proof.iter().cloned().into());
@@ -458,7 +458,7 @@ mod dip_did_proof_with_verified_subject_commitment {
 	// DIP proof generated on Peregrine via the `dipProvider::generateProof` runtime
 	// API.
 	#[allow(clippy::type_complexity)]
-	fn dip_proof() -> (
+	fn get_dip_proof() -> (
 		H256,
 		DidMerkleProof<H256, AccountId32, u64, BoundedVec<u8, ConstU32<32>>, LinkableAccountId>,
 	) {
@@ -498,7 +498,7 @@ mod dip_did_proof_with_verified_subject_commitment {
 
 	#[test]
 	fn verify_dip_proof_successful() {
-		let (dip_commitment, dip_proof) = dip_proof();
+		let (dip_commitment, dip_proof) = get_dip_proof();
 		let proof = DipDidProofWithVerifiedSubjectCommitment::<_, _, _, _, _, _, ()>::with_commitment_and_dip_proof(
 			dip_commitment,
 			dip_proof.clone(),
@@ -512,7 +512,7 @@ mod dip_did_proof_with_verified_subject_commitment {
 
 	#[test]
 	fn verify_dip_proof_wrong_merkle_hasher() {
-		let (dip_commitment, dip_proof) = dip_proof();
+		let (dip_commitment, dip_proof) = get_dip_proof();
 		let proof = DipDidProofWithVerifiedSubjectCommitment::<_, _, _, _, _, _, ()>::with_commitment_and_dip_proof(
 			dip_commitment,
 			dip_proof,
@@ -523,7 +523,7 @@ mod dip_did_proof_with_verified_subject_commitment {
 
 	#[test]
 	fn verify_dip_proof_too_many_leaves() {
-		let (dip_commitment, dip_proof) = dip_proof();
+		let (dip_commitment, dip_proof) = get_dip_proof();
 		let proof = DipDidProofWithVerifiedSubjectCommitment::<_, _, _, _, _, _, ()>::with_commitment_and_dip_proof(
 			dip_commitment,
 			dip_proof,
