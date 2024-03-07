@@ -27,7 +27,7 @@ use xcm_emulator::{
 /// Test that a reserved transfer to the relaychain is failing. We don't want to
 /// allow transfers to the relaychain since the funds might be lost.
 #[test]
-fn test_reserve_asset_transfer_from_regular_account_to_relay() {
+fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_relay() {
 	MockNetwork::reset();
 
 	let alice_account_id_on_peregrine = get_account_id_from_seed::<sr25519::Public>(ALICE);
@@ -64,7 +64,7 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 }
 
 #[test]
-fn test_reserve_asset_transfer_from_spiritnet_to_asset_hub() {
+fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 	MockNetwork::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
@@ -112,7 +112,7 @@ fn test_reserve_asset_transfer_from_spiritnet_to_asset_hub() {
 }
 
 #[test]
-fn test_teleport_asset_from_regular_account_to_asset_hub() {
+fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 	MockNetwork::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
