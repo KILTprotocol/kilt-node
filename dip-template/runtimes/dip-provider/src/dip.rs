@@ -34,7 +34,7 @@ use crate::{
 	weights, AccountId, Balances, DidIdentifier, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
 
-pub const MAX_REVEALABLE_LINKED_ACCOUNTS: u32 = 20;
+pub const MAX_REVEALABLE_LINKED_ACCOUNTS: u32 = 10;
 
 pub mod runtime_api {
 	use super::*;
