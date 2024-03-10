@@ -16500,9 +16500,11 @@ name = "xcm-integration-tests"
 version = "1.12.0-dev"
 dependencies = [
  "asset-hub-polkadot-runtime",
+ "ctype",
  "cumulus-pallet-dmp-queue",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
+ "did",
  "frame-support",
  "frame-system",
  "integration-tests-common",

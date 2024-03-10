@@ -13,9 +13,11 @@ version.workspace = true
 [dependencies]
 
 asset-hub-polkadot-runtime = {workspace = true, default-features = true}
+ctype.workspace = true
 cumulus-pallet-dmp-queue.workspace = true
 cumulus-pallet-xcmp-queue.workspace = true
 cumulus-primitives-core.workspace = true
+did.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
 integration-tests-common.workspace = true

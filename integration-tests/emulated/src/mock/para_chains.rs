@@ -89,7 +89,9 @@ decl_test_parachains! {
 			ParachainSystem: spiritnet_runtime::ParachainSystem,
 			ParachainInfo: spiritnet_runtime::ParachainInfo,
 		},
-		pallets_extra = {}
+		pallets_extra = {
+			Did: spiritnet_runtime::Did,
+		}
 	},
 	pub struct AssetHub {
 		genesis = asset_hub_polkadot::genesis(),
