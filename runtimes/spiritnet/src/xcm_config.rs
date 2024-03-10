@@ -105,7 +105,8 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 pub struct SafeCallFilter;
 impl Contains<RuntimeCall> for SafeCallFilter {
 	fn contains(_call: &RuntimeCall) -> bool {
-		false
+		//TODO: allow did call creation and w3n creation.
+		true
 	}
 }
 
