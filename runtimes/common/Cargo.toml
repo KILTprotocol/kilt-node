@@ -11,6 +11,8 @@ repository.workspace = true
 version.workspace = true
 
 [dev-dependencies]
+did = {workspace = true, features = ["std", "mock"]}
+kilt-dip-primitives = { workspace = true, features = ["std"] }
 sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
@@ -23,8 +25,9 @@ smallvec.workspace = true
 
 attestation.workspace = true
 did.workspace = true
-kilt-support.workspace = true
 kilt-dip-primitives.workspace = true
+kilt-support.workspace = true
+pallet-deposit-storage.workspace = true
 pallet-did-lookup.workspace = true
 pallet-dip-provider.workspace = true
 pallet-web3-names.workspace = true
@@ -74,6 +77,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "kilt-dip-primitives/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
+  "pallet-deposit-storage/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
   "pallet-multisig/runtime-benchmarks",
@@ -97,8 +101,9 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",
-  "kilt-support/std",
   "kilt-dip-primitives/std",
+  "kilt-support/std",
+  "pallet-deposit-storage/std",
   "pallet-did-lookup/std",
   "pallet-dip-provider/std",
   "pallet-web3-names/std",

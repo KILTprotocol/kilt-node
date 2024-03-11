@@ -19,19 +19,22 @@
 use did::did_details::DidDetails;
 use frame_support::ensure;
 use frame_system::pallet_prelude::BlockNumberFor;
-use kilt_dip_primitives::merkle::RevealedWeb3Name;
+use kilt_dip_primitives::RevealedWeb3Name;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::ConstU32;
 use sp_runtime::{BoundedVec, SaturatedConversion};
-use sp_std::vec::Vec;
+use sp_std::{fmt::Debug, vec::Vec};
 
 #[cfg(feature = "runtime-benchmarks")]
 use kilt_support::{benchmark::IdentityContext, traits::GetWorstCase};
 
-#[derive(Encode, Decode, TypeInfo, Debug)]
+#[cfg(test)]
+mod tests;
+
+#[derive(Encode, Decode, TypeInfo, Debug, PartialEq, Eq)]
 pub enum LinkedDidInfoProviderError {
 	DidNotFound,
 	DidDeleted,
@@ -42,9 +45,13 @@ pub enum LinkedDidInfoProviderError {
 impl From<LinkedDidInfoProviderError> for u16 {
 	fn from(value: LinkedDidInfoProviderError) -> Self {
 		match value {
-			LinkedDidInfoProviderError::DidNotFound => 0,
-			LinkedDidInfoProviderError::DidDeleted => 1,
-			LinkedDidInfoProviderError::TooManyLinkedAccounts => 2,
+			// DO NOT USE 0
+			// Errors of different sub-parts are separated by a `u8::MAX`.
+			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
+			// or the new sub-part error (u8::MAX + 0).
+			LinkedDidInfoProviderError::DidNotFound => 1,
+			LinkedDidInfoProviderError::DidDeleted => 2,
+			LinkedDidInfoProviderError::TooManyLinkedAccounts => 3,
 			LinkedDidInfoProviderError::Internal => u16::MAX,
 		}
 	}
@@ -55,6 +62,7 @@ pub type Web3OwnershipOf<Runtime> =
 
 /// Identity information related to a KILT DID relevant for cross-chain
 /// transactions via the DIP protocol.
+#[derive(Debug, Clone, PartialEq)]
 pub struct LinkedDidInfoOf<Runtime, const MAX_LINKED_ACCOUNTS: u32>
 where
 	Runtime: did::Config + pallet_web3_names::Config,
