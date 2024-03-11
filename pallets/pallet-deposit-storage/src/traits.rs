@@ -35,10 +35,7 @@ where
 	) -> Result<(), Self::Error>;
 }
 
-/// Dummy implementation of the [`DepositStorageHooks`] trait that does a noop.
-pub struct NoopDepositStorageHooks;
-
-impl<Runtime> DepositStorageHooks<Runtime> for NoopDepositStorageHooks
+impl<Runtime> DepositStorageHooks<Runtime> for ()
 where
 	Runtime: Config,
 {

@@ -22,14 +22,12 @@ use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use runtime_common::constants::KILT;
 use sc_chain_spec::ChainType;
-use sp_core::crypto::UncheckedInto;
-use sp_core::sr25519;
+use sp_core::{crypto::UncheckedInto, sr25519};
 
 use clone_runtime::{
-	BalancesConfig, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig,
-	SystemConfig,
+	BalancesConfig, CollatorSelectionConfig, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig,
+	SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
-use clone_runtime::{CollatorSelectionConfig, WASM_BINARY};
 use runtime_common::{AccountId, AuthorityId, Balance};
 
 use super::{get_account_id_from_seed, get_from_seed, get_properties, DEFAULT_PARA_ID};

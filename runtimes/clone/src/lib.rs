@@ -26,11 +26,11 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
-use frame_support::PalletId;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::Everything,
 	weights::{ConstantMultiplier, Weight},
+	PalletId,
 };
 use frame_system::EnsureRoot;
 use pallet_transaction_payment::CurrencyAdapter;

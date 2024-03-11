@@ -27,11 +27,13 @@ mod benchmarking;
 
 #[cfg(test)]
 mod mock;
+#[cfg(test)]
+mod tests;
 
 pub use crate::{
 	default_weights::WeightInfo,
 	pallet::*,
-	traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, NoopHooks},
+	traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider},
 };
 
 #[frame_support::pallet]

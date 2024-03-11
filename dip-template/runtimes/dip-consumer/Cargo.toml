@@ -21,11 +21,9 @@ scale-info = {workspace = true, features = ["derive"]}
 dip-provider-runtime-template.workspace = true
 did.workspace = true
 kilt-dip-primitives.workspace = true
-pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-postit.workspace = true
 pallet-relay-store.workspace = true
-runtime-common.workspace = true
 
 # Substrate
 frame-executive.workspace = true
@@ -41,7 +39,6 @@ pallet-timestamp.workspace = true
 pallet-transaction-payment.workspace = true
 pallet-transaction-payment-rpc-runtime-api.workspace = true
 pallet-utility.workspace = true
-polkadot-parachain.workspace = true
 sp-api.workspace = true
 sp-block-builder.workspace = true
 sp-consensus-aura.workspace = true
@@ -57,18 +54,18 @@ sp-weights.workspace = true
 
 # Cumulus
 cumulus-pallet-aura-ext.workspace = true
-cumulus-pallet-dmp-queue.workspace = true
 cumulus-pallet-parachain-system.workspace = true
 cumulus-primitives-core.workspace = true
 cumulus-primitives-timestamp.workspace = true
-cumulus-primitives-utility.workspace = true
 pallet-collator-selection.workspace = true
 parachain-info.workspace = true
+
+# Polkadot
+rococo-runtime.workspace = true
 
 # Benchmarks
 frame-benchmarking = {workspace = true, optional = true}
 frame-system-benchmarking = {workspace = true, optional = true}
-hex-literal = {workspace = true, optional = true}
 
 [features]
 default = [
@@ -80,11 +77,9 @@ std = [
   "dip-provider-runtime-template/std",
   "did/std",
   "kilt-dip-primitives/std",
-  "pallet-did-lookup/std",
   "pallet-dip-consumer/std",
   "pallet-postit/std",
   "pallet-relay-store/std",
-  "runtime-common/std",
 	"frame-executive/std",
 	"frame-support/std",
 	"frame-system/std",
@@ -98,7 +93,6 @@ std = [
 	"pallet-transaction-payment/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-utility/std",
-  "polkadot-parachain/std",
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
@@ -112,21 +106,22 @@ std = [
 	"sp-version/std",
   "sp-weights/std",
   "cumulus-pallet-aura-ext/std",
-	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
-	"cumulus-primitives-utility/std",
   "pallet-collator-selection/std",
-  "parachain-info/std"
+  "parachain-info/std",
+  "rococo-runtime/std",
+  "frame-benchmarking?/std",
+  "frame-system-benchmarking?/std",
 ]
 
 runtime-benchmarks = [
   "dip-provider-runtime-template/runtime-benchmarks",
+  "did/runtime-benchmarks",
   "kilt-dip-primitives/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
   "pallet-relay-store/runtime-benchmarks",
-  "runtime-common/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
@@ -135,7 +130,7 @@ runtime-benchmarks = [
   "pallet-timestamp/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
+  "rococo-runtime/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
   "frame-system-benchmarking/runtime-benchmarks",
-  "hex-literal"
 ]
