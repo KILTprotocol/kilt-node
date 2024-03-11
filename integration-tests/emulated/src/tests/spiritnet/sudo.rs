@@ -9,7 +9,6 @@ use crate::{
 use asset_hub_polkadot_runtime::System as AssetHubSystem;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
-use polkadot_runtime::System as PolkadotSystem;
 use runtime_common::AccountId;
 use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
@@ -164,6 +163,6 @@ fn test_sudo_call_from_asset_hub_to_spiritnet() {
 
 	// No event on the relaychain (message is meant for asset hub)
 	Polkadot::execute_with(|| {
-		assert_eq!(PolkadotSystem::events().len(), 0);
+		assert_eq!(Polkadot::events().len(), 0);
 	});
 }

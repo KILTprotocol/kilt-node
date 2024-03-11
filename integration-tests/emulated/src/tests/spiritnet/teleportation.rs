@@ -6,11 +6,9 @@ use crate::{
 	},
 	utils::get_account_id_from_seed,
 };
-use asset_hub_polkadot_runtime::System as AssetHubSystem;
 use frame_support::assert_err;
 use frame_support::dispatch::RawOrigin;
 use integration_tests_common::{asset_hub_polkadot, polkadot::ED, ALICE, BOB};
-use polkadot_runtime::System as PolkadotSystem;
 use sp_core::sr25519;
 use sp_runtime::{DispatchError, ModuleError};
 use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;
@@ -49,10 +47,10 @@ fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 	});
 	// No event on the relaychain Message is for AssetHub
 	Polkadot::execute_with(|| {
-		assert_eq!(PolkadotSystem::events().len(), 0);
+		assert_eq!(Polkadot::events().len(), 0);
 	});
 	// Fails on AssetHub since spiritnet is not a trusted registrar.
 	AssetHubPolkadot::execute_with(|| {
-		assert_eq!(AssetHubSystem::events().len(), 0);
+		assert_eq!(AssetHubPolkadot::events().len(), 0);
 	});
 }
