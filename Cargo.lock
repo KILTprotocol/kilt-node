@@ -16479,10 +16479,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "integration-tests-common",
- "pallet-assets",
- "pallet-im-online",
  "pallet-message-queue",
- "pallet-staking",
  "pallet-xcm",
  "parity-scale-codec",
  "peregrine-runtime",
@@ -16506,7 +16503,6 @@ dependencies = [
  "xcm",
  "xcm-emulator",
  "xcm-executor",
- "xcm-simulator",
 ]
 
 [[package]]
@@ -16518,24 +16514,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.39",
-]
-
-[[package]]
-name = "xcm-simulator"
-version = "1.0.0"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v1.0.0#c9ec8c5a15959ce711bb60aa79add58f560d61e9"
-dependencies = [
- "frame-support",
- "parity-scale-codec",
- "paste",
- "polkadot-core-primitives",
- "polkadot-parachain",
- "polkadot-runtime-parachains",
- "sp-io",
- "sp-std",
- "xcm",
- "xcm-builder",
- "xcm-executor",
 ]
 
 [[package]]
