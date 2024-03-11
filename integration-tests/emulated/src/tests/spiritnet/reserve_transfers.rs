@@ -9,7 +9,6 @@ use crate::{
 
 use frame_support::{assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
 use integration_tests_common::{asset_hub_polkadot, polkadot::ED, ALICE};
-use polkadot_runtime::System as PolkadotSystem;
 use runtime_common::AccountId;
 use sp_core::sr25519;
 use sp_runtime::traits::Zero;
@@ -55,7 +54,7 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_relay() {
 	});
 	// No message should reach the relaychain.
 	Polkadot::execute_with(|| {
-		assert_eq!(PolkadotSystem::events().len(), 0);
+		assert_eq!(Polkadot::events().len(), 0);
 	})
 }
 
@@ -112,7 +111,7 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 	});
 	// No event on the relaychain (message is meant for AssetHub.
 	Polkadot::execute_with(|| {
-		assert_eq!(PolkadotSystem::events().len(), 0);
+		assert_eq!(Polkadot::events().len(), 0);
 	});
 	// Fails on AssetHub since spiritnet is not a trusted registrar
 	AssetHubPolkadot::execute_with(|| {
