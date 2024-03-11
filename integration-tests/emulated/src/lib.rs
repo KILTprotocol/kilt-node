@@ -1,5 +1,6 @@
+#[cfg(test)]
 pub mod mock;
-mod utils;
-
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod utils;
