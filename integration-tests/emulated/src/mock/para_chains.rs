@@ -72,7 +72,7 @@ pub mod spiritnet {
 	}
 }
 
-mod peregrine {
+pub mod peregrine {
 	use super::*;
 
 	use peregrine_runtime::{

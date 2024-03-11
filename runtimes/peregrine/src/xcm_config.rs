@@ -30,15 +30,16 @@ use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use xcm::v3::prelude::*;
 use xcm_builder::{
-	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative,
-	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-	TakeWeightCredit, UsingComponents, WithComputedOrigin,
+	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin,
+	FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative,
+	SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+	WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
 use runtime_common::xcm_config::{
 	DenyReserveTransferToRelayChain, DenyThenTry, HereLocation, LocalAssetTransactor, LocationToAccountId,
-	MaxAssetsIntoHolding, MaxInstructions, ParentLegislative, UnitWeightCost,
+	MaxAssetsIntoHolding, MaxInstructions, ParentOrSiblings, UnitWeightCost,
 };
 
 parameter_types! {
@@ -74,22 +75,27 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	XcmPassthrough<RuntimeOrigin>,
 );
 
-pub type XcmBarrier = DenyThenTry<
-	DenyReserveTransferToRelayChain,
-	// For local XCM execution (i.e., for pallet_xcm::reserve_asset_transfer)
-	(
-		TakeWeightCredit,
-		WithComputedOrigin<
-			(
-				// We allow everything from the relay chain if it was sent by the relay chain legislative (i.e.,
-				// democracy vote). Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls
-				// from the relaychain legislative, we allow unpaid execution.
-				AllowTopLevelPaidExecutionFrom<ParentLegislative>,
-			),
-			UniversalLocation,
-			ConstU32<8>,
-		>,
-	),
+pub type XcmBarrier = TrailingSetTopicAsId<
+	DenyThenTry<
+		DenyReserveTransferToRelayChain,
+		(
+			// For local extrinsics. Takes credit from already paid extrinsic fee. This is outside the computed origin
+			// since local accounts don't have a computed origin (the message isn't send by any router etc.)
+			TakeWeightCredit,
+			// If we request a response we should also allow it to execute.
+			AllowKnownQueryResponses<PolkadotXcm>,
+			WithComputedOrigin<
+				(
+					// Allow paid execution.
+					AllowTopLevelPaidExecutionFrom<Everything>,
+					// Subscriptions for XCM version are OK from the relaychain and other parachains.
+					AllowSubscriptionsFrom<ParentOrSiblings>,
+				),
+				UniversalLocation,
+				ConstU32<8>,
+			>,
+		),
+	>,
 >;
 
 /// A call filter for the XCM Transact instruction. This is a temporary measure
@@ -102,8 +108,16 @@ pub type XcmBarrier = DenyThenTry<
 /// parameters.
 pub struct SafeCallFilter;
 impl Contains<RuntimeCall> for SafeCallFilter {
-	fn contains(_call: &RuntimeCall) -> bool {
-		false
+	fn contains(call: &RuntimeCall) -> bool {
+		matches!(
+			call,
+			RuntimeCall::Did { .. }
+				| RuntimeCall::Ctype { .. }
+				| RuntimeCall::DidLookup { .. }
+				| RuntimeCall::Web3Names { .. }
+				| RuntimeCall::PublicCredentials { .. }
+				| RuntimeCall::Attestation { .. }
+		)
 	}
 }
 

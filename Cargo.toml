@@ -112,6 +112,7 @@ parachain-info = {git = "https://github.com/paritytech/cumulus", default-feature
 
 # XCM Emulator tests
 asset-hub-polkadot-runtime = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v1.0.0", default-features = false}
+asset-hub-rococo-runtime = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v1.0.0", default-features = false}
 integration-tests-common = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v1.0.0"}
 pallet-assets = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-staking = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
