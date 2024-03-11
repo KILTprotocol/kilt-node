@@ -62,10 +62,6 @@ fn test_unpaid_execution_to_peregrine() {
 
 	Peregrine::execute_with(|| {
 		type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
-
-		let a = Peregrine::events();
-		println!("{:?}", a);
-
 		assert_expected_events!(
 			Peregrine,
 			vec![

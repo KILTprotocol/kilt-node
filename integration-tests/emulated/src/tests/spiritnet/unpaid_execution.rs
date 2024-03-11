@@ -62,10 +62,6 @@ fn test_unpaid_execution_to_spiritnet() {
 
 	Spiritnet::execute_with(|| {
 		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
-
-		let a = Spiritnet::events();
-		println!("{:?}", a);
-
 		assert_expected_events!(
 			Spiritnet,
 			vec![
