@@ -16,7 +16,7 @@ use xcm::v3::WeightLimit;
 use xcm_emulator::{Here, Junction, Junctions, ParentThen, TestExt, X1};
 
 #[test]
-fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
+fn test_teleport_asset_from_regular_peregrine_account_to_asset_hub() {
 	MockNetworkRococo::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
@@ -49,7 +49,7 @@ fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 	Rococo::execute_with(|| {
 		assert_eq!(Rococo::events().len(), 0);
 	});
-	// Fails on AssetHub since spiritnet is not a trusted registrar.
+	// Fails on AssetHub since peregrine is not a trusted registrar.
 	AssetHubRococo::execute_with(|| {
 		assert_eq!(AssetHubRococo::events().len(), 0);
 	});
