@@ -104,9 +104,16 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 /// parameters.
 pub struct SafeCallFilter;
 impl Contains<RuntimeCall> for SafeCallFilter {
-	fn contains(_call: &RuntimeCall) -> bool {
-		//TODO: allow did call creation and w3n creation.
-		true
+	fn contains(call: &RuntimeCall) -> bool {
+		matches!(
+			call,
+			RuntimeCall::Did { .. }
+				| RuntimeCall::Ctype { .. }
+				| RuntimeCall::DidLookup { .. }
+				| RuntimeCall::Web3Names { .. }
+				| RuntimeCall::PublicCredentials { .. }
+				| RuntimeCall::Attestation { .. }
+		)
 	}
 }
 

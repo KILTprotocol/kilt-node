@@ -78,7 +78,7 @@ mod tests;
 
 mod dip;
 mod weights;
-mod xcm_config;
+pub mod xcm_config;
 
 impl_opaque_keys! {
 	pub struct SessionKeys {

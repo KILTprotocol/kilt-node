@@ -21,6 +21,8 @@ use sp_runtime::{
 	MultiSignature,
 };
 
+pub const UNIT: u128 = 10u128.pow(15);
+
 type AccountPublic = <MultiSignature as Verify>::Signer;
 
 /// Helper function to generate a crypto pair from seed

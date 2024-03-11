@@ -8,16 +8,24 @@ use xcm_emulator::{
 use xcm_executor::traits::ConvertLocation;
 
 use crate::mock::{
-	para_chains::{AssetHub, Spiritnet},
-	relay_chains::Polkadot,
+	para_chains::{AssetHubPolkadot, AssetHubRococo, Peregrine, Spiritnet},
+	relay_chains::{Polkadot, Rococo},
 };
 
 decl_test_networks! {
-	pub struct MockNetwork {
+	pub struct MockNetworkPolkadot {
 		relay_chain = Polkadot,
 		parachains = vec![
-			AssetHub,
+			AssetHubPolkadot,
 			Spiritnet,
+		],
+		bridge = ()
+	},
+	pub struct MockNetworkRococo {
+		relay_chain = Rococo,
+		parachains = vec![
+			AssetHubRococo,
+			Peregrine,
 		],
 		bridge = ()
 	}

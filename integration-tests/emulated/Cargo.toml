@@ -27,12 +27,14 @@ pallet-message-queue.workspace = true
 pallet-staking = {workspace = true, default-features = true}
 pallet-xcm.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
+peregrine-runtime = {workspace = true, default-features = true}
 polkadot-parachain = {workspace = true, default-features = true}
 polkadot-primitives = {workspace = true, default-features = true}
 polkadot-runtime = {workspace = true, default-features = true}
 polkadot-runtime-constants = {workspace = true, default-features = true}
 polkadot-runtime-parachains = {workspace = true, default-features = true}
 polkadot-service = {workspace = true, default-features = true}
+rococo-runtime = {workspace = true, default-features = true}
 runtime-common.workspace = true
 sc-consensus-grandpa.workspace = true
 sp-authority-discovery.workspace = true
