@@ -111,8 +111,16 @@ cumulus-primitives-utility = {git = "https://github.com/paritytech/cumulus", def
 parachain-info = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
 
 # XCM Emulator tests
+asset-hub-kusama-runtime = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
 asset-hub-polkadot-runtime = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v1.0.0", default-features = false}
+asset-hub-rococo-runtime = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
+asset-hub-westend-runtime = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
+bridge-hub-kusama-runtime = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
+bridge-hub-polkadot-runtime = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
+bridge-hub-rococo-runtime = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
+collectives-polkadot-runtime = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
 integration-tests-common = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v1.0.0", default-features = false}
+penpal-runtime = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
 xcm-emulator = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
 
 # Substrate (with default disabled)
@@ -174,6 +182,7 @@ polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-fe
 polkadot-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
 polkadot-runtime-constants = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
 polkadot-runtime-parachains = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
+polkadot-test-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
 rococo-runtime-constants = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
 xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}

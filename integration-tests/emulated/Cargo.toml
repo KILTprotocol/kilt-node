@@ -11,7 +11,13 @@ repository.workspace = true
 version.workspace = true
 
 [dev-dependencies]
+asset-hub-kusama-runtime.workspace = true
 asset-hub-polkadot-runtime.workspace = true
+asset-hub-westend-runtime.workspace = true
+bridge-hub-kusama-runtime.workspace = true
+bridge-hub-polkadot-runtime.workspace = true
+bridge-hub-rococo-runtime.workspace = true
+collectives-polkadot-runtime.workspace = true
 ctype.workspace = true
 cumulus-pallet-dmp-queue.workspace = true
 cumulus-pallet-xcmp-queue.workspace = true
@@ -19,18 +25,20 @@ cumulus-primitives-core.workspace = true
 did.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
-integration-tests-common = {workspace = true, default-features = false}
+integration-tests-common.workspace = true
 pallet-message-queue.workspace = true
 pallet-xcm.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
-peregrine-runtime = {workspace = true}
-polkadot-parachain = {workspace = true}
-polkadot-primitives = {workspace = true}
-polkadot-runtime = {workspace = true}
-polkadot-runtime-constants = {workspace = true}
-polkadot-runtime-parachains = {workspace = true}
-polkadot-service = {workspace = true}
-rococo-runtime = {workspace = true}
+penpal-runtime.workspace = true
+peregrine-runtime.workspace = true
+polkadot-parachain.workspace = true
+polkadot-primitives.workspace = true
+polkadot-runtime-constants.workspace = true
+polkadot-runtime-parachains.workspace = true
+polkadot-runtime.workspace = true
+polkadot-service.workspace = true
+polkadot-test-runtime.workspace = true
+rococo-runtime.workspace = true
 runtime-common.workspace = true
 sc-consensus-grandpa.workspace = true
 sp-authority-discovery.workspace = true
@@ -40,7 +48,7 @@ sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
 sp-tracing.workspace = true
-spiritnet-runtime = {workspace = true}
+spiritnet-runtime.workspace = true
 xcm-emulator.workspace = true
 xcm-executor.workspace = true
 xcm.workspace = true
@@ -51,4 +59,15 @@ runtime-benchmarks = [
   "asset-hub-polkadot-runtime/runtime-benchmarks",
   "polkadot-runtime/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
+  "collectives-polkadot-runtime/runtime-benchmarks",
+  "bridge-hub-rococo-runtime/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks",
+  "asset-hub-westend-runtime/runtime-benchmarks",
+  "asset-hub-kusama-runtime/runtime-benchmarks",
+  "penpal-runtime/runtime-benchmarks",
+  "did/runtime-benchmarks",
+  "ctype/runtime-benchmarks",
+  "bridge-hub-polkadot-runtime/runtime-benchmarks",
+  "bridge-hub-kusama-runtime/runtime-benchmarks",
+  "polkadot-test-runtime/runtime-benchmarks",
 ]
