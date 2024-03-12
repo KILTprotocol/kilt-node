@@ -93,7 +93,7 @@ fn test_did_creation_from_asset_hub() {
 
 		// we also expect that the sovereignAccount of AssetHub has some coins now
 		let balance_after_xcm_call: u128 =
-			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account).into();
+			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
 
 		// since a did is created some of the free balance should now be on hold. Therefore the balance should be less.
 		assert!(balance_after_xcm_call < init_balance);

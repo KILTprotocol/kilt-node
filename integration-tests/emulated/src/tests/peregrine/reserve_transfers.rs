@@ -72,7 +72,7 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 		// the sovereign_account of AssetHub should have no coins.
 
 		let balance_before_transfer: u128 =
-			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account).into();
+			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
 
 		assert!(balance_before_transfer.is_zero());
 
@@ -105,7 +105,7 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 
 		// we also expect that the sovereignAccount of AssetHub has some coins now
 		let balance_after_transfer: u128 =
-			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account).into();
+			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
 
 		assert_eq!(balance_after_transfer, balance_to_transfer);
 	});
