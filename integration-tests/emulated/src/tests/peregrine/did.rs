@@ -8,15 +8,14 @@ use crate::{
 };
 use frame_support::traits::fungible::Inspect;
 use frame_support::{assert_ok, traits::fungible::Mutate};
-use integration_tests_common::asset_hub_polkadot;
 use parity_scale_codec::Encode;
 use rococo_runtime::System as RococoSystem;
 use runtime_common::AccountId;
 use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
 	assert_expected_events, Here,
-	Instruction::{BuyExecution, RefundSurplus, ReportError, Transact, WithdrawAsset},
-	Junction, Junctions, OriginKind, Parachain, ParentThen, QueryResponseInfo, TestExt, Weight, Xcm,
+	Instruction::{BuyExecution, RefundSurplus, Transact, WithdrawAsset},
+	Junction, Junctions, OriginKind, Parachain, ParentThen, TestExt, Weight, Xcm,
 };
 
 #[test]
@@ -40,22 +39,15 @@ fn test_did_creation_from_asset_hub() {
 
 	// the Weight parts are copied from logs.
 	let require_weight_at_most = Weight::from_parts(10_000_600_000_000, 200_000_000_000);
-	let origin_kind = OriginKind::Native;
-
-	// XCM is async. In order to know if your call succeeded, we request a response info.
-	let response_info = QueryResponseInfo {
-		destination: ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into(),
-		max_weight: require_weight_at_most.clone(),
-		// arbitrary query_id
-		query_id: 0,
-	};
+	let origin_kind = OriginKind::SovereignAccount;
 
 	let init_balance = UNIT * 10;
+	let withdraw_balance = init_balance / 2;
 
 	let xcm = VersionedXcm::from(Xcm(vec![
-		WithdrawAsset((Here, init_balance).into()),
+		WithdrawAsset((Here, withdraw_balance).into()),
 		BuyExecution {
-			fees: (Here, init_balance).into(),
+			fees: (Here, withdraw_balance).into(),
 			weight_limit: WeightLimit::Unlimited,
 		},
 		Transact {
@@ -65,8 +57,6 @@ fn test_did_creation_from_asset_hub() {
 		},
 		// refund back the withdraw assets.
 		RefundSurplus,
-		// in case of an error, we request the response info.
-		ReportError(response_info),
 	]));
 
 	// give the sovereign account of AssetHub some coins.
@@ -97,6 +87,7 @@ fn test_did_creation_from_asset_hub() {
 			Peregrine,
 			vec![
 				PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
+				PeregrineRuntimeEvent::Did(did::Event::DidCreated(_, _)) => {},
 			]
 		);
 
@@ -104,10 +95,11 @@ fn test_did_creation_from_asset_hub() {
 		let balance_after_xcm_call: u128 =
 			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account).into();
 
+		// since a did is created some of the free balance should now be on hold. Therefore the balance should be less.
 		assert!(balance_after_xcm_call < init_balance);
 	});
 
-	// No event on the relaychain (message is meant for AssetHub)
+	// No event on the relaychain (message is meant for Peregrine)
 	Rococo::execute_with(|| {
 		assert_eq!(RococoSystem::events().len(), 0);
 	});

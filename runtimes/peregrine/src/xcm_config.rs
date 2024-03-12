@@ -75,6 +75,8 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	XcmPassthrough<RuntimeOrigin>,
 );
 
+/// Explicitly deny ReserveTransfer to the relay chain. Allow calls from the
+/// relay chain governance.
 pub type XcmBarrier = TrailingSetTopicAsId<
 	DenyThenTry<
 		DenyReserveTransferToRelayChain,

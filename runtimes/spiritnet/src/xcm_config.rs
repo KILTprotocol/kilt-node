@@ -32,7 +32,8 @@ use xcm::v3::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin,
 	FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative,
-	SignedToAccountId32, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
+	SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+	WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -53,9 +54,10 @@ parameter_types! {
 /// `Transact`. There is an `OriginKind` which can bias the kind of local
 /// `Origin` it will become.
 pub type XcmOriginToTransactDispatchOrigin = (
-	// We don't include `SovereignSignedViaLocation<LocationToAccountId, RuntimeOrigin>` since we don't want to allow
-	// other chains to manage accounts on our network.
-
+	// Sovereign account converter; this attempts to derive an `AccountId` from the origin location
+	// using `LocationToAccountId` and then turn that into the usual `Signed` origin. Useful for
+	// foreign chains who want to have a local sovereign account on this chain which they control.
+	SovereignSignedViaLocation<LocationToAccountId<RelayNetworkId>, RuntimeOrigin>,
 	// Native converter for Relay-chain (Parent) location which converts to a `Relay` origin when
 	// recognized.
 	RelayChainAsNative<RelayChainOrigin, RuntimeOrigin>,
@@ -177,13 +179,18 @@ parameter_types! {
 }
 
 impl pallet_xcm::Config for Runtime {
-	type MaxRemoteLockConsumers = ConstU32<10>;
-	type RemoteLockConsumerIdentifier = [u8; 8];
+	type MaxRemoteLockConsumers = ConstU32<0>;
+	type RemoteLockConsumerIdentifier = ();
 	type RuntimeEvent = RuntimeEvent;
+	// Allows anyone to send XCM messages. For regular origins, a `DescendOrigin` is
+	// prepended to the message.
 	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
 	type XcmRouter = XcmRouter;
+	// We allow execution of XCM programs because it is required by the
+	// `reserve_transfer_assets` operation.
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
-	// Disable dispatchable execution on the XCM pallet.
+	// Disable calls to pallet_xcm::execute(), by still allowing the other
+	// extrinsics to be called.
 	// NOTE: For local testing this needs to be `Everything`.
 	type XcmExecuteFilter = Nothing;
 	type XcmTeleportFilter = Nothing;
@@ -222,6 +229,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type ControllerOrigin = EnsureRoot<AccountId>;
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
 	type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
+	// TODO: Most chains use `NoPriceForMessageDelivery`, merged in https://github.com/paritytech/polkadot-sdk/pull/1234.
 	type PriceForSiblingDelivery = ();
 }
 
