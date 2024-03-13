@@ -6,11 +6,10 @@ use crate::{
 	},
 	utils::get_account_id_from_seed,
 };
-use frame_support::assert_err;
+use frame_support::assert_noop;
 use frame_support::dispatch::RawOrigin;
 use integration_tests_common::{asset_hub_polkadot, polkadot::ED, ALICE, BOB};
 use sp_core::sr25519;
-use sp_runtime::{DispatchError, ModuleError};
 use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;
 use xcm::v3::WeightLimit;
 use xcm_emulator::{Here, Junction, Junctions, ParentThen, TestExt, X1};
@@ -23,7 +22,7 @@ fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 	let bob_account_id = get_account_id_from_seed::<sr25519::Public>(BOB);
 
 	Spiritnet::execute_with(|| {
-		assert_err!(
+		assert_noop!(
 			SpiritnetXcm::limited_teleport_assets(
 				RawOrigin::Signed(alice_account_id.clone()).into(),
 				Box::new(ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into()),
@@ -38,11 +37,7 @@ fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 				0,
 				WeightLimit::Unlimited,
 			),
-			DispatchError::Module(ModuleError {
-				index: 83,
-				error: [2, 0, 0, 0],
-				message: Some("Filtered")
-			})
+			pallet_xcm::Error::<spiritnet_runtime::Runtime>::Filtered
 		);
 	});
 	// No event on the relaychain Message is for AssetHub
