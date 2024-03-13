@@ -6,6 +6,7 @@ use crate::{
 	},
 	utils::UNIT,
 };
+use did::did_details::DidVerificationKey;
 use frame_support::traits::fungible::Inspect;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
@@ -27,7 +28,7 @@ fn test_did_creation_from_asset_hub() {
 		Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHubRococo::para_id()));
 
 	let call: DoubleEncoded<()> = <Peregrine as Parachain>::RuntimeCall::Did(did::Call::create_from_account {
-		authentication_key: did::did_details::DidVerificationKey::Account(asset_hub_sovereign_account.clone()),
+		authentication_key: DidVerificationKey::Account(asset_hub_sovereign_account.clone()),
 	})
 	.encode()
 	.into();
