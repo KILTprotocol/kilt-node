@@ -93,7 +93,7 @@ fn test_did_creation_from_asset_hub() {
 			]
 		);
 
-		let balance_on_hold = <<Spiritnet as Parachain>::Balances as Inspect<AccountId>>::balance_on_hold(
+		let balance_on_hold = <<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance_on_hold(
 			&peregrine_runtime::RuntimeHoldReason::from(did::HoldReason::Deposit),
 			&asset_hub_sovereign_account,
 		);
