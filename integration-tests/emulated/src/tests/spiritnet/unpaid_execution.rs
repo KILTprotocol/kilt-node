@@ -73,7 +73,7 @@ fn test_unpaid_execution_to_spiritnet() {
 		);
 	});
 
-	// No event on the Polkadot message is meant for AssetHub
+	// No event on the Polkadot message is meant for Spiritnet
 	Polkadot::execute_with(|| {
 		assert_eq!(Polkadot::events().len(), 0);
 	});

@@ -73,7 +73,7 @@ fn test_unpaid_execution_to_peregrine() {
 		);
 	});
 
-	// No event on Rococo. message is meant for AssetHub
+	// No event on Rococo. message is meant for Peregrine
 	Rococo::execute_with(|| {
 		assert_eq!(Rococo::events().len(), 0);
 	});
