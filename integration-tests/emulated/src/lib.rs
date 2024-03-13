@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod mock;
+mod mock;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
