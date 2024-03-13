@@ -4,12 +4,9 @@ use crate::mock::{
 	relay_chains::Polkadot,
 };
 use frame_support::assert_ok;
-use parity_scale_codec::Encode;
-use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
+use xcm::{v3::WeightLimit, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
-	assert_expected_events,
-	Instruction::{Transact, UnpaidExecution},
-	Junction, Junctions, OriginKind, Parachain, ParentThen, TestExt, Weight, Xcm,
+	assert_expected_events, Instruction::UnpaidExecution, Junction, Junctions, Parachain, ParentThen, TestExt, Xcm,
 };
 
 #[test]
