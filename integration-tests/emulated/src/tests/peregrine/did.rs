@@ -14,7 +14,7 @@ use runtime_common::AccountId;
 use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
 	assert_expected_events, Here,
-	Instruction::{BuyExecution, RefundSurplus, Transact, WithdrawAsset},
+	Instruction::{BuyExecution, Transact, WithdrawAsset},
 	Junction, Junctions, OriginKind, Parachain, ParentThen, TestExt, Weight, Xcm,
 };
 
@@ -55,8 +55,6 @@ fn test_did_creation_from_asset_hub() {
 			require_weight_at_most,
 			call,
 		},
-		// refund back the withdraw assets.
-		RefundSurplus,
 	]));
 
 	// give the sovereign account of AssetHub some coins.
