@@ -47,9 +47,11 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_relay() {
 
 		assert_expected_events!(
 			Spiritnet,
-			vec![RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
+			vec![
+				RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
 				outcome: xcm::latest::Outcome::Error(xcm::latest::Error::Barrier)
-			}) => {},]
+			}) => {},
+			]
 		);
 	});
 	// No message should reach the relaychain.
