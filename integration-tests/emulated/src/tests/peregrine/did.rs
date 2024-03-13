@@ -7,7 +7,7 @@ use crate::{
 	utils::UNIT,
 };
 use did::did_details::DidVerificationKey;
-use frame_support::traits::fungible::Inspect;
+use frame_support::traits::fungible::hold::Inspect;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use rococo_runtime::System as RococoSystem;
@@ -93,12 +93,13 @@ fn test_did_creation_from_asset_hub() {
 			]
 		);
 
-		// we also expect that the sovereignAccount of AssetHub has some coins now
-		let balance_after_xcm_call: u128 =
-			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
+		let balance_on_hold = <<Spiritnet as Parachain>::Balances as Inspect<AccountId>>::balance_on_hold(
+			&peregrine_runtime::RuntimeHoldReason::from(did::HoldReason::Deposit),
+			&asset_hub_sovereign_account,
+		);
 
-		// since a did is created some of the free balance should now be on hold. Therefore the balance should be less.
-		assert!(balance_after_xcm_call < init_balance);
+		// since a did is created, 2 of the free balance should now be on hold
+		assert_eq!(balance_on_hold, UNIT * 2);
 	});
 
 	// No event on the relaychain (message is meant for Peregrine)
