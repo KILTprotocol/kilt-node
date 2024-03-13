@@ -67,10 +67,6 @@ fn test_sudo_call_from_relay_chain_to_peregrine() {
 	Peregrine::execute_with(|| {
 		type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
 
-		let events = Peregrine::events();
-
-		println!("{:?}", events);
-
 		assert_expected_events!(
 			Peregrine,
 			vec![
