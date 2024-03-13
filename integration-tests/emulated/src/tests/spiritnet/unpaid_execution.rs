@@ -16,31 +16,17 @@ use xcm_emulator::{
 fn test_unpaid_execution_to_spiritnet() {
 	MockNetworkPolkadot::reset();
 
-	let code = vec![];
-
-	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::System(frame_system::Call::set_code { code })
-		.encode()
-		.into();
 	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
 	let parachain_destination: VersionedMultiLocation =
 		ParentThen(Junctions::X1(Junction::Parachain(spiritnet::PARA_ID))).into();
 
 	let weight_limit = WeightLimit::Unlimited;
-	let require_weight_at_most = Weight::from_parts(1000000000, 200000);
-	let origin_kind = OriginKind::Superuser;
 	let check_origin = None;
 
-	let xcm = VersionedXcm::from(Xcm(vec![
-		UnpaidExecution {
-			weight_limit,
-			check_origin,
-		},
-		Transact {
-			origin_kind,
-			require_weight_at_most,
-			call,
-		},
-	]));
+	let xcm = VersionedXcm::from(Xcm(vec![UnpaidExecution {
+		weight_limit,
+		check_origin,
+	}]));
 
 	//Send XCM message from relay chain
 	AssetHubPolkadot::execute_with(|| {
