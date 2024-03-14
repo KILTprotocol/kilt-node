@@ -10,7 +10,7 @@ use did::did_details::DidVerificationKey;
 use frame_support::traits::fungible::hold::Inspect;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
-use runtime_common::AccountId;
+use runtime_common::{AccountId, Balance};
 use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
 	assert_expected_events, Here,
@@ -18,13 +18,12 @@ use xcm_emulator::{
 	Junction, Junctions, OriginKind, Parachain, ParentThen, TestExt, Weight, Xcm,
 };
 
-#[test]
-fn test_did_creation_from_asset_hub() {
-	MockNetworkPolkadot::reset();
+fn get_asset_hub_sovereign_account() -> AccountId {
+	Spiritnet::sovereign_account_id_of(Spiritnet::sibling_location_of(AssetHubPolkadot::para_id()))
+}
 
-	// create the sovereign account of AssetHub
-	let asset_hub_sovereign_account =
-		Spiritnet::sovereign_account_id_of(Spiritnet::sibling_location_of(AssetHubPolkadot::para_id()));
+fn get_xcm_message(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
+	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::Did(did::Call::create_from_account {
 		authentication_key: DidVerificationKey::Account(asset_hub_sovereign_account.clone()),
@@ -32,19 +31,9 @@ fn test_did_creation_from_asset_hub() {
 	.encode()
 	.into();
 
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
-
-	let parachain_destination: VersionedMultiLocation =
-		ParentThen(Junctions::X1(Junction::Parachain(spiritnet::PARA_ID))).into();
-
-	// the Weight parts are copied from logs.
 	let require_weight_at_most = Weight::from_parts(10_000_600_000_000, 200_000_000_000);
-	let origin_kind = OriginKind::SovereignAccount;
 
-	let init_balance = UNIT * 10;
-	let withdraw_balance = init_balance / 2;
-
-	let xcm = VersionedXcm::from(Xcm(vec![
+	VersionedXcm::from(Xcm(vec![
 		WithdrawAsset((Here, withdraw_balance).into()),
 		BuyExecution {
 			fees: (Here, withdraw_balance).into(),
@@ -55,8 +44,26 @@ fn test_did_creation_from_asset_hub() {
 			require_weight_at_most,
 			call,
 		},
-	]));
+	]))
+}
 
+fn get_destination() -> VersionedMultiLocation {
+	ParentThen(Junctions::X1(Junction::Parachain(spiritnet::PARA_ID))).into()
+}
+
+#[test]
+fn test_did_creation_from_asset_hub_successful() {
+	MockNetworkPolkadot::reset();
+
+	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+
+	let init_balance = UNIT * 10;
+	let withdraw_balance = init_balance / 2;
+
+	let xcm = get_xcm_message(OriginKind::SovereignAccount, withdraw_balance);
+	let destination = get_destination();
+
+	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 	// give the sovereign account of AssetHub some coins.
 	Spiritnet::execute_with(|| {
 		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
@@ -66,7 +73,7 @@ fn test_did_creation_from_asset_hub() {
 	AssetHubPolkadot::execute_with(|| {
 		assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 			sudo_origin,
-			Box::new(parachain_destination),
+			Box::new(destination),
 			Box::new(xcm)
 		));
 
@@ -106,4 +113,72 @@ fn test_did_creation_from_asset_hub() {
 	Polkadot::execute_with(|| {
 		assert_eq!(Polkadot::events().len(), 0);
 	});
+}
+
+#[test]
+fn test_did_creation_from_asset_hub_unsuccessful() {
+	MockNetworkPolkadot::reset();
+
+	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+
+	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
+	let init_balance = UNIT * 10;
+	let withdraw_balance = init_balance / 2;
+
+	let destination = get_destination();
+	let origin_kind_list = vec![OriginKind::Xcm, OriginKind::Superuser, OriginKind::Native];
+
+	for origin in origin_kind_list {
+		let xcm = get_xcm_message(origin, withdraw_balance);
+
+		// give the sovereign account of AssetHub some coins.
+		Spiritnet::execute_with(|| {
+			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
+		});
+
+		//Send XCM message from AssetHub
+		AssetHubPolkadot::execute_with(|| {
+			assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
+				sudo_origin.clone(),
+				Box::new(destination.clone()),
+				Box::new(xcm)
+			));
+
+			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+			assert_expected_events!(
+				AssetHubPolkadot,
+				vec![
+					RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
+				]
+			);
+		});
+
+		Spiritnet::execute_with(|| {
+			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+
+			// we still expect that the xcm message is send.
+			assert_expected_events!(
+				Spiritnet,
+				vec![
+					SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
+				]
+			);
+
+			// ... but we also expect that the extrinsic will fail since it is no signed runtime origin.
+			let is_create_event_present = Spiritnet::events().iter().any(|event| match event {
+				SpiritnetRuntimeEvent::Did(did::Event::<spiritnet_runtime::Runtime>::DidCreated(_, _)) => true,
+				_ => false,
+			});
+
+			assert!(
+				!is_create_event_present,
+				"Create event for an unsupported origin is found"
+			);
+		});
+
+		// No event on the relaychain (message is meant for Spiritnet)
+		Polkadot::execute_with(|| {
+			assert_eq!(Polkadot::events().len(), 0);
+		});
+	}
 }
