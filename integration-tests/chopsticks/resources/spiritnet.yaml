@@ -1,0 +1,10 @@
+endpoint: wss://spiritnet.kilt.io
+mock-signature-host: true
+db: ./db/spiritnet.db.sqlite
+port: 8002
+
+import-storage:
+    technicalCommittee:
+        Members: ["4pF5Y2Eo6doQHPLQj5AkndZwtomVB8ab2sRftRS2D9JDdELr"]
+    council:
+        Members: ["4pF5Y2Eo6doQHPLQj5AkndZwtomVB8ab2sRftRS2D9JDdELr"]

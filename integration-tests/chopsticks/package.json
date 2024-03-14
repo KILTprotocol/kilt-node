@@ -1,0 +1,14 @@
+{
+  "name": "chopsticks",
+  "version": "1.0.0",
+  "description": "e2e tests between spiritnet and hydradx ",
+  "main": "index.ts",
+  "license": "MIT",
+  "devDependencies": {
+    "@acala-network/chopsticks": "^0.9.7"
+  },
+  "scripts": {
+    "boot" : "npx @acala-network/chopsticks xcm -r ./resources/polkadot.yaml -p ./resources/hydradx.yaml -p ./resources/spiritnet.yaml",
+    "clean": "rm -rf db"
+  }
+}
