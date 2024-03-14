@@ -52,7 +52,7 @@ parameter_types! {
 /// This type specifies how a `MultiLocation` can be converted into an `AccountId` within the
 /// Spiritnet network, which is crucial for determining ownership of accounts for asset transactions
 /// and for dispatching XCM `Transact` operations.
-pub type SpiritnetLocationToAccountId = LocationToAccountId<RelayNetworkId>;
+pub type LocationToAccountIdConverter = LocationToAccountId<RelayNetworkId>;
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
 /// `Origin` instance, ready for dispatching a transaction with Xcm's
@@ -62,7 +62,7 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	// Sovereign account converter; this attempts to derive an `AccountId` from the origin location
 	// using `LocationToAccountId` and then turn that into the usual `Signed` origin. Useful for
 	// foreign chains who want to have a local sovereign account on this chain which they control.
-	SovereignSignedViaLocation<SpiritnetLocationToAccountId, RuntimeOrigin>,
+	SovereignSignedViaLocation<LocationToAccountIdConverter, RuntimeOrigin>,
 	// Native converter for Relay-chain (Parent) location which converts to a `Relay` origin when
 	// recognized.
 	RelayChainAsNative<RelayChainOrigin, RuntimeOrigin>,
@@ -213,7 +213,7 @@ impl pallet_xcm::Config for Runtime {
 	type Currency = Balances;
 	type CurrencyMatcher = ();
 	type TrustedLockers = ();
-	type SovereignAccountOf = SpiritnetLocationToAccountId;
+	type SovereignAccountOf = LocationToAccountIdConverter;
 	type MaxLockers = ConstU32<8>;
 	type WeightInfo = crate::weights::pallet_xcm::WeightInfo<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]
