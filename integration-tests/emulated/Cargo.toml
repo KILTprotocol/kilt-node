@@ -14,6 +14,7 @@ version.workspace = true
 asset-hub-kusama-runtime.workspace = true
 asset-hub-polkadot-runtime.workspace = true
 asset-hub-westend-runtime.workspace = true
+attestation.workspace = true
 bridge-hub-kusama-runtime.workspace = true
 bridge-hub-polkadot-runtime.workspace = true
 bridge-hub-rococo-runtime.workspace = true
@@ -27,6 +28,7 @@ frame-support.workspace = true
 frame-system.workspace = true
 integration-tests-common.workspace = true
 pallet-message-queue.workspace = true
+pallet-web3-names.workspace = true
 pallet-xcm.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
 penpal-runtime.workspace = true

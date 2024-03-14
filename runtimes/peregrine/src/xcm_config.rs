@@ -115,16 +115,45 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 /// parameters.
 pub struct SafeCallFilter;
 impl Contains<RuntimeCall> for SafeCallFilter {
-	fn contains(call: &RuntimeCall) -> bool {
-		matches!(
-			call,
-			RuntimeCall::Did { .. }
-				| RuntimeCall::Ctype { .. }
+	fn contains(c: &RuntimeCall) -> bool {
+
+		fn is_call_allowed(call: &RuntimeCall) -> bool {
+			matches!(
+				call, 
+				RuntimeCall::Ctype { .. }
 				| RuntimeCall::DidLookup { .. }
 				| RuntimeCall::Web3Names { .. }
 				| RuntimeCall::PublicCredentials { .. }
 				| RuntimeCall::Attestation { .. }
-		)
+				// we exclude here [dispatch_as] and [submit_did_call]
+				| RuntimeCall::Did ( 
+							did::Call::add_key_agreement_key { .. }
+							| did::Call::add_service_endpoint { .. }
+							| did::Call::create { .. }
+							| did::Call::delete { .. }
+							| did::Call::remove_attestation_key { .. }
+							| did::Call::remove_delegation_key { .. }
+							| did::Call::remove_key_agreement_key { .. }
+							| did::Call::remove_service_endpoint { .. }
+							| did::Call::set_attestation_key { .. }
+							| did::Call::set_authentication_key { .. }
+							| did::Call::set_delegation_key { .. }
+							| did::Call::update_deposit { .. }
+							| did::Call::change_deposit_owner { .. }
+							| did::Call::reclaim_deposit { .. }
+						)
+				)
+		}
+		
+
+		match c {
+			RuntimeCall::Did (c) => match c {
+				did::Call::dispatch_as { call, did_identifier: _ } => is_call_allowed(call),
+				did::Call::submit_did_call { did_call, signature: _ } => is_call_allowed(&did_call.call),
+				_ => true
+			},
+			_ => is_call_allowed(c),
+		}
 	}
 }
 

@@ -140,6 +140,9 @@ decl_test_parachains! {
 		},
 		pallets_extra = {
 			Did: spiritnet_runtime::Did,
+			Ctype: spiritnet_runtime::Ctype,
+			Attestation: spiritnet_runtime::Attestation,
+			Web3Names: spiritnet_runtime::Web3Names,
 		}
 	},
 	pub struct AssetHubPolkadot {
@@ -202,6 +205,9 @@ decl_test_parachains! {
 		},
 		pallets_extra = {
 			Did: peregrine_runtime::Did,
+			Ctype: peregrine_runtime::Ctype,
+			Attestation: peregrine_runtime::Attestation,
+			Web3Names: peregrine_runtime::Web3Names,
 		}
 	}
 }

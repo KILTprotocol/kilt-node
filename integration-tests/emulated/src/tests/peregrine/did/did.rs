@@ -118,7 +118,7 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 
 	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
 
-	let init_balance = KILT * 10;
+	let init_balance = KILT * 100;
 	let withdraw_balance = init_balance / 2;
 
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
@@ -126,12 +126,13 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 
 	let origin_kind_list = vec![OriginKind::Xcm, OriginKind::Superuser, OriginKind::Native];
 
+	// give the sovereign account of AssetHub some coins.
+	Peregrine::execute_with(|| {
+		<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
+	});
+
 	for origin in origin_kind_list {
 		let xcm = get_xcm_message(origin, withdraw_balance);
-		// give the sovereign account of AssetHub some coins.
-		Peregrine::execute_with(|| {
-			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
-		});
 
 		//Send XCM message from AssetHub
 		AssetHubRococo::execute_with(|| {
