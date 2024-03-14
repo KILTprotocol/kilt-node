@@ -16,20 +16,32 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{DidIdentifier, Runtime};
 use frame_support::traits::Get;
 use pallet_deposit_storage::{
 	traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet,
 };
 use pallet_dip_provider::IdentityCommitmentVersion;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use runtime_common::{constants::dip_provider::COMMITMENT_DEPOSIT, AccountId};
 use scale_info::TypeInfo;
 use sp_core::{ConstU128, RuntimeDebug};
+
+use crate::{constants::dip_provider::COMMITMENT_DEPOSIT, AccountId, DidIdentifier};
+
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
 
 #[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
 pub enum DepositNamespace {
 	DipProvider,
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for DepositNamespace {
+	fn default() -> Self {
+		Self::DipProvider
+	}
 }
 
 /// The namespace to use in the [`pallet_deposit_storage::Pallet`] to store
@@ -66,6 +78,7 @@ impl From<(DidIdentifier, AccountId, IdentityCommitmentVersion)> for DepositKey 
 pub type DepositCollectorHooks =
 	FixedDepositCollectorViaDepositsPallet<DipProviderDepositNamespace, ConstU128<COMMITMENT_DEPOSIT>, DepositKey>;
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CommitmentDepositRemovalHookError {
 	DecodeKey,
 	Internal,
@@ -74,7 +87,11 @@ pub enum CommitmentDepositRemovalHookError {
 impl From<CommitmentDepositRemovalHookError> for u16 {
 	fn from(value: CommitmentDepositRemovalHookError) -> Self {
 		match value {
-			CommitmentDepositRemovalHookError::DecodeKey => 0,
+			// DO NOT USE 0
+			// Errors of different sub-parts are separated by a `u8::MAX`.
+			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
+			// or the new sub-part error (u8::MAX + 0).
+			CommitmentDepositRemovalHookError::DecodeKey => 1,
 			CommitmentDepositRemovalHookError::Internal => u16::MAX,
 		}
 	}
@@ -87,7 +104,10 @@ impl From<CommitmentDepositRemovalHookError> for u16 {
 /// or release deposits from the [`pallet_deposit_storage::Pallet`] pallet.
 pub struct DepositHooks;
 
-impl DepositStorageHooks<Runtime> for DepositHooks {
+impl<Runtime> DepositStorageHooks<Runtime> for DepositHooks
+where
+	Runtime: pallet_deposit_storage::Config + pallet_dip_provider::Config<Identifier = DidIdentifier>,
+{
 	type Error = CommitmentDepositRemovalHookError;
 
 	fn on_deposit_reclaimed(
@@ -119,13 +139,18 @@ impl DepositStorageHooks<Runtime> for DepositHooks {
 pub struct PalletDepositStorageBenchmarkHooks;
 
 #[cfg(feature = "runtime-benchmarks")]
-impl pallet_deposit_storage::traits::BenchmarkHooks<Runtime> for PalletDepositStorageBenchmarkHooks {
+impl<Runtime> pallet_deposit_storage::traits::BenchmarkHooks<Runtime> for PalletDepositStorageBenchmarkHooks
+where
+	Runtime: pallet_deposit_storage::Config<Namespace = DepositNamespace>
+		+ pallet_dip_provider::Config<Identifier = DidIdentifier, AccountId = AccountId>,
+	pallet_dip_provider::IdentityCommitmentOf<Runtime>: From<crate::Hash>,
+{
 	fn pre_reclaim_deposit() -> (
 		<Runtime as frame_system::Config>::AccountId,
 		<Runtime as pallet_deposit_storage::Config>::Namespace,
 		sp_runtime::BoundedVec<u8, <Runtime as pallet_deposit_storage::Config>::MaxKeyLength>,
 	) {
-		let submitter = runtime_common::AccountId::from([100u8; 32]);
+		let submitter = AccountId::from([100u8; 32]);
 		let namespace = DepositNamespace::DipProvider;
 		let did_identifier = DidIdentifier::from([200u8; 32]);
 		let commitment_version = 0u16;
@@ -138,7 +163,7 @@ impl pallet_deposit_storage::traits::BenchmarkHooks<Runtime> for PalletDepositSt
 		pallet_dip_provider::IdentityCommitments::<Runtime>::insert(
 			&did_identifier,
 			commitment_version,
-			<Runtime as frame_system::Config>::Hash::default(),
+			pallet_dip_provider::IdentityCommitmentOf::<Runtime>::from(crate::Hash::default()),
 		);
 
 		assert!(pallet_dip_provider::IdentityCommitments::<Runtime>::get(did_identifier, commitment_version).is_some());

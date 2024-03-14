@@ -20,16 +20,9 @@
 pub mod parachain;
 /// Verification logic to integrate a child chain as a DIP provider.
 pub mod relaychain;
-
-mod common;
-
 pub use parachain::{
 	DipParachainStateProofVerifierError, KiltVersionedParachainVerifier, VersionedDipParachainStateProof,
 };
 pub use relaychain::{
 	DipRelaychainStateProofVerifierError, KiltVersionedRelaychainVerifier, VersionedRelaychainStateProof,
 };
-
-pub mod latest {
-	pub use super::{common::latest::*, parachain::latest::*, relaychain::latest::*};
-}

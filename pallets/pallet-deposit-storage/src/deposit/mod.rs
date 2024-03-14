@@ -32,6 +32,11 @@ use sp_std::marker::PhantomData;
 
 use crate::{BalanceOf, Config, Error, HoldReason, Pallet};
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 /// Details associated to an on-chain deposit.
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub struct DepositEntry<AccountId, Balance, Reason> {
@@ -59,10 +64,14 @@ pub enum FixedDepositCollectorViaDepositsPalletError {
 impl From<FixedDepositCollectorViaDepositsPalletError> for u16 {
 	fn from(value: FixedDepositCollectorViaDepositsPalletError) -> Self {
 		match value {
-			FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken => 0,
-			FixedDepositCollectorViaDepositsPalletError::DepositNotFound => 1,
-			FixedDepositCollectorViaDepositsPalletError::FailedToHold => 2,
-			FixedDepositCollectorViaDepositsPalletError::FailedToRelease => 3,
+			// DO NOT USE 0
+			// Errors of different sub-parts are separated by a `u8::MAX`.
+			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
+			// or the new sub-part error (u8::MAX + 0).
+			FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken => 1,
+			FixedDepositCollectorViaDepositsPalletError::DepositNotFound => 2,
+			FixedDepositCollectorViaDepositsPalletError::FailedToHold => 3,
+			FixedDepositCollectorViaDepositsPalletError::FailedToRelease => 4,
 			FixedDepositCollectorViaDepositsPalletError::Internal => u16::MAX,
 		}
 	}
@@ -103,11 +112,12 @@ where
 			},
 			reason: HoldReason::Deposit.into(),
 		};
-		Pallet::<Runtime>::add_deposit(namespace, key, deposit_entry).map_err(|e| match e {
-			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositExisting) => {
+		Pallet::<Runtime>::add_deposit(namespace, key, deposit_entry).map_err(|e| {
+			if e == DispatchError::from(Error::<Runtime>::DepositExisting) {
 				FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken
-			}
-			_ => {
+			} else if e == DispatchError::from(Error::<Runtime>::FailedToHold) {
+				FixedDepositCollectorViaDepositsPalletError::FailedToHold
+			} else {
 				log::error!(
 					"Error {:#?} should not be generated inside `on_identity_committed` hook.",
 					e
@@ -136,11 +146,15 @@ where
 				);
 				FixedDepositCollectorViaDepositsPalletError::Internal
 			})?;
-		Pallet::<Runtime>::remove_deposit(&namespace, &key, None).map_err(|e| match e {
-			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositNotFound) => {
+		// We don't set any expected owner for the deposit on purpose, since this hook
+		// assumes the dip-provider pallet has performed all the access control logic
+		// necessary.
+		Pallet::<Runtime>::remove_deposit(&namespace, &key, None).map_err(|e| {
+			if e == DispatchError::from(Error::<Runtime>::DepositNotFound) {
 				FixedDepositCollectorViaDepositsPalletError::DepositNotFound
-			}
-			_ => {
+			} else if e == DispatchError::from(Error::<Runtime>::FailedToRelease) {
+				FixedDepositCollectorViaDepositsPalletError::FailedToRelease
+			} else {
 				log::error!(
 					"Error {:#?} should not be generated inside `on_commitment_removed` hook.",
 					e

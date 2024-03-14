@@ -39,7 +39,7 @@ use crate::{
 };
 
 /// Public verification key that a DID can control.
-#[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub enum DidVerificationKey<AccountId> {
 	/// An Ed25519 public key.
 	Ed25519(ed25519::Public),
@@ -118,7 +118,7 @@ pub enum DidEncryptionKey {
 }
 
 /// A general public key under the control of the DID.
-#[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub enum DidPublicKey<AccountId> {
 	/// A verification key, used to generate and verify signatures.
 	PublicVerificationKey(DidVerificationKey<AccountId>),
@@ -153,7 +153,7 @@ pub enum DidVerificationKeyRelationship {
 }
 
 /// Types of signatures supported by this pallet.
-#[derive(Clone, Decode, RuntimeDebug, Encode, Eq, PartialEq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub enum DidSignature {
 	/// A Ed25519 signature.
 	Ed25519(ed25519::Signature),
@@ -264,7 +264,7 @@ impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 ///
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
-#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, RuntimeDebug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
 pub struct DidPublicKeyDetails<BlockNumber, AccountId> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey<AccountId>,
