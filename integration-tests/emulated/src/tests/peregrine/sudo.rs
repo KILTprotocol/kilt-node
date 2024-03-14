@@ -1,14 +1,11 @@
-use crate::{
-	mock::{
-		network::MockNetworkRococo,
-		para_chains::{peregrine, AssetHubRococo, AssetHubRococoPallet, Peregrine},
-		relay_chains::{Rococo, RococoPallet},
-	},
-	utils::UNIT,
+use crate::mock::{
+	network::MockNetworkRococo,
+	para_chains::{peregrine, AssetHubRococo, AssetHubRococoPallet, Peregrine},
+	relay_chains::{Rococo, RococoPallet},
 };
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
-use runtime_common::{AccountId, Balance};
+use runtime_common::{constants::KILT, AccountId, Balance};
 use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
 	assert_expected_events, Here,
@@ -136,7 +133,7 @@ fn test_sudo_call_from_asset_hub_to_peregrine() {
 	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
 
 	let parachain_destination = get_parachain_destination_from_parachain();
-	let init_balance = UNIT * 10;
+	let init_balance = KILT * 10;
 
 	let origin_kind_list = vec![
 		OriginKind::Superuser,

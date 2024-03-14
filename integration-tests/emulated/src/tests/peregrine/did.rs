@@ -1,17 +1,14 @@
-use crate::{
-	mock::{
-		network::MockNetworkRococo,
-		para_chains::{peregrine, AssetHubRococo, AssetHubRococoPallet, Peregrine},
-		relay_chains::Rococo,
-	},
-	utils::UNIT,
+use crate::mock::{
+	network::MockNetworkRococo,
+	para_chains::{peregrine, AssetHubRococo, AssetHubRococoPallet, Peregrine},
+	relay_chains::Rococo,
 };
 use did::did_details::DidVerificationKey;
 use frame_support::traits::fungible::hold::Inspect;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use rococo_runtime::System as RococoSystem;
-use runtime_common::{AccountId, Balance};
+use runtime_common::{constants::KILT, AccountId, Balance};
 use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
 	assert_expected_events, Here,
@@ -58,7 +55,7 @@ fn test_did_creation_from_asset_hub_successful() {
 
 	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
 
-	let init_balance = UNIT * 10;
+	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
 
 	let xcm = get_xcm_message(OriginKind::SovereignAccount, withdraw_balance);
@@ -104,7 +101,10 @@ fn test_did_creation_from_asset_hub_successful() {
 			&asset_hub_sovereign_account,
 		);
 
-		assert_eq!(balance_on_hold, UNIT * 2);
+		assert_eq!(
+			balance_on_hold,
+			<peregrine_runtime::Runtime as did::Config>::BaseDeposit::get()
+		);
 	});
 
 	Rococo::execute_with(|| {
@@ -118,7 +118,7 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 
 	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
 
-	let init_balance = UNIT * 10;
+	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
 
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();

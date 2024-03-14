@@ -1,16 +1,13 @@
-use crate::{
-	mock::{
-		network::MockNetworkPolkadot,
-		para_chains::{spiritnet, AssetHubPolkadot, AssetHubPolkadotPallet, Spiritnet},
-		relay_chains::Polkadot,
-	},
-	utils::UNIT,
+use crate::mock::{
+	network::MockNetworkPolkadot,
+	para_chains::{spiritnet, AssetHubPolkadot, AssetHubPolkadotPallet, Spiritnet},
+	relay_chains::Polkadot,
 };
 use did::did_details::DidVerificationKey;
 use frame_support::traits::fungible::hold::Inspect;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
-use runtime_common::{AccountId, Balance};
+use runtime_common::{constants::KILT, AccountId, Balance};
 use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
 	assert_expected_events, Here,
@@ -57,7 +54,7 @@ fn test_did_creation_from_asset_hub_successful() {
 
 	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
 
-	let init_balance = UNIT * 10;
+	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
 
 	let xcm = get_xcm_message(OriginKind::SovereignAccount, withdraw_balance);
@@ -106,7 +103,10 @@ fn test_did_creation_from_asset_hub_successful() {
 		);
 
 		// since a did is created, 2 of the free balance should now be on hold
-		assert_eq!(balance_on_hold, UNIT * 2);
+		assert_eq!(
+			balance_on_hold,
+			<spiritnet_runtime::Runtime as did::Config>::BaseDeposit::get()
+		);
 	});
 
 	// No event on the relaychain (message is meant for Spiritnet)
@@ -122,7 +122,7 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
 
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
-	let init_balance = UNIT * 10;
+	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
 
 	let destination = get_destination();
