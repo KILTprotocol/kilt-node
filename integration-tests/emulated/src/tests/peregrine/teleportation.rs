@@ -44,7 +44,7 @@ fn test_teleport_asset_from_regular_peregrine_account_to_asset_hub() {
 	Rococo::execute_with(|| {
 		assert_eq!(Rococo::events().len(), 0);
 	});
-	// Fails on AssetHub since peregrine is not a trusted registrar.
+	// AssetHub should not receive any message, since the message is filtered out.
 	AssetHubRococo::execute_with(|| {
 		assert_eq!(AssetHubRococo::events().len(), 0);
 	});

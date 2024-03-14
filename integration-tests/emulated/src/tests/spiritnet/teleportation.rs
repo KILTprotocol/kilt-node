@@ -44,7 +44,7 @@ fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 	Polkadot::execute_with(|| {
 		assert_eq!(Polkadot::events().len(), 0);
 	});
-	// Fails on AssetHub since spiritnet is not a trusted registrar.
+	// AssetHub should not receive any message, since the message is filtered out.
 	AssetHubPolkadot::execute_with(|| {
 		assert_eq!(AssetHubPolkadot::events().len(), 0);
 	});
