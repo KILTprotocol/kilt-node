@@ -1,7 +1,12 @@
-use crate::mock::{
-	network::MockNetworkRococo,
-	para_chains::{peregrine, AssetHubRococo, AssetHubRococoPallet, Peregrine},
-	relay_chains::Rococo,
+use crate::{
+	mock::{
+		network::MockNetworkRococo,
+		para_chains::{AssetHubRococo, AssetHubRococoPallet, Peregrine},
+		relay_chains::Rococo,
+	},
+	tests::peregrine::did::utils::{
+		construct_xcm_message, get_asset_hub_sovereign_account, get_sibling_destination_peregrine,
+	},
 };
 use did::did_details::DidVerificationKey;
 use frame_support::traits::fungible::hold::Inspect;
@@ -9,18 +14,10 @@ use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use rococo_runtime::System as RococoSystem;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
-use xcm_emulator::{
-	assert_expected_events, Here,
-	Instruction::{BuyExecution, Transact, WithdrawAsset},
-	Junction, Junctions, OriginKind, Parachain, ParentThen, TestExt, Weight, Xcm,
-};
+use xcm::{DoubleEncoded, VersionedXcm};
+use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
 
-fn get_asset_hub_sovereign_account() -> AccountId {
-	Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHubRococo::para_id()))
-}
-
-fn get_xcm_message(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
+fn get_xcm_message_create_did(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	let call: DoubleEncoded<()> = <Peregrine as Parachain>::RuntimeCall::Did(did::Call::create_from_account {
@@ -29,24 +26,7 @@ fn get_xcm_message(origin_kind: OriginKind, withdraw_balance: Balance) -> Versio
 	.encode()
 	.into();
 
-	let require_weight_at_most = Weight::from_parts(10_000_600_000_000, 200_000_000_000);
-
-	VersionedXcm::from(Xcm(vec![
-		WithdrawAsset((Here, withdraw_balance).into()),
-		BuyExecution {
-			fees: (Here, withdraw_balance).into(),
-			weight_limit: WeightLimit::Unlimited,
-		},
-		Transact {
-			origin_kind,
-			require_weight_at_most,
-			call,
-		},
-	]))
-}
-
-fn get_destination() -> VersionedMultiLocation {
-	ParentThen(Junctions::X1(Junction::Parachain(peregrine::PARA_ID))).into()
+	construct_xcm_message(origin_kind, withdraw_balance, call)
 }
 
 #[test]
@@ -58,8 +38,8 @@ fn test_did_creation_from_asset_hub_successful() {
 	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
 
-	let xcm = get_xcm_message(OriginKind::SovereignAccount, withdraw_balance);
-	let destination = get_destination();
+	let xcm = get_xcm_message_create_did(OriginKind::SovereignAccount, withdraw_balance);
+	let destination = get_sibling_destination_peregrine();
 
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
@@ -114,25 +94,24 @@ fn test_did_creation_from_asset_hub_successful() {
 
 #[test]
 fn test_did_creation_from_asset_hub_unsuccessful() {
-	MockNetworkRococo::reset();
-
 	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 100;
 	let withdraw_balance = init_balance / 2;
 
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
-	let destination = get_destination();
+	let destination = get_sibling_destination_peregrine();
 
 	let origin_kind_list = vec![OriginKind::Xcm, OriginKind::Superuser, OriginKind::Native];
 
-	// give the sovereign account of AssetHub some coins.
-	Peregrine::execute_with(|| {
-		<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
-	});
-
 	for origin in origin_kind_list {
-		let xcm = get_xcm_message(origin, withdraw_balance);
+		MockNetworkRococo::reset();
+
+		Peregrine::execute_with(|| {
+			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
+		});
+
+		let xcm = get_xcm_message_create_did(origin, withdraw_balance);
 
 		//Send XCM message from AssetHub
 		AssetHubRococo::execute_with(|| {
@@ -154,15 +133,6 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
 
-			// we still expect that the xcm message is send.
-			assert_expected_events!(
-				Peregrine,
-				vec![
-					PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
-				]
-			);
-
-			// ... but we also expect that the extrinsic will fail since it is no signed runtime origin. So there should no [DidCreated] event
 			let is_create_event_present = Peregrine::events().iter().any(|event| match event {
 				PeregrineRuntimeEvent::Did(did::Event::<peregrine_runtime::Runtime>::DidCreated(_, _)) => true,
 				_ => false,

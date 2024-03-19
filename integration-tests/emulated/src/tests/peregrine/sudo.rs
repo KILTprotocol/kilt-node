@@ -119,7 +119,7 @@ fn test_sudo_call_from_relay_chain_to_peregrine() {
 			);
 		});
 
-		// No event on the AssetHub message is meant for relay chain
+		// No event on the AssetHub message is meant for peregrine
 		AssetHubRococo::execute_with(|| {
 			assert_eq!(AssetHubRococo::events().len(), 0);
 		});

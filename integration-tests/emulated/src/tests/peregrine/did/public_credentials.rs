@@ -5,24 +5,42 @@ use crate::{
 		relay_chains::Rococo,
 	},
 	tests::peregrine::did::utils::{
-		construct_xcm_message, create_mock_did, get_asset_hub_sovereign_account, get_sibling_destination_peregrine,
+		construct_xcm_message, create_mock_ctype, create_mock_did, get_asset_hub_sovereign_account,
+		get_sibling_destination_peregrine,
 	},
 };
 use frame_support::{assert_ok, traits::fungible::Mutate};
+use kilt_asset_dids::AssetDid as AssetIdentifier;
 use parity_scale_codec::Encode;
 use rococo_runtime::System as RococoSystem;
 use runtime_common::{constants::KILT, AccountId, Balance};
+use sp_core::H256;
+use sp_runtime::BoundedVec;
 use xcm::{DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
 
-fn get_xcm_message_ctype_creation(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
+fn get_xcm_message_add_public_credential(
+	origin_kind: OriginKind,
+	withdraw_balance: Balance,
+	ctype_hash: H256,
+) -> VersionedXcm<()> {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
+
+	let subject_id = AssetIdentifier::ether_currency();
+
+	let credential = public_credentials::mock::generate_base_public_credential_creation_op::<peregrine_runtime::Runtime>(
+		BoundedVec::try_from(subject_id.encode()).unwrap(),
+		ctype_hash,
+		Default::default(),
+	);
 
 	let call: DoubleEncoded<()> = <Peregrine as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
 		did_identifier: asset_hub_sovereign_account,
-		call: Box::new(<Peregrine as Parachain>::RuntimeCall::Ctype(ctype::Call::add {
-			ctype: b"{\"foo\": \"bar\"}".to_vec(),
-		})),
+		call: Box::new(<Peregrine as Parachain>::RuntimeCall::PublicCredentials(
+			public_credentials::Call::add {
+				credential: Box::new(credential),
+			},
+		)),
 	})
 	.encode()
 	.into();
@@ -31,20 +49,23 @@ fn get_xcm_message_ctype_creation(origin_kind: OriginKind, withdraw_balance: Bal
 }
 
 #[test]
-fn test_ctype_creation_from_asset_hub_successful() {
+fn test_create_public_credential_from_asset_hub() {
 	MockNetworkRococo::reset();
 
 	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
+	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
+	let ctype_hash_value = H256([0; 32]);
 
 	let init_balance = KILT * 10;
 
-	let xcm_ctype_call = get_xcm_message_ctype_creation(OriginKind::SovereignAccount, KILT);
-	let destination = get_sibling_destination_peregrine();
+	let xcm_claim_w3n_call =
+		get_xcm_message_add_public_credential(OriginKind::SovereignAccount, KILT, ctype_hash_value);
 
-	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
+	let destination = get_sibling_destination_peregrine();
 
 	Peregrine::execute_with(|| {
 		create_mock_did();
+		create_mock_ctype(ctype_hash_value.clone());
 		<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
 
@@ -52,7 +73,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 		assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination),
-			Box::new(xcm_ctype_call)
+			Box::new(xcm_claim_w3n_call)
 		));
 
 		type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
@@ -75,8 +96,8 @@ fn test_ctype_creation_from_asset_hub_successful() {
 					account: account == &asset_hub_sovereign_account,
 					result: result.is_ok(),
 				},
-				PeregrineRuntimeEvent::Ctype(ctype::Event::CTypeCreated(account, _)) => {
-					account: account == &asset_hub_sovereign_account,
+				PeregrineRuntimeEvent::PublicCredentials(public_credentials::Event::CredentialStored{ subject_id: _, credential_id: _ }) => {
+
 				},
 			]
 		);
@@ -88,15 +109,14 @@ fn test_ctype_creation_from_asset_hub_successful() {
 }
 
 #[test]
-fn test_ctype_creation_from_asset_hub_unsuccessful() {
-	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
-
-	let init_balance = KILT * 10;
-
+fn test_create_public_credential_from_asset_hub_unsuccessful() {
 	let origin_kind_list = vec![OriginKind::Native, OriginKind::Superuser, OriginKind::Xcm];
 
-	let destination = get_sibling_destination_peregrine();
+	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
+	let init_balance = KILT * 100;
+	let ctype_hash_value = H256([0; 32]);
 
+	let destination = get_sibling_destination_peregrine();
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	for origin_kind in origin_kind_list {
@@ -104,16 +124,17 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 
 		Peregrine::execute_with(|| {
 			create_mock_did();
+			create_mock_ctype(ctype_hash_value.clone());
 			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
-		let xcm_ctype_call = get_xcm_message_ctype_creation(origin_kind, KILT);
+		let xcm_claim_w3n_call = get_xcm_message_add_public_credential(origin_kind, KILT, ctype_hash_value);
 
 		AssetHubRococo::execute_with(|| {
 			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
-				Box::new(xcm_ctype_call)
+				Box::new(xcm_claim_w3n_call.clone())
 			));
 
 			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
@@ -130,11 +151,11 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 
 			let is_event_present = Peregrine::events().iter().any(|event| match event {
 				PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				PeregrineRuntimeEvent::Ctype(ctype::Event::CTypeCreated(_, _)) => true,
+				PeregrineRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _)) => true,
 				_ => false,
 			});
 
-			assert!(!is_event_present);
+			assert!(!is_event_present)
 		});
 
 		Rococo::execute_with(|| {

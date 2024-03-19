@@ -143,6 +143,8 @@ decl_test_parachains! {
 			Ctype: spiritnet_runtime::Ctype,
 			Attestation: spiritnet_runtime::Attestation,
 			Web3Names: spiritnet_runtime::Web3Names,
+			DidLookup: spiritnet_runtime::DidLookup,
+			PublicCredentials: spiritnet_runtime::PublicCredentials,
 		}
 	},
 	pub struct AssetHubPolkadot {
@@ -208,6 +210,8 @@ decl_test_parachains! {
 			Ctype: peregrine_runtime::Ctype,
 			Attestation: peregrine_runtime::Attestation,
 			Web3Names: peregrine_runtime::Web3Names,
+			DidLookup: peregrine_runtime::DidLookup,
+			PublicCredentials: peregrine_runtime::PublicCredentials,
 		}
 	}
 }
