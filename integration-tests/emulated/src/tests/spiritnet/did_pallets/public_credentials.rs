@@ -83,7 +83,7 @@ fn test_create_public_credential_from_asset_hub() {
 
 	Spiritnet::execute_with(|| {
 		create_mock_did_from_account(asset_hub_sovereign_account.clone());
-		create_mock_ctype(ctype_hash_value.clone());
+		create_mock_ctype(ctype_hash_value);
 		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
 
@@ -142,7 +142,7 @@ fn test_create_public_credential_from_asset_hub_unsuccessful() {
 
 		Polkadot::execute_with(|| {
 			create_mock_did_from_account(asset_hub_sovereign_account.clone());
-			create_mock_ctype(ctype_hash_value.clone());
+			create_mock_ctype(ctype_hash_value);
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
@@ -167,10 +167,12 @@ fn test_create_public_credential_from_asset_hub_unsuccessful() {
 		Spiritnet::execute_with(|| {
 			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
-			let is_event_present = Spiritnet::events().iter().any(|event| match event {
-				SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				SpiritnetRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _)) => true,
-				_ => false,
+			let is_event_present = Spiritnet::events().iter().any(|event| {
+				matches!(
+					event,
+					SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
+						| SpiritnetRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _))
+				)
 			});
 
 			assert!(!is_event_present)

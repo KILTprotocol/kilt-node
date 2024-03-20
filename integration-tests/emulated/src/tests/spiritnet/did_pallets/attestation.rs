@@ -74,8 +74,8 @@ fn test_attestation_creation_from_asset_hub_successful() {
 	let xcm_attestation_call = get_xcm_message_attestation_creation(
 		OriginKind::SovereignAccount,
 		withdraw_balance,
-		ctype_hash_value.clone(),
-		claim_hash_value.clone(),
+		ctype_hash_value,
+		claim_hash_value,
 	);
 
 	let destination = get_sibling_destination_spiritnet();
@@ -83,7 +83,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	Spiritnet::execute_with(|| {
-		create_mock_ctype(ctype_hash_value.clone());
+		create_mock_ctype(ctype_hash_value);
 		create_mock_did_from_account(asset_hub_sovereign_account.clone());
 		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
@@ -143,17 +143,13 @@ fn test_attestation_creation_from_asset_hub_unsuccessful() {
 		MockNetworkPolkadot::reset();
 
 		Spiritnet::execute_with(|| {
-			create_mock_ctype(ctype_hash_value.clone());
+			create_mock_ctype(ctype_hash_value);
 			create_mock_did_from_account(asset_hub_sovereign_account.clone());
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
-		let xcm_attestation_call = get_xcm_message_attestation_creation(
-			origin_kind,
-			withdraw_balance,
-			ctype_hash_value.clone(),
-			claim_hash_value.clone(),
-		);
+		let xcm_attestation_call =
+			get_xcm_message_attestation_creation(origin_kind, withdraw_balance, ctype_hash_value, claim_hash_value);
 
 		AssetHubPolkadot::execute_with(|| {
 			assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
@@ -174,10 +170,12 @@ fn test_attestation_creation_from_asset_hub_unsuccessful() {
 		Spiritnet::execute_with(|| {
 			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
-			let is_event_present = Spiritnet::events().iter().any(|event| match event {
-				SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				SpiritnetRuntimeEvent::Attestation(attestation::Event::AttestationCreated { .. }) => true,
-				_ => false,
+			let is_event_present = Spiritnet::events().iter().any(|event| {
+				matches!(
+					event,
+					SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
+						| SpiritnetRuntimeEvent::Attestation(attestation::Event::AttestationCreated { .. })
+				)
 			});
 
 			assert!(!is_event_present);

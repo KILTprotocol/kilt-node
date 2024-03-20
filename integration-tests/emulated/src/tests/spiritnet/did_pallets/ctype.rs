@@ -147,10 +147,12 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 		Spiritnet::execute_with(|| {
 			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
-			let is_event_present = Spiritnet::events().iter().any(|event| match event {
-				SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				SpiritnetRuntimeEvent::Ctype(ctype::Event::CTypeCreated(_, _)) => true,
-				_ => false,
+			let is_event_present = Spiritnet::events().iter().any(|event| {
+				matches!(
+					event,
+					SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
+						| SpiritnetRuntimeEvent::Ctype(ctype::Event::CTypeCreated(_, _))
+				)
 			});
 
 			assert!(!is_event_present);

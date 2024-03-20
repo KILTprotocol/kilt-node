@@ -147,12 +147,15 @@ fn test_claim_w3n_from_asset_hub_unsuccessful() {
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
 
-			let is_event_present = Peregrine::events().iter().any(|event| match event {
-				PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed { owner: _, name: _ }) => {
-					true
-				}
-				_ => false,
+			let is_event_present = Peregrine::events().iter().any(|event| {
+				matches!(
+					event,
+					PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
+						| PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed {
+							owner: _,
+							name: _
+						})
+				)
 			});
 
 			assert!(!is_event_present)

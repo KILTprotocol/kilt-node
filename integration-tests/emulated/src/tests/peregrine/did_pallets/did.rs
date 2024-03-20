@@ -39,7 +39,7 @@ fn get_xcm_message_create_did(origin_kind: OriginKind, withdraw_balance: Balance
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	let call: DoubleEncoded<()> = <Peregrine as Parachain>::RuntimeCall::Did(did::Call::create_from_account {
-		authentication_key: DidVerificationKey::Account(asset_hub_sovereign_account.clone()),
+		authentication_key: DidVerificationKey::Account(asset_hub_sovereign_account),
 	})
 	.encode()
 	.into();
@@ -151,9 +151,11 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
 
-			let is_create_event_present = Peregrine::events().iter().any(|event| match event {
-				PeregrineRuntimeEvent::Did(did::Event::<peregrine_runtime::Runtime>::DidCreated(_, _)) => true,
-				_ => false,
+			let is_create_event_present = Peregrine::events().iter().any(|event| {
+				matches!(
+					event,
+					PeregrineRuntimeEvent::Did(did::Event::<peregrine_runtime::Runtime>::DidCreated(_, _))
+				)
 			});
 
 			assert!(

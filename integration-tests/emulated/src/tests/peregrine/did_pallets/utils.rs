@@ -54,7 +54,7 @@ pub fn create_mock_did_from_account(account: AccountId32) {
 	let mut details = did::did_details::DidDetails::<peregrine_runtime::Runtime>::new(
 		did_key.clone(),
 		0,
-		AccountId32::new([0u8; 32]).into(),
+		AccountId32::new([0u8; 32]),
 	)
 	.expect("Failed to generate new DidDetails");
 

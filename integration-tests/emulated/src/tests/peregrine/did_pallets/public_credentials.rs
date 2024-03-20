@@ -83,7 +83,7 @@ fn test_create_public_credential_from_asset_hub() {
 
 	Peregrine::execute_with(|| {
 		create_mock_did_from_account(asset_hub_sovereign_account.clone());
-		create_mock_ctype(ctype_hash_value.clone());
+		create_mock_ctype(ctype_hash_value);
 		<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
 
@@ -142,7 +142,7 @@ fn test_create_public_credential_from_asset_hub_unsuccessful() {
 
 		Peregrine::execute_with(|| {
 			create_mock_did_from_account(asset_hub_sovereign_account.clone());
-			create_mock_ctype(ctype_hash_value.clone());
+			create_mock_ctype(ctype_hash_value);
 			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
@@ -167,10 +167,12 @@ fn test_create_public_credential_from_asset_hub_unsuccessful() {
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
 
-			let is_event_present = Peregrine::events().iter().any(|event| match event {
-				PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				PeregrineRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _)) => true,
-				_ => false,
+			let is_event_present = Peregrine::events().iter().any(|event| {
+				matches!(
+					event,
+					PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
+						| PeregrineRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _))
+				)
 			});
 
 			assert!(!is_event_present)

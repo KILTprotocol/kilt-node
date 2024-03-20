@@ -146,10 +146,12 @@ fn test_create_association_from_asset_hub_unsuccessful() {
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
 
-			let is_event_present = Peregrine::events().iter().any(|event| match event {
-				PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				PeregrineRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _)) => true,
-				_ => false,
+			let is_event_present = Peregrine::events().iter().any(|event| {
+				matches!(
+					event,
+					PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
+						| PeregrineRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _))
+				)
 			});
 
 			assert!(!is_event_present)

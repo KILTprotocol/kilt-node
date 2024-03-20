@@ -147,12 +147,15 @@ fn test_claim_w3n_from_asset_hub_unsuccessful() {
 		Spiritnet::execute_with(|| {
 			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
-			let is_event_present = Spiritnet::events().iter().any(|event| match event {
-				SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				SpiritnetRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed { owner: _, name: _ }) => {
-					true
-				}
-				_ => false,
+			let is_event_present = Spiritnet::events().iter().any(|event| {
+				matches!(
+					event,
+					SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
+						| SpiritnetRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed {
+							owner: _,
+							name: _
+						})
+				)
 			});
 
 			assert!(!is_event_present)

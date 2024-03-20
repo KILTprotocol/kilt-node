@@ -146,10 +146,12 @@ fn test_create_association_from_asset_hub_unsuccessful() {
 		Spiritnet::execute_with(|| {
 			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
-			let is_event_present = Spiritnet::events().iter().any(|event| match event {
-				SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				SpiritnetRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _)) => true,
-				_ => false,
+			let is_event_present = Spiritnet::events().iter().any(|event| {
+				matches!(
+					event,
+					SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
+						| SpiritnetRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _))
+				)
 			});
 
 			assert!(!is_event_present)
