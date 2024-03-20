@@ -82,6 +82,7 @@ fn test_unpaid_execution_from_asset_hub_to_peregrine() {
 	});
 }
 
+// TODO: Check why test is passing. Unpaid execution should work now.
 #[test]
 fn test_unpaid_execution_from_rococo_to_peregrine() {
 	MockNetworkRococo::reset();
