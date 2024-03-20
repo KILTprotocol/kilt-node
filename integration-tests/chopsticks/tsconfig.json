@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "lib": ["es2019"],
+
+    /* Modules */
+    "module": "commonjs",
+    "rootDir": "src",
+
+    /* Emit */
+
+    "outDir": "./bin",
+
+    /* Interop Constraints */
+
+    "esModuleInterop": true,
+
+    "forceConsistentCasingInFileNames": true,
+
+    "strict": true,
+    "noImplicitAny": true,
+
+    "skipLibCheck": true
+  }
+}

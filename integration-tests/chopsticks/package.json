@@ -1,14 +1,38 @@
 {
-  "name": "chopsticks",
-  "version": "1.0.0",
-  "description": "e2e tests between spiritnet and hydradx ",
-  "main": "index.ts",
+  "name": "e2e",
+  "version": "0.0.1",
+  "description": "chopsticks integration tests",
+  "main": "src/index.ts",
+  "repository": "git@github.com:KILTprotocol/kilt-node.git",
+  "author": "[\"KILT <info@kilt.io>\"]",
   "license": "MIT",
+  "dependencies": {
+    "@types/node": "^20.11.30",
+    "typescript": "*",
+    "@acala-network/chopsticks": "^0.9.9",
+    "@acala-network/chopsticks-testing": "^0.9.9",
+    "@polkadot/api": "^10.11.2"
+  },
   "devDependencies": {
-    "@acala-network/chopsticks": "^0.9.7"
+    "@typescript-eslint/eslint-plugin": "^5.13.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^8.0.1",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-standard-with-typescript": "^43.0.1",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0 || ^16.0.0 ",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-promise": "^6.0.0",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2"
   },
   "scripts": {
-    "boot" : "npx @acala-network/chopsticks xcm -r ./resources/polkadot.yaml -p ./resources/hydradx.yaml -p ./resources/spiritnet.yaml",
-    "clean": "rm -rf db"
+    "build": "tsc",
+    "start": "node ./bin/app.js",
+    "dev": "ts-node ./src/app.ts",
+    "lint": "eslit .",
+    "lint:fix": "eslint --fix ."
   }
 }
