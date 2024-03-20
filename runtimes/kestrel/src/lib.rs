@@ -118,7 +118,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-kestrel"),
 	impl_name: create_runtime_str!("kilt-kestrel"),
 	authoring_version: 4,
-	spec_version: 11200,
+	spec_version: 11300,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 6,
