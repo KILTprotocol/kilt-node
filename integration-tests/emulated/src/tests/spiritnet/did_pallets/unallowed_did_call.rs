@@ -29,7 +29,8 @@ use crate::{
 		relay_chains::Polkadot,
 	},
 	tests::spiritnet::did_pallets::utils::{
-		construct_xcm_message, create_mock_did, get_asset_hub_sovereign_account, get_sibling_destination_spiritnet,
+		construct_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
+		get_sibling_destination_spiritnet,
 	},
 };
 
@@ -85,7 +86,7 @@ fn test_not_allowed_did_call() {
 		MockNetworkPolkadot::reset();
 
 		Spiritnet::execute_with(|| {
-			create_mock_did();
+			create_mock_did_from_account(asset_hub_sovereign_account.clone());
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
@@ -147,7 +148,7 @@ fn test_recursion_did_call() {
 		MockNetworkPolkadot::reset();
 
 		Spiritnet::execute_with(|| {
-			create_mock_did();
+			create_mock_did_from_account(asset_hub_sovereign_account.clone());
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 

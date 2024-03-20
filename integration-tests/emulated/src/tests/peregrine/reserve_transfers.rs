@@ -88,7 +88,6 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 
 	Peregrine::execute_with(|| {
 		// the sovereign_account of AssetHub should have no coins.
-
 		let balance_before_transfer: u128 =
 			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
 

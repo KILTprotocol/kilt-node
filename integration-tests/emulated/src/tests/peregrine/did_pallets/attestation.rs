@@ -30,7 +30,7 @@ use crate::{
 		relay_chains::Rococo,
 	},
 	tests::peregrine::did_pallets::utils::{
-		construct_xcm_message, create_mock_ctype, create_mock_did, get_asset_hub_sovereign_account,
+		construct_xcm_message, create_mock_ctype, create_mock_did_from_account, get_asset_hub_sovereign_account,
 		get_sibling_destination_peregrine,
 	},
 };
@@ -84,7 +84,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 
 	Peregrine::execute_with(|| {
 		create_mock_ctype(ctype_hash_value.clone());
-		create_mock_did();
+		create_mock_did_from_account(asset_hub_sovereign_account.clone());
 		<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
 
@@ -144,7 +144,7 @@ fn test_attestation_creation_from_asset_hub_unsuccessful() {
 
 		Peregrine::execute_with(|| {
 			create_mock_ctype(ctype_hash_value.clone());
-			create_mock_did();
+			create_mock_did_from_account(asset_hub_sovereign_account.clone());
 			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 

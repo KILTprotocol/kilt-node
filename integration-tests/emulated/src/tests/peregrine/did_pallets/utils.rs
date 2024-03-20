@@ -49,8 +49,8 @@ pub fn get_sibling_destination_peregrine() -> VersionedMultiLocation {
 	ParentThen(Junctions::X1(Junction::Parachain(peregrine::PARA_ID))).into()
 }
 
-pub fn create_mock_did() {
-	let did_key = DidVerificationKey::Account(get_asset_hub_sovereign_account());
+pub fn create_mock_did_from_account(account: AccountId32) {
+	let did_key = DidVerificationKey::Account(account);
 	let mut details = did::did_details::DidDetails::<peregrine_runtime::Runtime>::new(
 		did_key.clone(),
 		0,

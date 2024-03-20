@@ -29,7 +29,8 @@ use crate::{
 		relay_chains::Rococo,
 	},
 	tests::peregrine::did_pallets::utils::{
-		construct_xcm_message, create_mock_did, get_asset_hub_sovereign_account, get_sibling_destination_peregrine,
+		construct_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
+		get_sibling_destination_peregrine,
 	},
 };
 
@@ -62,7 +63,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	Peregrine::execute_with(|| {
-		create_mock_did();
+		create_mock_did_from_account(asset_hub_sovereign_account.clone());
 		<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
 
@@ -121,7 +122,7 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 		MockNetworkRococo::reset();
 
 		Peregrine::execute_with(|| {
-			create_mock_did();
+			create_mock_did_from_account(asset_hub_sovereign_account.clone());
 			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 

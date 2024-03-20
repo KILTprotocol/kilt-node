@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use kilt_asset_dids::AssetDid as AssetIdentifier;
 use parity_scale_codec::Encode;
@@ -33,7 +32,7 @@ use crate::{
 		relay_chains::Polkadot,
 	},
 	tests::spiritnet::did_pallets::utils::{
-		construct_xcm_message, create_mock_ctype, create_mock_did, get_asset_hub_sovereign_account,
+		construct_xcm_message, create_mock_ctype, create_mock_did_from_account, get_asset_hub_sovereign_account,
 		get_sibling_destination_spiritnet,
 	},
 };
@@ -83,7 +82,7 @@ fn test_create_public_credential_from_asset_hub() {
 	let destination = get_sibling_destination_spiritnet();
 
 	Spiritnet::execute_with(|| {
-		create_mock_did();
+		create_mock_did_from_account(asset_hub_sovereign_account.clone());
 		create_mock_ctype(ctype_hash_value.clone());
 		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
@@ -142,7 +141,7 @@ fn test_create_public_credential_from_asset_hub_unsuccessful() {
 		MockNetworkPolkadot::reset();
 
 		Polkadot::execute_with(|| {
-			create_mock_did();
+			create_mock_did_from_account(asset_hub_sovereign_account.clone());
 			create_mock_ctype(ctype_hash_value.clone());
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
