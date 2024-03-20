@@ -15682,7 +15682,7 @@ dependencies = [
 
 [[package]]
 name = "xcm-integration-tests"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "asset-hub-kusama-runtime",
  "asset-hub-polkadot-runtime",
