@@ -129,7 +129,6 @@ mod try_state;
 
 pub mod api;
 mod inflation;
-pub mod migrations;
 mod set;
 mod types;
 
