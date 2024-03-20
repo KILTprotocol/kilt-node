@@ -30,16 +30,13 @@ use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use xcm::v3::prelude::*;
 use xcm_builder::{
-	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin,
-	FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative,
-	SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
-	WithComputedOrigin,
+	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
 use runtime_common::xcm_config::{
 	DenyReserveTransferToRelayChain, DenyThenTry, HereLocation, LocalAssetTransactor, LocationToAccountId,
-	MaxAssetsIntoHolding, MaxInstructions, ParentOrSiblings, UnitWeightCost,
+	MaxAssetsIntoHolding, MaxInstructions, ParentOrSiblings, UnitWeightCost, ParentLegislative
 };
 
 parameter_types! {
@@ -93,6 +90,8 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 			AllowKnownQueryResponses<PolkadotXcm>,
 			WithComputedOrigin<
 				(
+					// Allow unpaid execution from the relay chain legislative.
+					AllowUnpaidExecutionFrom<ParentLegislative>,
 					// Allow paid execution.
 					AllowTopLevelPaidExecutionFrom<Everything>,
 					// Subscriptions for XCM version are OK from the relaychain and other parachains.
@@ -220,16 +219,9 @@ impl pallet_xcm::Config for Runtime {
 	type MaxRemoteLockConsumers = ConstU32<0>;
 	type RemoteLockConsumerIdentifier = ();
 	type RuntimeEvent = RuntimeEvent;
-	// Allows anyone to send XCM messages. For regular origins, a `DescendOrigin` is
-	// prepended to the message.
-	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
+	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, ()>;
 	type XcmRouter = XcmRouter;
-	// We allow execution of XCM programs because it is required by the
-	// `reserve_transfer_assets` operation.
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
-	// Disable calls to pallet_xcm::execute(), by still allowing the other
-	// extrinsics to be called.
-	// NOTE: For local testing this needs to be `Everything`.
 	type XcmExecuteFilter = Nothing;
 	type XcmTeleportFilter = Nothing;
 	type XcmReserveTransferFilter = Everything;
