@@ -45,7 +45,7 @@ fn test_unpaid_execution_from_asset_hub_to_peregrine() {
 		check_origin,
 	}]));
 
-	//Send XCM message from relay chain
+	//Send XCM message from Parachain
 	AssetHubRococo::execute_with(|| {
 		assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 			sudo_origin,

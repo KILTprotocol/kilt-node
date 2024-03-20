@@ -44,7 +44,7 @@ fn test_unpaid_execution_to_spiritnet() {
 		check_origin,
 	}]));
 
-	//Send XCM message from relay chain
+	//Send XCM message from Parachain
 	AssetHubPolkadot::execute_with(|| {
 		assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 			sudo_origin,
