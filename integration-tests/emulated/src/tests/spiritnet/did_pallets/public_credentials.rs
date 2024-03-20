@@ -1,18 +1,17 @@
 use crate::{
 	mock::{
-		network::MockNetworkRococo,
-		para_chains::{AssetHubRococo, AssetHubRococoPallet, Peregrine},
-		relay_chains::Rococo,
+		network::MockNetworkPolkadot,
+		para_chains::{AssetHubPolkadot, AssetHubPolkadotPallet, Spiritnet},
+		relay_chains::Polkadot,
 	},
-	tests::peregrine::did::utils::{
+	tests::spiritnet::did_pallets::utils::{
 		construct_xcm_message, create_mock_ctype, create_mock_did, get_asset_hub_sovereign_account,
-		get_sibling_destination_peregrine,
+		get_sibling_destination_spiritnet,
 	},
 };
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use kilt_asset_dids::AssetDid as AssetIdentifier;
 use parity_scale_codec::Encode;
-use rococo_runtime::System as RococoSystem;
 use runtime_common::{constants::KILT, AccountId, Balance};
 use sp_core::H256;
 use sp_runtime::BoundedVec;
@@ -28,15 +27,15 @@ fn get_xcm_message_add_public_credential(
 
 	let subject_id = AssetIdentifier::ether_currency();
 
-	let credential = public_credentials::mock::generate_base_public_credential_creation_op::<peregrine_runtime::Runtime>(
+	let credential = public_credentials::mock::generate_base_public_credential_creation_op::<spiritnet_runtime::Runtime>(
 		BoundedVec::try_from(subject_id.encode()).unwrap(),
 		ctype_hash,
 		Default::default(),
 	);
 
-	let call: DoubleEncoded<()> = <Peregrine as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
+	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
 		did_identifier: asset_hub_sovereign_account,
-		call: Box::new(<Peregrine as Parachain>::RuntimeCall::PublicCredentials(
+		call: Box::new(<Spiritnet as Parachain>::RuntimeCall::PublicCredentials(
 			public_credentials::Call::add {
 				credential: Box::new(credential),
 			},
@@ -50,9 +49,9 @@ fn get_xcm_message_add_public_credential(
 
 #[test]
 fn test_create_public_credential_from_asset_hub() {
-	MockNetworkRococo::reset();
+	MockNetworkPolkadot::reset();
 
-	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 	let ctype_hash_value = H256([0; 32]);
 
@@ -61,50 +60,50 @@ fn test_create_public_credential_from_asset_hub() {
 	let xcm_claim_w3n_call =
 		get_xcm_message_add_public_credential(OriginKind::SovereignAccount, KILT, ctype_hash_value);
 
-	let destination = get_sibling_destination_peregrine();
+	let destination = get_sibling_destination_spiritnet();
 
-	Peregrine::execute_with(|| {
+	Spiritnet::execute_with(|| {
 		create_mock_did();
 		create_mock_ctype(ctype_hash_value.clone());
-		<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
+		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
 
-	AssetHubRococo::execute_with(|| {
-		assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
+	AssetHubPolkadot::execute_with(|| {
+		assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination),
 			Box::new(xcm_claim_w3n_call)
 		));
 
-		type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
 		assert_expected_events!(
-			AssetHubRococo,
+			AssetHubPolkadot,
 			vec![
 				RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 			]
 		);
 	});
 
-	Peregrine::execute_with(|| {
-		type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+	Spiritnet::execute_with(|| {
+		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
 		assert_expected_events!(
-			Peregrine,
+			Spiritnet,
 			vec![
-				PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
-				PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(account, result)) => {
+				SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
+				SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(account, result)) => {
 					account: account == &asset_hub_sovereign_account,
 					result: result.is_ok(),
 				},
-				PeregrineRuntimeEvent::PublicCredentials(public_credentials::Event::CredentialStored{ subject_id: _, credential_id: _ }) => {
+				SpiritnetRuntimeEvent::PublicCredentials(public_credentials::Event::CredentialStored{ subject_id: _, credential_id: _ }) => {
 
 				},
 			]
 		);
 	});
 
-	Rococo::execute_with(|| {
-		assert_eq!(RococoSystem::events().len(), 0);
+	Polkadot::execute_with(|| {
+		assert_eq!(Polkadot::events().len(), 0);
 	});
 }
 
@@ -112,54 +111,54 @@ fn test_create_public_credential_from_asset_hub() {
 fn test_create_public_credential_from_asset_hub_unsuccessful() {
 	let origin_kind_list = vec![OriginKind::Native, OriginKind::Superuser, OriginKind::Xcm];
 
-	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
 	let init_balance = KILT * 100;
 	let ctype_hash_value = H256([0; 32]);
 
-	let destination = get_sibling_destination_peregrine();
+	let destination = get_sibling_destination_spiritnet();
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	for origin_kind in origin_kind_list {
-		MockNetworkRococo::reset();
+		MockNetworkPolkadot::reset();
 
-		Peregrine::execute_with(|| {
+		Polkadot::execute_with(|| {
 			create_mock_did();
 			create_mock_ctype(ctype_hash_value.clone());
-			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
+			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
 		let xcm_claim_w3n_call = get_xcm_message_add_public_credential(origin_kind, KILT, ctype_hash_value);
 
-		AssetHubRococo::execute_with(|| {
-			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
+		AssetHubPolkadot::execute_with(|| {
+			assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
 				Box::new(xcm_claim_w3n_call.clone())
 			));
 
-			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
 			assert_expected_events!(
-				AssetHubRococo,
+				AssetHubPolkadot,
 				vec![
 					RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 				]
 			);
 		});
 
-		Peregrine::execute_with(|| {
-			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+		Spiritnet::execute_with(|| {
+			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
-			let is_event_present = Peregrine::events().iter().any(|event| match event {
-				PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
-				PeregrineRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _)) => true,
+			let is_event_present = Spiritnet::events().iter().any(|event| match event {
+				SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _)) => true,
+				SpiritnetRuntimeEvent::DidLookup(pallet_did_lookup::Event::AssociationEstablished(_, _)) => true,
 				_ => false,
 			});
 
 			assert!(!is_event_present)
 		});
 
-		Rococo::execute_with(|| {
-			assert_eq!(RococoSystem::events().len(), 0);
+		Polkadot::execute_with(|| {
+			assert_eq!(Polkadot::events().len(), 0);
 		});
 	}
 }

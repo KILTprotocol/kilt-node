@@ -4,13 +4,12 @@ use crate::{
 		para_chains::{AssetHubRococo, AssetHubRococoPallet, Peregrine},
 		relay_chains::Rococo,
 	},
-	tests::peregrine::did::utils::{
+	tests::peregrine::did_pallets::utils::{
 		construct_xcm_message, create_mock_did, get_asset_hub_sovereign_account, get_sibling_destination_peregrine,
 	},
 };
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
-use rococo_runtime::System as RococoSystem;
 use runtime_common::{constants::KILT, AccountId, Balance};
 use xcm::{DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
@@ -84,7 +83,7 @@ fn test_create_association_from_asset_hub() {
 	});
 
 	Rococo::execute_with(|| {
-		assert_eq!(RococoSystem::events().len(), 0);
+		assert_eq!(Rococo::events().len(), 0);
 	});
 }
 
@@ -137,7 +136,7 @@ fn test_create_association_from_asset_hub_unsuccessful() {
 		});
 
 		Rococo::execute_with(|| {
-			assert_eq!(RococoSystem::events().len(), 0);
+			assert_eq!(Rococo::events().len(), 0);
 		});
 	}
 }
