@@ -17,11 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{assert_ok, traits::fungible::Mutate};
-use kilt_asset_dids::AssetDid as AssetIdentifier;
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
 use sp_core::H256;
-use sp_runtime::BoundedVec;
 use xcm::{DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
 
@@ -42,12 +40,12 @@ fn get_xcm_message_add_public_credential(
 	withdraw_balance: Balance,
 	ctype_hash: H256,
 ) -> VersionedXcm<()> {
-	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
+	let asset_hub_sovereign_account: sp_runtime::AccountId32 = get_asset_hub_sovereign_account();
 
-	let subject_id = AssetIdentifier::ether_currency();
+	let subject_id = b"did:asset:eip155:1.slip44:60".to_vec();
 
 	let credential = public_credentials::mock::generate_base_public_credential_creation_op::<spiritnet_runtime::Runtime>(
-		BoundedVec::try_from(subject_id.encode()).unwrap(),
+		subject_id.try_into().unwrap(),
 		ctype_hash,
 		Default::default(),
 	);
@@ -76,7 +74,7 @@ fn test_create_public_credential_from_asset_hub() {
 
 	let init_balance = KILT * 10;
 
-	let xcm_claim_w3n_call =
+	let xcm_issue_public_credential_call =
 		get_xcm_message_add_public_credential(OriginKind::SovereignAccount, KILT, ctype_hash_value);
 
 	let destination = get_sibling_destination_spiritnet();
@@ -91,7 +89,7 @@ fn test_create_public_credential_from_asset_hub() {
 		assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination),
-			Box::new(xcm_claim_w3n_call)
+			Box::new(xcm_issue_public_credential_call)
 		));
 
 		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
@@ -114,7 +112,7 @@ fn test_create_public_credential_from_asset_hub() {
 					account: account == &asset_hub_sovereign_account,
 					result: result.is_ok(),
 				},
-				SpiritnetRuntimeEvent::PublicCredentials(public_credentials::Event::CredentialStored{ subject_id: _, credential_id: _ }) => {
+				SpiritnetRuntimeEvent::PublicCredentials(public_credentials::Event::CredentialStored{ .. }) => {
 
 				},
 			]
