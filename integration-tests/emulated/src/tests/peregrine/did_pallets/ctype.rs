@@ -57,7 +57,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 
 	let init_balance = KILT * 10;
 
-	let xcm_ctype_call = get_xcm_message_ctype_creation(OriginKind::SovereignAccount, KILT);
+	let xcm_add_ctype_msg = get_xcm_message_ctype_creation(OriginKind::SovereignAccount, KILT);
 	let destination = get_sibling_destination_peregrine();
 
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
@@ -71,7 +71,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 		assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination),
-			Box::new(xcm_ctype_call)
+			Box::new(xcm_add_ctype_msg)
 		));
 
 		type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
@@ -126,13 +126,13 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
-		let xcm_ctype_call = get_xcm_message_ctype_creation(origin_kind, KILT);
+		let xcm_add_ctype_msg = get_xcm_message_ctype_creation(origin_kind, KILT);
 
 		AssetHubRococo::execute_with(|| {
 			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
-				Box::new(xcm_ctype_call)
+				Box::new(xcm_add_ctype_msg)
 			));
 
 			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;

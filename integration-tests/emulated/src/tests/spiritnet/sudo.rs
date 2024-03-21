@@ -126,6 +126,8 @@ fn test_sudo_call_from_relay_chain_to_spiritnet() {
 
 		Spiritnet::execute_with(|| {
 			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+
+			println!("{:?}", Spiritnet::events());
 			assert_expected_events!(
 				Spiritnet,
 				vec![

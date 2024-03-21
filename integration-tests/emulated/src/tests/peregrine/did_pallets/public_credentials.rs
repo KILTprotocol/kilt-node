@@ -40,7 +40,7 @@ fn get_xcm_message_add_public_credential(
 	withdraw_balance: Balance,
 	ctype_hash: H256,
 ) -> VersionedXcm<()> {
-	let asset_hub_sovereign_account: sp_runtime::AccountId32 = get_asset_hub_sovereign_account();
+	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	let subject_id = b"did:asset:eip155:1.slip44:60".to_vec();
 

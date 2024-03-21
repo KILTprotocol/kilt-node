@@ -90,13 +90,13 @@ fn test_not_allowed_did_call() {
 			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
-		let xcm_claim_w3n_call = get_xcm_message_system_remark(origin_kind, KILT);
+		let xcm_invalid_did_msg = get_xcm_message_system_remark(origin_kind, KILT);
 
 		AssetHubRococo::execute_with(|| {
 			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
-				Box::new(xcm_claim_w3n_call.clone())
+				Box::new(xcm_invalid_did_msg.clone())
 			));
 
 			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
@@ -152,13 +152,13 @@ fn test_recursion_did_call() {
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
-		let xcm_claim_w3n_call = get_xcm_message_recursion(origin_kind, KILT);
+		let xcm_invalid_did_msg = get_xcm_message_recursion(origin_kind, KILT);
 
 		AssetHubRococo::execute_with(|| {
 			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
-				Box::new(xcm_claim_w3n_call.clone())
+				Box::new(xcm_invalid_did_msg.clone())
 			));
 
 			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;

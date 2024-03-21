@@ -19,7 +19,7 @@
 use ctype::ctype_entry::CtypeEntry;
 use ctype::pallet::Ctypes;
 use did::{did_details::DidVerificationKey, pallet::Did};
-use runtime_common::{AccountId, Balance};
+use runtime_common::Balance;
 use sp_core::H256;
 use sp_runtime::AccountId32;
 use xcm::{DoubleEncoded, VersionedMultiLocation, VersionedXcm};
@@ -41,7 +41,7 @@ pub fn create_mock_ctype(ctype_hash: H256) {
 	Ctypes::<peregrine_runtime::Runtime>::insert(ctype_hash, ctype_entry);
 }
 
-pub fn get_asset_hub_sovereign_account() -> AccountId {
+pub fn get_asset_hub_sovereign_account() -> AccountId32 {
 	Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHubRococo::para_id()))
 }
 

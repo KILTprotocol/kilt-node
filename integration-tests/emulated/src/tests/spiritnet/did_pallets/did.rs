@@ -56,7 +56,7 @@ fn test_did_creation_from_asset_hub_successful() {
 	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
 
-	let xcm = get_xcm_message_create_did(OriginKind::SovereignAccount, withdraw_balance);
+	let xcm_create_did_msg = get_xcm_message_create_did(OriginKind::SovereignAccount, withdraw_balance);
 	let destination = get_sibling_destination_spiritnet();
 
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
@@ -69,7 +69,7 @@ fn test_did_creation_from_asset_hub_successful() {
 		assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination.clone()),
-			Box::new(xcm.clone())
+			Box::new(xcm_create_did_msg.clone())
 		));
 
 		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
@@ -129,14 +129,13 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
-		let xcm = get_xcm_message_create_did(origin, withdraw_balance);
+		let xcm_create_did_msg = get_xcm_message_create_did(origin, withdraw_balance);
 
-		//Send XCM message from AssetHub
 		AssetHubPolkadot::execute_with(|| {
 			assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
-				Box::new(xcm)
+				Box::new(xcm_create_did_msg)
 			));
 
 			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
@@ -164,7 +163,6 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 			);
 		});
 
-		// No event on the relaychain (message is meant for Spiritnet)
 		Polkadot::execute_with(|| {
 			assert_eq!(Polkadot::events().len(), 0);
 		});

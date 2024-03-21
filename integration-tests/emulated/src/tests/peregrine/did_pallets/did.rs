@@ -56,7 +56,7 @@ fn test_did_creation_from_asset_hub_successful() {
 	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
 
-	let xcm = get_xcm_message_create_did(OriginKind::SovereignAccount, withdraw_balance);
+	let xcm_create_did_msg = get_xcm_message_create_did(OriginKind::SovereignAccount, withdraw_balance);
 	let destination = get_sibling_destination_peregrine();
 
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
@@ -69,7 +69,7 @@ fn test_did_creation_from_asset_hub_successful() {
 		assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination.clone()),
-			Box::new(xcm.clone())
+			Box::new(xcm_create_did_msg.clone())
 		));
 
 		type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
@@ -129,14 +129,14 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
-		let xcm = get_xcm_message_create_did(origin, withdraw_balance);
+		let xcm_create_did_msg = get_xcm_message_create_did(origin, withdraw_balance);
 
 		//Send XCM message from AssetHub
 		AssetHubRococo::execute_with(|| {
 			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
-				Box::new(xcm)
+				Box::new(xcm_create_did_msg)
 			));
 
 			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;

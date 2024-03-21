@@ -71,7 +71,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
 
-	let xcm_attestation_call = get_xcm_message_attestation_creation(
+	let xcm_issue_attestation_msg = get_xcm_message_attestation_creation(
 		OriginKind::SovereignAccount,
 		withdraw_balance,
 		ctype_hash_value,
@@ -92,7 +92,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 		assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 			sudo_origin.clone(),
 			Box::new(destination.clone()),
-			Box::new(xcm_attestation_call)
+			Box::new(xcm_issue_attestation_msg)
 		));
 
 		type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
@@ -148,14 +148,14 @@ fn test_attestation_creation_from_asset_hub_unsuccessful() {
 			<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
-		let xcm_attestation_call =
+		let xcm_issue_attestation_msg =
 			get_xcm_message_attestation_creation(origin_kind, withdraw_balance, ctype_hash_value, claim_hash_value);
 
 		AssetHubRococo::execute_with(|| {
 			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
-				Box::new(xcm_attestation_call)
+				Box::new(xcm_issue_attestation_msg)
 			));
 
 			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;

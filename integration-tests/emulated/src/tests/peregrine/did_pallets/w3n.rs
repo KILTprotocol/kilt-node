@@ -61,7 +61,7 @@ fn test_claim_w3n_from_asset_hub() {
 
 	let init_balance = KILT * 10;
 
-	let xcm_claim_w3n_call = get_xcm_message_claim_w3n(OriginKind::SovereignAccount, KILT);
+	let xcm_claim_w3n_msg = get_xcm_message_claim_w3n(OriginKind::SovereignAccount, KILT);
 	let destination = get_sibling_destination_peregrine();
 
 	Peregrine::execute_with(|| {
@@ -73,7 +73,7 @@ fn test_claim_w3n_from_asset_hub() {
 		assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination),
-			Box::new(xcm_claim_w3n_call)
+			Box::new(xcm_claim_w3n_msg)
 		));
 
 		type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;

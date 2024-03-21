@@ -74,7 +74,7 @@ fn test_create_public_credential_from_asset_hub() {
 
 	let init_balance = KILT * 10;
 
-	let xcm_issue_public_credential_call =
+	let xcm_issue_public_credential_msg =
 		get_xcm_message_add_public_credential(OriginKind::SovereignAccount, KILT, ctype_hash_value);
 
 	let destination = get_sibling_destination_spiritnet();
@@ -89,7 +89,7 @@ fn test_create_public_credential_from_asset_hub() {
 		assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination),
-			Box::new(xcm_issue_public_credential_call)
+			Box::new(xcm_issue_public_credential_msg)
 		));
 
 		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
@@ -144,13 +144,14 @@ fn test_create_public_credential_from_asset_hub_unsuccessful() {
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
-		let xcm_claim_w3n_call = get_xcm_message_add_public_credential(origin_kind, KILT, ctype_hash_value);
+		let xcm_issue_public_credential_msg =
+			get_xcm_message_add_public_credential(origin_kind, KILT, ctype_hash_value);
 
 		AssetHubPolkadot::execute_with(|| {
 			assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
-				Box::new(xcm_claim_w3n_call.clone())
+				Box::new(xcm_issue_public_credential_msg.clone())
 			));
 
 			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
