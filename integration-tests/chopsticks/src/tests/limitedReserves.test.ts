@@ -7,7 +7,6 @@ import * as PolkadotNetwork from '../network/polkadot'
 import * as HydraDxNetwork from '../network/hydroDx'
 import type { Config } from '../network/types'
 import { keysBob } from '../helper'
-import { describe } from 'node:test'
 
 let spiritnetContext: Config
 let hydradxContext: Config
@@ -19,6 +18,7 @@ beforeAll(async () => {
 	polkadotContext = await PolkadotNetwork.getContext()
 
 	await polkadotContext.dev.setStorage(PolkadotNetwork.defaultStorage)
+	await spiritnetContext.dev.setStorage(SpiritnetNetwork.defaultStorage)
 
 	// Setup network
 	await connectVertical(polkadotContext.chain, spiritnetContext.chain)
@@ -38,55 +38,60 @@ afterAll(() => {
 	polkadotContext.teardown()
 })
 
-describe('Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx', async () => {
-	const remakrkTx = spiritnetContext.api.tx.system.remarkWithEvent('hello').signAsync(keysBob)
+test(
+	'Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx',
+	async () => {
+		const remakrkTx = spiritnetContext.api.tx.system.remarkWithEvent('hello').signAsync(keysBob)
 
-	const { events } = await sendTransaction(remakrkTx)
+		const { events } = await sendTransaction(remakrkTx)
 
-	await spiritnetContext.chain.newBlock()
+		await spiritnetContext.chain.newBlock()
 
-	console.log((await events).map((ev) => ev.toHuman()))
+		console.log((await events).map((ev) => ev.toHuman()))
 
-	const signedTx = spiritnetContext.api.tx.polkadotXcm
-		.limitedReserveTransferAssets(
-			{
-				V3: {
-					parents: 1,
-					interior: {
-						X1: {
-							Parachain: HydraDxNetwork.paraId,
-						},
-					},
-				},
-			},
-			{
-				V3: {
-					parents: 1,
-					interior: {
-						X1: {
-							AccountId32: {
-								id: HydraDxNetwork.sovereignAccount,
+		const signedTx = spiritnetContext.api.tx.polkadotXcm
+			.limitedReserveTransferAssets(
+				{
+					V3: {
+						parents: 1,
+						interior: {
+							X1: {
+								Parachain: HydraDxNetwork.paraId,
 							},
 						},
 					},
 				},
-			},
-			{
-				V3: [
-					{
-						id: { Concrete: { parents: 0, interior: 'Here' } },
-						fun: { Fungible: 1 * 10e12 },
+				{
+					V3: {
+						parents: 1,
+						interior: {
+							X1: {
+								AccountId32: {
+									id: HydraDxNetwork.sovereignAccount,
+								},
+							},
+						},
 					},
-				],
-			},
-			0,
-			'Unlimited'
-		)
-		.signAsync(keysBob)
+				},
+				{
+					V3: [
+						{
+							id: { Concrete: { parents: 0, interior: 'Here' } },
+							fun: { Fungible: 1 * 10e12 },
+						},
+					],
+				},
+				0,
+				'Unlimited'
+			)
+			.signAsync(keysBob)
 
-	const tx0 = await sendTransaction(signedTx)
+		console.log((await (await signedTx).paymentInfo(keysBob.address)).toHuman())
+		const tx0 = await sendTransaction(signedTx)
 
-	console.log(tx0)
+		console.log(tx0)
 
-	await spiritnetContext.chain.newBlock()
-})
+		await spiritnetContext.chain.newBlock()
+	},
+	{ timeout: 240000 }
+)
