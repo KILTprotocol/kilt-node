@@ -1,43 +1,10 @@
-import { ApiPromise } from '@polkadot/api'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
-import type { ISubmittableResult } from '@polkadot/types/types'
+import { Keyring } from '@polkadot/keyring'
 
-export class BlockchainApi {
-	api: ApiPromise
+// Random mnemonic
 
-	constructor(api: ApiPromise) {
-		this.api = api
-	}
+const keyring = new Keyring({ type: 'sr25519', ss58Format: 2 })
+keyring.setSS58Format(38)
 
-	queryBalances(api: ApiPromise, address: string) {
-		return api.query.system.account(address)
-	}
-
-	getLimitedReserveTransfer(amount: any, dest: any, acc: any): SubmittableExtrinsic<'promise', ISubmittableResult> {
-		return this.api.tx.polkadotXcm.limitedReserveTransferAssets(
-			dest,
-			{
-				V3: {
-					parents: 0,
-					interior: {
-						X1: {
-							AccountId32: {
-								id: acc,
-							},
-						},
-					},
-				},
-			},
-			{
-				V3: [
-					{
-						id: { Concrete: { parents: 0, interior: 'Here' } },
-						fun: { Fungible: amount },
-					},
-				],
-			},
-			0,
-			'Unlimited'
-		)
-	}
-}
+export const keysAlice = keyring.addFromUri('//alice', undefined, 'sr25519')
+export const keysBob = keyring.addFromUri('//bob', undefined, 'sr25519')
+export const keysCharlie = keyring.addFromUri('//charlie', undefined, 'sr25519')

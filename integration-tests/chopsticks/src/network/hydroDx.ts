@@ -1,38 +1,37 @@
-import { Config } from './types'
+import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
+import type { Config } from './types'
+import { u8aToHex } from '@polkadot/util'
+import { decodeAddress } from '@polkadot/util-crypto'
 
-export type Vars = {
-  relayToken: number
-  dai: number
+export const options: SetupOption = {
+	endpoint: 'wss://hydradx-rpc.dwellir.com',
+	db: './db/hydradx.db.sqlite',
+	port: 8001,
 }
 
-export default {
-  polkadot: {
-    name: 'hydraDX' as const,
-    endpoint: 'wss://rpc.hydradx.cloud',
-    relayToken: 5,
-    dai: 2,
-  },
-  config: ({ alice, relayToken, dai }) => ({
-    storages: {
-      System: {
-        Account: [[[alice.address], { providers: 1, data: { free: 1000 * 1e12 } }]],
-      },
-      // Tokens: {
-      //   Accounts: [
-      //     [[alice.address, relayToken], { free: 1000 * 1e12 }],
-      //     [[alice.address, dai], { free: 100n * 10n ** 18n }],
-      //   ],
-      // },
-    },
-  }),
-} satisfies Config<Vars>
-
-export const hydraDX = {
-  paraId: 2034,
-  dai: 2,
+enum Tokens {
+	HDX = 0,
+	LERNA = 1,
+	// Kilt is not listed yet. Last token index is Interlay with 17.
+	KILT = 18,
 }
 
-export const basilisk = {
-  paraId: 2090,
-  dai: 13,
+export const defaultStorage = {
+	// set technical committee and council alice
+	TechnicalCommittee: { Members: ['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY'] },
+	Council: { Members: ['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY'] },
+	Tokens: {
+		Accounts: [
+			[['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY', Tokens.HDX], { free: 100 * 1e12 }],
+			[['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY', Tokens.LERNA], { free: 100 * 1e12 }],
+			[['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY', Tokens.KILT, { free: 100 * 1e12 }]],
+		],
+	},
+}
+
+export const paraId = 2034
+export const sovereignAccount = u8aToHex(decodeAddress('5Eg2fntQqFi3EvFWAf71G66Ecjjah26bmFzoANAeHFgj9Lia'))
+
+export async function getContext(): Promise<Config> {
+	return setupContext(options)
 }
