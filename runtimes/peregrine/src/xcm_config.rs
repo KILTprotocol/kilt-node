@@ -28,6 +28,7 @@ use frame_support::{
 use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
+use sp_std::prelude::ToOwned;
 use xcm::v3::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
@@ -94,7 +95,7 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 			AllowKnownQueryResponses<PolkadotXcm>,
 			WithComputedOrigin<
 				(
-					// Allow unpaid execution from the relay chain legislative.
+					// Allow unpaid execution from the relay chain
 					AllowUnpaidExecutionFrom<ParentLocation>,
 					// Allow paid execution.
 					AllowTopLevelPaidExecutionFrom<Everything>,
@@ -149,12 +150,9 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 
 		match c {
 			RuntimeCall::Did(c) => match c {
-				did::Call::dispatch_as {
-					call,
-					did_identifier: _,
-				} => is_call_allowed(call),
-				did::Call::submit_did_call { did_call, signature: _ } => is_call_allowed(&did_call.call),
-				_ => true,
+				did::Call::dispatch_as { call, .. } => is_call_allowed(call),
+				did::Call::submit_did_call { did_call, .. } => is_call_allowed(&did_call.call),
+				_ => is_call_allowed(&c.to_owned().into()),
 			},
 			_ => is_call_allowed(c),
 		}
