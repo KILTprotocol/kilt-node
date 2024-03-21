@@ -140,6 +140,7 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 							| did::Call::update_deposit { .. }
 							| did::Call::change_deposit_owner { .. }
 							| did::Call::reclaim_deposit { .. }
+							| did::Call::create_from_account { .. }
 						)
 			)
 		}

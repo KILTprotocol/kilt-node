@@ -127,12 +127,11 @@ fn test_sudo_call_from_relay_chain_to_spiritnet() {
 		Spiritnet::execute_with(|| {
 			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
-			println!("{:?}", Spiritnet::events());
 			assert_expected_events!(
 				Spiritnet,
 				vec![
 					SpiritnetRuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-						outcome: xcm::v3::Outcome::Error(xcm::v3::Error::Barrier),
+						outcome: xcm::v3::Outcome::Incomplete(_, xcm::v3::Error::NoPermission),
 						..
 					}) => {},
 				]

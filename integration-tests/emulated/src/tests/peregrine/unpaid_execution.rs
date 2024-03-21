@@ -19,8 +19,8 @@
 use frame_support::assert_ok;
 use xcm::{v3::WeightLimit, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
-	assert_expected_events, BodyId, BodyPart, Instruction::UnpaidExecution, Junction, Junctions, MultiLocation,
-	Outcome, Parachain, ParentThen, Plurality, RelayChain, TestExt, Xcm, X1,
+	assert_expected_events, Instruction::UnpaidExecution, Junction, Junctions, Outcome, Parachain, ParentThen,
+	RelayChain, TestExt, Xcm,
 };
 
 use crate::mock::{
@@ -82,7 +82,6 @@ fn test_unpaid_execution_from_asset_hub_to_peregrine() {
 	});
 }
 
-// TODO: Check why test is passing. Unpaid execution should work now.
 #[test]
 fn test_unpaid_execution_from_rococo_to_peregrine() {
 	MockNetworkRococo::reset();
@@ -91,13 +90,7 @@ fn test_unpaid_execution_from_rococo_to_peregrine() {
 	let parachain_destination: VersionedMultiLocation = Junctions::X1(Junction::Parachain(peregrine::PARA_ID)).into();
 
 	let weight_limit = WeightLimit::Unlimited;
-	let check_origin = Some(MultiLocation {
-		parents: 1,
-		interior: X1(Plurality {
-			id: BodyId::Legislative,
-			part: BodyPart::Voice,
-		}),
-	});
+	let check_origin = None;
 
 	let xcm = VersionedXcm::from(Xcm(vec![UnpaidExecution {
 		weight_limit,
@@ -128,7 +121,7 @@ fn test_unpaid_execution_from_rococo_to_peregrine() {
 			Peregrine,
 			vec![
 				PeregrineRuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-					outcome: Outcome::Error(xcm::v3::Error::Barrier),
+					outcome: Outcome::Complete(_),
 					..
 				}) => {},
 			]
