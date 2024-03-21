@@ -16,31 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	assert_noop, assert_ok,
-	traits::{fungible::InspectHold, Get},
-};
-use sp_runtime::traits::Zero;
-
-use ctype::mock::get_ctype_hash;
-use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
-
-use crate::{
-	mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, HoldReason, InputClaimsContentOf,
-};
-
-// add
-
-
-
-// revoke
-
-
-
-// remove
-
-
-
-// reclaim_deposit
-
-
+mod association;
+mod attestation;
+mod ctype;
+mod did;
+mod public_credentials;
+mod unallowed_did_call;
+mod utils;
+mod w3n;

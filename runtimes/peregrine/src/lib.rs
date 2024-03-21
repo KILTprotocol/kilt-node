@@ -92,7 +92,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 11200,
+	spec_version: 11300,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 8,
@@ -1095,11 +1095,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(
-		runtime_common::migrations::BumpStorageVersion<Runtime>,
-		parachain_staking::migrations::BalanceMigration<Runtime>,
-		pallet_xcm::migration::v1::MigrateToV1<Runtime>,
-	),
+	(),
 >;
 
 #[cfg(feature = "runtime-benchmarks")]

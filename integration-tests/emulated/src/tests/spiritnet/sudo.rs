@@ -1,15 +1,25 @@
-use crate::{
-	mock::{
-		network::MockNetworkPolkadot,
-		para_chains::{spiritnet, AssetHubPolkadot, AssetHubPolkadotPallet, Spiritnet},
-		relay_chains::{Polkadot, PolkadotPallet},
-	},
-	utils::UNIT,
-};
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2024 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 use asset_hub_polkadot_runtime::System as AssetHubSystem;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
-use runtime_common::AccountId;
+use runtime_common::{constants::KILT, AccountId, Balance};
 use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
 	assert_expected_events, Here,
@@ -17,147 +27,179 @@ use xcm_emulator::{
 	Junction, Junctions, OriginKind, Parachain, ParentThen, RelayChain, TestExt, Weight, Xcm,
 };
 
-#[test]
-fn test_sudo_call_from_relay_chain_to_spiritnet() {
-	MockNetworkPolkadot::reset();
+use crate::mock::{
+	network::MockNetworkPolkadot,
+	para_chains::{spiritnet, AssetHubPolkadot, AssetHubPolkadotPallet, Spiritnet},
+	relay_chains::{Polkadot, PolkadotPallet},
+};
 
+fn get_sovereign_account_id_of_asset_hub() -> AccountId {
+	Spiritnet::sovereign_account_id_of(Spiritnet::sibling_location_of(AssetHubPolkadot::para_id()))
+}
+
+fn get_parachain_destination_from_parachain() -> VersionedMultiLocation {
+	ParentThen(Junctions::X1(Junction::Parachain(spiritnet::PARA_ID))).into()
+}
+
+fn get_parachain_destination_from_relay_chain() -> VersionedMultiLocation {
+	Polkadot::child_location_of(spiritnet::PARA_ID.into()).into_versioned()
+}
+
+fn get_unpaid_xcm_message(origin_kind: OriginKind) -> VersionedXcm<()> {
 	let code = vec![];
-
 	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::System(frame_system::Call::set_code { code })
 		.encode()
 		.into();
-	let sudo_origin = <Polkadot as RelayChain>::RuntimeOrigin::root();
-	let parachain_destination = Polkadot::child_location_of(spiritnet::PARA_ID.into()).into_versioned();
-
 	let weight_limit = WeightLimit::Unlimited;
 	let require_weight_at_most = Weight::from_parts(1600000000000, 200000);
-	let check_origin = None;
-	let origin_kind = OriginKind::Superuser;
 
-	// the relay chain would submit an unpaid execution request.
-	let xcm = VersionedXcm::from(Xcm(vec![
+	VersionedXcm::from(Xcm(vec![
 		UnpaidExecution {
 			weight_limit,
-			check_origin,
+			check_origin: None,
 		},
 		Transact {
 			origin_kind,
 			require_weight_at_most,
 			call,
 		},
-	]));
+	]))
+}
 
-	//Send XCM message from relay chain
-	Polkadot::execute_with(|| {
-		assert_ok!(<Polkadot as PolkadotPallet>::XcmPallet::send(
-			sudo_origin,
-			Box::new(parachain_destination),
-			Box::new(xcm)
-		));
+fn get_paid_xcm_message(init_balance: Balance, origin_kind: OriginKind) -> VersionedXcm<()> {
+	let code = vec![];
 
-		type RuntimeEvent = <Polkadot as RelayChain>::RuntimeEvent;
+	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::System(frame_system::Call::set_code { code })
+		.encode()
+		.into();
+	let weight_limit = WeightLimit::Unlimited;
+	let require_weight_at_most = Weight::from_parts(1600000000000, 200000);
+	let withdraw_asset = init_balance / 2;
 
-		assert_expected_events!(
-			Polkadot,
-			vec![
-				RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. }) => {},
-			]
-		);
-	});
+	VersionedXcm::from(Xcm(vec![
+		WithdrawAsset((Here, withdraw_asset).into()),
+		BuyExecution {
+			fees: (Here, withdraw_asset).into(),
+			weight_limit,
+		},
+		Transact {
+			origin_kind,
+			require_weight_at_most,
+			call,
+		},
+	]))
+}
 
-	Spiritnet::execute_with(|| {
-		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
-		assert_expected_events!(
-			Spiritnet,
-			vec![
-				SpiritnetRuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-					outcome: xcm::v3::Outcome::Error(xcm::v3::Error::Barrier),
-					..
-				}) => {},
-			]
-		);
-	});
+#[test]
+fn test_sudo_call_from_relay_chain_to_spiritnet() {
+	let sudo_origin = <Polkadot as RelayChain>::RuntimeOrigin::root();
+	let parachain_destination = get_parachain_destination_from_relay_chain();
 
-	// No event on the AssetHub message is meant for relay chain
-	AssetHubPolkadot::execute_with(|| {
-		assert_eq!(AssetHubSystem::events().len(), 0);
-	});
+	let origin_kind_list = vec![
+		OriginKind::Superuser,
+		OriginKind::Native,
+		OriginKind::SovereignAccount,
+		OriginKind::Xcm,
+	];
+
+	for origin_kind in origin_kind_list {
+		MockNetworkPolkadot::reset();
+
+		let xcm = get_unpaid_xcm_message(origin_kind);
+
+		Polkadot::execute_with(|| {
+			assert_ok!(<Polkadot as PolkadotPallet>::XcmPallet::send(
+				sudo_origin.clone(),
+				Box::new(parachain_destination.clone()),
+				Box::new(xcm.clone()),
+			));
+
+			type RuntimeEvent = <Polkadot as RelayChain>::RuntimeEvent;
+
+			assert_expected_events!(
+				Polkadot,
+				vec![
+					RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. }) => {},
+				]
+			);
+		});
+
+		Spiritnet::execute_with(|| {
+			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+
+			assert_expected_events!(
+				Spiritnet,
+				vec![
+					SpiritnetRuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward {
+						outcome: xcm::v3::Outcome::Incomplete(_, xcm::v3::Error::NoPermission),
+						..
+					}) => {},
+				]
+			);
+		});
+
+		AssetHubPolkadot::execute_with(|| {
+			assert_eq!(AssetHubSystem::events().len(), 0);
+		});
+	}
 }
 
 #[test]
 fn test_sudo_call_from_asset_hub_to_spiritnet() {
-	MockNetworkPolkadot::reset();
+	let asset_hub_sovereign_account = get_sovereign_account_id_of_asset_hub();
 
-	// create the sovereign account of AssetHub
-	let asset_hub_sovereign_account =
-		Spiritnet::sovereign_account_id_of(Spiritnet::sibling_location_of(AssetHubPolkadot::para_id()));
-
-	let code = vec![];
-
-	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::System(frame_system::Call::set_code { code })
-		.encode()
-		.into();
 	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
-	let parachain_destination: VersionedMultiLocation =
-		ParentThen(Junctions::X1(Junction::Parachain(spiritnet::PARA_ID))).into();
+	let parachain_destination = get_parachain_destination_from_parachain();
+	let init_balance = KILT * 10;
 
-	let weight_limit = WeightLimit::Unlimited;
-	let require_weight_at_most = Weight::from_parts(1600000000000, 200000);
-	let origin_kind = OriginKind::Superuser;
-	let init_balance = UNIT * 10;
+	let origin_kind_list = vec![
+		OriginKind::Superuser,
+		OriginKind::Native,
+		OriginKind::SovereignAccount,
+		OriginKind::Xcm,
+	];
 
-	let xcm = VersionedXcm::from(Xcm(vec![
-		WithdrawAsset((Here, init_balance).into()),
-		BuyExecution {
-			fees: (Here, init_balance).into(),
-			weight_limit,
-		},
-		Transact {
-			origin_kind,
-			require_weight_at_most,
-			call,
-		},
-	]));
+	for origin_kind in origin_kind_list {
+		MockNetworkPolkadot::reset();
+		let xcm = get_paid_xcm_message(init_balance, origin_kind);
 
-	// give the sovereign account of AssetHub some coins.
-	Spiritnet::execute_with(|| {
-		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
-	});
+		Spiritnet::execute_with(|| {
+			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
+		});
 
-	//Send XCM message from AssetHub
-	AssetHubPolkadot::execute_with(|| {
-		assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
-			sudo_origin,
-			Box::new(parachain_destination),
-			Box::new(xcm)
-		));
+		AssetHubPolkadot::execute_with(|| {
+			assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
+				sudo_origin.clone(),
+				Box::new(parachain_destination.clone()),
+				Box::new(xcm.clone())
+			));
 
-		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
 
-		assert_expected_events!(
-			AssetHubPolkadot,
-			vec![
-				RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
-			]
-		);
-	});
+			assert_expected_events!(
+				AssetHubPolkadot,
+				vec![
+					RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
+				]
+			);
+		});
 
-	Spiritnet::execute_with(|| {
-		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+		Spiritnet::execute_with(|| {
+			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
-		assert_expected_events!(
-			Spiritnet,
-			vec![
-				SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-					error: xcm::v3::Error::NoPermission,
-					..
-				}) => {},
-			]
-		);
-	});
+			assert_expected_events!(
+				Spiritnet,
+				vec![
+					SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
+						error: xcm::v3::Error::NoPermission,
+						..
+					}) => {},
+				]
+			);
+		});
 
-	// No event on the relaychain (message is meant for asset hub)
-	Polkadot::execute_with(|| {
-		assert_eq!(Polkadot::events().len(), 0);
-	});
+		Polkadot::execute_with(|| {
+			assert_eq!(Polkadot::events().len(), 0);
+		});
+	}
 }

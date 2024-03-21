@@ -28,18 +28,19 @@ use frame_support::{
 use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
+use sp_std::prelude::ToOwned;
 use xcm::v3::prelude::*;
 use xcm_builder::{
-	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin,
-	FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative,
-	SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
-	WithComputedOrigin,
+	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
+	EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative,
+	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+	UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
 use runtime_common::xcm_config::{
 	DenyReserveTransferToRelayChain, DenyThenTry, HereLocation, LocalAssetTransactor, LocationToAccountId,
-	MaxAssetsIntoHolding, MaxInstructions, ParentOrSiblings, UnitWeightCost,
+	MaxAssetsIntoHolding, MaxInstructions, ParentLocation, ParentOrSiblings, UnitWeightCost,
 };
 
 parameter_types! {
@@ -52,10 +53,11 @@ parameter_types! {
 		Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
-/// This type specifies how a `MultiLocation` can be converted into an `AccountId` within the
-/// Peregrine network, which is crucial for determining ownership of accounts for asset transactions
-/// and for dispatching XCM `Transact` operations.
-pub type PeregrineLocationToAccountId = LocationToAccountId<RelayNetworkId>;
+/// This type specifies how a `MultiLocation` can be converted into an
+/// `AccountId` within the Peregrine network, which is crucial for determining
+/// ownership of accounts for asset transactions and for dispatching XCM
+/// `Transact` operations.
+pub type LocationToAccountIdConverter = LocationToAccountId<RelayNetworkId>;
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
 /// `Origin` instance, ready for dispatching a transaction with Xcm's
@@ -63,10 +65,10 @@ pub type PeregrineLocationToAccountId = LocationToAccountId<RelayNetworkId>;
 /// `Origin` it will become.
 pub type XcmOriginToTransactDispatchOrigin = (
 	// Sovereign account converter; this attempts to derive an `AccountId` from the origin location
-	// using `PeregrineLocationToAccountId` and then turn that into the usual `Signed` origin. Useful for
+	// using `LocationToAccountIdConverter` and then turn that into the usual `Signed` origin. Useful for
 	// foreign chains who want to have a local sovereign account on this chain which they control.
 	// In contrast to Spiritnet, it's fine to include this on peregrine for testing.
-	SovereignSignedViaLocation<PeregrineLocationToAccountId, RuntimeOrigin>,
+	SovereignSignedViaLocation<LocationToAccountIdConverter, RuntimeOrigin>,
 	// Native converter for Relay-chain (Parent) location which converts to a `Relay` origin when
 	// recognized.
 	RelayChainAsNative<RelayChainOrigin, RuntimeOrigin>,
@@ -93,6 +95,8 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 			AllowKnownQueryResponses<PolkadotXcm>,
 			WithComputedOrigin<
 				(
+					// Allow unpaid execution from the relay chain
+					AllowUnpaidExecutionFrom<ParentLocation>,
 					// Allow paid execution.
 					AllowTopLevelPaidExecutionFrom<Everything>,
 					// Subscriptions for XCM version are OK from the relaychain and other parachains.
@@ -115,16 +119,44 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 /// parameters.
 pub struct SafeCallFilter;
 impl Contains<RuntimeCall> for SafeCallFilter {
-	fn contains(call: &RuntimeCall) -> bool {
-		matches!(
-			call,
-			RuntimeCall::Did { .. }
-				| RuntimeCall::Ctype { .. }
+	fn contains(c: &RuntimeCall) -> bool {
+		fn is_call_allowed(call: &RuntimeCall) -> bool {
+			matches!(
+				call,
+				RuntimeCall::Ctype { .. }
 				| RuntimeCall::DidLookup { .. }
 				| RuntimeCall::Web3Names { .. }
 				| RuntimeCall::PublicCredentials { .. }
 				| RuntimeCall::Attestation { .. }
-		)
+				// we exclude here [dispatch_as] and [submit_did_call]
+				| RuntimeCall::Did (
+							did::Call::add_key_agreement_key { .. }
+							| did::Call::add_service_endpoint { .. }
+							| did::Call::create { .. }
+							| did::Call::delete { .. }
+							| did::Call::remove_attestation_key { .. }
+							| did::Call::remove_delegation_key { .. }
+							| did::Call::remove_key_agreement_key { .. }
+							| did::Call::remove_service_endpoint { .. }
+							| did::Call::set_attestation_key { .. }
+							| did::Call::set_authentication_key { .. }
+							| did::Call::set_delegation_key { .. }
+							| did::Call::update_deposit { .. }
+							| did::Call::change_deposit_owner { .. }
+							| did::Call::reclaim_deposit { .. }
+							| did::Call::create_from_account { .. }
+						)
+			)
+		}
+
+		match c {
+			RuntimeCall::Did(c) => match c {
+				did::Call::dispatch_as { call, .. } => is_call_allowed(call),
+				did::Call::submit_did_call { did_call, .. } => is_call_allowed(&did_call.call),
+				_ => is_call_allowed(&c.to_owned().into()),
+			},
+			_ => is_call_allowed(c),
+		}
 	}
 }
 
@@ -191,16 +223,9 @@ impl pallet_xcm::Config for Runtime {
 	type MaxRemoteLockConsumers = ConstU32<0>;
 	type RemoteLockConsumerIdentifier = ();
 	type RuntimeEvent = RuntimeEvent;
-	// Allows anyone to send XCM messages. For regular origins, a `DescendOrigin` is
-	// prepended to the message.
-	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
+	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, ()>;
 	type XcmRouter = XcmRouter;
-	// We allow execution of XCM programs because it is required by the
-	// `reserve_transfer_assets` operation.
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
-	// Disable calls to pallet_xcm::execute(), by still allowing the other
-	// extrinsics to be called.
-	// NOTE: For local testing this needs to be `Everything`.
 	type XcmExecuteFilter = Nothing;
 	type XcmTeleportFilter = Nothing;
 	type XcmReserveTransferFilter = Everything;
@@ -217,7 +242,7 @@ impl pallet_xcm::Config for Runtime {
 	type Currency = Balances;
 	type CurrencyMatcher = ();
 	type TrustedLockers = ();
-	type SovereignAccountOf = PeregrineLocationToAccountId;
+	type SovereignAccountOf = LocationToAccountIdConverter;
 	type MaxLockers = ConstU32<8>;
 	type WeightInfo = crate::weights::pallet_xcm::WeightInfo<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]

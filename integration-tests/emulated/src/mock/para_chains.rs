@@ -15,11 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use integration_tests_common::constants::{accounts, asset_hub_polkadot, polkadot::ED};
-use peregrine_runtime::xcm_config::PeregrineLocationToAccountId;
 use runtime_common::AuthorityId;
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
-use spiritnet_runtime::xcm_config::SpiritnetLocationToAccountId;
 use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Parachain, TestExt};
 
 use crate::utils::{get_account_id_from_seed, get_from_seed};
@@ -134,7 +132,7 @@ decl_test_parachains! {
 			RuntimeEvent: spiritnet_runtime::RuntimeEvent,
 			XcmpMessageHandler: spiritnet_runtime::XcmpQueue,
 			DmpMessageHandler: spiritnet_runtime::DmpQueue,
-			LocationToAccountId: SpiritnetLocationToAccountId,
+			LocationToAccountId: spiritnet_runtime::xcm_config::LocationToAccountIdConverter,
 			System: spiritnet_runtime::System,
 			Balances: spiritnet_runtime::Balances,
 			ParachainSystem: spiritnet_runtime::ParachainSystem,
@@ -142,6 +140,11 @@ decl_test_parachains! {
 		},
 		pallets_extra = {
 			Did: spiritnet_runtime::Did,
+			Ctype: spiritnet_runtime::Ctype,
+			Attestation: spiritnet_runtime::Attestation,
+			Web3Names: spiritnet_runtime::Web3Names,
+			DidLookup: spiritnet_runtime::DidLookup,
+			PublicCredentials: spiritnet_runtime::PublicCredentials,
 		}
 	},
 	pub struct AssetHubPolkadot {
@@ -196,7 +199,7 @@ decl_test_parachains! {
 			RuntimeEvent: peregrine_runtime::RuntimeEvent,
 			XcmpMessageHandler: peregrine_runtime::XcmpQueue,
 			DmpMessageHandler: peregrine_runtime::DmpQueue,
-			LocationToAccountId: PeregrineLocationToAccountId,
+			LocationToAccountId: peregrine_runtime::xcm_config::LocationToAccountIdConverter,
 			System: peregrine_runtime::System,
 			Balances: peregrine_runtime::Balances,
 			ParachainSystem: peregrine_runtime::ParachainSystem,
@@ -204,6 +207,11 @@ decl_test_parachains! {
 		},
 		pallets_extra = {
 			Did: peregrine_runtime::Did,
+			Ctype: peregrine_runtime::Ctype,
+			Attestation: peregrine_runtime::Attestation,
+			Web3Names: peregrine_runtime::Web3Names,
+			DidLookup: peregrine_runtime::DidLookup,
+			PublicCredentials: peregrine_runtime::PublicCredentials,
 		}
 	}
 }

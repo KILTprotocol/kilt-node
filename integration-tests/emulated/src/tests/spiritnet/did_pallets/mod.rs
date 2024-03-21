@@ -16,23 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{traits::OnRuntimeUpgrade, weights::Weight};
-use sp_core::Get;
-use sp_std::marker::PhantomData;
-
-/// There are some pallets without a storage version.
-/// Based on the changes in the PR <https://github.com/paritytech/substrate/pull/13417>,
-/// pallets without a storage version or with a wrong version throw an error
-/// in the try state tests.
-pub struct BumpStorageVersion<T>(PhantomData<T>);
-
-impl<T> OnRuntimeUpgrade for BumpStorageVersion<T>
-where
-	T: frame_system::Config,
-{
-	fn on_runtime_upgrade() -> Weight {
-		log::info!("BumpStorageVersion: Initiating migration");
-
-		<T as frame_system::Config>::DbWeight::get().writes(0)
-	}
-}
+mod association;
+mod attestation;
+mod ctype;
+mod did;
+mod public_credentials;
+mod unallowed_did_call;
+mod utils;
+mod w3n;
