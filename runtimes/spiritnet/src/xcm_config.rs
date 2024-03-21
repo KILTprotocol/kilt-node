@@ -30,16 +30,16 @@ use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use xcm::v3::prelude::*;
 use xcm_builder::{
-	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin,
-	FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative,
-	SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
-	WithComputedOrigin, AllowUnpaidExecutionFrom
+	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
+	EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative,
+	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+	UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
 use runtime_common::xcm_config::{
 	DenyReserveTransferToRelayChain, DenyThenTry, HereLocation, LocalAssetTransactor, LocationToAccountId,
-	MaxAssetsIntoHolding, MaxInstructions, ParentOrSiblings, UnitWeightCost, ParentLegislative
+	MaxAssetsIntoHolding, MaxInstructions, ParentLocation, ParentOrSiblings, UnitWeightCost,
 };
 
 parameter_types! {
@@ -49,9 +49,10 @@ parameter_types! {
 	pub UniversalLocation: InteriorMultiLocation = X2(GlobalConsensus(RelayNetworkId::get()), Parachain(ParachainInfo::parachain_id().into()));
 }
 
-/// This type specifies how a `MultiLocation` can be converted into an `AccountId` within the
-/// Spiritnet network, which is crucial for determining ownership of accounts for asset transactions
-/// and for dispatching XCM `Transact` operations.
+/// This type specifies how a `MultiLocation` can be converted into an
+/// `AccountId` within the Spiritnet network, which is crucial for determining
+/// ownership of accounts for asset transactions and for dispatching XCM
+/// `Transact` operations.
 pub type LocationToAccountIdConverter = LocationToAccountId<RelayNetworkId>;
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
@@ -90,7 +91,7 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 			WithComputedOrigin<
 				(
 					// Allow unpaid execution from the relay chain legislative.
-					AllowUnpaidExecutionFrom<ParentLegislative>,
+					AllowUnpaidExecutionFrom<ParentLocation>,
 					// Allow paid execution.
 					AllowTopLevelPaidExecutionFrom<Everything>,
 					// Subscriptions for XCM version are OK from the relaychain and other parachains.
@@ -114,17 +115,16 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 pub struct SafeCallFilter;
 impl Contains<RuntimeCall> for SafeCallFilter {
 	fn contains(c: &RuntimeCall) -> bool {
-
 		fn is_call_allowed(call: &RuntimeCall) -> bool {
 			matches!(
-				call, 
+				call,
 				RuntimeCall::Ctype { .. }
 				| RuntimeCall::DidLookup { .. }
 				| RuntimeCall::Web3Names { .. }
 				| RuntimeCall::PublicCredentials { .. }
 				| RuntimeCall::Attestation { .. }
 				// we exclude here [dispatch_as] and [submit_did_call]
-				| RuntimeCall::Did ( 
+				| RuntimeCall::Did (
 							did::Call::add_key_agreement_key { .. }
 							| did::Call::add_service_endpoint { .. }
 							| did::Call::create { .. }
@@ -140,15 +140,17 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 							| did::Call::change_deposit_owner { .. }
 							| did::Call::reclaim_deposit { .. }
 						)
-				)
+			)
 		}
-		
 
 		match c {
-			RuntimeCall::Did (c) => match c {
-				did::Call::dispatch_as { call, did_identifier: _ } => is_call_allowed(call),
+			RuntimeCall::Did(c) => match c {
+				did::Call::dispatch_as {
+					call,
+					did_identifier: _,
+				} => is_call_allowed(call),
 				did::Call::submit_did_call { did_call, signature: _ } => is_call_allowed(&did_call.call),
-				_ => true
+				_ => true,
 			},
 			_ => is_call_allowed(c),
 		}
