@@ -2,17 +2,15 @@ import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types'
 
 export const options: SetupOption = {
-	endpoint: 'wss://polkadot-rpc.dwellir.com',
+	endpoint: ['wss://rpc.ibp.network/polkadot', 'wss://rpc.polkadot.io', 'wss://polkadot-rpc.dwellir.com'],
 	db: './db/polkadot.db.sqlite',
 	port: 8000,
 }
 
-export const defaultStorage = {
+export const defaultStorage = (addr: string) => ({
 	// give charlie some coins
 	System: {
-		Account: [
-			[['4opXEdE6gvsx2Dsw3uisuP8reFCutip5WNZWkdtzFpHLHE8V'], { providers: 1, data: { free: 1000 * 1e12 } }],
-		],
+		Account: [[[addr], { providers: 1, data: { free: 1000 * 1e12 } }]],
 	},
 	ParasDisputes: {
 		// those can makes block building super slow
@@ -22,7 +20,7 @@ export const defaultStorage = {
 		// clear existing dmp to avoid impact test result
 		$removePrefix: ['downwardMessageQueues'],
 	},
-}
+})
 
 export async function getContext(): Promise<Config> {
 	return setupContext(options)

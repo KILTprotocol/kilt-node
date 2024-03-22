@@ -1,0 +1,74 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx > Balance events 1`] = `
+[
+  {
+    "data": {
+      "who": "4qpE21nvgo8AmyNMi32T7r4LWitN7fJaUox4PmGRUJvGqH7W",
+    },
+    "method": "Upgraded",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4qpE21nvgo8AmyNMi32T7r4LWitN7fJaUox4PmGRUJvGqH7W",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "account": "4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt",
+      "freeBalance": 10000000000000,
+    },
+    "method": "Endowed",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": 10000000000000,
+      "from": "4qpE21nvgo8AmyNMi32T7r4LWitN7fJaUox4PmGRUJvGqH7W",
+      "to": "4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt",
+    },
+    "method": "Transfer",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 84000000000)",
+      "who": "4qPZ8fv6BjGoGKzfx5LtBFnEUp2b5Q5C1ErrjBNGmoFTLNHG",
+    },
+    "method": "Deposit",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 84000000000)",
+      "who": "4taHgf8x9U5b8oJaiYoNEh61jaHpKs9caUdattxfBRkJMHvm",
+    },
+    "method": "Deposit",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx > sender events 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Incomplete": [
+          {
+            "proofSize": 0,
+            "refTime": 400000000,
+          },
+          "DestinationUnsupported",
+        ],
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;

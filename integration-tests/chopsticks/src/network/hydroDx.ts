@@ -4,7 +4,7 @@ import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 
 export const options: SetupOption = {
-	endpoint: 'wss://hydradx-rpc.dwellir.com',
+	endpoint: ['wss://rpc.hydradx.cloud', 'wss://hydradx-rpc.dwellir.com'],
 	db: './db/hydradx.db.sqlite',
 	port: 8001,
 }
@@ -16,18 +16,18 @@ enum Tokens {
 	KILT = 18,
 }
 
-export const defaultStorage = {
+export const defaultStorage = (addr: string) => ({
 	// set technical committee and council alice
-	TechnicalCommittee: { Members: ['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY'] },
-	Council: { Members: ['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY'] },
+	TechnicalCommittee: { Members: [addr] },
+	Council: { Members: [addr] },
 	Tokens: {
 		Accounts: [
-			[['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY', Tokens.HDX], { free: 100 * 1e12 }],
-			[['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY', Tokens.LERNA], { free: 100 * 1e12 }],
-			[['4sSTXhUWmxsXhd8Pi5AkMXGn3oYm7D8SbKbqZQXXeQqsWzdY', Tokens.KILT, { free: 100 * 1e12 }]],
+			[[addr, Tokens.HDX], { free: 100 * 1e12 }],
+			[[addr, Tokens.LERNA], { free: 100 * 1e12 }],
+			[[addr, Tokens.KILT, { free: 100 * 1e12 }]],
 		],
 	},
-}
+})
 
 export const paraId = 2034
 export const sovereignAccount = u8aToHex(decodeAddress('5Eg2fntQqFi3EvFWAf71G66Ecjjah26bmFzoANAeHFgj9Lia'))
