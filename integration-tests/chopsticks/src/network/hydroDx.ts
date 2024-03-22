@@ -17,7 +17,7 @@ enum Tokens {
 }
 
 export const defaultStorage = (addr: string) => ({
-	// set technical committee and council alice
+	// set technical committee and council to addr
 	TechnicalCommittee: { Members: [addr] },
 	Council: { Members: [addr] },
 	Tokens: {
