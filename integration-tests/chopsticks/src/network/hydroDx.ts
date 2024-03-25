@@ -1,5 +1,5 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
-import type { Config } from './types'
+import type { Config } from './types.js'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 
@@ -7,6 +7,7 @@ export const options: SetupOption = {
 	endpoint: ['wss://rpc.hydradx.cloud', 'wss://hydradx-rpc.dwellir.com'],
 	db: './db/hydradx.db.sqlite',
 	port: 8001,
+	runtimeLogLevel: 5,
 }
 
 enum Tokens {

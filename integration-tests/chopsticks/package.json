@@ -12,8 +12,8 @@
     "@acala-network/chopsticks-testing": "^0.9.10",
     "@polkadot/api": "^10.11.2",
     "@types/node": "^20.11.30",
-    "typescript": "*",
-     "bn.js": "^5.2.1"
+    "bn.js": "^5.2.1",
+    "typescript": "*"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.13.0",
@@ -29,12 +29,14 @@
     "eslint-plugin-promise": "^6.0.0",
     "prettier": "^3.2.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.7.1",
     "vitest": "^1.4.0"
   },
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "clean": "rm -rf ./db",
-    "test": "LOG_LEVEL=error vitest"
+    "test": "LOG_LEVEL=error vitest",
+    "dev": "tsx ./src/index.ts"
   }
 }

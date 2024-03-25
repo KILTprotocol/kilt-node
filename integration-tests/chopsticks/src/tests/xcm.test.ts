@@ -2,11 +2,12 @@ import { test, beforeAll, afterAll } from 'vitest'
 import { connectParachains, connectVertical, xcmLogger } from '@acala-network/chopsticks'
 import { sendTransaction } from '@acala-network/chopsticks-testing'
 
-import * as SpiritnetNetwork from '../network/spiritnet'
-import * as PolkadotNetwork from '../network/polkadot'
-import * as HydraDxNetwork from '../network/hydroDx'
-import type { Config } from '../network/types'
-import { checkEvents, keysBob, keysCharlie } from '../helper'
+import * as SpiritnetNetwork from '../network/spiritnet.js'
+import * as PolkadotNetwork from '../network/polkadot.js'
+import * as HydraDxNetwork from '../network/hydroDx.js'
+import type { Config } from '../network/types.js'
+import { checkEvents } from './utils.js'
+import { keysBob, keysCharlie } from '../helper.js'
 
 let spiritnetContext: Config
 let hydradxContext: Config
@@ -49,39 +50,35 @@ beforeAll(async () => {
 }, 40_000)
 
 afterAll(() => {
-	// spiritnetContext.teardown()
-	// hydradxContext.teardown()
-	// polkadotContext.teardown()
+	spiritnetContext.teardown()
+	hydradxContext.teardown()
+	polkadotContext.teardown()
 })
 
-test(
-	'Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx',
-	async () => {
-		const signedTx = spiritnetContext.api.tx.polkadotXcm
-			.limitedReserveTransferAssets(
-				SpiritnetNetwork.spiritnet.hydraDxDestination,
-				SpiritnetNetwork.spiritnet.hydraDxBeneficiary,
-				{
-					V2: [
-						{
-							id: { Concrete: { parents: 0, interior: 'Here' } },
-							fun: { Fungible: 1 * 10e12 },
-						},
-					],
-				},
-				0,
-				'Unlimited'
-			)
-			.signAsync(keysBob)
+test('Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx', async () => {
+	const signedTx = spiritnetContext.api.tx.polkadotXcm
+		.limitedReserveTransferAssets(
+			SpiritnetNetwork.spiritnet.hydraDxDestination,
+			SpiritnetNetwork.spiritnet.hydraDxBeneficiary,
+			{
+				V2: [
+					{
+						id: { Concrete: { parents: 0, interior: 'Here' } },
+						fun: { Fungible: 1 * 10e12 },
+					},
+				],
+			},
+			0,
+			'Unlimited'
+		)
+		.signAsync(keysBob)
 
-		const events = await sendTransaction(signedTx)
+	const events = await sendTransaction(signedTx)
 
-		await spiritnetContext.chain.newBlock()
+	await spiritnetContext.chain.newBlock()
 
-		checkEvents(events, 'balances').toMatchSnapshot('Balance events')
-		checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events')
+	checkEvents(events, 'balances').toMatchSnapshot('Balance events')
+	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events')
 
-		while (1) {}
-	},
-	{ timeout: 100_000 }
-)
+	while (1) {}
+})
