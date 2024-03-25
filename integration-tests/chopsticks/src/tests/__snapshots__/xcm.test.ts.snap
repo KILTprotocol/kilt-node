@@ -45,7 +45,7 @@ exports[`Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx > Balan
   {
     "data": {
       "amount": "(rounded 84000000000)",
-      "who": "4taHgf8x9U5b8oJaiYoNEh61jaHpKs9caUdattxfBRkJMHvm",
+      "who": "4oEapGbe4JYognwWu5jN4MZsLAtbWAfVwo2gqppxqudtS6jx",
     },
     "method": "Deposit",
     "section": "balances",
@@ -63,7 +63,7 @@ exports[`Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx > sende
             "proofSize": 0,
             "refTime": 400000000,
           },
-          "DestinationUnsupported",
+          "Transport",
         ],
       },
     },

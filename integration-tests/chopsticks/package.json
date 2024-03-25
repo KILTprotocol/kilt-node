@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "chopsticks integration tests",
   "main": "src/index.ts",
+  "type": "module",
   "repository": "git@github.com:KILTprotocol/kilt-node.git",
   "author": "[\"KILT <info@kilt.io>\"]",
   "license": "MIT",
@@ -31,7 +32,7 @@
     "vitest": "^1.4.0"
   },
   "scripts": {
-    "lint": "eslit .",
+    "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "clean": "rm -rf ./db",
     "test": "LOG_LEVEL=error vitest"

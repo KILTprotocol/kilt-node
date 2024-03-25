@@ -9,6 +9,7 @@ export const options: SetupOption = {
 	wasmOverride: '../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm',
 	allowUnresolvedImports: true,
 	timeout: 600000,
+	runtimeLogLevel: 5,
 }
 
 export const defaultStorage = (addr: string) => ({
@@ -18,12 +19,15 @@ export const defaultStorage = (addr: string) => ({
 	System: {
 		Account: [[[addr], { providers: 1, data: { free: 1000 * 1e12 } }]],
 	},
+	polkadotXcm: {
+		safeXcmVersion: 3,
+	},
 })
 
 export const spiritnet = {
 	paraId: 2086,
 	hydraDxDestination: {
-		V3: {
+		V2: {
 			parents: 1,
 			interior: {
 				X1: {
@@ -33,11 +37,12 @@ export const spiritnet = {
 		},
 	},
 	hydraDxBeneficiary: {
-		V3: {
+		V2: {
 			parents: 1,
 			interior: {
 				X1: {
 					AccountId32: {
+						network: 'Any',
 						id: HydraDxConfig.sovereignAccount,
 					},
 				},
