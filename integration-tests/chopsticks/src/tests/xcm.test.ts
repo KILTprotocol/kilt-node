@@ -45,9 +45,9 @@ test('Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx', async ({
 
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(
-			SpiritnetNetwork.hydraDxDestination,
-			SpiritnetNetwork.hydraDxBeneficiary,
-			SpiritnetNetwork.nativeAssetId,
+			SpiritnetNetwork.hydraDxDestinationV2,
+			SpiritnetNetwork.hydraDxBeneficiaryV2,
+			SpiritnetNetwork.nativeAssetIdV2,
 			0,
 			'Unlimited'
 		)
