@@ -30,8 +30,8 @@ use crate::{
 		relay_chains::Polkadot,
 	},
 	tests::spiritnet::did_pallets::utils::{
-		construct_xcm_message, create_mock_ctype, create_mock_did_from_account, get_asset_hub_sovereign_account,
-		get_sibling_destination_spiritnet,
+		construct_basic_transact_xcm_message, create_mock_ctype, create_mock_did_from_account,
+		get_asset_hub_sovereign_account, get_sibling_destination_spiritnet,
 	},
 };
 
@@ -56,7 +56,7 @@ fn get_xcm_message_attestation_creation(
 	.encode()
 	.into();
 
-	construct_xcm_message(origin_kind, withdraw_balance, call)
+	construct_basic_transact_xcm_message(origin_kind, withdraw_balance, call)
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	Spiritnet::execute_with(|| {
-		create_mock_ctype(ctype_hash_value);
+		create_mock_ctype(ctype_hash_value, asset_hub_sovereign_account.clone());
 		create_mock_did_from_account(asset_hub_sovereign_account.clone());
 		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
@@ -104,6 +104,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 		);
 	});
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	Spiritnet::execute_with(|| {
 		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
@@ -143,7 +144,7 @@ fn test_attestation_creation_from_asset_hub_unsuccessful() {
 		MockNetworkPolkadot::reset();
 
 		Spiritnet::execute_with(|| {
-			create_mock_ctype(ctype_hash_value);
+			create_mock_ctype(ctype_hash_value, asset_hub_sovereign_account.clone());
 			create_mock_did_from_account(asset_hub_sovereign_account.clone());
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});

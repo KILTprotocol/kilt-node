@@ -31,7 +31,7 @@ use crate::{
 		relay_chains::Rococo,
 	},
 	tests::peregrine::did_pallets::utils::{
-		construct_xcm_message, get_asset_hub_sovereign_account, get_sibling_destination_peregrine,
+		construct_basic_transact_xcm_message, get_asset_hub_sovereign_account, get_sibling_destination_peregrine,
 	},
 };
 
@@ -44,7 +44,7 @@ fn get_xcm_message_create_did(origin_kind: OriginKind, withdraw_balance: Balance
 	.encode()
 	.into();
 
-	construct_xcm_message(origin_kind, withdraw_balance, call)
+	construct_basic_transact_xcm_message(origin_kind, withdraw_balance, call)
 }
 
 #[test]

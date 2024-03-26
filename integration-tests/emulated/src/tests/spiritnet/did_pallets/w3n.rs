@@ -30,7 +30,7 @@ use crate::{
 		relay_chains::Polkadot,
 	},
 	tests::spiritnet::did_pallets::utils::{
-		construct_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
+		construct_basic_transact_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
 		get_sibling_destination_spiritnet,
 	},
 };
@@ -49,11 +49,11 @@ fn get_xcm_message_claim_w3n(origin_kind: OriginKind, withdraw_balance: Balance)
 	.encode()
 	.into();
 
-	construct_xcm_message(origin_kind, withdraw_balance, call)
+	construct_basic_transact_xcm_message(origin_kind, withdraw_balance, call)
 }
 
 #[test]
-fn test_claim_w3n_from_asset_hub() {
+fn test_claim_w3n_from_asset_hub_successful() {
 	MockNetworkPolkadot::reset();
 
 	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
@@ -85,6 +85,7 @@ fn test_claim_w3n_from_asset_hub() {
 		);
 	});
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	Spiritnet::execute_with(|| {
 		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 

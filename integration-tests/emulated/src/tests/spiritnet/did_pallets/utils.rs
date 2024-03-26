@@ -32,11 +32,8 @@ use xcm_emulator::{
 
 use crate::mock::para_chains::{spiritnet, AssetHubPolkadot, Spiritnet};
 
-pub fn create_mock_ctype(ctype_hash: H256) {
-	let ctype_entry = CtypeEntry {
-		creator: get_asset_hub_sovereign_account(),
-		created_at: 0,
-	};
+pub fn create_mock_ctype(ctype_hash: H256, creator: AccountId32) {
+	let ctype_entry = CtypeEntry { creator, created_at: 0 };
 
 	Ctypes::<spiritnet_runtime::Runtime>::insert(ctype_hash, ctype_entry);
 }
@@ -63,7 +60,7 @@ pub fn create_mock_did_from_account(account: AccountId32) {
 	Did::<spiritnet_runtime::Runtime>::insert(get_asset_hub_sovereign_account(), details);
 }
 
-pub fn construct_xcm_message(
+pub fn construct_basic_transact_xcm_message(
 	origin_kind: OriginKind,
 	withdraw_balance: Balance,
 	call: DoubleEncoded<()>,
