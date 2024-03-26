@@ -5,6 +5,8 @@ import * as PolkadotNetwork from './network/polkadot.js'
 import * as HydraDxNetwork from './network/hydroDx.js'
 import { keysCharlie, keysBob } from './helper.js'
 
+/// Helper function to validate the storage of the chains. The chains will not produce any blocks on demand.
+/// TODO: fix that
 async function spinUpNetwork() {
 	const spiritnetContext = await SpiritnetNetwork.getContext()
 	const hydradxContext = await HydraDxNetwork.getContext()
