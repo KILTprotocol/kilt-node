@@ -22,7 +22,7 @@ export const defaultStorage = (addr: string) => ({
 })
 
 export const paraId = 2086
-export const hydraDxDestination = {
+export const hydraDxDestinationV2 = {
 	V2: {
 		parents: 1,
 		interior: {
@@ -32,7 +32,7 @@ export const hydraDxDestination = {
 		},
 	},
 }
-export const hydraDxBeneficiary = {
+export const hydraDxBeneficiaryV2 = {
 	V2: {
 		parents: 1,
 		interior: {
@@ -46,7 +46,7 @@ export const hydraDxBeneficiary = {
 	},
 }
 
-export const nativeAssetId = {
+export const nativeAssetIdV2 = {
 	V2: [
 		{
 			id: { Concrete: { parents: 0, interior: 'Here' } },
