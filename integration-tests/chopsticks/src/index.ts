@@ -12,6 +12,7 @@ async function spinUpNetwork() {
 
 	await polkadotContext.dev.setStorage(PolkadotNetwork.defaultStorage(keysCharlie.address))
 	await spiritnetContext.dev.setStorage(SpiritnetNetwork.defaultStorage(keysBob.address))
+	await hydradxContext.dev.setStorage(HydraDxNetwork.defaultStorage(keysBob.address))
 
 	// Setup network
 	await connectVertical(polkadotContext.chain, spiritnetContext.chain)

@@ -4,17 +4,15 @@ import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 
 export const options: SetupOption = {
-	endpoint: ['wss://rpc.hydradx.cloud', 'wss://hydradx-rpc.dwellir.com'],
+	endpoint: ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
 	db: './db/hydradx.db.sqlite',
 	port: 8001,
-	runtimeLogLevel: 5,
 }
 
 enum Tokens {
 	HDX = 0,
 	LERNA = 1,
-	// Kilt is not listed yet. Last token index is Interlay with 17.
-	KILT = 18,
+	KILT = 60,
 }
 
 export const defaultStorage = (addr: string) => ({
@@ -23,9 +21,36 @@ export const defaultStorage = (addr: string) => ({
 	Council: { Members: [addr] },
 	Tokens: {
 		Accounts: [
-			[[addr, Tokens.HDX], { free: 100 * 1e12 }],
-			[[addr, Tokens.LERNA], { free: 100 * 1e12 }],
-			[[addr, Tokens.KILT, { free: 100 * 1e12 }]],
+			[['4pF5Y2Eo6doQHPLQj5AkndZwtomVB8ab2sRftRS2D9JDdELr', Tokens.KILT], { free: 1000 * 1e12 }],
+			[['4pF5Y2Eo6doQHPLQj5AkndZwtomVB8ab2sRftRS2D9JDdELr', Tokens.HDX], { free: 1000 * 1e12 }],
+		],
+	},
+	assetRegistry: {
+		assetLocations: [[[Tokens.KILT], { parents: 1, interior: { X1: { Parachain: 2086 } } }]],
+		assetIds: [[['KILT'], Tokens.KILT]],
+		locationAssets: [[[{ parents: 1, interior: { X1: { Parachain: 2086 } } }], Tokens.KILT]],
+		assets: [
+			[
+				[Tokens.KILT],
+				{
+					name: 'KILT',
+					assetType: 'Token',
+					existentialDeposit: 500,
+					symbol: 'KLT',
+					decimals: 18,
+					xcmRateLimit: null,
+					isSufficient: true,
+				},
+			],
+		],
+	},
+	multiTransactionPayment: {
+		acceptedCurrencies: [[[Tokens.KILT], 100_000]],
+	},
+
+	System: {
+		Account: [
+			[['5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'], { providers: 1, data: { free: 1000 * 1e12 } }],
 		],
 	},
 })

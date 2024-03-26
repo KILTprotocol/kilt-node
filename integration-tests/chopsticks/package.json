@@ -8,8 +8,8 @@
   "author": "[\"KILT <info@kilt.io>\"]",
   "license": "MIT",
   "dependencies": {
-    "@acala-network/chopsticks": "^0.9.10",
-    "@acala-network/chopsticks-testing": "^0.9.10",
+    "@acala-network/chopsticks": "0.9.11",
+    "@acala-network/chopsticks-testing": "0.9.11",
     "@polkadot/api": "^10.11.2",
     "@types/node": "^20.11.30",
     "bn.js": "^5.2.1",
@@ -35,8 +35,8 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "clean": "rm -rf ./db",
-    "test": "LOG_LEVEL=error vitest",
+    "clean": "rm -rf ./db && cargo build",
+    "test": "LOG_LEVEL=error vitest --testTimeout=5000",
     "dev": "tsx ./src/index.ts"
   }
 }

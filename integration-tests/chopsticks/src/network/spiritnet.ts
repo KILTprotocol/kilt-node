@@ -9,7 +9,6 @@ export const options: SetupOption = {
 	wasmOverride: '../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm',
 	allowUnresolvedImports: true,
 	timeout: 600000,
-	runtimeLogLevel: 5,
 }
 
 export const defaultStorage = (addr: string) => ({
