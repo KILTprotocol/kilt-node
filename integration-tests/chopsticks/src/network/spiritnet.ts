@@ -11,7 +11,6 @@ export const options: SetupOption = {
 }
 
 export const defaultStorage = (addr: string) => ({
-	// set technical committee and council to addr
 	technicalCommittee: { Members: [addr] },
 	council: { Members: [addr] },
 	System: {

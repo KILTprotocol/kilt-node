@@ -8,7 +8,6 @@ export const options: SetupOption = {
 }
 
 export const defaultStorage = (addr: string) => ({
-	// give addr some coins
 	System: {
 		Account: [[[addr], { providers: 1, data: { free: 1000 * 1e12 } }]],
 	},

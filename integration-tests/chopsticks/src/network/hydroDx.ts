@@ -13,7 +13,6 @@ export const options: SetupOption = {
 const kiltTokenId = 60
 
 export const defaultStorage = (addr: string) => ({
-	// set technical committee and council to addr
 	TechnicalCommittee: { Members: [addr] },
 	Council: { Members: [addr] },
 	Tokens: {
