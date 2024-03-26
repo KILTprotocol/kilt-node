@@ -31,7 +31,7 @@ beforeAll(async () => {
 	await new Promise((r) => setTimeout(r, 500))
 	// Perform runtime upgrade
 	await Promise.all([polkadotContext.dev.newBlock(), spiritnetContext.dev.newBlock(), hydradxContext.dev.newBlock()])
-	console.log('Runtime Upgrade completed')
+	console.info('Runtime Upgrade completed')
 }, 40_000)
 
 afterAll(async () => {
@@ -45,16 +45,9 @@ test('Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx', async ({
 
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(
-			SpiritnetNetwork.spiritnet.hydraDxDestination,
-			SpiritnetNetwork.spiritnet.hydraDxBeneficiary,
-			{
-				V2: [
-					{
-						id: { Concrete: { parents: 0, interior: 'Here' } },
-						fun: { Fungible: 1 * 10e12 },
-					},
-				],
-			},
+			SpiritnetNetwork.hydraDxDestination,
+			SpiritnetNetwork.hydraDxBeneficiary,
+			SpiritnetNetwork.nativeAssetId,
 			0,
 			'Unlimited'
 		)
@@ -64,14 +57,15 @@ test('Limited Reserve Transfers from Spiritnet Account Bob -> HydraDx', async ({
 
 	// fixes api runtime disconnect warning
 	await new Promise((r) => setTimeout(r, 50))
+
 	await spiritnetContext.chain.newBlock()
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
 
 	// fixes api runtime disconnect warning
 	await new Promise((r) => setTimeout(r, 50))
-	await hydradxContext.dev.newBlock()
 
+	await hydradxContext.dev.newBlock()
 	checkSystemEvents(hydradxContext, 'tokens').toMatchSnapshot('receiver events tokens')
 	checkSystemEvents(hydradxContext, 'currencies').toMatchSnapshot('receiver events currencies')
 	checkSystemEvents(hydradxContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')

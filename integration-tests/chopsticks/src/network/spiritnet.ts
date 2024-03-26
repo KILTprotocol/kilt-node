@@ -8,7 +8,6 @@ export const options: SetupOption = {
 	port: 8002,
 	wasmOverride: '../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm',
 	allowUnresolvedImports: true,
-	timeout: 600000,
 }
 
 export const defaultStorage = (addr: string) => ({
@@ -23,31 +22,38 @@ export const defaultStorage = (addr: string) => ({
 	},
 })
 
-export const spiritnet = {
-	paraId: 2086,
-	hydraDxDestination: {
-		V2: {
-			parents: 1,
-			interior: {
-				X1: {
-					Parachain: HydraDxConfig.paraId,
+export const paraId = 2086
+export const hydraDxDestination = {
+	V2: {
+		parents: 1,
+		interior: {
+			X1: {
+				Parachain: HydraDxConfig.paraId,
+			},
+		},
+	},
+}
+export const hydraDxBeneficiary = {
+	V2: {
+		parents: 1,
+		interior: {
+			X1: {
+				AccountId32: {
+					network: 'Any',
+					id: HydraDxConfig.sovereignAccount,
 				},
 			},
 		},
 	},
-	hydraDxBeneficiary: {
-		V2: {
-			parents: 1,
-			interior: {
-				X1: {
-					AccountId32: {
-						network: 'Any',
-						id: HydraDxConfig.sovereignAccount,
-					},
-				},
-			},
+}
+
+export const nativeAssetId = {
+	V2: [
+		{
+			id: { Concrete: { parents: 0, interior: 'Here' } },
+			fun: { Fungible: 10e12 },
 		},
-	},
+	],
 }
 
 export async function getContext(): Promise<Config> {

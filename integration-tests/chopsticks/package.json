@@ -8,8 +8,8 @@
   "author": "[\"KILT <info@kilt.io>\"]",
   "license": "MIT",
   "dependencies": {
-    "@acala-network/chopsticks": "0.9.11",
-    "@acala-network/chopsticks-testing": "0.9.11",
+    "@acala-network/chopsticks": "0.9.12",
+    "@acala-network/chopsticks-testing": "0.9.12",
     "@polkadot/api": "^10.11.2",
     "@types/node": "^20.11.30",
     "bn.js": "^5.2.1",

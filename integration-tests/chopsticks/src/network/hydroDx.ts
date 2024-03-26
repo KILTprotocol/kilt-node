@@ -2,6 +2,7 @@ import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types.js'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
+import * as SpiritnetConfig from './spiritnet.js'
 
 export const options: SetupOption = {
 	endpoint: ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
@@ -9,29 +10,22 @@ export const options: SetupOption = {
 	port: 8001,
 }
 
-enum Tokens {
-	HDX = 0,
-	LERNA = 1,
-	KILT = 60,
-}
+const kiltTokenId = 60
 
 export const defaultStorage = (addr: string) => ({
 	// set technical committee and council to addr
 	TechnicalCommittee: { Members: [addr] },
 	Council: { Members: [addr] },
 	Tokens: {
-		Accounts: [
-			[['4pF5Y2Eo6doQHPLQj5AkndZwtomVB8ab2sRftRS2D9JDdELr', Tokens.KILT], { free: 1000 * 1e12 }],
-			[['4pF5Y2Eo6doQHPLQj5AkndZwtomVB8ab2sRftRS2D9JDdELr', Tokens.HDX], { free: 1000 * 1e12 }],
-		],
+		Accounts: [[[addr, kiltTokenId], { free: 100 * 10e12 }]],
 	},
 	assetRegistry: {
-		assetLocations: [[[Tokens.KILT], { parents: 1, interior: { X1: { Parachain: 2086 } } }]],
-		assetIds: [[['KILT'], Tokens.KILT]],
-		locationAssets: [[[{ parents: 1, interior: { X1: { Parachain: 2086 } } }], Tokens.KILT]],
+		assetLocations: [[[kiltTokenId], { parents: 1, interior: { X1: { Parachain: SpiritnetConfig.paraId } } }]],
+		assetIds: [[['KILT'], kiltTokenId]],
+		locationAssets: [[[{ parents: 1, interior: { X1: { Parachain: SpiritnetConfig.paraId } } }], kiltTokenId]],
 		assets: [
 			[
-				[Tokens.KILT],
+				[kiltTokenId],
 				{
 					name: 'KILT',
 					assetType: 'Token',
@@ -45,13 +39,11 @@ export const defaultStorage = (addr: string) => ({
 		],
 	},
 	multiTransactionPayment: {
-		acceptedCurrencies: [[[Tokens.KILT], 100_000]],
+		acceptedCurrencies: [[[kiltTokenId], 100_000]],
 	},
 
 	System: {
-		Account: [
-			[['5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'], { providers: 1, data: { free: 1000 * 1e12 } }],
-		],
+		Account: [[[addr], { providers: 1, data: { free: 100 * 10e12 } }]],
 	},
 })
 
