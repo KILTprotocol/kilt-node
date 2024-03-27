@@ -4,7 +4,6 @@
     "lib": ["es2019"],
     "module": "NodeNext",
     "rootDir": "src",
-    "outDir": "./bin",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
