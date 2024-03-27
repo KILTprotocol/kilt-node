@@ -1,0 +1,123 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > receiver events balances 1`] = `
+[
+ 
+  {
+    "data": {
+      "who": "4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt",
+    },
+    "method": "Upgraded",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": 10000000000,
+      "who": "4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 29000)",
+      "who": "4qPZ8fv6BjGoGKzfx5LtBFnEUp2b5Q5C1ErrjBNGmoFTLNHG",
+    },
+    "method": "Deposit",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > receiver events polkadotXCM 1`] = `[]`;
+
+exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > receiver events xcmpQueue 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+      "messageId": "(hash)",
+      "weight": {
+        "proofSize": 0,
+        "refTime": 800000000,
+      },
+    },
+    "method": "Success",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > sender events xcm pallet 1`] = `[]`;
+
+exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > sender events xcm pallet 2`] = `
+[
+  {
+    "data": {
+      "assets": [
+        {
+          "fun": {
+            "Fungible": 10000000000,
+          },
+          "id": {
+            "Concrete": {
+              "interior": {
+                "X1": {
+                  "Parachain": "(rounded 2100)",
+                },
+              },
+              "parents": 1,
+            },
+          },
+        },
+      ],
+      "dest": {
+        "interior": {
+          "X2": [
+            {
+              "Parachain": "(rounded 2100)",
+            },
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": null,
+              },
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "fee": {
+        "fun": {
+          "Fungible": 10000000000,
+        },
+        "id": {
+          "Concrete": {
+            "interior": {
+              "X1": {
+                "Parachain": "(rounded 2100)",
+              },
+            },
+            "parents": 1,
+          },
+        },
+      },
+      "sender": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
+    },
+    "method": "TransferredMultiAssets",
+    "section": "xTokens",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > sender events xcm queue pallet 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
