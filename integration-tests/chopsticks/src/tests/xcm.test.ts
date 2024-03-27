@@ -29,7 +29,7 @@ beforeAll(async () => {
 
 	// fixes api runtime disconnect warning
 	await new Promise((r) => setTimeout(r, 500))
-	// Perform runtime upgrade
+	// Perform runtime upgrade and establish xcm connections.
 	await Promise.all([polkadotContext.dev.newBlock(), spiritnetContext.dev.newBlock(), hydradxContext.dev.newBlock()])
 	console.info('Runtime Upgrade completed')
 }, 40_000)
