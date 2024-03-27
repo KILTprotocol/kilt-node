@@ -157,10 +157,7 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 				)
 			});
 
-			assert!(
-				!is_create_event_present,
-				"Create event for an unsupported origin is found"
-			);
+			assert!(!is_create_event_present);
 		});
 
 		Polkadot::execute_with(|| {

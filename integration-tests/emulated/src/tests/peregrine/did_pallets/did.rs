@@ -131,7 +131,6 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 
 		let xcm_create_did_msg = get_xcm_message_create_did(origin, withdraw_balance);
 
-		//Send XCM message from AssetHub
 		AssetHubRococo::execute_with(|| {
 			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
@@ -158,13 +157,9 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 				)
 			});
 
-			assert!(
-				!is_create_event_present,
-				"Create event for an unsupported origin is found"
-			);
+			assert!(!is_create_event_present);
 		});
 
-		// No event on the relaychain (message is meant for Peregrine)
 		Rococo::execute_with(|| {
 			assert_eq!(Rococo::events().len(), 0);
 		});
