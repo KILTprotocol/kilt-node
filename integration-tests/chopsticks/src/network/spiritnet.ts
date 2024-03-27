@@ -1,11 +1,12 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types.js'
 import * as HydraDxConfig from './hydraDx.js'
+import { toNumber } from './utils.js'
 
 export const options: SetupOption = {
-	endpoint: 'wss://kilt-rpc.dwellir.com',
+	endpoint: process.env.SPIRITNET_WS || 'wss://kilt-rpc.dwellir.com',
 	db: './db/spiritnet.db.sqlite',
-	port: 8002,
+	port: toNumber(process.env.SPIRITNET_PORT) || 8002,
 	wasmOverride: '../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm',
 	allowUnresolvedImports: true,
 }

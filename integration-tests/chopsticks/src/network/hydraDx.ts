@@ -3,11 +3,12 @@ import type { Config } from './types.js'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 import * as SpiritnetConfig from './spiritnet.js'
+import { toNumber } from './utils.js'
 
 export const options: SetupOption = {
-	endpoint: ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
+	endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
 	db: './db/hydradx.db.sqlite',
-	port: 8001,
+	port: toNumber(process.env.HYDRADX_PORT) || 8001,
 }
 
 const kiltTokenId = 60

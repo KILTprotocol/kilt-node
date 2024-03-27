@@ -1,10 +1,15 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types.js'
+import { toNumber } from './utils.js'
 
 export const options: SetupOption = {
-	endpoint: ['wss://rpc.polkadot.io', 'wss://polkadot-rpc.dwellir.com', 'wss://rpc.ibp.network/polkadot'],
+	endpoint: process.env.POLKADOT_WS || [
+		'wss://rpc.polkadot.io',
+		'wss://polkadot-rpc.dwellir.com',
+		'wss://rpc.ibp.network/polkadot',
+	],
 	db: './db/polkadot.db.sqlite',
-	port: 8000,
+	port: toNumber(process.env.POLKADOT_PORT) || 8000,
 }
 
 export const defaultStorage = (addr: string) => ({
