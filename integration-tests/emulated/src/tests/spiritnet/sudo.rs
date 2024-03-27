@@ -90,6 +90,7 @@ fn get_paid_xcm_message(init_balance: Balance, origin_kind: OriginKind) -> Versi
 	]))
 }
 
+/// Sudo calls from other chains should not be whitelisted and therefore fail.
 #[test]
 fn test_sudo_call_from_relay_chain_to_spiritnet() {
 	let sudo_origin = <Polkadot as RelayChain>::RuntimeOrigin::root();
@@ -138,12 +139,14 @@ fn test_sudo_call_from_relay_chain_to_spiritnet() {
 			);
 		});
 
+		// No events on other parachains. Message was for the relaychain
 		AssetHubPolkadot::execute_with(|| {
 			assert_eq!(AssetHubSystem::events().len(), 0);
 		});
 	}
 }
 
+/// Sudo calls from other chains should not be whitelisted and therefore fail.
 #[test]
 fn test_sudo_call_from_asset_hub_to_spiritnet() {
 	let asset_hub_sovereign_account = get_sovereign_account_id_of_asset_hub();
@@ -163,10 +166,12 @@ fn test_sudo_call_from_asset_hub_to_spiritnet() {
 		MockNetworkPolkadot::reset();
 		let xcm = get_paid_xcm_message(init_balance, origin_kind);
 
+		// Give some coins to pay the fees
 		Spiritnet::execute_with(|| {
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 		});
 
+		// Send msg to Spiritnet
 		AssetHubPolkadot::execute_with(|| {
 			assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
@@ -198,6 +203,7 @@ fn test_sudo_call_from_asset_hub_to_spiritnet() {
 			);
 		});
 
+		// No events on the relaychain. Message was for Spiritnet
 		Polkadot::execute_with(|| {
 			assert_eq!(Polkadot::events().len(), 0);
 		});

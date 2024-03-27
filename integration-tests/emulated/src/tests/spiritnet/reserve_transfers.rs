@@ -45,6 +45,7 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_relay() {
 
 	let alice_account = get_account_id_from_seed::<sr25519::Public>(ALICE);
 
+	// Submit XCM msg
 	Spiritnet::execute_with(|| {
 		assert_ok!(SpiritnetXcm::limited_reserve_transfer_assets(
 			RawOrigin::Signed(alice_account.clone()).into(),
@@ -63,6 +64,7 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_relay() {
 
 		type RuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 
+		// The msg should be blocked by the barrier
 		assert_expected_events!(
 			Spiritnet,
 			vec![
@@ -72,6 +74,7 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_relay() {
 			]
 		);
 	});
+
 	// No message should reach the relaychain.
 	Polkadot::execute_with(|| {
 		assert_eq!(Polkadot::events().len(), 0);
@@ -90,7 +93,6 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 
 	Spiritnet::execute_with(|| {
 		// the sovereign_account of AssetHub should have no coins.
-
 		let balance_before_transfer: u128 =
 			<<Spiritnet as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
 
@@ -129,10 +131,12 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 
 		assert_eq!(balance_after_transfer, balance_to_transfer);
 	});
-	// No event on the relaychain (message is meant for AssetHub.
+
+	// No event on the relaychain. Message is for AssetHub.
 	Polkadot::execute_with(|| {
 		assert_eq!(Polkadot::events().len(), 0);
 	});
+
 	// Fails on AssetHub since spiritnet is not a trusted registrar
 	AssetHubPolkadot::execute_with(|| {
 		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;

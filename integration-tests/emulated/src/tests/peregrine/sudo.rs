@@ -189,6 +189,7 @@ fn test_sudo_call_from_asset_hub_to_peregrine() {
 			);
 		});
 
+		// We expect to get the [NoPermission] error
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
 
@@ -203,7 +204,7 @@ fn test_sudo_call_from_asset_hub_to_peregrine() {
 			);
 		});
 
-		// No event on the relaychain (message is meant for asset hub)
+		// No event on the relaychain. Message is for AssetHub
 		Rococo::execute_with(|| {
 			assert_eq!(Rococo::events().len(), 0);
 		});

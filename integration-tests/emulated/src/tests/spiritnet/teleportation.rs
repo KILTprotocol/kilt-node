@@ -40,6 +40,7 @@ fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
 	let bob_account_id = get_account_id_from_seed::<sr25519::Public>(BOB);
 
+	// Send XCM msg
 	Spiritnet::execute_with(|| {
 		assert_noop!(
 			SpiritnetXcm::limited_teleport_assets(
