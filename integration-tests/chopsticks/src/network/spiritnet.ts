@@ -1,6 +1,6 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types.js'
-import * as HydraDxConfig from './hydroDx.js'
+import * as HydraDxConfig from './hydraDx.js'
 
 export const options: SetupOption = {
 	endpoint: 'wss://kilt-rpc.dwellir.com',

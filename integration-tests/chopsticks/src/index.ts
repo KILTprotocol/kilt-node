@@ -2,7 +2,7 @@ import { connectParachains, connectVertical } from '@acala-network/chopsticks'
 
 import * as SpiritnetNetwork from './network/spiritnet.js'
 import * as PolkadotNetwork from './network/polkadot.js'
-import * as HydraDxNetwork from './network/hydroDx.js'
+import * as HydraDxNetwork from './network/hydraDx.js'
 import { keysCharlie, keysBob } from './helper.js'
 
 /// Helper function to validate the storage of the chains. The chains will not produce any blocks on demand.

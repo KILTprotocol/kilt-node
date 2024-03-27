@@ -4,7 +4,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as SpiritnetNetwork from '../network/spiritnet.js'
 import * as PolkadotNetwork from '../network/polkadot.js'
-import * as HydraDxNetwork from '../network/hydroDx.js'
+import * as HydraDxNetwork from '../network/hydraDx.js'
 import type { Config } from '../network/types.js'
 import { keysBob, keysCharlie } from '../helper.js'
 
