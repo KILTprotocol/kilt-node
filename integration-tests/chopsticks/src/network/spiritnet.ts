@@ -8,6 +8,7 @@ export const options: SetupOption = {
 	db: './db/spiritnet.db.sqlite',
 	port: toNumber(process.env.SPIRITNET_PORT) || 8002,
 	wasmOverride: '../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm',
+	// Whether to allow WASM unresolved imports when using a WASM to build the parachain
 	allowUnresolvedImports: true,
 }
 
