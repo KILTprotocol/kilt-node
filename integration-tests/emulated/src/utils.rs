@@ -21,7 +21,6 @@ use sp_runtime::{
 	MultiSignature,
 };
 
-
 type AccountPublic = <MultiSignature as Verify>::Signer;
 
 /// Helper function to generate a crypto pair from seed
