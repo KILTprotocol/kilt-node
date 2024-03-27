@@ -162,7 +162,7 @@ fn test_unpaid_execution_from_polkadot_to_spiritnet() {
 			]
 		);
 
-		// Since the user have not paid any tx fees, we expect that the free balance is the 2*ED
+		// Since the user have not paid any tx fees, we expect that the free balance is the ED
 		let balance_after_transfer: u128 =
 			<<Spiritnet as Parachain>::Balances as Inspect<AccountId>>::balance(&polkadot_sovereign_account);
 

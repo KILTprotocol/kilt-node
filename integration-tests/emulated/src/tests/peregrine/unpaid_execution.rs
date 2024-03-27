@@ -161,7 +161,7 @@ fn test_unpaid_execution_from_rococo_to_peregrine() {
 			]
 		);
 
-		// Since the user have not paid any tx fees, we expect that the free balance is the 2*ED
+		// Since the user have not paid any tx fees, we expect that the free balance is the ED
 		let balance_after_transfer: u128 =
 			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&polkadot_sovereign_account);
 
