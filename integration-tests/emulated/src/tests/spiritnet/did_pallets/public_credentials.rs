@@ -101,7 +101,6 @@ fn test_create_public_credential_from_asset_hub_successful() {
 		);
 	});
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	Spiritnet::execute_with(|| {
 		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
 

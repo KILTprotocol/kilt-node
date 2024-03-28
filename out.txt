@@ -1,0 +1,9 @@
+pallet-conviction-voting v4.0.0-dev (https://github.com/paritytech/substrate?branch=polkadot-v1.0.0#948fbd2f)
+├── kusama-runtime v1.0.0 (https://github.com/paritytech/polkadot?branch=release-v1.0.0#c9ec8c5a)
+│   └── integration-tests-common v1.0.0 (https://github.com/paritytech/cumulus?branch=polkadot-v1.0.0#0d17cf6b)
+│       [dev-dependencies]
+│       └── xcm-integration-tests v1.13.0-dev (/home/antonio/Developer/kilt-node/integration-tests/emulated)
+└── polkadot-runtime v1.0.0 (https://github.com/paritytech/polkadot?branch=release-v1.0.0#c9ec8c5a)
+    └── integration-tests-common v1.0.0 (https://github.com/paritytech/cumulus?branch=polkadot-v1.0.0#0d17cf6b) (*)
+    [dev-dependencies]
+    └── xcm-integration-tests v1.13.0-dev (/home/antonio/Developer/kilt-node/integration-tests/emulated)
