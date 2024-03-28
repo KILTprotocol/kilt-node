@@ -376,12 +376,13 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 	}
 }
 
-pub const MAX_PUBLIC_KEYS_PER_DID: u32 = 53;
+pub const MAX_PUBLIC_KEYS_PER_DID: u32 = 20;
+const MAX_TOTAL_KEY_AGREEMENT_KEYS: u32 = MAX_PUBLIC_KEYS_PER_DID - 1;
 parameter_types! {
 	#[derive(Debug, Clone, Eq, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = 50;
+	pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
 	#[derive(Debug, Clone, Eq, PartialEq, TypeInfo, Encode, Decode)]
-	pub const MaxNewKeyAgreementKeys: u32 = 50;
+	pub const MaxNewKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
 }
 
 impl did::Config for Runtime {

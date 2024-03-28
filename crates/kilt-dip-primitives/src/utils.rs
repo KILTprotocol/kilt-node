@@ -82,7 +82,7 @@ mod calculate_dip_identity_commitment_storage_key_for_runtime {
 
 		assert_eq!(
 			calculate_dip_identity_commitment_storage_key_for_runtime::<PeregrineRuntime>(&DidIdentifierOf::<PeregrineRuntime>::from_ss58check("4s3jpR7pzrUdhVUqHHdWoBN6oNQHBC7WRo7zsXdjAzQPT7Cf").unwrap(), 0).0,
-			hex_literal::hex!("b375edf06348b4330d1e88564111cb3d5bf19e4ed2927982e234d989e812f3f34edc5f456255d7c2b6caebbe9e3adeaaf693a2d198f2881d0b504fc72ed4ac0a7ed24a025fc228ce01a12dfa1fa4ab9a0000")
+			hex_literal::hex!("b375edf06348b4330d1e88564111cb3d5bf19e4ed2927982e234d989e812f3f314c9211b34c8b43b2a18d67d5c96de9cb6caebbe9e3adeaaf693a2d198f2881d0b504fc72ed4ac0a7ed24a025fc228ce01a12dfa1fa4ab9a0000")
 				.to_vec()
 		);
 	}
