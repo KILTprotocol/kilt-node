@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+mod errors;
+
 /// Verification logic to integrate a sibling chain as a DIP provider.
 pub mod parachain;
 /// Verification logic to integrate a child chain as a DIP provider.

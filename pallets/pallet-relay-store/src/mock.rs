@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberStrictlyIncreases};
-use cumulus_primitives_core::ParaId;
+use cumulus_primitives_core::{ParaId, PersistedValidationData};
 use frame_support::{
 	construct_runtime, parameter_types,
 	sp_runtime::{
@@ -25,9 +25,13 @@ use frame_support::{
 		traits::{BlakeTwo256, IdentityLookup},
 		AccountId32,
 	},
+	storage_alias,
 	traits::{ConstU16, ConstU32, ConstU64, Everything},
 };
 use frame_system::mocking::MockBlock;
+use sp_runtime::BoundedVec;
+
+use crate::{Config, Pallet};
 
 construct_runtime!(
 	pub struct TestRuntime {
@@ -84,17 +88,52 @@ impl crate::Config for TestRuntime {
 	type WeightInfo = ();
 }
 
+// Alias to the ParachainSystem storage which cannot be modified directly.
+#[storage_alias]
+type ValidationData = StorageValue<ParachainSystem, PersistedValidationData>;
+
 #[derive(Default)]
-pub(crate) struct ExtBuilder;
+pub(crate) struct ExtBuilder(
+	Option<(u32, H256)>,
+	BoundedVec<(u32, H256), <TestRuntime as Config>::MaxRelayBlocksStored>,
+);
 
 impl ExtBuilder {
-	pub fn _build(self) -> sp_io::TestExternalities {
-		sp_io::TestExternalities::default()
+	pub(crate) fn with_new_relay_state_root(mut self, relay_root: (u32, H256)) -> Self {
+		self.0 = Some(relay_root);
+		self
+	}
+
+	pub(crate) fn with_stored_relay_roots(mut self, relay_roots: Vec<(u32, H256)>) -> Self {
+		self.1 = relay_roots.try_into().unwrap();
+		self
+	}
+
+	pub(crate) fn build(self) -> sp_io::TestExternalities {
+		let mut ext = sp_io::TestExternalities::default();
+		ext.execute_with(|| {
+			if let Some(new_relay_state_root) = self.0 {
+				ValidationData::put(PersistedValidationData {
+					relay_parent_number: new_relay_state_root.0,
+					relay_parent_storage_root: new_relay_state_root.1,
+					..Default::default()
+				});
+			}
+			for (stored_relay_block_number, stored_relay_state_root) in self.1 {
+				Pallet::<TestRuntime>::store_new_validation_data(PersistedValidationData {
+					relay_parent_number: stored_relay_block_number,
+					relay_parent_storage_root: stored_relay_state_root,
+					..Default::default()
+				});
+			}
+		});
+
+		ext
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
-		let mut ext = self._build();
+	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
 		let keystore = sp_keystore::testing::MemoryKeystore::new();
 		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 		ext

@@ -83,7 +83,7 @@ fn generate_proof_for_complete_linked_info() {
 	let dip_origin_info = cross_chain_proof
 		.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>()
 		.and_then(|r| r.verify_signature_time(&50))
-		.and_then(|r| r.retrieve_signing_leaf_for_payload(&().encode()))
+		.and_then(|r| r.retrieve_signing_leaves_for_payload(&().encode()))
 		.unwrap();
 	// All key agreement keys, plus authentication, attestation, and delegation key,
 	// plus all linked accounts, plus web3name.
@@ -185,7 +185,7 @@ fn generate_proof_for_complete_linked_info() {
 	let dip_origin_info = cross_chain_proof
 		.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>()
 		.and_then(|r| r.verify_signature_time(&50))
-		.and_then(|r| r.retrieve_signing_leaf_for_payload(&().encode()))
+		.and_then(|r| r.retrieve_signing_leaves_for_payload(&().encode()))
 		.unwrap();
 	// Only the authentication key.
 	let expected_leaves_revealed = 1;
@@ -256,7 +256,7 @@ fn generate_proof_for_complete_linked_info() {
 	let dip_origin_info = cross_chain_proof
 		.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>()
 		.and_then(|r| r.verify_signature_time(&50))
-		.and_then(|r| r.retrieve_signing_leaf_for_payload(&().encode()))
+		.and_then(|r| r.retrieve_signing_leaves_for_payload(&().encode()))
 		.unwrap();
 	// The authentication key and the web3name.
 	let expected_leaves_revealed = 2;
@@ -310,7 +310,7 @@ fn generate_proof_for_complete_linked_info() {
 	let dip_origin_info = cross_chain_proof
 		.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>()
 		.and_then(|r| r.verify_signature_time(&50))
-		.and_then(|r| r.retrieve_signing_leaf_for_payload(&().encode()))
+		.and_then(|r| r.retrieve_signing_leaves_for_payload(&().encode()))
 		.unwrap();
 	// The authentication key and the web3name.
 	let expected_leaves_revealed = 2;
@@ -446,7 +446,7 @@ fn generate_proof_with_two_keys_with_same_id() {
 	let dip_origin_info = cross_chain_proof
 		.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>()
 		.and_then(|r| r.verify_signature_time(&50))
-		.and_then(|r| r.retrieve_signing_leaf_for_payload(&().encode()))
+		.and_then(|r| r.retrieve_signing_leaves_for_payload(&().encode()))
 		.unwrap();
 	// Authentication key and attestation key have the same key ID, but they are
 	// different keys, so there should be 2 leaves.
