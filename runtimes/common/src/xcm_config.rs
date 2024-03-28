@@ -26,16 +26,19 @@ use xcm_executor::traits::{Properties, ShouldExecute};
 use crate::AccountId;
 
 parameter_types! {
-	// One XCM operation is 1_000_000_000 weight, almost certainly a conservative estimate.
-	pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
+	// One XCM operation is 200_000_000 weight, cross-chain transfer ~= 2x of transfer.
+	pub UnitWeightCost: Weight = Weight::from_parts(200_000_000, 0);
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
 
 match_types! {
-	// The legislative of our parent (i.e. Polkadot majority vote for Spiritnet).
-	pub type ParentLegislative: impl Contains<MultiLocation> = {
-		MultiLocation { parents: 1, interior: X1(Plurality { id: BodyId::Legislative, .. }) }
+	pub type ParentLocation: impl Contains<MultiLocation> = {
+		MultiLocation { parents: 1, interior: Here}
+	};
+	pub type ParentOrSiblings: impl Contains<MultiLocation> = {
+		MultiLocation { parents: 1, interior: Here } |
+		MultiLocation { parents: 1, interior: X1(_) }
 	};
 }
 
