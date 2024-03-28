@@ -1,4 +1,4 @@
-import { beforeAll, afterAll } from 'vitest'
+import { beforeEach, afterAll, afterEach } from 'vitest'
 import { connectParachains, connectVertical, xcmLogger } from '@acala-network/chopsticks'
 
 import * as SpiritnetNetwork from '../network/spiritnet.js'
@@ -10,7 +10,7 @@ export let spiritnetContext: Config
 export let hydradxContext: Config
 export let polkadotContext: Config
 
-beforeAll(async () => {
+beforeEach(async () => {
 	xcmLogger.level = 'info'
 	spiritnetContext = await SpiritnetNetwork.getContext()
 	hydradxContext = await HydraDxNetwork.getContext()
@@ -21,14 +21,19 @@ beforeAll(async () => {
 	await connectVertical(polkadotContext.chain, hydradxContext.chain)
 	await connectParachains([spiritnetContext.chain, hydradxContext.chain])
 
+	const newBlockConfig = { count: 2 }
 	// fixes api runtime disconnect warning
 	await new Promise((r) => setTimeout(r, 500))
 	// Perform runtime upgrade and establish xcm connections.
-	await Promise.all([polkadotContext.dev.newBlock(), spiritnetContext.dev.newBlock(), hydradxContext.dev.newBlock()])
+	await Promise.all([
+		polkadotContext.dev.newBlock(newBlockConfig),
+		spiritnetContext.dev.newBlock(newBlockConfig),
+		hydradxContext.dev.newBlock(newBlockConfig),
+	])
 	console.info('Runtime Upgrade completed')
 }, 40_000)
 
-afterAll(async () => {
+afterEach(async () => {
 	// fixes api runtime disconnect warning
 	await new Promise((r) => setTimeout(r, 500))
 	await Promise.all([spiritnetContext.teardown(), hydradxContext.teardown(), polkadotContext.teardown()])

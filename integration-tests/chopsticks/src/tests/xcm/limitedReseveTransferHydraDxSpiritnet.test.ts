@@ -10,6 +10,11 @@ import { initBalance } from '../../network/utils.js'
 test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
+	// Create some new blocks to have consistent snapshots
+	await new Promise((r) => setTimeout(r, 50))
+	await spiritnetContext.dev.newBlock()
+	await hydradxContext.dev.newBlock()
+
 	// Give the sovereign account of HydraDx some kilt coins.
 	await spiritnetContext.dev.setStorage(SpiritnetConfig.defaultStorage(HydraDxConfig.sovereignAccount))
 	await hydradxContext.dev.setStorage(HydraDxConfig.defaultStorage(keysBob.address))

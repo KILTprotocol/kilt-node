@@ -13,6 +13,11 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async
 	await spiritnetContext.dev.setStorage(SpiritnetConfig.defaultStorage(keysAlice.address))
 	await hydradxContext.dev.setStorage(HydraDxConfig.defaultStorage(keysAlice.address))
 
+	// Create some new blocks to have consistent snapshots
+	await new Promise((r) => setTimeout(r, 50))
+	await spiritnetContext.dev.newBlock()
+	await hydradxContext.dev.newBlock()
+
 	const balanceSovereignAccountHydraDxBeforeTx = await getFreeBalanceSpiritnet(HydraDxConfig.sovereignAccount)
 
 	expect(balanceSovereignAccountHydraDxBeforeTx).eq(0)
@@ -63,6 +68,11 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async
 	// Set storage
 	await spiritnetContext.dev.setStorage(SpiritnetConfig.defaultStorage(keysAlice.address))
 	await hydradxContext.dev.setStorage(HydraDxConfig.defaultStorage(keysAlice.address))
+
+	// Create some new blocks to have consistent snapshots
+	await new Promise((r) => setTimeout(r, 50))
+	await spiritnetContext.dev.newBlock()
+	await hydradxContext.dev.newBlock()
 
 	const balanceSovereignAccountHydraDxBeforeTx = await getFreeBalanceSpiritnet(HydraDxConfig.sovereignAccount)
 

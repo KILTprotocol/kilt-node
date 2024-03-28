@@ -2,7 +2,21 @@
 
 exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > receiver events balances 1`] = `
 [
- 
+  {
+    "data": {
+      "amount": "(rounded 760000000000000)",
+    },
+    "method": "Issued",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 760000000000000)",
+      "who": "4qPZ8fv6BjGoGKzfx5LtBFnEUp2b5Q5C1ErrjBNGmoFTLNHG",
+    },
+    "method": "Deposit",
+    "section": "balances",
+  },
   {
     "data": {
       "who": "4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt",

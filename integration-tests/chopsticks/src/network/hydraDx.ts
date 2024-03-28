@@ -49,7 +49,7 @@ export const defaultStorage = (addr: string) => ({
 
 export const paraId = 2034
 export const sovereignAccount = u8aToHex(decodeAddress('5Eg2fntQqFi3EvFWAf71G66Ecjjah26bmFzoANAeHFgj9Lia'))
-export const omnipoolAccount = u8aToHex(decodeAddress('5EYCAe5iXZYTipz5c1tu1r75R6Shi2EaDXtKudMiJp1GSCki'))
+export const omnipoolAccount = u8aToHex(decodeAddress('7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1'))
 
 export const spiritnetDestinationAccount = (addr: string) => ({
 	V3: {
