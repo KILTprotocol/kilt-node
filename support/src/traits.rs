@@ -82,19 +82,30 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 /// only when running benchmarks.
 #[cfg(feature = "runtime-benchmarks")]
 pub trait GetWorstCase<Context = ()> {
-	fn worst_case(context: Context) -> Self;
+	type Output;
+	fn worst_case(context: Context) -> Self::Output;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> GetWorstCase<T> for u32 {
-	fn worst_case(_context: T) -> Self {
+	type Output = Self;
+	fn worst_case(_context: T) -> Self::Output {
 		u32::MAX
 	}
 }
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> GetWorstCase<T> for () {
-	fn worst_case(_context: T) -> Self {}
+	type Output = Self;
+	fn worst_case(_context: T) -> Self::Output {}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T> GetWorstCase<T> for bool {
+	type Output = Self;
+	fn worst_case(_context: T) -> Self::Output {
+		true
+	}
 }
 
 /// Trait that allows instanciating multiple instances of a type.

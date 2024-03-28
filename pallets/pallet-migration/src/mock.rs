@@ -377,7 +377,9 @@ pub mod runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	impl<Context> kilt_support::traits::GetWorstCase<Context> for TestSubjectId {
 		// Only used for benchmark testing, not really relevant.
-		fn worst_case(_context: Context) -> Self {
+		type Output = Self;
+
+		fn worst_case(_context: Context) -> Self::Output {
 			crate::mock::TestSubjectId::default()
 		}
 	}
