@@ -34,7 +34,7 @@ use crate::{
 	weights, AccountId, Balances, DidIdentifier, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
 
-const MAX_LINKED_ACCOUNTS: u32 = 20;
+pub const MAX_REVEALABLE_LINKED_ACCOUNTS: u32 = 10;
 
 pub mod runtime_api {
 	use super::*;
@@ -243,7 +243,7 @@ impl pallet_dip_provider::Config for Runtime {
 	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
 	// Identity info is defined as the collection of DID keys, linked accounts, and
 	// the optional web3name of a given DID subject.
-	type IdentityProvider = LinkedDidInfoProvider<MAX_LINKED_ACCOUNTS>;
+	type IdentityProvider = LinkedDidInfoProvider<MAX_REVEALABLE_LINKED_ACCOUNTS>;
 	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pallet_dip_provider::WeightInfo<Runtime>;

@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use parity_scale_codec::Decode;
-use scale_info::TypeInfo;
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 use sp_trie::StorageProof;
@@ -30,26 +29,8 @@ use crate::{state_proofs::substrate_no_std_port::read_proof_check, utils::Output
 // kept up-to-date with upstream.
 mod substrate_no_std_port;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub enum MerkleProofError {
-	InvalidProof,
-	RequiredLeafNotRevealed,
-	ResultDecoding,
-}
-
-impl From<MerkleProofError> for u8 {
-	fn from(value: MerkleProofError) -> Self {
-		match value {
-			// DO NOT USE 0
-			// Errors of different sub-parts are separated by a `u8::MAX`.
-			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
-			// or the new sub-part error (u8::MAX + 0).
-			MerkleProofError::InvalidProof => 1,
-			MerkleProofError::RequiredLeafNotRevealed => 2,
-			MerkleProofError::ResultDecoding => 3,
-		}
-	}
-}
+mod error;
+pub use error::*;
 
 /// Verify a Merkle-based storage proof for a given storage key according to the
 /// provided state root. The generic types indicate the following:
@@ -127,7 +108,7 @@ mod test {
 	use crate::state_proofs::verify_storage_value_proof;
 
 	#[test]
-	fn spiritnet_system_event_count() {
+	fn verify_storage_value_proof_spiritnet_system_event_count() {
 		// As of RPC state_getReadProof("
 		// 0x26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850",
 		// "0x2c0746e7e9ccc6e4d27bcb4118cb6821ae53ae9bf372f4f49ac28d8598f9bed5")
@@ -156,7 +137,7 @@ mod test {
 	}
 
 	#[test]
-	fn polkadot_parahead_proof_for_spiritnet() {
+	fn verify_storage_value_proof_polkadot_parahead_proof_for_spiritnet() {
 		// As of RPC state_getReadProof("0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000", "0x18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39")
 		let spiritnet_head_storage_key = StorageKey(
 			[
