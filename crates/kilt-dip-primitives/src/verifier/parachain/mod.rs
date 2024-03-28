@@ -65,7 +65,6 @@ pub enum VersionedDipParachainStateProof<
 	),
 }
 
-#[cfg(feature = "runtime-benchmarks")]
 impl<
 		RelayBlockNumber,
 		KiltDidKeyId,
@@ -74,8 +73,18 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
-		Context,
-	> kilt_support::traits::GetWorstCase<Context>
+	>
+	From<
+		ParachainDipDidProof<
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		>,
+	>
 	for VersionedDipParachainStateProof<
 		RelayBlockNumber,
 		KiltDidKeyId,
@@ -84,20 +93,30 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
-	> where
-	RelayBlockNumber: Default,
-	KiltDidKeyId: Default + Clone,
-	KiltAccountId: Clone,
-	KiltBlockNumber: Default + Clone,
-	KiltWeb3Name: Clone,
-	KiltLinkableAccountId: Clone,
-	ConsumerBlockNumber: Default,
-	Context: Clone,
+	>
 {
-	fn worst_case(context: Context) -> Self {
-		Self::V0(ParachainDipDidProof::worst_case(context))
+	fn from(
+		value: ParachainDipDidProof<
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		>,
+	) -> Self {
+		Self::V0(value)
 	}
 }
+
+pub const DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 128;
+pub const DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 1024;
+pub const DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 128;
+pub const DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 1024;
+pub const DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 128;
+pub const DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 1024;
+pub const DEFAULT_MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 128;
 
 /// Versioned proof verifier. For version-specific description, refer to each
 /// verifier's documentation.
@@ -108,13 +127,13 @@ pub struct KiltVersionedParachainVerifier<
 	KiltRuntime,
 	DidCallVerifier,
 	SignedExtra = (),
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 64,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 1024,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 64,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 1024,
-	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 64,
-	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 1024,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 64,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = DEFAULT_MAX_DID_MERKLE_LEAVES_REVEALED,
 >(
 	PhantomData<(
 		RelaychainRuntime,

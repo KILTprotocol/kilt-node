@@ -2496,7 +2496,9 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
+ "hex-literal 0.3.4",
  "kilt-dip-primitives",
+ "kilt-support",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
@@ -2519,6 +2521,7 @@ dependencies = [
  "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
+ "sp-io",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -4621,7 +4624,6 @@ dependencies = [
 name = "kilt-dip-primitives"
 version = "1.12.0-dev"
 dependencies = [
- "cfg-if",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "did",

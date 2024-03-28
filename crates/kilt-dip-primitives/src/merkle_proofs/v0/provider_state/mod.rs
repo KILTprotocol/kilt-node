@@ -33,7 +33,7 @@ use crate::{
 		input_common::{DidMerkleProof, DipCommitmentStateProof, ProviderHeadStateProof, TimeBoundDidSignature},
 	},
 	state_proofs::{verify_storage_value_proof, verify_storage_value_proof_with_decoder},
-	traits::{BenchmarkDefault, GetWithArg},
+	traits::GetWithArg,
 	utils::{
 		calculate_dip_identity_commitment_storage_key_for_runtime, calculate_parachain_head_storage_key, OutputOf,
 	},
@@ -76,7 +76,6 @@ pub struct ParachainDipDidProof<
 	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
 }
 
-#[cfg(feature = "runtime-benchmarks")]
 impl<
 		RelayBlockNumber,
 		KiltDidKeyId,
@@ -85,9 +84,8 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
-		Context,
-	> kilt_support::traits::GetWorstCase<Context>
-	for ParachainDipDidProof<
+	>
+	ParachainDipDidProof<
 		RelayBlockNumber,
 		KiltDidKeyId,
 		KiltAccountId,
@@ -95,23 +93,38 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
-	> where
-	RelayBlockNumber: Default,
-	KiltDidKeyId: Default + Clone,
-	KiltAccountId: Clone,
-	KiltBlockNumber: Default + Clone,
-	KiltWeb3Name: Clone,
-	KiltLinkableAccountId: Clone,
-	ConsumerBlockNumber: Default,
-	Context: Clone,
+	>
 {
-	fn worst_case(context: Context) -> Self {
+	pub fn new(
+		provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
+		dip_commitment_proof: DipCommitmentStateProof,
+		dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+		signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+	) -> Self {
 		Self {
-			provider_head_proof: ProviderHeadStateProof::worst_case(context.clone()),
-			dip_commitment_proof: DipCommitmentStateProof::worst_case(context.clone()),
-			dip_proof: DidMerkleProof::worst_case(context.clone()),
-			signature: TimeBoundDidSignature::worst_case(context),
+			dip_commitment_proof,
+			dip_proof,
+			provider_head_proof,
+			signature,
 		}
+	}
+
+	pub fn provider_head_proof(&self) -> &ProviderHeadStateProof<RelayBlockNumber> {
+		&self.provider_head_proof
+	}
+
+	pub fn dip_commitment_proof(&self) -> &DipCommitmentStateProof {
+		&self.dip_commitment_proof
+	}
+
+	pub fn dip_proof(
+		&self,
+	) -> &DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId> {
+		&self.dip_proof
+	}
+
+	pub fn signature(&self) -> &TimeBoundDidSignature<ConsumerBlockNumber> {
+		&self.signature
 	}
 }
 
@@ -132,8 +145,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
-	> where
-	KiltBlockNumber: BenchmarkDefault,
+	>
 {
 	/// Verifies the head data of the state proof for the provider with the
 	/// given para ID and relaychain state root.
@@ -166,7 +178,7 @@ impl<
 		let provider_head_storage_key = calculate_parachain_head_storage_key(provider_para_id);
 		// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
 		//This could be the reason (and the solution): https://substrate.stackexchange.com/a/1891/1795
-		let provider_header_result = verify_storage_value_proof_with_decoder::<_, RelayHasher, ProviderHeader>(
+		let provider_header = verify_storage_value_proof_with_decoder::<_, RelayHasher, ProviderHeader>(
 			&provider_head_storage_key,
 			*relay_state_root,
 			self.provider_head_proof.proof,
@@ -177,14 +189,8 @@ impl<
 				let mut trimmed_input = &input[2..];
 				ProviderHeader::decode(&mut trimmed_input).ok()
 			},
-		);
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				let provider_header = provider_header_result.unwrap_or_else(|_| ProviderHeader::new(<ProviderHeader as HeaderT>::Number::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), sp_runtime::Digest::default()));
-			} else {
-				let provider_header = provider_header_result.map_err(Error::ParaHeadMerkleProof)?;
-			}
-		}
+		)
+		.map_err(Error::ParaHeadMerkleProof)?;
 		Ok(DipDidProofWithVerifiedStateRoot {
 			state_root: *provider_header.state_root(),
 			dip_commitment_proof: self.dip_commitment_proof,
@@ -225,14 +231,8 @@ impl<
 		StateRootStore: GetWithArg<RelayBlockNumber, Result = Option<OutputOf<RelayHasher>>>,
 		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>, Number = KiltBlockNumber>,
 	{
-		let relay_state_root = StateRootStore::get(&self.provider_head_proof.relay_block_number);
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				let relay_state_root = relay_state_root.unwrap_or_default();
-			} else {
-				let relay_state_root = relay_state_root.ok_or(Error::RelayStateRootNotFound)?;
-			}
-		}
+		let relay_state_root =
+			StateRootStore::get(&self.provider_head_proof.relay_block_number).ok_or(Error::RelayStateRootNotFound)?;
 		self.verify_provider_head_proof_with_state_root::<RelayHasher, ProviderHeader>(
 			provider_para_id,
 			&relay_state_root,
@@ -320,23 +320,15 @@ impl<
 		StateRoot: Ord,
 		ParachainHasher: Hash<Output = StateRoot>,
 		ProviderRuntime: pallet_dip_provider::Config,
-		IdentityCommitmentOf<ProviderRuntime>: BenchmarkDefault,
 	{
 		let dip_commitment_storage_key =
 			calculate_dip_identity_commitment_storage_key_for_runtime::<ProviderRuntime>(subject, 0);
-		let dip_commitment_result =
-			verify_storage_value_proof::<_, ParachainHasher, IdentityCommitmentOf<ProviderRuntime>>(
-				&dip_commitment_storage_key,
-				self.state_root,
-				self.dip_commitment_proof.0,
-			);
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				let dip_commitment = dip_commitment_result.unwrap_or_default();
-			} else {
-				let dip_commitment = dip_commitment_result.map_err(Error::DipCommitmentMerkleProof)?;
-			}
-		}
+		let dip_commitment = verify_storage_value_proof::<_, ParachainHasher, IdentityCommitmentOf<ProviderRuntime>>(
+			&dip_commitment_storage_key,
+			self.state_root,
+			self.dip_commitment_proof.0,
+		)
+		.map_err(Error::DipCommitmentMerkleProof)?;
 		Ok(DipDidProofWithVerifiedSubjectCommitment {
 			dip_commitment,
 			dip_proof: self.dip_proof,
@@ -469,19 +461,13 @@ impl<
 			.iter()
 			.map(|revealed_leaf| (revealed_leaf.encoded_key(), Some(revealed_leaf.encoded_value())))
 			.collect::<Vec<_>>();
-		let proof_verification_result = verify_trie_proof::<LayoutV1<DidMerkleHasher>, _, _, _>(
+		verify_trie_proof::<LayoutV1<DidMerkleHasher>, _, _, _>(
 			&self.dip_commitment,
 			self.dip_proof.blinded.as_slice(),
 			proof_leaves_key_value_pairs.as_slice(),
-		);
+		)
+		.map_err(|_| Error::InvalidDidMerkleProof)?;
 
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				drop(proof_verification_result);
-			} else {
-				proof_verification_result.map_err(|_| Error::InvalidDidMerkleProof)?;
-			}
-		}
 		let revealed_leaves = BoundedVec::try_from(self.dip_proof.revealed).map_err(|_| {
 			log::error!("Should not fail to construct BoundedVec since bounds were checked before.");
 			Error::Internal

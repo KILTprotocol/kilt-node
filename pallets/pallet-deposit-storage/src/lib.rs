@@ -149,8 +149,14 @@ pub mod pallet {
 	/// deposit instance.
 	#[pallet::storage]
 	#[pallet::getter(fn deposits)]
-	pub(crate) type Deposits<T> =
-		StorageDoubleMap<_, Twox64Concat, <T as Config>::Namespace, Twox64Concat, DepositKeyOf<T>, DepositEntryOf<T>>;
+	pub(crate) type Deposits<T> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		<T as Config>::Namespace,
+		Blake2_128Concat,
+		DepositKeyOf<T>,
+		DepositEntryOf<T>,
+	>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]

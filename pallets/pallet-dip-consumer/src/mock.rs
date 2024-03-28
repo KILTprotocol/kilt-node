@@ -134,6 +134,23 @@ impl IdentityProofVerifier<TestRuntime> for BooleanProofVerifier {
 	}
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+impl kilt_support::traits::GetWorstCase for BooleanProofVerifier {
+	type Output = crate::benchmarking::WorstCaseOf<TestRuntime>;
+
+	fn worst_case(_context: ()) -> Self::Output {
+		crate::benchmarking::WorstCaseOf {
+			call: frame_system::Call::remark {
+				remark: b"Hello!".to_vec(),
+			}
+			.into(),
+			proof: true,
+			subject: AccountId32::new([100; 32]),
+			submitter: AccountId32::new([200; 32]),
+		}
+	}
+}
+
 impl crate::Config for TestRuntime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;

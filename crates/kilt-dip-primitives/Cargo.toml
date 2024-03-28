@@ -14,7 +14,6 @@ version.workspace = true
 # External dependencies
 hash-db.workspace = true
 log.workspace = true
-cfg-if.workspace = true
 
 # Internal dependencies
 did.workspace = true
@@ -78,5 +77,5 @@ std = [
 runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
-  "pallet-dip-provider/runtime-benchmarks",
+  "pallet-dip-provider/runtime-benchmarks"
 ]

@@ -20,6 +20,7 @@ use did::{
 	did_details::{DidPublicKey, DidPublicKeyDetails},
 	DidSignature,
 };
+use frame_support::ensure;
 use sp_core::ConstU32;
 use sp_runtime::{traits::SaturatedConversion, BoundedVec};
 use sp_std::vec::Vec;
@@ -29,7 +30,6 @@ use crate::{
 		input_common::TimeBoundDidSignature,
 		output_common::{DidKeyRelationship, DipOriginInfo, RevealedDidKey, RevealedDidMerkleProofLeaf},
 	},
-	traits::BenchmarkDefault,
 	Error,
 };
 
@@ -106,13 +106,7 @@ impl<
 		>,
 		Error,
 	> {
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				let _ = self.signature.valid_until >= *block_number;
-			} else {
-				frame_support::ensure!(self.signature.valid_until >= *block_number, Error::InvalidSignatureTime);
-			}
-		}
+		ensure!(self.signature.valid_until >= *block_number, Error::InvalidSignatureTime);
 		Ok(DipRevealedDetailsAndVerifiedDidSignatureFreshness {
 			revealed_leaves: self.revealed_leaves,
 			signature: self.signature.signature,
@@ -166,9 +160,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		MAX_REVEALED_LEAVES_COUNT,
-	> where
-	KiltDidKeyId: BenchmarkDefault,
-	KiltBlockNumber: BenchmarkDefault,
+	>
 {
 	/// Iterates over the revealed DID leaves to find the ones that generated a
 	/// valid signature for the provided payload.
@@ -214,15 +206,7 @@ impl<
 			.map(|(index, _)| u32::saturated_from(index))
 			.collect();
 
-		if signing_leaves_indices.is_empty() {
-			cfg_if::cfg_if! {
-				if #[cfg(feature = "runtime-benchmarks")] {
-						return Ok(DipOriginInfo::default());
-				} else {
-					return Err(Error::InvalidDidKeyRevealed);
-				}
-			}
-		}
+		ensure!(!signing_leaves_indices.is_empty(), Error::InvalidDidKeyRevealed);
 
 		let signing_leaves_indices_vector = signing_leaves_indices.try_into().map_err(|_| {
 			log::error!("Should never fail to convert vector of signing leaf indices into BoundedVec.");

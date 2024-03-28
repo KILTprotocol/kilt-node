@@ -32,7 +32,7 @@ use crate::{
 	merkle_proofs::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
-	DipOriginInfo,
+	DipOriginInfo, RelayDipDidProof,
 };
 
 pub mod v0;
@@ -55,7 +55,7 @@ pub enum VersionedRelaychainStateProof<
 	KiltLinkableAccountId,
 > {
 	V0(
-		crate::merkle_proofs::v0::RelayDipDidProof<
+		RelayDipDidProof<
 			ConsumerBlockNumber,
 			ConsumerBlockHasher,
 			KiltDidKeyId,
@@ -67,6 +67,59 @@ pub enum VersionedRelaychainStateProof<
 	),
 }
 
+impl<
+		ConsumerBlockNumber: Copy + Into<U256> + TryFrom<U256>,
+		ConsumerBlockHasher: Hash,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+	>
+	From<
+		RelayDipDidProof<
+			ConsumerBlockNumber,
+			ConsumerBlockHasher,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+		>,
+	>
+	for VersionedRelaychainStateProof<
+		ConsumerBlockNumber,
+		ConsumerBlockHasher,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+	>
+{
+	fn from(
+		value: RelayDipDidProof<
+			ConsumerBlockNumber,
+			ConsumerBlockHasher,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+		>,
+	) -> Self {
+		Self::V0(value)
+	}
+}
+
+pub const DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 128;
+pub const DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 1024;
+pub const DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 128;
+pub const DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 1024;
+pub const DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 128;
+pub const DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 1024;
+pub const DEFAULT_MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 128;
+
 /// Versioned proof verifier. For version-specific description, refer to each
 /// verifier's documentation.
 pub struct KiltVersionedRelaychainVerifier<
@@ -75,13 +128,13 @@ pub struct KiltVersionedRelaychainVerifier<
 	KiltRuntime,
 	DidCallVerifier,
 	SignedExtra = (),
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 64,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 64,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 64,
-	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 64,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = DEFAULT_MAX_DID_MERKLE_LEAVES_REVEALED,
 >(#[allow(clippy::type_complexity)] PhantomData<(ConsumerBlockHashStore, KiltRuntime, DidCallVerifier, SignedExtra)>);
 
 impl<

@@ -175,7 +175,9 @@ where
 	<Runtime as frame_system::Config>::AccountId: Into<LinkableAccountId> + From<sp_core::sr25519::Public>,
 	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
 {
-	fn worst_case(context: IdentityContext<Runtime::Identifier, Runtime::AccountId>) -> Self {
+	type Output = Self;
+
+	fn worst_case(context: IdentityContext<Runtime::Identifier, Runtime::AccountId>) -> Self::Output {
 		use did::{
 			did_details::DidVerificationKey,
 			mock_utils::{generate_base_did_creation_details, get_key_agreement_keys},

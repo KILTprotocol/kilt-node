@@ -29,7 +29,7 @@ use crate::{
 		input_common::{DidMerkleProof, DipCommitmentStateProof, ProviderHeadStateProof, TimeBoundDidSignature},
 		provider_state::ParachainDipDidProof,
 	},
-	traits::{BenchmarkDefault, GetWithArg},
+	traits::GetWithArg,
 	utils::OutputOf,
 	DipDidProofWithVerifiedStateRoot, Error,
 };
@@ -204,8 +204,7 @@ impl<
 		KiltBlockNumber,
 		KiltWeb3Name,
 		KiltLinkableAccountId,
-	> where
-	KiltBlockNumber: BenchmarkDefault,
+	>
 {
 	/// Verifies the head data of the state proof for the provider with the
 	/// given para ID.
