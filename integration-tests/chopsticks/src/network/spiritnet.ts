@@ -47,7 +47,7 @@ export const V2 = {
 	},
 	hydraDxBeneficiary: {
 		V2: {
-			parents: 1,
+			parents: 0,
 			interior: {
 				X1: {
 					AccountId32: {
@@ -71,7 +71,7 @@ export const V3 = {
 
 	hydraDxBeneficiary: {
 		V3: {
-			parents: 1,
+			parents: 0,
 			interior: {
 				X1: {
 					AccountId32: {
