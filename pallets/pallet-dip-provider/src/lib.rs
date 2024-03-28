@@ -91,7 +91,7 @@ pub mod pallet {
 	#[pallet::getter(fn identity_commitments)]
 	pub type IdentityCommitments<T> = StorageDoubleMap<
 		_,
-		Twox64Concat,
+		Blake2_128Concat,
 		<T as Config>::Identifier,
 		Twox64Concat,
 		IdentityCommitmentVersion,
