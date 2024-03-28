@@ -3,7 +3,7 @@ import type { Config } from './types.js'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 import * as SpiritnetConfig from './spiritnet.js'
-import { initBalance, toNumber } from './utils.js'
+import { UNIT, toNumber } from '../utils.js'
 
 export const options: SetupOption = {
 	endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
@@ -17,17 +17,17 @@ export const defaultStorage = (addr: string) => ({
 	TechnicalCommittee: { Members: [addr] },
 	Council: { Members: [addr] },
 	Tokens: {
-		Accounts: [[[addr, kiltTokenId], { free: initBalance }]],
+		Accounts: [[[addr, kiltTokenId], { free: UNIT * BigInt(100) }]],
 	},
 	assetRegistry: {
 		assetLocations: [[[kiltTokenId], { parents: 1, interior: { X1: { Parachain: SpiritnetConfig.paraId } } }]],
-		assetIds: [[['KILT'], kiltTokenId]],
+		assetIds: [[['UNIT'], kiltTokenId]],
 		locationAssets: [[[{ parents: 1, interior: { X1: { Parachain: SpiritnetConfig.paraId } } }], kiltTokenId]],
 		assets: [
 			[
 				[kiltTokenId],
 				{
-					name: 'KILT',
+					name: 'UNIT',
 					assetType: 'Token',
 					existentialDeposit: 500,
 					symbol: 'KLT',
@@ -43,7 +43,7 @@ export const defaultStorage = (addr: string) => ({
 	},
 
 	System: {
-		Account: [[[addr], { providers: 1, data: { free: initBalance } }]],
+		Account: [[[addr], { providers: 1, data: { free: UNIT * BigInt(100) } }]],
 	},
 })
 

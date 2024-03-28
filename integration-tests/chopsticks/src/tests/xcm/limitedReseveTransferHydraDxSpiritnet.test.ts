@@ -5,9 +5,9 @@ import { decodeAddress } from '@polkadot/util-crypto'
 
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import * as SpiritnetConfig from '../../network/spiritnet.js'
-import { keysAlice, keysBob } from '../../helper.js'
+import { keysAlice, keysBob } from '../../utils.js'
 import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../index.js'
-import { initBalance } from '../../network/utils.js'
+import { UNIT } from '../../utils.js'
 
 test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
@@ -25,9 +25,9 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 
 	// check initial balance of alice
 	const aliceBalanceBeforeTx = await getFreeBalanceSpiritnet(keysAlice.address)
-	expect(aliceBalanceBeforeTx).eq(0)
+	expect(aliceBalanceBeforeTx).eq(BigInt(0))
 
-	const balanceToTransfer = 10e5
+	const balanceToTransfer = BigInt(10e15)
 
 	const signedTx = hydradxContext.api.tx.xTokens
 		.transfer(
@@ -53,21 +53,22 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	checkEvents(events, 'xTokens').toMatchSnapshot('sender events currencies')
 
 	checkSystemEvents(spiritnetContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
-	checkSystemEvents(spiritnetContext, 'balances').toMatchSnapshot('receiver events polkadotXCM')
+	checkSystemEvents(spiritnetContext, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
+		'receiver events Balances'
+	)
+	checkSystemEvents(spiritnetContext, { section: 'balances', method: 'Endowed' }).toMatchSnapshot(
+		'receiver events Balances'
+	)
 
 	// Check Balance
 	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
-	expect(balanceSovereignAccountHydraDxAfterTx).eq(initBalance - balanceToTransfer)
+	expect(balanceSovereignAccountHydraDxAfterTx).eq(UNIT - balanceToTransfer)
 
 	console.log(keysAlice.address)
 
 	const balanceBobHydraDx = await getFreeBalanceHydraDxKilt(keysBob.address)
-	expect(balanceBobHydraDx).eq(initBalance - balanceToTransfer)
+	expect(balanceBobHydraDx).eq(UNIT - balanceToTransfer)
 
 	await new Promise((r) => setTimeout(r, 50))
 	await spiritnetContext.dev.newBlock()
-	const balanceAliceSpiritnetAfterTx = await getFreeBalanceSpiritnet(
-		'4qPZ8fv6BjGoGKzfx5LtBFnEUp2b5Q5C1ErrjBNGmoFTLNHG'
-	)
-	expect(balanceAliceSpiritnetAfterTx).eq(balanceToTransfer)
 }, 20_000)

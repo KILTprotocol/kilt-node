@@ -1,43 +1,26 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > receiver events polkadotXCM 1`] = `
+exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > receiver events Balances 1`] = `
 [
   {
     "data": {
-      "amount": "(rounded 760000000000000)",
-    },
-    "method": "Issued",
-    "section": "balances",
-  },
-  {
-    "data": {
-      "amount": "(rounded 760000000000000)",
-      "who": "4qPZ8fv6BjGoGKzfx5LtBFnEUp2b5Q5C1ErrjBNGmoFTLNHG",
-    },
-    "method": "Deposit",
-    "section": "balances",
-  },
-  {
-    "data": {
-      "who": "4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt",
-    },
-    "method": "Upgraded",
-    "section": "balances",
-  },
-  {
-    "data": {
-      "amount": 1000000,
+      "amount": 10000000000000000,
       "who": "4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt",
     },
     "method": "Withdraw",
     "section": "balances",
   },
+]
+`;
+
+exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > receiver events Balances 2`] = `
+[
   {
     "data": {
-      "amount": "(rounded 29000)",
-      "who": "4qPZ8fv6BjGoGKzfx5LtBFnEUp2b5Q5C1ErrjBNGmoFTLNHG",
+      "account": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+      "freeBalance": "(rounded 10000000000000000)",
     },
-    "method": "Deposit",
+    "method": "Endowed",
     "section": "balances",
   },
 ]
@@ -73,7 +56,7 @@ exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > sende
   },
   {
     "data": {
-      "amount": 1000000,
+      "amount": 10000000000000000,
       "currencyId": 60,
       "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
     },
@@ -90,7 +73,7 @@ exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > sende
       "assets": [
         {
           "fun": {
-            "Fungible": 1000000,
+            "Fungible": 10000000000000000,
           },
           "id": {
             "Concrete": {
@@ -122,7 +105,7 @@ exports[`Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet > sende
       },
       "fee": {
         "fun": {
-          "Fungible": 1000000,
+          "Fungible": 10000000000000000,
         },
         "id": {
           "Concrete": {

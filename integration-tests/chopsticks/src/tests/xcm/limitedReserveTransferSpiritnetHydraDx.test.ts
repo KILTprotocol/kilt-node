@@ -5,10 +5,10 @@ import { decodeAddress } from '@polkadot/util-crypto'
 
 import * as SpiritnetConfig from '../../network/spiritnet.js'
 import * as HydraDxConfig from '../../network/hydraDx.js'
-import { keysAlice } from '../../helper.js'
+import { UNIT, keysAlice } from '../../utils.js'
 import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../index.js'
 
-test.skip('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async ({ expect }) => {
+test('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// set storage
@@ -24,7 +24,7 @@ test.skip('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', 
 	const balanceSovereignAccountHydraDxBeforeTx = await getFreeBalanceSpiritnet(
 		SpiritnetConfig.hydraDxSovereignAccount
 	)
-	expect(balanceSovereignAccountHydraDxBeforeTx).eq(0)
+	expect(balanceSovereignAccountHydraDxBeforeTx).eq(BigInt(0))
 
 	const balanceToTransfer = 10e12
 	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
@@ -62,13 +62,13 @@ test.skip('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', 
 
 	// check balance
 	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
-	expect(balanceSovereignAccountHydraDxAfterTx).eq(balanceToTransfer)
+	expect(balanceSovereignAccountHydraDxAfterTx).eq(BigInt(balanceToTransfer))
 
 	let freeBalanceOmnipoolAccount = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
-	expect(freeBalanceOmnipoolAccount).eq(balanceToTransfer)
+	expect(freeBalanceOmnipoolAccount).eq(BigInt(balanceToTransfer))
 }, 20_000)
 
-test.skip('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async ({ expect }) => {
+test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Set storage
@@ -84,7 +84,7 @@ test.skip('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', 
 		SpiritnetConfig.hydraDxSovereignAccount
 	)
 
-	expect(balanceSovereignAccountHydraDxBeforeTx).eq(0)
+	expect(balanceSovereignAccountHydraDxBeforeTx).eq(BigInt(0))
 
 	const balanceToTransfer = 10e12
 	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
@@ -122,8 +122,8 @@ test.skip('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', 
 	// Check balance
 
 	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
-	expect(balanceSovereignAccountHydraDxAfterTx).eq(balanceToTransfer)
+	expect(balanceSovereignAccountHydraDxAfterTx).eq(UNIT - BigInt(balanceToTransfer))
 
 	let freeBalanceOmnipoolAccount = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
-	expect(freeBalanceOmnipoolAccount).eq(balanceToTransfer)
+	expect(freeBalanceOmnipoolAccount).eq(BigInt(balanceToTransfer))
 }, 20_000)

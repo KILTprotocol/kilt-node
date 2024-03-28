@@ -10,6 +10,7 @@ export let spiritnetContext: Config
 export let hydradxContext: Config
 export let polkadotContext: Config
 
+// There is not really a way to reset the storage. dev.setStorage only appends or overwrites an existing entry
 beforeEach(async () => {
 	xcmLogger.level = 'info'
 	spiritnetContext = await SpiritnetNetwork.getContext()
@@ -39,12 +40,12 @@ afterEach(async () => {
 	await Promise.all([spiritnetContext.teardown(), hydradxContext.teardown(), polkadotContext.teardown()])
 })
 
-export async function getFreeBalanceSpiritnet(account: string): Promise<number> {
+export async function getFreeBalanceSpiritnet(account: string): Promise<bigint> {
 	const accountInfo = await spiritnetContext.api.query.system.account(account)
-	return accountInfo.data.free.toNumber()
+	return accountInfo.data.free.toBigInt()
 }
 
-export async function getFreeBalanceHydraDxKilt(account: string): Promise<number> {
+export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint> {
 	const accountInfo: any = await hydradxContext.api.query.tokens.accounts(account, HydraDxNetwork.kiltTokenId)
-	return accountInfo.free.toNumber()
+	return accountInfo.free.toBigInt()
 }
