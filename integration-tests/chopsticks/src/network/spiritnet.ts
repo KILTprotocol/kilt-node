@@ -10,6 +10,7 @@ export const options: SetupOption = {
 	wasmOverride: '../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm',
 	// Whether to allow WASM unresolved imports when using a WASM to build the parachain
 	allowUnresolvedImports: true,
+	runtimeLogLevel: 5,
 }
 
 export const defaultStorage = (addr: string) => ({
@@ -34,6 +35,8 @@ const hydraDxLocation = {
 	},
 }
 
+export const hydraDxSovereignAccount = '4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt'
+
 const nativeAssetIdLocation = (amount: number) => [
 	{
 		id: { Concrete: { parents: 0, interior: 'Here' } },
@@ -45,21 +48,21 @@ export const V2 = {
 	hydraDxDestination: {
 		V2: hydraDxLocation,
 	},
-	hydraDxBeneficiary: {
+	hydraDxBeneficiary: (addr: string) => ({
 		V2: {
 			parents: 0,
 			interior: {
 				X1: {
 					AccountId32: {
 						network: 'Any',
-						id: HydraDxConfig.omnipoolAccount,
+						id: addr,
 					},
 				},
 			},
 		},
-	},
+	}),
 
-	nativeAssetId: (amount: number) => ({
+	nativeAssetIdLocation: (amount: number) => ({
 		V2: nativeAssetIdLocation(amount),
 	}),
 }
@@ -69,20 +72,20 @@ export const V3 = {
 		V3: hydraDxLocation,
 	},
 
-	hydraDxBeneficiary: {
+	hydraDxBeneficiary: (addr: string) => ({
 		V3: {
 			parents: 0,
 			interior: {
 				X1: {
 					AccountId32: {
-						id: HydraDxConfig.omnipoolAccount,
+						id: addr,
 					},
 				},
 			},
 		},
-	},
+	}),
 
-	nativeAssetId: (amount: number) => ({
+	nativeAssetIdLocation: (amount: number) => ({
 		V3: nativeAssetIdLocation(amount),
 	}),
 }

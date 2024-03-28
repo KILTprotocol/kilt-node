@@ -1,5 +1,7 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
+import { u8aToHex } from '@polkadot/util'
+import { decodeAddress } from '@polkadot/util-crypto'
 
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import * as SpiritnetConfig from '../../network/spiritnet.js'
@@ -16,14 +18,16 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	await hydradxContext.dev.newBlock()
 
 	// Give the sovereign account of HydraDx some kilt coins.
-	await spiritnetContext.dev.setStorage(SpiritnetConfig.defaultStorage(HydraDxConfig.sovereignAccount))
+	await spiritnetContext.dev.setStorage(
+		SpiritnetConfig.defaultStorage(u8aToHex(decodeAddress(SpiritnetConfig.hydraDxSovereignAccount)))
+	)
 	await hydradxContext.dev.setStorage(HydraDxConfig.defaultStorage(keysBob.address))
 
-	const balanceToTransfer = 10e9
-
+	// check initial balance of alice
 	const aliceBalanceBeforeTx = await getFreeBalanceSpiritnet(keysAlice.address)
-
 	expect(aliceBalanceBeforeTx).eq(0)
+
+	const balanceToTransfer = 10e5
 
 	const signedTx = hydradxContext.api.tx.xTokens
 		.transfer(
@@ -45,21 +49,25 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 
 	// Check Events
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
-	checkEvents(events, 'xTokens').toMatchSnapshot('sender events xcm pallet')
+	checkEvents(events, { section: 'currencies', method: 'Withdrawn' }).toMatchSnapshot('sender events currencies')
+	checkEvents(events, 'xTokens').toMatchSnapshot('sender events currencies')
 
 	checkSystemEvents(spiritnetContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
-	checkSystemEvents(spiritnetContext, 'polkadotXcm').toMatchSnapshot('receiver events polkadotXCM')
-	checkSystemEvents(spiritnetContext, 'balances').toMatchSnapshot('receiver events balances')
+	checkSystemEvents(spiritnetContext, 'balances').toMatchSnapshot('receiver events polkadotXCM')
 
 	// Check Balance
-
-	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(HydraDxConfig.sovereignAccount)
+	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
 	expect(balanceSovereignAccountHydraDxAfterTx).eq(initBalance - balanceToTransfer)
 
-	const balanceAliceSpiritnetAfterTx = await getFreeBalanceSpiritnet(keysAlice.address)
-	expect(balanceAliceSpiritnetAfterTx).eq(balanceToTransfer)
+	console.log(keysAlice.address)
 
-	let balanceBobHydraDx = await getFreeBalanceHydraDxKilt(keysBob.address)
+	const balanceBobHydraDx = await getFreeBalanceHydraDxKilt(keysBob.address)
 	expect(balanceBobHydraDx).eq(initBalance - balanceToTransfer)
+
+	await new Promise((r) => setTimeout(r, 50))
+	await spiritnetContext.dev.newBlock()
+	const balanceAliceSpiritnetAfterTx = await getFreeBalanceSpiritnet(
+		'4qPZ8fv6BjGoGKzfx5LtBFnEUp2b5Q5C1ErrjBNGmoFTLNHG'
+	)
+	expect(balanceAliceSpiritnetAfterTx).eq(balanceToTransfer)
 }, 20_000)

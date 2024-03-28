@@ -1,4 +1,4 @@
-import { beforeEach, afterAll, afterEach } from 'vitest'
+import { beforeEach, afterEach } from 'vitest'
 import { connectParachains, connectVertical, xcmLogger } from '@acala-network/chopsticks'
 
 import * as SpiritnetNetwork from '../network/spiritnet.js'

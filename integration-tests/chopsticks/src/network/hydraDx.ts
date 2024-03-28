@@ -9,7 +9,6 @@ export const options: SetupOption = {
 	endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
 	db: './db/hydradx.db.sqlite',
 	port: toNumber(process.env.HYDRADX_PORT) || 9001,
-	runtimeLogLevel: 5,
 }
 
 export const kiltTokenId = 60
@@ -49,12 +48,11 @@ export const defaultStorage = (addr: string) => ({
 })
 
 export const paraId = 2034
-export const sovereignAccount = u8aToHex(decodeAddress('5Eg2fntQqFi3EvFWAf71G66Ecjjah26bmFzoANAeHFgj9Lia'))
-export const omnipoolAccount = u8aToHex(decodeAddress('7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1'))
+export const omnipoolAccount = '7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1'
 
 export const spiritnetDestinationAccount = (addr: string) => ({
 	V3: {
-		parents: 0,
+		parents: 1,
 		interior: {
 			X2: [
 				{ Parachain: SpiritnetConfig.paraId },
