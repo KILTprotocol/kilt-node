@@ -113,7 +113,7 @@ std = [
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
   "cumulus-primitives-utility/std",
-  "cumulus-pallet-session-benchmarking/std",
+  "cumulus-pallet-session-benchmarking?/std",
   "frame-benchmarking?/std",
   "frame-executive/std",
   "frame-support/std",

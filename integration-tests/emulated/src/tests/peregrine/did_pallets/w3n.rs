@@ -85,7 +85,6 @@ fn test_claim_w3n_from_asset_hub_successful() {
 		);
 	});
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	Peregrine::execute_with(|| {
 		type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
 
