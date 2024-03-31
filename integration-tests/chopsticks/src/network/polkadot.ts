@@ -1,6 +1,6 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types.js'
-import { UNIT, toNumber } from '../utils.js'
+import { initialBalanceDOT, toNumber } from '../utils.js'
 
 export const options: SetupOption = {
 	endpoint: process.env.POLKADOT_WS || [
@@ -14,7 +14,7 @@ export const options: SetupOption = {
 
 export const defaultStorage = (addr: string) => ({
 	System: {
-		Account: [[[addr], { providers: 1, data: { free: UNIT * BigInt(100) } }]],
+		Account: [[[addr], { providers: 1, data: { free: initialBalanceDOT } }]],
 	},
 	ParasDisputes: {
 		// those can makes block building super slow

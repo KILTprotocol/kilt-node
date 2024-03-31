@@ -1,7 +1,7 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types.js'
 import * as HydraDxConfig from './hydraDx.js'
-import { UNIT, toNumber } from '../utils.js'
+import { initialBalanceKILT, toNumber } from '../utils.js'
 
 export const options: SetupOption = {
 	endpoint: process.env.SPIRITNET_WS || 'wss://kilt-rpc.dwellir.com',
@@ -16,7 +16,7 @@ export const defaultStorage = (addr: string) => ({
 	technicalCommittee: { Members: [addr] },
 	council: { Members: [addr] },
 	System: {
-		Account: [[[addr], { providers: 1, data: { free: UNIT * BigInt(100) } }]],
+		Account: [[[addr], { providers: 1, data: { free: initialBalanceKILT } }]],
 	},
 	polkadotXcm: {
 		safeXcmVersion: 3,
@@ -24,6 +24,7 @@ export const defaultStorage = (addr: string) => ({
 })
 
 export const paraId = 2086
+export const hydraDxSovereignAccount = '4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt'
 
 const hydraDxLocation = {
 	parents: 1,
@@ -34,9 +35,7 @@ const hydraDxLocation = {
 	},
 }
 
-export const hydraDxSovereignAccount = '4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt'
-
-const nativeAssetIdLocation = (amount: number) => [
+const nativeAssetIdLocation = (amount: BigInt) => [
 	{
 		id: { Concrete: { parents: 0, interior: 'Here' } },
 		fun: { Fungible: amount },
@@ -61,7 +60,7 @@ export const V2 = {
 		},
 	}),
 
-	nativeAssetIdLocation: (amount: number) => ({
+	nativeAssetIdLocation: (amount: BigInt) => ({
 		V2: nativeAssetIdLocation(amount),
 	}),
 }
@@ -84,7 +83,7 @@ export const V3 = {
 		},
 	}),
 
-	nativeAssetIdLocation: (amount: number) => ({
+	nativeAssetIdLocation: (amount: BigInt) => ({
 		V3: nativeAssetIdLocation(amount),
 	}),
 }

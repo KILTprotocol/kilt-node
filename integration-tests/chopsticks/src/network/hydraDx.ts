@@ -3,7 +3,7 @@ import type { Config } from './types.js'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 import * as SpiritnetConfig from './spiritnet.js'
-import { UNIT, toNumber } from '../utils.js'
+import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../utils.js'
 
 export const options: SetupOption = {
 	endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
@@ -17,20 +17,20 @@ export const defaultStorage = (addr: string) => ({
 	TechnicalCommittee: { Members: [addr] },
 	Council: { Members: [addr] },
 	Tokens: {
-		Accounts: [[[addr, kiltTokenId], { free: UNIT * BigInt(100) }]],
+		Accounts: [[[addr, kiltTokenId], { free: initialBalanceKILT }]],
 	},
 	assetRegistry: {
 		assetLocations: [[[kiltTokenId], { parents: 1, interior: { X1: { Parachain: SpiritnetConfig.paraId } } }]],
-		assetIds: [[['UNIT'], kiltTokenId]],
+		assetIds: [[['KILT'], kiltTokenId]],
 		locationAssets: [[[{ parents: 1, interior: { X1: { Parachain: SpiritnetConfig.paraId } } }], kiltTokenId]],
 		assets: [
 			[
 				[kiltTokenId],
 				{
-					name: 'UNIT',
+					name: 'KILT',
 					assetType: 'Token',
 					existentialDeposit: 500,
-					symbol: 'KLT',
+					symbol: 'KILT',
 					decimals: 18,
 					xcmRateLimit: null,
 					isSufficient: true,
@@ -43,7 +43,7 @@ export const defaultStorage = (addr: string) => ({
 	},
 
 	System: {
-		Account: [[[addr], { providers: 1, data: { free: UNIT * BigInt(100) } }]],
+		Account: [[[addr], { providers: 1, data: { free: initialBalanceHDX } }]],
 	},
 })
 

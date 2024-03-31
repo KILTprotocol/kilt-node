@@ -5,9 +5,8 @@ import { decodeAddress } from '@polkadot/util-crypto'
 
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import * as SpiritnetConfig from '../../network/spiritnet.js'
-import { keysAlice, keysBob } from '../../utils.js'
+import { KILT, initialBalanceKILT, keysAlice, keysBob } from '../../utils.js'
 import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../index.js'
-import { UNIT } from '../../utils.js'
 
 test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
@@ -27,12 +26,10 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	const aliceBalanceBeforeTx = await getFreeBalanceSpiritnet(keysAlice.address)
 	expect(aliceBalanceBeforeTx).eq(BigInt(0))
 
-	const balanceToTransfer = BigInt(10e15)
-
 	const signedTx = hydradxContext.api.tx.xTokens
 		.transfer(
 			HydraDxConfig.kiltTokenId,
-			balanceToTransfer,
+			KILT,
 			HydraDxConfig.spiritnetDestinationAccount(keysAlice.address),
 			'Unlimited'
 		)
@@ -44,14 +41,14 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	// fixes api runtime disconnect warning
 	await new Promise((r) => setTimeout(r, 50))
 	await hydradxContext.chain.newBlock()
-	await new Promise((r) => setTimeout(r, 50))
 	await spiritnetContext.dev.newBlock()
 
-	// Check Events
+	// Check Events HydraDx
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, { section: 'currencies', method: 'Withdrawn' }).toMatchSnapshot('sender events currencies')
 	checkEvents(events, 'xTokens').toMatchSnapshot('sender events currencies')
 
+	// check Events Spiritnet
 	checkSystemEvents(spiritnetContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
 	checkSystemEvents(spiritnetContext, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
 		'receiver events Balances'
@@ -62,13 +59,8 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 
 	// Check Balance
 	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
-	expect(balanceSovereignAccountHydraDxAfterTx).eq(UNIT - balanceToTransfer)
-
-	console.log(keysAlice.address)
+	expect(balanceSovereignAccountHydraDxAfterTx).eq(initialBalanceKILT - KILT)
 
 	const balanceBobHydraDx = await getFreeBalanceHydraDxKilt(keysBob.address)
-	expect(balanceBobHydraDx).eq(UNIT - balanceToTransfer)
-
-	await new Promise((r) => setTimeout(r, 50))
-	await spiritnetContext.dev.newBlock()
+	expect(balanceBobHydraDx).eq(initialBalanceKILT - KILT)
 }, 20_000)
