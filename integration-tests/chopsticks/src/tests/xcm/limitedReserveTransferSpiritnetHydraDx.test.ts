@@ -49,6 +49,8 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async
 
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
+	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
+
 	checkSystemEvents(hydradxContext, { section: 'currencies', method: 'Deposited' }).toMatchSnapshot(
 		'receiver events currencies'
 	)
@@ -102,6 +104,8 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async
 
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
+	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
+
 	checkSystemEvents(hydradxContext, { section: 'currencies', method: 'Deposited' }).toMatchSnapshot(
 		'receiver events currencies'
 	)
@@ -111,7 +115,6 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async
 
 	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
 	expect(balanceSovereignAccountHydraDxAfterTx).eq(KILT)
-
 	const freeBalanceOmnipoolAccount = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
 	expect(freeBalanceOmnipoolAccount).eq(KILT)
 }, 20_000)
