@@ -313,10 +313,7 @@ where
 
 	Ok(CompleteMerkleProof {
 		root,
-		proof: DidMerkleProofOf::<Runtime>::new(
-			proof.into_iter().into(),
-			leaves.into_iter().flatten().collect::<Vec<_>>(),
-		),
+		proof: DidMerkleProofOf::<Runtime>::new(proof, leaves.into_iter().flatten().collect::<Vec<_>>()),
 	})
 }
 
