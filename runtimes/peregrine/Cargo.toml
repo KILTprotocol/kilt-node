@@ -185,7 +185,6 @@ std = [
   "kilt-runtime-api-staking/std",
   "kilt-support/std",
   "log/std",
-  "kilt-support/std",
   "pallet-aura/std",
   "pallet-authorship/std",
   "pallet-balances/std",
