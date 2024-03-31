@@ -37,7 +37,7 @@ use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
 use runtime_common::xcm_config::{
 	DenyReserveTransferToRelayChain, DenyThenTry, HereLocation, LocalAssetTransactor, LocationToAccountId,
-	MaxAssetsIntoHolding, MaxInstructions, ParentLegislative, UnitWeightCost,
+	MaxAssetsIntoHolding, MaxInstructions, ParentLocation, UnitWeightCost,
 };
 
 parameter_types! {
@@ -81,7 +81,7 @@ pub type XcmBarrier = DenyThenTry<
 			// We allow everything from the relay chain if it was sent by the relay chain legislative (i.e., democracy
 			// vote). Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls from the
 			// relaychain legislative, we allow unpaid execution.
-			AllowTopLevelPaidExecutionFrom<ParentLegislative>,
+			AllowTopLevelPaidExecutionFrom<ParentLocation>,
 		),
 		UniversalLocation,
 		ConstU32<8>,
