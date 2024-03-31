@@ -28,7 +28,7 @@ use kilt_support::{
 		T::CommitOriginCheck: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::Identifier>,
 		T::AccountId: Instanciate,
 		T::Identifier: Instanciate,
-		<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success: GetWorstCase<IdentityContext<T::Identifier, T::AccountId>>
+		<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success: GetWorstCase<IdentityContext<T::Identifier, T::AccountId>, Output = <<T as Config>::IdentityProvider as IdentityProvider<T>>::Success>
 )]
 mod benchmarks {
 

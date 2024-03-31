@@ -44,7 +44,7 @@ pub mod identity_provision {
 
 	/// Return the `Default` value of the provided `Identity` type if it
 	/// implements the `Default` trait.
-	pub struct DefaultIdentityProvider<Identity>(PhantomData<Identity>);
+	pub struct DefaultIdentityProvider<Identity = ()>(PhantomData<Identity>);
 
 	impl<Runtime, Identity> IdentityProvider<Runtime> for DefaultIdentityProvider<Identity>
 	where
@@ -91,7 +91,7 @@ pub mod identity_generation {
 
 	/// Implement the [`IdentityCommitmentGenerator`] trait by returning the
 	/// `Default` value for the `Output` type.
-	pub struct DefaultIdentityCommitmentGenerator<Output>(PhantomData<Output>);
+	pub struct DefaultIdentityCommitmentGenerator<Output = ()>(PhantomData<Output>);
 
 	impl<Runtime, Output> IdentityCommitmentGenerator<Runtime> for DefaultIdentityCommitmentGenerator<Output>
 	where
