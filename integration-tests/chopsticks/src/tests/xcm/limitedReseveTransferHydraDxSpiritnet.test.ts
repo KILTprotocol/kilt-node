@@ -64,4 +64,8 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 
 	const balanceBobHydraDx = await getFreeBalanceHydraDxKilt(keysBob.address)
 	expect(balanceBobHydraDx).eq(initialBalanceKILT - KILT)
+
+	const aliceBalanceAfterTx = await getFreeBalanceSpiritnet(keysAlice.address)
+	// Alice receives a bit less since the tx fees has to be paid.
+	expect(aliceBalanceAfterTx).eq(BigInt('99999999999971175'))
 }, 20_000)

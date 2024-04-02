@@ -14,7 +14,7 @@ exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > 
 ]
 `;
 
-exports[`Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx > receiver events xcmpQueue 1`] = `
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > receiver events xcmpQueue 1`] = `
 [
   {
     "data": {
@@ -44,7 +44,7 @@ exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > 
 ]
 `;
 
-exports[`Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx > sender events xcm pallet 1`] = `
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > sender events xcm pallet 1`] = `
 [
   {
     "data": {
@@ -61,7 +61,7 @@ exports[`Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx > se
 ]
 `;
 
-exports[`Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx > sender events xcm queue pallet 1`] = `
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > sender events xcm queue pallet 1`] = `
 [
   {
     "data": {
@@ -73,7 +73,7 @@ exports[`Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx > se
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx > receiver events currencies 1`] = `
+exports[`Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx > receiver events currencies 1`] = `
 [
   {
     "data": {
@@ -87,7 +87,7 @@ exports[`Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx > re
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx > receiver events xcmpQueue 1`] = `
+exports[`Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx > receiver events xcmpQueue 1`] = `
 [
   {
     "data": {
@@ -104,7 +104,7 @@ exports[`Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx > re
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx > sender events Balances 1`] = `
+exports[`Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx > sender events Balances 1`] = `
 [
   {
     "data": {
@@ -117,7 +117,7 @@ exports[`Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx > se
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx > sender events xcm pallet 1`] = `
+exports[`Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx > sender events xcm pallet 1`] = `
 [
   {
     "data": {
@@ -134,7 +134,7 @@ exports[`Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx > se
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx > sender events xcm queue pallet 1`] = `
+exports[`Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx > sender events xcm queue pallet 1`] = `
 [
   {
     "data": {
