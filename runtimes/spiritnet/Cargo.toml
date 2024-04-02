@@ -36,8 +36,11 @@ attestation.workspace = true
 ctype.workspace = true
 delegation.workspace = true
 did.workspace = true
+kilt-runtime-api-dip-provider.workspace = true
 kilt-support.workspace = true
+pallet-deposit-storage.workspace = true
 pallet-did-lookup.workspace = true
+pallet-dip-provider.workspace = true
 pallet-inflation.workspace = true
 pallet-migration.workspace = true
 pallet-web3-names.workspace = true
@@ -126,7 +129,9 @@ runtime-benchmarks = [
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
+  "pallet-deposit-storage/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
+  "pallet-dip-provider/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
@@ -171,6 +176,7 @@ std = [
   "frame-system/std",
   "frame-try-runtime?/std",
   "kilt-runtime-api-did/std",
+  "kilt-runtime-api-dip-provider/std",
   "kilt-runtime-api-public-credentials/std",
   "kilt-runtime-api-staking/std",
   "kilt-support/std",
@@ -180,7 +186,9 @@ std = [
   "pallet-balances/std",
   "pallet-collective/std",
   "pallet-democracy/std",
+  "pallet-deposit-storage/std",
   "pallet-did-lookup/std",
+  "pallet-dip-provider/std",
   "pallet-indices/std",
   "pallet-inflation/std",
   "pallet-membership/std",
@@ -241,7 +249,9 @@ try-runtime = [
   "pallet-balances/try-runtime",
   "pallet-collective/try-runtime",
   "pallet-democracy/try-runtime",
+  "pallet-deposit-storage/try-runtime",
   "pallet-did-lookup/try-runtime",
+  "pallet-dip-provider/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-inflation/try-runtime",
   "pallet-membership/try-runtime",

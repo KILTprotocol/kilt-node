@@ -35,13 +35,13 @@ pallets=(
 	pallet-xcm
 	parachain-staking
 	public-credentials
+	pallet-deposit-storage
+	pallet-dip-provider
 )
 
 if [ "$runtime" = "peregrine" ]; then
   pallets+=( 
 			"pallet-configuration" 
-  			"pallet-deposit-storage"
-			"pallet-dip-provider"
 			)
 fi
 
