@@ -9,7 +9,7 @@ import * as HydraDxConfig from '../../network/hydraDx.js'
 import { KILT, keysAlice } from '../../utils.js'
 import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../index.js'
 
-test('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async ({ expect }) => {
+test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// set storage
@@ -66,7 +66,7 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async
 	expect(freeBalanceOmnipoolAccountAfterTx).eq(BigInt(KILT))
 }, 20_000)
 
-test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async ({ expect }) => {
+test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Set storage
