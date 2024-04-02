@@ -1,5 +1,5 @@
 {
-  "name": "e2e-tests",
+  "name": "@kiltprotocol/e2e-tests",
   "version": "0.0.1",
   "description": "chopsticks integration tests",
   "private": "true",
