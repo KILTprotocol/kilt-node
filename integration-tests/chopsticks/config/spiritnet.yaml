@@ -1,0 +1,21 @@
+endpoint:
+ - wss://kilt-rpc.dwellir.com
+db: ./db/spiritnet.db.sqlite
+port: 50001
+wasm-override: ../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm
+
+import-storage:
+ TechnicalCommittee:
+  Members:
+   - 4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr
+ Council:
+  Members:
+   - 4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr
+ System:
+  Account:
+   -
+    -
+     - 4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr
+    - providers: 1
+      data:
+       free: "1000000000000000000000"

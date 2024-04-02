@@ -35,6 +35,7 @@
     "lint:fix": "eslint --fix .",
     "clean": "rm -rf ./db && cargo build -p spiritnet-runtime",
     "test": "LOG_LEVEL=error vitest --testTimeout=5000 --isolate=true",
-    "start-network": "tsx ./src/spinupNetwork.ts"
+    "start-network": "tsx ./src/spinupNetwork.ts",
+    "start-from-config:spiritnet": "yarn chopsticks xcm -r config/polkadot.yaml -p config/spiritnet.yaml -p config/hydradx.yaml"
   }
 }
