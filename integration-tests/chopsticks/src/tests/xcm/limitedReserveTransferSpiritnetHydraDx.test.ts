@@ -2,6 +2,7 @@ import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
+import { setTimeout } from 'timers/promises'
 
 import * as SpiritnetConfig from '../../network/spiritnet.js'
 import * as HydraDxConfig from '../../network/hydraDx.js'
@@ -16,7 +17,7 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async
 	await hydradxContext.dev.setStorage(HydraDxConfig.defaultStorage(keysAlice.address))
 
 	// Create some new blocks to have consistent snapshots
-	await new Promise((r) => setTimeout(r, 50))
+	await setTimeout(50)
 	await spiritnetContext.dev.newBlock()
 	await hydradxContext.dev.newBlock()
 
@@ -41,7 +42,7 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async
 
 	// Produce new blocks
 	// fixes api runtime disconnect warning
-	await new Promise((r) => setTimeout(r, 50))
+	await setTimeout(50)
 	await spiritnetContext.chain.newBlock()
 	await hydradxContext.dev.newBlock()
 
@@ -71,7 +72,7 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async
 	await hydradxContext.dev.setStorage(HydraDxConfig.defaultStorage(keysAlice.address))
 
 	// Create some new blocks to have consistent snapshots
-	await new Promise((r) => setTimeout(r, 50))
+	await setTimeout(50)
 	await spiritnetContext.dev.newBlock()
 	await hydradxContext.dev.newBlock()
 
@@ -96,7 +97,7 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async
 
 	// Produce new blocks
 	// fixes api runtime disconnect warning
-	await new Promise((r) => setTimeout(r, 50))
+	await setTimeout(50)
 	await spiritnetContext.chain.newBlock()
 	await hydradxContext.dev.newBlock()
 

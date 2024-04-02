@@ -1,5 +1,6 @@
 import { beforeEach, afterEach } from 'vitest'
 import { connectParachains, connectVertical, xcmLogger } from '@acala-network/chopsticks'
+import { setTimeout } from 'timers/promises'
 
 import * as SpiritnetNetwork from '../network/spiritnet.js'
 import * as PolkadotNetwork from '../network/polkadot.js'
@@ -24,7 +25,7 @@ beforeEach(async () => {
 
 	const newBlockConfig = { count: 2 }
 	// fixes api runtime disconnect warning
-	await new Promise((r) => setTimeout(r, 500))
+	await setTimeout(500)
 	// Perform runtime upgrade and establish xcm connections.
 	await Promise.all([
 		polkadotContext.dev.newBlock(newBlockConfig),
@@ -36,7 +37,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
 	// fixes api runtime disconnect warning
-	await new Promise((r) => setTimeout(r, 500))
+	await setTimeout(500)
 	await Promise.all([spiritnetContext.teardown(), hydradxContext.teardown(), polkadotContext.teardown()])
 })
 

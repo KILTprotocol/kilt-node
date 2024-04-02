@@ -2,6 +2,7 @@ import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
+import { setTimeout } from 'timers/promises'
 
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import * as SpiritnetConfig from '../../network/spiritnet.js'
@@ -12,7 +13,7 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Create some new blocks to have consistent snapshots
-	await new Promise((r) => setTimeout(r, 50))
+	await setTimeout(50)
 	await spiritnetContext.dev.newBlock()
 	await hydradxContext.dev.newBlock()
 
@@ -39,7 +40,7 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 
 	// Produce a new Block
 	// fixes api runtime disconnect warning
-	await new Promise((r) => setTimeout(r, 50))
+	await setTimeout(50)
 	await hydradxContext.chain.newBlock()
 	await spiritnetContext.dev.newBlock()
 
