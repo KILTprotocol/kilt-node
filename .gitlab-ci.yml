@@ -3,6 +3,7 @@ stages:
   - build
 
 clippy-and-docs:
+  timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
@@ -16,12 +17,14 @@ fmt:
     - cargo fmt -- --check
 
 test:
+  timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
     - cargo test --all --all-targets --locked
 
 test-features:
+  timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
