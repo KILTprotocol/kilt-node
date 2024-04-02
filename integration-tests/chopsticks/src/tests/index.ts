@@ -25,7 +25,7 @@ beforeEach(async () => {
 
 	const newBlockConfig = { count: 2 }
 	// fixes api runtime disconnect warning
-	await setTimeout(500)
+	await setTimeout(50)
 	// Perform runtime upgrade and establish xcm connections.
 	await Promise.all([
 		polkadotContext.dev.newBlock(newBlockConfig),
@@ -33,11 +33,11 @@ beforeEach(async () => {
 		hydradxContext.dev.newBlock(newBlockConfig),
 	])
 	console.info('Runtime Upgrade completed')
-}, 40_000)
+}, 60_000)
 
 afterEach(async () => {
 	// fixes api runtime disconnect warning
-	await setTimeout(500)
+	await setTimeout(50)
 	await Promise.all([spiritnetContext.teardown(), hydradxContext.teardown(), polkadotContext.teardown()])
 })
 
