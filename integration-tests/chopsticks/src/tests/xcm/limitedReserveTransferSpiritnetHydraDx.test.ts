@@ -26,6 +26,8 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async
 		SpiritnetConfig.hydraDxSovereignAccount
 	)
 	expect(balanceSovereignAccountHydraDxBeforeTx).eq(BigInt(0))
+	const freeBalanceOmnipoolAccountBeforeTx = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
+	expect(freeBalanceOmnipoolAccountBeforeTx).eq(BigInt(0))
 
 	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
@@ -60,8 +62,8 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Bob -> HydraDx', async
 	// check balance
 	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
 	expect(balanceSovereignAccountHydraDxAfterTx).eq(BigInt(KILT))
-	const freeBalanceOmnipoolAccount = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
-	expect(freeBalanceOmnipoolAccount).eq(BigInt(KILT))
+	const freeBalanceOmnipoolAccountAfterTx = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
+	expect(freeBalanceOmnipoolAccountAfterTx).eq(BigInt(KILT))
 }, 20_000)
 
 test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async ({ expect }) => {
@@ -81,6 +83,8 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async
 		SpiritnetConfig.hydraDxSovereignAccount
 	)
 	expect(balanceSovereignAccountHydraDxBeforeTx).eq(BigInt(0))
+	const freeBalanceOmnipoolAccountBeforeTx = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
+	expect(freeBalanceOmnipoolAccountBeforeTx).eq(BigInt(0))
 
 	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
@@ -116,6 +120,6 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Bob -> HydraDx', async
 
 	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
 	expect(balanceSovereignAccountHydraDxAfterTx).eq(KILT)
-	const freeBalanceOmnipoolAccount = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
-	expect(freeBalanceOmnipoolAccount).eq(KILT)
+	const freeBalanceOmnipoolAccountAfterTx = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
+	expect(freeBalanceOmnipoolAccountAfterTx).eq(KILT)
 }, 20_000)
