@@ -3,6 +3,7 @@ endpoint:
  - wss://rpc.hydradx.cloud
 db: ./db/hydradx.db.sqlite
 port: 50002
+runtime-log-level: 5
 
 import-storage:
  TechnicalCommittee:
@@ -16,6 +17,12 @@ import-storage:
    -
     -
      - 4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr
+    - providers: 1
+      data:
+       free: "1000000000000000000"
+   -
+    -
+     - 4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ
     - providers: 1
       data:
        free: "1000000000000000000"
