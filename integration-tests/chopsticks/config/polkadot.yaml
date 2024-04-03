@@ -3,4 +3,4 @@ endpoint:
  - wss://polkadot-rpc.dwellir.com
  - wss://rpc.ibp.network/polkadot
 db: ./db/polkadot.db.sqlite
-port: 50000
+port: ${env.POLKADOT_PORT}

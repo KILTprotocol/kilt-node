@@ -2,7 +2,7 @@ endpoint:
  - wss://hydradx-rpc.dwellir.com
  - wss://rpc.hydradx.cloud
 db: ./db/hydradx.db.sqlite
-port: 50002
+port: ${env.HYDRADX_PORT}
 runtime-log-level: 5
 
 import-storage:
