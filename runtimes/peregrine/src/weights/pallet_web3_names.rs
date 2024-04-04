@@ -62,7 +62,7 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 	/// Storage: `Migration::MigratedKeys` (r:0 w:1)
 	/// Proof: `Migration::MigratedKeys` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[3, 32]`.
-	fn claim(n: u32, ) -> Weight {
+	fn claim(_n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `112`
 		//  Estimated: `4414`
