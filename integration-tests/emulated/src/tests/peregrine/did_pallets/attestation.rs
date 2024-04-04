@@ -112,7 +112,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 			Peregrine,
 			vec![
 				PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
-				PeregrineRuntimeEvent::Attestation(attestation::Event::AttestationCreated { attester, claim_hash, authorization: _ , ctype_hash }) => {
+				PeregrineRuntimeEvent::Attestation(attestation::Event::AttestationCreated(attester, claim_hash, ctype_hash, _)) => {
 					attester: attester == &asset_hub_sovereign_account,
 					claim_hash: claim_hash == &claim_hash_value,
 					ctype_hash: ctype_hash == &ctype_hash_value,
