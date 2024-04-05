@@ -4,3 +4,19 @@ endpoint:
  - wss://rpc.ibp.network/polkadot
 db: ./db/polkadot.db.sqlite
 port: ${env.POLKADOT_PORT}
+
+import-storage:
+ System:
+  Account:
+   -
+    -
+     - 4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr
+    - providers: 1
+      data:
+       free: "1000000000000000000000"
+   -
+    -
+     - 4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ
+    - providers: 1
+      data:
+       free: "1000000000000000000000"
