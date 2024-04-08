@@ -4,6 +4,7 @@ endpoint:
  - wss://rpc.ibp.network/polkadot
 db: ./db/polkadot.db.sqlite
 port: ${env.POLKADOT_PORT}
+runtime-log-level: 5
 
 import-storage:
  System:
