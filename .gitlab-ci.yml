@@ -30,6 +30,26 @@ test-features:
   script:
     - cargo test --all --all-features --all-targets --locked
 
+# TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
+test-try-runtime:
+  parallel:
+    matrix:
+      - RUNTIME: "peregrine"
+        ENDPOINT: "wss://peregrine.kilt.io:443"
+      - RUNTIME: "spiritnet"
+        ENDPOINT: "wss://spiritnet.kilt.io:443"
+  timeout: 2 hours
+  image: paritytech/ci-unified:bullseye-1.70.0
+  stage: test
+  variables:
+    TRY_RUNTIME_CLI_VERSION_TAG: v0.6.1
+  script:
+    - curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${TRY_RUNTIME_CLI_VERSION_TAG}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
+    - chmod +x ./try-runtime
+    - ./try-runtime --version
+    - cargo build --locked --release -p ${RUNTIME}-runtime --features try-runtime
+    - try-runtime --runtime ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm on-runtime-upgrade --disable-spec-version-check --checks=all live --uri=${ENDPOINT}
+
 build:
   timeout: 2 hours
   image:
