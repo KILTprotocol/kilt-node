@@ -21,3 +21,9 @@ import-storage:
     - providers: 1
       data:
        free: "1000000000000000000000"
+   -
+    -
+     - 13YMK2dxjYEL7c6ymsM996UcwK3xBnKQmSxKx6DNEwsVoSQg
+    - providers: 1
+      data:
+       free: "250000000000"
