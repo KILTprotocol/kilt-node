@@ -123,7 +123,7 @@ build-wasm-try-runtime:
       - RUNTIME: "peregrine"
       - RUNTIME: "spiritnet"
   image:
-    image: paritytech/ci-unified:bullseye-1.70.0
+    name: paritytech/ci-unified:bullseye-1.70.0
     entrypoint: [""]
   stage: build
   only:
