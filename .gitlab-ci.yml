@@ -48,7 +48,7 @@ test-try-runtime:
     - chmod +x ./try-runtime
     - ./try-runtime --version
     - cargo build --locked --release -p ${RUNTIME}-runtime --features try-runtime
-    - try-runtime --runtime ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm on-runtime-upgrade --disable-spec-version-check --checks=all live --uri=${ENDPOINT}
+    - ./try-runtime --runtime ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm on-runtime-upgrade --disable-spec-version-check --checks=all live --uri=${ENDPOINT}
 
 build:
   timeout: 2 hours
