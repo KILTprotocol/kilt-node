@@ -41,11 +41,11 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 fn validate_candiate_pool<T: Config>() -> Result<(), TryRuntimeError> {
 	// check if enough collators are set.
 	ensure!(
-		CandidatePool::<T>::count() >= T::MinCollators::get(),
+		CandidatePool::<T>::count() >= T::MinRequiredCollators::get(),
 		log_and_return_error_message(format!(
 			"Insufficient collators. Collators count: {:?}. Min required collators: {:?}",
 			CandidatePool::<T>::count(),
-			T::MinCollators::get()
+			T::MinRequiredCollators::get()
 		))
 	);
 
