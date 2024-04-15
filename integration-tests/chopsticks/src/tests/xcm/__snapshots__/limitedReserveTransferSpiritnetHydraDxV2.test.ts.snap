@@ -1,0 +1,74 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > receiver events currencies 1`] = `
+[
+  {
+    "data": {
+      "amount": 100000000000000000,
+      "currencyId": 60,
+      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+    },
+    "method": "Deposited",
+    "section": "currencies",
+  },
+]
+`;
+
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > receiver events xcmpQueue 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+      "messageId": "(hash)",
+      "weight": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Success",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > sender events Balances 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > sender events xcm pallet 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > sender events xcm queue pallet 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;

@@ -13,7 +13,6 @@ export let spiritnetContext: Config
 export let hydradxContext: Config
 export let polkadotContext: Config
 
-// There is not really a way to reset the storage. dev.setStorage only appends or overwrites an existing entry
 beforeAll(async () => {
 	spiritnetContext = await SpiritnetConfig.getContext()
 	hydradxContext = await HydraDxConfig.getContext()
@@ -33,9 +32,13 @@ beforeAll(async () => {
 		spiritnetContext.dev.newBlock(newBlockConfig),
 		hydradxContext.dev.newBlock(newBlockConfig),
 	])
+
 	console.info('Runtime Upgrade completed')
 
+	// set SafeXcmVersion to 3
 	await setStorage(spiritnetContext, SpiritnetConfig.setSafeXcmVersion(3))
+
+	// register Kilt in HydraDX
 	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
 }, 60_000)
 
@@ -43,27 +46,6 @@ afterAll(async () => {
 	// fixes api runtime disconnect warning
 	await setTimeout(50)
 	await Promise.all([spiritnetContext.teardown(), hydradxContext.teardown(), polkadotContext.teardown()])
-})
-
-// Resets the balance storage after each test
-afterEach(async () => {
-	console.log('Resetting balance storage')
-	const accounts = [
-		keysAlice.address,
-		keysBob.address,
-		keysCharlie.address,
-		SpiritnetConfig.hydraDxSovereignAccount,
-		HydraDxConfig.omnipoolAccount,
-	]
-
-	const hydraDxConfig = {
-		...HydraDxConfig.assignNativeTokensToAccount(accounts, BigInt(0)),
-		...HydraDxConfig.assignKiltTokensToAccount(accounts, BigInt(0)),
-	}
-
-	await setStorage(hydradxContext, hydraDxConfig)
-	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount(accounts, BigInt(0)))
-	await setStorage(polkadotContext, PolkadotConfig.setAddrNativeTokens(accounts, BigInt(0)))
 })
 
 export async function getFreeBalanceSpiritnet(account: string): Promise<bigint> {

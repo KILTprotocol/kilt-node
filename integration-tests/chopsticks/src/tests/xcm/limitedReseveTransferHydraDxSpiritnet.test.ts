@@ -1,51 +1,56 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
-import { u8aToHex } from '@polkadot/util'
-import { decodeAddress } from '@polkadot/util-crypto'
 
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import * as SpiritnetConfig from '../../network/spiritnet.js'
 import { KILT, initialBalanceKILT, keysAlice, keysBob } from '../../utils.js'
 import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../index.js'
-import { checkBalanceAndExpectAmount, checkBalanceAndExpectZero, createBlock, setStorage } from '../utils.js'
+import { checkBalanceAndExpectAmount, createBlock, hexAddress, setStorage } from '../utils.js'
+
+const destinationAlice = {
+	V3: {
+		parents: 1,
+		interior: {
+			X2: [
+				{ Parachain: SpiritnetConfig.paraId },
+				{
+					AccountId32: {
+						id: hexAddress(keysAlice.address),
+					},
+				},
+			],
+		},
+	},
+}
 
 test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
-	const hydraDxSovereignAccount = u8aToHex(decodeAddress(SpiritnetConfig.hydraDxSovereignAccount))
-
-	// Create some new blocks to have consistent snapshots
-	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount(hydraDxSovereignAccount))
-	await setStorage(spiritnetContext, SpiritnetConfig.setSafeXcmVersion(3))
-	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
-	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount(keysBob.address))
-
-	// check initial balance of alice
-	await checkBalanceAndExpectZero(getFreeBalanceSpiritnet, keysAlice.address, expect)
-
-	const destination = {
-		V3: {
-			parents: 1,
-			interior: {
-				X2: [
-					{ Parachain: SpiritnetConfig.paraId },
-					{
-						AccountId32: {
-							id: u8aToHex(decodeAddress(keysAlice.address)),
-						},
-					},
-				],
-			},
-		},
+	const hydraDxConfig = {
+		...HydraDxConfig.assignKiltTokensToAccount([keysBob.address, HydraDxConfig.omnipoolAccount]),
+		...HydraDxConfig.assignNativeTokensToAccount([keysBob.address, HydraDxConfig.omnipoolAccount]),
 	}
 
+	// Update storage
+	await setStorage(
+		spiritnetContext,
+		SpiritnetConfig.assignNativeTokensToAccount([SpiritnetConfig.hydraDxSovereignAccount])
+	)
+	await setStorage(hydradxContext, hydraDxConfig)
+
+	await createBlock(spiritnetContext)
+	await createBlock(hydradxContext)
+
+	// check initial balance of alice
+	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, keysAlice.address, expect)
+
 	const signedTx = hydradxContext.api.tx.xTokens
-		.transfer(HydraDxConfig.kiltTokenId, KILT, destination, 'Unlimited')
+		.transfer(HydraDxConfig.kiltTokenId, KILT, destinationAlice, 'Unlimited')
 		.signAsync(keysBob)
 
 	const events = await sendTransaction(signedTx)
 
-	// Produce a new Block
+	// Order matters here, we need to create a block on the sender first
 	await createBlock(hydradxContext)
 	await createBlock(spiritnetContext)
 
