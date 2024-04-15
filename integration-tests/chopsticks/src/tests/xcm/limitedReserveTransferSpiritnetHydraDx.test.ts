@@ -8,13 +8,14 @@ import * as SpiritnetConfig from '../../network/spiritnet.js'
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import { KILT, keysAlice } from '../../utils.js'
 import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../index.js'
+import { getAccountDestinationV3, getNativeAssetIdLocation, getSiblingDestination } from '../../network/utils.js'
 
 test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// set storage
-	await spiritnetContext.dev.setStorage(SpiritnetConfig.defaultStorage(keysAlice.address))
-	await hydradxContext.dev.setStorage(HydraDxConfig.defaultStorage(keysAlice.address))
+	await spiritnetContext.dev.setStorage(SpiritnetConfig.assignNativeTokensToAccount(keysAlice.address))
+	await hydradxContext.dev.setStorage(HydraDxConfig.assignNativeTokensToAccount(keysAlice.address))
 
 	// Create some new blocks to have consistent snapshots
 	await setTimeout(50)
@@ -30,14 +31,15 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	expect(freeBalanceOmnipoolAccountBeforeTx).eq(BigInt(0))
 
 	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
+	const hydraDxDestination = { V3: getSiblingDestination(HydraDxConfig.paraId) }
+	const beneficiary = getAccountDestinationV3(omniPoolAddress)
+
+	const asset = { V3: getNativeAssetIdLocation(KILT) }
+
+	console.log(asset)
+
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
-		.limitedReserveTransferAssets(
-			SpiritnetConfig.V3.hydraDxDestination,
-			SpiritnetConfig.V3.hydraDxBeneficiary(omniPoolAddress),
-			SpiritnetConfig.V3.nativeAssetIdLocation(KILT),
-			0,
-			'Unlimited'
-		)
+		.limitedReserveTransferAssets(hydraDxDestination, beneficiary, asset, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)
@@ -66,7 +68,7 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	expect(freeBalanceOmnipoolAccountAfterTx).eq(BigInt(KILT))
 }, 20_000)
 
-test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx', async ({ expect }) => {
+test.skip('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Set storage

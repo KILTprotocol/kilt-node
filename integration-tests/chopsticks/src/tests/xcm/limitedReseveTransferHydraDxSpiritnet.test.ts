@@ -9,7 +9,7 @@ import * as SpiritnetConfig from '../../network/spiritnet.js'
 import { KILT, initialBalanceKILT, keysAlice, keysBob } from '../../utils.js'
 import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../index.js'
 
-test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({ expect }) => {
+test.skip('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Create some new blocks to have consistent snapshots

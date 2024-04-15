@@ -1,33 +1,46 @@
-import { u8aToHex } from '@polkadot/util'
-import { decodeAddress } from '@polkadot/util-crypto'
-
-export function getSiblingAccountDestination(paraId: number, addr: string) {
+export function getSiblingDestination(paraId: number) {
 	return {
 		parents: 1,
 		interior: {
-			X2: [
-				{ Parachain: paraId },
-				{
-					AccountId32: {
-						id: u8aToHex(decodeAddress(addr)),
-					},
-				},
-			],
+			X1: { Parachain: paraId },
 		},
 	}
 }
 
-export function getParentAccountDestination(addr: string) {
+export function getParentAccountDestination() {
 	return {
 		parents: 1,
-		interior: {
-			X1: [
-				{
+		interior: 'Here',
+	}
+}
+
+export function getAccountDestinationV2(addr: string) {
+	return {
+		V2: {
+			parents: 0,
+			interior: {
+				X1: {
 					AccountId32: {
-						id: u8aToHex(decodeAddress(addr)),
+						network: 'Any',
+						id: addr,
 					},
 				},
-			],
+			},
+		},
+	}
+}
+
+export function getAccountDestinationV3(addr: string) {
+	return {
+		V3: {
+			parents: 0,
+			interior: {
+				X1: {
+					AccountId32: {
+						id: addr,
+					},
+				},
+			},
 		},
 	}
 }
