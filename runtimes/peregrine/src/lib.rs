@@ -30,13 +30,12 @@ use frame_support::{
 	traits::{AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
-use frame_system::{EnsureRoot, EnsureSigned};
+use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
 use frame_try_runtime::UpgradeCheckSelect;
 
-use frame_system::pallet_prelude::BlockNumberFor;
 use sp_api::impl_runtime_apis;
 use sp_core::{ConstBool, OpaqueMetadata};
 use sp_runtime::{
@@ -92,7 +91,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 11300,
+	spec_version: 11400,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 8,
@@ -830,6 +829,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| did::Call::submit_did_call { .. }
 							| did::Call::update_deposit { .. }
 							| did::Call::change_deposit_owner { .. }
+							| did::Call::create_from_account { .. }
+							| did::Call::dispatch_as { .. }
 					)
 					| RuntimeCall::DidLookup(
 						// Excludes `reclaim_deposit`
