@@ -1,9 +1,9 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types.js'
-import * as HydraDxConfig from './hydraDx.js'
 import { initialBalanceKILT, toNumber } from '../utils.js'
 
-export const options: SetupOption = {
+/// Options used to create the Spiritnet context
+const options: SetupOption = {
 	endpoint: process.env.SPIRITNET_WS || 'wss://kilt-rpc.dwellir.com',
 	db: './db/spiritnet.db.sqlite',
 	port: toNumber(process.env.SPIRITNET_PORT) || 9002,
@@ -12,6 +12,7 @@ export const options: SetupOption = {
 	allowUnresolvedImports: true,
 }
 
+/// Assigns the native tokens to an account
 export function assignNativeTokensToAccount(addr: string, balance: bigint = initialBalanceKILT) {
 	return {
 		System: {
@@ -20,6 +21,7 @@ export function assignNativeTokensToAccount(addr: string, balance: bigint = init
 	}
 }
 
+/// Sets the [technicalCommittee] and [council] governance to the given accounts
 export function setGovernance(addr: string[]) {
 	return {
 		technicalCommittee: { Members: addr },
@@ -27,6 +29,7 @@ export function setGovernance(addr: string[]) {
 	}
 }
 
+/// Sets the [safeXcmVersion] to the given version
 export function setSafeXcmVersion(version: number) {
 	return {
 		polkadotXcm: {
@@ -35,71 +38,13 @@ export function setSafeXcmVersion(version: number) {
 	}
 }
 
+/// Spiritnet ParaId
 export const paraId = 2086
+
+/// The sovereign account of HydraDx in Spiritnet
 export const hydraDxSovereignAccount = '4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt'
 
-const hydraDxLocation = {
-	parents: 1,
-	interior: {
-		X1: {
-			Parachain: HydraDxConfig.paraId,
-		},
-	},
-}
-
-const nativeAssetIdLocation = (amount: BigInt) => [
-	{
-		id: { Concrete: { parents: 0, interior: 'Here' } },
-		fun: { Fungible: amount },
-	},
-]
-
-export const V2 = {
-	hydraDxDestination: {
-		V2: hydraDxLocation,
-	},
-	hydraDxBeneficiary: (addr: string) => ({
-		V2: {
-			parents: 0,
-			interior: {
-				X1: {
-					AccountId32: {
-						network: 'Any',
-						id: addr,
-					},
-				},
-			},
-		},
-	}),
-
-	nativeAssetIdLocation: (amount: BigInt) => ({
-		V2: nativeAssetIdLocation(amount),
-	}),
-}
-
-export const V3 = {
-	hydraDxDestination: {
-		V3: hydraDxLocation,
-	},
-
-	hydraDxBeneficiary: (addr: string) => ({
-		V3: {
-			parents: 0,
-			interior: {
-				X1: {
-					AccountId32: {
-						id: addr,
-					},
-				},
-			},
-		},
-	}),
-
-	nativeAssetIdLocation: (amount: BigInt) => ({
-		V3: nativeAssetIdLocation(amount),
-	}),
-}
-
+/// Returns the Spiritnet context for the given options
 export async function getContext(): Promise<Config> {
 	return setupContext(options)
 }
