@@ -11,5 +11,7 @@
     "project": "./tsconfig.json"
   },
   "plugins": ["@typescript-eslint", "prettier"],
-  "rules": {}
+  "rules": {
+    "quotes": ["warn", "single"]
+  }
 }
