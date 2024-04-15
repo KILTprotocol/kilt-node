@@ -53,6 +53,7 @@ export async function getFreeBalanceSpiritnet(account: string): Promise<bigint> 
 }
 
 export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const accountInfo: any = await hydradxContext.api.query.tokens.accounts(account, HydraDxConfig.kiltTokenId)
 	return accountInfo.free.toBigInt()
 }

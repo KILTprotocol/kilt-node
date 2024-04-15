@@ -13,6 +13,7 @@ export async function createBlock(context: Config) {
 }
 
 /// sets the storage for the given context.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function setStorage(context: Config, storage: { [key: string]: any }) {
 	await context.dev.setStorage(storage)
 	await createBlock(context)
@@ -23,7 +24,7 @@ export async function checkBalance(
 	getFreeBalanceFunction: (account: string) => Promise<bigint>,
 	account: string,
 	expect: ExpectStatic,
-	expectedAmount: bigint = BigInt(0)
+	expectedAmount = BigInt(0)
 ) {
 	const balance = await getFreeBalanceFunction(account)
 	expect(balance).eq(BigInt(expectedAmount))
