@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, afterAll } from 'vitest'
+import { beforeAll, afterAll } from 'vitest'
 import { connectParachains, connectVertical } from '@acala-network/chopsticks'
 import { setTimeout } from 'timers/promises'
 
@@ -6,8 +6,7 @@ import * as SpiritnetConfig from '../network/spiritnet.js'
 import * as PolkadotConfig from '../network/polkadot.js'
 import * as HydraDxConfig from '../network/hydraDx.js'
 import type { Config } from '../network/types.js'
-import { hexAddress, setStorage } from './utils.js'
-import { keysAlice, keysBob, keysCharlie } from '../utils.js'
+import { setStorage } from './utils.js'
 
 export let spiritnetContext: Config
 export let hydradxContext: Config

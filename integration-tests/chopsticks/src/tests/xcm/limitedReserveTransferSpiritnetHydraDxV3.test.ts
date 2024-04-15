@@ -1,14 +1,12 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
-import { u8aToHex } from '@polkadot/util'
-import { decodeAddress } from '@polkadot/util-crypto'
 
 import * as SpiritnetConfig from '../../network/spiritnet.js'
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import { KILT, keysAlice } from '../../utils.js'
 import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../index.js'
 import { getAccountDestinationV3, getNativeAssetIdLocation, getSiblingDestination } from '../../network/utils.js'
-import { checkBalanceAndExpectAmount, createBlock, setStorage } from '../utils.js'
+import { checkBalance, createBlock, hexAddress, setStorage } from '../utils.js'
 
 const KILT_ASSET_V3 = { V3: [getNativeAssetIdLocation(KILT)] }
 
@@ -20,10 +18,10 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount([keysAlice.address]))
 
 	// check initial balance
-	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
-	await checkBalanceAndExpectAmount(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
+	await checkBalance(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
+	await checkBalance(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
 
-	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
+	const omniPoolAddress = hexAddress(HydraDxConfig.omnipoolAccount)
 	const hydraDxDestination = { V3: getSiblingDestination(HydraDxConfig.paraId) }
 	const beneficiary = getAccountDestinationV3(omniPoolAddress)
 
@@ -48,6 +46,6 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	checkSystemEvents(hydradxContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
 
 	// check balance
-	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect, KILT)
-	await checkBalanceAndExpectAmount(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect, KILT)
+	await checkBalance(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect, KILT)
+	await checkBalance(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect, KILT)
 }, 20_000)

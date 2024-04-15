@@ -5,7 +5,7 @@ import * as HydraDxConfig from '../../network/hydraDx.js'
 import * as SpiritnetConfig from '../../network/spiritnet.js'
 import { KILT, initialBalanceKILT, keysAlice, keysBob } from '../../utils.js'
 import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../index.js'
-import { checkBalanceAndExpectAmount, createBlock, hexAddress, setStorage } from '../utils.js'
+import { checkBalance, createBlock, hexAddress, setStorage } from '../utils.js'
 
 const destinationAlice = {
 	V3: {
@@ -42,7 +42,7 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	await createBlock(hydradxContext)
 
 	// check initial balance of alice
-	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, keysAlice.address, expect)
+	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect)
 
 	const signedTx = hydradxContext.api.tx.xTokens
 		.transfer(HydraDxConfig.kiltTokenId, KILT, destinationAlice, 'Unlimited')
@@ -69,13 +69,13 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	)
 
 	// Check Balance
-	await checkBalanceAndExpectAmount(
+	await checkBalance(
 		getFreeBalanceSpiritnet,
 		SpiritnetConfig.hydraDxSovereignAccount,
 		expect,
 		initialBalanceKILT - KILT
 	)
-	await checkBalanceAndExpectAmount(getFreeBalanceHydraDxKilt, keysBob.address, expect, initialBalanceKILT - KILT)
+	await checkBalance(getFreeBalanceHydraDxKilt, keysBob.address, expect, initialBalanceKILT - KILT)
 	// Alice receives a bit less since the tx fees has to be paid.
-	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, keysAlice.address, expect, BigInt('99999999999971175'))
+	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect, BigInt('99999999999971175'))
 }, 20_000)

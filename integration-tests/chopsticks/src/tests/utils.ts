@@ -19,7 +19,7 @@ export async function setStorage(context: Config, storage: { [key: string]: any 
 }
 
 /// checks the balance of an account and expects it to be the given amount
-export async function checkBalanceAndExpectAmount(
+export async function checkBalance(
 	getFreeBalanceFunction: (account: string) => Promise<bigint>,
 	account: string,
 	expect: ExpectStatic,
