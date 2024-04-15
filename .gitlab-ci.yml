@@ -10,7 +10,7 @@ clippy-and-docs:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
 
-fmt:
+fmt-rust:
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
@@ -38,6 +38,15 @@ integration-tests:
     - cd integrations-tests/chopsticks
     - yarn 
     - yarn test
+
+fmt-typescript:
+  timeout: 5 minutes
+  image: node:20
+  stage: test
+  script:
+    - cd integrations-tests/chopsticks
+    - yarn 
+    - yarn lint
 
 # TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
 test-try-runtime:
