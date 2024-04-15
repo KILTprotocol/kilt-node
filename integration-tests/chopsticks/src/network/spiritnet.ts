@@ -8,7 +8,7 @@ export const options: SetupOption = {
 	db: './db/spiritnet.db.sqlite',
 	port: toNumber(process.env.SPIRITNET_PORT) || 9002,
 	wasmOverride: '../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm',
-	// Whether to allow WASM unresolved imports when using a WASM to build the parachain
+	// Whether to allow WASM unresolved imports when using a WASM to build the parachain. This Flag is needed otherwise, the runtime can not be built from the WASM. Chopsticks throws an error when it encounters an unresolved import.
 	allowUnresolvedImports: true,
 }
 
