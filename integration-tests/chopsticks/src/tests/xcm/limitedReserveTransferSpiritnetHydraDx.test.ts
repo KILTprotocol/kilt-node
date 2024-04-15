@@ -2,56 +2,49 @@ import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
-import { setTimeout } from 'timers/promises'
 
 import * as SpiritnetConfig from '../../network/spiritnet.js'
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import { KILT, keysAlice } from '../../utils.js'
 import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../index.js'
-import { getAccountDestinationV3, getNativeAssetIdLocation, getSiblingDestination } from '../../network/utils.js'
+import {
+	getAccountDestinationV2,
+	getAccountDestinationV3,
+	getNativeAssetIdLocation,
+	getSiblingDestination,
+} from '../../network/utils.js'
+import { checkBalanceAndExpectAmount, checkBalanceAndExpectZero, createBlock, setStorage } from '../utils.js'
+
+const KILT_ASSET_V3 = { V3: [getNativeAssetIdLocation(KILT)] }
+const KILT_ASSET_V2 = { V2: [getNativeAssetIdLocation(KILT)] }
 
 test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// set storage
-	await spiritnetContext.dev.setStorage(SpiritnetConfig.assignNativeTokensToAccount(keysAlice.address))
-	await hydradxContext.dev.setStorage(HydraDxConfig.assignNativeTokensToAccount(keysAlice.address))
-
-	// Create some new blocks to have consistent snapshots
-	await setTimeout(50)
-	await spiritnetContext.dev.newBlock()
-	await hydradxContext.dev.newBlock()
+	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount(keysAlice.address))
+	await setStorage(spiritnetContext, SpiritnetConfig.setSafeXcmVersion(3))
+	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount(keysAlice.address))
+	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
 
 	// check initial balance
-	const balanceSovereignAccountHydraDxBeforeTx = await getFreeBalanceSpiritnet(
-		SpiritnetConfig.hydraDxSovereignAccount
-	)
-	expect(balanceSovereignAccountHydraDxBeforeTx).eq(BigInt(0))
-	const freeBalanceOmnipoolAccountBeforeTx = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
-	expect(freeBalanceOmnipoolAccountBeforeTx).eq(BigInt(0))
+	await checkBalanceAndExpectZero(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
+	await checkBalanceAndExpectZero(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
 
 	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
 	const hydraDxDestination = { V3: getSiblingDestination(HydraDxConfig.paraId) }
 	const beneficiary = getAccountDestinationV3(omniPoolAddress)
 
-	const asset = { V3: getNativeAssetIdLocation(KILT) }
-
-	console.log(asset)
-
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
-		.limitedReserveTransferAssets(hydraDxDestination, beneficiary, asset, 0, 'Unlimited')
+		.limitedReserveTransferAssets(hydraDxDestination, beneficiary, KILT_ASSET_V3, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)
 
 	// Produce new blocks
-	// fixes api runtime disconnect warning
-	await setTimeout(50)
-	await spiritnetContext.chain.newBlock()
-	await hydradxContext.dev.newBlock()
+	await Promise.all([createBlock(spiritnetContext), createBlock(hydradxContext)])
 
 	// Check events
-
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
 	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
@@ -62,53 +55,37 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	checkSystemEvents(hydradxContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
 
 	// check balance
-	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
-	expect(balanceSovereignAccountHydraDxAfterTx).eq(BigInt(KILT))
-	const freeBalanceOmnipoolAccountAfterTx = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
-	expect(freeBalanceOmnipoolAccountAfterTx).eq(BigInt(KILT))
+	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect, KILT)
+	await checkBalanceAndExpectAmount(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect, KILT)
 }, 20_000)
 
-test.skip('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx', async ({ expect }) => {
+test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Set storage
-	await spiritnetContext.dev.setStorage(SpiritnetConfig.defaultStorage(keysAlice.address))
-	await hydradxContext.dev.setStorage(HydraDxConfig.defaultStorage(keysAlice.address))
+	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount(keysAlice.address))
+	await setStorage(spiritnetContext, SpiritnetConfig.setSafeXcmVersion(3))
+	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount(keysAlice.address))
+	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
 
-	// Create some new blocks to have consistent snapshots
-	await setTimeout(50)
-	await spiritnetContext.dev.newBlock()
-	await hydradxContext.dev.newBlock()
-
-	// pre submit extrinsic checks
-	const balanceSovereignAccountHydraDxBeforeTx = await getFreeBalanceSpiritnet(
-		SpiritnetConfig.hydraDxSovereignAccount
-	)
-	expect(balanceSovereignAccountHydraDxBeforeTx).eq(BigInt(0))
-	const freeBalanceOmnipoolAccountBeforeTx = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
-	expect(freeBalanceOmnipoolAccountBeforeTx).eq(BigInt(0))
+	// check initial balance
+	await checkBalanceAndExpectZero(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
+	await checkBalanceAndExpectZero(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
 
 	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
+	const hydraDxDestination = { V2: getSiblingDestination(HydraDxConfig.paraId) }
+	const beneficiary = getAccountDestinationV2(omniPoolAddress)
+
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
-		.limitedReserveTransferAssets(
-			SpiritnetConfig.V2.hydraDxDestination,
-			SpiritnetConfig.V2.hydraDxBeneficiary(omniPoolAddress),
-			SpiritnetConfig.V2.nativeAssetIdLocation(KILT),
-			0,
-			'Unlimited'
-		)
+		.limitedReserveTransferAssets(hydraDxDestination, beneficiary, KILT_ASSET_V2, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)
 
 	// Produce new blocks
-	// fixes api runtime disconnect warning
-	await setTimeout(50)
-	await spiritnetContext.chain.newBlock()
-	await hydradxContext.dev.newBlock()
+	await Promise.all([createBlock(spiritnetContext), createBlock(hydradxContext)])
 
 	// Check events
-
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
 	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
@@ -118,10 +95,7 @@ test.skip('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx'
 	)
 	checkSystemEvents(hydradxContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
 
-	// Check balance
-
-	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
-	expect(balanceSovereignAccountHydraDxAfterTx).eq(KILT)
-	const freeBalanceOmnipoolAccountAfterTx = await getFreeBalanceHydraDxKilt(HydraDxConfig.omnipoolAccount)
-	expect(freeBalanceOmnipoolAccountAfterTx).eq(KILT)
+	// check balance
+	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect, KILT)
+	await checkBalanceAndExpectAmount(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect, KILT)
 }, 20_000)
