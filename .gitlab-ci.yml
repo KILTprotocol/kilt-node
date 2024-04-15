@@ -30,6 +30,15 @@ test-features:
   script:
     - cargo test --all --all-features --all-targets --locked
 
+integration-tests:
+  timeout: 5 minutes
+  image: node:20
+  stage: test
+  script:
+    - cd integrations-tests/chopsticks
+    - yarn 
+    - yarn test
+
 # TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
 test-try-runtime:
   parallel:
