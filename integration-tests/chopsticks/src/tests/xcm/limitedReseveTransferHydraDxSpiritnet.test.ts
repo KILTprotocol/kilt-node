@@ -2,47 +2,52 @@ import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
-import { setTimeout } from 'timers/promises'
 
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import * as SpiritnetConfig from '../../network/spiritnet.js'
 import { KILT, initialBalanceKILT, keysAlice, keysBob } from '../../utils.js'
 import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../index.js'
+import { checkBalanceAndExpectAmount, checkBalanceAndExpectZero, createBlock, setStorage } from '../utils.js'
 
-test.skip('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({ expect }) => {
+test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
-	// Create some new blocks to have consistent snapshots
-	await setTimeout(50)
-	await spiritnetContext.dev.newBlock()
-	await hydradxContext.dev.newBlock()
+	const hydraDxSovereignAccount = u8aToHex(decodeAddress(SpiritnetConfig.hydraDxSovereignAccount))
 
-	// Give the sovereign account of HydraDx some kilt coins.
-	await spiritnetContext.dev.setStorage(
-		SpiritnetConfig.defaultStorage(u8aToHex(decodeAddress(SpiritnetConfig.hydraDxSovereignAccount)))
-	)
-	await hydradxContext.dev.setStorage(HydraDxConfig.defaultStorage(keysBob.address))
+	// Create some new blocks to have consistent snapshots
+	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount(hydraDxSovereignAccount))
+	await setStorage(spiritnetContext, SpiritnetConfig.setSafeXcmVersion(3))
+	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
+	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount(keysBob.address))
 
 	// check initial balance of alice
-	const aliceBalanceBeforeTx = await getFreeBalanceSpiritnet(keysAlice.address)
-	expect(aliceBalanceBeforeTx).eq(BigInt(0))
+	await checkBalanceAndExpectZero(getFreeBalanceSpiritnet, keysAlice.address, expect)
+
+	const destination = {
+		V3: {
+			parents: 1,
+			interior: {
+				X2: [
+					{ Parachain: SpiritnetConfig.paraId },
+					{
+						AccountId32: {
+							id: u8aToHex(decodeAddress(keysAlice.address)),
+						},
+					},
+				],
+			},
+		},
+	}
 
 	const signedTx = hydradxContext.api.tx.xTokens
-		.transfer(
-			HydraDxConfig.kiltTokenId,
-			KILT,
-			HydraDxConfig.spiritnetDestinationAccount(keysAlice.address),
-			'Unlimited'
-		)
+		.transfer(HydraDxConfig.kiltTokenId, KILT, destination, 'Unlimited')
 		.signAsync(keysBob)
 
 	const events = await sendTransaction(signedTx)
 
 	// Produce a new Block
-	// fixes api runtime disconnect warning
-	await setTimeout(50)
-	await hydradxContext.chain.newBlock()
-	await spiritnetContext.dev.newBlock()
+	await createBlock(hydradxContext)
+	await createBlock(spiritnetContext)
 
 	// Check Events HydraDx
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
@@ -59,13 +64,13 @@ test.skip('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', asy
 	)
 
 	// Check Balance
-	const balanceSovereignAccountHydraDxAfterTx = await getFreeBalanceSpiritnet(SpiritnetConfig.hydraDxSovereignAccount)
-	expect(balanceSovereignAccountHydraDxAfterTx).eq(initialBalanceKILT - KILT)
-
-	const balanceBobHydraDx = await getFreeBalanceHydraDxKilt(keysBob.address)
-	expect(balanceBobHydraDx).eq(initialBalanceKILT - KILT)
-
-	const aliceBalanceAfterTx = await getFreeBalanceSpiritnet(keysAlice.address)
+	await checkBalanceAndExpectAmount(
+		getFreeBalanceSpiritnet,
+		SpiritnetConfig.hydraDxSovereignAccount,
+		expect,
+		initialBalanceKILT - KILT
+	)
+	await checkBalanceAndExpectAmount(getFreeBalanceHydraDxKilt, keysBob.address, expect, initialBalanceKILT - KILT)
 	// Alice receives a bit less since the tx fees has to be paid.
-	expect(aliceBalanceAfterTx).eq(BigInt('99999999999971175'))
+	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, keysAlice.address, expect, BigInt('99999999999971175'))
 }, 20_000)
