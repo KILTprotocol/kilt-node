@@ -13,10 +13,10 @@ const options: SetupOption = {
 }
 
 /// Assigns the native tokens to an account
-export function assignNativeTokensToAccount(addr: string, balance: bigint = initialBalanceKILT) {
+export function assignNativeTokensToAccount(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
 		System: {
-			Account: [[[addr], { providers: 1, data: { free: balance } }]],
+			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance } }]),
 		},
 	}
 }

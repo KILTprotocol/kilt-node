@@ -1,22 +1,23 @@
-import { beforeEach, afterEach } from 'vitest'
-import { connectParachains, connectVertical, xcmLogger } from '@acala-network/chopsticks'
+import { afterEach, beforeAll, afterAll } from 'vitest'
+import { connectParachains, connectVertical } from '@acala-network/chopsticks'
 import { setTimeout } from 'timers/promises'
 
-import * as SpiritnetNetwork from '../network/spiritnet.js'
-import * as PolkadotNetwork from '../network/polkadot.js'
-import * as HydraDxNetwork from '../network/hydraDx.js'
+import * as SpiritnetConfig from '../network/spiritnet.js'
+import * as PolkadotConfig from '../network/polkadot.js'
+import * as HydraDxConfig from '../network/hydraDx.js'
 import type { Config } from '../network/types.js'
+import { hexAddress, setStorage } from './utils.js'
+import { keysAlice, keysBob, keysCharlie } from '../utils.js'
 
 export let spiritnetContext: Config
 export let hydradxContext: Config
 export let polkadotContext: Config
 
 // There is not really a way to reset the storage. dev.setStorage only appends or overwrites an existing entry
-beforeEach(async () => {
-	xcmLogger.level = 'info'
-	spiritnetContext = await SpiritnetNetwork.getContext()
-	hydradxContext = await HydraDxNetwork.getContext()
-	polkadotContext = await PolkadotNetwork.getContext()
+beforeAll(async () => {
+	spiritnetContext = await SpiritnetConfig.getContext()
+	hydradxContext = await HydraDxConfig.getContext()
+	polkadotContext = await PolkadotConfig.getContext()
 
 	// Setup network
 	await connectVertical(polkadotContext.chain, spiritnetContext.chain)
@@ -33,12 +34,36 @@ beforeEach(async () => {
 		hydradxContext.dev.newBlock(newBlockConfig),
 	])
 	console.info('Runtime Upgrade completed')
+
+	await setStorage(spiritnetContext, SpiritnetConfig.setSafeXcmVersion(3))
+	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
 }, 60_000)
 
-afterEach(async () => {
+afterAll(async () => {
 	// fixes api runtime disconnect warning
 	await setTimeout(50)
 	await Promise.all([spiritnetContext.teardown(), hydradxContext.teardown(), polkadotContext.teardown()])
+})
+
+// Resets the balance storage after each test
+afterEach(async () => {
+	console.log('Resetting balance storage')
+	const accounts = [
+		keysAlice.address,
+		keysBob.address,
+		keysCharlie.address,
+		SpiritnetConfig.hydraDxSovereignAccount,
+		HydraDxConfig.omnipoolAccount,
+	]
+
+	const hydraDxConfig = {
+		...HydraDxConfig.assignNativeTokensToAccount(accounts, BigInt(0)),
+		...HydraDxConfig.assignKiltTokensToAccount(accounts, BigInt(0)),
+	}
+
+	await setStorage(hydradxContext, hydraDxConfig)
+	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount(accounts, BigInt(0)))
+	await setStorage(polkadotContext, PolkadotConfig.setAddrNativeTokens(accounts, BigInt(0)))
 })
 
 export async function getFreeBalanceSpiritnet(account: string): Promise<bigint> {
@@ -47,6 +72,6 @@ export async function getFreeBalanceSpiritnet(account: string): Promise<bigint> 
 }
 
 export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint> {
-	const accountInfo: any = await hydradxContext.api.query.tokens.accounts(account, HydraDxNetwork.kiltTokenId)
+	const accountInfo: any = await hydradxContext.api.query.tokens.accounts(account, HydraDxConfig.kiltTokenId)
 	return accountInfo.free.toBigInt()
 }

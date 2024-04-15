@@ -19,6 +19,13 @@ exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > 
   {
     "data": {
       "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+  {
+    "data": {
+      "messageHash": "(hash)",
       "messageId": "(hash)",
       "weight": {
         "proofSize": 0,

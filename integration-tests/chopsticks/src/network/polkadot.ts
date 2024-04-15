@@ -12,10 +12,10 @@ export const options: SetupOption = {
 	port: toNumber(process.env.POLKADOT_PORT) || 9000,
 }
 
-export function setAddrNativeTokens(addr: string, balance: bigint = initialBalanceDOT) {
+export function setAddrNativeTokens(addr: string[], balance: bigint = initialBalanceDOT) {
 	return {
 		System: {
-			Account: [[[addr], { providers: 1, data: { free: balance } }]],
+			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance } }]),
 		},
 	}
 }

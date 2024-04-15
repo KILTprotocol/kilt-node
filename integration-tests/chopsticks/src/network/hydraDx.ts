@@ -18,18 +18,18 @@ export function setGovernance(addr: string[]) {
 	}
 }
 
-export function assignNativeTokensToAccount(addr: string, balance: bigint = initialBalanceHDX) {
+export function assignNativeTokensToAccount(addr: string[], balance: bigint = initialBalanceHDX) {
 	return {
 		System: {
-			Account: [[[addr], { providers: 1, data: { free: balance } }]],
+			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance } }]),
 		},
 	}
 }
 
-export function assignKiltTokensToAccount(addr: string, balance: bigint = initialBalanceKILT) {
+export function assignKiltTokensToAccount(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
 		Tokens: {
-			Accounts: [[[addr, kiltTokenId], { free: balance }]],
+			Accounts: addr.map((address) => [[address, kiltTokenId], { free: balance }]),
 		},
 	}
 }

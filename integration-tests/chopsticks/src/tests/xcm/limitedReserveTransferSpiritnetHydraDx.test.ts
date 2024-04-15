@@ -13,7 +13,7 @@ import {
 	getNativeAssetIdLocation,
 	getSiblingDestination,
 } from '../../network/utils.js'
-import { checkBalanceAndExpectAmount, checkBalanceAndExpectZero, createBlock, setStorage } from '../utils.js'
+import { checkBalanceAndExpectAmount, createBlock, setStorage } from '../utils.js'
 
 const KILT_ASSET_V3 = { V3: [getNativeAssetIdLocation(KILT)] }
 const KILT_ASSET_V2 = { V2: [getNativeAssetIdLocation(KILT)] }
@@ -22,14 +22,12 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// set storage
-	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount(keysAlice.address))
-	await setStorage(spiritnetContext, SpiritnetConfig.setSafeXcmVersion(3))
-	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount(keysAlice.address))
-	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
+	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount([keysAlice.address]))
+	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount([keysAlice.address]))
 
 	// check initial balance
-	await checkBalanceAndExpectZero(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
-	await checkBalanceAndExpectZero(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
+	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
+	await checkBalanceAndExpectAmount(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
 
 	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
 	const hydraDxDestination = { V3: getSiblingDestination(HydraDxConfig.paraId) }
@@ -41,8 +39,8 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', asy
 
 	const events = await sendTransaction(signedTx)
 
-	// Produce new blocks
-	await Promise.all([createBlock(spiritnetContext), createBlock(hydradxContext)])
+	await createBlock(spiritnetContext)
+	await createBlock(hydradxContext)
 
 	// Check events
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
@@ -63,14 +61,12 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Set storage
-	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount(keysAlice.address))
-	await setStorage(spiritnetContext, SpiritnetConfig.setSafeXcmVersion(3))
-	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount(keysAlice.address))
-	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
+	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount([keysAlice.address]))
+	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount([keysAlice.address]))
 
 	// check initial balance
-	await checkBalanceAndExpectZero(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
-	await checkBalanceAndExpectZero(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
+	await checkBalanceAndExpectAmount(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
+	await checkBalanceAndExpectAmount(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
 
 	const omniPoolAddress = u8aToHex(decodeAddress(HydraDxConfig.omnipoolAccount))
 	const hydraDxDestination = { V2: getSiblingDestination(HydraDxConfig.paraId) }
@@ -82,14 +78,15 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx', asy
 
 	const events = await sendTransaction(signedTx)
 
-	// Produce new blocks
-	await Promise.all([createBlock(spiritnetContext), createBlock(hydradxContext)])
+	await createBlock(spiritnetContext)
+	await createBlock(hydradxContext)
 
-	// Check events
+	// Check events sender
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
 	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
 
+	// Check events receiver
 	checkSystemEvents(hydradxContext, { section: 'currencies', method: 'Deposited' }).toMatchSnapshot(
 		'receiver events currencies'
 	)

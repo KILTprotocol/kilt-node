@@ -1,5 +1,7 @@
 import { ExpectStatic } from 'vitest'
 import { setTimeout } from 'timers/promises'
+import { u8aToHex } from '@polkadot/util'
+import { decodeAddress } from '@polkadot/util-crypto'
 
 import { Config } from '../network/types.js'
 
@@ -16,23 +18,17 @@ export async function setStorage(context: Config, storage: { [key: string]: any 
 	await createBlock(context)
 }
 
-/// checks the balance of an account and expects it to be zero
-export async function checkBalanceAndExpectZero(
-	getFreeBalanceFunction: (account: string) => Promise<bigint>,
-	account: string,
-	expect: ExpectStatic
-) {
-	const balance = await getFreeBalanceFunction(account)
-	expect(balance).eq(BigInt(0))
-}
-
 /// checks the balance of an account and expects it to be the given amount
 export async function checkBalanceAndExpectAmount(
 	getFreeBalanceFunction: (account: string) => Promise<bigint>,
 	account: string,
 	expect: ExpectStatic,
-	expectedAmount: bigint
+	expectedAmount: bigint = BigInt(0)
 ) {
 	const balance = await getFreeBalanceFunction(account)
 	expect(balance).eq(BigInt(expectedAmount))
+}
+
+export function hexAddress(addr: string) {
+	return u8aToHex(decodeAddress(addr))
 }
