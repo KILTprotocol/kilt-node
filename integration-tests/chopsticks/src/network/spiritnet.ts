@@ -12,16 +12,28 @@ export const options: SetupOption = {
 	allowUnresolvedImports: true,
 }
 
-export const defaultStorage = (addr: string) => ({
-	technicalCommittee: { Members: [addr] },
-	council: { Members: [addr] },
-	System: {
-		Account: [[[addr], { providers: 1, data: { free: initialBalanceKILT } }]],
-	},
-	polkadotXcm: {
-		safeXcmVersion: 3,
-	},
-})
+export function assignNativeTokensToAccount(addr: string, balance: bigint = initialBalanceKILT) {
+	return {
+		System: {
+			Account: [[[addr], { providers: 1, data: { free: balance } }]],
+		},
+	}
+}
+
+export function setGovernance(addr: string[]) {
+	return {
+		technicalCommittee: { Members: addr },
+		council: { Members: addr },
+	}
+}
+
+export function setSafeXcmVersion(version: number) {
+	return {
+		polkadotXcm: {
+			safeXcmVersion: version,
+		},
+	}
+}
 
 export const paraId = 2086
 export const hydraDxSovereignAccount = '4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt'

@@ -12,19 +12,26 @@ export const options: SetupOption = {
 	port: toNumber(process.env.POLKADOT_PORT) || 9000,
 }
 
-export const defaultStorage = (addr: string) => ({
-	System: {
-		Account: [[[addr], { providers: 1, data: { free: initialBalanceDOT } }]],
-	},
-	ParasDisputes: {
-		// those can makes block building super slow
-		$removePrefix: ['disputes'],
-	},
-	Dmp: {
-		// clear existing dmp to avoid impact test result
-		$removePrefix: ['downwardMessageQueues'],
-	},
-})
+export function setAddrNativeTokens(addr: string, balance: bigint = initialBalanceDOT) {
+	return {
+		System: {
+			Account: [[[addr], { providers: 1, data: { free: balance } }]],
+		},
+	}
+}
+
+export function removeDisputesAndMessageQueues() {
+	return {
+		ParasDisputes: {
+			// those can makes block building super slow
+			$removePrefix: ['disputes'],
+		},
+		Dmp: {
+			// clear existing dmp to avoid impact test result
+			$removePrefix: ['downwardMessageQueues'],
+		},
+	}
+}
 
 export async function getContext(): Promise<Config> {
 	return setupContext(options)
