@@ -88,6 +88,8 @@ runtime-benchmarks = [
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
+  "xcm-builder/runtime-benchmarks",
+  "xcm-executor/runtime-benchmarks",
 ]
 std = [
   "cumulus-pallet-parachain-system/std",

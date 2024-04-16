@@ -28,6 +28,7 @@ frame-support.workspace = true
 frame-system.workspace = true
 integration-tests-common.workspace = true
 kilt-asset-dids.workspace = true
+pallet-bags-list.workspace = true
 pallet-did-lookup.workspace = true
 pallet-message-queue.workspace = true
 pallet-web3-names.workspace = true
@@ -41,7 +42,6 @@ polkadot-runtime-constants.workspace = true
 polkadot-runtime-parachains.workspace = true
 polkadot-runtime.workspace = true
 polkadot-service.workspace = true
-polkadot-test-runtime.workspace = true
 public-credentials = {workspace = true, features = ["mock"]}
 rococo-runtime.workspace = true
 runtime-common.workspace = true
@@ -60,21 +60,21 @@ xcm.workspace = true
 
 [features]
 runtime-benchmarks = [
-  "integration-tests-common/runtime-benchmarks",
-  "asset-hub-polkadot-runtime/runtime-benchmarks",
-  "polkadot-runtime/runtime-benchmarks",
-  "rococo-runtime/runtime-benchmarks",
-  "collectives-polkadot-runtime/runtime-benchmarks",
-  "bridge-hub-rococo-runtime/runtime-benchmarks",
-  "runtime-common/runtime-benchmarks",
-  "asset-hub-westend-runtime/runtime-benchmarks",
-  "asset-hub-kusama-runtime/runtime-benchmarks",
-  "penpal-runtime/runtime-benchmarks",
+  "integration-tests-common/runtime-benchmarks", # "asset-hub-polkadot-runtime/runtime-benchmarks",  # "polkadot-runtime/runtime-benchmarks",  # "rococo-runtime/runtime-benchmarks",  # "collectives-polkadot-runtime/runtime-benchmarks",  # "bridge-hub-rococo-runtime/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks", # "asset-hub-westend-runtime/runtime-benchmarks",  # "asset-hub-kusama-runtime/runtime-benchmarks",
+  # "penpal-runtime/runtime-benchmarks",
   "did/runtime-benchmarks",
-  "ctype/runtime-benchmarks",
-  "bridge-hub-polkadot-runtime/runtime-benchmarks",
-  "bridge-hub-kusama-runtime/runtime-benchmarks",
-  "polkadot-test-runtime/runtime-benchmarks",
+  "ctype/runtime-benchmarks", # "bridge-hub-polkadot-runtime/runtime-benchmarks",
+  # "bridge-hub-kusama-runtime/runtime-benchmarks",
+  # "polkadot-test-runtime/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
+]
+
+try-runtime = [
+  "did/try-runtime",
+  "ctype/try-runtime",
+  "peregrine-runtime/try-runtime",
+  "spiritnet-runtime/try-runtime",
+  "pallet-bags-list/try-runtime",
 ]

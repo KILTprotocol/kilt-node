@@ -17,10 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::{account, benchmarks, vec, Vec, Zero};
+use frame_benchmarking::{account, benchmarks};
 use frame_support::{
 	pallet_prelude::EnsureOrigin,
-	sp_runtime::SaturatedConversion,
+	sp_runtime::{traits::Zero, SaturatedConversion},
 	traits::{
 		fungible::{Inspect, Mutate},
 		Get,
@@ -29,6 +29,7 @@ use frame_support::{
 };
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use sp_runtime::app_crypto::sr25519;
+use sp_std::{vec, vec::Vec};
 
 use kilt_support::{traits::GenerateBenchmarkOrigin, Deposit};
 

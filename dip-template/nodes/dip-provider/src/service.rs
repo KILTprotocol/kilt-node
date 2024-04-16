@@ -79,7 +79,7 @@ pub fn new_partial(
 		ParachainClient,
 		ParachainBackend,
 		(),
-		DefaultImportQueue<Block, ParachainClient>,
+		DefaultImportQueue<Block>,
 		FullPool<Block, ParachainClient>,
 		(ParachainBlockImport, Option<Telemetry>, Option<TelemetryWorkerHandle>),
 	>,

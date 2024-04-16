@@ -15,8 +15,8 @@ substrate-wasm-builder.workspace = true
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
 log.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
 hex-literal = {workspace = true, optional = true}

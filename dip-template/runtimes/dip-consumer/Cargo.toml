@@ -57,7 +57,7 @@ sp-weights.workspace = true
 
 # Cumulus
 cumulus-pallet-aura-ext.workspace = true
-cumulus-pallet-parachain-system.workspace = true
+cumulus-pallet-parachain-system = {workspace = true, features = ["parameterized-consensus-hook"]}
 cumulus-primitives-core.workspace = true
 cumulus-primitives-timestamp.workspace = true
 pallet-collator-selection.workspace = true

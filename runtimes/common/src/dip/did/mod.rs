@@ -182,10 +182,10 @@ where
 			did_details::DidVerificationKey,
 			mock_utils::{generate_base_did_creation_details, get_key_agreement_keys},
 		};
-		use frame_benchmarking::{vec, Zero};
-		use frame_support::traits::fungible::Mutate;
+		use frame_support::{sp_runtime::traits::Zero, traits::fungible::Mutate};
 		use sp_io::crypto::{ed25519_generate, sr25519_generate};
 		use sp_runtime::{traits::Get, KeyTypeId};
+		use sp_std::vec;
 
 		use crate::constants::KILT;
 

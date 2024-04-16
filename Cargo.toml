@@ -134,6 +134,7 @@ frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/polkadot-sd
 frame-try-runtime = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 pallet-aura = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 pallet-authorship = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
+pallet-bags-list = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 pallet-balances = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 pallet-collator-selection = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 pallet-collective = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
@@ -183,7 +184,6 @@ polkadot-parachain = {package = "polkadot-parachain-primitives", git = "https://
 polkadot-runtime = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 polkadot-runtime-constants = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 polkadot-runtime-parachains = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
-polkadot-test-runtime = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 rococo-runtime-constants = {git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}
 xcm = {package = "staging-xcm", git = "https://github.com/paritytech/polkadot-sdk", default-features = false, tag = "polkadot-v1.1.0"}

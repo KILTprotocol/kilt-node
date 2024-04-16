@@ -20,7 +20,7 @@ sp-runtime = {workspace = true, features = ["std"]}
 sp-trie = {workspace = true, features = ["std"]}
 
 [dependencies]
-cumulus-pallet-parachain-system.workspace = true
+cumulus-pallet-parachain-system = {workspace = true, features = ["parameterized-consensus-hook"]}
 cumulus-primitives-core.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
@@ -36,6 +36,13 @@ sp-runtime = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
+runtime-benchmarks = [
+  "cumulus-pallet-parachain-system/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "frame-benchmarking",
+  "sp-runtime/runtime-benchmarks",
+]
 std = [
   "cumulus-pallet-parachain-system/std",
   "cumulus-primitives-core/std",
@@ -48,14 +55,8 @@ std = [
   "frame-benchmarking?/std",
   "sp-runtime?/std",
 ]
-runtime-benchmarks = [
-  "cumulus-pallet-parachain-system/runtime-benchmarks",
-  "frame-support/runtime-benchmarks",
-  "frame-system/runtime-benchmarks",
-  "frame-benchmarking",
-  "sp-runtime/runtime-benchmarks",
-]
 try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
+  "cumulus-pallet-parachain-system/try-runtime",
 ]
