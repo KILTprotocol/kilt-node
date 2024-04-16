@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{traits::EnsureOrigin, RuntimeDebug};
+use frame_support::{sp_runtime::RuntimeDebug, traits::EnsureOrigin};
 use kilt_support::traits::CallSources;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;

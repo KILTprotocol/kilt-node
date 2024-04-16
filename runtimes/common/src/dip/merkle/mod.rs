@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::KeyIdOf;
-use frame_support::RuntimeDebug;
+use frame_support::sp_runtime::RuntimeDebug;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_primitives::DidMerkleProof;
 use pallet_did_lookup::linkable_account::LinkableAccountId;

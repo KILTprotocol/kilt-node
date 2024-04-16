@@ -19,7 +19,7 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
-use frame_support::RuntimeDebug;
+use frame_support::sp_runtime::RuntimeDebug;
 
 use kilt_support::Deposit;
 

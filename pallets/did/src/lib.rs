@@ -118,8 +118,9 @@ pub use crate::{
 use errors::{DidError, InputError, SignatureError, StorageError};
 
 use frame_support::{
-	dispatch::{DispatchError, DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
+	dispatch::{DispatchResult, GetDispatchInfo, PostDispatchInfo},
 	ensure,
+	sp_runtime::{traits::Dispatchable, DispatchError},
 	storage::types::StorageMap,
 	traits::{Get, OnUnbalanced},
 	Parameter,

@@ -41,8 +41,9 @@ pub mod pallet {
 	use super::*;
 
 	use frame_support::{
-		dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
+		dispatch::{GetDispatchInfo, PostDispatchInfo},
 		pallet_prelude::*,
+		sp_runtime::traits::Dispatchable,
 		traits::{Contains, EnsureOriginWithArg},
 	};
 	use frame_system::pallet_prelude::*;

@@ -197,6 +197,7 @@ impl frame_system::Config for Runtime {
 
 parameter_types! {
 	pub const MaxAuthorities: u32 = constants::staking::MAX_CANDIDATES;
+	pub const MaxNominators: u32 = constants::staking::MAX_NOMINATORS;
 }
 
 impl pallet_aura::Config for Runtime {
@@ -209,6 +210,7 @@ impl pallet_aura::Config for Runtime {
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type KeyOwnerProof = sp_core::Void;
+	type MaxNominators = MaxNominators;
 	type WeightInfo = ();
 	type MaxAuthorities = MaxAuthorities;
 	// This is a purely random value

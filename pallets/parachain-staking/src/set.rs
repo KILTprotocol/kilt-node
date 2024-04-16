@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{traits::Get, BoundedVec, DefaultNoBound, RuntimeDebug};
+use frame_support::{sp_runtime::RuntimeDebug, traits::Get, BoundedVec, DefaultNoBound};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, SaturatedConversion};

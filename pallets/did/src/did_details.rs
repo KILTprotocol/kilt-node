@@ -18,9 +18,9 @@
 
 use frame_support::{
 	ensure,
+	sp_runtime::RuntimeDebug,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
 	traits::Get,
-	RuntimeDebug,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::Deposit;

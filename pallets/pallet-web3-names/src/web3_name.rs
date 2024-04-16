@@ -18,7 +18,7 @@
 
 use sp_std::{fmt::Debug, marker::PhantomData, ops::Deref, vec::Vec};
 
-use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec, RuntimeDebug};
+use frame_support::{ensure, sp_runtime::RuntimeDebug, sp_runtime::SaturatedConversion, traits::Get, BoundedVec};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
