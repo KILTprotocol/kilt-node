@@ -32,12 +32,12 @@ stages:
 
 integration-tests:
   timeout: 5 minutes
-  image: node:20
+  image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
-    - ls
+    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    - apt-get install -y nodejs
     - cargo build -p spiritnet-runtime
-    - ls
     - cd ./integration-tests/chopsticks
     - yarn 
     - yarn test
