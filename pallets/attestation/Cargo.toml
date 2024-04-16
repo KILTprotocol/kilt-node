@@ -25,8 +25,8 @@ sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
 log.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
 # Internal dependencies
@@ -43,6 +43,7 @@ sp-io = {workspace = true, optional = true}
 sp-keystore = {workspace = true, optional = true}
 sp-runtime.workspace = true
 sp-std.workspace = true
+sp-weights.workspace = true
 
 [features]
 default = ["std"]
@@ -58,7 +59,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "sp-core",
-  "sp-runtime/runtime-benchmarks"
+  "sp-runtime/runtime-benchmarks",
 ]
 std = [
   "ctype/std",
@@ -78,5 +79,5 @@ std = [
 try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
-  "kilt-support/try-runtime"
+  "kilt-support/try-runtime",
 ]

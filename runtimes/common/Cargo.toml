@@ -12,7 +12,7 @@ version.workspace = true
 
 [dev-dependencies]
 did = {workspace = true, features = ["std", "mock"]}
-kilt-dip-primitives = { workspace = true, features = ["std"] }
+kilt-dip-primitives = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
@@ -35,8 +35,8 @@ parachain-staking.workspace = true
 public-credentials.workspace = true
 
 # Substrate dependencies
-cumulus-pallet-parachain-system.workspace = true
 cumulus-pallet-dmp-queue.workspace = true
+cumulus-pallet-parachain-system.workspace = true
 cumulus-pallet-xcmp-queue.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
@@ -53,6 +53,7 @@ sp-io.workspace = true
 sp-runtime.workspace = true
 sp-std.workspace = true
 sp-trie.workspace = true
+sp-weights.workspace = true
 
 # Cumulus dependencies
 cumulus-primitives-core.workspace = true
@@ -64,7 +65,7 @@ xcm-executor.workspace = true
 xcm.workspace = true
 
 #benchmarking
-frame-benchmarking = { workspace = true, optional = true }
+frame-benchmarking = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
@@ -86,8 +87,6 @@ runtime-benchmarks = [
   "polkadot-parachain/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
-  "xcm-builder/runtime-benchmarks",
-  "xcm-executor/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
 ]
 std = [

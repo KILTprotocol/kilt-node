@@ -327,7 +327,7 @@ fn build_import_queue(
 	config: &Configuration,
 	telemetry: Option<TelemetryHandle>,
 	task_manager: &TaskManager,
-) -> Result<DefaultImportQueue<Block, ParachainClient>, sc_service::Error> {
+) -> Result<DefaultImportQueue<Block>, sc_service::Error> {
 	let slot_duration = slot_duration(&*client)?;
 
 	import_queue::<sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _>(ImportQueueParams {

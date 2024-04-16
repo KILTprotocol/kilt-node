@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{errors, Config};
-use frame_support::{ensure, traits::Get, BoundedVec, RuntimeDebug};
+use frame_support::{ensure, sp_runtime::RuntimeDebug, traits::Get, BoundedVec};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::traits::SaturatedConversion;

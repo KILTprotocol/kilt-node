@@ -1,14 +1,14 @@
 [package]
 authors.workspace = true
+description = "Enables adding and revoking public credentials."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "public-credentials"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "public-credentials"
-description = "Enables adding and revoking public credentials."
 
 [dev-dependencies]
 ctype = {workspace = true, features = ["mock"]}
@@ -20,9 +20,9 @@ sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
+log.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
-log.workspace = true
 
 # Internal dependencies
 ctype.workspace = true
@@ -37,6 +37,7 @@ sp-io = {workspace = true, optional = true}
 sp-keystore = {workspace = true, optional = true}
 sp-runtime.workspace = true
 sp-std.workspace = true
+sp-weights.workspace = true
 
 [features]
 default = ["std"]
@@ -59,12 +60,12 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
-  "log/std"
+  "log/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
-  "kilt-support/try-runtime"
+  "kilt-support/try-runtime",
 ]
 
 mock = []

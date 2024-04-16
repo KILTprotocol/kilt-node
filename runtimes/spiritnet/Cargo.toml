@@ -151,8 +151,6 @@ runtime-benchmarks = [
   "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
-  "xcm-builder/runtime-benchmarks",
-  "xcm-executor/runtime-benchmarks",
 ]
 std = [
   "attestation/std",
