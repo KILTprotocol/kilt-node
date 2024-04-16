@@ -36,6 +36,8 @@ integration-tests:
   stage: test
   script:
     - ls
+    - cargo build -p spiritnet-runtime
+    - ls
     - cd ./integration-tests/chopsticks
     - yarn 
     - yarn test
