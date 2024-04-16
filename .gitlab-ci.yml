@@ -35,18 +35,16 @@ integration-tests:
   image: node:20
   stage: test
   script:
-    - ls
-    - cd ./integrations-tests/chopsticks
+    - cd ./integration-tests/chopsticks
     - yarn 
     - yarn test
 
-fmt-typescript:
+lint-typescript:
   timeout: 5 minutes
   image: node:20
   stage: test
   script:
-
-    - cd ./integrations-tests/chopsticks
+    - cd ./integration-tests/chopsticks
     - yarn 
     - yarn lint
 
