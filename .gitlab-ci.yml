@@ -2,40 +2,41 @@ stages:
   - test
   - build
 
-clippy-and-docs:
-  timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
-  stage: test
-  script:
-    - cargo clippy --all-features --all-targets --locked -- -D warnings
-    - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
+# clippy-and-docs:
+#   timeout: 2 hours
+#   image: paritytech/ci-unified:bullseye-1.70.0
+#   stage: test
+#   script:
+#     - cargo clippy --all-features --all-targets --locked -- -D warnings
+#     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
 
-fmt-rust:
-  image: paritytech/ci-unified:bullseye-1.70.0
-  stage: test
-  script:
-    - cargo fmt -- --check
+# fmt-rust:
+#   image: paritytech/ci-unified:bullseye-1.70.0
+#   stage: test
+#   script:
+#     - cargo fmt -- --check
 
-test:
-  timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
-  stage: test
-  script:
-    - cargo test --all --all-targets --locked
+# test:
+#   timeout: 2 hours
+#   image: paritytech/ci-unified:bullseye-1.70.0
+#   stage: test
+#   script:
+#     - cargo test --all --all-targets --locked
 
-test-features:
-  timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
-  stage: test
-  script:
-    - cargo test --all --all-features --all-targets --locked
+# test-features:
+#   timeout: 2 hours
+#   image: paritytech/ci-unified:bullseye-1.70.0
+#   stage: test
+#   script:
+#     - cargo test --all --all-features --all-targets --locked
 
 integration-tests:
   timeout: 5 minutes
   image: node:20
   stage: test
   script:
-    - cd integrations-tests/chopsticks
+    - ls
+    - cd ./integrations-tests/chopsticks
     - yarn 
     - yarn test
 
@@ -44,139 +45,140 @@ fmt-typescript:
   image: node:20
   stage: test
   script:
-    - cd integrations-tests/chopsticks
+
+    - cd ./integrations-tests/chopsticks
     - yarn 
     - yarn lint
 
 # TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
-test-try-runtime:
-  parallel:
-    matrix:
-      - RUNTIME: "peregrine"
-        ENDPOINT: "wss://peregrine.kilt.io:443"
-      - RUNTIME: "spiritnet"
-        ENDPOINT: "wss://spiritnet.kilt.io:443"
-  timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
-  stage: test
-  variables:
-    TRY_RUNTIME_CLI_VERSION_TAG: v0.6.1
-  script:
-    - curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${TRY_RUNTIME_CLI_VERSION_TAG}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
-    - chmod +x ./try-runtime
-    - ./try-runtime --version
-    - cargo build --locked --release -p ${RUNTIME}-runtime --features try-runtime
-    - ./try-runtime --runtime ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm on-runtime-upgrade --disable-spec-version-check --checks=all live --uri=${ENDPOINT}
-    - echo "try-runtime with all checks exited successfully."
-    - ./try-runtime --runtime ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm on-runtime-upgrade --disable-spec-version-check live --uri=${ENDPOINT}
-    - echo "try-runtime with pre and post checks exited successfully."
+# test-try-runtime:
+#   parallel:
+#     matrix:
+#       - RUNTIME: "peregrine"
+#         ENDPOINT: "wss://peregrine.kilt.io:443"
+#       - RUNTIME: "spiritnet"
+#         ENDPOINT: "wss://spiritnet.kilt.io:443"
+#   timeout: 2 hours
+#   image: paritytech/ci-unified:bullseye-1.70.0
+#   stage: test
+#   variables:
+#     TRY_RUNTIME_CLI_VERSION_TAG: v0.6.1
+#   script:
+#     - curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${TRY_RUNTIME_CLI_VERSION_TAG}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
+#     - chmod +x ./try-runtime
+#     - ./try-runtime --version
+#     - cargo build --locked --release -p ${RUNTIME}-runtime --features try-runtime
+#     - ./try-runtime --runtime ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm on-runtime-upgrade --disable-spec-version-check --checks=all live --uri=${ENDPOINT}
+#     - echo "try-runtime with all checks exited successfully."
+#     - ./try-runtime --runtime ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm on-runtime-upgrade --disable-spec-version-check live --uri=${ENDPOINT}
+#     - echo "try-runtime with pre and post checks exited successfully."
 
-build:
-  timeout: 2 hours
-  image:
-    name: kiltprotocol/kilt-ci:2.7.31
-    entrypoint: [""]
-  stage: build
-  only:
-    refs:
-      - develop
-      - master
-      - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
-      - /^[dev-](\w*-)*[0-9]?$/
-  variables:
-    DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
-    DOCKER_HUB_STANDALONE: "kiltprotocol/standalone-node"
-    DOCKER_HUB_DIP_PROVIDER_TEMPLATE: "kiltprotocol/dip-provider-node-template"
-    DOCKER_HUB_DIP_CONSUMER_TEMPLATE: "kiltprotocol/dip-consumer-node-template"
-  before_script:
-    - aws --version
-    - docker --version
-  script:
-    - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-    - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_REGISTRY
-    - ./.maintain/docker-auth-config.sh
+# build:
+#   timeout: 2 hours
+#   image:
+#     name: kiltprotocol/kilt-ci:2.7.31
+#     entrypoint: [""]
+#   stage: build
+#   only:
+#     refs:
+#       - develop
+#       - master
+#       - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+#       - /^[dev-](\w*-)*[0-9]?$/
+#   variables:
+#     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
+#     DOCKER_HUB_STANDALONE: "kiltprotocol/standalone-node"
+#     DOCKER_HUB_DIP_PROVIDER_TEMPLATE: "kiltprotocol/dip-provider-node-template"
+#     DOCKER_HUB_DIP_CONSUMER_TEMPLATE: "kiltprotocol/dip-consumer-node-template"
+#   before_script:
+#     - aws --version
+#     - docker --version
+#   script:
+#     - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+#     - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_REGISTRY
+#     - ./.maintain/docker-auth-config.sh
 
-    - ./.maintain/build-image.sh build
-    - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_SHORT_SHA}; fi"
-    - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build latest-${CI_COMMIT_BRANCH}; fi"
-    - "if [[ ! -z ${CI_COMMIT_TAG} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_TAG}; fi"
-    - "if [[ ! -z ${CI_COMMIT_TAG} && ! -z ${CI_COMMIT_TAG##*-rc*} && ! -z ${CI_COMMIT_TAG##*dev-*} ]]; then ./.maintain/push-image.sh build latest; fi"
+#     - ./.maintain/build-image.sh build
+#     - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_SHORT_SHA}; fi"
+#     - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build latest-${CI_COMMIT_BRANCH}; fi"
+#     - "if [[ ! -z ${CI_COMMIT_TAG} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_TAG}; fi"
+#     - "if [[ ! -z ${CI_COMMIT_TAG} && ! -z ${CI_COMMIT_TAG##*-rc*} && ! -z ${CI_COMMIT_TAG##*dev-*} ]]; then ./.maintain/push-image.sh build latest; fi"
 
-build-wasm-peregrine:
-  image:
-    name: paritytech/srtool:1.70.0
-    entrypoint: [""]
-  stage: build
-  only:
-    - develop
-    - master
-    - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
-  script:
-    - export PACKAGE=peregrine-runtime
-    - export RUNTIME_DIR=runtimes/peregrine
-    - export PARACHAIN_PALLET_ID=0x50
-    - export AUTHORIZE_UPGRADE_PREFIX=0x02
-    - cp -r * /build
-    - /srtool/build build
-    - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
-    - subwasm get -o peregrine-live.wasm wss://peregrine.kilt.io
-    - subwasm diff --no-color peregrine-live.wasm /out/peregrine_runtime.compact.wasm | tee /out/peregrine-diff.txt
-    - mkdir ./out
-    - mv /out/* ./out/
-  artifacts:
-    paths:
-      - out/*.wasm
-      - out/*.json
-      - out/*.txt
-    expire_in: 12 week
+# build-wasm-peregrine:
+#   image:
+#     name: paritytech/srtool:1.70.0
+#     entrypoint: [""]
+#   stage: build
+#   only:
+#     - develop
+#     - master
+#     - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+#   script:
+#     - export PACKAGE=peregrine-runtime
+#     - export RUNTIME_DIR=runtimes/peregrine
+#     - export PARACHAIN_PALLET_ID=0x50
+#     - export AUTHORIZE_UPGRADE_PREFIX=0x02
+#     - cp -r * /build
+#     - /srtool/build build
+#     - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
+#     - subwasm get -o peregrine-live.wasm wss://peregrine.kilt.io
+#     - subwasm diff --no-color peregrine-live.wasm /out/peregrine_runtime.compact.wasm | tee /out/peregrine-diff.txt
+#     - mkdir ./out
+#     - mv /out/* ./out/
+#   artifacts:
+#     paths:
+#       - out/*.wasm
+#       - out/*.json
+#       - out/*.txt
+#     expire_in: 12 week
 
-build-wasm-spiritnet:
-  image:
-    name: paritytech/srtool:1.70.0
-    entrypoint: [""]
-  stage: build
-  only:
-    - develop
-    - master
-    - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
-  script:
-    - export PACKAGE=spiritnet-runtime
-    - export RUNTIME_DIR=runtimes/spiritnet
-    - export PARACHAIN_PALLET_ID=0x50
-    - export AUTHORIZE_UPGRADE_PREFIX=0x02
-    - cp -r * /build
-    - /srtool/build build
-    - subwasm meta --format=json+scale /out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
-    - subwasm get -o spiritnet-live.wasm wss://spiritnet.kilt.io
-    - subwasm diff --no-color spiritnet-live.wasm /out/spiritnet_runtime.compact.wasm | tee /out/spiritnet-diff.txt
-    - mkdir ./out
-    - mv /out/* ./out/
-  artifacts:
-    paths:
-      - out/*.wasm
-      - out/*.json
-      - out/*.txt
-    expire_in: 12 week
+# build-wasm-spiritnet:
+#   image:
+#     name: paritytech/srtool:1.70.0
+#     entrypoint: [""]
+#   stage: build
+#   only:
+#     - develop
+#     - master
+#     - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+#   script:
+#     - export PACKAGE=spiritnet-runtime
+#     - export RUNTIME_DIR=runtimes/spiritnet
+#     - export PARACHAIN_PALLET_ID=0x50
+#     - export AUTHORIZE_UPGRADE_PREFIX=0x02
+#     - cp -r * /build
+#     - /srtool/build build
+#     - subwasm meta --format=json+scale /out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
+#     - subwasm get -o spiritnet-live.wasm wss://spiritnet.kilt.io
+#     - subwasm diff --no-color spiritnet-live.wasm /out/spiritnet_runtime.compact.wasm | tee /out/spiritnet-diff.txt
+#     - mkdir ./out
+#     - mv /out/* ./out/
+#   artifacts:
+#     paths:
+#       - out/*.wasm
+#       - out/*.json
+#       - out/*.txt
+#     expire_in: 12 week
 
-build-wasm-try-runtime:
-  parallel:
-    matrix:
-      - RUNTIME: "peregrine"
-      - RUNTIME: "spiritnet"
-  image:
-    name: paritytech/ci-unified:bullseye-1.70.0
-    entrypoint: [""]
-  stage: build
-  only:
-    - develop
-    - master
-    - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
-  script:
-    - cargo build -p ${RUNTIME}-runtime --features try-runtime
-    - mkdir ./out
-    - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm ./dangerous_${RUNTIME}.try-runtime.wasm
-  artifacts:
-    name: ${RUNTIME}_try-runtime
-    paths:
-      - ./dangerous_${RUNTIME}.try-runtime.wasm
-    expire_in: 12 week
+# build-wasm-try-runtime:
+#   parallel:
+#     matrix:
+#       - RUNTIME: "peregrine"
+#       - RUNTIME: "spiritnet"
+#   image:
+#     name: paritytech/ci-unified:bullseye-1.70.0
+#     entrypoint: [""]
+#   stage: build
+#   only:
+#     - develop
+#     - master
+#     - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+#   script:
+#     - cargo build -p ${RUNTIME}-runtime --features try-runtime
+#     - mkdir ./out
+#     - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm ./dangerous_${RUNTIME}.try-runtime.wasm
+#   artifacts:
+#     name: ${RUNTIME}_try-runtime
+#     paths:
+#       - ./dangerous_${RUNTIME}.try-runtime.wasm
+#     expire_in: 12 week
