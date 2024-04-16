@@ -35,6 +35,7 @@ integration-tests:
   image: node:20
   stage: test
   script:
+    - ls
     - cd ./integration-tests/chopsticks
     - yarn 
     - yarn test
