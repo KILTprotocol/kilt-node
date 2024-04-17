@@ -31,14 +31,19 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx', asy
 
 	const events = await sendTransaction(signedTx)
 
-	// Order matters here, we need to create a block on the sender first
+	// Check sender state
 	await createBlock(spiritnetContext)
-	await createBlock(hydradxContext)
 
 	// Check events sender
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
 	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
+
+	// check balance
+	await checkBalance(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect, KILT)
+
+	// Check receiver state
+	await createBlock(hydradxContext)
 
 	// Check events receiver
 	checkSystemEvents(hydradxContext, { section: 'currencies', method: 'Deposited' }).toMatchSnapshot(
@@ -47,6 +52,5 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	checkSystemEvents(hydradxContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
 
 	// check balance
-	await checkBalance(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect, KILT)
 	await checkBalance(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect, KILT)
 }, 20_000)

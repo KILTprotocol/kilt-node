@@ -7,7 +7,7 @@ import { KILT, initialBalanceKILT, keysAlice, keysBob } from '../../utils.js'
 import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../index.js'
 import { checkBalance, createBlock, hexAddress, setStorage } from '../utils.js'
 
-const destinationAlice = {
+const aliceLocation = {
 	V3: {
 		parents: 1,
 		interior: {
@@ -45,21 +45,26 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect)
 
 	const signedTx = hydradxContext.api.tx.xTokens
-		.transfer(HydraDxConfig.kiltTokenId, KILT, destinationAlice, 'Unlimited')
+		.transfer(HydraDxConfig.kiltTokenId, KILT, aliceLocation, 'Unlimited')
 		.signAsync(keysBob)
 
 	const events = await sendTransaction(signedTx)
 
-	// Order matters here, we need to create a block on the sender first
+	// Check sender state
 	await createBlock(hydradxContext)
-	await createBlock(spiritnetContext)
 
-	// Check Events HydraDx
+	// Check events sender
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, { section: 'currencies', method: 'Withdrawn' }).toMatchSnapshot('sender events currencies')
 	checkEvents(events, 'xTokens').toMatchSnapshot('sender events currencies')
 
-	// check Events Spiritnet
+	// Check balance
+	await checkBalance(getFreeBalanceHydraDxKilt, keysBob.address, expect, initialBalanceKILT - KILT)
+
+	// Check receiver state
+	await createBlock(spiritnetContext)
+
+	// check events receiver
 	checkSystemEvents(spiritnetContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
 	checkSystemEvents(spiritnetContext, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
 		'receiver events Balances'
@@ -68,14 +73,13 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 		'receiver events Balances'
 	)
 
-	// Check Balance
+	// Check balance receiver
 	await checkBalance(
 		getFreeBalanceSpiritnet,
 		SpiritnetConfig.hydraDxSovereignAccount,
 		expect,
 		initialBalanceKILT - KILT
 	)
-	await checkBalance(getFreeBalanceHydraDxKilt, keysBob.address, expect, initialBalanceKILT - KILT)
 	// Alice receives a bit less since the tx fees has to be paid.
 	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect, BigInt('99999999999971175'))
 }, 20_000)
