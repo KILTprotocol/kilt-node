@@ -3,6 +3,7 @@ import type { Config } from './types.js'
 import * as SpiritnetConfig from './spiritnet.js'
 import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../utils.js'
 
+/// Options used to create the HydraDx context
 export const options: SetupOption = {
 	endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
 	db: './db/hydradx.db.sqlite',
@@ -11,6 +12,7 @@ export const options: SetupOption = {
 
 export const kiltTokenId = 60
 
+/// Sets the [TechnicalCommittee] and [Council] governance to the given accounts
 export function setGovernance(addr: string[]) {
 	return {
 		TechnicalCommittee: { Members: addr },
@@ -18,7 +20,8 @@ export function setGovernance(addr: string[]) {
 	}
 }
 
-export function assignNativeTokensToAccount(addr: string[], balance: bigint = initialBalanceHDX) {
+/// Assigns the native tokens to an accounts
+export function assignNativeTokensToAccounts(addr: string[], balance: bigint = initialBalanceHDX) {
 	return {
 		System: {
 			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance } }]),
@@ -26,7 +29,8 @@ export function assignNativeTokensToAccount(addr: string[], balance: bigint = in
 	}
 }
 
-export function assignKiltTokensToAccount(addr: string[], balance: bigint = initialBalanceKILT) {
+/// Assigns KILT tokens to an accounts
+export function assignKiltTokensToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
 		Tokens: {
 			Accounts: addr.map((address) => [[address, kiltTokenId], { free: balance }]),
@@ -34,6 +38,7 @@ export function assignKiltTokensToAccount(addr: string[], balance: bigint = init
 	}
 }
 
+/// Register KILT into HydraDX and allow KILT as payment
 export function registerKilt() {
 	return {
 		assetRegistry: {
@@ -61,7 +66,10 @@ export function registerKilt() {
 	}
 }
 
+/// HydraDX ParaId
 export const paraId = 2034
+
+/// OmniPool account
 export const omnipoolAccount = '7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1'
 
 export async function getContext(): Promise<Config> {

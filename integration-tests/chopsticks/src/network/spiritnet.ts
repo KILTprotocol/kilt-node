@@ -12,8 +12,8 @@ const options: SetupOption = {
 	allowUnresolvedImports: true,
 }
 
-/// Assigns the native tokens to an account
-export function assignNativeTokensToAccount(addr: string[], balance: bigint = initialBalanceKILT) {
+/// Assigns the native tokens to an accounts
+export function assignNativeTokensToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
 		System: {
 			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance } }]),
