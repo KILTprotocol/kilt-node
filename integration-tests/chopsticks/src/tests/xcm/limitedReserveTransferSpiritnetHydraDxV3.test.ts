@@ -5,7 +5,7 @@ import * as SpiritnetConfig from '../../network/spiritnet.js'
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import { KILT, keysAlice } from '../../utils.js'
 import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../index.js'
-import { getAccountDestinationV3, getNativeAssetIdLocation, getSiblingDestination } from '../../network/utils.js'
+import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocation } from '../../network/utils.js'
 import { checkBalance, createBlock, hexAddress, setStorage } from '../utils.js'
 
 const KILT_ASSET_V3 = { V3: [getNativeAssetIdLocation(KILT)] }
@@ -14,16 +14,16 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// set storage
-	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccount([keysAlice.address]))
-	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccount([keysAlice.address]))
+	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address]))
+	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccounts([keysAlice.address]))
 
 	// check initial balance
 	await checkBalance(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
 	await checkBalance(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
 
 	const omniPoolAddress = hexAddress(HydraDxConfig.omnipoolAccount)
-	const hydraDxDestination = { V3: getSiblingDestination(HydraDxConfig.paraId) }
-	const beneficiary = getAccountDestinationV3(omniPoolAddress)
+	const hydraDxDestination = { V3: getSiblingLocation(HydraDxConfig.paraId) }
+	const beneficiary = getAccountLocationV3(omniPoolAddress)
 
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(hydraDxDestination, beneficiary, KILT_ASSET_V3, 0, 'Unlimited')

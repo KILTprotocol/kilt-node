@@ -27,14 +27,14 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	const hydraDxConfig = {
-		...HydraDxConfig.assignKiltTokensToAccount([keysBob.address, HydraDxConfig.omnipoolAccount]),
-		...HydraDxConfig.assignNativeTokensToAccount([keysBob.address, HydraDxConfig.omnipoolAccount]),
+		...HydraDxConfig.assignKiltTokensToAccounts([keysBob.address, HydraDxConfig.omnipoolAccount]),
+		...HydraDxConfig.assignNativeTokensToAccounts([keysBob.address, HydraDxConfig.omnipoolAccount]),
 	}
 
 	// Update storage
 	await setStorage(
 		spiritnetContext,
-		SpiritnetConfig.assignNativeTokensToAccount([SpiritnetConfig.hydraDxSovereignAccount])
+		SpiritnetConfig.assignNativeTokensToAccounts([SpiritnetConfig.hydraDxSovereignAccount])
 	)
 	await setStorage(hydradxContext, hydraDxConfig)
 
