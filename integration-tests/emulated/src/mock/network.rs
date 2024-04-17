@@ -18,8 +18,8 @@ use integration_tests_common::Get;
 use polkadot_primitives::Balance;
 use sp_core::sr25519;
 use xcm_emulator::{
-	decl_test_networks, AccountId, Ancestor, BridgeMessageHandler, MultiLocation, Parachain, Parent, RelayChain,
-	TestExt, X1,
+	decl_test_networks, AccountId, Ancestor, BridgeMessageHandler, MultiLocation, Network, Parachain, Parent,
+	RelayChain, TestExt, X1,
 };
 use xcm_executor::traits::ConvertLocation;
 

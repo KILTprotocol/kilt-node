@@ -125,20 +125,14 @@ decl_test_parachains! {
 	pub struct Spiritnet {
 		genesis = spiritnet::genesis(),
 		on_init = (),
-		runtime = {
-			Runtime: spiritnet_runtime::Runtime,
-			RuntimeOrigin: spiritnet_runtime::RuntimeOrigin,
-			RuntimeCall: spiritnet_runtime::RuntimeCall,
-			RuntimeEvent: spiritnet_runtime::RuntimeEvent,
+		runtime = spiritnet_runtime,
+		core = {
 			XcmpMessageHandler: spiritnet_runtime::XcmpQueue,
 			DmpMessageHandler: spiritnet_runtime::DmpQueue,
 			LocationToAccountId: spiritnet_runtime::xcm_config::LocationToAccountIdConverter,
-			System: spiritnet_runtime::System,
-			Balances: spiritnet_runtime::Balances,
-			ParachainSystem: spiritnet_runtime::ParachainSystem,
 			ParachainInfo: spiritnet_runtime::ParachainInfo,
 		},
-		pallets_extra = {
+		pallets = {
 			Did: spiritnet_runtime::Did,
 			Ctype: spiritnet_runtime::Ctype,
 			Attestation: spiritnet_runtime::Attestation,
@@ -150,20 +144,16 @@ decl_test_parachains! {
 	pub struct AssetHubPolkadot {
 		genesis = asset_hub_polkadot::genesis(),
 		on_init = (),
-		runtime = {
-			Runtime: asset_hub_polkadot_runtime::Runtime,
-			RuntimeOrigin: asset_hub_polkadot_runtime::RuntimeOrigin,
-			RuntimeCall: asset_hub_polkadot_runtime::RuntimeCall,
-			RuntimeEvent: asset_hub_polkadot_runtime::RuntimeEvent,
+		runtime= asset_hub_polkadot_runtime,
+		core = {
 			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
 			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
 			LocationToAccountId: asset_hub_polkadot_runtime::xcm_config::LocationToAccountId,
-			System: asset_hub_polkadot_runtime::System,
-			Balances: asset_hub_polkadot_runtime::Balances,
-			ParachainSystem: asset_hub_polkadot_runtime::ParachainSystem,
 			ParachainInfo: asset_hub_polkadot_runtime::ParachainInfo,
 		},
-		pallets_extra = {
+		pallets = {
+			Balances: asset_hub_polkadot_runtime::Balances,
+			System: asset_hub_polkadot_runtime::System,
 			PolkadotXcm: asset_hub_polkadot_runtime::PolkadotXcm,
 			Assets: asset_hub_polkadot_runtime::Assets,
 		}
@@ -171,20 +161,16 @@ decl_test_parachains! {
 	pub struct AssetHubRococo {
 		genesis = asset_hub_polkadot::genesis(),
 		on_init = (),
-		runtime = {
-			Runtime: asset_hub_polkadot_runtime::Runtime,
-			RuntimeOrigin: asset_hub_polkadot_runtime::RuntimeOrigin,
-			RuntimeCall: asset_hub_polkadot_runtime::RuntimeCall,
-			RuntimeEvent: asset_hub_polkadot_runtime::RuntimeEvent,
+		runtime= asset_hub_polkadot_runtime,
+		core = {
 			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
 			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
 			LocationToAccountId: asset_hub_polkadot_runtime::xcm_config::LocationToAccountId,
-			System: asset_hub_polkadot_runtime::System,
-			Balances: asset_hub_polkadot_runtime::Balances,
-			ParachainSystem: asset_hub_polkadot_runtime::ParachainSystem,
 			ParachainInfo: asset_hub_polkadot_runtime::ParachainInfo,
 		},
-		pallets_extra = {
+		pallets = {
+			Balances: asset_hub_polkadot_runtime::Balances,
+			System: asset_hub_polkadot_runtime::System,
 			PolkadotXcm: asset_hub_polkadot_runtime::PolkadotXcm,
 			Assets: asset_hub_polkadot_runtime::Assets,
 		}
@@ -192,20 +178,16 @@ decl_test_parachains! {
 	pub struct Peregrine {
 		genesis = peregrine::genesis(),
 		on_init = (),
-		runtime = {
-			Runtime: peregrine_runtime::Runtime,
-			RuntimeOrigin: peregrine_runtime::RuntimeOrigin,
-			RuntimeCall: peregrine_runtime::RuntimeCall,
-			RuntimeEvent: peregrine_runtime::RuntimeEvent,
+		runtime = peregrine_runtime,
+		core = {
 			XcmpMessageHandler: peregrine_runtime::XcmpQueue,
 			DmpMessageHandler: peregrine_runtime::DmpQueue,
 			LocationToAccountId: peregrine_runtime::xcm_config::LocationToAccountIdConverter,
-			System: peregrine_runtime::System,
-			Balances: peregrine_runtime::Balances,
-			ParachainSystem: peregrine_runtime::ParachainSystem,
 			ParachainInfo: peregrine_runtime::ParachainInfo,
 		},
-		pallets_extra = {
+		pallets = {
+			System: peregrine_runtime::System,
+			Balances: peregrine_runtime::Balances,
 			Did: peregrine_runtime::Did,
 			Ctype: peregrine_runtime::Ctype,
 			Attestation: peregrine_runtime::Attestation,
