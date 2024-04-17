@@ -1,4 +1,4 @@
-export function getSiblingDestination(paraId: number) {
+export function getSiblingLocation(paraId: number) {
 	return {
 		parents: 1,
 		interior: {
@@ -7,14 +7,14 @@ export function getSiblingDestination(paraId: number) {
 	}
 }
 
-export function getParentAccountDestination() {
+export function getParentLocation() {
 	return {
 		parents: 1,
 		interior: 'Here',
 	}
 }
 
-export function getAccountDestinationV2(addr: string) {
+export function getAccountLocationV2(addr: string) {
 	return {
 		V2: {
 			parents: 0,
@@ -30,7 +30,7 @@ export function getAccountDestinationV2(addr: string) {
 	}
 }
 
-export function getAccountDestinationV3(addr: string) {
+export function getAccountLocationV3(addr: string) {
 	return {
 		V3: {
 			parents: 0,
