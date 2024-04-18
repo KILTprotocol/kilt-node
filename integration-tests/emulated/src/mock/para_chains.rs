@@ -122,23 +122,25 @@ pub mod peregrine {
 }
 
 decl_test_parachains! {
-	pub struct Spiritnet {
-		genesis = spiritnet::genesis(),
+	pub struct Peregrine {
+		genesis = peregrine::genesis(),
 		on_init = (),
-		runtime = spiritnet_runtime,
+		runtime = peregrine_runtime,
 		core = {
-			XcmpMessageHandler: spiritnet_runtime::XcmpQueue,
-			DmpMessageHandler: spiritnet_runtime::DmpQueue,
-			LocationToAccountId: spiritnet_runtime::xcm_config::LocationToAccountIdConverter,
-			ParachainInfo: spiritnet_runtime::ParachainInfo,
+			XcmpMessageHandler: peregrine_runtime::XcmpQueue,
+			DmpMessageHandler: peregrine_runtime::DmpQueue,
+			LocationToAccountId: peregrine_runtime::xcm_config::LocationToAccountIdConverter,
+			ParachainInfo: peregrine_runtime::ParachainInfo,
 		},
 		pallets = {
-			Did: spiritnet_runtime::Did,
-			Ctype: spiritnet_runtime::Ctype,
-			Attestation: spiritnet_runtime::Attestation,
-			Web3Names: spiritnet_runtime::Web3Names,
-			DidLookup: spiritnet_runtime::DidLookup,
-			PublicCredentials: spiritnet_runtime::PublicCredentials,
+			System: peregrine_runtime::System,
+			Balances: peregrine_runtime::Balances,
+			Did: peregrine_runtime::Did,
+			Ctype: peregrine_runtime::Ctype,
+			Attestation: peregrine_runtime::Attestation,
+			Web3Names: peregrine_runtime::Web3Names,
+			DidLookup: peregrine_runtime::DidLookup,
+			PublicCredentials: peregrine_runtime::PublicCredentials,
 		}
 	},
 	pub struct AssetHubPolkadot {

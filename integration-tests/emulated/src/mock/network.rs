@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use integration_tests_common::Get;
 use polkadot_primitives::Balance;
 use sp_core::sr25519;
+use sp_core::Get;
 use xcm_emulator::{
 	decl_test_networks, AccountId, Ancestor, BridgeMessageHandler, MultiLocation, Network, Parachain, Parent,
 	RelayChain, TestExt, X1,

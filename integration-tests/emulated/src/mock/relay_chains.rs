@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use integration_tests_common::{polkadot, rococo};
+use integration_tests_common::constants::{polkadot, rococo};
 use xcm_emulator::{decl_test_relay_chains, DefaultMessageProcessor, RelayChain, TestExt, XcmHash};
 
 decl_test_relay_chains! {
