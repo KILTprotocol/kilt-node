@@ -31,25 +31,17 @@ test-features:
     - cargo test --all --all-features --all-targets --locked
 
 integration-tests:
-  timeout: 5 minutes
+  timeout: 15 minutes
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
-    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    - apt-get install -y nodejs
+    - cd ./integration-tests/chopsticks
+    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    - nvm install
     - cargo build -p spiritnet-runtime
-    - cd ./integration-tests/chopsticks
-    - yarn 
-    - yarn test
-
-lint-typescript:
-  timeout: 5 minutes
-  image: node:20
-  stage: test
-  script:
-    - cd ./integration-tests/chopsticks
     - yarn 
     - yarn lint
+    - yarn test
 
 # TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
 test-try-runtime:
