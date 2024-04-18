@@ -81,5 +81,5 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 		initialBalanceKILT - KILT
 	)
 	// Alice receives a bit less since the tx fees has to be paid.
-	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect, BigInt('99999999999971175'))
+	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect, BigInt('999999999971175'))
 }, 20_000)
