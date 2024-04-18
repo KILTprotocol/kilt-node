@@ -37,7 +37,8 @@ integration-tests:
   script:
     - cd ./integration-tests/chopsticks
     - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-    - nvm install
+    - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use 
+    - eval "[ -f .nvmrc ] && nvm install"
     - cargo build -p spiritnet-runtime
     - yarn --immutable
     - yarn lint
