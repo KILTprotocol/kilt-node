@@ -18,13 +18,13 @@ use polkadot_primitives::Balance;
 use sp_core::sr25519;
 use sp_core::Get;
 use xcm_emulator::{
-	decl_test_networks, AccountId, Ancestor, BridgeMessageHandler, MultiLocation, Network, Parachain, Parent,
+	decl_test_networks, AccountId, Ancestor, BridgeMessageHandler, Chain, MultiLocation, Network, Parachain, Parent,
 	RelayChain, TestExt, X1,
 };
 use xcm_executor::traits::ConvertLocation;
 
 use crate::mock::{
-	para_chains::{AssetHubPolkadot, AssetHubRococo, Peregrine, Spiritnet},
+	para_chains::{AssetHubPolkadot, AssetHubRococo, Peregrine},
 	relay_chains::{Polkadot, Rococo},
 };
 
@@ -33,7 +33,7 @@ decl_test_networks! {
 		relay_chain = Polkadot,
 		parachains = vec![
 			AssetHubPolkadot,
-			Spiritnet,
+
 		],
 		bridge = ()
 	},
@@ -42,6 +42,7 @@ decl_test_networks! {
 		parachains = vec![
 			AssetHubRococo,
 			Peregrine,
+
 		],
 		bridge = ()
 	}

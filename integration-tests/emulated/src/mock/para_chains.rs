@@ -18,7 +18,7 @@ use integration_tests_common::constants::{accounts, asset_hub_polkadot, polkadot
 use runtime_common::AuthorityId;
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
-use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Parachain, TestExt};
+use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Chain, NetworkComponent, Parachain, TestExt};
 
 use crate::utils::{get_account_id_from_seed, get_from_seed};
 
@@ -84,12 +84,6 @@ pub mod peregrine {
 
 	pub fn genesis() -> Storage {
 		RuntimeGenesisConfig {
-			system: SystemConfig {
-				code: WASM_BINARY
-					.expect("WASM binary was not build, please build it!")
-					.to_vec(),
-				..Default::default()
-			},
 			parachain_info: ParachainInfoConfig {
 				parachain_id: PARA_ID.into(),
 				..Default::default()
@@ -133,14 +127,14 @@ decl_test_parachains! {
 			ParachainInfo: peregrine_runtime::ParachainInfo,
 		},
 		pallets = {
-			System: peregrine_runtime::System,
 			Balances: peregrine_runtime::Balances,
-			Did: peregrine_runtime::Did,
-			Ctype: peregrine_runtime::Ctype,
-			Attestation: peregrine_runtime::Attestation,
-			Web3Names: peregrine_runtime::Web3Names,
-			DidLookup: peregrine_runtime::DidLookup,
-			PublicCredentials: peregrine_runtime::PublicCredentials,
+			PolkadotXcm: peregrine_runtime::PolkadotXcm,
+			// Did: peregrine_runtime::Did,
+			// Ctype: peregrine_runtime::Ctype,
+			// Attestation: peregrine_runtime::Attestation,
+			// Web3Names: peregrine_runtime::Web3Names,
+			// DidLookup: peregrine_runtime::DidLookup,
+			// PublicCredentials: peregrine_runtime::PublicCredentials,
 		}
 	},
 	pub struct AssetHubPolkadot {
@@ -155,7 +149,6 @@ decl_test_parachains! {
 		},
 		pallets = {
 			Balances: asset_hub_polkadot_runtime::Balances,
-			System: asset_hub_polkadot_runtime::System,
 			PolkadotXcm: asset_hub_polkadot_runtime::PolkadotXcm,
 			Assets: asset_hub_polkadot_runtime::Assets,
 		}
@@ -172,30 +165,9 @@ decl_test_parachains! {
 		},
 		pallets = {
 			Balances: asset_hub_polkadot_runtime::Balances,
-			System: asset_hub_polkadot_runtime::System,
 			PolkadotXcm: asset_hub_polkadot_runtime::PolkadotXcm,
 			Assets: asset_hub_polkadot_runtime::Assets,
 		}
 	},
-	pub struct Peregrine {
-		genesis = peregrine::genesis(),
-		on_init = (),
-		runtime = peregrine_runtime,
-		core = {
-			XcmpMessageHandler: peregrine_runtime::XcmpQueue,
-			DmpMessageHandler: peregrine_runtime::DmpQueue,
-			LocationToAccountId: peregrine_runtime::xcm_config::LocationToAccountIdConverter,
-			ParachainInfo: peregrine_runtime::ParachainInfo,
-		},
-		pallets = {
-			System: peregrine_runtime::System,
-			Balances: peregrine_runtime::Balances,
-			Did: peregrine_runtime::Did,
-			Ctype: peregrine_runtime::Ctype,
-			Attestation: peregrine_runtime::Attestation,
-			Web3Names: peregrine_runtime::Web3Names,
-			DidLookup: peregrine_runtime::DidLookup,
-			PublicCredentials: peregrine_runtime::PublicCredentials,
-		}
-	}
+
 }
