@@ -9,7 +9,7 @@
   "license": "MIT",
   "devDependencies": {
     "@acala-network/chopsticks": "0.10.0",
-    "@acala-network/chopsticks-testing": "0.10.0",
+    "@acala-network/chopsticks-testing": "0.10.1",
     "@polkadot/api": "^10.11.2",
     "@types/node": "^20.11.30",
     "@typescript-eslint/eslint-plugin": "^7.7.0",
@@ -33,6 +33,6 @@
     "lint": "eslint src && prettier --check src",
     "lint:fix": "eslint --fix src && prettier --write src",
     "clean": "rm -rf ./db && cargo build -p spiritnet-runtime",
-    "test": "LOG_LEVEL=error vitest --testTimeout=5000 --isolate=true"
+    "test": "LOG_LEVEL=error vitest"
   }
 }
