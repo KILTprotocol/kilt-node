@@ -39,7 +39,7 @@ beforeAll(async () => {
 
 	// register Kilt in HydraDX
 	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
-}, 120_000)
+}, 300_000)
 
 afterAll(async () => {
 	// fixes api runtime disconnect warning
