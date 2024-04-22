@@ -129,12 +129,12 @@ decl_test_parachains! {
 		pallets = {
 			Balances: peregrine_runtime::Balances,
 			PolkadotXcm: peregrine_runtime::PolkadotXcm,
-			// Did: peregrine_runtime::Did,
-			// Ctype: peregrine_runtime::Ctype,
-			// Attestation: peregrine_runtime::Attestation,
-			// Web3Names: peregrine_runtime::Web3Names,
-			// DidLookup: peregrine_runtime::DidLookup,
-			// PublicCredentials: peregrine_runtime::PublicCredentials,
+			Did: peregrine_runtime::Did,
+			Ctype: peregrine_runtime::Ctype,
+			Attestation: peregrine_runtime::Attestation,
+			Web3Names: peregrine_runtime::Web3Names,
+			DidLookup: peregrine_runtime::DidLookup,
+			PublicCredentials: peregrine_runtime::PublicCredentials,
 		}
 	},
 	pub struct AssetHubPolkadot {

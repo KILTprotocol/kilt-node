@@ -76,7 +76,7 @@ pub mod opaque {
 }
 
 /// An index to a block.
-pub type BlockNumber = u64;
+pub type BlockNumber = u32;
 
 pub(crate) type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, PalletBalance<T, ()>>;
 
