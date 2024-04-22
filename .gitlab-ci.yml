@@ -10,7 +10,7 @@ clippy-and-docs:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
 
-fmt-rust:
+fmt:
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
