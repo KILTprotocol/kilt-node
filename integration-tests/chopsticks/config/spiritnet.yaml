@@ -2,7 +2,7 @@ endpoint:
  - wss://kilt-rpc.dwellir.com
 db: ./db/spiritnet.db.sqlite
 port: ${env.SPIRITNET_PORT}
-wasm-override: ../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm
+# wasm-override: ../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm
 runtime-log-level: 5
 
 import-storage:
@@ -26,5 +26,3 @@ import-storage:
     - providers: 1
       data:
        free: "1000000000000000000000"
- PolkadotXcm:
-  safeXcmVersion: 3
