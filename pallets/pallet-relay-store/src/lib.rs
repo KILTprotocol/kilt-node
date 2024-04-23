@@ -122,7 +122,7 @@ pub mod pallet {
 			let relay_block_height = validation_data.relay_parent_number;
 			log::trace!(
 				target: LOG_TARGET,
-				"Adding new relay block with state root {:#02x?} and number {:#?}",
+				"Adding new relay block with state root {:#?} and number {:#?}",
 				validation_data.relay_parent_storage_root,
 				validation_data.relay_parent_number,
 			);
@@ -130,7 +130,7 @@ pub mod pallet {
 			if let Err(err) = push_res {
 				log::error!(
 					target: LOG_TARGET,
-					"Failed to push block number {:#?} to {:#?}",
+					"Failed to append block number {:#?} to {:#?}",
 					err,
 					latest_block_heights
 				);

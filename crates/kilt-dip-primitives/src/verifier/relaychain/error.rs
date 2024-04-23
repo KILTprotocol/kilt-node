@@ -18,8 +18,8 @@
 
 use crate::Error;
 
+#[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(test, derive(enum_iterator::Sequence))]
-#[derive(Debug)]
 pub enum DipRelaychainStateProofVerifierError<DidOriginError> {
 	UnsupportedVersion,
 	ProofComponentTooLarge(u8),

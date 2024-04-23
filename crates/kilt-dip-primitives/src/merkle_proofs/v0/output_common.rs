@@ -97,18 +97,25 @@ impl<
 	/// `Error::Internal` which, anyway, should never happen.
 	pub fn get_signing_leaves(
 		&self,
-	) -> Result<impl Iterator<Item = &RevealedDidKey<KiltDidKeyId, KiltBlockNumber, KiltAccountId>>, Error> {
-		const LOG_TARGET: &str = "dip::consumer::DipOriginInfo";
+	) -> Result<impl Iterator<Item = &RevealedDidKey<KiltDidKeyId, KiltBlockNumber, KiltAccountId>>, Error>
+	where
+		KiltDidKeyId: Debug,
+		KiltBlockNumber: Debug,
+		KiltAccountId: Debug,
+		KiltWeb3Name: Debug,
+		KiltLinkableAccountId: Debug,
+	{
+		const LOG_TARGET: &str = "dip::consumer::DipOriginInfoV0";
 		let leaves = self
 			.signing_leaves_indices
 			.iter()
 			.map(|index| {
 				let leaf = self.revealed_leaves.get(usize::saturated_from(*index)).ok_or_else(|| {
-					log::error!(target: LOG_TARGET, "Should never fail to retrieve the signing leaf at index {:#?}.", index);
+					log::error!(target: LOG_TARGET, "Failed to retrieve the signing leaf at index {:#?}.", index);
 					Error::Internal
 				})?;
 				let RevealedDidMerkleProofLeaf::DidKey(did_key) = leaf else {
-					log::error!(target: LOG_TARGET, "Should never fail to convert the signing leaf to a DID Key leaf.");
+					log::error!(target: LOG_TARGET, "Failed to convert the signing leaf {:#?} to a DID Key leaf.", leaf);
 					return Err(Error::Internal);
 				};
 				Ok(did_key)

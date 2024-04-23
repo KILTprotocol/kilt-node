@@ -165,8 +165,8 @@ pub mod pallet {
 
 			match Self::delete_identity_commitment_storage_entry(&identifier, &dispatcher, commitment_version) {
 				// Ignore if there was no previous commitment.
-				Ok(_) => {
-					log::trace!(target: LOG_TARGET, "Previous commitment for subject {:#?} deleted.", identifier);
+				Ok(commitment) => {
+					log::trace!(target: LOG_TARGET, "Previous commitment {:#?} for subject {:#?} deleted.", commitment, identifier);
 				}
 				Err(Error::<T>::CommitmentNotFound) => (),
 				// If a different error is returned, bubble it up.

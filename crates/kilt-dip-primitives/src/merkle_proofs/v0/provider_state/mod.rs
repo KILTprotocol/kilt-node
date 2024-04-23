@@ -468,10 +468,11 @@ impl<
 			self.dip_proof.blinded.as_slice(),
 			proof_leaves_key_value_pairs.as_slice(),
 		)
+		// Can't log since the result returned by `verify_trie_proof` implements `Debug` only with `std`.
 		.map_err(|_| Error::InvalidDidMerkleProof)?;
 
 		let revealed_leaves = BoundedVec::try_from(self.dip_proof.revealed).map_err(|_| {
-			log::error!(target: "dip::consumer::DipDidProofWithVerifiedSubjectCommitmentV0", "Should not fail to construct BoundedVec<u8, {MAX_REVEALED_LEAVES_COUNT}> since bounds were checked before.");
+			log::error!(target: "dip::consumer::DipDidProofWithVerifiedSubjectCommitmentV0", "Failed to construct BoundedVec<u8, {MAX_REVEALED_LEAVES_COUNT}>.");
 			Error::Internal
 		})?;
 

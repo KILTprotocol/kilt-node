@@ -123,7 +123,7 @@ where
 			} else {
 				log::error!(
 					target: LOG_TARGET,
-					"Error {:#?} should not be generated inside `on_identity_committed` hook.",
+					"Error {:#?} generated inside `on_identity_committed` hook.",
 					e
 				);
 				FixedDepositCollectorViaDepositsPalletError::Internal
@@ -160,10 +160,7 @@ where
 			} else if e == DispatchError::from(Error::<Runtime>::FailedToRelease) {
 				FixedDepositCollectorViaDepositsPalletError::FailedToRelease
 			} else {
-				log::error!(
-					"Error {:#?} should not be generated inside `on_commitment_removed` hook.",
-					e
-				);
+				log::error!(target: LOG_TARGET, "Error {:#?} generated inside `on_commitment_removed` hook.", e);
 				FixedDepositCollectorViaDepositsPalletError::Internal
 			}
 		})?;
@@ -199,7 +196,7 @@ pub(crate) fn free_deposit<Account, Currency: Mutate<Account>>(
 	);
 	// Same as the `debug_assert` above, but also run in release mode.
 	if result != Ok(deposit.amount) {
-		log::warn!(target: LOG_TARGET, "Released deposit amount does not match with expected amount. Expected: {:#?}, Released amount: {:#?}  Error: {:#?}", deposit.amount, result.ok(), result.err());
+		log::error!(target: LOG_TARGET, "Released deposit amount does not match with expected amount. Expected: {:#?}, Released amount: {:#?}  Error: {:#?}", deposit.amount, result.ok(), result.err());
 	}
 	result
 }
