@@ -209,7 +209,7 @@ impl<
 		ensure!(!signing_leaves_indices.is_empty(), Error::InvalidDidKeyRevealed);
 
 		let signing_leaves_indices_vector = signing_leaves_indices.try_into().map_err(|_| {
-			log::error!("Should never fail to convert vector of signing leaf indices into BoundedVec.");
+			log::error!(target: "dip::consumer::DipRevealedDetailsAndVerifiedDidSignatureFreshness", "Should never fail to convert vector of signing leaf indices into BoundedVec<u8, {MAX_REVEALED_LEAVES_COUNT}>.");
 			Error::Internal
 		})?;
 
