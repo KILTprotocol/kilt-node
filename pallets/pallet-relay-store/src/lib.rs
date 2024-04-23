@@ -37,6 +37,8 @@ mod tests;
 
 pub use crate::{default_weights::WeightInfo, pallet::*, relay::*};
 
+const LOG_TARGET: &str = "pallet_relay_store";
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -111,22 +113,26 @@ pub mod pallet {
 				let oldest_block_height = latest_block_heights.remove(0);
 				LatestRelayHeads::<T>::remove(oldest_block_height);
 				log::trace!(
-					"Relay block queue full. Removing oldest block at height {:?}",
+					target: LOG_TARGET,
+					"Relay block queue full. Removing oldest block at height {:#?}",
 					oldest_block_height
 				);
 			}
 			// Set the new relay block in storage.
 			let relay_block_height = validation_data.relay_parent_number;
 			log::trace!(
-				"Adding new relay block with state root {:#02x?} and number {:?}",
+				target: LOG_TARGET,
+				"Adding new relay block with state root {:#02x?} and number {:#?}",
 				validation_data.relay_parent_storage_root,
 				validation_data.relay_parent_number,
 			);
 			let push_res = latest_block_heights.try_push(relay_block_height);
 			if let Err(err) = push_res {
 				log::error!(
-					"Pushing a new relay block to the queue should not fail but it did when adding relay block n. {:?}",
-					err
+					target: LOG_TARGET,
+					"Failed to push block number {:#?} to {:#?}",
+					err,
+					latest_block_heights
 				);
 			} else {
 				LatestBlockHeights::<T>::set(latest_block_heights);
