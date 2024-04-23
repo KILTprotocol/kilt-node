@@ -160,7 +160,11 @@ where
 			} else if e == DispatchError::from(Error::<Runtime>::FailedToRelease) {
 				FixedDepositCollectorViaDepositsPalletError::FailedToRelease
 			} else {
-				log::error!(target: LOG_TARGET, "Error {:#?} generated inside `on_commitment_removed` hook.", e);
+				log::error!(
+					target: LOG_TARGET,
+					"Error {:#?} generated inside `on_commitment_removed` hook.",
+					e
+				);
 				FixedDepositCollectorViaDepositsPalletError::Internal
 			}
 		})?;

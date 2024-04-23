@@ -111,7 +111,11 @@ impl<
 			.iter()
 			.map(|index| {
 				let leaf = self.revealed_leaves.get(usize::saturated_from(*index)).ok_or_else(|| {
-					log::error!(target: LOG_TARGET, "Failed to retrieve the signing leaf at index {:#?}.", index);
+					log::error!(
+						target: LOG_TARGET,
+						"Failed to retrieve the signing leaf at index {:#?}.",
+						index
+					);
 					Error::Internal
 				})?;
 				let RevealedDidMerkleProofLeaf::DidKey(did_key) = leaf else {

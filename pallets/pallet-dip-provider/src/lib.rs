@@ -158,7 +158,12 @@ pub mod pallet {
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
 			let identity = T::IdentityProvider::retrieve(&identifier)
 				.map_err(|error| Error::<T>::IdentityProvider(error.into()))?;
-			log::info!(target: LOG_TARGET, "Identity details retrieved for identifier {:#?}: {:#?}", identifier, identity);
+			log::info!(
+				target: LOG_TARGET,
+				"Identity details retrieved for identifier {:#?}: {:#?}",
+				identifier,
+				identity
+			);
 			let commitment =
 				T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
 					.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))?;
@@ -166,7 +171,12 @@ pub mod pallet {
 			match Self::delete_identity_commitment_storage_entry(&identifier, &dispatcher, commitment_version) {
 				// Ignore if there was no previous commitment.
 				Ok(commitment) => {
-					log::trace!(target: LOG_TARGET, "Previous commitment {:#?} for subject {:#?} deleted.", commitment, identifier);
+					log::trace!(
+						target: LOG_TARGET,
+						"Previous commitment {:#?} for subject {:#?} deleted.",
+						commitment,
+						identifier
+					);
 				}
 				Err(Error::<T>::CommitmentNotFound) => (),
 				// If a different error is returned, bubble it up.
@@ -215,7 +225,12 @@ pub mod pallet {
 		) -> Result<IdentityCommitmentOf<T>, Error<T>> {
 			let commitment = Self::delete_identity_commitment_storage_entry_without_hook(identifier, version)?;
 			T::ProviderHooks::on_commitment_removed(identifier, dispatcher, &commitment, version).map_err(|e| {
-				log::info!(target: LOG_TARGET, "Provider hook failed when removing commitment for {:#?} with error {:#?}", identifier, e);
+				log::info!(
+					target: LOG_TARGET,
+					"Provider hook failed when removing commitment for {:#?} with error {:#?}",
+					identifier,
+					e
+				);
 				Error::<T>::Hook(e.into())
 			})?;
 			Ok(commitment)

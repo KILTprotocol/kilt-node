@@ -158,12 +158,20 @@ impl<
 			log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", e);
 			DipRelaychainStateProofVerifierError::ProofVerification(e)
 		})?;
-		log::info!(target: LOG_TARGET, "Verified relaychain state root: {:#?}", proof_without_header.relay_state_root);
+		log::info!(
+			target: LOG_TARGET,
+			"Verified relaychain state root: {:#?}",
+			proof_without_header.relay_state_root
+		);
 
 		// 2. Verify parachain state is finalized by relay chain and fresh.
 		if proof_without_header.provider_head_proof.proof.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into() {
 			let inner_error = DipProofComponentTooLargeError::ParachainHeadProofTooManyLeaves;
-			log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", inner_error);
+			log::info!(
+				target: LOG_TARGET,
+				"Proof verification failed with error {:#?}",
+				inner_error
+			);
 			return Err(DipRelaychainStateProofVerifierError::ProofComponentTooLarge(
 				inner_error as u8,
 			));
@@ -176,7 +184,11 @@ impl<
 			.any(|l| l.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into())
 		{
 			let inner_error = DipProofComponentTooLargeError::ParachainHeadProofLeafTooLarge;
-			log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", inner_error);
+			log::info!(
+				target: LOG_TARGET,
+				"Proof verification failed with error {:#?}",
+				inner_error
+			);
 			return Err(DipRelaychainStateProofVerifierError::ProofComponentTooLarge(
 				inner_error as u8,
 			));
@@ -185,13 +197,21 @@ impl<
 		let proof_without_relaychain = proof_without_header
 			.verify_provider_head_proof::<ConsumerRuntime::Hashing, HeaderFor<KiltRuntime>>(KILT_PARA_ID)
 			.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
-		log::info!(target: LOG_TARGET, "Verified parachain state root: {:#?}", proof_without_relaychain.state_root);
+		log::info!(
+			target: LOG_TARGET,
+			"Verified parachain state root: {:#?}",
+			proof_without_relaychain.state_root
+		);
 
 		// 3. Verify commitment is included in provider parachain state.
 		if proof_without_relaychain.dip_commitment_proof.0.len() > MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into()
 		{
 			let inner_error = DipProofComponentTooLargeError::DipCommitmentProofTooManyLeaves;
-			log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", inner_error);
+			log::info!(
+				target: LOG_TARGET,
+				"Proof verification failed with error {:#?}",
+				inner_error
+			);
 			return Err(DipRelaychainStateProofVerifierError::ProofComponentTooLarge(
 				inner_error as u8,
 			));
@@ -203,7 +223,11 @@ impl<
 			.any(|l| l.len() > MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into())
 		{
 			let inner_error = DipProofComponentTooLargeError::DipCommitmentProofLeafTooLarge;
-			log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", inner_error);
+			log::info!(
+				target: LOG_TARGET,
+				"Proof verification failed with error {:#?}",
+				inner_error
+			);
 			return Err(DipRelaychainStateProofVerifierError::ProofComponentTooLarge(
 				inner_error as u8,
 			));
@@ -212,12 +236,20 @@ impl<
 		let proof_without_parachain = proof_without_relaychain
 			.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime>(subject)
 			.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
-		log::info!(target: LOG_TARGET, "Verified subject DIP commitment: {:#?}", proof_without_parachain.dip_commitment);
+		log::info!(
+			target: LOG_TARGET,
+			"Verified subject DIP commitment: {:#?}",
+			proof_without_parachain.dip_commitment
+		);
 
 		// 4. Verify DIP Merkle proof.
 		if proof_without_parachain.dip_proof.blinded.len() > MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into() {
 			let inner_error = DipProofComponentTooLargeError::DipProofTooManyLeaves;
-			log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", inner_error);
+			log::info!(
+				target: LOG_TARGET,
+				"Proof verification failed with error {:#?}",
+				inner_error
+			);
 			return Err(DipRelaychainStateProofVerifierError::ProofComponentTooLarge(
 				inner_error as u8,
 			));
@@ -230,7 +262,11 @@ impl<
 			.any(|l| l.len() > MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into())
 		{
 			let inner_error = DipProofComponentTooLargeError::DipProofLeafTooLarge;
-			log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", inner_error);
+			log::info!(
+				target: LOG_TARGET,
+				"Proof verification failed with error {:#?}",
+				inner_error
+			);
 			return Err(DipRelaychainStateProofVerifierError::ProofComponentTooLarge(
 				inner_error as u8,
 			));
@@ -239,7 +275,11 @@ impl<
 		let proof_without_dip_merkle = proof_without_parachain
 			.verify_dip_proof::<KiltRuntime::Hashing, MAX_DID_MERKLE_LEAVES_REVEALED>()
 			.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
-		log::info!(target: LOG_TARGET, "Verified DID Merkle leaves: {:#?}", proof_without_dip_merkle.revealed_leaves);
+		log::info!(
+			target: LOG_TARGET,
+			"Verified DID Merkle leaves: {:#?}",
+			proof_without_dip_merkle.revealed_leaves
+		);
 
 		// 5. Verify call is signed by one of the DID keys revealed in the proof
 		let current_block_number = frame_system::Pallet::<ConsumerRuntime>::block_number();
@@ -270,7 +310,12 @@ impl<
 			details.increment();
 		} else {
 			let default_details = Default::default();
-			log::trace!(target: LOG_TARGET, "No details present for subject {:#?}. Setting default ones: {:#?}.", subject, default_details);
+			log::trace!(
+				target: LOG_TARGET,
+				"No details present for subject {:#?}. Setting default ones: {:#?}.",
+				subject,
+				default_details
+			);
 			*identity_details = Some(default_details);
 		};
 
