@@ -1406,7 +1406,7 @@ impl_runtime_apis! {
 			const LOG_TARGET: &str = "runtime_api::dip_provider";
 
 			let identity_details = pallet_dip_provider::IdentityProviderOf::<Runtime>::retrieve(&request.identifier).map_err(dip::runtime_api::DipProofError::IdentityProvider)?;
-			log::info!(target: LOG_TARGET, "Identity details retrieved for request {:?#}: {:#?}", request, identity_details);
+			log::info!(target: LOG_TARGET, "Identity details retrieved for request {:#?}: {:#?}", request, identity_details);
 
 			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(dip::runtime_api::DipProofError::MerkleProof)
 		}

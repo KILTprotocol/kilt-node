@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 #[repr(u8)]
+#[derive(sp_std::fmt::Debug)]
 pub(crate) enum DipProofComponentTooLargeError {
 	ParachainHeadProofTooManyLeaves = 0,
 	ParachainHeadProofLeafTooLarge = 1,
