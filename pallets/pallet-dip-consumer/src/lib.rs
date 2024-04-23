@@ -169,7 +169,7 @@ pub mod pallet {
 				.map_err(|e| {
 					log::info!(
 						target: LOG_TARGET,
-						"Identity proof verification for identifier {:#?} failed with error {:#?}",
+						"Failed to verify identity proof for identifier {:#?} with error {:#?}",
 						identifier,
 						e
 					);

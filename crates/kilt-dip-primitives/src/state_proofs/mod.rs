@@ -80,7 +80,7 @@ where
 	let storage_proof = StorageProof::new(state_proof);
 	let mut revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
 		.map_err(|e| {
-			log::info!(target: LOG_TARGET, "Storage proof failed with error {:#?}", e);
+			log::info!(target: LOG_TARGET, "Failed verification of storage proof with error {:#?}", e);
 			MerkleProofError::InvalidProof
 		})?;
 

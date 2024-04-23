@@ -177,7 +177,7 @@ impl<
 			let inner_error = DipProofComponentTooLargeError::ParachainHeadProofTooManyLeaves;
 			log::info!(
 				target: LOG_TARGET,
-				"Proof verification failed with error {:#?}",
+				"Failed to verify DIP proof with error {:#?}",
 				inner_error
 			);
 			return Err(DipParachainStateProofVerifierError::ProofComponentTooLarge(
@@ -194,7 +194,7 @@ impl<
 			let inner_error = DipProofComponentTooLargeError::ParachainHeadProofLeafTooLarge;
 			log::info!(
 				target: LOG_TARGET,
-				"Proof verification failed with error {:#?}",
+				"Failed to verify DIP proof with error {:#?}",
 				inner_error
 			);
 			return Err(DipParachainStateProofVerifierError::ProofComponentTooLarge(
@@ -207,7 +207,7 @@ impl<
 				KILT_PARA_ID,
 			)
 			.map_err(|e| {
-				log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", e);
+				log::info!(target: LOG_TARGET, "Failed to verify DIP proof with error {:#?}", e);
 				DipParachainStateProofVerifierError::ProofVerification(e)
 			})?;
 		log::info!(
@@ -222,7 +222,7 @@ impl<
 			let inner_error = DipProofComponentTooLargeError::DipCommitmentProofTooManyLeaves;
 			log::info!(
 				target: LOG_TARGET,
-				"Proof verification failed with error {:#?}",
+				"Failed to verify DIP proof with error {:#?}",
 				inner_error
 			);
 			return Err(DipParachainStateProofVerifierError::ProofComponentTooLarge(
@@ -239,7 +239,7 @@ impl<
 			let inner_error = DipProofComponentTooLargeError::DipCommitmentProofLeafTooLarge;
 			log::info!(
 				target: LOG_TARGET,
-				"Proof verification failed with error {:#?}",
+				"Failed to verify DIP proof with error {:#?}",
 				inner_error
 			);
 			return Err(DipParachainStateProofVerifierError::ProofComponentTooLarge(
@@ -261,7 +261,7 @@ impl<
 			let inner_error = DipProofComponentTooLargeError::DipProofTooManyLeaves;
 			log::info!(
 				target: LOG_TARGET,
-				"Proof verification failed with error {:#?}",
+				"Failed to verify DIP proof with error {:#?}",
 				inner_error
 			);
 			return Err(DipParachainStateProofVerifierError::ProofComponentTooLarge(
@@ -278,7 +278,7 @@ impl<
 			let inner_error = DipProofComponentTooLargeError::DipProofLeafTooLarge;
 			log::info!(
 				target: LOG_TARGET,
-				"Proof verification failed with error {:#?}",
+				"Failed to verify DIP proof with error {:#?}",
 				inner_error
 			);
 			return Err(DipParachainStateProofVerifierError::ProofComponentTooLarge(
@@ -289,7 +289,7 @@ impl<
 		let proof_without_dip_merkle = proof_without_parachain
 			.verify_dip_proof::<KiltRuntime::Hashing, MAX_DID_MERKLE_LEAVES_REVEALED>()
 			.map_err(|e| {
-				log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", e);
+				log::info!(target: LOG_TARGET, "Failed to verify DIP proof with error {:#?}", e);
 				DipParachainStateProofVerifierError::ProofVerification(e)
 			})?;
 		log::info!(
@@ -319,17 +319,17 @@ impl<
 			.verify_signature_time(&current_block_number)
 			.and_then(|p| p.retrieve_signing_leaves_for_payload(&encoded_payload[..]))
 			.map_err(|e| {
-				log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", e);
+				log::info!(target: LOG_TARGET, "Failed to verify DIP proof with error {:#?}", e);
 				DipParachainStateProofVerifierError::ProofVerification(e)
 			})?;
 
 		// 5. Verify the signing key fulfills the requirements
 		let signing_keys = revealed_did_info.get_signing_leaves().map_err(|e| {
-			log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", e);
+			log::info!(target: LOG_TARGET, "Failed to verify DIP proof with error {:#?}", e);
 			DipParachainStateProofVerifierError::ProofVerification(e)
 		})?;
 		DidCallVerifier::check_call_origin_info(call, &signing_keys.cloned().collect::<Vec<_>>()).map_err(|e| {
-			log::info!(target: LOG_TARGET, "Proof verification failed with error {:#?}", e);
+			log::info!(target: LOG_TARGET, "Failed to verify DIP proof with error {:#?}", e);
 			DipParachainStateProofVerifierError::DidOriginError(e)
 		})?;
 

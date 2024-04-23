@@ -181,7 +181,7 @@ pub mod pallet {
 			T::DepositHooks::on_deposit_reclaimed(&namespace, &key, deposit).map_err(|e| {
 				log::info!(
 					target: LOG_TARGET,
-					"Deposit hook failed when removing deposit for namespace {:#?} and key {:#?} with error {:#?}",
+					"Failed to invoke `DepositHooks::on_deposit_reclaimed` for {:#?} and key {:#?} with error {:#?}",
 					namespace,
 					key,
 					e

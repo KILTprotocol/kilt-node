@@ -227,7 +227,7 @@ pub mod pallet {
 			T::ProviderHooks::on_commitment_removed(identifier, dispatcher, &commitment, version).map_err(|e| {
 				log::info!(
 					target: LOG_TARGET,
-					"Provider hook failed when removing commitment for {:#?} with error {:#?}",
+					"Failed to invoke `ProviderHooks::on_commitment_removed` for commitment {:#?} with error {:#?}",
 					identifier,
 					e
 				);
