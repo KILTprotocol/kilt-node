@@ -102,7 +102,7 @@ where
 			.map_err(|_| {
 				log::error!(
 					target: LOG_TARGET,
-					"Failed to convert tuple ({:#?}, {version}) to BoundedVec<u8, {}>",
+					"Failed to convert tuple ({:#?}, {version}) to BoundedVec<u8, {:#?}>",
 					identifier,
 					Runtime::MaxKeyLength::get()
 				);
@@ -145,7 +145,7 @@ where
 			.map_err(|_| {
 				log::error!(
 					target: LOG_TARGET,
-					"Failed to convert tuple ({:#?}, {version}) to BoundedVec<u8, {}>",
+					"Failed to convert tuple ({:#?}, {version}) to BoundedVec<u8, {:#?}>",
 					identifier,
 					Runtime::MaxKeyLength::get()
 				);
