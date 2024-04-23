@@ -36,7 +36,7 @@ pub use crate::{
 	traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider},
 };
 
-const LOG_TARGET: &str = "dip::pallet_dip_provider";
+const LOG_TARGET: &str = "dip::provider::pallet_dip_provider";
 
 #[frame_support::pallet]
 pub mod pallet {

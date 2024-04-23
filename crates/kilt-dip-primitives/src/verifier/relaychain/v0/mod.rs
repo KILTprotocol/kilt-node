@@ -26,7 +26,7 @@ use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::Encode;
 use sp_core::U256;
 use sp_runtime::{traits::Zero, SaturatedConversion};
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
 use crate::{
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
@@ -124,7 +124,7 @@ impl<
 		RuntimeCallOf<ConsumerRuntime>,
 		OriginInfo = Vec<RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>>,
 	>,
-	DidCallVerifier::Error: Into<u8>,
+	DidCallVerifier::Error: Into<u8> + Debug,
 {
 	type Error = DipRelaychainStateProofVerifierError<DidCallVerifier::Error>;
 	type Proof = RelayDipDidProof<

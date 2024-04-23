@@ -193,7 +193,7 @@ impl<
 		RuntimeCallOf<ConsumerRuntime>,
 		OriginInfo = Vec<RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>>,
 	>,
-	DidCallVerifier::Error: Into<u8>,
+	DidCallVerifier::Error: Into<u8> + Debug,
 {
 	type Error = DipParachainStateProofVerifierError<DidCallVerifier::Error>;
 	type Proof = VersionedDipParachainStateProof<

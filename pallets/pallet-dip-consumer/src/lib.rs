@@ -36,7 +36,7 @@ mod origin;
 
 pub use crate::{default_weights::WeightInfo, origin::*, pallet::*, traits::SuccessfulProofVerifier};
 
-const LOG_TARGET: &str = "pallet_dip_consumer";
+const LOG_TARGET: &str = "dip::consumer::pallet_dip_consumer";
 
 #[frame_support::pallet]
 pub mod pallet {

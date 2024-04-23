@@ -25,7 +25,7 @@ use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::Encode;
 use sp_runtime::{traits::Zero, SaturatedConversion};
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
 use crate::{
 	merkle_proofs::v0::ParachainDipDidProof,
@@ -142,7 +142,7 @@ impl<
 		RuntimeCallOf<ConsumerRuntime>,
 		OriginInfo = Vec<RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>>,
 	>,
-	DidCallVerifier::Error: Into<u8>,
+	DidCallVerifier::Error: Into<u8> + Debug,
 {
 	type Error = DipParachainStateProofVerifierError<DidCallVerifier::Error>;
 	type Proof = ParachainDipDidProof<

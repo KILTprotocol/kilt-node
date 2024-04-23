@@ -97,6 +97,8 @@ impl From<CommitmentDepositRemovalHookError> for u16 {
 	}
 }
 
+const LOG_TARGET: &str = "dip::provider::DepositHooks";
+
 /// The logic to execute whenever an identity commitment is generated and
 /// stored in the [`pallet_dip_provider::Pallet`] pallet.
 ///
@@ -126,8 +128,10 @@ where
 		)
 		.map_err(|_| {
 			log::error!(
-				"Should not fail to remove commitment for identifier {:#?} and version {version}",
-				identifier
+				target: LOG_TARGET,
+				"Failed to remove commitment for identifier {:#?} and version {:#?}",
+				identifier,
+				version
 			);
 			CommitmentDepositRemovalHookError::Internal
 		})?;
