@@ -36,6 +36,8 @@ mod origin;
 
 pub use crate::{default_weights::WeightInfo, origin::*, pallet::*, traits::SuccessfulProofVerifier};
 
+const LOG_TARGET: &str = "pallet_dip_consumer";
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -164,7 +166,10 @@ pub mod pallet {
 					identity_entry,
 					proof,
 				)
-				.map_err(|e| Error::<T>::InvalidProof(e.into()))
+				.map_err(|e| {
+					log::info!(target: LOG_TARGET, "Identity proof verification for identifier {:#?} failed with error {:#?}", identifier, e);
+					Error::<T>::InvalidProof(e.into())
+				})
 			})?;
 			let did_origin: DipOrigin<
 				T::Identifier,
