@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use sp_std::fmt::Debug;
+
 use crate::{Config, DepositEntryOf, DepositKeyOf};
 
 /// A trait to configure additional custom logic whenever a deposit-related
@@ -24,7 +26,7 @@ pub trait DepositStorageHooks<Runtime>
 where
 	Runtime: Config,
 {
-	type Error: Into<u16>;
+	type Error: Into<u16> + Debug;
 
 	/// Called by the pallet whenever a deposit for a given namespace and key is
 	/// removed.

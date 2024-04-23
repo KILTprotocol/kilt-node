@@ -46,6 +46,8 @@ pub struct DepositEntry<AccountId, Balance, Reason> {
 	pub reason: Reason,
 }
 
+const LOG_TARGET: &str = "pallet_deposit_storage::FixedDepositCollectorViaDepositsPallet";
+
 /// Type implementing the [`DipProviderHooks`] hooks trait by taking a deposit
 /// whenever an identity commitment is stored, and releasing the deposit
 /// whenever an identity commitment is removed.
@@ -99,7 +101,8 @@ where
 			.try_into()
 			.map_err(|_| {
 				log::error!(
-					"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {}",
+					target: LOG_TARGET,
+					"Failed to convert tuple ({:#?}, {version}) to BoundedVec<u8, {}>",
 					identifier,
 					Runtime::MaxKeyLength::get()
 				);
@@ -119,6 +122,7 @@ where
 				FixedDepositCollectorViaDepositsPalletError::FailedToHold
 			} else {
 				log::error!(
+					target: LOG_TARGET,
 					"Error {:#?} should not be generated inside `on_identity_committed` hook.",
 					e
 				);
@@ -140,7 +144,8 @@ where
 			.try_into()
 			.map_err(|_| {
 				log::error!(
-					"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {}",
+					target: LOG_TARGET,
+					"Failed to convert tuple ({:#?}, {version}) to BoundedVec<u8, {}>",
 					identifier,
 					Runtime::MaxKeyLength::get()
 				);
@@ -187,10 +192,14 @@ pub(crate) fn free_deposit<Account, Currency: Mutate<Account>>(
 	let result = Currency::release(reason, &deposit.owner, deposit.amount, Precision::BestEffort);
 	debug_assert!(
 		result == Ok(deposit.amount),
-		"Released deposit amount does not match with expected amount. Expected: {:?}, Released amount: {:?}  Error: {:?}",
+		"Released deposit amount does not match with expected amount. Expected: {:#?}, Released amount: {:#?}  Error: {:#?}",
 		deposit.amount,
 		result.ok(),
 		result.err(),
 	);
+	// Same as the `debug_assert` above, but also run in release mode.
+	if result != Ok(deposit.amount) {
+		log::warn!(target: LOG_TARGET, "Released deposit amount does not match with expected amount. Expected: {:#?}, Released amount: {:#?}  Error: {:#?}", deposit.amount, result.ok(), result.err());
+	}
 	result
 }
