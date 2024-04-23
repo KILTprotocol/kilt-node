@@ -7883,6 +7883,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-support",
+ "log",
  "parity-scale-codec",
  "scale-info",
  "sp-io",
