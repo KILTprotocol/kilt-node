@@ -24,6 +24,7 @@ did.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
 kilt-support.workspace = true
+log.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 sp-std.workspace = true
@@ -48,6 +49,7 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"kilt-support/std",
+  "log/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"sp-std/std",

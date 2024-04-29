@@ -16,8 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::assert_noop;
-use frame_support::dispatch::RawOrigin;
+use frame_support::{assert_noop, dispatch::RawOrigin};
 use integration_tests_common::{asset_hub_polkadot, polkadot::ED, ALICE, BOB};
 use sp_core::sr25519;
 use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;

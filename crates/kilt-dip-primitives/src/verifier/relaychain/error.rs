@@ -18,6 +18,7 @@
 
 use crate::Error;
 
+#[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(test, derive(enum_iterator::Sequence))]
 pub enum DipRelaychainStateProofVerifierError<DidOriginError> {
 	UnsupportedVersion,
