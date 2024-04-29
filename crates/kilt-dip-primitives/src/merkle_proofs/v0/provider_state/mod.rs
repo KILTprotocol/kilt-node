@@ -176,6 +176,7 @@ impl<
 		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>, Number = KiltBlockNumber>,
 	{
 		let provider_head_storage_key = calculate_parachain_head_storage_key(provider_para_id);
+		log::trace!(target: "dip::consumer::ParachainDipDidProofV0", "Calculated storage key for para ID {:#?} = {:#?}", provider_para_id, provider_head_storage_key);
 		// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
 		//This could be the reason (and the solution): https://substrate.stackexchange.com/a/1891/1795
 		let provider_header = verify_storage_value_proof_with_decoder::<_, RelayHasher, ProviderHeader>(
@@ -323,6 +324,7 @@ impl<
 	{
 		let dip_commitment_storage_key =
 			calculate_dip_identity_commitment_storage_key_for_runtime::<ProviderRuntime>(subject, 0);
+		log::trace!(target: "dip::consumer::DipDidProofWithVerifiedStateRootV0", "Calculated storage key for subject {:#?} = {:#?}", subject, dip_commitment_storage_key);
 		let dip_commitment = verify_storage_value_proof::<_, ParachainHasher, IdentityCommitmentOf<ProviderRuntime>>(
 			&dip_commitment_storage_key,
 			self.state_root,
@@ -466,10 +468,11 @@ impl<
 			self.dip_proof.blinded.as_slice(),
 			proof_leaves_key_value_pairs.as_slice(),
 		)
+		// Can't log since the result returned by `verify_trie_proof` implements `Debug` only with `std`.
 		.map_err(|_| Error::InvalidDidMerkleProof)?;
 
 		let revealed_leaves = BoundedVec::try_from(self.dip_proof.revealed).map_err(|_| {
-			log::error!("Should not fail to construct BoundedVec since bounds were checked before.");
+			log::error!(target: "dip::consumer::DipDidProofWithVerifiedSubjectCommitmentV0", "Failed to construct BoundedVec<u8, {MAX_REVEALED_LEAVES_COUNT}>.");
 			Error::Internal
 		})?;
 

@@ -178,12 +178,12 @@ impl<
 		+ pallet_did_lookup::Config,
 	KiltRuntime::IdentityCommitmentGenerator: IdentityCommitmentGenerator<KiltRuntime, Output = ConsumerRuntime::Hash>,
 	SignedExtra: GetWithoutArg,
-	SignedExtra::Result: Encode,
+	SignedExtra::Result: Encode + Debug,
 	DidCallVerifier: DipCallOriginFilter<
 		RuntimeCallOf<ConsumerRuntime>,
 		OriginInfo = Vec<RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>>,
 	>,
-	DidCallVerifier::Error: Into<u8>,
+	DidCallVerifier::Error: Into<u8> + Debug,
 {
 	type Error = DipRelaychainStateProofVerifierError<DidCallVerifier::Error>;
 	type Proof = VersionedRelaychainStateProof<

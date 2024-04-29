@@ -25,12 +25,12 @@ use runtime_common::{
 	DidIdentifier,
 };
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
+use sp_std::{fmt::Debug, vec::Vec};
 
 use crate::Runtime;
 
 /// Parameters for a DIP proof request.
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub struct DipProofRequest {
 	/// The subject identifier for which to generate the DIP proof.
 	pub(crate) identifier: DidIdentifier,

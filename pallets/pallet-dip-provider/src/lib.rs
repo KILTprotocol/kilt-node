@@ -36,6 +36,8 @@ pub use crate::{
 	traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider},
 };
 
+const LOG_TARGET: &str = "dip::provider::pallet_dip_provider";
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -156,13 +158,27 @@ pub mod pallet {
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
 			let identity = T::IdentityProvider::retrieve(&identifier)
 				.map_err(|error| Error::<T>::IdentityProvider(error.into()))?;
+			log::info!(
+				target: LOG_TARGET,
+				"Identity details retrieved for identifier {:#?}: {:#?}",
+				identifier,
+				identity
+			);
 			let commitment =
 				T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
 					.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))?;
 
 			match Self::delete_identity_commitment_storage_entry(&identifier, &dispatcher, commitment_version) {
 				// Ignore if there was no previous commitment.
-				Ok(_) | Err(Error::<T>::CommitmentNotFound) => (),
+				Ok(commitment) => {
+					log::trace!(
+						target: LOG_TARGET,
+						"Previous commitment {:#?} for subject {:#?} deleted.",
+						commitment,
+						identifier
+					);
+				}
+				Err(Error::<T>::CommitmentNotFound) => (),
 				// If a different error is returned, bubble it up.
 				Err(e) => return Err(e.into()),
 			};
@@ -208,8 +224,15 @@ pub mod pallet {
 			version: IdentityCommitmentVersion,
 		) -> Result<IdentityCommitmentOf<T>, Error<T>> {
 			let commitment = Self::delete_identity_commitment_storage_entry_without_hook(identifier, version)?;
-			T::ProviderHooks::on_commitment_removed(identifier, dispatcher, &commitment, version)
-				.map_err(|e| Error::<T>::Hook(e.into()))?;
+			T::ProviderHooks::on_commitment_removed(identifier, dispatcher, &commitment, version).map_err(|e| {
+				log::info!(
+					target: LOG_TARGET,
+					"Failed to invoke `ProviderHooks::on_commitment_removed` for commitment {:#?} with error {:#?}",
+					identifier,
+					e
+				);
+				Error::<T>::Hook(e.into())
+			})?;
 			Ok(commitment)
 		}
 

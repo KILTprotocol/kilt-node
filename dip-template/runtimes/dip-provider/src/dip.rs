@@ -119,6 +119,7 @@ pub mod deposit {
 	pub type DepositCollectorHooks =
 		FixedDepositCollectorViaDepositsPallet<DipProviderDepositNamespace, ConstU128<DEPOSIT_AMOUNT>, DepositKey>;
 
+	#[derive(RuntimeDebug)]
 	pub enum CommitmentDepositRemovalHookError {
 		DecodeKey,
 		Internal,

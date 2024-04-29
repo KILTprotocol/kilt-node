@@ -64,7 +64,8 @@ fn dispatch_as_successful_existing_details() {
 			System::assert_last_event(
 				pallet_did_lookup::Event::<TestRuntime>::AssociationEstablished(SUBMITTER.into(), SUBJECT).into(),
 			);
-			// Details have been bumped up by the proof verifier, and correctly stored in the storage.
+			// Details have been bumped up by the proof verifier, and correctly stored in
+			// the storage.
 			assert_eq!(IdentityEntries::<TestRuntime>::get(SUBJECT), Some(101));
 		});
 }
