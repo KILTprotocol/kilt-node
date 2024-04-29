@@ -16,14 +16,18 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx', asy
 	// set storage
 	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address]))
 	await setStorage(hydradxContext, HydraDxConfig.assignNativeTokensToAccounts([keysAlice.address]))
+	// Set balance to 0 for HydraDX sovereign account on Spiritnet
+	await setStorage(spiritnetContext, SpiritnetConfig.assignNativeTokensToAccounts([SpiritnetConfig.hydraDxSovereignAccount], BigInt(0)))
+	// Set KILT balance to 0 for Omnipool account on HydraDx
+	await setStorage(hydradxContext, HydraDxConfig.assignKiltTokensToAccounts([HydraDxConfig.omnipoolAccount], BigInt(0)))
 
 	// check initial balance
-	await checkBalance(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect)
-	await checkBalance(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect)
+	await checkBalance(getFreeBalanceSpiritnet, SpiritnetConfig.hydraDxSovereignAccount, expect, BigInt(0))
+	await checkBalance(getFreeBalanceHydraDxKilt, HydraDxConfig.omnipoolAccount, expect, BigInt(0))
 
-	const omniPoolAddress = hexAddress(HydraDxConfig.omnipoolAccount)
+	const omnipoolAddress = hexAddress(HydraDxConfig.omnipoolAccount)
 	const hydraDxDestination = { V3: getSiblingLocation(HydraDxConfig.paraId) }
-	const beneficiary = getAccountLocationV3(omniPoolAddress)
+	const beneficiary = getAccountLocationV3(omnipoolAddress)
 
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(hydraDxDestination, beneficiary, KILT_ASSET_V3, 0, 'Unlimited')

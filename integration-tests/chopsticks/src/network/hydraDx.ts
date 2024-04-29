@@ -40,7 +40,7 @@ export function assignKiltTokensToAccounts(addr: string[], balance: bigint = ini
 /// HydraDX ParaId
 export const paraId = 2034
 
-/// OmniPool account
+/// Omnipool account
 export const omnipoolAccount = '7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1'
 
 export async function getContext(): Promise<Config> {
