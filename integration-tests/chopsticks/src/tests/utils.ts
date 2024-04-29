@@ -30,6 +30,18 @@ export async function checkBalance(
 	expect(balance).eq(BigInt(expectedAmount))
 }
 
+/// checks the balance of an account and expects it to be in the given range
+export async function checkBalanceInRange(
+	getFreeBalanceFunction: (account: string) => Promise<bigint>,
+	account: string,
+	expect: ExpectStatic,
+	expectedRange: [bigint, bigint]
+) {
+	const balance = await getFreeBalanceFunction(account)
+	expect(balance >= expectedRange[0])
+	expect(balance <= expectedRange[1])
+}
+
 export function hexAddress(addr: string) {
 	return u8aToHex(decodeAddress(addr))
 }

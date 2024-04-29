@@ -30,22 +30,22 @@ test-features:
   script:
     - cargo test --all --all-features --all-targets --locked
 
-# integration-tests:
-#   timeout: 30 minutes
-#   image: paritytech/ci-unified:bullseye-1.70.0
-#   stage: test
-#   variables:
-#     CI: "true"
-#   script:
-#     - cd ./integration-tests/chopsticks
-#     - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-#     - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use
-#     - eval "[ -f .nvmrc ] && nvm install" && nvm use
-#     - yarn --immutable
-#     - yarn ts-check
-#     - yarn lint
-#     - cargo build -p spiritnet-runtime
-#     - yarn test:CI
+integration-tests:
+  timeout: 30 minutes
+  image: paritytech/ci-unified:bullseye-1.70.0
+  stage: test
+  variables:
+    CI: "true"
+  script:
+    - cd ./integration-tests/chopsticks
+    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use
+    - eval "[ -f .nvmrc ] && nvm install" && nvm use
+    - yarn --immutable
+    - yarn ts-check
+    - yarn lint
+    - cargo build -p spiritnet-runtime
+    - yarn test:CI
 
 # TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
 test-try-runtime:
