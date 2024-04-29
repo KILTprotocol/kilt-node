@@ -18,8 +18,11 @@ beforeAll(async () => {
 	polkadotContext = await PolkadotConfig.getContext()
 
 	// Setup network
+	//@ts-expect-error Something weird in the exported types
 	await connectVertical(polkadotContext.chain, spiritnetContext.chain)
+	//@ts-expect-error Something weird in the exported types
 	await connectVertical(polkadotContext.chain, hydradxContext.chain)
+	//@ts-expect-error Something weird in the exported types
 	await connectParachains([spiritnetContext.chain, hydradxContext.chain])
 
 	const newBlockConfig = { count: 2 }
@@ -31,14 +34,6 @@ beforeAll(async () => {
 		spiritnetContext.dev.newBlock(newBlockConfig),
 		hydradxContext.dev.newBlock(newBlockConfig),
 	])
-
-	console.info('Runtime Upgrade completed')
-
-	// set SafeXcmVersion to 3
-	await setStorage(spiritnetContext, SpiritnetConfig.setSafeXcmVersion(3))
-
-	// register Kilt in HydraDX
-	await setStorage(hydradxContext, HydraDxConfig.registerKilt())
 }, 300_000)
 
 afterAll(async () => {
