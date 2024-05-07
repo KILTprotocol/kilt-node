@@ -76,9 +76,17 @@ where
 	MerkleHasher: Hash,
 	OutputOf<MerkleHasher>: Ord,
 {
+	const LOG_TARGET: &str = "dip::consumer::verify_storage_value_proof_with_decoder";
 	let storage_proof = StorageProof::new(state_proof);
 	let mut revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
-		.map_err(|_| MerkleProofError::InvalidProof)?;
+		.map_err(|e| {
+			log::info!(
+				target: LOG_TARGET,
+				"Failed verification of storage proof with error {:#?}",
+				e
+			);
+			MerkleProofError::InvalidProof
+		})?;
 
 	debug_assert!(
 		revealed_leaves.len() == 1usize,

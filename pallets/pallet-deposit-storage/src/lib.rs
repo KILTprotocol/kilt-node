@@ -40,6 +40,8 @@ mod benchmarking;
 
 pub use crate::{default_weights::WeightInfo, deposit::FixedDepositCollectorViaDepositsPallet, pallet::*};
 
+const LOG_TARGET: &str = "pallet_deposit_storage";
+
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::{
@@ -176,7 +178,16 @@ pub mod pallet {
 			let dispatcher = T::CheckOrigin::ensure_origin(origin)?;
 
 			let deposit = Self::remove_deposit(&namespace, &key, Some(&dispatcher))?;
-			T::DepositHooks::on_deposit_reclaimed(&namespace, &key, deposit).map_err(|e| Error::<T>::Hook(e.into()))?;
+			T::DepositHooks::on_deposit_reclaimed(&namespace, &key, deposit).map_err(|e| {
+				log::info!(
+					target: LOG_TARGET,
+					"Failed to invoke `DepositHooks::on_deposit_reclaimed` for {:#?} and key {:#?} with error {:#?}",
+					namespace,
+					key,
+					e
+				);
+				Error::<T>::Hook(e.into())
+			})?;
 			Ok(())
 		}
 	}

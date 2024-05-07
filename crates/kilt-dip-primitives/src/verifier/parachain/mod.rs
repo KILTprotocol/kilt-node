@@ -188,12 +188,12 @@ impl<
 	KiltRuntime::IdentityCommitmentGenerator:
 		IdentityCommitmentGenerator<KiltRuntime, Output = RelaychainRuntime::Hash>,
 	SignedExtra: GetWithoutArg,
-	SignedExtra::Result: Encode,
+	SignedExtra::Result: Encode + Debug,
 	DidCallVerifier: DipCallOriginFilter<
 		RuntimeCallOf<ConsumerRuntime>,
 		OriginInfo = Vec<RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>>,
 	>,
-	DidCallVerifier::Error: Into<u8>,
+	DidCallVerifier::Error: Into<u8> + Debug,
 {
 	type Error = DipParachainStateProofVerifierError<DidCallVerifier::Error>;
 	type Proof = VersionedDipParachainStateProof<

@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::Parameter;
+use sp_std::fmt::Debug;
 
 use crate::{Config, RuntimeCallOf};
 
@@ -29,7 +30,7 @@ where
 	Runtime: Config,
 {
 	/// The error returned upon failed DIP proof verification.
-	type Error: Into<u16>;
+	type Error: Into<u16> + Debug;
 	/// The accepted type for a DIP identity proof.
 	type Proof: Parameter;
 	/// The type returned upon successful DIP proof verification.

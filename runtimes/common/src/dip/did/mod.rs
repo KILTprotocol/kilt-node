@@ -76,6 +76,8 @@ where
 	pub linked_accounts: BoundedVec<LinkableAccountId, ConstU32<MAX_LINKED_ACCOUNTS>>,
 }
 
+const LOG_TARGET: &str = "dip::provider::LinkedDidInfoProvider";
+
 /// Type implementing the [`IdentityProvider`] trait which is responsible for
 /// collecting the DID information relevant for DIP cross-chain transactions by
 /// interacting with the different pallets involved.
@@ -124,6 +126,7 @@ where
 
 	let ownership = pallet_web3_names::Pallet::<Runtime>::owner(&web3_name).ok_or_else(|| {
 		log::error!(
+			target: LOG_TARGET,
 			"Inconsistent reverse map pallet_web3_names::owner(web3_name). Cannot find owner for web3name {:#?}",
 			web3_name
 		);

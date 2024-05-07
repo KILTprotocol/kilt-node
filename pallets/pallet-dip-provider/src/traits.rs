@@ -18,6 +18,7 @@
 
 use did::DidRawOrigin;
 use frame_support::sp_runtime::AccountId32;
+use sp_std::fmt::Debug;
 
 use crate::{Config, IdentityCommitmentOf, IdentityCommitmentVersion};
 
@@ -35,7 +36,7 @@ pub mod identity_provision {
 		Runtime: Config,
 	{
 		type Error: Into<u16>;
-		type Success;
+		type Success: Debug;
 
 		/// Return the identity information for the identifier, if found.
 		/// Otherwise, return an error.
@@ -49,7 +50,7 @@ pub mod identity_provision {
 	impl<Runtime, Identity> IdentityProvider<Runtime> for DefaultIdentityProvider<Identity>
 	where
 		Runtime: Config,
-		Identity: Default,
+		Identity: Default + Debug,
 	{
 		type Error = u16;
 		type Success = Identity;
@@ -155,7 +156,7 @@ pub trait ProviderHooks<Runtime>
 where
 	Runtime: Config,
 {
-	type Error: Into<u16>;
+	type Error: Into<u16> + Debug;
 
 	fn on_identity_committed(
 		identifier: &Runtime::Identifier,

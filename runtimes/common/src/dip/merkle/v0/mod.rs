@@ -32,6 +32,8 @@ use crate::dip::{
 	merkle::{CompleteMerkleProof, DidMerkleProofError, DidMerkleProofOf},
 };
 
+const LOG_TARGET: &str = "dip::provider::DidMerkleRootGeneratorV0";
+
 #[cfg(test)]
 mod tests;
 
@@ -48,7 +50,12 @@ where
 		.public_keys
 		.get(&did_details.authentication_key)
 		.ok_or_else(|| {
-			log::error!("Authentication key should be part of the public keys.");
+			log::error!(
+				target: LOG_TARGET,
+				"Failed to find authentication key {:#?} among the public keys {:#?}.",
+				did_details.authentication_key,
+				did_details.public_keys
+			);
 			DidMerkleProofError::Internal
 		})?;
 	Ok([RevealedDidKey {
@@ -72,7 +79,12 @@ where
 		return Ok(vec![].into_iter());
 	};
 	let att_key_details = did_details.public_keys.get(&att_key_id).ok_or_else(|| {
-		log::error!("Attestation key should be part of the public keys.");
+		log::error!(
+			target: LOG_TARGET,
+			"Failed to find attestation  key {:#?} among the public keys {:#?}.",
+			att_key_id,
+			did_details.public_keys
+		);
 		DidMerkleProofError::Internal
 	})?;
 	Ok(vec![RevealedDidKey {
@@ -96,7 +108,12 @@ where
 		return Ok(vec![].into_iter());
 	};
 	let del_key_details = did_details.public_keys.get(&del_key_id).ok_or_else(|| {
-		log::error!("Delegation key should be part of the public keys.");
+		log::error!(
+			target: LOG_TARGET,
+			"Failed to find delegation  key {:#?} among the public keys {:#?}.",
+			del_key_id,
+			did_details.public_keys
+		);
 		DidMerkleProofError::Internal
 	})?;
 	Ok(vec![RevealedDidKey {
@@ -121,7 +138,12 @@ where
 		.iter()
 		.map(|id| {
 			let key_agreement_details = did_details.public_keys.get(id).ok_or_else(|| {
-				log::error!("Key agreement key should be part of the public keys.");
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to find key agreement  key {:#?} among the public keys {:#?}.",
+					id,
+					did_details.public_keys
+				);
 				DidMerkleProofError::Internal
 			})?;
 			Ok(RevealedDidKey {
@@ -199,7 +221,11 @@ where
 		trie_builder
 			.insert(leaf.encoded_key().as_slice(), leaf.encoded_value().as_slice())
 			.map_err(|_| {
-				log::error!("Failed to insert leaf in the trie builder. Leaf: {:#?}", leaf);
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to insert leaf {:#?} in the trie builder.",
+					leaf
+				);
 				DidMerkleProofError::Internal
 			})?;
 		Ok(())
@@ -254,7 +280,12 @@ where
 					key_relationships.push(DidVerificationKeyRelationship::CapabilityDelegation.into());
 				}
 				if key_relationships.is_empty() {
-					log::error!("Unknown key ID {:#?} retrieved from DID details.", key_id);
+					log::error!(
+						target: LOG_TARGET,
+						"Unknown key ID {:#?} retrieved from DID details {:#?}.",
+						key_id,
+						did_details.public_keys
+					);
 					Err(DidMerkleProofError::Internal)
 				} else {
 					Ok(key_relationships)
@@ -305,11 +336,13 @@ where
 	let encoded_keys: Vec<Vec<u8>> = leaves.iter().flatten().map(|l| l.encoded_key()).collect();
 	let proof = generate_trie_proof::<LayoutV1<Runtime::Hashing>, _, _, _>(&db, root, &encoded_keys).map_err(|_| {
 		log::error!(
-			"Failed to generate a merkle proof for the encoded keys: {:#?}",
+			target: LOG_TARGET,
+			"Failed to generate a Merkle proof for the encoded keys: {:#?}",
 			encoded_keys
 		);
 		DidMerkleProofError::Internal
 	})?;
+	log::info!(target: LOG_TARGET, "Merkle proof generated: {:#?}", proof);
 
 	Ok(CompleteMerkleProof {
 		root,

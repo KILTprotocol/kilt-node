@@ -20,3 +20,5 @@
 **/node_modules
 
 runtimes/spiritnet/src/xcm_tests/e2e/out
+
+*.db.sqlite*

@@ -36,6 +36,8 @@ mod origin;
 
 pub use crate::{default_weights::WeightInfo, origin::*, pallet::*, traits::SuccessfulProofVerifier};
 
+const LOG_TARGET: &str = "dip::consumer::pallet_dip_consumer";
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -49,7 +51,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
 	use scale_info::TypeInfo;
-	use sp_std::boxed::Box;
+	use sp_std::{boxed::Box, fmt::Debug};
 
 	use crate::traits::IdentityProofVerifier;
 
@@ -83,7 +85,7 @@ pub mod pallet {
 		/// Any additional information that must be available only to the
 		/// provider runtime that is required to provide additional context when
 		/// verifying a cross-chain identity proof.
-		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen;
+		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen + Debug;
 		/// The core component of this pallet. It takes care of validating an
 		/// identity proof and optionally update any `LocalIdentityInfo`. It
 		/// also defines, via its associated type, the structure of the identity
@@ -165,7 +167,15 @@ pub mod pallet {
 					identity_entry,
 					proof,
 				)
-				.map_err(|e| Error::<T>::InvalidProof(e.into()))
+				.map_err(|e| {
+					log::info!(
+						target: LOG_TARGET,
+						"Failed to verify identity proof for identifier {:#?} with error {:#?}",
+						identifier,
+						e
+					);
+					Error::<T>::InvalidProof(e.into())
+				})
 			})?;
 			let did_origin: DipOrigin<
 				T::Identifier,
