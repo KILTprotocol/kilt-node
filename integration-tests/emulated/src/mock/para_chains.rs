@@ -18,7 +18,7 @@ use integration_tests_common::constants::{accounts, asset_hub_polkadot, polkadot
 use runtime_common::AuthorityId;
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
-use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Chain, NetworkComponent, Parachain, TestExt};
+use xcm_emulator::decl_test_parachains;
 
 use crate::utils::{get_account_id_from_seed, get_from_seed};
 
@@ -77,7 +77,6 @@ pub mod peregrine {
 
 	use peregrine_runtime::{
 		BalancesConfig, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SessionConfig, SessionKeys,
-		SystemConfig, WASM_BINARY,
 	};
 
 	pub const PARA_ID: u32 = 2_000;
@@ -116,6 +115,27 @@ pub mod peregrine {
 }
 
 decl_test_parachains! {
+	pub struct Spiritnet {
+		genesis = spiritnet::genesis(),
+		on_init = (),
+		runtime = spiritnet_runtime,
+		core = {
+			XcmpMessageHandler: spiritnet_runtime::XcmpQueue,
+			DmpMessageHandler: spiritnet_runtime::DmpQueue,
+			LocationToAccountId: spiritnet_runtime::xcm_config::LocationToAccountIdConverter,
+			ParachainInfo: spiritnet_runtime::ParachainInfo,
+		},
+		pallets = {
+			Balances: spiritnet_runtime::Balances,
+			PolkadotXcm: spiritnet_runtime::PolkadotXcm,
+			Did: spiritnet_runtime::Did,
+			Ctype: spiritnet_runtime::Ctype,
+			Attestation: spiritnet_runtime::Attestation,
+			Web3Names: spiritnet_runtime::Web3Names,
+			DidLookup: spiritnet_runtime::DidLookup,
+			PublicCredentials: spiritnet_runtime::PublicCredentials,
+		}
+	},
 	pub struct Peregrine {
 		genesis = peregrine::genesis(),
 		on_init = (),

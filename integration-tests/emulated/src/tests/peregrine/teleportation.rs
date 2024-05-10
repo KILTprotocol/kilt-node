@@ -17,11 +17,15 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{assert_noop, dispatch::RawOrigin};
-use integration_tests_common::{asset_hub_polkadot, polkadot::ED, ALICE, BOB};
+use integration_tests_common::constants::{
+	accounts::{ALICE, BOB},
+	asset_hub_polkadot,
+	polkadot::ED,
+};
 use peregrine_runtime::PolkadotXcm as PeregrineXcm;
 use sp_core::sr25519;
-use xcm::v3::WeightLimit;
-use xcm_emulator::{Here, Junction, Junctions, ParentThen, TestExt, X1};
+use xcm::v3::prelude::{Here, Junction, Junctions, ParentThen, WeightLimit, X1};
+use xcm_emulator::{Chain, Network, TestExt};
 
 use crate::{
 	mock::{

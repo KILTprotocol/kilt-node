@@ -15,9 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use integration_tests_common::constants::{polkadot, rococo};
-use xcm_emulator::{
-	decl_test_relay_chains, Chain, DefaultMessageProcessor, NetworkComponent, RelayChain, TestExt, XcmHash,
-};
+use xcm_emulator::{decl_test_relay_chains, DefaultMessageProcessor};
 
 decl_test_relay_chains! {
 	#[api_version(5)]

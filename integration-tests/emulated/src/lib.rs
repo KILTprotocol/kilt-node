@@ -16,9 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#[cfg(test)]
 mod mock;
-// #[cfg(test)]
-// mod testsa;
-#[cfg(test)]
 mod utils;
+
+#[cfg(test)]
+mod tests;

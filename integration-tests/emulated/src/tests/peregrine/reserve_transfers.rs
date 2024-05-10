@@ -16,22 +16,23 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
 use frame_support::{assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
-use integration_tests_common::{asset_hub_polkadot, polkadot::ED, ALICE};
+use integration_tests_common::constants::{
+	accounts::ALICE,
+	asset_hub_polkadot::{self, ED},
+};
 use peregrine_runtime::PolkadotXcm as PeregrineXcm;
 use runtime_common::AccountId;
 use sp_core::sr25519;
 use sp_runtime::traits::Zero;
-use xcm::v3::WeightLimit;
-use xcm_emulator::{
-	assert_expected_events, cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent, Here, Junction, Junctions, Parachain,
-	Parent, ParentThen, TestExt, X1,
-};
+use xcm::v3::prelude::{Here, Junction, Junctions, Parent, ParentThen, WeightLimit, X1};
+use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 
 use crate::{
 	mock::{
 		network::MockNetworkRococo,
-		para_chains::{AssetHubRococo, Peregrine},
+		para_chains::{AssetHubRococo, Peregrine, PeregrinePallet},
 		relay_chains::Rococo,
 	},
 	utils::get_account_id_from_seed,
@@ -61,7 +62,7 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_relay() {
 			WeightLimit::Unlimited,
 		));
 
-		type RuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			Peregrine,
@@ -89,7 +90,7 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 	Peregrine::execute_with(|| {
 		// the sovereign_account of AssetHub should have no coins.
 		let balance_before_transfer: u128 =
-			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
+			<peregrine_runtime::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
 
 		assert!(balance_before_transfer.is_zero());
 
@@ -109,7 +110,7 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 			WeightLimit::Unlimited,
 		));
 
-		type RuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 		// we expect to have the [Complete] event.
 		assert_expected_events!(
@@ -122,7 +123,7 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 
 		// we also expect that the sovereignAccount of AssetHub has some coins now
 		let balance_after_transfer: u128 =
-			<<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
+			<<Peregrine as PeregrinePallet>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
 
 		assert_eq!(balance_after_transfer, balance_to_transfer);
 	});
@@ -132,7 +133,7 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 	});
 	// Fails on AssetHub since peregrine is not a trusted registrar
 	AssetHubRococo::execute_with(|| {
-		type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			AssetHubRococo,

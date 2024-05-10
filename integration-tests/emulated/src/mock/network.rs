@@ -14,17 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use polkadot_primitives::Balance;
-use sp_core::sr25519;
-use sp_core::Get;
-use xcm_emulator::{
-	decl_test_networks, AccountId, Ancestor, BridgeMessageHandler, Chain, MultiLocation, Network, Parachain, Parent,
-	RelayChain, TestExt, X1,
-};
-use xcm_executor::traits::ConvertLocation;
+use xcm_emulator::{decl_test_networks};
 
 use crate::mock::{
-	para_chains::{AssetHubPolkadot, AssetHubRococo, Peregrine},
+	para_chains::{AssetHubPolkadot, AssetHubRococo, Peregrine, Spiritnet},
 	relay_chains::{Polkadot, Rococo},
 };
 
@@ -33,7 +26,7 @@ decl_test_networks! {
 		relay_chain = Polkadot,
 		parachains = vec![
 			AssetHubPolkadot,
-
+			Spiritnet,
 		],
 		bridge = ()
 	},
@@ -42,7 +35,6 @@ decl_test_networks! {
 		parachains = vec![
 			AssetHubRococo,
 			Peregrine,
-
 		],
 		bridge = ()
 	}

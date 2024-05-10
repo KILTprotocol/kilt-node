@@ -16,22 +16,24 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
 use frame_support::{assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
-use integration_tests_common::{asset_hub_polkadot, polkadot::ED, ALICE};
+use integration_tests_common::constants::{accounts::ALICE, asset_hub_polkadot, polkadot::ED};
 use runtime_common::AccountId;
 use sp_core::sr25519;
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;
-use xcm::v3::WeightLimit;
-use xcm_emulator::{
-	assert_expected_events, cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent, Here, Junction, Junctions, Parachain,
-	Parent, ParentThen, TestExt, X1,
+use xcm::v3::{
+	prelude::{Here, Junction, Junctions, Parent, ParentThen, X1},
+	WeightLimit,
 };
+
+use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 
 use crate::{
 	mock::{
 		network::MockNetworkPolkadot,
-		para_chains::{AssetHubPolkadot, Spiritnet},
+		para_chains::{AssetHubPolkadot, Spiritnet, SpiritnetPallet},
 		relay_chains::Polkadot,
 	},
 	utils::get_account_id_from_seed,
@@ -62,7 +64,7 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_relay() {
 			WeightLimit::Unlimited,
 		));
 
-		type RuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 		// The msg should be blocked by the barrier
 		assert_expected_events!(
@@ -93,8 +95,8 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 
 	Spiritnet::execute_with(|| {
 		// the sovereign_account of AssetHub should have no coins.
-		let balance_before_transfer: u128 =
-			<<Spiritnet as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
+		let balance_before_transfer =
+			<<Spiritnet as SpiritnetPallet>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
 
 		assert!(balance_before_transfer.is_zero());
 
@@ -114,7 +116,7 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 			WeightLimit::Unlimited,
 		));
 
-		type RuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 		// we expect to have the [Complete] event.
 		assert_expected_events!(
@@ -126,8 +128,8 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 		);
 
 		// we also expect that the sovereignAccount of AssetHub has some coins now
-		let balance_after_transfer: u128 =
-			<<Spiritnet as Parachain>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
+		let balance_after_transfer =
+			<<Spiritnet as SpiritnetPallet>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
 
 		assert_eq!(balance_after_transfer, balance_to_transfer);
 	});
@@ -139,7 +141,7 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 
 	// Fails on AssetHub since spiritnet is not a trusted registrar
 	AssetHubPolkadot::execute_with(|| {
-		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			AssetHubPolkadot,
