@@ -44,7 +44,6 @@ integration-tests:
     - yarn --immutable
     - yarn ts-check
     - yarn lint
-    - cargo build -p spiritnet-runtime
     - yarn test:CI
 
 # TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
