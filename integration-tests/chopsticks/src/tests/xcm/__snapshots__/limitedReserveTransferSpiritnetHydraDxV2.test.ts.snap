@@ -1,12 +1,21 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > receiver events currencies 1`] = `
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > receiver events currencies 1`] = `
 [
   {
     "data": {
-      "amount": 1000000000000000,
-      "currencyId": 60,
-      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+      "amount": "(rounded 990000000000000)",
+      "currencyId": 28,
+      "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
+    },
+    "method": "Deposited",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 5000000000000)",
+      "currencyId": 28,
+      "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
     "method": "Deposited",
     "section": "currencies",
@@ -14,7 +23,7 @@ exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > 
 ]
 `;
 
-exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > receiver events xcmpQueue 1`] = `
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > receiver events xcmpQueue 1`] = `
 [
   {
     "data": {
@@ -31,7 +40,7 @@ exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > 
 ]
 `;
 
-exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > sender events Balances 1`] = `
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > sender events Balances 1`] = `
 [
   {
     "data": {
@@ -44,7 +53,7 @@ exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > 
 ]
 `;
 
-exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > sender events xcm pallet 1`] = `
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > sender events xcm pallet 1`] = `
 [
   {
     "data": {
@@ -61,7 +70,7 @@ exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > 
 ]
 `;
 
-exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx > sender events xcm queue pallet 1`] = `
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > sender events xcm queue pallet 1`] = `
 [
   {
     "data": {

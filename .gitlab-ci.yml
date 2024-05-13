@@ -41,8 +41,8 @@ integration-tests:
     - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use
     - eval "[ -f .nvmrc ] && nvm install" && nvm use
-    - cargo build -p spiritnet-runtime
     - yarn --immutable
+    - yarn ts-check
     - yarn lint
     - yarn test:CI
 
