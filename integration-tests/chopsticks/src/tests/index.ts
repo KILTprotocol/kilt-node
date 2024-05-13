@@ -6,7 +6,6 @@ import * as SpiritnetConfig from '../network/spiritnet.js'
 import * as PolkadotConfig from '../network/polkadot.js'
 import * as HydraDxConfig from '../network/hydraDx.js'
 import type { Config } from '../network/types.js'
-import { setStorage } from './utils.js'
 
 export let spiritnetContext: Config
 export let hydradxContext: Config

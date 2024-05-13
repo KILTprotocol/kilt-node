@@ -3,9 +3,9 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as HydraDxConfig from '../../network/hydraDx.js'
 import * as SpiritnetConfig from '../../network/spiritnet.js'
-import { KILT, initialBalanceKILT, keysAlice, keysBob } from '../../utils.js'
+import { KILT, initialBalanceHDX, initialBalanceKILT, keysAlice } from '../../utils.js'
 import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../index.js'
-import { checkBalance, createBlock, hexAddress, setStorage } from '../utils.js'
+import { checkBalance, createBlock, hexAddress, setStorage, checkBalanceInRange } from '../utils.js'
 
 const aliceLocation = {
 	V3: {
@@ -23,30 +23,28 @@ const aliceLocation = {
 	},
 }
 
-test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({ expect }) => {
+test('Limited Reserve Transfers from HydraDx Account Alice -> Spiritnet Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
-	const hydraDxConfig = {
-		...HydraDxConfig.assignKiltTokensToAccounts([keysBob.address, HydraDxConfig.omnipoolAccount]),
-		...HydraDxConfig.assignNativeTokensToAccounts([keysBob.address, HydraDxConfig.omnipoolAccount]),
+	// assign initial balance to Alice. Alice also needs to have some HDX, otherwise the account gets dusted
+	const config = {
+		...HydraDxConfig.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
+		...HydraDxConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceHDX),
 	}
 
-	// Update storage
-	await setStorage(
-		spiritnetContext,
-		SpiritnetConfig.assignNativeTokensToAccounts([SpiritnetConfig.hydraDxSovereignAccount])
-	)
-	await setStorage(hydradxContext, hydraDxConfig)
+	// Set storage
+	await setStorage(hydradxContext, config)
 
-	await createBlock(spiritnetContext)
-	await createBlock(hydradxContext)
+	const hydraDxSovereignAccountBalanceBeforeTransfer = await getFreeBalanceSpiritnet(
+		SpiritnetConfig.hydraDxSovereignAccount
+	)
 
 	// check initial balance of alice
-	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect)
+	await checkBalance(getFreeBalanceHydraDxKilt, keysAlice.address, expect, initialBalanceKILT)
 
 	const signedTx = hydradxContext.api.tx.xTokens
 		.transfer(HydraDxConfig.kiltTokenId, KILT, aliceLocation, 'Unlimited')
-		.signAsync(keysBob)
+		.signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)
 
@@ -59,7 +57,7 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 	checkEvents(events, 'xTokens').toMatchSnapshot('sender events currencies')
 
 	// Check balance
-	await checkBalance(getFreeBalanceHydraDxKilt, keysBob.address, expect, initialBalanceKILT - KILT)
+	await checkBalance(getFreeBalanceHydraDxKilt, keysAlice.address, expect, initialBalanceKILT - KILT)
 
 	// Check receiver state
 	await createBlock(spiritnetContext)
@@ -78,8 +76,12 @@ test('Limited Reserve Transfers from HydraDx Account Bob -> Spiritnet', async ({
 		getFreeBalanceSpiritnet,
 		SpiritnetConfig.hydraDxSovereignAccount,
 		expect,
-		initialBalanceKILT - KILT
+		hydraDxSovereignAccountBalanceBeforeTransfer - KILT
 	)
+
 	// Alice receives a bit less since the tx fees has to be paid.
-	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect, BigInt('999999999971175'))
+	await checkBalanceInRange(getFreeBalanceSpiritnet, keysAlice.address, expect, [
+		BigInt('999999999971174'),
+		BigInt('999999999976345'),
+	])
 }, 20_000)
