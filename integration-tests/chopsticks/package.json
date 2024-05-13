@@ -30,9 +30,10 @@
     "eslint-plugin-jsx-a11y": "^6.8.0"
   },
   "scripts": {
+    "ts-check": "tsc --noEmit",
     "lint": "eslint src && prettier --check src",
     "lint:fix": "eslint --fix src && prettier --write src",
-    "clean": "rm -rf ./db && cargo build -p spiritnet-runtime",
+    "clean": "rm -rf ./db",
     "test": "LOG_LEVEL=error vitest",
     "test:CI": "vitest --bail 0  --no-file-parallelism"
   }
