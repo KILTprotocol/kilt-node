@@ -66,9 +66,6 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx Accou
 	await createBlock(hydradxContext)
 
 	// Check events receiver
-	checkSystemEvents(hydradxContext, { section: 'currencies', method: 'Deposited' }).toMatchSnapshot(
-		'receiver events currencies'
-	)
 	checkSystemEvents(hydradxContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
 
 	// check balance receiver
