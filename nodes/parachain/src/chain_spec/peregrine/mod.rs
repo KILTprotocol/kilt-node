@@ -56,13 +56,13 @@ fn testnet_genesis(
 	type LockingPeriod = BlockNumber;
 
 	// vesting and locks as initially designed
-	let claimable_accounts_json = &include_bytes!("../../res/genesis/claimable-accounts.json")[..];
+	let claimable_accounts_json = &include_bytes!("../../../res/genesis/claimable-accounts.json")[..];
 	let claimable_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(claimable_accounts_json)
 			.expect("The file genesis_accounts.json exists and is valid; qed");
 
 	// botlabs account should not be migrated but some have vesting
-	let owned_accounts_json = &include_bytes!("../../res/genesis/owned-accounts.json")[..];
+	let owned_accounts_json = &include_bytes!("../../../res/genesis/owned-accounts.json")[..];
 	let owned_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(owned_accounts_json).expect("The file botlabs_accounts.json exists and is valid; qed");
 
