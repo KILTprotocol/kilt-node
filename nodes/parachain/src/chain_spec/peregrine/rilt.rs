@@ -47,10 +47,10 @@ pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
 			)
 		},
 		vec![
-			"/dns4/bootnode.kilt.io/tcp/30365/p2p/12D3KooWS2h3rxqEC9bzrFNKVgrT1iaGz2UAWA1jVG1EB6dEoeJm"
+			"/dns4/eyrie-4.kilt.io/tcp/30365/p2p/12D3KooWMSF7Vefmpf67iGMkPrUgvXw38HoxaLmTNpYGYikFS7DZ"
 				.parse()
 				.expect("bootnode address is formatted correctly; qed"),
-			"/dns4/bootnode.kilt.io/tcp/30366/p2p/12D3KooWMSF7Vefmpf67iGMkPrUgvXw38HoxaLmTNpYGYikFS7DZ"
+			"/dns4/eyrie-6.kilt.io/tcp/30365/p2p/12D3KooWS2h3rxqEC9bzrFNKVgrT1iaGz2UAWA1jVG1EB6dEoeJm"
 				.parse()
 				.expect("bootnode address is formatted correctly; qed"),
 		],
