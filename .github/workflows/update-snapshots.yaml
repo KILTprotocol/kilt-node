@@ -1,12 +1,10 @@
 name: Update Snapshots
 
 on:
-  pull_request_target:
-    types:
-      - opened
-      - edited
-      - synchronize
-
+  push:
+    branches:
+      - ag_chopsticks
+ 
 permissions:
   contents: write 
   pull-requests: write 
