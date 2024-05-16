@@ -3,7 +3,7 @@ workflow:
     on_new_commit: interruptible
     on_job_failure: all
   rules:
-    - if: '$CI_COMMIT_TITLE == "CI: Update snapshots"'
+    - if: '$CI_COMMIT_TITLE == "ci: Update snapshots"'
       when: never
     - when: always
 
