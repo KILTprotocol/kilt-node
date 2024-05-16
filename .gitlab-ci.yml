@@ -1,11 +1,14 @@
+before_script:
+  - >
+    if echo "$CI_COMMIT_TITLE" | grep -q "ci: Update snapshots"; then
+      echo "Skipping tests due to PR title"
+      exit 0
+    fi
+
 workflow:
   auto_cancel:
     on_new_commit: interruptible
     on_job_failure: all
-  rules:
-    - if: '$CI_COMMIT_TITLE == "ci: Update snapshots"'
-      when: never
-    - when: always
 
 
 stages:
