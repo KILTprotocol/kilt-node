@@ -99,7 +99,7 @@ spiritnet-runtime = {path = "runtimes/spiritnet", default-features = false}
 cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 
-# Cumulus (with default disabled)
+#  Cumulus (with default disabled)
 
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
 cumulus-pallet-dmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
