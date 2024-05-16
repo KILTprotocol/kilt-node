@@ -38,7 +38,7 @@ jobs:
           await exec.exec(`git config user.email "devs@kilt.io"`)
           await exec.exec(`git config user.name "kiltbot"`)
           await exec.exec(`git checkout -b ${branchName}`)
-          await exec.exec(`git`, ['commit', '-am', 'update snapshots'])
+          await exec.exec(`git`, ['commit', '-am', 'ci: Update snapshots'])
           await exec.exec(`git push origin HEAD:${branchName}`)
           await github.rest.pulls.create({
             owner: context.repo.owner,
