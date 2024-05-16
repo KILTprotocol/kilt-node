@@ -1,3 +1,7 @@
+print_commit_title:
+  script:
+    - echo $CI_COMMIT_TITLE
+
 workflow:
   auto_cancel:
     on_new_commit: interruptible
