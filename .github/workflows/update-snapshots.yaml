@@ -49,6 +49,6 @@ jobs:
             repo: context.repo.repo,
             title: 'CI: Update snapshots',
             head: branchName,
-            base: 'master',
+            base: 'develop',
             body: 'Update snapshots',
           })
