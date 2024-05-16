@@ -1,9 +1,4 @@
 name: Update Snapshots
-
-on:
-  push:
-    branches:
-      - ag_chopsticks
  
 permissions:
   contents: write 
