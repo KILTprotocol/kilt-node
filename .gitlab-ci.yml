@@ -1,9 +1,11 @@
 workflow:
   auto_cancel:
     on_new_commit: interruptible
-  # rules:
-  #   - if: $CI_COMMIT_TITLE =~ /-draft$/
-  #     when: never
+    on_job_failure: all
+  rules:
+    - if: '$CI_COMMIT_TITLE == "CI: Update snapshots"'
+      when: never
+    - when: always
 
 
 stages:
