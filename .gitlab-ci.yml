@@ -1,6 +1,6 @@
 before_script:
   - >
-    if echo "$CI_COMMIT_TITLE" | grep -q "ci: Update snapshots"; then
+    if echo "$CI_COMMIT_TITLE" | grep -q "ci: Update snapshots"; then 
       echo "Skipping tests due to PR title"
       exit 0
     fi
