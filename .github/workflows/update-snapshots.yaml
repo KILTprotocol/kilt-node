@@ -1,14 +1,17 @@
 name: Update Snapshots
 
 on:
-  workflow_dispatch:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
 
 permissions:
-  contents: write # required for push commit
-  pull-requests: write # required for create pr
+  contents: write 
+  pull-requests: write 
 
 env:
-  DB_PATH: ./db.sqlite
   GH_TOKEN: ${{ github.token }}
 
 jobs:
