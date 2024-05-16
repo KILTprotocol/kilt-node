@@ -13,7 +13,7 @@ exports[`Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx Ac
   },
   {
     "data": {
-      "amount": "(rounded 4100000000000)",
+      "amount": "(rounded 4000000000000)",
       "currencyId": 28,
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
