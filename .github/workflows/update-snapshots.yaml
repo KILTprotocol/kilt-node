@@ -26,6 +26,7 @@ jobs:
         export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use
         eval "[ -f .nvmrc ] && nvm install" && nvm use
         yarn --immutable
+        ls
         yarn test -u
     - name: Commit and Create PR
       uses: actions/github-script@v6
