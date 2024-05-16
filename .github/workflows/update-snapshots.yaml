@@ -38,9 +38,9 @@ jobs:
       with:
         script: |
           const branchName = `update-snapshots-${context.sha.slice(0, 7)}`
-          echo "hello I am here"
-          await exec.exec(`git config user.email "bot@kilt.io"`)
-          await exec.exec(`git config user.name "KILT Github Action Bot"`)
+          console.log("I am here")
+          await exec.exec(`git config user.email "devs@kilt.io"`)
+          await exec.exec(`git config user.name "kiltbot"`)
           await exec.exec(`git checkout -b ${branchName}`)
           await exec.exec(`git`, ['commit', '-am', 'update snapshots'])
           await exec.exec(`git push origin HEAD:${branchName}`)
