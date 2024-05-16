@@ -35,7 +35,6 @@ jobs:
       with:
         script: |
           const branchName = `update-snapshots-${context.sha.slice(0, 7)}`
-          console.log("I am here")
           await exec.exec(`git config user.email "devs@kilt.io"`)
           await exec.exec(`git config user.name "kiltbot"`)
           await exec.exec(`git checkout -b ${branchName}`)
