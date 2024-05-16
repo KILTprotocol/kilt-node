@@ -47,7 +47,7 @@ jobs:
           await github.rest.pulls.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title: 'CI: Update snapshots',
+            title: 'ci: Update snapshots',
             head: branchName,
             base: 'develop',
             body: 'Update snapshots',
