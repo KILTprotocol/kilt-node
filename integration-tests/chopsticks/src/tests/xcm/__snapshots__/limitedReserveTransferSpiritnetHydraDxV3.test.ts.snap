@@ -1,5 +1,28 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > receiver events currencies 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 1000000000000000)",
+      "currencyId": 28,
+      "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
+    },
+    "method": "Deposited",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 4100000000000)",
+      "currencyId": 28,
+      "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
+    },
+    "method": "Deposited",
+    "section": "currencies",
+  },
+]
+`;
+
 exports[`Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > receiver events xcmpQueue 1`] = `
 [
   {
