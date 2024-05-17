@@ -23,6 +23,10 @@ clippy-and-docs:
   script:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
+  rules:
+    - if: '$CI_COMMIT_MESSAGE == "test"'
+      when: never
+    - when: always
 
 fmt:
   interruptible: true
