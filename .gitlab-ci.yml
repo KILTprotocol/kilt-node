@@ -20,7 +20,7 @@ clippy-and-docs:
   timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
-    before_script:
+  before_script:
     - >
       if echo "$CI_COMMIT_TITLE" | grep -q "test"; then
         echo "Skipping tests due to commit title"
