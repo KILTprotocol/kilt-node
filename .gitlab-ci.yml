@@ -21,10 +21,12 @@ clippy-and-docs:
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   before_script:
-    - if echo "$CI_COMMIT_TITLE" | grep -q "test"; then
+    - |
+      if echo "$CI_COMMIT_TITLE" | grep -q "test"; then
         echo "Skipping tests due to commit title"
         exit 0
       fi
+
   script:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
