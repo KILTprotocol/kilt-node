@@ -17,7 +17,6 @@
 workflow:
   auto_cancel:
     on_new_commit: interruptible
-    on_job_failure: all
 
 
 stages:
