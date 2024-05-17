@@ -1,9 +1,18 @@
-before_script:
-  - >
-    if echo "$CI_COMMIT_TITLE" | grep -q "ci: Update snapshots"; then
-      echo "Skipping tests due to commit title"
-      exit 0
-    fi
+.check_skip_rust:
+  before_script:
+    - |-
+      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-rust"; then
+        echo "Skipping rust tests due to commit title"
+        exit 0
+      fi
+
+.check_skip_integration_tests:
+  before_script:
+    - |-
+      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-integration-tests"; then
+        echo "Skipping integration tests due to commit title"
+        exit 0
+      fi
 
 workflow:
   auto_cancel:
@@ -16,6 +25,7 @@ stages:
   - build
 
 clippy-and-docs:
+  extends: .check_skip_rust
   interruptible: true
   timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
@@ -32,6 +42,7 @@ clippy-and-docs:
 
 fmt:
   interruptible: true
+  extends: .check_skip_rust
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
@@ -39,6 +50,7 @@ fmt:
 
 test:
   interruptible: true
+  extends: .check_skip_rust
   timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
@@ -46,6 +58,7 @@ test:
     - cargo test --all --all-targets --locked
 
 test-features:
+  extends: .check_skip_rust
   interruptible: true
   timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
@@ -54,6 +67,7 @@ test-features:
     - cargo test --all --all-features --all-targets --locked
 
 integration-tests:
+  extends: .check_skip_integration_tests
   interruptible: true
   timeout: 30 minutes
   image: paritytech/ci-unified:bullseye-1.70.0
@@ -72,6 +86,7 @@ integration-tests:
 
 # TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
 test-try-runtime:
+  extends: .check_skip_rust
   interruptible: true
   parallel:
     matrix:
