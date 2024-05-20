@@ -9203,7 +9203,6 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-collective",
- "pallet-configuration",
  "pallet-democracy",
  "pallet-deposit-storage",
  "pallet-did-lookup",
