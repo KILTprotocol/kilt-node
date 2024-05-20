@@ -1,60 +1,64 @@
 [package]
-authors.workspace = true
+authors = { workspace = true }
 description = "Pallet enabling to send some form of identity information to a specified destination."
-documentation.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license-file.workspace = true
+documentation = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license-file = { workspace = true }
 name = "pallet-dip-provider"
 readme = "README.md"
-repository.workspace = true
-version.workspace = true
+repository = { workspace = true }
+version = { workspace = true }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-kilt-support = {workspace = true, features = ["std", "mock", "try-runtime"]}
-sp-io = {workspace = true, features = ["std"]}
-sp-keystore = {workspace = true, features = ["std"]}
-sp-runtime = {workspace = true, features = ["std"]}
+kilt-support = { workspace = true, features = ["std", "mock", "try-runtime"] }
+sp-io = { workspace = true, features = ["std"] }
+sp-keystore = { workspace = true, features = ["std"] }
+sp-runtime = { workspace = true, features = ["std"] }
 
 [dependencies]
-did.workspace = true
-frame-support.workspace = true
-frame-system.workspace = true
-kilt-support.workspace = true
-log.workspace = true
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
-sp-std.workspace = true
+did = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+kilt-support = { workspace = true }
+log = { workspace = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
+sp-std = { workspace = true }
 
 # Benchmarks
-frame-benchmarking = {workspace = true, optional = true}
-sp-runtime = {workspace = true, optional = true}
+frame-benchmarking = { workspace = true, optional = true }
+sp-runtime = { workspace = true, optional = true }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 
 runtime-benchmarks = [
-	"did/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"frame-system/runtime-benchmarks",
-	"kilt-support/runtime-benchmarks",
+  "did/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
   "frame-benchmarking",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
-	"did/std",
-	"frame-support/std",
-	"frame-system/std",
-	"kilt-support/std",
+  "did/std",
+  "frame-support/std",
+  "frame-system/std",
+  "kilt-support/std",
   "log/std",
-	"parity-scale-codec/std",
-	"scale-info/std",
-	"sp-std/std",
+  "parity-scale-codec/std",
+  "scale-info/std",
+  "sp-std/std",
   "frame-benchmarking?/std",
   "sp-runtime?/std",
 ]
 
-try-runtime = [ "did/try-runtime", "frame-support/try-runtime", "kilt-support/try-runtime" ]
+try-runtime = [
+  "did/try-runtime",
+  "frame-support/try-runtime",
+  "kilt-support/try-runtime",
+]

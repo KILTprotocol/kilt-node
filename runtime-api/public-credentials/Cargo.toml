@@ -1,31 +1,26 @@
 [package]
-authors.workspace = true
-documentation.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license-file.workspace = true
-readme.workspace = true
-repository.workspace = true
-version.workspace = true
-name = "kilt-runtime-api-public-credentials"
+authors = { workspace = true }
 description = "Runtime APIs for dealing with public credentials."
+documentation = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license-file = { workspace = true }
+name = "kilt-runtime-api-public-credentials"
+readme = { workspace = true }
+repository = { workspace = true }
+version = { workspace = true }
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
+parity-scale-codec = { workspace = true, features = ["derive"] }
 
 # Internal dependencies
-kilt-support.workspace = true
+kilt-support = { workspace = true }
 
 # Substrate dependencies
-sp-api.workspace = true
-sp-std.workspace = true
+sp-api = { workspace = true }
+sp-std = { workspace = true }
 
 [features]
 default = ["std"]
-std = [
-	"parity-scale-codec/std",
-  "kilt-support/std",
-	"sp-api/std",
-	"sp-std/std",
-]
+std = ["parity-scale-codec/std", "kilt-support/std", "sp-api/std", "sp-std/std"]
