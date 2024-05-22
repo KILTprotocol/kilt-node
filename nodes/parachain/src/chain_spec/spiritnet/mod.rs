@@ -25,4 +25,4 @@ const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub(crate) type ChainSpec =
-	sc_service::GenericChainSpec<peregrine_runtime::RuntimeGenesisConfig, crate::chain_spec::Extensions>;
+	sc_service::GenericChainSpec<spiritnet_runtime::RuntimeGenesisConfig, crate::chain_spec::Extensions>;

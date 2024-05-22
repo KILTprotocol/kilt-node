@@ -18,11 +18,6 @@
 
 //! KILT chain specification
 
-// FIXME: Remove once ChainSpecGroup implements Eq
-#![allow(clippy::derive_partial_eq_without_eq)]
-
-use cumulus_primitives_core::ParaId;
-use polkadot_primitives::v5::LOWEST_PUBLIC_ID;
 use runtime_common::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::Properties;
@@ -30,14 +25,22 @@ use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public};
 use sp_runtime::traits::IdentifyAccount;
 
-pub mod peregrine;
-pub mod spiritnet;
+pub(crate) mod peregrine;
+pub(crate) mod spiritnet;
 
+const KILT_PARA_ID: u32 = 2_086;
 const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
-const DEFAULT_PARA_ID: ParaId = LOWEST_PUBLIC_ID;
+
+/// Helper function to generate an account ID from seed
+fn get_account_id_from_secret<TPublic: Public>(seed: &str) -> AccountId
+where
+	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
+{
+	AccountPublic::from(get_from_secret::<TPublic>(seed)).into_account()
+}
 
 /// Helper function to generate a crypto pair from seed
-pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
+fn get_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
 	TPublic::Pair::from_string(&format!("//{}", seed), None)
 		.expect("static values are valid; qed")
 		.public()
@@ -46,7 +49,7 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
 /// The extensions for the `ChainSpec`.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
-pub struct Extensions {
+struct Extensions {
 	/// The relay chain of the Parachain.
 	pub relay_chain: String,
 	/// The id of the Parachain.
@@ -60,19 +63,13 @@ impl Extensions {
 	}
 }
 
-/// Helper function to generate an account ID from seed
-pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
-}
-
-pub fn get_properties(symbol: &str, decimals: u32, ss58format: u32) -> Properties {
-	let mut properties = Properties::new();
-	properties.insert("tokenSymbol".into(), symbol.into());
-	properties.insert("tokenDecimals".into(), decimals.into());
-	properties.insert("ss58Format".into(), ss58format.into());
-
-	properties
+fn get_properties(symbol: &str, decimals: u32, ss58format: u32) -> Properties {
+	Properties::from_iter(
+		[
+			("tokenSymbol".into(), symbol.into()),
+			("tokenDecimals".into(), decimals.into()),
+			("ss58Format".into(), ss58format.into()),
+		]
+		.into_iter(),
+	)
 }
