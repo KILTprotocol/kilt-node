@@ -1,101 +1,111 @@
 [package]
-authors = { workspace = true }
-description = "Parachain runtime template for the KILT Decentralized Identity Provider (DIP) consumer."
-documentation = { workspace = true }
-edition = { workspace = true }
-homepage = { workspace = true }
-license-file = { workspace = true }
-name = "dip-consumer-runtime-template"
-readme = { workspace = true }
-repository = { workspace = true }
-version = { workspace = true }
+authors      ={ workspace=true }
+description  ="Parachain runtime template for the KILT Decentralized Identity Provider (DIP) consumer."
+documentation={ workspace=true }
+edition      ={ workspace=true }
+homepage     ={ workspace=true }
+license-file ={ workspace=true }
+name         ="dip-consumer-runtime-template"
+readme       ={ workspace=true }
+repository   ={ workspace=true }
+version      ={ workspace=true }
 
 [build-dependencies]
-substrate-wasm-builder = { workspace = true }
+substrate-wasm-builder={ workspace=true }
 
 [dev-dependencies]
-sp-io = { workspace = true, features = ["std"] }
+sp-io={ workspace=true, features=["std"] }
 
 [dependencies]
-parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
+parity-scale-codec={ workspace=true, features=["derive"] }
+scale-info        ={ workspace=true, features=["derive"] }
 
 # DIP
-dip-provider-runtime-template = { workspace = true }
-did = { workspace = true }
-kilt-dip-primitives = { workspace = true }
-pallet-dip-consumer = { workspace = true }
-pallet-postit = { workspace = true }
-pallet-relay-store = { workspace = true }
+did                          ={ workspace=true }
+dip-provider-runtime-template={ workspace=true }
+kilt-dip-primitives          ={ workspace=true }
+pallet-dip-consumer          ={ workspace=true }
+pallet-postit                ={ workspace=true }
+pallet-relay-store           ={ workspace=true }
 
 # Substrate
-frame-executive = { workspace = true }
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-frame-system-rpc-runtime-api = { workspace = true }
-pallet-aura = { workspace = true }
-pallet-authorship = { workspace = true }
-pallet-balances = { workspace = true }
-pallet-session = { workspace = true }
-pallet-sudo = { workspace = true }
-pallet-timestamp = { workspace = true }
-pallet-transaction-payment = { workspace = true }
-pallet-transaction-payment-rpc-runtime-api = { workspace = true }
-pallet-utility = { workspace = true }
-sp-api = { workspace = true }
-sp-block-builder = { workspace = true }
-sp-consensus-aura = { workspace = true }
-sp-core = { workspace = true }
-sp-inherents = { workspace = true }
-sp-offchain = { workspace = true }
-sp-runtime = { workspace = true }
-sp-session = { workspace = true }
-sp-std = { workspace = true }
-sp-transaction-pool = { workspace = true }
-sp-version = { workspace = true }
-sp-weights = { workspace = true }
+frame-executive                           ={ workspace=true }
+frame-support                             ={ workspace=true }
+frame-system                              ={ workspace=true }
+frame-system-rpc-runtime-api              ={ workspace=true }
+pallet-aura                               ={ workspace=true }
+pallet-authorship                         ={ workspace=true }
+pallet-balances                           ={ workspace=true }
+pallet-session                            ={ workspace=true }
+pallet-sudo                               ={ workspace=true }
+pallet-timestamp                          ={ workspace=true }
+pallet-transaction-payment                ={ workspace=true }
+pallet-transaction-payment-rpc-runtime-api={ workspace=true }
+pallet-utility                            ={ workspace=true }
+sp-api                                    ={ workspace=true }
+sp-block-builder                          ={ workspace=true }
+sp-consensus-aura                         ={ workspace=true }
+sp-core                                   ={ workspace=true }
+sp-inherents                              ={ workspace=true }
+sp-offchain                               ={ workspace=true }
+sp-runtime                                ={ workspace=true }
+sp-session                                ={ workspace=true }
+sp-std                                    ={ workspace=true }
+sp-transaction-pool                       ={ workspace=true }
+sp-version                                ={ workspace=true }
+sp-weights                                ={ workspace=true }
 
 # Cumulus
-cumulus-pallet-aura-ext = { workspace = true }
-cumulus-pallet-parachain-system = { workspace = true }
-cumulus-primitives-core = { workspace = true }
-cumulus-primitives-timestamp = { workspace = true }
-pallet-collator-selection = { workspace = true }
-parachain-info = { workspace = true }
+cumulus-pallet-aura-ext        ={ workspace=true }
+cumulus-pallet-parachain-system={ workspace=true }
+cumulus-primitives-core        ={ workspace=true }
+cumulus-primitives-timestamp   ={ workspace=true }
+pallet-collator-selection      ={ workspace=true }
+parachain-info                 ={ workspace=true }
 
 # Polkadot
-rococo-runtime = { workspace = true }
+rococo-runtime={ workspace=true }
 
 # Benchmarks
-frame-benchmarking = { workspace = true, optional = true }
-frame-system-benchmarking = { workspace = true, optional = true }
-kilt-support = { workspace = true, optional = true }
-hex-literal = { workspace = true, optional = true }
+frame-benchmarking       ={ workspace=true, optional=true }
+frame-system-benchmarking={ workspace=true, optional=true }
+hex-literal              ={ workspace=true, optional=true }
+kilt-support             ={ workspace=true, optional=true }
 
 [features]
-default = ["std"]
-std = [
-  "parity-scale-codec/std",
-  "scale-info/std",
-  "dip-provider-runtime-template/std",
+default=["std"]
+std=[
+  "cumulus-pallet-aura-ext/std",
+  "cumulus-pallet-parachain-system/std",
+  "cumulus-primitives-core/std",
+  "cumulus-primitives-timestamp/std",
   "did/std",
-  "kilt-dip-primitives/std",
-  "pallet-dip-consumer/std",
-  "pallet-postit/std",
-  "pallet-relay-store/std",
+  "dip-provider-runtime-template/std",
+  "frame-benchmarking?/std",
   "frame-executive/std",
   "frame-support/std",
-  "frame-system/std",
+  "frame-system-benchmarking?/std",
   "frame-system-rpc-runtime-api/std",
+  "frame-system/std",
+  "kilt-dip-primitives/std",
+  "kilt-support?/std",
   "pallet-aura/std",
   "pallet-authorship/std",
   "pallet-balances/std",
+  "pallet-collator-selection/std",
+  "pallet-dip-consumer/std",
+  "pallet-postit/std",
+  "pallet-relay-store/std",
   "pallet-session/std",
   "pallet-sudo/std",
   "pallet-timestamp/std",
-  "pallet-transaction-payment/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
+  "pallet-transaction-payment/std",
   "pallet-utility/std",
+  "parachain-info/std",
+  "parity-scale-codec/std",
+  "rococo-runtime/std",
+  "scale-info/std",
   "sp-api/std",
   "sp-block-builder/std",
   "sp-consensus-aura/std",
@@ -108,35 +118,25 @@ std = [
   "sp-transaction-pool/std",
   "sp-version/std",
   "sp-weights/std",
-  "cumulus-pallet-aura-ext/std",
-  "cumulus-pallet-parachain-system/std",
-  "cumulus-primitives-core/std",
-  "cumulus-primitives-timestamp/std",
-  "pallet-collator-selection/std",
-  "parachain-info/std",
-  "rococo-runtime/std",
-  "frame-benchmarking?/std",
-  "frame-system-benchmarking?/std",
-  "kilt-support?/std",
 ]
 
-runtime-benchmarks = [
-  "dip-provider-runtime-template/runtime-benchmarks",
+runtime-benchmarks=[
   "did/runtime-benchmarks",
-  "kilt-dip-primitives/runtime-benchmarks",
-  "pallet-dip-consumer/runtime-benchmarks",
-  "pallet-relay-store/runtime-benchmarks",
+  "dip-provider-runtime-template/runtime-benchmarks",
+  "frame-benchmarking/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
+  "frame-system-benchmarking/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
+  "hex-literal",
+  "kilt-dip-primitives/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collator-selection/runtime-benchmarks",
+  "pallet-dip-consumer/runtime-benchmarks",
+  "pallet-relay-store/runtime-benchmarks",
   "pallet-sudo/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
-  "sp-runtime/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
-  "frame-benchmarking/runtime-benchmarks",
-  "frame-system-benchmarking/runtime-benchmarks",
-  "kilt-support/runtime-benchmarks",
-  "hex-literal",
+  "sp-runtime/runtime-benchmarks",
 ]

@@ -1,29 +1,24 @@
 [package]
-authors = { workspace = true }
-description = "Runtime APIs for dealing with parachain staking."
-documentation = { workspace = true }
-edition = { workspace = true }
-homepage = { workspace = true }
-license-file = { workspace = true }
-name = "kilt-runtime-api-staking"
-readme = { workspace = true }
-repository = { workspace = true }
-version = { workspace = true }
+authors      ={ workspace=true }
+description  ="Runtime APIs for dealing with parachain staking."
+documentation={ workspace=true }
+edition      ={ workspace=true }
+homepage     ={ workspace=true }
+license-file ={ workspace=true }
+name         ="kilt-runtime-api-staking"
+readme       ={ workspace=true }
+repository   ={ workspace=true }
+version      ={ workspace=true }
 
 [dependencies]
 # External dependencies
-parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
+parity-scale-codec={ workspace=true, features=["derive"] }
+scale-info        ={ workspace=true, features=["derive"] }
 
 # Substrate dependencies
-sp-api = { workspace = true }
-sp-runtime = { workspace = true }
+sp-api    ={ workspace=true }
+sp-runtime={ workspace=true }
 
 [features]
-default = ["std"]
-std = [
-  "parity-scale-codec/std",
-  "sp-api/std",
-  "sp-runtime/std",
-  "scale-info/std",
-]
+default=["std"]
+std    =["parity-scale-codec/std", "scale-info/std", "sp-api/std", "sp-runtime/std"]

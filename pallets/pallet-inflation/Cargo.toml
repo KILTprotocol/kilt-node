@@ -1,46 +1,46 @@
 [package]
-authors = { workspace = true }
-description = "Substrate pallet issueing a pre-configured amount of tokens to the treasury."
-documentation = { workspace = true }
-edition = { workspace = true }
-homepage = { workspace = true }
-license-file = { workspace = true }
-name = "pallet-inflation"
-readme = { workspace = true }
-repository = { workspace = true }
-version = { workspace = true }
+authors      ={ workspace=true }
+description  ="Substrate pallet issueing a pre-configured amount of tokens to the treasury."
+documentation={ workspace=true }
+edition      ={ workspace=true }
+homepage     ={ workspace=true }
+license-file ={ workspace=true }
+name         ="pallet-inflation"
+readme       ={ workspace=true }
+repository   ={ workspace=true }
+version      ={ workspace=true }
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
+targets=["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-pallet-balances = { workspace = true, features = ["std"] }
-sp-core = { workspace = true, features = ["std"] }
-sp-io = { workspace = true, features = ["std"] }
+pallet-balances={ workspace=true, features=["std"] }
+sp-core        ={ workspace=true, features=["std"] }
+sp-io          ={ workspace=true, features=["std"] }
 
 [dependencies]
 # External dependencies
-parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
+parity-scale-codec={ workspace=true, features=["derive"] }
+scale-info        ={ workspace=true, features=["derive"] }
 
 # Benchmarking dependencies
-frame-benchmarking = { workspace = true, optional = true }
+frame-benchmarking={ workspace=true, optional=true }
 
 # Substrate dependencies
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-sp-runtime = { workspace = true }
-sp-std = { workspace = true }
+frame-support={ workspace=true }
+frame-system ={ workspace=true }
+sp-runtime   ={ workspace=true }
+sp-std       ={ workspace=true }
 
 [features]
-default = ["std"]
-runtime-benchmarks = [
+default=["std"]
+runtime-benchmarks=[
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
-std = [
+std=[
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
@@ -49,4 +49,4 @@ std = [
   "sp-runtime/std",
   "sp-std/std",
 ]
-try-runtime = ["frame-support/try-runtime", "frame-system/try-runtime"]
+try-runtime=["frame-support/try-runtime", "frame-system/try-runtime"]

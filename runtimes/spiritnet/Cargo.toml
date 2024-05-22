@@ -1,118 +1,118 @@
 [package]
-authors = { workspace = true }
-description = "Parachain runtime for KILT Mainnet on Polkadot."
-documentation = { workspace = true }
-edition = { workspace = true }
-homepage = { workspace = true }
-license-file = { workspace = true }
-name = "spiritnet-runtime"
-readme = { workspace = true }
-repository = { workspace = true }
-version = { workspace = true }
+authors      ={ workspace=true }
+description  ="Parachain runtime for KILT Mainnet on Polkadot."
+documentation={ workspace=true }
+edition      ={ workspace=true }
+homepage     ={ workspace=true }
+license-file ={ workspace=true }
+name         ="spiritnet-runtime"
+readme       ={ workspace=true }
+repository   ={ workspace=true }
+version      ={ workspace=true }
 
 [build-dependencies]
-substrate-wasm-builder = { workspace = true }
+substrate-wasm-builder={ workspace=true }
 
 [dev-dependencies]
-sp-io = { workspace = true }
+sp-io={ workspace=true }
 
 [dependencies]
 # External dependencies
-log = { workspace = true }
-parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
+log               ={ workspace=true }
+parity-scale-codec={ workspace=true, features=["derive"] }
+scale-info        ={ workspace=true, features=["derive"] }
 
-hex-literal = { workspace = true, optional = true }
+hex-literal={ workspace=true, optional=true }
 
 # RPC & Runtime API
-frame-system-rpc-runtime-api = { workspace = true }
-kilt-runtime-api-did = { workspace = true }
-kilt-runtime-api-public-credentials = { workspace = true }
-kilt-runtime-api-staking = { workspace = true }
-pallet-transaction-payment-rpc-runtime-api = { workspace = true }
+frame-system-rpc-runtime-api              ={ workspace=true }
+kilt-runtime-api-did                      ={ workspace=true }
+kilt-runtime-api-public-credentials       ={ workspace=true }
+kilt-runtime-api-staking                  ={ workspace=true }
+pallet-transaction-payment-rpc-runtime-api={ workspace=true }
 
 # KILT pallets & primitives
-attestation = { workspace = true }
-ctype = { workspace = true }
-delegation = { workspace = true }
-did = { workspace = true }
-kilt-runtime-api-dip-provider = { workspace = true }
-kilt-support = { workspace = true }
-pallet-deposit-storage = { workspace = true }
-pallet-did-lookup = { workspace = true }
-pallet-dip-provider = { workspace = true }
-pallet-inflation = { workspace = true }
-pallet-migration = { workspace = true }
-pallet-web3-names = { workspace = true }
-parachain-staking = { workspace = true }
-public-credentials = { workspace = true }
-runtime-common = { workspace = true }
+attestation                  ={ workspace=true }
+ctype                        ={ workspace=true }
+delegation                   ={ workspace=true }
+did                          ={ workspace=true }
+kilt-runtime-api-dip-provider={ workspace=true }
+kilt-support                 ={ workspace=true }
+pallet-deposit-storage       ={ workspace=true }
+pallet-did-lookup            ={ workspace=true }
+pallet-dip-provider          ={ workspace=true }
+pallet-inflation             ={ workspace=true }
+pallet-migration             ={ workspace=true }
+pallet-web3-names            ={ workspace=true }
+parachain-staking            ={ workspace=true }
+public-credentials           ={ workspace=true }
+runtime-common               ={ workspace=true }
 
 # Substrate dependencies
-sp-api = { workspace = true }
-sp-block-builder = { workspace = true }
-sp-consensus-aura = { workspace = true }
-sp-core = { workspace = true }
-sp-inherents = { workspace = true }
-sp-offchain = { workspace = true }
-sp-runtime = { workspace = true }
-sp-session = { workspace = true }
-sp-std = { workspace = true }
-sp-transaction-pool = { workspace = true }
-sp-version = { workspace = true }
-sp-weights = { workspace = true }
+sp-api             ={ workspace=true }
+sp-block-builder   ={ workspace=true }
+sp-consensus-aura  ={ workspace=true }
+sp-core            ={ workspace=true }
+sp-inherents       ={ workspace=true }
+sp-offchain        ={ workspace=true }
+sp-runtime         ={ workspace=true }
+sp-session         ={ workspace=true }
+sp-std             ={ workspace=true }
+sp-transaction-pool={ workspace=true }
+sp-version         ={ workspace=true }
+sp-weights         ={ workspace=true }
 
-frame-executive = { workspace = true }
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-pallet-aura = { workspace = true }
-pallet-authorship = { workspace = true }
-pallet-balances = { workspace = true }
-pallet-collective = { workspace = true }
-pallet-democracy = { workspace = true }
-pallet-indices = { workspace = true }
-pallet-membership = { workspace = true }
-pallet-multisig = { workspace = true }
-pallet-preimage = { workspace = true }
-pallet-proxy = { workspace = true }
-pallet-scheduler = { workspace = true }
-pallet-session = { workspace = true }
-pallet-timestamp = { workspace = true }
-pallet-tips = { workspace = true }
-pallet-transaction-payment = { workspace = true }
-pallet-treasury = { workspace = true }
-pallet-utility = { workspace = true }
-pallet-vesting = { workspace = true }
+frame-executive           ={ workspace=true }
+frame-support             ={ workspace=true }
+frame-system              ={ workspace=true }
+pallet-aura               ={ workspace=true }
+pallet-authorship         ={ workspace=true }
+pallet-balances           ={ workspace=true }
+pallet-collective         ={ workspace=true }
+pallet-democracy          ={ workspace=true }
+pallet-indices            ={ workspace=true }
+pallet-membership         ={ workspace=true }
+pallet-multisig           ={ workspace=true }
+pallet-preimage           ={ workspace=true }
+pallet-proxy              ={ workspace=true }
+pallet-scheduler          ={ workspace=true }
+pallet-session            ={ workspace=true }
+pallet-timestamp          ={ workspace=true }
+pallet-tips               ={ workspace=true }
+pallet-transaction-payment={ workspace=true }
+pallet-treasury           ={ workspace=true }
+pallet-utility            ={ workspace=true }
+pallet-vesting            ={ workspace=true }
 
 # Cumulus dependencies
-cumulus-pallet-aura-ext = { workspace = true }
-cumulus-pallet-dmp-queue = { workspace = true }
-cumulus-pallet-parachain-system = { workspace = true }
-cumulus-pallet-xcm = { workspace = true }
-cumulus-pallet-xcmp-queue = { workspace = true }
-cumulus-primitives-core = { workspace = true }
-cumulus-primitives-timestamp = { workspace = true }
-cumulus-primitives-utility = { workspace = true }
-parachain-info = { workspace = true }
+cumulus-pallet-aura-ext        ={ workspace=true }
+cumulus-pallet-dmp-queue       ={ workspace=true }
+cumulus-pallet-parachain-system={ workspace=true }
+cumulus-pallet-xcm             ={ workspace=true }
+cumulus-pallet-xcmp-queue      ={ workspace=true }
+cumulus-primitives-core        ={ workspace=true }
+cumulus-primitives-timestamp   ={ workspace=true }
+cumulus-primitives-utility     ={ workspace=true }
+parachain-info                 ={ workspace=true }
 
 # Polkadot dependencies
-pallet-xcm = { workspace = true }
-xcm-builder = { workspace = true }
-xcm-executor = { workspace = true }
-xcm = { workspace = true }
+pallet-xcm  ={ workspace=true }
+xcm         ={ workspace=true }
+xcm-builder ={ workspace=true }
+xcm-executor={ workspace=true }
 
 # Benchmarking dependencies
-cumulus-pallet-session-benchmarking = { workspace = true, optional = true }
-frame-benchmarking = { workspace = true, optional = true }
-frame-system-benchmarking = { workspace = true, optional = true }
+cumulus-pallet-session-benchmarking={ workspace=true, optional=true }
+frame-benchmarking                 ={ workspace=true, optional=true }
+frame-system-benchmarking          ={ workspace=true, optional=true }
 
 # Runtime tests
-frame-try-runtime = { workspace = true, optional = true }
+frame-try-runtime={ workspace=true, optional=true }
 
 [features]
-default = ["std"]
-fast-gov = ["runtime-common/fast-gov"]
-runtime-benchmarks = [
+default=["std"]
+fast-gov=["runtime-common/fast-gov"]
+runtime-benchmarks=[
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
   "cumulus-pallet-parachain-system/runtime-benchmarks",
@@ -135,8 +135,8 @@ runtime-benchmarks = [
   "pallet-indices/runtime-benchmarks",
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
-  "pallet-multisig/runtime-benchmarks",
   "pallet-migration/runtime-benchmarks",
+  "pallet-multisig/runtime-benchmarks",
   "pallet-preimage/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
@@ -154,18 +154,18 @@ runtime-benchmarks = [
   "xcm-builder/runtime-benchmarks",
   "xcm-executor/runtime-benchmarks",
 ]
-std = [
+std=[
   "attestation/std",
   "ctype/std",
   "cumulus-pallet-aura-ext/std",
   "cumulus-pallet-dmp-queue/std",
   "cumulus-pallet-parachain-system/std",
+  "cumulus-pallet-session-benchmarking/std",
   "cumulus-pallet-xcm/std",
   "cumulus-pallet-xcmp-queue/std",
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
   "cumulus-primitives-utility/std",
-  "cumulus-pallet-session-benchmarking/std",
   "delegation/std",
   "did/std",
   "frame-benchmarking?/std",
@@ -192,8 +192,8 @@ std = [
   "pallet-indices/std",
   "pallet-inflation/std",
   "pallet-membership/std",
-  "pallet-multisig/std",
   "pallet-migration/std",
+  "pallet-multisig/std",
   "pallet-preimage/std",
   "pallet-proxy/std",
   "pallet-scheduler/std",
@@ -229,7 +229,7 @@ std = [
   "xcm-executor/std",
   "xcm/std",
 ]
-try-runtime = [
+try-runtime=[
   "attestation/try-runtime",
   "ctype/try-runtime",
   "cumulus-pallet-aura-ext/try-runtime",
@@ -255,8 +255,8 @@ try-runtime = [
   "pallet-indices/try-runtime",
   "pallet-inflation/try-runtime",
   "pallet-membership/try-runtime",
-  "pallet-multisig/try-runtime",
   "pallet-migration/try-runtime",
+  "pallet-multisig/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
   "pallet-scheduler/try-runtime",
@@ -274,4 +274,4 @@ try-runtime = [
   "public-credentials/try-runtime",
   "runtime-common/try-runtime",
 ]
-with-tracing = ["frame-executive/with-tracing", "sp-io/with-tracing"]
+with-tracing=["frame-executive/with-tracing", "sp-io/with-tracing"]
