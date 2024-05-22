@@ -19,7 +19,7 @@
 //! KILT chain specification
 
 use kestrel_runtime::{
-	BalancesConfig, IndicesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use runtime_common::{AccountId, AccountPublic};
 
@@ -40,8 +40,6 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 
 fn generate_dev_chain_spec() -> Result<ChainSpec, String> {
-	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development WASM binary not available".to_string())?;
-
 	let properties = Properties::from_iter(
 		[
 			("tokenDecimals".into(), 15.into()),
@@ -54,23 +52,7 @@ fn generate_dev_chain_spec() -> Result<ChainSpec, String> {
 		"Standalone Node (Dev)",
 		"standalone_node_development",
 		ChainType::Development,
-		move || {
-			generate_devnet_genesis_state(
-				wasm_binary,
-				vec![get_authority_keys_from_secret("//Alice")],
-				get_account_id_from_secret::<ed25519::Public>("//Alice"),
-				vec![
-					// Dev Faucet account
-					get_account_id_from_secret::<ed25519::Public>(
-						"receive clutch item involve chaos clutch furnace arrest claw isolate okay together",
-					),
-					get_account_id_from_secret::<ed25519::Public>("//Alice"),
-					get_account_id_from_secret::<ed25519::Public>("//Bob"),
-					get_account_id_from_secret::<sr25519::Public>("//Alice"),
-					get_account_id_from_secret::<sr25519::Public>("//Bob"),
-				],
-			)
-		},
+		generate_devnet_genesis_state,
 		vec![],
 		None,
 		None,
@@ -80,41 +62,46 @@ fn generate_dev_chain_spec() -> Result<ChainSpec, String> {
 	))
 }
 
-fn generate_devnet_genesis_state(
-	wasm_binary: &[u8],
-	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
-	root_key: AccountId,
-	endowed_accounts: Vec<AccountId>,
-) -> RuntimeGenesisConfig {
+fn generate_devnet_genesis_state() -> RuntimeGenesisConfig {
+	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
+	let endowed_accounts = vec![
+		// Dev Faucet account
+		get_account_id_from_secret::<ed25519::Public>(
+			"receive clutch item involve chaos clutch furnace arrest claw isolate okay together",
+		),
+		get_account_id_from_secret::<ed25519::Public>("//Alice"),
+		get_account_id_from_secret::<ed25519::Public>("//Bob"),
+		get_account_id_from_secret::<sr25519::Public>("//Alice"),
+		get_account_id_from_secret::<sr25519::Public>("//Bob"),
+	];
+	let initial_authorities = vec![get_authority_keys_from_secret("//Alice")];
+	let root_key = get_account_id_from_secret::<ed25519::Public>("//Alice");
+
 	RuntimeGenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
 			..Default::default()
 		},
-		indices: IndicesConfig { indices: vec![] },
-		transaction_payment: Default::default(),
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|a| (a, 1u128 << 90)).collect(),
+			balances: endowed_accounts.into_iter().map(|a| (a, 1u128 << 90)).collect(),
 		},
 		session: SessionConfig {
 			keys: initial_authorities
-				.iter()
+				.into_iter()
 				.map(|x| {
 					(
 						x.0.clone(),
 						x.0.clone(),
-						kestrel_runtime::opaque::SessionKeys {
+						SessionKeys {
 							aura: x.1.clone(),
-							grandpa: x.2.clone(),
+							grandpa: x.2,
 						},
 					)
 				})
 				.collect::<Vec<_>>(),
 		},
-		aura: Default::default(),
-		grandpa: Default::default(),
 		sudo: SudoConfig { key: Some(root_key) },
-		did_lookup: Default::default(),
+		..Default::default()
 	}
 }
 
