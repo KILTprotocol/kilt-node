@@ -30,7 +30,6 @@ use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public};
 use sp_runtime::traits::IdentifyAccount;
 
-pub mod clone;
 pub mod peregrine;
 pub mod spiritnet;
 
