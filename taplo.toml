@@ -1,3 +1,5 @@
+exclude=["target/**"]
+
 [formatting]
 align_entries      =true
 allowed_blank_lines=1
