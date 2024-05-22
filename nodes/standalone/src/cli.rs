@@ -20,17 +20,17 @@ use clap::Parser;
 use sc_cli::RunCmd;
 
 #[derive(Debug, Parser)]
-pub struct Cli {
+pub(crate) struct Cli {
 	#[command(subcommand)]
-	pub subcommand: Option<Subcommand>,
+	pub(crate) subcommand: Option<Subcommand>,
 
 	#[command(flatten)]
-	pub run: RunCmd,
+	pub(crate) run: RunCmd,
 }
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Parser)]
-pub enum Subcommand {
+pub(crate) enum Subcommand {
 	/// Key management cli utilities
 	#[command(subcommand)]
 	Key(sc_cli::KeySubcommand),
