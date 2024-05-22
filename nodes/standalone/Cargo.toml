@@ -20,18 +20,17 @@ substrate-build-script-utils.workspace = true
 
 [dependencies]
 # External dependencies
-clap = {workspace = true, features = ["derive"]}
-jsonrpsee = {workspace = true, features = ["server"]}
-hex-literal.workspace = true
-futures = { workspace = true, features = ["thread-pool"]}
+clap = { workspace = true, features = ["derive"] }
+jsonrpsee = { workspace = true, features = ["server"] }
+futures = { workspace = true, features = ["thread-pool"] }
 
 # Internal dependencies
-kestrel-runtime = {workspace = true, features = ["std"]}
-runtime-common = {workspace = true, features = ["std"]}
+kestrel-runtime = { workspace = true, features = ["std"] }
+runtime-common = { workspace = true, features = ["std"] }
 
 # Substrate dependencies
-frame-system = {workspace = true, features = ["std"]}
-pallet-transaction-payment = {workspace = true, features = ["std"]}
+frame-system = { workspace = true, features = ["std"] }
+pallet-transaction-payment = { workspace = true, features = ["std"] }
 sc-basic-authorship.workspace = true
 sc-cli.workspace = true
 sc-client-api.workspace = true
@@ -46,17 +45,17 @@ sc-network.workspace = true
 sc-telemetry.workspace = true
 sc-transaction-pool.workspace = true
 sc-transaction-pool-api.workspace = true
-sp-api = {workspace = true, features = ["std"]}
-sp-block-builder = {workspace = true, features = ["std"]}
+sp-api = { workspace = true, features = ["std"] }
+sp-block-builder = { workspace = true, features = ["std"] }
 sp-blockchain.workspace = true
-sp-consensus-aura = {workspace = true, features = ["std"]}
-sp-core = {workspace = true, features = ["std"]}
-sp-consensus-grandpa = {workspace = true, features = ["std"]}
-sp-inherents = {workspace = true, features = ["std"]}
-sp-io = {workspace = true, features = ["std"]}
+sp-consensus-aura = { workspace = true, features = ["std"] }
+sp-core = { workspace = true, features = ["std"] }
+sp-consensus-grandpa = { workspace = true, features = ["std"] }
+sp-inherents = { workspace = true, features = ["std"] }
+sp-io = { workspace = true, features = ["std"] }
 sp-keyring.workspace = true
-sp-runtime = {workspace = true, features = ["std"]}
-sp-timestamp = {workspace = true, features = ["std"]}
+sp-runtime = { workspace = true, features = ["std"] }
+sp-timestamp = { workspace = true, features = ["std"] }
 
 # RPC related dependencies
 pallet-transaction-payment-rpc.workspace = true
@@ -64,11 +63,11 @@ sc-rpc-api.workspace = true
 substrate-frame-rpc-system.workspace = true
 
 # Benchmarking
-frame-benchmarking = {workspace = true, features = ["std"]}
+frame-benchmarking = { workspace = true, features = ["std"] }
 frame-benchmarking-cli.workspace = true
 
 # Runtime tests
-try-runtime-cli = {workspace = true, optional = true}
+try-runtime-cli = { workspace = true, optional = true }
 
 [features]
 default = []

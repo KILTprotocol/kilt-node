@@ -23,57 +23,39 @@ use kestrel_runtime::{
 };
 use runtime_common::{AccountId, AccountPublic};
 
-use hex_literal::hex;
 use sc_service::{self, ChainType, Properties};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
-use sp_core::{crypto::UncheckedInto, ed25519, sr25519, Pair, Public};
+use sp_core::{ed25519, sr25519, Pair, Public};
 use sp_runtime::traits::IdentifyAccount;
 
-// Note this is the URL for the telemetry server
-//const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
-
-/// Specialised `ChainSpec`. This is a specialisation of the general Substrate
-/// ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
-
-/// Helper function to generate a crypto pair from seed
-fn get_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-	TPublic::Pair::from_string(seed, None)
-		.unwrap_or_else(|_| panic!("Invalid string '{}'", seed))
-		.public()
+pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
+	Ok(Box::new(match id {
+		// Dev chainspec, used for SDK integration tests
+		"dev" => generate_dev_chain_spec()?,
+		_ => return Err(format!("Unknown spec: {}", id)),
+	}))
 }
 
-/// Helper function to generate an account ID from seed
-fn get_account_id_from_secret<TPublic: Public>(seed: &str) -> AccountId
-where
-	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-	AccountPublic::from(get_from_secret::<TPublic>(seed)).into_account()
-}
+type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 
-/// Helper function to generate an authority key for Aura
-fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) {
-	(
-		get_account_id_from_secret::<ed25519::Public>(seed),
-		get_from_secret::<AuraId>(seed),
-		get_from_secret::<GrandpaId>(seed),
-	)
-}
+fn generate_dev_chain_spec() -> Result<ChainSpec, String> {
+	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development WASM binary not available".to_string())?;
 
-fn devnet_chain_spec() -> Result<ChainSpec, String> {
-	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm binary not available".to_string())?;
+	let properties = Properties::from_iter(
+		[
+			("tokenDecimals".into(), 15.into()),
+			("tokenSymbol".into(), "DILT".into()),
+		]
+		.into_iter(),
+	);
 
-	let mut properties = Properties::new();
-	properties.insert("tokenDecimals".into(), 15_i16.into());
-
-	properties.insert("tokenSymbol".into(), "DILT".into());
 	Ok(ChainSpec::from_genesis(
-		"Development",
-		"development",
+		"Standalone Node (Dev)",
+		"standalone_node_development",
 		ChainType::Development,
 		move || {
-			devnet_genesis(
+			generate_devnet_genesis_state(
 				wasm_binary,
 				vec![get_authority_keys_from_secret("//Alice")],
 				get_account_id_from_secret::<ed25519::Public>("//Alice"),
@@ -98,58 +80,7 @@ fn devnet_chain_spec() -> Result<ChainSpec, String> {
 	))
 }
 
-const YORLIN_ALICE_ACC: [u8; 32] = hex!["e82655d021c27086c4c8a47c29a9094c50c3d09d5ddbb71c01781b4cf6c2dc3f"];
-const YORLIN_ALICE_SESSION_SR: [u8; 32] = hex!["ecb26520504cecf51936e8d9df07d1355726bf186f9cd38d35277f918fe3230c"];
-const YORLIN_ALICE_SESSION_ED: [u8; 32] = hex!["d600f710ab168414cb29faef92bd570f01c375cb359ec27485b176246ac597a5"];
-const YORLIN_BOB_ACC: [u8; 32] = hex!["38621f2de0250bd855fef9ab09fd8b06e6ed67c574ea4ae2b46557a809fab56d"];
-const YORLIN_BOB_SESSION_SR: [u8; 32] = hex!["1284c324ac272432b83779886ad66ff74dc6147f4a4a67124218e0b88c27ea7d"];
-const YORLIN_BOB_SESSION_ED: [u8; 32] = hex!["5d1040178af44ca8bc598d48c6b0c49e8b5b916315d3d91f953df7623c9c78ae"];
-const YORLIN_FAUCET_ACC: [u8; 32] = hex!["a874b37f88e76eefbeb62d4424876004c81f7ae30e2d7c2bb380001a1961fc38"];
-
-fn yorlin_chain_spec() -> Result<ChainSpec, String> {
-	let wasm_binary = WASM_BINARY.ok_or_else(|| "Yorlin wasm binary not available".to_string())?;
-
-	let mut properties = Properties::new();
-	properties.insert("tokenDecimals".into(), 15_i16.into());
-
-	properties.insert("tokenSymbol".into(), "YILT".into());
-	Ok(ChainSpec::from_genesis(
-		"Yorlin",
-		"Yorlin",
-		ChainType::Development,
-		move || {
-			devnet_genesis(
-				wasm_binary,
-				vec![
-					(
-						YORLIN_ALICE_ACC.into(),
-						YORLIN_ALICE_SESSION_SR.unchecked_into(),
-						YORLIN_ALICE_SESSION_ED.unchecked_into(),
-					),
-					(
-						YORLIN_BOB_ACC.into(),
-						YORLIN_BOB_SESSION_SR.unchecked_into(),
-						YORLIN_BOB_SESSION_ED.unchecked_into(),
-					),
-				],
-				YORLIN_ALICE_ACC.into(),
-				vec![YORLIN_ALICE_ACC.into(), YORLIN_BOB_ACC.into(), YORLIN_FAUCET_ACC.into()],
-			)
-		},
-		vec![],
-		None,
-		Some("yOrLiN"),
-		None,
-		Some(properties),
-		None,
-	))
-}
-
-fn testnet_chain_spec() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../res/testnet.json")[..])
-}
-
-fn devnet_genesis(
+fn generate_devnet_genesis_state(
 	wasm_binary: &[u8],
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	root_key: AccountId,
@@ -187,11 +118,23 @@ fn devnet_genesis(
 	}
 }
 
-pub fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
-	Ok(Box::new(match id {
-		"kilt-testnet" => testnet_chain_spec()?,
-		"dev" => devnet_chain_spec()?,
-		"yorlin" => yorlin_chain_spec()?,
-		_ => return Err(format!("Unknown spec: {}", id)),
-	}))
+fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) {
+	(
+		get_account_id_from_secret::<ed25519::Public>(seed),
+		get_from_secret::<AuraId>(seed),
+		get_from_secret::<GrandpaId>(seed),
+	)
+}
+
+fn get_account_id_from_secret<TPublic: Public>(seed: &str) -> AccountId
+where
+	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
+{
+	AccountPublic::from(get_from_secret::<TPublic>(seed)).into_account()
+}
+
+fn get_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
+	TPublic::Pair::from_string(seed, None)
+		.unwrap_or_else(|_| panic!("Invalid string '{}'", seed))
+		.public()
 }
