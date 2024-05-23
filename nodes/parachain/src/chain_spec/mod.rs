@@ -18,8 +18,11 @@
 
 //! KILT chain specification
 
+use std::str::FromStr;
+
 use runtime_common::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
+use sc_cli::{ChainSpec, RuntimeVersion};
 use sc_service::Properties;
 use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public};
@@ -49,7 +52,7 @@ fn get_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Publ
 /// The extensions for the `ChainSpec`.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
-struct Extensions {
+pub(crate) struct Extensions {
 	/// The relay chain of the Parachain.
 	pub relay_chain: String,
 	/// The id of the Parachain.
@@ -58,7 +61,7 @@ struct Extensions {
 
 impl Extensions {
 	/// Try to get the extension from the given `ChainSpec`.
-	pub fn try_get(chain_spec: &dyn sc_service::ChainSpec) -> Option<&Self> {
+	pub(crate) fn try_get(chain_spec: &dyn sc_service::ChainSpec) -> Option<&Self> {
 		sc_chain_spec::get_extension(chain_spec.extensions())
 	}
 }
@@ -72,4 +75,37 @@ fn get_properties(symbol: &str, decimals: u32, ss58format: u32) -> Properties {
 		]
 		.into_iter(),
 	)
+}
+
+pub(crate) enum ChainRuntime {
+	Peregrine,
+	Spiritnet,
+}
+
+impl std::fmt::Display for ChainRuntime {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Peregrine => write!(f, "peregrine"),
+			Self::Spiritnet => write!(f, "spiritnet"),
+		}
+	}
+}
+
+impl FromStr for ChainRuntime {
+	type Err = &'static str;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		if s.contains("peregrine") {
+			Ok(ChainRuntime::Peregrine)
+		} else if s.contains("spiritnet") {
+			Ok(ChainRuntime::Spiritnet)
+		} else {
+			Err("Unknown chain_spec id provided")
+		}
+	}
+}
+
+pub(crate) trait ChainRuntimeT {
+	fn runtime() -> ChainRuntime;
+	fn native_runtime_version(&self) -> &'static RuntimeVersion;
 }

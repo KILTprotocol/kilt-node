@@ -26,7 +26,7 @@ use sc_service::ChainType;
 use sp_core::sr25519;
 use spiritnet_runtime::{
 	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
-	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, SystemConfig, TechnicalCommitteeConfig, WASM_BINARY,
+	RuntimeGenesisConfig, SessionConfig, SessionKeys, SystemConfig, TechnicalCommitteeConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{
@@ -35,7 +35,7 @@ use crate::chain_spec::{
 	Extensions, KILT_PARA_ID,
 };
 
-fn generate_chain_spec(relaychain_name: &str) -> Result<ChainSpec, String> {
+pub(crate) fn generate_chain_spec(relaychain_name: &str) -> Result<ChainSpec, String> {
 	Ok(ChainSpec::from_genesis(
 		"KILT Spiritnet Develop",
 		"kilt_spiritnet_dev",

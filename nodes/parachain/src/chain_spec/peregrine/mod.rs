@@ -18,11 +18,26 @@
 
 //! KILT chain specification
 
-mod dev;
-mod new;
+use crate::chain_spec::{ChainRuntime, ChainRuntimeT};
+
+pub(crate) mod dev;
+pub(crate) mod new;
 
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub(crate) type ChainSpec =
 	sc_service::GenericChainSpec<peregrine_runtime::RuntimeGenesisConfig, crate::chain_spec::Extensions>;
+
+impl ChainRuntimeT for ChainSpec {
+	fn runtime() -> ChainRuntime {
+		ChainRuntime::Peregrine
+	}
+	fn native_runtime_version(&self) -> &'static sc_cli::RuntimeVersion {
+		&peregrine_runtime::VERSION
+	}
+}
+
+pub(crate) fn load_chain_spec(path: &str) -> Result<ChainSpec, String> {
+	ChainSpec::from_json_file(path.into())
+}

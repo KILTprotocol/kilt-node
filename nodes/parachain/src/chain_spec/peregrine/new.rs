@@ -27,7 +27,7 @@ use crate::chain_spec::{
 	Extensions, KILT_PARA_ID,
 };
 
-fn generate_chain_spec() -> Result<ChainSpec, String> {
+pub(crate) fn generate_chain_spec() -> Result<ChainSpec, String> {
 	Ok(ChainSpec::from_genesis(
 		"KILT Peregrine New (change title)",
 		"kilt_peregrine_new",

@@ -46,7 +46,7 @@ use runtime_common::{AccountId, AuthorityId, Balance, BlockNumber, Nonce};
 
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 
-pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
+pub(crate) type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
 
 type ParachainExecutor<Executor> = NativeElseWasmExecutor<Executor>;
 
@@ -57,7 +57,7 @@ type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport<RuntimeApi, Executor> =
 	TParachainBlockImport<Block, Arc<ParachainClient<RuntimeApi, Executor>>, ParachainBackend>;
 
-pub type TransactionPool<Block, RuntimeApi, Executor> =
+pub(crate) type TransactionPool<Block, RuntimeApi, Executor> =
 	sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>;
 
 type PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHandle> = sc_service::PartialComponents<
@@ -74,7 +74,7 @@ type PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHa
 >;
 
 /// Native Spiritnet executor instance.
-pub struct SpiritnetRuntimeExecutor;
+pub(crate) struct SpiritnetRuntimeExecutor;
 
 impl sc_executor::NativeExecutionDispatch for SpiritnetRuntimeExecutor {
 	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
@@ -89,7 +89,7 @@ impl sc_executor::NativeExecutionDispatch for SpiritnetRuntimeExecutor {
 }
 
 /// Native Peregrine executor instance.
-pub struct PeregrineRuntimeExecutor;
+pub(crate) struct PeregrineRuntimeExecutor;
 
 impl sc_executor::NativeExecutionDispatch for PeregrineRuntimeExecutor {
 	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
@@ -107,7 +107,7 @@ impl sc_executor::NativeExecutionDispatch for PeregrineRuntimeExecutor {
 ///
 /// Use this macro if you don't actually need the full service, but just the
 /// builder in order to be able to perform chain operations.
-pub fn new_partial<RuntimeApi, Executor, BIQ>(
+pub(crate) fn new_partial<RuntimeApi, Executor, BIQ>(
 	config: &Configuration,
 	build_import_queue: BIQ,
 ) -> Result<PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHandle>, sc_service::Error>
@@ -427,7 +427,7 @@ where
 
 #[allow(clippy::type_complexity)]
 /// Build the import queue for THE runtime.
-pub fn build_import_queue<RE, API>(
+pub(crate) fn build_import_queue<RE, API>(
 	client: Arc<TFullClient<Block, API, NativeElseWasmExecutor<RE>>>,
 	block_import: ParachainBlockImport<API, RE>,
 	config: &Configuration,
@@ -477,7 +477,7 @@ where
 }
 
 /// Start a parachain node.
-pub async fn start_node<RE, API>(
+pub(crate) async fn start_node<RE, API>(
 	parachain_config: Configuration,
 	polkadot_config: Configuration,
 	collator_options: CollatorOptions,

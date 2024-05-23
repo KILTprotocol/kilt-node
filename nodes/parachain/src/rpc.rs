@@ -35,10 +35,10 @@ use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use runtime_common::{AccountId, Balance, Block, Nonce};
 
 /// A type representing all RPC extensions.
-pub type RpcExtension = jsonrpsee::RpcModule<()>;
+pub(crate) type RpcExtension = jsonrpsee::RpcModule<()>;
 
 /// Full client dependencies.
-pub struct FullDeps<C, P> {
+pub(crate) struct FullDeps<C, P> {
 	/// The client instance to use.
 	pub client: Arc<C>,
 	/// Transaction pool instance.
@@ -48,7 +48,7 @@ pub struct FullDeps<C, P> {
 }
 
 /// Instantiate all RPC extensions.
-pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
+pub(crate) fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
 where
 	C: ProvideRuntimeApi<Block>
 		+ HeaderBackend<Block>

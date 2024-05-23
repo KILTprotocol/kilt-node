@@ -16,17 +16,48 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use clap::Parser;
-use std::{ops::Deref, path::PathBuf};
+use std::path::PathBuf;
 
-pub(crate) const DEFAULT_RUNTIME: &str = "peregrine";
+use clap::Parser;
+
+#[derive(Debug, clap::Parser)]
+#[command(
+	propagate_version = true,
+	args_conflicts_with_subcommands = true,
+	subcommand_negates_reqs = true
+)]
+pub(crate) struct Cli {
+	#[command(subcommand)]
+	pub(crate) subcommand: Option<Subcommand>,
+
+	#[command(flatten)]
+	pub(crate) run: cumulus_client_cli::RunCmd,
+
+	/// Disable automatic hardware benchmarks.
+	///
+	/// By default these benchmarks are automatically ran at startup and measure
+	/// the CPU speed, the memory bandwidth and the disk speed.
+	///
+	/// The results are then printed out in the logs, and also sent as part of
+	/// telemetry, if telemetry is enabled.
+	#[arg(long)]
+	pub no_hardware_benchmarks: bool,
+
+	/// The name of the runtime which should get executed.
+	#[arg(long, default_value = "peregrine")]
+	pub(crate) runtime: String,
+
+	/// Relaychain arguments
+	#[arg(raw = true)]
+	pub(crate) relay_chain_args: Vec<String>,
+}
 
 /// Sub-commands supported by the collator.
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Parser)]
 pub(crate) enum Subcommand {
 	/// Build a chain specification.
-	BuildSpec(BuildSpecCmd),
+	BuildSpec(sc_cli::BuildSpecCmd),
 
 	/// Validate blocks.
 	CheckBlock(sc_cli::CheckBlockCmd),
@@ -65,58 +96,6 @@ pub(crate) enum Subcommand {
 	/// be enabled.
 	#[cfg(not(feature = "try-runtime"))]
 	TryRuntime,
-}
-
-/// Command for building the genesis state of the parachain
-#[derive(Debug, Parser)]
-#[group(skip)]
-pub(crate) struct BuildSpecCmd {
-	#[command(flatten)]
-	pub(crate) inner_args: sc_cli::BuildSpecCmd,
-
-	/// The name of the runtime which should get executed.
-	#[arg(long, default_value = DEFAULT_RUNTIME)]
-	pub(crate) runtime: String,
-}
-
-impl Deref for BuildSpecCmd {
-	type Target = sc_cli::BuildSpecCmd;
-
-	fn deref(&self) -> &Self::Target {
-		&self.inner_args
-	}
-}
-
-#[derive(Debug, clap::Parser)]
-#[command(
-	propagate_version = true,
-	args_conflicts_with_subcommands = true,
-	subcommand_negates_reqs = true
-)]
-pub(crate) struct Cli {
-	#[command(subcommand)]
-	pub(crate) subcommand: Option<Subcommand>,
-
-	#[command(flatten)]
-	pub(crate) run: cumulus_client_cli::RunCmd,
-
-	// Disable automatic hardware benchmarks.
-	///
-	/// By default these benchmarks are automatically ran at startup and measure
-	/// the CPU speed, the memory bandwidth and the disk speed.
-	///
-	/// The results are then printed out in the logs, and also sent as part of
-	/// telemetry, if telemetry is enabled.
-	#[arg(long)]
-	pub no_hardware_benchmarks: bool,
-
-	/// The name of the runtime which should get executed.
-	#[arg(long, default_value = DEFAULT_RUNTIME)]
-	pub(crate) runtime: String,
-
-	/// Relaychain arguments
-	#[arg(raw = true)]
-	pub(crate) relay_chain_args: Vec<String>,
 }
 
 #[derive(Debug)]

@@ -35,7 +35,7 @@ use crate::chain_spec::{
 	Extensions, KILT_PARA_ID,
 };
 
-fn generate_chain_spec(relaychain_name: &str) -> Result<ChainSpec, String> {
+pub(crate) fn generate_chain_spec(relaychain_name: &str) -> Result<ChainSpec, String> {
 	Ok(ChainSpec::from_genesis(
 		"KILT Peregrine Develop",
 		"kilt_peregrine_dev",
