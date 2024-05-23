@@ -19,7 +19,7 @@
 use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-use log::{info, warn};
+use log::{info, trace, warn};
 use parity_scale_codec::Encode;
 use runtime_common::Block;
 use sc_cli::{CliConfiguration, SubstrateCli};
@@ -28,9 +28,10 @@ use sp_core::hexdisplay::HexDisplay;
 use sp_runtime::traits::{AccountIdConversion, Block as BlockT, Zero};
 
 use crate::{
-	chain_spec::{self, ChainRuntime},
+	chain_spec::{self, ParachainRuntime},
 	cli::{Cli, RelayChainCli, Subcommand},
 	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
+	LOG_TARGET,
 };
 
 impl SubstrateCli for Cli {
@@ -106,11 +107,14 @@ impl SubstrateCli for RelayChainCli {
 macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let chain_spec_id = $cmd.chain_id($cmd.is_dev()?)?;
-		let runtime = chain_spec_id.parse::<ChainRuntime>()?;
+		let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
 		let runner = $cli.create_runner($cmd)?;
 
+		trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
+		trace!(target: LOG_TARGET, "The following runtime was chosen based on the spec id: {runtime}.");
+
 		match runtime {
-			ChainRuntime::Spiritnet => {
+			ParachainRuntime::Spiritnet(_) => {
 				runner.async_run(|$config| {
 					let $components = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&$config,
@@ -120,7 +124,7 @@ macro_rules! construct_async_run {
 					{ $( $code )* }.map(|v| (v, task_manager))
 				})
 			},
-			ChainRuntime::Peregrine => {
+			ParachainRuntime::Peregrine(_) => {
 				runner.async_run(|$config| {
 					let $components = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&$config,
@@ -184,19 +188,23 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 		}
 		Some(Subcommand::ExportGenesisState(cmd)) => {
 			let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
-			let runtime = chain_spec_id.parse::<ChainRuntime>()?;
+			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
 			let spec = cli.load_spec(chain_spec_id.as_str())?;
+
+			println!("Dispatching task for spec id: {chain_spec_id}.");
+			println!("The following runtime was chosen based on the spec id: {runtime}.");
+
 			let runner = cli.create_runner(cmd)?;
 
 			match runtime {
-				ChainRuntime::Spiritnet => runner.sync_run(|config| {
+				ParachainRuntime::Spiritnet(_) => runner.sync_run(|config| {
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
 					cmd.run::<Block>(&*spec, &*partials.client)
 				}),
-				ChainRuntime::Peregrine => runner.sync_run(|config| {
+				ParachainRuntime::Peregrine(_) => runner.sync_run(|config| {
 					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
@@ -210,16 +218,23 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			runner.sync_run(|_config| {
 				let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
 				let spec = cli.load_spec(chain_spec_id.as_str())?;
+
+				trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
+
 				cmd.run(&*spec)
 			})
 		}
 		Some(Subcommand::Benchmark(cmd)) => {
 			let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
-			let runtime = chain_spec_id.parse::<ChainRuntime>()?;
+			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
+
+			trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
+			trace!(target: LOG_TARGET, "The following runtime was chosen based on the spec id: {runtime}.");
+
 			let runner = cli.create_runner(cmd)?;
 
 			match (cmd, runtime) {
-				(BenchmarkCmd::Pallet(cmd), ChainRuntime::Spiritnet) => {
+				(BenchmarkCmd::Pallet(cmd), ParachainRuntime::Spiritnet(_)) => {
 					if cfg!(feature = "runtime-benchmarks") {
 						runner.sync_run(|config| {
 							cmd.run::<Block, <SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
@@ -230,7 +245,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 							.into())
 					}
 				}
-				(BenchmarkCmd::Pallet(cmd), ChainRuntime::Peregrine) => {
+				(BenchmarkCmd::Pallet(cmd), ParachainRuntime::Peregrine(_)) => {
 					if cfg!(feature = "runtime-benchmarks") {
 						runner.sync_run(|config| {
 							cmd.run::<Block, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
@@ -241,14 +256,14 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 							.into())
 					}
 				}
-				(BenchmarkCmd::Block(cmd), ChainRuntime::Spiritnet) => runner.sync_run(|config| {
+				(BenchmarkCmd::Block(cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
 					cmd.run(partials.client)
 				}),
-				(BenchmarkCmd::Block(cmd), ChainRuntime::Peregrine) => runner.sync_run(|config| {
+				(BenchmarkCmd::Block(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
 					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
@@ -262,7 +277,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 						.into(),
 				)),
 				#[cfg(feature = "runtime-benchmarks")]
-				(BenchmarkCmd::Storage(cmd), ChainRuntime::Spiritnet) => runner.sync_run(|config| {
+				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
@@ -274,7 +289,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					cmd.run(config, partials.client.clone(), db, storage)
 				}),
 				#[cfg(feature = "runtime-benchmarks")]
-				(BenchmarkCmd::Storage(cmd), ChainRuntime::Peregrine) => runner.sync_run(|config| {
+				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
 					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
@@ -291,7 +306,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				}
 				// NOTE: this allows the Client to leniently implement
 				// new benchmark commands without requiring a companion MR.
-				(_, ChainRuntime::Spiritnet) | (_, ChainRuntime::Peregrine) => {
+				(_, ParachainRuntime::Spiritnet(_)) | (_, ParachainRuntime::Peregrine(_)) => {
 					Err("Benchmarking sub-command unsupported".into())
 				}
 			}
@@ -309,10 +324,13 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			let info_provider = timestamp_with_aura_info(MILLISECS_PER_BLOCK);
 
 			let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
-			let runtime = chain_spec_id.parse::<ChainRuntime>()?;
+			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
+
+			trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
+			trace!(target: LOG_TARGET, "The following runtime was chosen based on the spec id: {runtime}.");
 
 			match runtime {
-				ChainRuntime::Peregrine => runner.async_run(|_| {
+				ParachainRuntime::Peregrine(_) => runner.async_run(|_| {
 					Ok((
 						cmd.run::<Block, ExtendedHostFunctions<
 							sp_io::SubstrateHostFunctions,
@@ -321,7 +339,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 						task_manager,
 					))
 				}),
-				ChainRuntime::Spiritnet => runner.async_run(|_| {
+				ParachainRuntime::Spiritnet(_) => runner.async_run(|_| {
 					Ok((
 						cmd.run::<Block, ExtendedHostFunctions<
 							sp_io::SubstrateHostFunctions,
@@ -365,7 +383,10 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
 				let chain_spec_id = config.chain_spec.id();
-				let runtime = chain_spec_id.parse::<ChainRuntime>()?;
+				let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
+
+				trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
+				trace!(target: LOG_TARGET, "The following runtime was chosen based on the spec id: {runtime}.");
 
 				let state_version = runtime.native_version().state_version();
 				let block: Block =
@@ -389,7 +410,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				}
 
 				match runtime {
-					ChainRuntime::Peregrine => {
+					ParachainRuntime::Peregrine(_) => {
 						crate::service::start_node::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>(
 							config,
 							polkadot_config,
@@ -401,7 +422,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 						.map(|r| r.0)
 						.map_err(Into::into)
 					},
-					ChainRuntime::Spiritnet => {
+					ParachainRuntime::Spiritnet(_) => {
 						crate::service::start_node::<SpiritnetRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
 							config,
 							polkadot_config,

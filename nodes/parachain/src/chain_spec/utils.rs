@@ -16,12 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use std::path::{Path, PathBuf};
+
 use runtime_common::{AccountId, AccountPublic};
 use sc_service::Properties;
 use sp_core::{Pair, Public};
 use sp_runtime::traits::IdentifyAccount;
 
-use crate::chain_spec;
+use crate::chain_spec::{self, ParachainRuntime, PeregrineRuntime, SpiritnetRuntime};
 
 /// Helper function to generate an account ID from seed
 pub(crate) fn get_account_id_from_secret<TPublic: Public>(seed: &str) -> AccountId
@@ -49,45 +51,58 @@ pub(crate) fn get_properties(symbol: &str, decimals: u32, ss58format: u32) -> Pr
 	)
 }
 
+fn get_full_path(path: &str) -> PathBuf {
+	const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
+	Path::new(MANIFEST_DIR).join(path)
+}
 pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
-	let runtime = id.parse::<chain_spec::ChainRuntime>()?;
+	let runtime = id.parse::<ParachainRuntime>()?;
 
-	log::trace!(target: chain_spec::LOG_TARGET, "Loading spec id: {id}.");
-	log::trace!(target: chain_spec::LOG_TARGET, "The following runtime was chosen based on the spec id: {runtime}.");
+	match runtime {
+		ParachainRuntime::Peregrine(PeregrineRuntime::Dev) => Ok(Box::new(
+			chain_spec::peregrine::dev::generate_chain_spec("rococo_local"),
+		)),
+		ParachainRuntime::Peregrine(PeregrineRuntime::New) => {
+			Ok(Box::new(chain_spec::peregrine::new::generate_chain_spec()))
+		}
+		ParachainRuntime::Peregrine(PeregrineRuntime::Peregrine) => {
+			Ok(Box::new(chain_spec::peregrine::load_chain_spec(
+				get_full_path("src/chain_spec/peregrine/specs/peregrine/peregrine-paseo.json")
+					.to_str()
+					.unwrap(),
+			)?))
+		}
+		ParachainRuntime::Peregrine(PeregrineRuntime::PeregrineStg) => {
+			Ok(Box::new(chain_spec::peregrine::load_chain_spec(
+				get_full_path("src/chain_spec/peregrine/specs/peregrine-stg/peregrine-stg.json")
+					.to_str()
+					.unwrap(),
+			)?))
+		}
+		ParachainRuntime::Peregrine(PeregrineRuntime::Rilt) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
+			get_full_path("src/chain_spec/peregrine/specs/rilt/peregrine-rilt.json")
+				.to_str()
+				.unwrap(),
+		)?)),
+		ParachainRuntime::Peregrine(PeregrineRuntime::Other(s)) => {
+			Ok(Box::new(chain_spec::peregrine::load_chain_spec(s.as_str())?))
+		}
 
-	match (id, runtime) {
-		// Peregrine development
-		("dev", _) => Ok(Box::new(chain_spec::peregrine::dev::generate_chain_spec(
-			"rococo_local",
-		))),
-		// New blank Peregrine chainspec
-		("peregrine-new", _) => Ok(Box::new(chain_spec::peregrine::new::generate_chain_spec())),
-		// Peregrine chainspec
-		("peregrine", _) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
-			"chain_spec/peregrine/specs/peregrine.json",
-		)?)),
-		// Peregrine staging chainspec
-		("peregrine-stg", _) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
-			"chain_spec/peregrine/specs/peregrine-stg.json",
-		)?)),
-		// RILT chainspec
-		("rilt", _) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
-			"chain_spec/peregrine/specs/peregrine-rilt.json",
-		)?)),
-		// Any other Peregrine-based chainspec
-		(s, chain_spec::ChainRuntime::Peregrine) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(s)?)),
-
-		// Spiritnet development
-		("spiritnet-dev", _) => Ok(Box::new(chain_spec::spiritnet::dev::generate_chain_spec(
-			"rococo_local",
-		))),
-		// New blank Spiritnet chainspec
-		("spiritnet-new", _) => Ok(Box::new(chain_spec::spiritnet::new::generate_chain_spec())),
-		// Spiritnet chainspec
-		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_chain_spec(
-			"chain_spec/spiritnet/specs/spiritnet.json",
-		)?)),
-		// Any other Spiritnet-based chainspec
-		(s, chain_spec::ChainRuntime::Spiritnet) => Ok(Box::new(chain_spec::spiritnet::load_chain_spec(s)?)),
+		ParachainRuntime::Spiritnet(SpiritnetRuntime::Dev) => Ok(Box::new(
+			chain_spec::spiritnet::dev::generate_chain_spec("rococo_local"),
+		)),
+		ParachainRuntime::Spiritnet(SpiritnetRuntime::New) => {
+			Ok(Box::new(chain_spec::spiritnet::new::generate_chain_spec()))
+		}
+		ParachainRuntime::Spiritnet(SpiritnetRuntime::Spiritnet) => {
+			Ok(Box::new(chain_spec::spiritnet::load_chain_spec(
+				get_full_path("src/chain_spec/spiritnet/specs/spiritnet/spiritnet.json")
+					.to_str()
+					.unwrap(),
+			)?))
+		}
+		ParachainRuntime::Spiritnet(SpiritnetRuntime::Other(s)) => {
+			Ok(Box::new(chain_spec::spiritnet::load_chain_spec(s.as_str())?))
+		}
 	}
 }

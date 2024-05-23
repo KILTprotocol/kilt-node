@@ -31,7 +31,6 @@ pub(crate) mod spiritnet;
 pub(crate) mod utils;
 
 const KILT_PARA_ID: u32 = 2_086;
-const LOG_TARGET: &str = "kilt-parachain::chain_spec";
 
 /// The extensions for the `ChainSpec`.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
@@ -50,39 +49,97 @@ impl Extensions {
 	}
 }
 
-pub(crate) enum ChainRuntime {
+pub(crate) enum PeregrineRuntime {
+	Dev,
 	Peregrine,
-	Spiritnet,
+	PeregrineStg,
+	Rilt,
+	New,
+	Other(String),
 }
 
-impl ChainRuntime {
-	pub(crate) fn native_version(&self) -> &'static RuntimeVersion {
-		match self {
-			Self::Peregrine => &peregrine_runtime::VERSION,
-			Self::Spiritnet => &spiritnet_runtime::VERSION,
-		}
-	}
-}
-
-impl std::fmt::Display for ChainRuntime {
+impl std::fmt::Display for PeregrineRuntime {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
+			Self::Dev => write!(f, "dev"),
 			Self::Peregrine => write!(f, "peregrine"),
-			Self::Spiritnet => write!(f, "spiritnet"),
+			Self::PeregrineStg => write!(f, "peregrine-stg"),
+			Self::Rilt => write!(f, "rilt"),
+			Self::New => write!(f, "new"),
+			Self::Other(path) => write!(f, "other -> {path}"),
 		}
 	}
 }
 
-impl FromStr for ChainRuntime {
+pub(crate) enum SpiritnetRuntime {
+	Dev,
+	Spiritnet,
+	New,
+	Other(String),
+}
+
+impl std::fmt::Display for SpiritnetRuntime {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Dev => write!(f, "dev"),
+			Self::Spiritnet => write!(f, "spiritnet"),
+			Self::New => write!(f, "new"),
+			Self::Other(path) => write!(f, "other -> {path}"),
+		}
+	}
+}
+
+pub(crate) enum ParachainRuntime {
+	Peregrine(PeregrineRuntime),
+	Spiritnet(SpiritnetRuntime),
+}
+
+impl ParachainRuntime {
+	pub(crate) fn native_version(&self) -> &'static RuntimeVersion {
+		match self {
+			Self::Peregrine(_) => &peregrine_runtime::VERSION,
+			Self::Spiritnet(_) => &spiritnet_runtime::VERSION,
+		}
+	}
+}
+
+impl std::fmt::Display for ParachainRuntime {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Peregrine(p) => write!(f, "peregrine ({p})"),
+			Self::Spiritnet(s) => write!(f, "spiritnet ({s})"),
+		}
+	}
+}
+
+impl FromStr for ParachainRuntime {
 	type Err = String;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		if s.contains("peregrine") {
-			Ok(ChainRuntime::Peregrine)
-		} else if s.contains("spiritnet") {
-			Ok(ChainRuntime::Spiritnet)
-		} else {
-			Err(format!("Unknown chainspec id provided: {s}"))
+		match s {
+			// Peregrine development
+			"dev" => Ok(Self::Peregrine(PeregrineRuntime::Dev)),
+			// New blank Peregrine chainspec
+			"peregrine-new" => Ok(Self::Peregrine(PeregrineRuntime::New)),
+			// Peregrine chainspec
+			"peregrine" => Ok(Self::Peregrine(PeregrineRuntime::Peregrine)),
+			// Peregrine staging chainspec
+			"peregrine-stg" => Ok(Self::Peregrine(PeregrineRuntime::PeregrineStg)),
+			// RILT chainspec
+			"rilt" => Ok(Self::Peregrine(PeregrineRuntime::Rilt)),
+			// Any other Peregrine-based chainspec
+			s if s.contains("peregrine") => Ok(Self::Peregrine(PeregrineRuntime::Other(s.to_string()))),
+
+			// Spiritnet development
+			"spiritnet-dev" => Ok(Self::Spiritnet(SpiritnetRuntime::Dev)),
+			// New blank Spiritnet chainspec
+			"spiritnet-new" => Ok(Self::Spiritnet(SpiritnetRuntime::New)),
+			// Spiritnet chainspec
+			"spiritnet" => Ok(Self::Spiritnet(SpiritnetRuntime::Spiritnet)),
+			// Any other Spiritnet-based chainspec
+			s if s.contains("spiritnet") => Ok(Self::Spiritnet(SpiritnetRuntime::Other(s.to_string()))),
+
+			_ => Err(format!("Unknown chainspec id provided: {s}")),
 		}
 	}
 }
