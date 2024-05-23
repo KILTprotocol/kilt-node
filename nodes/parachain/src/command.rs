@@ -229,7 +229,10 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
 
 			trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
-			trace!(target: LOG_TARGET, "The following runtime was chosen based on the spec id: {runtime}.");
+			trace!(
+				target: LOG_TARGET,
+				"The following runtime was chosen based on the spec id: {runtime}."
+			);
 
 			let runner = cli.create_runner(cmd)?;
 
@@ -327,7 +330,10 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
 
 			trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
-			trace!(target: LOG_TARGET, "The following runtime was chosen based on the spec id: {runtime}.");
+			trace!(
+				target: LOG_TARGET,
+				"The following runtime was chosen based on the spec id: {runtime}."
+			);
 
 			match runtime {
 				ParachainRuntime::Peregrine(_) => runner.async_run(|_| {
