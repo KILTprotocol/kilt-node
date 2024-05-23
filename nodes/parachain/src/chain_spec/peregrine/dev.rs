@@ -48,7 +48,7 @@ pub(crate) fn generate_chain_spec(relaychain_name: &str) -> Result<ChainSpec, St
 		Some(get_properties("PILT", 15, 38)),
 		Extensions {
 			relay_chain: relaychain_name.into(),
-			para_id: KILT_PARA_ID.into(),
+			para_id: KILT_PARA_ID,
 		},
 	))
 }
@@ -64,8 +64,8 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 		get_from_secret::<AuthorityId>("Bob"),
 	);
 	let endowed_accounts = [
-		alice.0,
-		bob.0,
+		alice.0.clone(),
+		bob.0.clone(),
 		get_account_id_from_secret::<sr25519::Public>("Charlie"),
 		get_account_id_from_secret::<sr25519::Public>("Dave"),
 		get_account_id_from_secret::<sr25519::Public>("Eve"),
@@ -81,24 +81,26 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 			balances: endowed_accounts.map(|acc| (acc, 10_000_000 * KILT)).to_vec(),
 		},
 		session: SessionConfig {
-			keys: [alice, bob]
-				.map(|(acc, key)| (acc, acc, SessionKeys { aura: key }))
+			keys: [alice.clone(), bob.clone()]
+				.map(|(acc, key)| (acc.clone(), acc, SessionKeys { aura: key }))
 				.to_vec(),
 		},
-		sudo: SudoConfig { key: Some(alice.0) },
+		sudo: SudoConfig {
+			key: Some(alice.0.clone()),
+		},
 		parachain_info: ParachainInfoConfig {
 			parachain_id: KILT_PARA_ID.into(),
 			..Default::default()
 		},
 		parachain_staking: ParachainStakingConfig {
-			stakers: [alice, bob]
+			stakers: [alice.clone(), bob.clone()]
 				.map(|(acc, _)| -> (AccountId, Option<AccountId>, Balance) { (acc, None, 2 * MinCollatorStake::get()) })
 				.to_vec(),
 			inflation_config: kilt_inflation_config(),
 			max_candidate_stake: MAX_COLLATOR_STAKE,
 		},
 		council: CouncilConfig {
-			members: [alice, bob].map(|(acc, _)| acc).to_vec(),
+			members: [alice.clone(), bob.clone()].map(|(acc, _)| acc).to_vec(),
 			phantom: Default::default(),
 		},
 		technical_committee: TechnicalCommitteeConfig {

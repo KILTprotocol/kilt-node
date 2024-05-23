@@ -18,8 +18,6 @@
 
 //! KILT chain specification
 
-use crate::chain_spec::{ChainRuntime, ChainRuntimeT};
-
 pub(crate) mod dev;
 pub(crate) mod new;
 
@@ -28,15 +26,6 @@ const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub(crate) type ChainSpec =
 	sc_service::GenericChainSpec<spiritnet_runtime::RuntimeGenesisConfig, crate::chain_spec::Extensions>;
-
-impl ChainRuntimeT for ChainSpec {
-	fn runtime() -> ChainRuntime {
-		ChainRuntime::Spiritnet
-	}
-	fn native_runtime_version(&self) -> &'static sc_cli::RuntimeVersion {
-		&spiritnet_runtime::VERSION
-	}
-}
 
 pub(crate) fn load_chain_spec(path: &str) -> Result<ChainSpec, String> {
 	ChainSpec::from_json_file(path.into())

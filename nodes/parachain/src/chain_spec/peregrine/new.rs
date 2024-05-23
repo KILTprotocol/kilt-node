@@ -40,7 +40,7 @@ pub(crate) fn generate_chain_spec() -> Result<ChainSpec, String> {
 		Some(get_properties("PILT", 15, 38)),
 		Extensions {
 			relay_chain: "relay".into(),
-			para_id: KILT_PARA_ID.into(),
+			para_id: KILT_PARA_ID,
 		},
 	))
 }

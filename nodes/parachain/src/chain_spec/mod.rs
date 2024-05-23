@@ -22,7 +22,7 @@ use std::str::FromStr;
 
 use runtime_common::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
-use sc_cli::{ChainSpec, RuntimeVersion};
+use sc_cli::RuntimeVersion;
 use sc_service::Properties;
 use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public};
@@ -32,7 +32,6 @@ pub(crate) mod peregrine;
 pub(crate) mod spiritnet;
 
 const KILT_PARA_ID: u32 = 2_086;
-const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
 
 /// Helper function to generate an account ID from seed
 fn get_account_id_from_secret<TPublic: Public>(seed: &str) -> AccountId
@@ -52,7 +51,7 @@ fn get_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Publ
 /// The extensions for the `ChainSpec`.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Extensions {
+pub struct Extensions {
 	/// The relay chain of the Parachain.
 	pub relay_chain: String,
 	/// The id of the Parachain.
@@ -82,6 +81,15 @@ pub(crate) enum ChainRuntime {
 	Spiritnet,
 }
 
+impl ChainRuntime {
+	pub(crate) fn native_version(&self) -> &'static RuntimeVersion {
+		match self {
+			Self::Peregrine => &peregrine_runtime::VERSION,
+			Self::Spiritnet => &spiritnet_runtime::VERSION,
+		}
+	}
+}
+
 impl std::fmt::Display for ChainRuntime {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
@@ -103,9 +111,4 @@ impl FromStr for ChainRuntime {
 			Err("Unknown chain_spec id provided")
 		}
 	}
-}
-
-pub(crate) trait ChainRuntimeT {
-	fn runtime() -> ChainRuntime;
-	fn native_runtime_version(&self) -> &'static RuntimeVersion;
 }
