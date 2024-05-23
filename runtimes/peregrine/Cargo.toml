@@ -19,10 +19,10 @@ sp-io.workspace = true
 [dependencies]
 # External dependencies
 log.workspace = true
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
 
-hex-literal = {workspace = true, optional = true}
+hex-literal = { workspace = true, optional = true }
 
 # RPC & Runtime API
 frame-system-rpc-runtime-api.workspace = true
@@ -38,7 +38,6 @@ delegation.workspace = true
 did.workspace = true
 kilt-runtime-api-dip-provider.workspace = true
 kilt-support.workspace = true
-pallet-configuration.workspace = true
 pallet-deposit-storage.workspace = true
 pallet-did-lookup.workspace = true
 pallet-dip-provider.workspace = true
@@ -104,12 +103,12 @@ xcm-executor.workspace = true
 xcm.workspace = true
 
 # Benchmarking dependencies
-cumulus-pallet-session-benchmarking = {workspace = true, optional = true}
-frame-benchmarking = {workspace = true, optional = true}
-frame-system-benchmarking = {workspace = true, optional = true}
+cumulus-pallet-session-benchmarking = { workspace = true, optional = true }
+frame-benchmarking = { workspace = true, optional = true }
+frame-system-benchmarking = { workspace = true, optional = true }
 
 # Runtime tests
-frame-try-runtime = {workspace = true, optional = true}
+frame-try-runtime = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
@@ -130,7 +129,6 @@ runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
-  "pallet-configuration/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
   "pallet-deposit-storage/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
@@ -189,7 +187,6 @@ std = [
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-collective/std",
-  "pallet-configuration/std",
   "pallet-democracy/std",
   "pallet-deposit-storage/std",
   "pallet-did-lookup/std",
@@ -254,7 +251,6 @@ try-runtime = [
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-collective/try-runtime",
-  "pallet-configuration/try-runtime",
   "pallet-democracy/try-runtime",
   "pallet-deposit-storage/try-runtime",
   "pallet-did-lookup/try-runtime",
@@ -282,7 +278,4 @@ try-runtime = [
   "public-credentials/try-runtime",
   "runtime-common/try-runtime",
 ]
-with-tracing = [
-  "frame-executive/with-tracing",
-  "sp-io/with-tracing",
-]
+with-tracing = ["frame-executive/with-tracing", "sp-io/with-tracing"]
