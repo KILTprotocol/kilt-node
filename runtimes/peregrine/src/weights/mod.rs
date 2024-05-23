@@ -23,7 +23,6 @@ pub mod did;
 pub mod frame_system;
 pub mod pallet_balances;
 pub mod pallet_collective;
-pub mod pallet_configuration;
 pub mod pallet_democracy;
 pub mod pallet_deposit_storage;
 pub mod pallet_did_lookup;
