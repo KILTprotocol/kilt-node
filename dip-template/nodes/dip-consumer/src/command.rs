@@ -21,7 +21,7 @@ use std::{fs::create_dir_all, net::SocketAddr};
 use cumulus_primitives_core::ParaId;
 use dip_consumer_runtime_template::Block;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-use log::{info, warn};
+use log::info;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, LoggerBuilder,
 	NetworkParams, Result, SharedParams, SubstrateCli,

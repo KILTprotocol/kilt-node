@@ -12,11 +12,11 @@ description = "Node template for the KILT Decentralized Identity Provider (DIP) 
 build = "build.rs"
 
 [dependencies]
-clap = {workspace = true, features = ["std", "derive"]}
+clap = { workspace = true, features = ["std", "derive"] }
 futures = { workspace = true }
 log = { workspace = true, features = ["std"] }
-serde = {workspace = true, features = ["std", "derive"]}
-jsonrpsee = {workspace = true, features = ["server"]}
+serde = { workspace = true, features = ["std", "derive"] }
+jsonrpsee = { workspace = true, features = ["server"] }
 
 # Internal dependencies
 dip-consumer-runtime-template = { workspace = true, features = ["std"] }
@@ -60,6 +60,8 @@ polkadot-primitives = { workspace = true, features = ["std"] }
 cumulus-client-cli.workspace = true
 cumulus-client-consensus-aura.workspace = true
 cumulus-client-consensus-common.workspace = true
+cumulus-client-consensus-proposer.workspace = true
+cumulus-client-collator.workspace = true
 cumulus-client-service.workspace = true
 cumulus-primitives-core = { workspace = true, features = ["std"] }
 cumulus-primitives-parachain-inherent = { workspace = true, features = ["std"] }

@@ -16,25 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use cumulus_client_cli::CollatorOptions;
 use cumulus_client_collator::service::CollatorService;
-use cumulus_client_consensus_aura::{
-	import_queue, slot_duration, AuraConsensus, BuildAuraConsensusParams, ImportQueueParams, SlotProportion,
-};
-use cumulus_client_consensus_common::{ParachainBlockImport as TParachainBlockImport, ParachainConsensus};
+use cumulus_client_consensus_aura::{import_queue, slot_duration, ImportQueueParams};
+use cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport;
+use cumulus_client_consensus_proposer::Proposer;
 use cumulus_client_service::{
 	build_network, build_relay_chain_interface, prepare_node_config, start_relay_chain_tasks, BuildNetworkParams,
-	CollatorSybilResistance, DARecoveryProfile, StartCollatorParams, StartFullNodeParams, StartRelayChainTasksParams,
+	CollatorSybilResistance, DARecoveryProfile, StartRelayChainTasksParams,
 };
-use cumulus_primitives_core::ParaId;
-use cumulus_primitives_parachain_inherent::ParachainInherentData;
-use cumulus_relay_chain_interface::RelayChainInterface;
-use dip_consumer_runtime_template::{api, native_version, NodeBlock as Block, RuntimeApi};
+use cumulus_primitives_core::{relay_chain::CollatorPair, ParaId};
+use cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface};
+use dip_consumer_runtime_template::{api, native_version, Hash, NodeBlock as Block, RuntimeApi};
 use frame_benchmarking::benchmarking::HostFunctions;
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
-use sc_basic_authorship::ProposerFactory;
 use sc_client_api::Backend;
 use sc_consensus::{DefaultImportQueue, ImportQueue};
 use sc_executor::NativeElseWasmExecutor;
@@ -171,7 +168,6 @@ async fn start_node_impl(
 	.await
 	.map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
-	let force_authoring = parachain_config.force_authoring;
 	let validator = parachain_config.role.is_authority();
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
 	let transaction_pool = params.transaction_pool.clone();

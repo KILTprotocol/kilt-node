@@ -37,11 +37,8 @@ use dip_provider_runtime_template::Web3Name;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
-use cumulus_pallet_parachain_system::{
-	register_validate_block, ParachainSetCode, RelayChainStateProof, RelayNumberStrictlyIncreases,
-};
+use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberStrictlyIncreases};
 use cumulus_primitives_core::CollationInfo;
-use cumulus_primitives_timestamp::InherentDataProvider;
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
@@ -71,7 +68,7 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	AccountId32, ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
 };
-use sp_std::{prelude::*, time::Duration};
+use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 mod dip;
