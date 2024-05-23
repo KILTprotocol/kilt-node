@@ -1,113 +1,111 @@
 [package]
-authors.workspace = true
-documentation.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license-file.workspace = true
-readme.workspace = true
-repository.workspace = true
-version.workspace = true
-name = "kilt-parachain"
-description = "Client for KILT parachain."
-build = "build.rs"
+authors       = { workspace = true }
+build         = "build.rs"
+description   = "Client for KILT parachain."
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "kilt-parachain"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [[bin]]
 name = "kilt-parachain"
 path = "src/main.rs"
 
 [build-dependencies]
-substrate-build-script-utils.workspace = true
+substrate-build-script-utils = { workspace = true }
 
 [dependencies]
 # External dependencies
-clap = {workspace = true, features = ["derive"]}
-parity-scale-codec = {workspace = true, features = ["derive"]}
-hex-literal.workspace = true
-jsonrpsee = {workspace = true, features = ["server"]}
-log.workspace = true
-serde = {workspace = true, features = ["derive"]}
-serde_json.workspace = true
+clap               = { workspace = true, features = ["derive"] }
+hex-literal        = { workspace = true }
+jsonrpsee          = { workspace = true, features = ["server"] }
+log                = { workspace = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+serde              = { workspace = true, features = ["derive"] }
+serde_json         = { workspace = true }
 
 # Internal dependencies
-peregrine-runtime = {workspace = true, features = ["std"]}
-runtime-common = {workspace = true, features = ["std"]}
-spiritnet-runtime = {workspace = true, features = ["std"]}
+clone-runtime     = { workspace = true, features = ["std"] }
+peregrine-runtime = { workspace = true, features = ["std"] }
+runtime-common    = { workspace = true, features = ["std"] }
+spiritnet-runtime = { workspace = true, features = ["std"] }
 
 # Substrate dependencies
-sc-basic-authorship.workspace = true
-sc-chain-spec.workspace = true
-sc-cli = {workspace = true}
-sc-client-api.workspace = true
-sc-consensus.workspace = true
-sc-executor = {workspace = true}
-sc-network.workspace = true
-sc-network-sync.workspace = true
-sc-service = {workspace = true}
-sc-sysinfo.workspace = true
-sc-telemetry.workspace = true
-sc-tracing.workspace = true
-sc-transaction-pool.workspace = true
-sc-transaction-pool-api.workspace = true
-sp-api = {workspace = true, features = ["std"]}
-sp-block-builder = {workspace = true, features = ["std"]}
-sp-blockchain.workspace = true
-sp-consensus-aura = {workspace = true, features = ["std"]}
-sp-core = {workspace = true, features = ["std"]}
-sp-io = {workspace = true, features = ["std"]}
-sp-keystore = {workspace = true, features = ["std"]}
-sp-offchain = {workspace = true, features = ["std"]}
-sp-runtime = {workspace = true, features = ["std"]}
-sp-session = {workspace = true, features = ["std"]}
-sp-timestamp = {workspace = true, features = ["std"]}
-sp-transaction-pool = {workspace = true, features = ["std"]}
-substrate-prometheus-endpoint.workspace = true
+sc-basic-authorship           = { workspace = true }
+sc-chain-spec                 = { workspace = true }
+sc-cli                        = { workspace = true }
+sc-client-api                 = { workspace = true }
+sc-consensus                  = { workspace = true }
+sc-executor                   = { workspace = true }
+sc-network                    = { workspace = true }
+sc-network-sync               = { workspace = true }
+sc-service                    = { workspace = true }
+sc-sysinfo                    = { workspace = true }
+sc-telemetry                  = { workspace = true }
+sc-tracing                    = { workspace = true }
+sc-transaction-pool           = { workspace = true }
+sc-transaction-pool-api       = { workspace = true }
+sp-api                        = { workspace = true, features = ["std"] }
+sp-block-builder              = { workspace = true, features = ["std"] }
+sp-blockchain                 = { workspace = true }
+sp-consensus-aura             = { workspace = true, features = ["std"] }
+sp-core                       = { workspace = true, features = ["std"] }
+sp-io                         = { workspace = true, features = ["std"] }
+sp-keystore                   = { workspace = true, features = ["std"] }
+sp-offchain                   = { workspace = true, features = ["std"] }
+sp-runtime                    = { workspace = true, features = ["std"] }
+sp-session                    = { workspace = true, features = ["std"] }
+sp-timestamp                  = { workspace = true, features = ["std"] }
+sp-transaction-pool           = { workspace = true, features = ["std"] }
+substrate-prometheus-endpoint = { workspace = true }
 
 # RPC related dependencies
-pallet-transaction-payment-rpc.workspace = true
-sc-rpc-api.workspace = true
-substrate-frame-rpc-system.workspace = true
+pallet-transaction-payment-rpc = { workspace = true }
+sc-rpc-api                     = { workspace = true }
+substrate-frame-rpc-system     = { workspace = true }
 
 # Cumulus dependencies
-cumulus-client-cli.workspace = true
-cumulus-client-consensus-aura.workspace = true
-cumulus-client-consensus-common.workspace = true
-cumulus-client-service.workspace = true
-cumulus-primitives-core = {workspace = true, features = ["std"]}
-cumulus-primitives-parachain-inherent = {workspace = true, features = ["std"]}
-cumulus-relay-chain-inprocess-interface.workspace = true
-cumulus-relay-chain-interface.workspace = true
-cumulus-relay-chain-minimal-node.workspace = true
+cumulus-client-cli                      = { workspace = true }
+cumulus-client-consensus-aura           = { workspace = true }
+cumulus-client-consensus-common         = { workspace = true }
+cumulus-client-service                  = { workspace = true }
+cumulus-primitives-core                 = { workspace = true, features = ["std"] }
+cumulus-primitives-parachain-inherent   = { workspace = true, features = ["std"] }
+cumulus-relay-chain-inprocess-interface = { workspace = true }
+cumulus-relay-chain-interface           = { workspace = true }
+cumulus-relay-chain-minimal-node        = { workspace = true }
 
 # Polkadot dependencies
-polkadot-cli.workspace = true
-polkadot-primitives = {workspace = true, features = ["std"]}
-polkadot-service.workspace = true
-xcm = {workspace = true, features = ["std"]}
+polkadot-cli        = { workspace = true }
+polkadot-primitives = { workspace = true, features = ["std"] }
+polkadot-service    = { workspace = true }
+xcm                 = { workspace = true, features = ["std"] }
 
 # Benchmarking
-frame-benchmarking = {workspace = true, features = ["std"]}
-frame-benchmarking-cli.workspace = true
+frame-benchmarking     = { workspace = true, features = ["std"] }
+frame-benchmarking-cli = { workspace = true }
 
 # Runtime tests
-try-runtime-cli = {workspace = true, optional = true}
+try-runtime-cli = { workspace = true, optional = true }
 
 [features]
 default = []
-fast-gov = [
-  "peregrine-runtime/fast-gov",
-  "runtime-common/fast-gov",
-]
+fast-gov = ["peregrine-runtime/fast-gov", "runtime-common/fast-gov"]
 runtime-benchmarks = [
-  "frame-benchmarking/runtime-benchmarks",
   "frame-benchmarking-cli/runtime-benchmarks",
+  "frame-benchmarking/runtime-benchmarks",
+  "peregrine-runtime/runtime-benchmarks",
   "polkadot-cli/runtime-benchmarks",
   "polkadot-primitives/runtime-benchmarks",
   "polkadot-service/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
-  "peregrine-runtime/runtime-benchmarks",
   "sc-service/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
-  "sp-runtime/runtime-benchmarks"
 ]
 try-runtime = [
   "peregrine-runtime/try-runtime",

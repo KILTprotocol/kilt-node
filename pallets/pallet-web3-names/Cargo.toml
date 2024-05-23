@@ -1,52 +1,52 @@
 [package]
-authors.workspace = true
-documentation.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license-file.workspace = true
-readme.workspace = true
-repository.workspace = true
-version.workspace = true
-name = "pallet-web3-names"
-description = "Unique Web3 nicknames for KILT DIDs."
+authors       = { workspace = true }
+description   = "Unique Web3 nicknames for KILT DIDs."
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "pallet-web3-names"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
+kilt-support = { workspace = true, features = ["mock", "try-runtime"] }
 
-pallet-balances = {workspace = true, features = ["std"]}
-sp-core = {workspace = true, features = ["std"]}
-sp-io = {workspace = true, features = ["std"]}
-sp-keystore = {workspace = true, features = ["std"]}
+pallet-balances = { workspace = true, features = ["std"] }
+sp-core         = { workspace = true, features = ["std"] }
+sp-io           = { workspace = true, features = ["std"] }
+sp-keystore     = { workspace = true, features = ["std"] }
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
-log.workspace = true
+log                = { workspace = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
 
 # Internal dependencies
-kilt-support.workspace = true
+kilt-support = { workspace = true }
 
 # Substrate dependencies
-frame-support.workspace = true
-frame-system.workspace = true
-sp-runtime.workspace = true
-sp-std.workspace = true
+frame-support = { workspace = true }
+frame-system  = { workspace = true }
+sp-runtime    = { workspace = true }
+sp-std        = { workspace = true }
 
 # Benchmarking dependencies
-frame-benchmarking = {workspace = true, optional = true}
-sp-io = {workspace = true, optional = true}
+frame-benchmarking = { workspace = true, optional = true }
+sp-io              = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
 runtime-benchmarks = [
   "frame-benchmarking",
-  "kilt-support/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
   "sp-io",
   "sp-runtime/runtime-benchmarks",
 ]
@@ -54,13 +54,10 @@ std = [
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
+  "log/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "sp-runtime/std",
   "sp-std/std",
-  "log/std"
 ]
-try-runtime = [
-  "frame-support/try-runtime",
-  "frame-system/try-runtime",
-]
+try-runtime = ["frame-support/try-runtime", "frame-system/try-runtime"]
