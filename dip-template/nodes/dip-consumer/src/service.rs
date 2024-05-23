@@ -25,7 +25,7 @@ use cumulus_client_consensus_aura::{
 use cumulus_client_consensus_common::{ParachainBlockImport as TParachainBlockImport, ParachainConsensus};
 use cumulus_client_service::{
 	build_network, build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
-	BuildNetworkParams, StartCollatorParams, StartFullNodeParams,
+	BuildNetworkParams, CollatorSybilResistance, StartCollatorParams, StartFullNodeParams,
 };
 use cumulus_primitives_core::ParaId;
 use cumulus_primitives_parachain_inherent::ParachainInherentData;
@@ -187,6 +187,7 @@ async fn start_node_impl(
 			spawn_handle: task_manager.spawn_handle(),
 			relay_chain_interface: relay_chain_interface.clone(),
 			import_queue: params.import_queue,
+			sybil_resistance_level: CollatorSybilResistance::Resistant, // because of Aura
 		})
 		.await?;
 

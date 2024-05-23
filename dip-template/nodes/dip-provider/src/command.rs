@@ -270,14 +270,6 @@ pub fn run() -> Result<()> {
 					if config.role.is_authority() { "yes" } else { "no" }
 				);
 
-				if !collator_options.relay_chain_rpc_urls.is_empty() && cli.relay_chain_args.is_empty() {
-					warn!(
-						"Detected relay chain node arguments together with --relay-chain-rpc-url. \
-						   This command starts a minimal Polkadot node that only uses a \
-						   network-related subset of all relay chain CLI options."
-					);
-				}
-
 				start_parachain_node(config, polkadot_config, collator_options, id, hwbench)
 					.await
 					.map(|r| r.0)
