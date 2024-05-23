@@ -22,8 +22,8 @@ use sc_service::ChainType;
 use spiritnet_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SystemConfig, WASM_BINARY};
 
 use crate::chain_spec::{
-	get_properties,
 	spiritnet::{ChainSpec, SAFE_XCM_VERSION},
+	utils::get_properties,
 	Extensions, KILT_PARA_ID,
 };
 

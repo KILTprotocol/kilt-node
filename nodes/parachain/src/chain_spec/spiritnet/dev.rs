@@ -30,8 +30,8 @@ use spiritnet_runtime::{
 };
 
 use crate::chain_spec::{
-	get_account_id_from_secret, get_from_secret, get_properties,
 	spiritnet::{ChainSpec, SAFE_XCM_VERSION},
+	utils::{get_account_id_from_secret, get_from_secret, get_properties},
 	Extensions, KILT_PARA_ID,
 };
 

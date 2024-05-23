@@ -22,8 +22,8 @@ use peregrine_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisCo
 use sc_service::ChainType;
 
 use crate::chain_spec::{
-	get_properties,
 	peregrine::{ChainSpec, SAFE_XCM_VERSION},
+	utils::get_properties,
 	Extensions, KILT_PARA_ID,
 };
 
