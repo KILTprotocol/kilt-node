@@ -1,45 +1,46 @@
 [package]
-authors.workspace = true
-documentation.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license-file.workspace = true
-readme.workspace = true
-repository.workspace = true
-version.workspace = true
-name = "public-credentials"
-description = "Enables adding and revoking public credentials."
+authors       = { workspace = true }
+description   = "Enables adding and revoking public credentials."
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "public-credentials"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [dev-dependencies]
-ctype = {workspace = true, features = ["mock"]}
-kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
+ctype        = { workspace = true, features = ["mock"] }
+kilt-support = { workspace = true, features = ["mock", "try-runtime"] }
 
-pallet-balances = {workspace = true, features = ["std"]}
-sp-io = {workspace = true, features = ["std"]}
-sp-keystore = {workspace = true, features = ["std"]}
+pallet-balances = { workspace = true, features = ["std"] }
+sp-io           = { workspace = true, features = ["std"] }
+sp-keystore     = { workspace = true, features = ["std"] }
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
-log.workspace = true
+log                = { workspace = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
 
 # Internal dependencies
-ctype.workspace = true
-kilt-support.workspace = true
+ctype        = { workspace = true }
+kilt-support = { workspace = true }
 
 # Substrate dependencies
-frame-benchmarking = {workspace = true, optional = true}
-frame-support.workspace = true
-frame-system.workspace = true
-sp-core.workspace = true
-sp-io = {workspace = true, optional = true}
-sp-keystore = {workspace = true, optional = true}
-sp-runtime.workspace = true
-sp-std.workspace = true
+frame-benchmarking = { workspace = true, optional = true }
+frame-support      = { workspace = true }
+frame-system       = { workspace = true }
+sp-core            = { workspace = true }
+sp-io              = { workspace = true, optional = true }
+sp-keystore        = { workspace = true, optional = true }
+sp-runtime         = { workspace = true }
+sp-std             = { workspace = true }
 
 [features]
 default = ["std"]
+mock = []
 runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
@@ -48,23 +49,21 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
-  "parity-scale-codec/std",
-  "scale-info/std",
   "ctype/std",
-  "kilt-support/std",
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
+  "kilt-support/std",
+  "log/std",
+  "parity-scale-codec/std",
+  "scale-info/std",
   "sp-core/std",
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
-  "log/std"
 ]
 try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
-  "kilt-support/try-runtime"
+  "kilt-support/try-runtime",
 ]
-
-mock = []
