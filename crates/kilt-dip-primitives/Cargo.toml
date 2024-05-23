@@ -17,7 +17,7 @@ log.workspace = true
 
 # Internal dependencies
 did.workspace = true
-kilt-support = {workspace = true, optional = true}
+kilt-support = { workspace = true, optional = true }
 pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
@@ -25,8 +25,8 @@ pallet-relay-store.workspace = true
 pallet-web3-names.workspace = true
 
 # Parity dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
 
 # Substrate dependencies
 frame-system.workspace = true
@@ -42,7 +42,10 @@ sp-trie.workspace = true
 cumulus-primitives-core.workspace = true
 
 [dev-dependencies]
-cumulus-pallet-parachain-system = { workspace = true, features = ["std"] }
+cumulus-pallet-parachain-system = { workspace = true, features = [
+  "std",
+  "parameterized-consensus-hook",
+] }
 enum-iterator.workspace = true
 hex-literal.workspace = true
 peregrine-runtime = { workspace = true, features = ["std"] }
@@ -77,5 +80,5 @@ std = [
 runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
-  "pallet-dip-provider/runtime-benchmarks"
+  "pallet-dip-provider/runtime-benchmarks",
 ]
