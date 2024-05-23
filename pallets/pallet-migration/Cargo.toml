@@ -1,65 +1,65 @@
 [package]
-authors      ={ workspace=true }
-description  ="Pallet for lazy migration"
-documentation={ workspace=true }
-edition      ={ workspace=true }
-homepage     ={ workspace=true }
-license-file ={ workspace=true }
-name         ="pallet-migration"
-readme       ={ workspace=true }
-repository   ={ workspace=true }
-version      ={ workspace=true }
+authors       = { workspace = true }
+description   = "Pallet for lazy migration"
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "pallet-migration"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [package.metadata.docs.rs]
-targets=["x86_64-unknown-linux-gnu"]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-attestation       ={ workspace=true, features=["mock"] }
-ctype             ={ workspace=true, features=["mock"] }
-delegation        ={ workspace=true, features=["mock"] }
-did               ={ workspace=true, features=["mock"] }
-env_logger        ={ workspace=true }
-frame-benchmarking={ workspace=true, features=["std"] }
-kilt-support      ={ workspace=true, features=["mock", "try-runtime"] }
-pallet-aura       ={ workspace=true, features=["std"] }
-pallet-session    ={ workspace=true, features=["std"] }
-pallet-timestamp  ={ workspace=true, features=["std"] }
-public-credentials={ workspace=true, features=["mock"] }
-sp-consensus-aura ={ workspace=true, features=["std"] }
-sp-keystore       ={ workspace=true, features=["std"] }
+attestation        = { workspace = true, features = ["mock"] }
+ctype              = { workspace = true, features = ["mock"] }
+delegation         = { workspace = true, features = ["mock"] }
+did                = { workspace = true, features = ["mock"] }
+env_logger         = { workspace = true }
+frame-benchmarking = { workspace = true, features = ["std"] }
+kilt-support       = { workspace = true, features = ["mock", "try-runtime"] }
+pallet-aura        = { workspace = true, features = ["std"] }
+pallet-session     = { workspace = true, features = ["std"] }
+pallet-timestamp   = { workspace = true, features = ["std"] }
+public-credentials = { workspace = true, features = ["mock"] }
+sp-consensus-aura  = { workspace = true, features = ["std"] }
+sp-keystore        = { workspace = true, features = ["std"] }
 
 [dependencies]
 # Internal dependencies
-attestation       ={ workspace=true }
-delegation        ={ workspace=true }
-did               ={ workspace=true }
-kilt-support      ={ workspace=true }
-pallet-did-lookup ={ workspace=true }
-pallet-web3-names ={ workspace=true }
-parachain-staking ={ workspace=true }
-public-credentials={ workspace=true }
-runtime-common    ={ workspace=true }
+attestation        = { workspace = true }
+delegation         = { workspace = true }
+did                = { workspace = true }
+kilt-support       = { workspace = true }
+pallet-did-lookup  = { workspace = true }
+pallet-web3-names  = { workspace = true }
+parachain-staking  = { workspace = true }
+public-credentials = { workspace = true }
+runtime-common     = { workspace = true }
 
-ctype={ workspace=true, optional=true }
+ctype = { workspace = true, optional = true }
 
 # Substrate dependencies
-frame-support     ={ workspace=true }
-frame-system      ={ workspace=true }
-pallet-balances   ={ workspace=true, optional=true }
-parity-scale-codec={ workspace=true, features=["derive"] }
-scale-info        ={ workspace=true, features=["derive"] }
-sp-core           ={ workspace=true }
-sp-io             ={ workspace=true }
-sp-runtime        ={ workspace=true }
-sp-std            ={ workspace=true }
+frame-support      = { workspace = true }
+frame-system       = { workspace = true }
+pallet-balances    = { workspace = true, optional = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
+sp-core            = { workspace = true }
+sp-io              = { workspace = true }
+sp-runtime         = { workspace = true }
+sp-std             = { workspace = true }
 
 # Benchmarking dependencies
-frame-benchmarking={ workspace=true, optional=true }
-sp-keystore       ={ workspace=true, optional=true }
+frame-benchmarking = { workspace = true, optional = true }
+sp-keystore        = { workspace = true, optional = true }
 
 [features]
-default=["std"]
-runtime-benchmarks=[
+default = ["std"]
+runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
   "delegation/runtime-benchmarks",
@@ -77,7 +77,7 @@ runtime-benchmarks=[
   "sp-runtime/runtime-benchmarks",
 ]
 
-std=[
+std = [
   "attestation/std",
   "ctype/std",
   "delegation/std",
@@ -98,7 +98,7 @@ std=[
   "sp-std/std",
 ]
 
-try-runtime=[
+try-runtime = [
   "attestation/try-runtime",
   "ctype/try-runtime",
   "delegation/try-runtime",

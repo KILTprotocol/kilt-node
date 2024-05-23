@@ -15,13 +15,8 @@ fmt:
   stage: test
   script:
     - cargo fmt -- --check
-
-fmt-tomls:
-  image: paritytech/ci-unified:bullseye-1.70.0
-  stage: test
-  script:
     - cargo install taplo-cli --version 0.9.0
-    - taplo fmt --check 
+    - taplo fmt --check
 
 test:
   timeout: 2 hours

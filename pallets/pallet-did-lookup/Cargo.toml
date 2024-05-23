@@ -1,64 +1,64 @@
 [package]
-authors      ={ workspace=true }
-description  ="Lookup the DID for a blockchain account."
-documentation={ workspace=true }
-edition      ={ workspace=true }
-homepage     ={ workspace=true }
-license-file ={ workspace=true }
-name         ="pallet-did-lookup"
-readme       ={ workspace=true }
-repository   ={ workspace=true }
-version      ={ workspace=true }
+authors       = { workspace = true }
+description   = "Lookup the DID for a blockchain account."
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "pallet-did-lookup"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [package.metadata.docs.rs]
-targets=["x86_64-unknown-linux-gnu"]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-env_logger  ={ workspace=true }
-kilt-support={ workspace=true, features=["mock", "try-runtime"] }
+env_logger   = { workspace = true }
+kilt-support = { workspace = true, features = ["mock", "try-runtime"] }
 
-pallet-balances={ workspace=true, features=["std"] }
-sp-core        ={ workspace=true, features=["std"] }
-sp-io          ={ workspace=true, features=["std"] }
-sp-keystore    ={ workspace=true, features=["std"] }
-test-log       ="0.2.11"
+pallet-balances = { workspace = true, features = ["std"] }
+sp-core         = { workspace = true, features = ["std"] }
+sp-io           = { workspace = true, features = ["std"] }
+sp-keystore     = { workspace = true, features = ["std"] }
+test-log        = "0.2.11"
 
 [dependencies]
 # External dependencies
-base58            ={ workspace=true }
-blake2            ={ version="0.10.6", default-features=false }
-hex               ={ workspace=true }
-libsecp256k1      ={ workspace=true, features=["hmac"] }
-log               ={ workspace=true }
-parity-scale-codec={ workspace=true, features=["derive"] }
-scale-info        ={ workspace=true, features=["derive"] }
-serde             ={ workspace=true, default-features=false, features=["derive"] }
-sha3              ={ workspace=true }
+base58             = { workspace = true }
+blake2             = { version = "0.10.6", default-features = false }
+hex                = { workspace = true }
+libsecp256k1       = { workspace = true, features = ["hmac"] }
+log                = { workspace = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
+serde              = { workspace = true, default-features = false, features = ["derive"] }
+sha3               = { workspace = true }
 
 # Internal dependencies
-kilt-support={ workspace=true }
+kilt-support = { workspace = true }
 
 # Substrate dependencies
-frame-support={ workspace=true }
-frame-system ={ workspace=true }
-sp-core      ={ workspace=true }
-sp-io        ={ workspace=true }
-sp-runtime   ={ workspace=true }
-sp-std       ={ workspace=true }
+frame-support = { workspace = true }
+frame-system  = { workspace = true }
+sp-core       = { workspace = true }
+sp-io         = { workspace = true }
+sp-runtime    = { workspace = true }
+sp-std        = { workspace = true }
 
 # Benchmarking dependencies
-frame-benchmarking={ workspace=true, optional=true }
+frame-benchmarking = { workspace = true, optional = true }
 
 [features]
-default=["std"]
-runtime-benchmarks=[
+default = ["std"]
+runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
-std=[
+std = [
   "blake2/std",
   "frame-benchmarking?/std",
   "frame-support/std",
@@ -76,7 +76,7 @@ std=[
   "sp-runtime/std",
   "sp-std/std",
 ]
-try-runtime=[
+try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",

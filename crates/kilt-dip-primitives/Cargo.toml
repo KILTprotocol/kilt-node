@@ -1,63 +1,63 @@
 [package]
-authors      ={ workspace=true }
-description  ="Primitive types, traits, and functions for the KILT Decentralized Identity Provider (DIP) functionality as implemented by the KILT blockchain."
-documentation={ workspace=true }
-edition      ={ workspace=true }
-homepage     ={ workspace=true }
-license-file ={ workspace=true }
-name         ="kilt-dip-primitives"
-readme       ={ workspace=true }
-repository   ={ workspace=true }
-version      ={ workspace=true }
+authors       = { workspace = true }
+description   = "Primitive types, traits, and functions for the KILT Decentralized Identity Provider (DIP) functionality as implemented by the KILT blockchain."
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "kilt-dip-primitives"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [dev-dependencies]
-cumulus-pallet-parachain-system={ workspace=true, features=["std"] }
-enum-iterator                  ={ workspace=true }
-hex-literal                    ={ workspace=true }
-peregrine-runtime              ={ workspace=true, features=["std"] }
-rococo-runtime                 ={ workspace=true, features=["std"] }
-sp-io                          ={ workspace=true, features=["std"] }
-spiritnet-runtime              ={ workspace=true, features=["std"] }
+cumulus-pallet-parachain-system = { workspace = true, features = ["std"] }
+enum-iterator                   = { workspace = true }
+hex-literal                     = { workspace = true }
+peregrine-runtime               = { workspace = true, features = ["std"] }
+rococo-runtime                  = { workspace = true, features = ["std"] }
+sp-io                           = { workspace = true, features = ["std"] }
+spiritnet-runtime               = { workspace = true, features = ["std"] }
 
 [dependencies]
 # External dependencies
-hash-db={ workspace=true }
-log    ={ workspace=true }
+hash-db = { workspace = true }
+log     = { workspace = true }
 
 # Internal dependencies
-did                ={ workspace=true }
-kilt-support       ={ workspace=true, optional=true }
-pallet-did-lookup  ={ workspace=true }
-pallet-dip-consumer={ workspace=true }
-pallet-dip-provider={ workspace=true }
-pallet-relay-store ={ workspace=true }
-pallet-web3-names  ={ workspace=true }
+did                 = { workspace = true }
+kilt-support        = { workspace = true, optional = true }
+pallet-did-lookup   = { workspace = true }
+pallet-dip-consumer = { workspace = true }
+pallet-dip-provider = { workspace = true }
+pallet-relay-store  = { workspace = true }
+pallet-web3-names   = { workspace = true }
 
 # Parity dependencies
-parity-scale-codec={ workspace=true, features=["derive"] }
-scale-info        ={ workspace=true, features=["derive"] }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
 
 # Substrate dependencies
-frame-support   ={ workspace=true }
-frame-system    ={ workspace=true }
-sp-core         ={ workspace=true }
-sp-io           ={ workspace=true }
-sp-runtime      ={ workspace=true }
-sp-state-machine={ workspace=true }
-sp-std          ={ workspace=true }
-sp-trie         ={ workspace=true }
+frame-support    = { workspace = true }
+frame-system     = { workspace = true }
+sp-core          = { workspace = true }
+sp-io            = { workspace = true }
+sp-runtime       = { workspace = true }
+sp-state-machine = { workspace = true }
+sp-std           = { workspace = true }
+sp-trie          = { workspace = true }
 
 # Cumulus dependencies
-cumulus-primitives-core={ workspace=true }
+cumulus-primitives-core = { workspace = true }
 
 [features]
-default=["std"]
-runtime-benchmarks=[
+default = ["std"]
+runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
   "pallet-dip-provider/runtime-benchmarks",
 ]
-std=[
+std = [
   "cumulus-primitives-core/std",
   "did/std",
   "frame-support/std",

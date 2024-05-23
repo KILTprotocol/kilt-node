@@ -1,46 +1,46 @@
 [package]
-authors      ={ workspace=true }
-description  ="Stores configuration values for the parachain"
-documentation={ workspace=true }
-edition      ={ workspace=true }
-homepage     ={ workspace=true }
-license-file ={ workspace=true }
-name         ="pallet-configuration"
-readme       ={ workspace=true }
-repository   ={ workspace=true }
-version      ={ workspace=true }
+authors       = { workspace = true }
+description   = "Stores configuration values for the parachain"
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "pallet-configuration"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [package.metadata.docs.rs]
-targets=["x86_64-unknown-linux-gnu"]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-pallet-balances={ workspace=true }
-serde          ={ workspace=true }
-sp-core        ={ workspace=true, features=["std"] }
-sp-io          ={ workspace=true, features=["std"] }
-sp-keystore    ={ workspace=true, features=["std"] }
+pallet-balances = { workspace = true }
+serde           = { workspace = true }
+sp-core         = { workspace = true, features = ["std"] }
+sp-io           = { workspace = true, features = ["std"] }
+sp-keystore     = { workspace = true, features = ["std"] }
 
 [dependencies]
 # Substrate dependencies
-cumulus-pallet-parachain-system={ workspace=true }
-frame-support                  ={ workspace=true }
-frame-system                   ={ workspace=true }
-parity-scale-codec             ={ workspace=true, features=["derive"] }
-scale-info                     ={ workspace=true, features=["derive"] }
-sp-runtime                     ={ workspace=true }
-sp-std                         ={ workspace=true }
+cumulus-pallet-parachain-system = { workspace = true }
+frame-support                   = { workspace = true }
+frame-system                    = { workspace = true }
+parity-scale-codec              = { workspace = true, features = ["derive"] }
+scale-info                      = { workspace = true, features = ["derive"] }
+sp-runtime                      = { workspace = true }
+sp-std                          = { workspace = true }
 
-frame-benchmarking={ workspace=true, optional=true }
+frame-benchmarking = { workspace = true, optional = true }
 
 [features]
-default=["std"]
-runtime-benchmarks=[
+default = ["std"]
+runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
-std=[
+std = [
   "cumulus-pallet-parachain-system/std",
   "frame-benchmarking?/std",
   "frame-support/std",
@@ -51,4 +51,4 @@ std=[
   "sp-runtime/std",
   "sp-std/std",
 ]
-try-runtime=["frame-support/try-runtime", "frame-system/try-runtime"]
+try-runtime = ["frame-support/try-runtime", "frame-system/try-runtime"]

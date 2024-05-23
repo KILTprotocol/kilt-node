@@ -1,58 +1,58 @@
 [package]
-authors      ={ workspace=true }
-description  ="Enables adding and removing decentralized identifiers (DIDs)."
-documentation={ workspace=true }
-edition      ={ workspace=true }
-homepage     ={ workspace=true }
-license-file ={ workspace=true }
-name         ="did"
-readme       ={ workspace=true }
-repository   ={ workspace=true }
-version      ={ workspace=true }
+authors       = { workspace = true }
+description   = "Enables adding and removing decentralized identifiers (DIDs)."
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "did"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [package.metadata.docs.rs]
-targets=["x86_64-unknown-linux-gnu"]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-env_logger ={ workspace=true }
-hex-literal={ workspace=true }
+env_logger  = { workspace = true }
+hex-literal = { workspace = true }
 
-ctype       ={ workspace=true, features=["mock"] }
-kilt-support={ workspace=true, features=["mock", "try-runtime"] }
+ctype        = { workspace = true, features = ["mock"] }
+kilt-support = { workspace = true, features = ["mock", "try-runtime"] }
 
-frame-benchmarking={ workspace=true, features=["std"] }
-pallet-balances   ={ workspace=true, features=["std"] }
-sp-keystore       ={ workspace=true, features=["std"] }
+frame-benchmarking = { workspace = true, features = ["std"] }
+pallet-balances    = { workspace = true, features = ["std"] }
+sp-keystore        = { workspace = true, features = ["std"] }
 
 [dependencies]
 # External dependencies
-fluent-uri={ workspace=true }
-log       ={ workspace=true }
+fluent-uri = { workspace = true }
+log        = { workspace = true }
 
 # Internal dependencies
-kilt-support={ workspace=true }
+kilt-support = { workspace = true }
 
-ctype={ workspace=true, optional=true }
+ctype = { workspace = true, optional = true }
 
 # Substrate dependencies
-frame-support     ={ workspace=true }
-frame-system      ={ workspace=true }
-parity-scale-codec={ workspace=true, features=["derive"] }
-scale-info        ={ workspace=true, features=["derive"] }
-sp-core           ={ workspace=true }
-sp-io             ={ workspace=true }
-sp-runtime        ={ workspace=true }
-sp-std            ={ workspace=true }
+frame-support      = { workspace = true }
+frame-system       = { workspace = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
+sp-core            = { workspace = true }
+sp-io              = { workspace = true }
+sp-runtime         = { workspace = true }
+sp-std             = { workspace = true }
 
 # Benchmarking dependencies
-frame-benchmarking={ workspace=true, optional=true }
-pallet-balances   ={ workspace=true, optional=true }
-sp-keystore       ={ workspace=true, optional=true }
+frame-benchmarking = { workspace = true, optional = true }
+pallet-balances    = { workspace = true, optional = true }
+sp-keystore        = { workspace = true, optional = true }
 
 [features]
-default=["std"]
-mock=["ctype", "pallet-balances", "sp-keystore"]
-runtime-benchmarks=[
+default = ["std"]
+mock = ["ctype", "pallet-balances", "sp-keystore"]
+runtime-benchmarks = [
   # "ctype/runtime-benchmarks", # enabling this results in an error that's impossible to link to this line.
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
@@ -61,7 +61,7 @@ runtime-benchmarks=[
   "pallet-balances/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
-std=[
+std = [
   "ctype/std",
   "fluent-uri/std",
   "frame-support/std",
@@ -78,7 +78,7 @@ std=[
   "sp-runtime/std",
   "sp-std/std",
 ]
-try-runtime=[
+try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",

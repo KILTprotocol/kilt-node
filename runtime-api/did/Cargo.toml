@@ -1,32 +1,34 @@
 [package]
-authors      ={ workspace=true }
-description  ="Runtime APIs for dealing with DIDs."
-documentation={ workspace=true }
-edition      ={ workspace=true }
-homepage     ={ workspace=true }
-license-file ={ workspace=true }
-name         ="kilt-runtime-api-did"
-readme       ={ workspace=true }
-repository   ={ workspace=true }
-version      ={ workspace=true }
+authors       = { workspace = true }
+description   = "Runtime APIs for dealing with DIDs."
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "kilt-runtime-api-did"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [dependencies]
 # External dependencies
-frame-system      ={ workspace=true, default-features=false }
-parity-scale-codec={ workspace=true, features=["derive"] }
-scale-info        ={ workspace=true, default-features=false, features=["derive"] }
+frame-system = { workspace = true, default-features = false }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, default-features = false, features = [
+  "derive",
+] }
 
 # Internal dependencies
-did         ={ workspace=true }
-kilt-support={ workspace=true }
+did          = { workspace = true }
+kilt-support = { workspace = true }
 
 # Substrate dependencies
-sp-api={ workspace=true }
-sp-std={ workspace=true }
+sp-api = { workspace = true }
+sp-std = { workspace = true }
 
 [features]
-default=["std"]
-std=[
+default = ["std"]
+std = [
   "did/std",
   "frame-system/std",
   "kilt-support/std",
