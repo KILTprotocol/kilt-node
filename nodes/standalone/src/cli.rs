@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use clap::Parser;
-use sc_cli::RunCmd;
 
 #[derive(Debug, Parser)]
 pub(crate) struct Cli {
@@ -25,7 +24,7 @@ pub(crate) struct Cli {
 	pub(crate) subcommand: Option<Subcommand>,
 
 	#[command(flatten)]
-	pub(crate) run: RunCmd,
+	pub(crate) run: sc_cli::RunCmd,
 }
 
 #[allow(clippy::large_enum_variant)]
