@@ -30,16 +30,17 @@ use sp_core::{ed25519, sr25519, Pair, Public};
 use sp_runtime::traits::IdentifyAccount;
 
 pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
-	Ok(Box::new(match id {
+	let chain_spec = match id {
 		// Dev chainspec, used for SDK integration tests
-		"dev" => generate_dev_chain_spec()?,
+		"dev" => Ok(generate_dev_chain_spec()),
 		_ => return Err(format!("Unknown spec: {}", id)),
-	}))
+	}?;
+	Box::new(chain_spec)
 }
 
 type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 
-fn generate_dev_chain_spec() -> Result<ChainSpec, String> {
+fn generate_dev_chain_spec() -> ChainSpec {
 	let properties = Properties::from_iter(
 		[
 			("tokenDecimals".into(), 15.into()),
@@ -48,7 +49,7 @@ fn generate_dev_chain_spec() -> Result<ChainSpec, String> {
 		.into_iter(),
 	);
 
-	Ok(ChainSpec::from_genesis(
+	ChainSpec::from_genesis(
 		"Standalone Node (Dev)",
 		"standalone_node_development",
 		ChainType::Development,
@@ -59,7 +60,7 @@ fn generate_dev_chain_spec() -> Result<ChainSpec, String> {
 		None,
 		Some(properties),
 		None,
-	))
+	)
 }
 
 fn generate_devnet_genesis_state() -> RuntimeGenesisConfig {

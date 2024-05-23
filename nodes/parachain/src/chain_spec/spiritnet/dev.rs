@@ -35,8 +35,8 @@ use crate::chain_spec::{
 	Extensions, KILT_PARA_ID,
 };
 
-pub(crate) fn generate_chain_spec(relaychain_name: &str) -> Result<ChainSpec, String> {
-	Ok(ChainSpec::from_genesis(
+pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
+	ChainSpec::from_genesis(
 		"KILT Spiritnet Develop",
 		"kilt_spiritnet_dev",
 		ChainType::Development,
@@ -50,7 +50,7 @@ pub(crate) fn generate_chain_spec(relaychain_name: &str) -> Result<ChainSpec, St
 			relay_chain: relaychain_name.into(),
 			para_id: KILT_PARA_ID,
 		},
-	))
+	)
 }
 
 fn generate_genesis_state() -> RuntimeGenesisConfig {

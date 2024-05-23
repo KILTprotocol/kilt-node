@@ -27,8 +27,8 @@ use crate::chain_spec::{
 	Extensions, KILT_PARA_ID,
 };
 
-pub(crate) fn generate_chain_spec() -> Result<ChainSpec, String> {
-	Ok(ChainSpec::from_genesis(
+pub(crate) fn generate_chain_spec() -> ChainSpec {
+	ChainSpec::from_genesis(
 		"KILT Spiritnet New (change title)",
 		"kilt_spiritnet_new",
 		ChainType::Live,
@@ -42,7 +42,7 @@ pub(crate) fn generate_chain_spec() -> Result<ChainSpec, String> {
 			relay_chain: "relay".into(),
 			para_id: KILT_PARA_ID,
 		},
-	))
+	)
 }
 
 fn generate_genesis_state() -> RuntimeGenesisConfig {
