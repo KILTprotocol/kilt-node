@@ -26,8 +26,6 @@ use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
 use parity_scale_codec::Encode;
-#[cfg(feature = "try-runtime")]
-use polkadot_service::TaskManager;
 use runtime_common::Block;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
