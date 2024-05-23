@@ -20,8 +20,6 @@
 
 #![warn(missing_docs)]
 
-const LOG_TARGET: &str = "kilt-parachain";
-
 mod chain_spec;
 #[macro_use]
 mod service;

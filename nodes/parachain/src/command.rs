@@ -19,7 +19,7 @@
 use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-use log::{info, trace, warn};
+use log::{info, warn};
 use parity_scale_codec::Encode;
 use runtime_common::Block;
 use sc_cli::{CliConfiguration, SubstrateCli};
@@ -31,7 +31,6 @@ use crate::{
 	chain_spec::{self, ParachainRuntime},
 	cli::{Cli, RelayChainCli, Subcommand},
 	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
-	LOG_TARGET,
 };
 
 macro_rules! construct_async_run {
@@ -39,9 +38,6 @@ macro_rules! construct_async_run {
 		let chain_spec_id = $cmd.chain_id($cmd.is_dev()?)?;
 		let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
 		let runner = $cli.create_runner($cmd)?;
-
-		trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
-		trace!(target: LOG_TARGET, "The following runtime was chosen based on the spec id: {runtime}.");
 
 		match runtime {
 			ParachainRuntime::Spiritnet(_) => {
@@ -149,20 +145,12 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
 				let spec = cli.load_spec(chain_spec_id.as_str())?;
 
-				trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
-
 				cmd.run(&*spec)
 			})
 		}
 		Some(Subcommand::Benchmark(cmd)) => {
 			let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
 			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
-
-			trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
-			trace!(
-				target: LOG_TARGET,
-				"The following runtime was chosen based on the spec id: {runtime}."
-			);
 
 			let runner = cli.create_runner(cmd)?;
 
@@ -259,12 +247,6 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
 			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
 
-			trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
-			trace!(
-				target: LOG_TARGET,
-				"The following runtime was chosen based on the spec id: {runtime}."
-			);
-
 			match runtime {
 				ParachainRuntime::Peregrine(_) => runner.async_run(|_| {
 					Ok((
@@ -320,9 +302,6 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 				let chain_spec_id = config.chain_spec.id();
 				let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
-
-				trace!(target: LOG_TARGET, "Dispatching task for spec id: {chain_spec_id}.");
-				trace!(target: LOG_TARGET, "The following runtime was chosen based on the spec id: {runtime}.");
 
 				let state_version = runtime.native_version().state_version();
 				let block: Block =

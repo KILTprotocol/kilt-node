@@ -32,10 +32,10 @@ use sp_runtime::traits::IdentifyAccount;
 pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
 	let chain_spec = match id {
 		// Dev chainspec, used for SDK integration tests
-		"dev" => Ok(generate_dev_chain_spec()),
+		"dev" => Ok::<_, String>(generate_dev_chain_spec()),
 		_ => return Err(format!("Unknown spec: {}", id)),
 	}?;
-	Box::new(chain_spec)
+	Ok(Box::new(chain_spec))
 }
 
 type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
