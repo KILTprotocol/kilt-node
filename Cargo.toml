@@ -23,8 +23,16 @@ members = [
 ]
 
 [profile.release]
+codegen-units = 1
 lto = "fat"
 panic = "unwind"
+
+# Defaults for `release` profiles as specified in https://doc.rust-lang.org/cargo/reference/profiles.html#release
+[profile.release-unoptimized]
+inherits = "release"
+codegen-units = 16
+incremental = true
+lto = false
 
 [workspace.dependencies]
 # Build deps
