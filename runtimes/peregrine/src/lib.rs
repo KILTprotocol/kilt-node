@@ -34,9 +34,6 @@ use frame_support::{
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
-#[cfg(feature = "try-runtime")]
-use frame_try_runtime::UpgradeCheckSelect;
-
 use sp_api::impl_runtime_apis;
 use sp_core::{ConstBool, OpaqueMetadata};
 use sp_runtime::{
@@ -64,14 +61,6 @@ use runtime_common::{
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
 };
-
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
-#[cfg(feature = "runtime-benchmarks")]
-use {kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
-
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
 
 #[cfg(test)]
 mod tests;
@@ -102,8 +91,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// The version information used to identify this runtime when compiled
 /// natively.
 #[cfg(feature = "std")]
-pub fn native_version() -> NativeVersion {
-	NativeVersion {
+pub fn native_version() -> sp_version::NativeVersion {
+	sp_version::NativeVersion {
 		runtime_version: VERSION,
 		can_author_with: Default::default(),
 	}
@@ -554,9 +543,9 @@ impl delegation::Config for Runtime {
 	type Signature = did::DidSignature;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type Signature = DummySignature;
+	type Signature = runtime_common::benchmarks::DummySignature;
 	#[cfg(feature = "runtime-benchmarks")]
-	type DelegationSignatureVerification = AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
+	type DelegationSignatureVerification = kilt_support::signature::AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
 
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
@@ -1467,7 +1456,7 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade(checks: UpgradeCheckSelect) -> (Weight, Weight) {
+		fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
 			log::info!("try-runtime::on_runtime_upgrade peregrine.");
 			let weight = Executive::try_runtime_upgrade(checks).unwrap();
 			(weight, BlockWeights::get().max_block)

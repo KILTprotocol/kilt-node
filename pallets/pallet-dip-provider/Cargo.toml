@@ -57,4 +57,4 @@ std = [
   "sp-runtime?/std",
 ]
 
-try-runtime = [ "did/try-runtime", "frame-support/try-runtime", "kilt-support/try-runtime" ]
+try-runtime = ["frame-support/try-runtime"]
