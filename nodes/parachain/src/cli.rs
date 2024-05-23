@@ -22,8 +22,11 @@ use clap::Parser;
 use polkadot_service::PrometheusConfig;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, SharedParams,
+	SubstrateCli,
 };
 use sc_service::BasePath;
+
+use crate::chain_spec;
 
 #[derive(Debug, clap::Parser)]
 #[command(
@@ -51,6 +54,42 @@ pub(crate) struct Cli {
 	/// Relaychain arguments
 	#[arg(raw = true)]
 	pub(crate) relay_chain_args: Vec<String>,
+}
+
+impl SubstrateCli for Cli {
+	fn impl_name() -> String {
+		"KILT".into()
+	}
+
+	fn impl_version() -> String {
+		env!("SUBSTRATE_CLI_IMPL_VERSION").into()
+	}
+
+	fn description() -> String {
+		format!(
+			"KILT\n\nThe command-line arguments provided first will be \
+		passed to the parachain node, while the arguments provided after -- will be passed \
+		to the relaychain node.\n\n\
+		{} [parachain-args] -- [relaychain-args]",
+			Self::executable_name()
+		)
+	}
+
+	fn author() -> String {
+		env!("CARGO_PKG_AUTHORS").into()
+	}
+
+	fn support_url() -> String {
+		"https://github.com/kiltprotocol/kilt-parachain/issues/new".into()
+	}
+
+	fn copyright_start_year() -> i32 {
+		2017
+	}
+
+	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
+		chain_spec::load_spec(id)
+	}
 }
 
 /// Sub-commands supported by the collator.
@@ -126,6 +165,40 @@ impl RelayChainCli {
 			chain_id,
 			base: clap::Parser::parse_from(relay_chain_args),
 		}
+	}
+}
+
+impl SubstrateCli for RelayChainCli {
+	fn impl_name() -> String {
+		"KILT".into()
+	}
+
+	fn impl_version() -> String {
+		env!("SUBSTRATE_CLI_IMPL_VERSION").into()
+	}
+
+	fn description() -> String {
+		"KILT\n\nThe command-line arguments provided first will be \
+		passed to the parachain node, while the arguments provided after -- will be passed \
+		to the relaychain node.\n\n\
+		kilt-parachain [parachain-args] -- [relaychain-args]"
+			.into()
+	}
+
+	fn author() -> String {
+		env!("CARGO_PKG_AUTHORS").into()
+	}
+
+	fn support_url() -> String {
+		"https://github.com/kiltprotocol/kilt-parachain/issues/new".into()
+	}
+
+	fn copyright_start_year() -> i32 {
+		2017
+	}
+
+	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
+		polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
 	}
 }
 
