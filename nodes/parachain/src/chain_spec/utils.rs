@@ -51,10 +51,6 @@ pub(crate) fn get_properties(symbol: &str, decimals: u32, ss58format: u32) -> Pr
 	)
 }
 
-fn get_full_path(path: &str) -> PathBuf {
-	const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
-	Path::new(MANIFEST_DIR).join(path)
-}
 pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
 	let runtime = id.parse::<ParachainRuntime>()?;
 
@@ -67,27 +63,24 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 		}
 		ParachainRuntime::Peregrine(PeregrineRuntime::Peregrine) => {
 			Ok(Box::new(chain_spec::peregrine::load_chain_spec(
-				get_full_path("src/chain_spec/peregrine/specs/peregrine/peregrine-paseo.json")
+				get_chainspec_full_path("peregrine/peregrine-paseo.json")
 					.to_str()
 					.unwrap(),
 			)?))
 		}
 		ParachainRuntime::Peregrine(PeregrineRuntime::PeregrineStg) => {
 			Ok(Box::new(chain_spec::peregrine::load_chain_spec(
-				get_full_path("src/chain_spec/peregrine/specs/peregrine-stg/peregrine-stg.json")
+				get_chainspec_full_path("peregrine-stg/peregrine-stg.json")
 					.to_str()
 					.unwrap(),
 			)?))
 		}
 		ParachainRuntime::Peregrine(PeregrineRuntime::Rilt) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
-			get_full_path("src/chain_spec/peregrine/specs/rilt/peregrine-rilt.json")
-				.to_str()
-				.unwrap(),
+			get_chainspec_full_path("rilt/peregrine-rilt.json").to_str().unwrap(),
 		)?)),
-		ParachainRuntime::Peregrine(PeregrineRuntime::Other(s)) => {
-			Ok(Box::new(chain_spec::peregrine::load_chain_spec(s.as_str())?))
-		}
-
+		ParachainRuntime::Peregrine(PeregrineRuntime::Other(s)) => Ok(Box::new(
+			chain_spec::peregrine::load_chain_spec(get_chainspec_full_path(s.as_str()).to_str().unwrap())?,
+		)),
 		ParachainRuntime::Spiritnet(SpiritnetRuntime::Dev) => Ok(Box::new(
 			chain_spec::spiritnet::dev::generate_chain_spec("rococo_local"),
 		)),
@@ -96,13 +89,25 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 		}
 		ParachainRuntime::Spiritnet(SpiritnetRuntime::Spiritnet) => {
 			Ok(Box::new(chain_spec::spiritnet::load_chain_spec(
-				get_full_path("src/chain_spec/spiritnet/specs/spiritnet/spiritnet.json")
-					.to_str()
-					.unwrap(),
+				get_chainspec_full_path("spiritnet/spiritnet.json").to_str().unwrap(),
 			)?))
 		}
-		ParachainRuntime::Spiritnet(SpiritnetRuntime::Other(s)) => {
-			Ok(Box::new(chain_spec::spiritnet::load_chain_spec(s.as_str())?))
-		}
+		ParachainRuntime::Spiritnet(SpiritnetRuntime::Other(s)) => Ok(Box::new(
+			chain_spec::spiritnet::load_chain_spec(get_chainspec_full_path(s.as_str()).to_str().unwrap())?,
+		)),
 	}
+}
+
+const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
+const CHAINSPECS_FOLDER: &str = "chainspecs";
+
+// Prepends the given path with the `<workspace_root>/chainspecs` path.
+fn get_chainspec_full_path(path: &str) -> PathBuf {
+	Path::new(MANIFEST_DIR)
+		.join("..")
+		.join("..")
+		.join(CHAINSPECS_FOLDER)
+		.join(path)
+		.canonicalize()
+		.expect("Invalid path provided.")
 }
