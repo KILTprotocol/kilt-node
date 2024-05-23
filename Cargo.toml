@@ -195,6 +195,8 @@ xcm-simulator = { git = "https://github.com/paritytech/polkadot-sdk", default-fe
 cumulus-client-cli = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.1.0" }
 cumulus-client-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.1.0" }
 cumulus-client-consensus-common = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.1.0" }
+cumulus-client-consensus-proposer = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.1.0" }
+cumulus-client-collator = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.1.0" }
 cumulus-client-network = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.1.0" }
 cumulus-client-service = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.1.0" }
 cumulus-primitives-parachain-inherent = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.1.0" }

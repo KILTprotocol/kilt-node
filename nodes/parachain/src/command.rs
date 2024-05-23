@@ -24,7 +24,7 @@ use crate::{
 use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-use log::{info, warn};
+use log::info;
 use parity_scale_codec::Encode;
 #[cfg(feature = "try-runtime")]
 use polkadot_service::TaskManager;
@@ -36,7 +36,7 @@ use sc_cli::{
 use sc_executor::NativeExecutionDispatch;
 use sc_service::config::{BasePath, PrometheusConfig};
 use sp_core::hexdisplay::HexDisplay;
-use sp_runtime::traits::{AccountIdConversion, Block as BlockT, Zero};
+use sp_runtime::traits::{AccountIdConversion, Block as BlockT};
 use std::net::SocketAddr;
 
 trait IdentifyChain {

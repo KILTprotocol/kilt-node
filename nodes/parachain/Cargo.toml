@@ -72,6 +72,8 @@ substrate-frame-rpc-system.workspace = true
 cumulus-client-cli.workspace = true
 cumulus-client-consensus-aura.workspace = true
 cumulus-client-consensus-common.workspace = true
+cumulus-client-consensus-proposer.workspace = true
+cumulus-client-collator.workspace = true
 cumulus-client-service.workspace = true
 cumulus-primitives-core = {workspace = true, features = ["std"]}
 cumulus-primitives-parachain-inherent = {workspace = true, features = ["std"]}
