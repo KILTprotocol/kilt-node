@@ -10662,6 +10662,67 @@ dependencies = [
 ]
 
 [[package]]
+name = "polkadot-test-runtime"
+version = "0.0.0"
+source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.1.0#72dd732e5aebfa97dbb774cd3345d9ed6ee8aaf0"
+dependencies = [
+ "bitvec",
+ "frame-election-provider-support",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-rpc-runtime-api",
+ "log",
+ "pallet-authority-discovery",
+ "pallet-authorship",
+ "pallet-babe",
+ "pallet-balances",
+ "pallet-grandpa",
+ "pallet-indices",
+ "pallet-offences",
+ "pallet-session",
+ "pallet-staking",
+ "pallet-staking-reward-curve",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-vesting",
+ "pallet-xcm",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "polkadot-primitives",
+ "polkadot-runtime-common",
+ "polkadot-runtime-parachains",
+ "rustc-hex",
+ "scale-info",
+ "serde",
+ "serde_derive",
+ "smallvec",
+ "sp-api",
+ "sp-authority-discovery",
+ "sp-block-builder",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-mmr-primitives",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-staking",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-version",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+ "substrate-wasm-builder",
+ "test-runtime-constants",
+]
+
+[[package]]
 name = "polling"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14939,6 +15000,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-runtime-constants"
+version = "0.0.0"
+source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.1.0#72dd732e5aebfa97dbb774cd3345d9ed6ee8aaf0"
+dependencies = [
+ "frame-support",
+ "polkadot-primitives",
+ "polkadot-runtime-common",
+ "smallvec",
+ "sp-core",
+ "sp-runtime",
+ "sp-weights",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -16853,7 +16928,6 @@ dependencies = [
  "frame-system",
  "integration-tests-common",
  "kilt-asset-dids",
- "pallet-bags-list",
  "pallet-did-lookup",
  "pallet-message-queue",
  "pallet-web3-names",
@@ -16867,6 +16941,7 @@ dependencies = [
  "polkadot-runtime-constants",
  "polkadot-runtime-parachains",
  "polkadot-service",
+ "polkadot-test-runtime",
  "public-credentials",
  "rococo-runtime",
  "runtime-common",
