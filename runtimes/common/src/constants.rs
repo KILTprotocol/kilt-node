@@ -101,7 +101,7 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 /// Inflation configuration which is used at genesis
 pub fn kilt_inflation_config() -> InflationInfo {
 	InflationInfo::new(
-		BLOCKS_PER_YEAR.into(),
+		BLOCKS_PER_YEAR,
 		// max collator staking rate
 		Perquintill::from_percent(40),
 		// collator reward rate
