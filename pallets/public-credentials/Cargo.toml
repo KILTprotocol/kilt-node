@@ -56,7 +56,6 @@ std = [
   "frame-system/std",
   "kilt-support/std",
   "log/std",
-  "log/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "sp-core/std",
