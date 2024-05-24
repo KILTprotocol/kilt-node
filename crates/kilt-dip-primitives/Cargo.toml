@@ -52,7 +52,7 @@ sp-std           = { workspace = true }
 sp-trie          = { workspace = true }
 
 # Cumulus dependencies
-cumulus-primitives-core.workspace = true
+cumulus-primitives-core = { workspace = true }
 
 [features]
 default = ["std"]
