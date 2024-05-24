@@ -15,6 +15,8 @@ fmt:
   stage: test
   script:
     - cargo fmt -- --check
+    - cargo install taplo-cli --version 0.9.0
+    - taplo fmt --check
 
 test:
   timeout: 2 hours
