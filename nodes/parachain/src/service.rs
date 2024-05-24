@@ -538,7 +538,7 @@ where
 	let params = AuraParams {
 		create_inherent_data_providers: move |_, ()| async move { Ok(()) },
 		block_import,
-		para_client: client,
+		para_client: client.clone(),
 		para_backend: backend,
 		relay_client: relay_chain_interface,
 		code_hash_provider: move |block_hash| client.code_at(block_hash).ok().map(|c| ValidationCode::from(c).hash()),
