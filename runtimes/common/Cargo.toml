@@ -1,67 +1,67 @@
 [package]
-authors.workspace = true
-description = "Common interfaces, types, constants and functionality for all KILT runtimes."
-documentation.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license-file.workspace = true
-name = "runtime-common"
-readme.workspace = true
-repository.workspace = true
-version.workspace = true
+authors       = { workspace = true }
+description   = "Common interfaces, types, constants and functionality for all KILT runtimes."
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "runtime-common"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [dev-dependencies]
-did = {workspace = true, features = ["std", "mock"]}
+did                 = { workspace = true, features = ["mock", "std"] }
 kilt-dip-primitives = { workspace = true, features = ["std"] }
-sp-io = {workspace = true, features = ["std"]}
+sp-io               = { workspace = true, features = ["std"] }
 
 [dependencies]
 # External dependencies
-kilt-asset-dids.workspace = true
-log.workspace = true
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
-smallvec.workspace = true
+kilt-asset-dids    = { workspace = true }
+log                = { workspace = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
+smallvec           = { workspace = true }
 
-attestation.workspace = true
-did.workspace = true
-kilt-dip-primitives.workspace = true
-kilt-support.workspace = true
-pallet-deposit-storage.workspace = true
-pallet-did-lookup.workspace = true
-pallet-dip-provider.workspace = true
-pallet-web3-names.workspace = true
-parachain-staking.workspace = true
-public-credentials.workspace = true
+attestation            = { workspace = true }
+did                    = { workspace = true }
+kilt-dip-primitives    = { workspace = true }
+kilt-support           = { workspace = true }
+pallet-deposit-storage = { workspace = true }
+pallet-did-lookup      = { workspace = true }
+pallet-dip-provider    = { workspace = true }
+pallet-web3-names      = { workspace = true }
+parachain-staking      = { workspace = true }
+public-credentials     = { workspace = true }
 
 # Substrate dependencies
-cumulus-pallet-parachain-system.workspace = true
-cumulus-pallet-dmp-queue.workspace = true
-cumulus-pallet-xcmp-queue.workspace = true
-frame-support.workspace = true
-frame-system.workspace = true
-pallet-authorship.workspace = true
-pallet-balances.workspace = true
-pallet-membership.workspace = true
-pallet-multisig.workspace = true
-pallet-tips.workspace = true
-pallet-transaction-payment.workspace = true
-pallet-treasury.workspace = true
-sp-consensus-aura.workspace = true
-sp-core.workspace = true
-sp-io.workspace = true
-sp-runtime.workspace = true
-sp-std.workspace = true
-sp-trie.workspace = true
+cumulus-pallet-dmp-queue        = { workspace = true }
+cumulus-pallet-parachain-system = { workspace = true }
+cumulus-pallet-xcmp-queue       = { workspace = true }
+frame-support                   = { workspace = true }
+frame-system                    = { workspace = true }
+pallet-authorship               = { workspace = true }
+pallet-balances                 = { workspace = true }
+pallet-membership               = { workspace = true }
+pallet-multisig                 = { workspace = true }
+pallet-tips                     = { workspace = true }
+pallet-transaction-payment      = { workspace = true }
+pallet-treasury                 = { workspace = true }
+sp-consensus-aura               = { workspace = true }
+sp-core                         = { workspace = true }
+sp-io                           = { workspace = true }
+sp-runtime                      = { workspace = true }
+sp-std                          = { workspace = true }
+sp-trie                         = { workspace = true }
 
 # Cumulus dependencies
-cumulus-primitives-core.workspace = true
+cumulus-primitives-core = { workspace = true }
 
 # Polkadot dependencies
-polkadot-parachain.workspace = true
-xcm-builder.workspace = true
-xcm-executor.workspace = true
-xcm.workspace = true
+polkadot-parachain = { workspace = true }
+xcm                = { workspace = true }
+xcm-builder        = { workspace = true }
+xcm-executor       = { workspace = true }
 
 #benchmarking
 frame-benchmarking = { workspace = true, optional = true }
@@ -70,53 +70,54 @@ frame-benchmarking = { workspace = true, optional = true }
 default = ["std"]
 fast-gov = []
 runtime-benchmarks = [
+  "attestation/runtime-benchmarks",
   "cumulus-pallet-parachain-system/runtime-benchmarks",
   "cumulus-pallet-xcmp-queue/runtime-benchmarks",
-  "attestation/runtime-benchmarks",
+  "frame-benchmarking/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-dip-primitives/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
-  "pallet-deposit-storage/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
+  "pallet-deposit-storage/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
   "pallet-multisig/runtime-benchmarks",
-  "pallet-treasury/runtime-benchmarks",
   "pallet-tips/runtime-benchmarks",
+  "pallet-treasury/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
   "xcm-executor/runtime-benchmarks",
-  "frame-benchmarking/runtime-benchmarks",
 ]
 std = [
-  "cumulus-pallet-parachain-system/std",
-  "cumulus-pallet-dmp-queue/std",
-  "cumulus-pallet-xcmp-queue/std",
   "attestation/std",
-  "did/std",
-  "parity-scale-codec/std",
+  "cumulus-pallet-dmp-queue/std",
+  "cumulus-pallet-parachain-system/std",
+  "cumulus-pallet-xcmp-queue/std",
   "cumulus-primitives-core/std",
+  "did/std",
+  "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",
   "kilt-dip-primitives/std",
   "kilt-support/std",
-  "pallet-deposit-storage/std",
-  "pallet-did-lookup/std",
-  "pallet-dip-provider/std",
-  "pallet-web3-names/std",
   "log/std",
   "pallet-authorship/std",
   "pallet-balances/std",
-  "pallet-multisig/std",
+  "pallet-deposit-storage/std",
+  "pallet-did-lookup/std",
+  "pallet-dip-provider/std",
   "pallet-membership/std",
   "pallet-multisig/std",
+  "pallet-multisig/std",
+  "pallet-tips/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
-  "pallet-tips/std",
+  "pallet-web3-names/std",
   "parachain-staking/std",
+  "parity-scale-codec/std",
   "parity-scale-codec/std",
   "polkadot-parachain/std",
   "public-credentials/std",
@@ -130,13 +131,12 @@ std = [
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
-  "frame-benchmarking?/std",
 ]
 try-runtime = [
-  "cumulus-pallet-parachain-system/try-runtime",
-  "cumulus-pallet-dmp-queue/try-runtime",
-  "cumulus-pallet-xcmp-queue/try-runtime",
   "attestation/try-runtime",
+  "cumulus-pallet-dmp-queue/try-runtime",
+  "cumulus-pallet-parachain-system/try-runtime",
+  "cumulus-pallet-xcmp-queue/try-runtime",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",

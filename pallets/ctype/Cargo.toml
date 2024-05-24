@@ -1,56 +1,51 @@
 [package]
-authors.workspace = true
-documentation.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license-file.workspace = true
-readme.workspace = true
-repository.workspace = true
-version.workspace = true
-name = "ctype"
-description = "Enables adding CTypes."
+authors       = { workspace = true }
+description   = "Enables adding CTypes."
+documentation = { workspace = true }
+edition       = { workspace = true }
+homepage      = { workspace = true }
+license-file  = { workspace = true }
+name          = "ctype"
+readme        = { workspace = true }
+repository    = { workspace = true }
+version       = { workspace = true }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
-pallet-balances = {workspace = true, features = ["std"]}
-sp-core = {workspace = true, features = ["std"]}
-sp-keystore = {workspace = true, features = ["std"]}
+kilt-support    = { workspace = true, features = ["mock", "try-runtime"] }
+pallet-balances = { workspace = true, features = ["std"] }
+sp-core         = { workspace = true, features = ["std"] }
+sp-keystore     = { workspace = true, features = ["std"] }
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
-log.workspace = true
-scale-info = {workspace = true, features = ["derive"]}
+log                = { workspace = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
 
 # Internal dependencies
-kilt-support.workspace = true
+kilt-support = { workspace = true }
 
 # Substrate dependencies
-frame-benchmarking = {workspace = true, optional = true}
-frame-support.workspace = true
-frame-system.workspace = true
-pallet-balances = {workspace = true, optional = true}
-sp-core = {workspace = true, optional = true}
-sp-io = {workspace = true, optional = true}
-sp-keystore = {workspace = true, optional = true}
-sp-runtime.workspace = true
-sp-std.workspace = true
+frame-benchmarking = { workspace = true, optional = true }
+frame-support      = { workspace = true }
+frame-system       = { workspace = true }
+pallet-balances    = { workspace = true, optional = true }
+sp-core            = { workspace = true, optional = true }
+sp-io              = { workspace = true, optional = true }
+sp-keystore        = { workspace = true, optional = true }
+sp-runtime         = { workspace = true }
+sp-std             = { workspace = true }
 
 [features]
 default = ["std"]
-mock = [
-  "pallet-balances",
-  "sp-core",
-  "sp-io",
-  "sp-keystore",
-]
+mock = ["pallet-balances", "sp-core", "sp-io", "sp-keystore"]
 runtime-benchmarks = [
   "frame-benchmarking",
-  "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
@@ -69,7 +64,4 @@ std = [
   "sp-runtime/std",
   "sp-std/std",
 ]
-try-runtime = [
-  "frame-support/try-runtime",
-  "frame-system/try-runtime",
-]
+try-runtime = ["frame-support/try-runtime", "frame-system/try-runtime"]
