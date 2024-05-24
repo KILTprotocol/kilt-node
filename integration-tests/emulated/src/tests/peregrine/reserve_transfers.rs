@@ -85,7 +85,7 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 	let asset_hub_sovereign_account =
 		Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHubRococo::para_id()));
 
-	let balance_to_transfer = 1000 * ED;
+	let balance_to_transfer = 10000 * ED;
 
 	Peregrine::execute_with(|| {
 		// the sovereign_account of AssetHub should have no coins.
