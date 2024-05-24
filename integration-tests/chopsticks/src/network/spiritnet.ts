@@ -7,9 +7,6 @@ const options: SetupOption = {
 	endpoint: process.env.SPIRITNET_WS || 'wss://kilt-rpc.dwellir.com',
 	db: './db/spiritnet.db.sqlite',
 	port: toNumber(process.env.SPIRITNET_PORT) || 9002,
-	wasmOverride: '../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm',
-	// Whether to allow WASM unresolved imports when using a WASM to build the parachain. This Flag is needed otherwise, the runtime can not be built from the WASM. Chopsticks throws an error when it encounters an unresolved import.
-	allowUnresolvedImports: true,
 }
 
 /// Assigns the native tokens to an accounts
@@ -26,15 +23,6 @@ export function setGovernance(addr: string[]) {
 	return {
 		technicalCommittee: { Members: addr },
 		council: { Members: addr },
-	}
-}
-
-/// Sets the [safeXcmVersion] to the given version
-export function setSafeXcmVersion(version: number) {
-	return {
-		polkadotXcm: {
-			safeXcmVersion: version,
-		},
 	}
 }
 

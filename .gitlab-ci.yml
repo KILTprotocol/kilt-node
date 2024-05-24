@@ -15,6 +15,8 @@ fmt:
   stage: test
   script:
     - cargo fmt -- --check
+    - cargo install taplo-cli --version 0.9.0
+    - taplo fmt --check
 
 test:
   timeout: 2 hours
@@ -41,8 +43,8 @@ integration-tests:
     - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use
     - eval "[ -f .nvmrc ] && nvm install" && nvm use
-    - cargo build -p spiritnet-runtime
     - yarn --immutable
+    - yarn ts-check
     - yarn lint
     - yarn test:CI
 

@@ -28,7 +28,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
+	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
@@ -538,12 +538,6 @@ impl pallet_tips::Config for Runtime {
 	type WeightInfo = weights::pallet_tips::WeightInfo<Runtime>;
 }
 
-impl pallet_configuration::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::pallet_configuration::WeightInfo<Runtime>;
-	type EnsureOrigin = AsEnsureOriginWithArg<EnsureRoot<AccountId>>;
-}
-
 impl attestation::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -956,7 +950,7 @@ construct_runtime! {
 		Balances: pallet_balances = 6,
 		TransactionPayment: pallet_transaction_payment exclude_parts { Config } = 7,
 		Sudo: pallet_sudo = 8,
-		Configuration: pallet_configuration = 9,
+		// Configuration: pallet_configuration = 9,
 
 		// Consensus support.
 		// The following order MUST NOT be changed: Aura -> Session -> Staking -> Authorship -> AuraExt
@@ -1123,7 +1117,6 @@ mod benches {
 		[pallet_session, SessionBench::<Runtime>]
 		[parachain_staking, ParachainStaking]
 		[pallet_democracy, Democracy]
-		[pallet_configuration, Configuration]
 		[pallet_collective, Council]
 		[pallet_collective, TechnicalCommittee]
 		[pallet_membership, TechnicalMembership]
