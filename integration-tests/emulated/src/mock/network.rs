@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use xcm_emulator::{decl_test_networks};
+use xcm_emulator::decl_test_networks;
 
 use crate::mock::{
 	para_chains::{AssetHubPolkadot, AssetHubRococo, Peregrine, Spiritnet},

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use frame_support::traits::OnInitialize;
 use integration_tests_common::constants::{accounts, asset_hub_polkadot, polkadot::ED};
 use runtime_common::AuthorityId;
 use sp_core::sr25519;
@@ -117,7 +118,9 @@ pub mod peregrine {
 decl_test_parachains! {
 	pub struct Spiritnet {
 		genesis = spiritnet::genesis(),
-		on_init = (),
+		on_init = {
+			spiritnet_runtime::AuraExt::on_initialize(1);
+		},
 		runtime = spiritnet_runtime,
 		core = {
 			XcmpMessageHandler: spiritnet_runtime::XcmpQueue,
@@ -138,7 +141,9 @@ decl_test_parachains! {
 	},
 	pub struct Peregrine {
 		genesis = peregrine::genesis(),
-		on_init = (),
+		on_init = {
+			peregrine_runtime::AuraExt::on_initialize(1);
+		},
 		runtime = peregrine_runtime,
 		core = {
 			XcmpMessageHandler: peregrine_runtime::XcmpQueue,
@@ -159,7 +164,9 @@ decl_test_parachains! {
 	},
 	pub struct AssetHubPolkadot {
 		genesis = asset_hub_polkadot::genesis(),
-		on_init = (),
+		on_init = {
+			asset_hub_polkadot_runtime::AuraExt::on_initialize(1);
+		},
 		runtime= asset_hub_polkadot_runtime,
 		core = {
 			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
@@ -175,7 +182,9 @@ decl_test_parachains! {
 	},
 	pub struct AssetHubRococo {
 		genesis = asset_hub_polkadot::genesis(),
-		on_init = (),
+		on_init = {
+			asset_hub_polkadot_runtime::AuraExt::on_initialize(1);
+		},
 		runtime= asset_hub_polkadot_runtime,
 		core = {
 			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
