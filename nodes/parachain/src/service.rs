@@ -27,7 +27,10 @@ use cumulus_client_service::{
 	build_relay_chain_interface, prepare_node_config, start_relay_chain_tasks, CollatorSybilResistance,
 	DARecoveryProfile, StartRelayChainTasksParams,
 };
-use cumulus_primitives_core::{relay_chain::CollatorPair, ParaId};
+use cumulus_primitives_core::{
+	relay_chain::{CollatorPair, ValidationCode},
+	ParaId,
+};
 use cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface};
 use polkadot_service::NativeExecutionDispatch;
 use sc_consensus::ImportQueue;
@@ -237,7 +240,8 @@ where
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
-		+ sp_consensus_aura::AuraApi<Block, AuthorityId>,
+		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
@@ -366,6 +370,7 @@ where
 	if validator {
 		start_consensus::<RuntimeApi, Executor>(
 			client.clone(),
+			backend.clone(),
 			block_import,
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|t| t.handle()),
@@ -455,7 +460,8 @@ where
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
-		+ cumulus_primitives_core::CollectCollationInfo<Block>,
+		+ cumulus_primitives_core::CollectCollationInfo<Block>
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
 	start_node_impl::<API, RE, _, _>(
@@ -472,6 +478,7 @@ where
 
 fn start_consensus<RuntimeApi, Executor>(
 	client: Arc<ParachainClient<RuntimeApi, Executor>>,
+	backend: Arc<ParachainBackend>,
 	block_import: ParachainBlockImport<RuntimeApi, Executor>,
 	prometheus_registry: Option<&Registry>,
 	telemetry: Option<TelemetryHandle>,
@@ -500,10 +507,11 @@ where
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
-		+ sp_consensus_aura::AuraApi<Block, AuthorityId>,
+		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 {
-	use cumulus_client_consensus_aura::collators::basic::{self as basic_aura, Params as BasicAuraParams};
+	use cumulus_client_consensus_aura::collators::lookahead::{self as aura, Params as AuraParams};
 
 	// NOTE: because we use Aura here explicitly, we can use `CollatorSybilResistance::Resistant`
 	// when starting the network.
@@ -527,11 +535,13 @@ where
 		client.clone(),
 	);
 
-	let params = BasicAuraParams {
+	let params = AuraParams {
 		create_inherent_data_providers: move |_, ()| async move { Ok(()) },
 		block_import,
 		para_client: client,
+		para_backend: backend,
 		relay_client: relay_chain_interface,
+		code_hash_provider: move |block_hash| client.code_at(block_hash).ok().map(|c| ValidationCode::from(c).hash()),
 		sync_oracle,
 		keystore,
 		collator_key,
@@ -541,11 +551,10 @@ where
 		relay_chain_slot_duration,
 		proposer,
 		collator_service,
-		// Very limited proposal time.
-		authoring_duration: Duration::from_millis(500),
+		authoring_duration: Duration::from_millis(1500),
 	};
 
-	let fut = basic_aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _>(params);
+	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _, _>(params);
 	task_manager.spawn_essential_handle().spawn("aura", None, fut);
 
 	Ok(())
