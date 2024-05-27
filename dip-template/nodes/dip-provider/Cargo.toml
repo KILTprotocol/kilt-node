@@ -74,6 +74,5 @@ cumulus-relay-chain-interface         = { workspace = true }
 default = []
 runtime-benchmarks = [
   "dip-provider-runtime-template/runtime-benchmarks",
-  "dip-provider-runtime-template/runtime-benchmarks",
   "frame-benchmarking-cli/runtime-benchmarks",
 ]

@@ -60,7 +60,6 @@ runtime-benchmarks = [
 ]
 std = [
   "cumulus-primitives-core/std",
-  "cumulus-primitives-core/std",
   "did/std",
   "frame-support/std",
   "frame-system/std",
