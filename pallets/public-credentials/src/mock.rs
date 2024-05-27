@@ -20,7 +20,7 @@ use frame_support::{traits::Get, weights::Weight};
 use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::{traits::Hash, DispatchError};
+use sp_runtime::{traits::Hash, DispatchError, RuntimeDebug};
 
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
@@ -210,18 +210,7 @@ pub(crate) mod runtime {
 	pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
 	#[derive(
-		Default,
-		Clone,
-		Copy,
-		Encode,
-		Decode,
-		MaxEncodedLen,
-		sp_runtime::RuntimeDebug,
-		Eq,
-		PartialEq,
-		Ord,
-		PartialOrd,
-		TypeInfo,
+		Default, Clone, Copy, Encode, Decode, MaxEncodedLen, RuntimeDebug, Eq, PartialEq, Ord, PartialOrd, TypeInfo,
 	)]
 	pub struct TestSubjectId(pub [u8; 32]);
 

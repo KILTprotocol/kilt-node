@@ -18,7 +18,6 @@
 
 use frame_support::{
 	ensure,
-	sp_runtime::RuntimeDebug,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
 	traits::Get,
 };
@@ -29,7 +28,7 @@ use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify, Zero},
-	MultiSignature, SaturatedConversion, Saturating,
+	MultiSignature, RuntimeDebug, SaturatedConversion, Saturating,
 };
 use sp_std::{convert::TryInto, vec::Vec};
 

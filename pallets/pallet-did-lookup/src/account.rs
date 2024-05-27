@@ -23,12 +23,13 @@
 //!
 //! It includes the Verify and IdentifyAccount traits for the AccountId20
 
-use frame_support::{crypto::ecdsa::ECDSAExt, sp_runtime::RuntimeDebug};
+use frame_support::crypto::ecdsa::ECDSAExt;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160, H256};
+use sp_runtime::RuntimeDebug;
 
 /// The AccountId20 type.
 /// It is a 20-byte Ethereum address.
