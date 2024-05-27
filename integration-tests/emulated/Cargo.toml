@@ -35,7 +35,7 @@ frame-support                = { workspace = true, default-features = true }
 frame-system                 = { workspace = true, default-features = true }
 integration-tests-common     = { workspace = true, default-features = true }
 kilt-asset-dids              = { workspace = true, default-features = true }
-pallet-bags-list             = { workspace = true }
+pallet-bags-list             = { workspace = true, default-features = true }
 pallet-did-lookup            = { workspace = true, default-features = true }
 pallet-message-queue         = { workspace = true, default-features = true }
 pallet-web3-names            = { workspace = true, default-features = true }
