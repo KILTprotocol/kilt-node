@@ -299,7 +299,7 @@ async fn start_node_impl(
 			params.keystore_container.keystore(),
 			relay_chain_slot_duration,
 			para_id,
-			collator_key.expect("Command line arguments do not allow this. qed"),
+			collator_key.expect("Collator key not provided"),
 			overseer_handle,
 			announce_block,
 		)?;
