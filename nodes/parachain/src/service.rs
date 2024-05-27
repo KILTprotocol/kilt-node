@@ -476,6 +476,7 @@ where
 	.await
 }
 
+#[allow(clippy::too_many_arguments)]
 fn start_consensus<RuntimeApi, Executor>(
 	client: Arc<ParachainClient<RuntimeApi, Executor>>,
 	backend: Arc<ParachainBackend>,
