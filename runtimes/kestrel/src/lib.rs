@@ -195,9 +195,12 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
+/// Maximum number of nominators per validator.
+const MAX_NOMINATORS: u32 = 8;
+
 parameter_types! {
 	pub const MaxAuthorities: u32 = constants::staking::MAX_CANDIDATES;
-	pub const MaxNominators: u32 = constants::staking::MAX_NOMINATORS;
+	pub const MaxNominators: u32 = MAX_NOMINATORS;
 }
 
 impl pallet_aura::Config for Runtime {

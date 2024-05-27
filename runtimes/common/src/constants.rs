@@ -194,9 +194,6 @@ pub mod dip_provider {
 pub mod staking {
 	use super::*;
 
-	/// Maximum number of nominators per validator.
-	pub const MAX_NOMINATORS: u32 = 8;
-
 	/// Minimum round length is 1 hour (300 * 12 second block times)
 	#[cfg(feature = "fast-gov")]
 	pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 10;
