@@ -20,7 +20,7 @@ use frame_support::{traits::Get, weights::Weight};
 use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::{traits::Hash, DispatchError, RuntimeDebug};
+use sp_runtime::{traits::Hash, DispatchError};
 
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
