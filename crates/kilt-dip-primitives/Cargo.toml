@@ -15,13 +15,14 @@ cumulus-pallet-parachain-system = { workspace = true, features = [
   "parameterized-consensus-hook",
   "std",
 ] }
+
 cumulus-primitives-core = { workspace = true }
-enum-iterator = { workspace = true }
-hex-literal = { workspace = true }
-peregrine-runtime = { workspace = true, features = ["std"] }
-rococo-runtime = { workspace = true, features = ["std"] }
-sp-io = { workspace = true, features = ["std"] }
-spiritnet-runtime = { workspace = true, features = ["std"] }
+enum-iterator           = { workspace = true }
+hex-literal             = { workspace = true }
+peregrine-runtime       = { workspace = true, features = ["std"] }
+rococo-runtime          = { workspace = true, features = ["std"] }
+sp-io                   = { workspace = true, features = ["std"] }
+spiritnet-runtime       = { workspace = true, features = ["std"] }
 
 [dependencies]
 # External dependencies

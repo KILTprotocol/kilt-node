@@ -56,15 +56,16 @@ sp-version                                 = { workspace = true }
 sp-weights                                 = { workspace = true }
 
 # Cumulus
-cumulus-pallet-aura-ext = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true, features = [
   "parameterized-consensus-hook",
 ] }
-cumulus-primitives-aura = { workspace = true }
-cumulus-primitives-core = { workspace = true }
+
+cumulus-pallet-aura-ext      = { workspace = true }
+cumulus-primitives-aura      = { workspace = true }
+cumulus-primitives-core      = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
-pallet-collator-selection = { workspace = true }
-parachain-info = { workspace = true }
+pallet-collator-selection    = { workspace = true }
+parachain-info               = { workspace = true }
 
 # Benchmarks
 frame-benchmarking        = { workspace = true, optional = true }
