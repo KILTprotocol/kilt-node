@@ -196,7 +196,6 @@ pub fn run() -> sc_cli::Result<()> {
 				}
 			})
 		}
-		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime) => Err("The `try-runtime` subcommand has been migrated to a standalone CLI (https://github.com/paritytech/try-runtime-cli). It is no longer being maintained here.".into()),
 		Some(Subcommand::ChainInfo(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
