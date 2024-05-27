@@ -167,7 +167,7 @@ decl_test_parachains! {
 		on_init = {
 			asset_hub_polkadot_runtime::AuraExt::on_initialize(1);
 		},
-		runtime= asset_hub_polkadot_runtime,
+		runtime = asset_hub_polkadot_runtime,
 		core = {
 			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
 			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
@@ -185,7 +185,7 @@ decl_test_parachains! {
 		on_init = {
 			asset_hub_polkadot_runtime::AuraExt::on_initialize(1);
 		},
-		runtime= asset_hub_polkadot_runtime,
+		runtime = asset_hub_polkadot_runtime,
 		core = {
 			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
 			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
