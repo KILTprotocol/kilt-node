@@ -28,6 +28,7 @@ frame-support = { workspace = true, default-features = true }
 frame-system = { workspace = true, default-features = true }
 integration-tests-common = { workspace = true, default-features = true }
 kilt-asset-dids = { workspace = true, default-features = true }
+pallet-bags-list = { workspace = true }
 pallet-did-lookup = { workspace = true, default-features = true }
 pallet-message-queue = { workspace = true, default-features = true }
 pallet-web3-names = { workspace = true, default-features = true }
@@ -86,6 +87,7 @@ runtime-benchmarks = [
 try-runtime = [
   "ctype/try-runtime",
   "did/try-runtime",
+  "pallet-bags-list/try-runtime",
   "peregrine-runtime/try-runtime",
   "spiritnet-runtime/try-runtime",
 ]

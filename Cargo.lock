@@ -16931,6 +16931,7 @@ dependencies = [
  "frame-system",
  "integration-tests-common",
  "kilt-asset-dids",
+ "pallet-bags-list",
  "pallet-did-lookup",
  "pallet-message-queue",
  "pallet-web3-names",
