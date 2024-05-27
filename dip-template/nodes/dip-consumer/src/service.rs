@@ -339,6 +339,7 @@ fn build_import_queue(
 	.map_err(Into::into)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn start_consensus(
 	client: Arc<ParachainClient>,
 	backend: Arc<ParachainBackend>,
