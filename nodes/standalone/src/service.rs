@@ -54,6 +54,7 @@ type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
 /// The minimum period of blocks on which justifications will be
 /// imported and generated.
+/// Value is copied from the solo chain template: https://github.com/paritytech/polkadot-sdk/blob/2352982717edc8976b55525274b1f9c9aa01aadd/templates/solochain/node/src/service.rs#L24
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
 type PartialComponents = sc_service::PartialComponents<
@@ -302,7 +303,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		let grandpa_config = sc_consensus_grandpa::Config {
 			// FIXME #1578 make this available through chainspec
 			gossip_duration: Duration::from_millis(333),
-			justification_generation_period: 512,
+			justification_generation_period: GRANDPA_JUSTIFICATION_PERIOD,
 			name: Some(name),
 			observer_enabled: false,
 			keystore,
