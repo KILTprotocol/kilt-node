@@ -115,21 +115,6 @@ pub const HOURS: BlockNumber = MINUTES * 60;
 pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = UNIT / 1_000;
 
-/// Maximum number of blocks simultaneously accepted by the Runtime, not yet included into the
-/// relay chain.
-pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
-/// How many parachain blocks are processed by the relay chain per parent. Limits the number of
-/// blocks authored per slot.
-pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
-/// Relay chain slot duration, in milliseconds.
-pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
-
-/// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
-/// up by `pallet_aura` to implement `fn slot_duration()`.
-///
-/// Change this to adjust the block time.
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
-
 construct_runtime!(
 	pub enum Runtime
 	{
@@ -239,6 +224,21 @@ impl frame_system::Config for Runtime {
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type Version = Version;
 }
+
+/// Maximum number of blocks simultaneously accepted by the Runtime, not yet included into the
+/// relay chain.
+const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
+/// How many parachain blocks are processed by the relay chain per parent. Limits the number of
+/// blocks authored per slot.
+const BLOCK_PROCESSING_VELOCITY: u32 = 1;
+/// Relay chain slot duration, in milliseconds.
+const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
+
+/// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
+/// up by `pallet_aura` to implement `fn slot_duration()`.
+///
+/// Change this to adjust the block time.
+const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 
 type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
 	Runtime,
