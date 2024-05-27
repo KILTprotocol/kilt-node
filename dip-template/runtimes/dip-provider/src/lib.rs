@@ -35,7 +35,7 @@ use scale_info::TypeInfo;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
-use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberStrictlyIncreases};
+use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberMonotonicallyIncreases};
 use cumulus_primitives_core::CollationInfo;
 use did::{DidRawOrigin, EnsureDidOrigin};
 use frame_support::{
@@ -114,6 +114,21 @@ pub const HOURS: BlockNumber = MINUTES * 60;
 
 pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = UNIT / 1_000;
+
+/// Maximum number of blocks simultaneously accepted by the Runtime, not yet included into the
+/// relay chain.
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
+/// How many parachain blocks are processed by the relay chain per parent. Limits the number of
+/// blocks authored per slot.
+pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
+/// Relay chain slot duration, in milliseconds.
+pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
+
+/// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
+/// up by `pallet_aura` to implement `fn slot_duration()`.
+///
+/// Change this to adjust the block time.
+pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 
 construct_runtime!(
 	pub enum Runtime
@@ -225,8 +240,15 @@ impl frame_system::Config for Runtime {
 	type Version = Version;
 }
 
+type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
+	Runtime,
+	RELAY_CHAIN_SLOT_DURATION_MILLIS,
+	BLOCK_PROCESSING_VELOCITY,
+	UNINCLUDED_SEGMENT_CAPACITY,
+>;
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
-	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
 	type DmpMessageHandler = ();
 	type OnSystemEvent = ();
 	type OutboundXcmpMessageSource = ();
@@ -235,7 +257,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type SelfParaId = ParachainInfo;
 	type XcmpMessageHandler = ();
-	type ConsensusHook = cumulus_pallet_parachain_system::ExpectParentIncluded;
+	type ConsensusHook = ConsensusHook;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -334,6 +356,8 @@ impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<100_000>;
+	#[cfg(feature = "experimental")]
+	type SlotDuration = ConstU64<SLOT_DURATION>;
 }
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
@@ -431,9 +455,19 @@ mod benches {
 }
 
 impl_runtime_apis! {
+
+	impl cumulus_primitives_aura::AuraUnincludedSegmentApi<Block> for Runtime {
+		fn can_build_upon(
+			included_hash: <Block as BlockT>::Hash,
+			slot: cumulus_primitives_aura::Slot,
+		) -> bool {
+			ConsensusHook::can_build_upon(included_hash, slot)
+		}
+	}
+
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
 		fn slot_duration() -> SlotDuration {
-			SlotDuration::from_millis(Aura::slot_duration())
+			SlotDuration::from_millis(SLOT_DURATION)
 		}
 
 		fn authorities() -> Vec<AuraId> {
@@ -720,4 +754,9 @@ impl_runtime_apis! {
 			Ok(batches)
 		}
 	}
+}
+
+cumulus_pallet_parachain_system::register_validate_block! {
+	Runtime = Runtime,
+	BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
 }
