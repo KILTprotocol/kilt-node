@@ -87,19 +87,16 @@ pallet-utility             = { workspace = true }
 pallet-vesting             = { workspace = true }
 
 # Cumulus dependencies
-cumulus-pallet-parachain-system = { workspace = true, features = [
-  "parameterized-consensus-hook",
-] }
-
-cumulus-pallet-aura-ext      = { workspace = true }
-cumulus-pallet-dmp-queue     = { workspace = true }
-cumulus-pallet-xcm           = { workspace = true }
-cumulus-pallet-xcmp-queue    = { workspace = true }
-cumulus-primitives-aura      = { workspace = true }
-cumulus-primitives-core      = { workspace = true }
-cumulus-primitives-timestamp = { workspace = true }
-cumulus-primitives-utility   = { workspace = true }
-parachain-info               = { workspace = true }
+cumulus-pallet-aura-ext         = { workspace = true }
+cumulus-pallet-dmp-queue        = { workspace = true }
+cumulus-pallet-parachain-system = { workspace = true, features = ["parameterized-consensus-hook"] }
+cumulus-pallet-xcm              = { workspace = true }
+cumulus-pallet-xcmp-queue       = { workspace = true }
+cumulus-primitives-aura         = { workspace = true }
+cumulus-primitives-core         = { workspace = true }
+cumulus-primitives-timestamp    = { workspace = true }
+cumulus-primitives-utility      = { workspace = true }
+parachain-info                  = { workspace = true }
 
 # Polkadot dependencies
 pallet-xcm   = { workspace = true }
