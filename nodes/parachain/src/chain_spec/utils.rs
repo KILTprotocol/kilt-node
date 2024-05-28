@@ -55,46 +55,36 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 	let runtime = id.parse::<ParachainRuntime>()?;
 
 	match runtime {
-		ParachainRuntime::Peregrine(PeregrineRuntime::Dev) => Ok(Box::new(
-			chain_spec::peregrine::dev::generate_chain_spec("rococo_local"),
-		)),
-		ParachainRuntime::Peregrine(PeregrineRuntime::New) => {
-			Ok(Box::new(chain_spec::peregrine::new::generate_chain_spec()))
-		}
-		ParachainRuntime::Peregrine(PeregrineRuntime::Peregrine) => {
-			Ok(Box::new(chain_spec::peregrine::load_chain_spec(
+		ParachainRuntime::Peregrine(pr) => match pr {
+			PeregrineRuntime::Dev => Ok(Box::new(chain_spec::peregrine::dev::generate_chain_spec(
+				"rococo_local",
+			))),
+			PeregrineRuntime::New => Ok(Box::new(chain_spec::peregrine::new::generate_chain_spec())),
+			PeregrineRuntime::Peregrine => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
 				get_chainspec_full_path("peregrine/peregrine-paseo.json")
 					.to_str()
 					.unwrap(),
-			)?))
-		}
-		ParachainRuntime::Peregrine(PeregrineRuntime::PeregrineStg) => {
-			Ok(Box::new(chain_spec::peregrine::load_chain_spec(
+			)?)),
+			PeregrineRuntime::PeregrineStg => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
 				get_chainspec_full_path("peregrine-stg/peregrine-stg.json")
 					.to_str()
 					.unwrap(),
-			)?))
-		}
-		ParachainRuntime::Peregrine(PeregrineRuntime::Rilt) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
-			get_chainspec_full_path("rilt/peregrine-rilt.json").to_str().unwrap(),
-		)?)),
-		ParachainRuntime::Peregrine(PeregrineRuntime::Other(s)) => {
-			Ok(Box::new(chain_spec::peregrine::load_chain_spec(s.as_str())?))
-		}
-		ParachainRuntime::Spiritnet(SpiritnetRuntime::Dev) => Ok(Box::new(
-			chain_spec::spiritnet::dev::generate_chain_spec("rococo_local"),
-		)),
-		ParachainRuntime::Spiritnet(SpiritnetRuntime::New) => {
-			Ok(Box::new(chain_spec::spiritnet::new::generate_chain_spec()))
-		}
-		ParachainRuntime::Spiritnet(SpiritnetRuntime::Spiritnet) => {
-			Ok(Box::new(chain_spec::spiritnet::load_chain_spec(
+			)?)),
+			PeregrineRuntime::Rilt => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
+				get_chainspec_full_path("rilt/peregrine-rilt.json").to_str().unwrap(),
+			)?)),
+			PeregrineRuntime::Other(s) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(s.as_str())?)),
+		},
+		ParachainRuntime::Spiritnet(sr) => match sr {
+			SpiritnetRuntime::Dev => Ok(Box::new(chain_spec::spiritnet::dev::generate_chain_spec(
+				"rococo_local",
+			))),
+			SpiritnetRuntime::New => Ok(Box::new(chain_spec::spiritnet::new::generate_chain_spec())),
+			SpiritnetRuntime::Spiritnet => Ok(Box::new(chain_spec::spiritnet::load_chain_spec(
 				get_chainspec_full_path("spiritnet/spiritnet.json").to_str().unwrap(),
-			)?))
-		}
-		ParachainRuntime::Spiritnet(SpiritnetRuntime::Other(s)) => {
-			Ok(Box::new(chain_spec::spiritnet::load_chain_spec(s.as_str())?))
-		}
+			)?)),
+			SpiritnetRuntime::Other(s) => Ok(Box::new(chain_spec::spiritnet::load_chain_spec(s.as_str())?)),
+		},
 	}
 }
 
