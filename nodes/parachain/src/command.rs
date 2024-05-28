@@ -33,10 +33,18 @@ use crate::{
 	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
 };
 
+// Returns the provided (`--chain`, <selected_runtime>) given only a reference
+// to the global `Cli` object.
+fn get_selected_chainspec(cli: &Cli) -> Result<(String, ParachainRuntime), sc_cli::Error> {
+	let run_cmd = &cli.run.base;
+	let chain_id = run_cmd.chain_id(run_cmd.is_dev()?)?;
+	let runtime = chain_id.parse::<ParachainRuntime>().map_err(sc_cli::Error::Input)?;
+	Ok((chain_id, runtime))
+}
+
 macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
-		let chain_spec_id = $cmd.chain_id($cmd.is_dev()?)?;
-		let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
+		let (_, runtime) = get_selected_chainspec(&$cli)?;
 		let runner = $cli.create_runner($cmd)?;
 
 		match runtime {
@@ -113,8 +121,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			})
 		}
 		Some(Subcommand::ExportGenesisState(cmd)) => {
-			let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
-			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
+			let (chain_spec_id, runtime) = get_selected_chainspec(&cli)?;
 			let spec = cli.load_spec(chain_spec_id.as_str())?;
 
 			println!("Dispatching task for spec id: {chain_spec_id}.");
@@ -142,15 +149,14 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 		Some(Subcommand::ExportGenesisWasm(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
 			runner.sync_run(|_config| {
-				let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
+				let (chain_spec_id, _) = get_selected_chainspec(&cli)?;
 				let spec = cli.load_spec(chain_spec_id.as_str())?;
 
 				cmd.run(&*spec)
 			})
 		}
 		Some(Subcommand::Benchmark(cmd)) => {
-			let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
-			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
+			let (_, runtime) = get_selected_chainspec(&cli)?;
 
 			let runner = cli.create_runner(cmd)?;
 
@@ -244,8 +250,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				.map_err(|e| format!("Error: {:?}", e))?;
 			let info_provider = timestamp_with_aura_info(MILLISECS_PER_BLOCK);
 
-			let chain_spec_id = cmd.chain_id(cmd.is_dev()?)?;
-			let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
+			let (_, runtime) = get_selected_chainspec(&cli)?;
 
 			match runtime {
 				ParachainRuntime::Peregrine(_) => runner.async_run(|_| {
@@ -300,8 +305,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
-				let chain_spec_id = config.chain_spec.id();
-				let runtime = chain_spec_id.parse::<ParachainRuntime>()?;
+				let (_, runtime) = get_selected_chainspec(&cli)?;
 
 				let state_version = runtime.native_version().state_version();
 				let block: Block =
