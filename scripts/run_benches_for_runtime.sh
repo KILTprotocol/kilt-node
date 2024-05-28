@@ -39,6 +39,11 @@ pallets=(
 	pallet-dip-provider
 )
 
+// Add Peregrine-only pallets here!
+if [ "$runtime" = "peregrine" ]; then
+  pallets+=()
+fi
+
 echo "[+] Running all runtime benchmarks for $runtime --chain=$chain"
 
 cargo build $standard_args
