@@ -30,11 +30,11 @@ pub(crate) fn get_account_id_from_secret<TPublic: Public>(seed: &str) -> Account
 where
 	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
 {
-	AccountPublic::from(get_from_secret::<TPublic>(seed)).into_account()
+	AccountPublic::from(get_public_key_from_secret::<TPublic>(seed)).into_account()
 }
 
 /// Helper function to generate a crypto pair from seed
-pub(crate) fn get_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
+pub(crate) fn get_public_key_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
 	TPublic::Pair::from_string(&format!("//{}", seed), None)
 		.expect("static values are valid; qed")
 		.public()

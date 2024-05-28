@@ -109,8 +109,8 @@ fn generate_devnet_genesis_state() -> RuntimeGenesisConfig {
 fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) {
 	(
 		get_account_id_from_secret::<ed25519::Public>(seed),
-		get_from_secret::<AuraId>(seed),
-		get_from_secret::<GrandpaId>(seed),
+		get_public_key_from_secret::<AuraId>(seed),
+		get_public_key_from_secret::<GrandpaId>(seed),
 	)
 }
 
@@ -118,10 +118,10 @@ fn get_account_id_from_secret<TPublic: Public>(seed: &str) -> AccountId
 where
 	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
 {
-	AccountPublic::from(get_from_secret::<TPublic>(seed)).into_account()
+	AccountPublic::from(get_public_key_from_secret::<TPublic>(seed)).into_account()
 }
 
-fn get_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
+fn get_public_key_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
 	TPublic::Pair::from_string(seed, None)
 		.unwrap_or_else(|_| panic!("Invalid string '{}'", seed))
 		.public()

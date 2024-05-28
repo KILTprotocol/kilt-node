@@ -31,7 +31,7 @@ use spiritnet_runtime::{
 
 use crate::chain_spec::{
 	spiritnet::{ChainSpec, SAFE_XCM_VERSION},
-	utils::{get_account_id_from_secret, get_from_secret, get_properties},
+	utils::{get_account_id_from_secret, get_properties, get_public_key_from_secret},
 	Extensions, KILT_PARA_ID,
 };
 
@@ -57,11 +57,11 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
 	let alice = (
 		get_account_id_from_secret::<sr25519::Public>("Alice"),
-		get_from_secret::<AuthorityId>("Alice"),
+		get_public_key_from_secret::<AuthorityId>("Alice"),
 	);
 	let bob = (
 		get_account_id_from_secret::<sr25519::Public>("Bob"),
-		get_from_secret::<AuthorityId>("Bob"),
+		get_public_key_from_secret::<AuthorityId>("Bob"),
 	);
 	let endowed_accounts = [
 		alice.0.clone(),
