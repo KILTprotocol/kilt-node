@@ -104,7 +104,6 @@ runtime-benchmarks = [
   "runtime-common/runtime-benchmarks",
   "sc-service/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
-  "sp-runtime/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
 ]
 try-runtime = [
