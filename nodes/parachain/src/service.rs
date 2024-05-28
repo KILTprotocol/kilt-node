@@ -47,6 +47,9 @@ use substrate_prometheus_endpoint::Registry;
 
 use runtime_common::{AccountId, AuthorityId, Balance, BlockNumber, Hash, Nonce};
 
+pub const AUTHORING_DURATION: u32 = 500;
+pub const TASK_MANAGER_IDENTIFIER: str = "aura";
+
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
@@ -549,11 +552,13 @@ where
 		relay_chain_slot_duration,
 		proposer,
 		collator_service,
-		authoring_duration: Duration::from_millis(500),
+		authoring_duration: Duration::from_millis(AUTHORING_DURATION),
 	};
 
 	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _, _>(params);
-	task_manager.spawn_essential_handle().spawn("aura", None, fut);
+	task_manager
+		.spawn_essential_handle()
+		.spawn(TASK_MANAGER_IDENTIFIER, None, fut);
 
 	Ok(())
 }
