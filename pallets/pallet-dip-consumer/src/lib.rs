@@ -45,12 +45,12 @@ pub mod pallet {
 	use frame_support::{
 		dispatch::{GetDispatchInfo, PostDispatchInfo},
 		pallet_prelude::*,
-		sp_runtime::traits::Dispatchable,
 		traits::{Contains, EnsureOriginWithArg},
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
 	use scale_info::TypeInfo;
+	use sp_runtime::traits::Dispatchable;
 	use sp_std::{boxed::Box, fmt::Debug};
 
 	use crate::traits::IdentityProofVerifier;
