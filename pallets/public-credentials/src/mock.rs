@@ -195,7 +195,7 @@ pub(crate) mod runtime {
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BuildStorage, MultiSignature, MultiSigner,
+		BuildStorage, MultiSignature, MultiSigner, RuntimeDebug,
 	};
 
 	use kilt_support::mock::{mock_origin, SubjectId};
