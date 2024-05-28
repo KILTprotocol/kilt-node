@@ -80,7 +80,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/kiltprotocol/kilt-parachain/issues/new".into()
+		"https://github.com/kiltprotocol/kilt-node/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -190,7 +190,7 @@ impl SubstrateCli for RelayChainCli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/kiltprotocol/kilt-parachain/issues/new".into()
+		"https://github.com/kiltprotocol/kilt-node/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
