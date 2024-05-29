@@ -21,13 +21,16 @@ use did::{did_details::DidVerificationKey, pallet::Did};
 use runtime_common::{AccountId, Balance};
 use sp_core::H256;
 use sp_runtime::AccountId32;
-use xcm::{DoubleEncoded, VersionedMultiLocation, VersionedXcm};
-use xcm_emulator::{
-	Instruction::{BuyExecution, Transact, WithdrawAsset},
-	Junction,
-	Junctions::{self, Here},
-	OriginKind, ParentThen, Weight, WeightLimit, Xcm,
+use xcm::{
+	v3::prelude::{
+		Instruction::{BuyExecution, Transact, WithdrawAsset},
+		Junction,
+		Junctions::{self, Here},
+		OriginKind, ParentThen, Weight, WeightLimit, Xcm,
+	},
+	DoubleEncoded, VersionedMultiLocation, VersionedXcm,
 };
+use xcm_emulator::Parachain;
 
 use crate::mock::para_chains::{spiritnet, AssetHubPolkadot, Spiritnet};
 

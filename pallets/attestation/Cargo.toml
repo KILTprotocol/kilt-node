@@ -43,6 +43,7 @@ sp-io              = { workspace = true, optional = true }
 sp-keystore        = { workspace = true, optional = true }
 sp-runtime         = { workspace = true }
 sp-std             = { workspace = true }
+sp-weights         = { workspace = true }
 
 [features]
 default = ["std"]

@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
-use frame_benchmarking::{account, benchmarks, Zero};
+use frame_benchmarking::{account, benchmarks};
 use frame_support::{
 	assert_ok,
 	traits::fungible::{Inspect, Mutate, MutateHold},
@@ -26,7 +26,10 @@ use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use parity_scale_codec::Encode;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
-use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
+use sp_runtime::{
+	traits::{IdentifyAccount, Zero},
+	AccountId32, MultiSigner,
+};
 use sp_std::{convert::TryInto, vec::Vec};
 
 use kilt_support::{signature::VerifySignature, Deposit};

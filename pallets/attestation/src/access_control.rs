@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::dispatch::Weight;
 use sp_runtime::DispatchError;
+use sp_weights::Weight;
 
 /// Allow for more complex schemes on who can attest, revoke and remove.
 pub trait AttestationAccessControl<AttesterId, AuthorizationId, Ctype, ClaimHash> {

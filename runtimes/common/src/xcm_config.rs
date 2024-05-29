@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use core::{marker::PhantomData, ops::ControlFlow};
-use frame_support::{log, match_types, parameter_types, traits::ProcessMessageError, weights::Weight};
+use frame_support::{match_types, parameter_types, traits::ProcessMessageError, weights::Weight};
 use polkadot_parachain::primitives::Sibling;
 use xcm::v3::prelude::*;
 use xcm_builder::{AccountId32Aliases, CurrencyAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};

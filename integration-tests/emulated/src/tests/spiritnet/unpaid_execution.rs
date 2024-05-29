@@ -20,19 +20,22 @@ use did::did_details::DidVerificationKey;
 use frame_support::{
 	assert_ok,
 	traits::fungible::{Inspect, Mutate},
+	weights::Weight,
 };
 use parity_scale_codec::Encode;
 use runtime_common::{constants::EXISTENTIAL_DEPOSIT, AccountId};
-use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
-use xcm_emulator::{
-	assert_expected_events,
-	Instruction::{Transact, UnpaidExecution},
-	Junction, Junctions, Outcome, Parachain, ParentThen, RelayChain, TestExt, Weight, Xcm,
+use xcm::{
+	v3::{
+		prelude::{OriginKind, Transact, UnpaidExecution},
+		Junction, Junctions, Outcome, ParentThen, WeightLimit, Xcm,
+	},
+	DoubleEncoded, VersionedMultiLocation, VersionedXcm,
 };
+use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 
 use crate::mock::{
 	network::MockNetworkPolkadot,
-	para_chains::{spiritnet, AssetHubPolkadot, AssetHubPolkadotPallet, Spiritnet},
+	para_chains::{spiritnet, AssetHubPolkadot, AssetHubPolkadotPallet, Spiritnet, SpiritnetPallet},
 	relay_chains::{Polkadot, PolkadotPallet},
 };
 
@@ -40,7 +43,7 @@ use crate::mock::{
 fn test_unpaid_execution_to_spiritnet() {
 	MockNetworkPolkadot::reset();
 
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 	let parachain_destination: VersionedMultiLocation =
 		ParentThen(Junctions::X1(Junction::Parachain(spiritnet::PARA_ID))).into();
 
@@ -60,7 +63,7 @@ fn test_unpaid_execution_to_spiritnet() {
 			Box::new(xcm)
 		));
 
-		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			AssetHubPolkadot,
@@ -72,7 +75,7 @@ fn test_unpaid_execution_to_spiritnet() {
 
 	// Execution should be blocked by barrier
 	Spiritnet::execute_with(|| {
-		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+		type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			Spiritnet,
 			vec![
@@ -94,7 +97,7 @@ fn test_unpaid_execution_to_spiritnet() {
 fn test_unpaid_execution_from_polkadot_to_spiritnet() {
 	MockNetworkPolkadot::reset();
 
-	let sudo_origin = <Polkadot as RelayChain>::RuntimeOrigin::root();
+	let sudo_origin = <Polkadot as Chain>::RuntimeOrigin::root();
 	let parachain_destination: VersionedMultiLocation = Junctions::X1(Junction::Parachain(spiritnet::PARA_ID)).into();
 	let init_balance = <spiritnet_runtime::Runtime as did::Config>::BaseDeposit::get()
 		+ <spiritnet_runtime::Runtime as did::Config>::Fee::get()
@@ -105,7 +108,7 @@ fn test_unpaid_execution_from_polkadot_to_spiritnet() {
 
 	let polkadot_sovereign_account = Spiritnet::sovereign_account_id_of(Spiritnet::parent_location());
 
-	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::Did(did::Call::create_from_account {
+	let call: DoubleEncoded<()> = <Spiritnet as Chain>::RuntimeCall::Did(did::Call::create_from_account {
 		authentication_key: DidVerificationKey::Account(polkadot_sovereign_account.clone()),
 	})
 	.encode()
@@ -117,7 +120,7 @@ fn test_unpaid_execution_from_polkadot_to_spiritnet() {
 			check_origin,
 		},
 		Transact {
-			origin_kind: xcm_emulator::OriginKind::SovereignAccount,
+			origin_kind: OriginKind::SovereignAccount,
 			require_weight_at_most: Weight::from_parts(10_000_600_000_000, 200_000_000_000),
 			call,
 		},
@@ -126,7 +129,10 @@ fn test_unpaid_execution_from_polkadot_to_spiritnet() {
 	Spiritnet::execute_with(|| {
 		// DID creation takes a deposit of 2 KILT coins + Fees. We have to give them to
 		// the sovereign account. Otherwise, the extrinsic will fail.
-		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&polkadot_sovereign_account, init_balance);
+		<<Spiritnet as SpiritnetPallet>::Balances as Mutate<AccountId>>::set_balance(
+			&polkadot_sovereign_account,
+			init_balance,
+		);
 	});
 
 	// Submit XCM msg from relaychain
@@ -137,7 +143,7 @@ fn test_unpaid_execution_from_polkadot_to_spiritnet() {
 			Box::new(xcm)
 		));
 
-		type RuntimeEvent = <Polkadot as RelayChain>::RuntimeEvent;
+		type RuntimeEvent = <Polkadot as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			Polkadot,
@@ -148,7 +154,7 @@ fn test_unpaid_execution_from_polkadot_to_spiritnet() {
 	});
 
 	Spiritnet::execute_with(|| {
-		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+		type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			Spiritnet,
 			vec![
@@ -165,8 +171,8 @@ fn test_unpaid_execution_from_polkadot_to_spiritnet() {
 
 		// Since the user have not paid any tx fees, we expect that the free balance is
 		// the ED
-		let balance_after_transfer: u128 =
-			<<Spiritnet as Parachain>::Balances as Inspect<AccountId>>::balance(&polkadot_sovereign_account);
+		let balance_after_transfer =
+			<<Spiritnet as SpiritnetPallet>::Balances as Inspect<AccountId>>::balance(&polkadot_sovereign_account);
 
 		assert_eq!(balance_after_transfer, EXISTENTIAL_DEPOSIT);
 	});

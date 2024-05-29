@@ -12,11 +12,9 @@ version       = { workspace = true }
 
 [dependencies]
 # External dependencies
-frame-system = { workspace = true, default-features = false }
+frame-system       = { workspace = true, default-features = false }
 parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, default-features = false, features = [
-  "derive",
-] }
+scale-info         = { workspace = true, default-features = false, features = ["derive"] }
 
 # Internal dependencies
 did          = { workspace = true }

@@ -16,10 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::dispatch;
 use kilt_support::signature::{SignatureVerificationError, SignatureVerificationResult, VerifySignature};
 use sp_runtime::SaturatedConversion;
 use sp_std::{marker::PhantomData, vec::Vec};
+use sp_weights::Weight;
 
 use crate::{
 	did_details::{DidSignature, DidVerificationKeyRelationship},
@@ -57,7 +57,7 @@ where
 		})
 	}
 
-	fn weight(payload_byte_length: usize) -> dispatch::Weight {
+	fn weight(payload_byte_length: usize) -> Weight {
 		<T as Config>::WeightInfo::signature_verification_sr25519(payload_byte_length.saturated_into())
 			.max(<T as Config>::WeightInfo::signature_verification_ed25519(
 				payload_byte_length.saturated_into(),
