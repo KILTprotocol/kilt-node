@@ -20,7 +20,11 @@ use kestrel_runtime::opaque::Block;
 use sc_cli::SubstrateCli;
 use sc_service::PartialComponents;
 
-use crate::cli::{Cli, Subcommand};
+use crate::{
+	chain_spec::load_spec,
+	cli::{Cli, Subcommand},
+	service::new_partial,
+};
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -52,7 +56,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
-		crate::chain_spec::load_spec(id)
+		load_spec(id)
 	}
 }
 
@@ -71,7 +75,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					task_manager,
 					import_queue,
 					..
-				} = crate::service::new_partial(&config)?;
+				} = new_partial(&config)?;
 				Ok((cmd.run(client, import_queue), task_manager))
 			})
 		}
@@ -80,7 +84,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			runner.async_run(|config| {
 				let PartialComponents {
 					client, task_manager, ..
-				} = crate::service::new_partial(&config)?;
+				} = new_partial(&config)?;
 				Ok((cmd.run(client, config.database), task_manager))
 			})
 		}
@@ -89,7 +93,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			runner.async_run(|config| {
 				let PartialComponents {
 					client, task_manager, ..
-				} = crate::service::new_partial(&config)?;
+				} = new_partial(&config)?;
 				Ok((cmd.run(client, config.chain_spec), task_manager))
 			})
 		}
@@ -101,7 +105,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					task_manager,
 					import_queue,
 					..
-				} = crate::service::new_partial(&config)?;
+				} = new_partial(&config)?;
 				Ok((cmd.run(client, import_queue), task_manager))
 			})
 		}
@@ -117,7 +121,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					task_manager,
 					backend,
 					..
-				} = crate::service::new_partial(&config)?;
+				} = new_partial(&config)?;
 				let aux_revert = Box::new(move |client, _, blocks| {
 					sc_consensus_grandpa::revert(client, blocks)?;
 					Ok(())
