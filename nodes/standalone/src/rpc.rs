@@ -27,7 +27,7 @@ use std::sync::Arc;
 
 use jsonrpsee::RpcModule;
 
-pub use sc_rpc_api::DenyUnsafe;
+use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
@@ -36,17 +36,17 @@ use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use runtime_common::{AccountId, Balance, Block, Nonce};
 
 /// Full client dependencies.
-pub struct FullDeps<C, P> {
+pub(crate) struct FullDeps<C, P> {
 	/// The client instance to use.
-	pub client: Arc<C>,
+	pub(crate) client: Arc<C>,
 	/// Transaction pool instance.
-	pub pool: Arc<P>,
+	pub(crate) pool: Arc<P>,
 	/// Whether to deny unsafe calls
-	pub deny_unsafe: DenyUnsafe,
+	pub(crate) deny_unsafe: DenyUnsafe,
 }
 
 /// Instantiate all full RPC extensions.
-pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
+pub(crate) fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
 	C: ProvideRuntimeApi<Block>,
 	C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,

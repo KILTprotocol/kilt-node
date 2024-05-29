@@ -38,7 +38,6 @@ delegation                    = { workspace = true }
 did                           = { workspace = true }
 kilt-runtime-api-dip-provider = { workspace = true }
 kilt-support                  = { workspace = true }
-pallet-configuration          = { workspace = true }
 pallet-deposit-storage        = { workspace = true }
 pallet-did-lookup             = { workspace = true }
 pallet-dip-provider           = { workspace = true }

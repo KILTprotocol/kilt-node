@@ -16,11 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub mod frame_system;
-pub mod pallet_balances;
-pub mod pallet_session;
-pub mod pallet_sudo;
-pub mod pallet_timestamp;
-pub mod pallet_xcm;
+//! KILT chain specification
 
-pub mod rocksdb_weights;
+pub(crate) mod dev;
+pub(crate) mod new;
+
+const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
+
+/// Specialized `ChainSpec` for the normal parachain runtime.
+pub(crate) type ChainSpec =
+	sc_service::GenericChainSpec<spiritnet_runtime::RuntimeGenesisConfig, crate::chain_spec::Extensions>;
+
+pub(crate) fn load_chain_spec(path: &str) -> Result<ChainSpec, String> {
+	ChainSpec::from_json_file(path.into())
+}
