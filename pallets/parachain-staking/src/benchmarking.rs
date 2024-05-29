@@ -19,7 +19,7 @@
 
 //! Benchmarking
 use crate::{types::RoundInfo, *};
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	assert_ok,
 	traits::{
@@ -30,7 +30,7 @@ use frame_support::{
 use frame_system::{pallet_prelude::BlockNumberFor, Pallet as System, RawOrigin};
 use pallet_session::Pallet as Session;
 use sp_runtime::{
-	traits::{One, SaturatedConversion, StaticLookup},
+	traits::{One, SaturatedConversion, StaticLookup, Zero},
 	Perquintill,
 };
 use sp_std::{convert::TryInto, vec::Vec};

@@ -60,7 +60,7 @@ pub mod runtime {
 	use sp_core::{ed25519, ConstU128, ConstU32};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		AccountId32, BuildStorage, MultiSignature, MultiSigner, Perquintill,
+		AccountId32, BuildStorage, MultiSignature, MultiSigner, Perquintill, RuntimeDebug,
 	};
 
 	use crate::{self as migration, Config, MigratedKeys};
@@ -342,18 +342,7 @@ pub mod runtime {
 	}
 
 	#[derive(
-		Default,
-		Clone,
-		Copy,
-		Encode,
-		Decode,
-		MaxEncodedLen,
-		sp_runtime::RuntimeDebug,
-		Eq,
-		PartialEq,
-		Ord,
-		PartialOrd,
-		TypeInfo,
+		Default, Clone, Copy, Encode, Decode, MaxEncodedLen, RuntimeDebug, Eq, PartialEq, Ord, PartialOrd, TypeInfo,
 	)]
 	pub struct TestSubjectId([u8; 32]);
 

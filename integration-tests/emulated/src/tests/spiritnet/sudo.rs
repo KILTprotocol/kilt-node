@@ -20,12 +20,18 @@ use asset_hub_polkadot_runtime::System as AssetHubSystem;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
-use xcm_emulator::{
-	assert_expected_events, Here,
-	Instruction::{BuyExecution, Transact, UnpaidExecution, WithdrawAsset},
-	Junction, Junctions, OriginKind, Parachain, ParentThen, RelayChain, TestExt, Weight, Xcm,
+use xcm::{
+	v3::{
+		prelude::{
+			Here,
+			Instruction::{BuyExecution, Transact, UnpaidExecution, WithdrawAsset},
+			Junction, Junctions, OriginKind, ParentThen, Xcm,
+		},
+		WeightLimit,
+	},
+	DoubleEncoded, VersionedMultiLocation, VersionedXcm,
 };
+use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, RelayChain, TestExt, Weight};
 
 use crate::mock::{
 	network::MockNetworkPolkadot,
@@ -47,7 +53,7 @@ fn get_parachain_destination_from_relay_chain() -> VersionedMultiLocation {
 
 fn get_unpaid_xcm_message(origin_kind: OriginKind) -> VersionedXcm<()> {
 	let code = vec![];
-	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::System(frame_system::Call::set_code { code })
+	let call: DoubleEncoded<()> = <Spiritnet as Chain>::RuntimeCall::System(frame_system::Call::set_code { code })
 		.encode()
 		.into();
 	let weight_limit = WeightLimit::Unlimited;
@@ -69,7 +75,7 @@ fn get_unpaid_xcm_message(origin_kind: OriginKind) -> VersionedXcm<()> {
 fn get_paid_xcm_message(init_balance: Balance, origin_kind: OriginKind) -> VersionedXcm<()> {
 	let code = vec![];
 
-	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::System(frame_system::Call::set_code { code })
+	let call: DoubleEncoded<()> = <Spiritnet as Chain>::RuntimeCall::System(frame_system::Call::set_code { code })
 		.encode()
 		.into();
 	let weight_limit = WeightLimit::Unlimited;
@@ -93,7 +99,7 @@ fn get_paid_xcm_message(init_balance: Balance, origin_kind: OriginKind) -> Versi
 /// Sudo calls from other chains should not be whitelisted and therefore fail.
 #[test]
 fn test_sudo_call_from_relay_chain_to_spiritnet() {
-	let sudo_origin = <Polkadot as RelayChain>::RuntimeOrigin::root();
+	let sudo_origin = <Polkadot as Chain>::RuntimeOrigin::root();
 	let parachain_destination = get_parachain_destination_from_relay_chain();
 
 	let origin_kind_list = vec![
@@ -115,7 +121,7 @@ fn test_sudo_call_from_relay_chain_to_spiritnet() {
 				Box::new(xcm.clone()),
 			));
 
-			type RuntimeEvent = <Polkadot as RelayChain>::RuntimeEvent;
+			type RuntimeEvent = <Polkadot as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				Polkadot,
@@ -126,7 +132,7 @@ fn test_sudo_call_from_relay_chain_to_spiritnet() {
 		});
 
 		Spiritnet::execute_with(|| {
-			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+			type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				Spiritnet,
@@ -151,7 +157,7 @@ fn test_sudo_call_from_relay_chain_to_spiritnet() {
 fn test_sudo_call_from_asset_hub_to_spiritnet() {
 	let asset_hub_sovereign_account = get_sovereign_account_id_of_asset_hub();
 
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 	let parachain_destination = get_parachain_destination_from_parachain();
 	let init_balance = KILT * 10;
 
@@ -179,7 +185,7 @@ fn test_sudo_call_from_asset_hub_to_spiritnet() {
 				Box::new(xcm.clone())
 			));
 
-			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				AssetHubPolkadot,
@@ -190,7 +196,7 @@ fn test_sudo_call_from_asset_hub_to_spiritnet() {
 		});
 
 		Spiritnet::execute_with(|| {
-			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+			type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				Spiritnet,

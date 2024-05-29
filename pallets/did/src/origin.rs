@@ -16,12 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	codec::{Decode, Encode},
-	traits::{EnsureOrigin, EnsureOriginWithArg},
-};
+use frame_support::traits::{EnsureOrigin, EnsureOriginWithArg};
 use kilt_support::traits::CallSources;
-use parity_scale_codec::MaxEncodedLen;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;

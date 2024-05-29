@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::KeyIdOf;
-use frame_support::RuntimeDebug;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_primitives::DidMerkleProof;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
@@ -27,6 +26,7 @@ use pallet_dip_provider::{
 };
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
+use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
 
 use crate::dip::did::LinkedDidInfoOf;

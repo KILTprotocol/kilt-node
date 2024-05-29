@@ -20,7 +20,7 @@ sp-runtime  = { workspace = true, features = ["std"] }
 sp-trie     = { workspace = true, features = ["std"] }
 
 [dependencies]
-cumulus-pallet-parachain-system = { workspace = true }
+cumulus-pallet-parachain-system = { workspace = true, features = ["parameterized-consensus-hook"] }
 cumulus-primitives-core         = { workspace = true }
 frame-support                   = { workspace = true }
 frame-system                    = { workspace = true }

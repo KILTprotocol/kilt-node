@@ -195,7 +195,7 @@ pub(crate) mod runtime {
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BuildStorage, MultiSignature, MultiSigner,
+		BuildStorage, MultiSignature, MultiSigner, RuntimeDebug,
 	};
 
 	use kilt_support::mock::{mock_origin, SubjectId};
@@ -210,18 +210,7 @@ pub(crate) mod runtime {
 	pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
 	#[derive(
-		Default,
-		Clone,
-		Copy,
-		Encode,
-		Decode,
-		MaxEncodedLen,
-		sp_runtime::RuntimeDebug,
-		Eq,
-		PartialEq,
-		Ord,
-		PartialOrd,
-		TypeInfo,
+		Default, Clone, Copy, Encode, Decode, MaxEncodedLen, RuntimeDebug, Eq, PartialEq, Ord, PartialOrd, TypeInfo,
 	)]
 	pub struct TestSubjectId(pub [u8; 32]);
 

@@ -19,8 +19,8 @@
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{DoubleEncoded, VersionedXcm};
-use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
+use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
+use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
 	mock::{
@@ -37,9 +37,9 @@ use crate::{
 fn get_xcm_message_ctype_creation(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
-	let call: DoubleEncoded<()> = <Peregrine as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
+	let call: DoubleEncoded<()> = <Peregrine as Chain>::RuntimeCall::Did(did::Call::dispatch_as {
 		did_identifier: asset_hub_sovereign_account,
-		call: Box::new(<Peregrine as Parachain>::RuntimeCall::Ctype(ctype::Call::add {
+		call: Box::new(<Peregrine as Chain>::RuntimeCall::Ctype(ctype::Call::add {
 			ctype: b"{\"foo\": \"bar\"}".to_vec(),
 		})),
 	})
@@ -53,7 +53,7 @@ fn get_xcm_message_ctype_creation(origin_kind: OriginKind, withdraw_balance: Bal
 fn test_ctype_creation_from_asset_hub_successful() {
 	MockNetworkRococo::reset();
 
-	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 10;
 
@@ -74,7 +74,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 			Box::new(xcm_add_ctype_msg)
 		));
 
-		type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			AssetHubRococo,
 			vec![
@@ -85,7 +85,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	Peregrine::execute_with(|| {
-		type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+		type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			Peregrine,
@@ -109,7 +109,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 
 #[test]
 fn test_ctype_creation_from_asset_hub_unsuccessful() {
-	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 10;
 
@@ -136,7 +136,7 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 				Box::new(xcm_add_ctype_msg)
 			));
 
-			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
 			assert_expected_events!(
 				AssetHubRococo,
 				vec![
@@ -146,7 +146,7 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 		});
 
 		Peregrine::execute_with(|| {
-			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+			type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 			let is_event_present = Peregrine::events().iter().any(|event| {
 				matches!(

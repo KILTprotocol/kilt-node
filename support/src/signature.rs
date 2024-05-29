@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::dispatch::Weight;
 use scale_info::TypeInfo;
+use sp_weights::Weight;
 
 #[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
 use sp_std::marker::PhantomData;

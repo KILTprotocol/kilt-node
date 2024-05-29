@@ -43,13 +43,14 @@ pub mod pallet {
 	use super::*;
 
 	use frame_support::{
-		dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
+		dispatch::{GetDispatchInfo, PostDispatchInfo},
 		pallet_prelude::*,
 		traits::{Contains, EnsureOriginWithArg},
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
 	use scale_info::TypeInfo;
+	use sp_runtime::traits::Dispatchable;
 	use sp_std::{boxed::Box, fmt::Debug};
 
 	use crate::traits::IdentityProofVerifier;

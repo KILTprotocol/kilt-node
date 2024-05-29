@@ -24,10 +24,8 @@ use crate::{
 use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-use log::{info, warn};
+use log::info;
 use parity_scale_codec::Encode;
-#[cfg(feature = "try-runtime")]
-use polkadot_service::TaskManager;
 use runtime_common::Block;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
@@ -36,7 +34,7 @@ use sc_cli::{
 use sc_executor::NativeExecutionDispatch;
 use sc_service::config::{BasePath, PrometheusConfig};
 use sp_core::hexdisplay::HexDisplay;
-use sp_runtime::traits::{AccountIdConversion, Block as BlockT, Zero};
+use sp_runtime::traits::{AccountIdConversion, Block as BlockT};
 use std::net::SocketAddr;
 
 trait IdentifyChain {
@@ -378,67 +376,18 @@ pub fn run() -> Result<()> {
 				(_, _) => Err("Unknown parachain runtime".into()),
 			}
 		}
-		#[cfg(feature = "try-runtime")]
-		Some(Subcommand::TryRuntime(cmd)) => {
-			use runtime_common::constants::MILLISECS_PER_BLOCK;
-			use sc_executor::sp_wasm_interface::ExtendedHostFunctions;
-			use try_runtime_cli::block_building_info::timestamp_with_aura_info;
-
-			let runner = cli.create_runner(cmd)?;
-			let registry = &runner.config().prometheus_config.as_ref().map(|cfg| &cfg.registry);
-			let task_manager = TaskManager::new(runner.config().tokio_handle.clone(), *registry)
-				.map_err(|e| format!("Error: {:?}", e))?;
-			let info_provider = timestamp_with_aura_info(MILLISECS_PER_BLOCK);
-
-			if runner.config().chain_spec.is_peregrine() {
-				runner.async_run(|_| {
-					Ok((
-						cmd.run::<Block, ExtendedHostFunctions<
-							sp_io::SubstrateHostFunctions,
-							<PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
-						>, _>(Some(info_provider)),
-						task_manager,
-					))
-				})
-			} else if runner.config().chain_spec.is_spiritnet() {
-				runner.async_run(|_| {
-					Ok((
-						cmd.run::<Block, ExtendedHostFunctions<
-							sp_io::SubstrateHostFunctions,
-							<SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
-						>, _>(Some(info_provider)),
-						task_manager,
-					))
-				})
-			} else if runner.config().chain_spec.is_clone() {
-				runner.async_run(|_| {
-					Ok((
-						cmd.run::<Block, ExtendedHostFunctions<
-							sp_io::SubstrateHostFunctions,
-							<CloneRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
-						>, _>(Some(info_provider)),
-						task_manager,
-					))
-				})
-			} else {
-				Err("Chain doesn't support try-runtime".into())
-			}
-		}
-		#[cfg(not(feature = "try-runtime"))]
-		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
-				You can enable it with `--features try-runtime`."
-			.into()),
+		Some(Subcommand::TryRuntime) => Err("The `try-runtime` subcommand has been migrated to a standalone CLI (https://github.com/paritytech/try-runtime-cli). It is no longer being maintained here.".into()),
 		None => {
 			let runner = cli.create_runner(&cli.run.normalize())?;
 			let collator_options = cli.run.collator_options();
 
 			runner.run_node_until_exit(|config| async move {
-				let hwbench = (!cli.no_hardware_benchmarks).then_some(
-					config.database.path().map(|database_path| {
+				let hwbench = (!cli.no_hardware_benchmarks)
+					.then_some(config.database.path().map(|database_path| {
 						let _ = std::fs::create_dir_all(database_path);
 						sc_sysinfo::gather_hwbench(Some(database_path))
-					})).flatten();
-
+					}))
+					.flatten();
 
 				let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
 					.map(|e| e.para_id)
@@ -472,10 +421,6 @@ pub fn run() -> Result<()> {
 					"Is collating: {}",
 					if config.role.is_authority() { "yes" } else { "no" }
 				);
-
-				if !collator_options.relay_chain_rpc_urls.len().is_zero() && !cli.relay_chain_args.len().is_zero() {
-					warn!("Detected relay chain node arguments together with --relay-chain-rpc-urls. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
-				}
 
 				if config.chain_spec.is_peregrine() {
 					crate::service::start_node::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>(

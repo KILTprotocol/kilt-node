@@ -14,14 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use integration_tests_common::Get;
-use polkadot_primitives::Balance;
-use sp_core::sr25519;
-use xcm_emulator::{
-	decl_test_networks, AccountId, Ancestor, BridgeMessageHandler, MultiLocation, Parachain, Parent, RelayChain,
-	TestExt, X1,
-};
-use xcm_executor::traits::ConvertLocation;
+use xcm_emulator::decl_test_networks;
 
 use crate::mock::{
 	para_chains::{AssetHubPolkadot, AssetHubRococo, Peregrine, Spiritnet},

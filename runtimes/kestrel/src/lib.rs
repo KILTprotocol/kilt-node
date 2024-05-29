@@ -195,8 +195,12 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
+/// Maximum number of nominators per validator.
+const MAX_NOMINATORS: u32 = 8;
+
 parameter_types! {
 	pub const MaxAuthorities: u32 = constants::staking::MAX_CANDIDATES;
+	pub const MaxNominators: u32 = MAX_NOMINATORS;
 }
 
 impl pallet_aura::Config for Runtime {
@@ -209,6 +213,7 @@ impl pallet_aura::Config for Runtime {
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type KeyOwnerProof = sp_core::Void;
+	type MaxNominators = MaxNominators;
 	type WeightInfo = ();
 	type MaxAuthorities = MaxAuthorities;
 	// This is a purely random value
@@ -1115,9 +1120,10 @@ impl_runtime_apis! {
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-			use frame_benchmarking::{Benchmarking, BenchmarkBatch, TrackedStorageKey};
+			use frame_benchmarking::{Benchmarking, BenchmarkBatch};
 			use frame_system_benchmarking::Pallet as SystemBench;
 			use frame_benchmarking::baseline::Pallet as Baseline;
+			use frame_support::traits::TrackedStorageKey;
 
 			impl frame_system_benchmarking::Config for Runtime {}
 			impl frame_benchmarking::baseline::Config for Runtime {}

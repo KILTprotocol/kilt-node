@@ -27,10 +27,9 @@ mod benchmarks {
 	use frame_system::RawOrigin;
 	use kilt_support::Deposit;
 	use sp_runtime::SaturatedConversion;
+	use sp_std::vec;
 
 	use crate::{traits::BenchmarkHooks, Call, Config, DepositEntryOf, Deposits, HoldReason, Pallet};
-
-	use super::*;
 
 	const KILT: u128 = 10u128.pow(15);
 

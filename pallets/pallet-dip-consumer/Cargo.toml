@@ -28,6 +28,7 @@ kilt-support       = { workspace = true }
 log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info         = { workspace = true, features = ["derive"] }
+sp-runtime         = { workspace = true }
 sp-std             = { workspace = true }
 
 # Benchmarks
