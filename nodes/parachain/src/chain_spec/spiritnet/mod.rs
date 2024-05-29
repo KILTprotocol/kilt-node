@@ -16,17 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! KILT node CLI.
+//! KILT chain specification
 
-#![warn(missing_docs)]
+pub(crate) mod dev;
+pub(crate) mod new;
 
-mod chain_spec;
-#[macro_use]
-mod service;
-mod cli;
-mod command;
-mod rpc;
+const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
-fn main() -> sc_cli::Result<()> {
-	command::run()
+/// Specialized `ChainSpec` for the normal parachain runtime.
+pub(crate) type ChainSpec =
+	sc_service::GenericChainSpec<spiritnet_runtime::RuntimeGenesisConfig, crate::chain_spec::Extensions>;
+
+pub(crate) fn load_chain_spec(path: &str) -> Result<ChainSpec, String> {
+	ChainSpec::from_json_file(path.into())
 }

@@ -29,7 +29,6 @@ serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
 
 # Internal dependencies
-clone-runtime     = { workspace = true, features = ["std"] }
 peregrine-runtime = { workspace = true, features = ["std"] }
 runtime-common    = { workspace = true, features = ["std"] }
 spiritnet-runtime = { workspace = true, features = ["std"] }

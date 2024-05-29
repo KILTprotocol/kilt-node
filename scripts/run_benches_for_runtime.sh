@@ -39,10 +39,9 @@ pallets=(
 	pallet-dip-provider
 )
 
+// Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
-  pallets+=( 
-			"pallet-configuration" 
-			)
+  pallets+=()
 fi
 
 echo "[+] Running all runtime benchmarks for $runtime --chain=$chain"
