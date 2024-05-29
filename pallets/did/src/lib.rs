@@ -118,7 +118,7 @@ pub use crate::{
 use errors::{DidError, InputError, SignatureError, StorageError};
 
 use frame_support::{
-	dispatch::{DispatchError, DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
+	dispatch::{DispatchResult, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
 	traits::{Get, OnUnbalanced},
@@ -126,6 +126,7 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use parity_scale_codec::Encode;
+use sp_runtime::{traits::Dispatchable, DispatchError};
 use sp_runtime::{
 	traits::{Saturating, Zero},
 	SaturatedConversion,

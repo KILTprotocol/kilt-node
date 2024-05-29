@@ -89,9 +89,10 @@ pallet-vesting             = { workspace = true }
 # Cumulus dependencies
 cumulus-pallet-aura-ext         = { workspace = true }
 cumulus-pallet-dmp-queue        = { workspace = true }
-cumulus-pallet-parachain-system = { workspace = true }
+cumulus-pallet-parachain-system = { workspace = true, features = ["parameterized-consensus-hook"] }
 cumulus-pallet-xcm              = { workspace = true }
 cumulus-pallet-xcmp-queue       = { workspace = true }
+cumulus-primitives-aura         = { workspace = true }
 cumulus-primitives-core         = { workspace = true }
 cumulus-primitives-timestamp    = { workspace = true }
 cumulus-primitives-utility      = { workspace = true }
@@ -166,6 +167,7 @@ std = [
   "cumulus-pallet-session-benchmarking/std",
   "cumulus-pallet-xcm/std",
   "cumulus-pallet-xcmp-queue/std",
+  "cumulus-primitives-aura/std",
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
   "cumulus-primitives-utility/std",

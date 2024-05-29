@@ -20,8 +20,8 @@ use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
 use sp_core::H256;
-use xcm::VersionedXcm;
-use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
+use xcm::{v3::prelude::OriginKind, VersionedXcm};
+use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
 	mock::{
@@ -43,15 +43,13 @@ fn get_xcm_message_attestation_creation(
 ) -> VersionedXcm<()> {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
-	let call = <Spiritnet as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
+	let call = <Spiritnet as Chain>::RuntimeCall::Did(did::Call::dispatch_as {
 		did_identifier: asset_hub_sovereign_account,
-		call: Box::new(<Spiritnet as Parachain>::RuntimeCall::Attestation(
-			attestation::Call::add {
-				claim_hash,
-				ctype_hash,
-				authorization: None,
-			},
-		)),
+		call: Box::new(<Spiritnet as Chain>::RuntimeCall::Attestation(attestation::Call::add {
+			claim_hash,
+			ctype_hash,
+			authorization: None,
+		})),
 	})
 	.encode()
 	.into();
@@ -63,7 +61,7 @@ fn get_xcm_message_attestation_creation(
 fn test_attestation_creation_from_asset_hub_successful() {
 	MockNetworkPolkadot::reset();
 
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 
 	let ctype_hash_value = H256([0; 32]);
 	let claim_hash_value = H256([1; 32]);
@@ -95,7 +93,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 			Box::new(xcm_issue_attestation_msg)
 		));
 
-		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			AssetHubPolkadot,
 			vec![
@@ -106,7 +104,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	Spiritnet::execute_with(|| {
-		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+		type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			Spiritnet,
@@ -129,7 +127,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 #[test]
 fn test_attestation_creation_from_asset_hub_unsuccessful() {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 	let destination = get_sibling_destination_spiritnet();
 
 	let ctype_hash_value = H256([0; 32]);
@@ -159,7 +157,7 @@ fn test_attestation_creation_from_asset_hub_unsuccessful() {
 				Box::new(xcm_issue_attestation_msg)
 			));
 
-			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 			assert_expected_events!(
 				AssetHubPolkadot,
 				vec![
@@ -169,7 +167,7 @@ fn test_attestation_creation_from_asset_hub_unsuccessful() {
 		});
 
 		Spiritnet::execute_with(|| {
-			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+			type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 			let is_event_present = Spiritnet::events().iter().any(|event| {
 				matches!(

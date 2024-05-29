@@ -81,6 +81,7 @@ impl cumulus_pallet_parachain_system::Config for TestRuntime {
 	type RuntimeEvent = RuntimeEvent;
 	type SelfParaId = ParachainId;
 	type XcmpMessageHandler = ();
+	type ConsensusHook = cumulus_pallet_parachain_system::ExpectParentIncluded;
 }
 
 impl crate::Config for TestRuntime {

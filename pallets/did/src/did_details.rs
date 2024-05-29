@@ -20,7 +20,6 @@ use frame_support::{
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
 	traits::Get,
-	RuntimeDebug,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::Deposit;
@@ -29,7 +28,7 @@ use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify, Zero},
-	MultiSignature, SaturatedConversion, Saturating,
+	MultiSignature, RuntimeDebug, SaturatedConversion, Saturating,
 };
 use sp_std::{convert::TryInto, vec::Vec};
 

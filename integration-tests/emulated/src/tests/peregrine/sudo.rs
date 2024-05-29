@@ -19,12 +19,15 @@
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
-use xcm_emulator::{
-	assert_expected_events, Here,
-	Instruction::{BuyExecution, Transact, UnpaidExecution, WithdrawAsset},
-	Junction, Junctions, OriginKind, Parachain, ParentThen, RelayChain, TestExt, Weight, Xcm,
+use xcm::{
+	v3::prelude::{
+		Here,
+		Instruction::{BuyExecution, Transact, UnpaidExecution, WithdrawAsset},
+		Junction, Junctions, OriginKind, ParentThen, WeightLimit, Xcm,
+	},
+	DoubleEncoded, VersionedMultiLocation, VersionedXcm,
 };
+use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, RelayChain, TestExt, Weight};
 
 use crate::mock::{
 	network::MockNetworkRococo,
@@ -46,7 +49,7 @@ fn get_parachain_destination_from_relay_chain() -> VersionedMultiLocation {
 
 fn get_unpaid_xcm_message(origin_kind: OriginKind) -> VersionedXcm<()> {
 	let code = vec![];
-	let call: DoubleEncoded<()> = <Peregrine as Parachain>::RuntimeCall::System(frame_system::Call::set_code { code })
+	let call: DoubleEncoded<()> = <Peregrine as Chain>::RuntimeCall::System(frame_system::Call::set_code { code })
 		.encode()
 		.into();
 	let weight_limit = WeightLimit::Unlimited;
@@ -68,7 +71,7 @@ fn get_unpaid_xcm_message(origin_kind: OriginKind) -> VersionedXcm<()> {
 fn get_paid_xcm_message(init_balance: Balance, origin_kind: OriginKind) -> VersionedXcm<()> {
 	let code = vec![];
 
-	let call: DoubleEncoded<()> = <Peregrine as Parachain>::RuntimeCall::System(frame_system::Call::set_code { code })
+	let call: DoubleEncoded<()> = <Peregrine as Chain>::RuntimeCall::System(frame_system::Call::set_code { code })
 		.encode()
 		.into();
 	let weight_limit = WeightLimit::Unlimited;
@@ -91,7 +94,7 @@ fn get_paid_xcm_message(init_balance: Balance, origin_kind: OriginKind) -> Versi
 
 #[test]
 fn test_sudo_call_from_relay_chain_to_peregrine() {
-	let sudo_origin = <Rococo as RelayChain>::RuntimeOrigin::root();
+	let sudo_origin = <Rococo as Chain>::RuntimeOrigin::root();
 	let parachain_destination = get_parachain_destination_from_relay_chain();
 
 	let origin_kind_list = vec![
@@ -114,7 +117,7 @@ fn test_sudo_call_from_relay_chain_to_peregrine() {
 				Box::new(xcm)
 			));
 
-			type RuntimeEvent = <Rococo as RelayChain>::RuntimeEvent;
+			type RuntimeEvent = <Rococo as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				Rococo,
@@ -125,7 +128,7 @@ fn test_sudo_call_from_relay_chain_to_peregrine() {
 		});
 
 		Peregrine::execute_with(|| {
-			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+			type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				Peregrine,
@@ -149,7 +152,7 @@ fn test_sudo_call_from_relay_chain_to_peregrine() {
 fn test_sudo_call_from_asset_hub_to_peregrine() {
 	let asset_hub_sovereign_account = get_sovereign_account_id_of_asset_hub();
 
-	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
 
 	let parachain_destination = get_parachain_destination_from_parachain();
 	let init_balance = KILT * 10;
@@ -179,7 +182,7 @@ fn test_sudo_call_from_asset_hub_to_peregrine() {
 				Box::new(xcm)
 			));
 
-			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				AssetHubRococo,
@@ -191,7 +194,7 @@ fn test_sudo_call_from_asset_hub_to_peregrine() {
 
 		// We expect to get the [NoPermission] error
 		Peregrine::execute_with(|| {
-			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+			type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				Peregrine,

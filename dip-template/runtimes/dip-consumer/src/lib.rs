@@ -37,11 +37,8 @@ use dip_provider_runtime_template::Web3Name;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
-use cumulus_pallet_parachain_system::{
-	register_validate_block, ParachainSetCode, RelayChainStateProof, RelayNumberStrictlyIncreases,
-};
+use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberMonotonicallyIncreases};
 use cumulus_primitives_core::CollationInfo;
-use cumulus_primitives_timestamp::InherentDataProvider;
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
@@ -71,7 +68,7 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	AccountId32, ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
 };
-use sp_std::{prelude::*, time::Duration};
+use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 mod dip;
@@ -170,27 +167,9 @@ pub fn native_version() -> NativeVersion {
 	}
 }
 
-struct CheckInherents;
-
-impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
-	fn check_inherents(block: &Block, relay_state_proof: &RelayChainStateProof) -> CheckInherentsResult {
-		let relay_chain_slot = relay_state_proof
-			.read_slot()
-			.expect("Could not read the relay chain slot from the proof");
-
-		let inherent_data =
-			InherentDataProvider::from_relay_chain_slot_and_duration(relay_chain_slot, Duration::from_secs(6))
-				.create_inherent_data()
-				.expect("Could not create the timestamp inherent data");
-
-		inherent_data.check_extrinsics(block)
-	}
-}
-
-register_validate_block! {
+cumulus_pallet_parachain_system::register_validate_block! {
 	Runtime = Runtime,
 	BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
-	CheckInherents = CheckInherents,
 }
 
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
@@ -250,8 +229,30 @@ impl frame_system::Config for Runtime {
 	type Version = Version;
 }
 
+/// Maximum number of blocks simultaneously accepted by the Runtime, not yet included into the
+/// relay chain.
+const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
+/// How many parachain blocks are processed by the relay chain per parent. Limits the number of
+/// blocks authored per slot.
+const BLOCK_PROCESSING_VELOCITY: u32 = 1;
+/// Relay chain slot duration, in milliseconds.
+const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
+
+/// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
+/// up by `pallet_aura` to implement `fn slot_duration()`.
+///
+/// Change this to adjust the block time.
+const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
+
+type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
+	Runtime,
+	RELAY_CHAIN_SLOT_DURATION_MILLIS,
+	BLOCK_PROCESSING_VELOCITY,
+	UNINCLUDED_SEGMENT_CAPACITY,
+>;
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
-	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
 	type DmpMessageHandler = ();
 	type OnSystemEvent = ();
 	type OutboundXcmpMessageSource = ();
@@ -260,6 +261,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type SelfParaId = ParachainInfo;
 	type XcmpMessageHandler = ();
+	type ConsensusHook = ConsensusHook;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -380,9 +382,19 @@ mod benches {
 }
 
 impl_runtime_apis! {
+
+	impl cumulus_primitives_aura::AuraUnincludedSegmentApi<Block> for Runtime {
+		fn can_build_upon(
+			included_hash: <Block as BlockT>::Hash,
+			slot: cumulus_primitives_aura::Slot,
+		) -> bool {
+			ConsensusHook::can_build_upon(included_hash, slot)
+		}
+	}
+
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
 		fn slot_duration() -> SlotDuration {
-			SlotDuration::from_millis(Aura::slot_duration())
+			SlotDuration::from_millis(SLOT_DURATION)
 		}
 
 		fn authorities() -> Vec<AuraId> {

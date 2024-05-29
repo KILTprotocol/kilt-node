@@ -22,6 +22,7 @@ use kilt_support::{
 	benchmark::IdentityContext,
 	traits::{GenerateBenchmarkOrigin, GetWorstCase, Instanciate},
 };
+use sp_std::vec;
 
 #[benchmarks(
 	where

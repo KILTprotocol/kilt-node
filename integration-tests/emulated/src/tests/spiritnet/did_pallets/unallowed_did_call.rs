@@ -19,8 +19,8 @@
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{DoubleEncoded, VersionedXcm};
-use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
+use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
+use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
 	mock::{
@@ -37,11 +37,11 @@ use crate::{
 fn get_xcm_message_system_remark(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
-	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
+	let call: DoubleEncoded<()> = <Spiritnet as Chain>::RuntimeCall::Did(did::Call::dispatch_as {
 		did_identifier: asset_hub_sovereign_account,
-		call: Box::new(<Spiritnet as Parachain>::RuntimeCall::System(
-			frame_system::Call::remark { remark: vec![] },
-		)),
+		call: Box::new(<Spiritnet as Chain>::RuntimeCall::System(frame_system::Call::remark {
+			remark: vec![],
+		})),
 	})
 	.encode()
 	.into();
@@ -52,13 +52,13 @@ fn get_xcm_message_system_remark(origin_kind: OriginKind, withdraw_balance: Bala
 fn get_xcm_message_recursion(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
-	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
+	let call: DoubleEncoded<()> = <Spiritnet as Chain>::RuntimeCall::Did(did::Call::dispatch_as {
 		did_identifier: asset_hub_sovereign_account.clone(),
-		call: Box::new(<Spiritnet as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
+		call: Box::new(<Spiritnet as Chain>::RuntimeCall::Did(did::Call::dispatch_as {
 			did_identifier: asset_hub_sovereign_account,
-			call: Box::new(<Spiritnet as Parachain>::RuntimeCall::System(
-				frame_system::Call::remark { remark: vec![] },
-			)),
+			call: Box::new(<Spiritnet as Chain>::RuntimeCall::System(frame_system::Call::remark {
+				remark: vec![],
+			})),
 		})),
 	})
 	.encode()
@@ -76,7 +76,7 @@ fn test_not_allowed_did_call() {
 		OriginKind::SovereignAccount,
 	];
 
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 	let init_balance = KILT * 100;
 
 	let destination = get_sibling_destination_spiritnet();
@@ -99,7 +99,7 @@ fn test_not_allowed_did_call() {
 				Box::new(xcm_invalid_did_msg.clone())
 			));
 
-			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 			assert_expected_events!(
 				AssetHubPolkadot,
 				vec![
@@ -109,7 +109,7 @@ fn test_not_allowed_did_call() {
 		});
 
 		Spiritnet::execute_with(|| {
-			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+			type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 			// All calls should have [NoPermission] error
 			assert_expected_events!(
@@ -138,7 +138,7 @@ fn test_recursion_did_call() {
 		OriginKind::SovereignAccount,
 	];
 
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 	let init_balance = KILT * 100;
 
 	let destination = get_sibling_destination_spiritnet();
@@ -161,7 +161,7 @@ fn test_recursion_did_call() {
 				Box::new(xcm_invalid_did_msg.clone())
 			));
 
-			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 			assert_expected_events!(
 				AssetHubPolkadot,
 				vec![
@@ -171,7 +171,7 @@ fn test_recursion_did_call() {
 		});
 
 		Spiritnet::execute_with(|| {
-			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+			type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 			// All calls should have [NoPermission] error
 			assert_expected_events!(

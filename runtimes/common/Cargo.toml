@@ -53,6 +53,7 @@ sp-io                           = { workspace = true }
 sp-runtime                      = { workspace = true }
 sp-std                          = { workspace = true }
 sp-trie                         = { workspace = true }
+sp-weights                      = { workspace = true }
 
 # Cumulus dependencies
 cumulus-primitives-core = { workspace = true }

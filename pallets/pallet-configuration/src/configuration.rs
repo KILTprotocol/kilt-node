@@ -16,9 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::RuntimeDebug;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use sp_runtime::RuntimeDebug;
 
 /// Configuration for the runtime.
 #[derive(Clone, Encode, Decode, RuntimeDebug, MaxEncodedLen, Eq, PartialEq, TypeInfo)]
