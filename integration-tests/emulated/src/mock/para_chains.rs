@@ -186,7 +186,10 @@ decl_test_parachains! {
 			asset_hub_polkadot_runtime::AuraExt::on_initialize(1);
 		},
 		runtime = asset_hub_polkadot_runtime,
+		core = {
+			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
 			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
+			LocationToAccountId: asset_hub_polkadot_runtime::xcm_config::LocationToAccountId,
 			ParachainInfo: asset_hub_polkadot_runtime::ParachainInfo,
 		},
 		pallets = {

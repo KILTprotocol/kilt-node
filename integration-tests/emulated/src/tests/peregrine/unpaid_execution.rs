@@ -125,7 +125,8 @@ fn test_unpaid_execution_from_rococo_to_peregrine() {
 	]));
 
 	Peregrine::execute_with(|| {
-		// DID creation takes a deposit of 2 KILT coins + Fees. We have to give them to the sovereign account. Otherwise, the extrinsic will fail.
+		// DID creation takes a deposit of 2 KILT coins + Fees. We have to give them to
+		// the sovereign account. Otherwise, the extrinsic will fail.
 		<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&polkadot_sovereign_account, init_balance);
 	});
 
@@ -163,7 +164,8 @@ fn test_unpaid_execution_from_rococo_to_peregrine() {
 			]
 		);
 
-		// Since the user have not paid any tx fees, we expect that the free balance is the ED
+		// Since the user have not paid any tx fees, we expect that the free balance is
+		// the ED
 		let balance_after_transfer: u128 =
 			<<Peregrine as PeregrinePallet>::Balances as Inspect<AccountId>>::balance(&polkadot_sovereign_account);
 
