@@ -11,7 +11,7 @@ import type { KeyringPair } from '@polkadot/keyring/types'
 
 describe.each(testPairsLimitedReserveTransfers)(
 	'Limited Reserve Transfers',
-	{ timeout: 30_000, skip: true },
+	{ timeout: 30_000 },
 	async ({ blockchain, storage, accounts, query, sovereignAccount, test, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -53,16 +53,15 @@ describe.each(testPairsLimitedReserveTransfers)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000, retry: 0 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
-			// test parameters
 			const { pallets, tx, balanceToTransfer } = test
 
 			// Balance of the receiver sovereign account before the transfer
-			const receiverSovereignAccountBalanceBeforeTransfer = await query.sender(
-				senderContext,
-				sovereignAccount.sender
+			const receiverSovereignAccountBalanceBeforeTransfer = await query.receiver(
+				receiverContext,
+				sovereignAccount.receiver
 			)
 
 			const initialBalanceReceiver = await query.receiver(receiverContext, receiverAccount.address)
@@ -86,18 +85,19 @@ describe.each(testPairsLimitedReserveTransfers)(
 			)
 
 			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
-			const receiverSovereignAccountBalanceAfterTransfer = await query.sender(
-				senderContext,
-				sovereignAccount.sender
-			)
-			expect(receiverSovereignAccountBalanceAfterTransfer).toBe(
-				receiverSovereignAccountBalanceBeforeTransfer + BigInt(balanceToTransfer)
-			)
 
 			checkBalanceInRange(balanceSenderAfterTransfer, expect, precision)
 
 			// check receiver state
 			await createBlock(receiverContext)
+
+			const receiverSovereignAccountBalanceAfterTransfer = await query.receiver(
+				receiverContext,
+				sovereignAccount.receiver
+			)
+			expect(receiverSovereignAccountBalanceAfterTransfer).toBe(
+				receiverSovereignAccountBalanceBeforeTransfer - BigInt(balanceToTransfer)
+			)
 
 			pallets.receiver.map((pallet) =>
 				checkSystemEvents(receiverContext, pallet).toMatchSnapshot(`receiver events ${JSON.stringify(pallet)}`)

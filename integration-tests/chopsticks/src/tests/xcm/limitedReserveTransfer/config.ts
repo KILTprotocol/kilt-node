@@ -11,69 +11,77 @@ import { ApiPromise } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { EventFilter, SetupOption } from '@acala-network/chopsticks-testing'
 
+interface Config {
+	desc: string
+	precision: bigint
+}
+
+interface Blockchain {
+	sender: SetupOption
+	receiver: SetupOption
+	relay: SetupOption
+}
+
+interface Query {
+	sender: (
+		{
+			api,
+		}: {
+			api: ApiPromise
+		},
+		address: string
+	) => Promise<bigint>
+	receiver: (
+		{
+			api,
+		}: {
+			api: ApiPromise
+		},
+		address: string
+	) => Promise<bigint>
+}
+
+interface Test {
+	tx: (
+		{
+			api,
+		}: {
+			api: ApiPromise
+		},
+		acc: string,
+		amount: number | string
+	) => SubmittableExtrinsic<'promise'>
+	pallets: {
+		sender: EventFilter[]
+		receiver: EventFilter[]
+	}
+	balanceToTransfer: bigint
+}
+
+interface Accounts {
+	senderAccount: KeyringPair
+	receiverAccount: KeyringPair
+}
+
+interface Storage {
+	senderStorage: Record<string, Record<string, unknown>>
+	receiverStorage: Record<string, Record<string, unknown>>
+	relayStorage: Record<string, Record<string, unknown>>
+}
+
+interface SovereignAccount {
+	sender: string
+	receiver: string
+}
+
 interface LimitedReserveTestConfiguration {
-	config: {
-		desc: string
-		precision: bigint
-	}
-
-	blockchain: {
-		sender: SetupOption
-		receiver: SetupOption
-		relay: SetupOption
-	}
-
-	query: {
-		sender: (
-			{
-				api,
-			}: {
-				api: ApiPromise
-			},
-			address: string
-		) => Promise<bigint>
-		receiver: (
-			{
-				api,
-			}: {
-				api: ApiPromise
-			},
-			address: string
-		) => Promise<bigint>
-	}
-
-	test: {
-		tx: (
-			{
-				api,
-			}: {
-				api: ApiPromise
-			},
-			acc: string,
-			amount: number | string
-		) => SubmittableExtrinsic<'promise'>
-
-		pallets: {
-			sender: EventFilter[]
-			receiver: EventFilter[]
-		}
-
-		balanceToTransfer: bigint
-	}
-	accounts: {
-		senderAccount: KeyringPair
-		receiverAccount: KeyringPair
-	}
-	storage: {
-		senderStorage: Record<string, Record<string, unknown>>
-		receiverStorage: Record<string, Record<string, unknown>>
-		relayStorage: Record<string, Record<string, unknown>>
-	}
-
-	sovereignAccount: {
-		sender: string
-		receiver: string
-	}
+	config: Config
+	blockchain: Blockchain
+	query: Query
+	test: Test
+	accounts: Accounts
+	storage: Storage
+	sovereignAccount: SovereignAccount
 }
 
 // Test pairs for limited reserve transfers
@@ -201,6 +209,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			receiver: SpiritnetConfig.hydraDxSovereignAccount,
 		},
 	},
+
 	{
 		config: {
 			desc: 'Kilt -> HydraDx at block V3',
@@ -242,5 +251,3 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 	},
 ] as const
-
-export type TestType = (typeof testPairsLimitedReserveTransfers)[number]

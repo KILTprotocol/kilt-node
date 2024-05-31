@@ -24,20 +24,6 @@
 // }
 
 // test('Limited Reserve Transfers from HydraDx Account Alice -> Spiritnet Account Alice', async ({ expect }) => {
-// 	const { checkEvents, checkSystemEvents } = withExpect(expect)
-
-// 	// assign initial balance to Alice. Alice also needs to have some HDX, otherwise the account gets dusted
-// 	const config = {
-// 		...HydraDxConfig.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
-// 		...HydraDxConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceHDX),
-// 	}
-
-// 	// Set storage
-// 	await setStorage(hydradxContext, config)
-
-// 	const hydraDxSovereignAccountBalanceBeforeTransfer = await getFreeBalanceSpiritnet(
-// 		SpiritnetConfig.hydraDxSovereignAccount
-// 	)
 
 // 	// check initial balance of alice
 // 	await checkBalance(getFreeBalanceHydraDxKilt, keysAlice.address, expect, initialBalanceKILT)
