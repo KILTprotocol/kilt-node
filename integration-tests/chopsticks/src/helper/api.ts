@@ -115,8 +115,8 @@ export const xcmPallet = {
 				'Unlimited'
 			),
 	limitedReserveTransferAssetsV3:
-		(token: any, amount: any, dest: any) =>
-		({ api }: { api: ApiPromise }, acc: any) =>
+		(token: any, dest: any) =>
+		({ api }: { api: ApiPromise }, acc: any, amount: any) =>
 			(api.tx.xcmPallet || api.tx.polkadotXcm).limitedReserveTransferAssets(
 				dest,
 				{
