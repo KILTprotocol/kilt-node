@@ -1,17 +1,23 @@
-import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
-import type { Config } from './types.js'
-import { initialBalanceDOT, toNumber } from '../utils.js'
+import type { SetupOption } from '@acala-network/chopsticks-testing'
+
+import { initialBalanceDOT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the HydraDx context
-export const options: SetupOption = {
-	endpoint: process.env.POLKADOT_WS || [
-		'wss://rpc.polkadot.io',
-		'wss://polkadot-rpc.dwellir.com',
-		'wss://rpc.ibp.network/polkadot',
-	],
-	db: './db/polkadot.db.sqlite',
-	port: toNumber(process.env.POLKADOT_PORT) || 9000,
-}
+export const getSetupOptions = (
+	blockNumber: number | undefined = undefined,
+	wasmOverride: string | undefined = undefined
+) =>
+	({
+		endpoint: process.env.POLKADOT_WS || [
+			'wss://rpc.polkadot.io',
+			'wss://polkadot-rpc.dwellir.com',
+			'wss://rpc.ibp.network/polkadot',
+		],
+		db: './db/polkadot.db.sqlite',
+		port: toNumber(process.env.POLKADOT_PORT) || 9000,
+		blockNumber,
+		wasmOverride,
+	}) as SetupOption
 
 /// Assigns the native tokens to an accounts
 export function assignNativeTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
@@ -33,8 +39,4 @@ export function removeDisputesAndMessageQueues() {
 			$removePrefix: ['downwardMessageQueues'],
 		},
 	}
-}
-
-export async function getContext(): Promise<Config> {
-	return setupContext(options)
 }

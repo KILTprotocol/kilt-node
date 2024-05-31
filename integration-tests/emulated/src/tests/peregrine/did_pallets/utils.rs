@@ -16,7 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use ctype::{ctype_entry::CtypeEntry, pallet::Ctypes};
+use ctype::ctype_entry::CtypeEntry;
+use ctype::pallet::Ctypes;
 use did::{did_details::DidVerificationKey, pallet::Did};
 use runtime_common::Balance;
 use sp_core::H256;

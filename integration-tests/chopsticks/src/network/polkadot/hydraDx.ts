@@ -1,13 +1,19 @@
-import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
-import type { Config } from './types.js'
-import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../utils.js'
+import { SetupOption } from '@acala-network/chopsticks-testing'
+
+import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the HydraDx context
-export const options: SetupOption = {
-	endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
-	db: './db/hydradx.db.sqlite',
-	port: toNumber(process.env.HYDRADX_PORT) || 9001,
-}
+export const getSetupOptions = (
+	blockNumber: number | undefined = undefined,
+	wasmOverride: string | undefined = undefined
+) =>
+	({
+		endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
+		db: './db/hydradx.db.sqlite',
+		port: toNumber(process.env.HYDRADX_PORT) || 9001,
+		blockNumber,
+		wasmOverride,
+	}) as SetupOption
 
 export const kiltTokenId = 28
 
@@ -37,12 +43,10 @@ export function assignKiltTokensToAccounts(addr: string[], balance: bigint = ini
 	}
 }
 
+export const KILTLocation = { Concrete: { parents: 1, interior: { X1: [{ Parachain: 2086 }] } } }
+
 /// HydraDX ParaId
 export const paraId = 2034
 
 /// Omnipool account
 export const omnipoolAccount = '7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1'
-
-export async function getContext(): Promise<Config> {
-	return setupContext(options)
-}

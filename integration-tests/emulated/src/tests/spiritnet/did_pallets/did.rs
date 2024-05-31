@@ -17,10 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::did_details::DidVerificationKey;
-use frame_support::{
-	assert_ok,
-	traits::fungible::{hold::Inspect, Mutate},
-};
+use frame_support::traits::fungible::hold::Inspect;
+use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
 use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
