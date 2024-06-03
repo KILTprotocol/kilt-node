@@ -229,7 +229,9 @@ pub mod pallet {
 			+ From<<Self as pallet_balances::Config>::Balance>
 			+ From<BlockNumberFor<Self>>
 			+ TypeInfo
-			+ MaxEncodedLen;
+			+ MaxEncodedLen
+			+ Send
+			+ Sync;
 
 		/// Minimum number of blocks validation rounds can last.
 		#[pallet::constant]
@@ -2386,7 +2388,7 @@ pub mod pallet {
 		/// The expected rewards are the product of
 		///  * the current total maximum collator rewards
 		///  * and the configured NetworkRewardRate
-		///
+		///F
 		/// `col_reward_rate_per_block * col_max_stake * max_num_of_collators *
 		/// NetworkRewardRate`
 		fn issue_network_reward() -> CreditOf<T> {
