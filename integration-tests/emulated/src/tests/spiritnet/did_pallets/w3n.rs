@@ -20,8 +20,8 @@ use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
 use sp_runtime::BoundedVec;
-use xcm::{DoubleEncoded, VersionedXcm};
-use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
+use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
+use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
 	mock::{
@@ -38,9 +38,9 @@ use crate::{
 fn get_xcm_message_claim_w3n(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
-	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
+	let call: DoubleEncoded<()> = <Spiritnet as Chain>::RuntimeCall::Did(did::Call::dispatch_as {
 		did_identifier: asset_hub_sovereign_account,
-		call: Box::new(<Spiritnet as Parachain>::RuntimeCall::Web3Names(
+		call: Box::new(<Spiritnet as Chain>::RuntimeCall::Web3Names(
 			pallet_web3_names::Call::claim {
 				name: BoundedVec::try_from(b"adelo".to_vec()).unwrap(),
 			},
@@ -56,7 +56,7 @@ fn get_xcm_message_claim_w3n(origin_kind: OriginKind, withdraw_balance: Balance)
 fn test_claim_w3n_from_asset_hub_successful() {
 	MockNetworkPolkadot::reset();
 
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	let init_balance = KILT * 10;
@@ -76,7 +76,7 @@ fn test_claim_w3n_from_asset_hub_successful() {
 			Box::new(xcm_claim_w3n_msg)
 		));
 
-		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			AssetHubPolkadot,
 			vec![
@@ -87,7 +87,7 @@ fn test_claim_w3n_from_asset_hub_successful() {
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	Spiritnet::execute_with(|| {
-		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+		type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			Spiritnet,
@@ -113,7 +113,7 @@ fn test_claim_w3n_from_asset_hub_successful() {
 fn test_claim_w3n_from_asset_hub_unsuccessful() {
 	let origin_kind_list = vec![OriginKind::Native, OriginKind::Superuser, OriginKind::Xcm];
 
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 	let init_balance = KILT * 100;
 
 	let destination = get_sibling_destination_spiritnet();
@@ -136,7 +136,7 @@ fn test_claim_w3n_from_asset_hub_unsuccessful() {
 				Box::new(xcm_claim_w3n_msg.clone())
 			));
 
-			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 			assert_expected_events!(
 				AssetHubPolkadot,
 				vec![
@@ -146,7 +146,7 @@ fn test_claim_w3n_from_asset_hub_unsuccessful() {
 		});
 
 		Spiritnet::execute_with(|| {
-			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+			type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 			let is_event_present = Spiritnet::events().iter().any(|event| {
 				matches!(

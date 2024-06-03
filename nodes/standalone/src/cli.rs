@@ -17,20 +17,24 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use clap::Parser;
-use sc_cli::RunCmd;
 
 #[derive(Debug, Parser)]
-pub struct Cli {
+#[command(
+	propagate_version = true,
+	args_conflicts_with_subcommands = true,
+	subcommand_negates_reqs = true
+)]
+pub(crate) struct Cli {
 	#[command(subcommand)]
-	pub subcommand: Option<Subcommand>,
+	pub(crate) subcommand: Option<Subcommand>,
 
 	#[command(flatten)]
-	pub run: RunCmd,
+	pub(crate) run: sc_cli::RunCmd,
 }
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Parser)]
-pub enum Subcommand {
+pub(crate) enum Subcommand {
 	/// Key management cli utilities
 	#[command(subcommand)]
 	Key(sc_cli::KeySubcommand),
@@ -60,13 +64,6 @@ pub enum Subcommand {
 	#[command(subcommand)]
 	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
-	/// Try some command against runtime state.
-	#[cfg(feature = "try-runtime")]
-	TryRuntime(try_runtime_cli::TryRuntimeCmd),
-
-	/// Try some command against runtime state. Note: `try-runtime` feature must
-	/// be enabled.
-	#[cfg(not(feature = "try-runtime"))]
 	TryRuntime,
 
 	/// Db meta columns information.

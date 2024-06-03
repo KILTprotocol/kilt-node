@@ -19,8 +19,8 @@
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{DoubleEncoded, VersionedXcm};
-use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
+use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
+use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
 	mock::{
@@ -37,9 +37,9 @@ use crate::{
 fn get_xcm_message_ctype_creation(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
-	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::Did(did::Call::dispatch_as {
+	let call: DoubleEncoded<()> = <Spiritnet as Chain>::RuntimeCall::Did(did::Call::dispatch_as {
 		did_identifier: asset_hub_sovereign_account,
-		call: Box::new(<Spiritnet as Parachain>::RuntimeCall::Ctype(ctype::Call::add {
+		call: Box::new(<Spiritnet as Chain>::RuntimeCall::Ctype(ctype::Call::add {
 			ctype: b"{\"foo\": \"bar\"}".to_vec(),
 		})),
 	})
@@ -53,7 +53,7 @@ fn get_xcm_message_ctype_creation(origin_kind: OriginKind, withdraw_balance: Bal
 fn test_ctype_creation_from_asset_hub_successful() {
 	MockNetworkPolkadot::reset();
 
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 10;
 
@@ -74,7 +74,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 			Box::new(xcm_create_ctype_msg)
 		));
 
-		type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			AssetHubPolkadot,
 			vec![
@@ -85,7 +85,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	Spiritnet::execute_with(|| {
-		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+		type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			Spiritnet,
@@ -109,7 +109,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 
 #[test]
 fn test_ctype_creation_from_asset_hub_unsuccessful() {
-	let sudo_origin = <AssetHubPolkadot as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 10;
 
@@ -136,7 +136,7 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 				Box::new(xcm_create_ctype_msg)
 			));
 
-			type RuntimeEvent = <AssetHubPolkadot as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
 			assert_expected_events!(
 				AssetHubPolkadot,
 				vec![
@@ -146,7 +146,7 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 		});
 
 		Spiritnet::execute_with(|| {
-			type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+			type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
 			let is_event_present = Spiritnet::events().iter().any(|event| {
 				matches!(

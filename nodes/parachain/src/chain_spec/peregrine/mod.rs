@@ -16,25 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use super::{Runtime, RuntimeCall};
-use pallet_xcm::BalanceOf;
-use parity_scale_codec::MaxEncodedLen;
-use runtime_common::constants::MAX_INDICES_BYTE_LENGTH;
+//! KILT chain specification
 
-#[test]
-fn call_size() {
-	assert!(
-		core::mem::size_of::<RuntimeCall>() <= 240,
-		"size of Call is more than 240 bytes: some calls have too big arguments, use Box to reduce \
-		the size of Call.
-		If the limit is too strong, maybe consider increase the limit to 300.",
-	);
-}
+pub(crate) mod dev;
+pub(crate) mod new;
 
-#[test]
-fn indices_storage_sizes() {
-	type Indices = (<Runtime as frame_system::Config>::AccountId, BalanceOf<Runtime>, bool);
+const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
-	let size = Indices::max_encoded_len();
-	assert_eq!(size, MAX_INDICES_BYTE_LENGTH as usize)
+/// Specialized `ChainSpec` for the normal parachain runtime.
+pub(crate) type ChainSpec =
+	sc_service::GenericChainSpec<peregrine_runtime::RuntimeGenesisConfig, crate::chain_spec::Extensions>;
+
+pub(crate) fn load_chain_spec(path: &str) -> Result<ChainSpec, String> {
+	ChainSpec::from_json_file(path.into())
 }

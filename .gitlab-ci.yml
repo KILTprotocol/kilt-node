@@ -1,8 +1,31 @@
+.check_skip_rust:
+  before_script:
+    - |-
+      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-rust"; then
+        echo "Skipping rust tests due to commit title"
+        exit 0
+      fi
+
+.check_skip_integration_tests:
+  before_script:
+    - |-
+      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-integration-tests"; then
+        echo "Skipping integration tests due to commit title"
+        exit 0
+      fi
+
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+
+
 stages:
   - test
   - build
 
 clippy-and-docs:
+  extends: .check_skip_rust
+  interruptible: true
   timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
@@ -11,12 +34,18 @@ clippy-and-docs:
     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
 
 fmt:
+  interruptible: true
+  extends: .check_skip_rust
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
     - cargo fmt -- --check
+    - cargo install taplo-cli --version 0.9.0
+    - taplo fmt --check
 
 test:
+  interruptible: true
+  extends: .check_skip_rust
   timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
@@ -24,6 +53,8 @@ test:
     - cargo test --all --all-targets --locked
 
 test-features:
+  extends: .check_skip_rust
+  interruptible: true
   timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
@@ -31,6 +62,8 @@ test-features:
     - cargo test --all --all-features --all-targets --locked
 
 integration-tests:
+  extends: .check_skip_integration_tests
+  interruptible: true
   timeout: 30 minutes
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
@@ -48,6 +81,8 @@ integration-tests:
 
 # TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
 test-try-runtime:
+  extends: .check_skip_rust
+  interruptible: true
   parallel:
     matrix:
       - RUNTIME: "peregrine"
@@ -67,6 +102,7 @@ test-try-runtime:
     - ./try-runtime --runtime ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm on-runtime-upgrade --disable-spec-version-check --checks=all live --uri=${ENDPOINT}
 
 build:
+  interruptible: true
   timeout: 2 hours
   image:
     name: kiltprotocol/kilt-ci:2.7.31
@@ -98,6 +134,7 @@ build:
     - "if [[ ! -z ${CI_COMMIT_TAG} && ! -z ${CI_COMMIT_TAG##*-rc*} && ! -z ${CI_COMMIT_TAG##*dev-*} ]]; then ./.maintain/push-image.sh build latest; fi"
 
 build-wasm-peregrine:
+  interruptible: true
   image:
     name: paritytech/srtool:1.70.0
     entrypoint: [""]
@@ -126,6 +163,7 @@ build-wasm-peregrine:
     expire_in: 12 week
 
 build-wasm-spiritnet:
+  interruptible: true
   image:
     name: paritytech/srtool:1.70.0
     entrypoint: [""]
@@ -154,6 +192,7 @@ build-wasm-spiritnet:
     expire_in: 12 week
 
 build-wasm-try-runtime:
+  interruptible: true
   parallel:
     matrix:
       - RUNTIME: "peregrine"

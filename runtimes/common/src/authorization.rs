@@ -15,10 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-use frame_support::dispatch::Weight;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
+use sp_weights::Weight;
 
 use attestation::AttestationAccessControl;
 use public_credentials::PublicCredentialsAccessControl;
@@ -38,12 +38,7 @@ impl<AttesterId, DelegationAc, DelegationId, Ctype, ClaimHash>
 where
 	DelegationAc: AttestationAccessControl<AttesterId, DelegationId, Ctype, ClaimHash>,
 {
-	fn can_attest(
-		&self,
-		who: &AttesterId,
-		ctype: &Ctype,
-		claim: &ClaimHash,
-	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+	fn can_attest(&self, who: &AttesterId, ctype: &Ctype, claim: &ClaimHash) -> Result<Weight, DispatchError> {
 		let PalletAuthorize::Delegation(ac) = self;
 		ac.can_attest(who, ctype, claim)
 	}
@@ -54,7 +49,7 @@ where
 		ctype: &Ctype,
 		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
-	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+	) -> Result<Weight, DispatchError> {
 		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
 		ac.can_revoke(who, ctype, claim, auth_id)
 	}
@@ -65,7 +60,7 @@ where
 		ctype: &Ctype,
 		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
-	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+	) -> Result<Weight, DispatchError> {
 		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
 		ac.can_remove(who, ctype, claim, auth_id)
 	}
@@ -100,7 +95,7 @@ where
 		who: &AttesterId,
 		ctype: &Ctype,
 		credential_id: &CredentialId,
-	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+	) -> Result<Weight, DispatchError> {
 		let PalletAuthorize::Delegation(ac) = self;
 		ac.can_issue(who, ctype, credential_id)
 	}
@@ -111,7 +106,7 @@ where
 		ctype: &Ctype,
 		credential_id: &CredentialId,
 		auth_id: &AuthorizationId<DelegationId>,
-	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+	) -> Result<Weight, DispatchError> {
 		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
 		ac.can_revoke(who, ctype, credential_id, auth_id)
 	}
@@ -122,7 +117,7 @@ where
 		ctype: &Ctype,
 		credential_id: &CredentialId,
 		auth_id: &AuthorizationId<DelegationId>,
-	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+	) -> Result<Weight, DispatchError> {
 		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
 		ac.can_unrevoke(who, ctype, credential_id, auth_id)
 	}
@@ -133,7 +128,7 @@ where
 		ctype: &Ctype,
 		credential_id: &CredentialId,
 		auth_id: &AuthorizationId<DelegationId>,
-	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+	) -> Result<Weight, DispatchError> {
 		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
 		ac.can_remove(who, ctype, credential_id, auth_id)
 	}

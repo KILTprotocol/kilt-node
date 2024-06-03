@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use frame_support::traits::OnInitialize;
 use integration_tests_common::constants::{accounts, asset_hub_polkadot, polkadot::ED};
 use runtime_common::AuthorityId;
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
-use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Parachain, TestExt};
+use xcm_emulator::decl_test_parachains;
 
 use crate::utils::{get_account_id_from_seed, get_from_seed};
 
@@ -77,19 +78,12 @@ pub mod peregrine {
 
 	use peregrine_runtime::{
 		BalancesConfig, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SessionConfig, SessionKeys,
-		SystemConfig, WASM_BINARY,
 	};
 
 	pub const PARA_ID: u32 = 2_000;
 
 	pub fn genesis() -> Storage {
 		RuntimeGenesisConfig {
-			system: SystemConfig {
-				code: WASM_BINARY
-					.expect("WASM binary was not build, please build it!")
-					.to_vec(),
-				..Default::default()
-			},
 			parachain_info: ParachainInfoConfig {
 				parachain_id: PARA_ID.into(),
 				..Default::default()
@@ -124,21 +118,19 @@ pub mod peregrine {
 decl_test_parachains! {
 	pub struct Spiritnet {
 		genesis = spiritnet::genesis(),
-		on_init = (),
-		runtime = {
-			Runtime: spiritnet_runtime::Runtime,
-			RuntimeOrigin: spiritnet_runtime::RuntimeOrigin,
-			RuntimeCall: spiritnet_runtime::RuntimeCall,
-			RuntimeEvent: spiritnet_runtime::RuntimeEvent,
+		on_init = {
+			spiritnet_runtime::AuraExt::on_initialize(1);
+		},
+		runtime = spiritnet_runtime,
+		core = {
 			XcmpMessageHandler: spiritnet_runtime::XcmpQueue,
 			DmpMessageHandler: spiritnet_runtime::DmpQueue,
 			LocationToAccountId: spiritnet_runtime::xcm_config::LocationToAccountIdConverter,
-			System: spiritnet_runtime::System,
-			Balances: spiritnet_runtime::Balances,
-			ParachainSystem: spiritnet_runtime::ParachainSystem,
 			ParachainInfo: spiritnet_runtime::ParachainInfo,
 		},
-		pallets_extra = {
+		pallets = {
+			Balances: spiritnet_runtime::Balances,
+			PolkadotXcm: spiritnet_runtime::PolkadotXcm,
 			Did: spiritnet_runtime::Did,
 			Ctype: spiritnet_runtime::Ctype,
 			Attestation: spiritnet_runtime::Attestation,
@@ -147,65 +139,21 @@ decl_test_parachains! {
 			PublicCredentials: spiritnet_runtime::PublicCredentials,
 		}
 	},
-	pub struct AssetHubPolkadot {
-		genesis = asset_hub_polkadot::genesis(),
-		on_init = (),
-		runtime = {
-			Runtime: asset_hub_polkadot_runtime::Runtime,
-			RuntimeOrigin: asset_hub_polkadot_runtime::RuntimeOrigin,
-			RuntimeCall: asset_hub_polkadot_runtime::RuntimeCall,
-			RuntimeEvent: asset_hub_polkadot_runtime::RuntimeEvent,
-			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
-			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
-			LocationToAccountId: asset_hub_polkadot_runtime::xcm_config::LocationToAccountId,
-			System: asset_hub_polkadot_runtime::System,
-			Balances: asset_hub_polkadot_runtime::Balances,
-			ParachainSystem: asset_hub_polkadot_runtime::ParachainSystem,
-			ParachainInfo: asset_hub_polkadot_runtime::ParachainInfo,
-		},
-		pallets_extra = {
-			PolkadotXcm: asset_hub_polkadot_runtime::PolkadotXcm,
-			Assets: asset_hub_polkadot_runtime::Assets,
-		}
-	},
-	pub struct AssetHubRococo {
-		genesis = asset_hub_polkadot::genesis(),
-		on_init = (),
-		runtime = {
-			Runtime: asset_hub_polkadot_runtime::Runtime,
-			RuntimeOrigin: asset_hub_polkadot_runtime::RuntimeOrigin,
-			RuntimeCall: asset_hub_polkadot_runtime::RuntimeCall,
-			RuntimeEvent: asset_hub_polkadot_runtime::RuntimeEvent,
-			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
-			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
-			LocationToAccountId: asset_hub_polkadot_runtime::xcm_config::LocationToAccountId,
-			System: asset_hub_polkadot_runtime::System,
-			Balances: asset_hub_polkadot_runtime::Balances,
-			ParachainSystem: asset_hub_polkadot_runtime::ParachainSystem,
-			ParachainInfo: asset_hub_polkadot_runtime::ParachainInfo,
-		},
-		pallets_extra = {
-			PolkadotXcm: asset_hub_polkadot_runtime::PolkadotXcm,
-			Assets: asset_hub_polkadot_runtime::Assets,
-		}
-	},
 	pub struct Peregrine {
 		genesis = peregrine::genesis(),
-		on_init = (),
-		runtime = {
-			Runtime: peregrine_runtime::Runtime,
-			RuntimeOrigin: peregrine_runtime::RuntimeOrigin,
-			RuntimeCall: peregrine_runtime::RuntimeCall,
-			RuntimeEvent: peregrine_runtime::RuntimeEvent,
+		on_init = {
+			peregrine_runtime::AuraExt::on_initialize(1);
+		},
+		runtime = peregrine_runtime,
+		core = {
 			XcmpMessageHandler: peregrine_runtime::XcmpQueue,
 			DmpMessageHandler: peregrine_runtime::DmpQueue,
 			LocationToAccountId: peregrine_runtime::xcm_config::LocationToAccountIdConverter,
-			System: peregrine_runtime::System,
-			Balances: peregrine_runtime::Balances,
-			ParachainSystem: peregrine_runtime::ParachainSystem,
 			ParachainInfo: peregrine_runtime::ParachainInfo,
 		},
-		pallets_extra = {
+		pallets = {
+			Balances: peregrine_runtime::Balances,
+			PolkadotXcm: peregrine_runtime::PolkadotXcm,
 			Did: peregrine_runtime::Did,
 			Ctype: peregrine_runtime::Ctype,
 			Attestation: peregrine_runtime::Attestation,
@@ -213,5 +161,42 @@ decl_test_parachains! {
 			DidLookup: peregrine_runtime::DidLookup,
 			PublicCredentials: peregrine_runtime::PublicCredentials,
 		}
-	}
+	},
+	pub struct AssetHubPolkadot {
+		genesis = asset_hub_polkadot::genesis(),
+		on_init = {
+			asset_hub_polkadot_runtime::AuraExt::on_initialize(1);
+		},
+		runtime = asset_hub_polkadot_runtime,
+		core = {
+			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
+			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
+			LocationToAccountId: asset_hub_polkadot_runtime::xcm_config::LocationToAccountId,
+			ParachainInfo: asset_hub_polkadot_runtime::ParachainInfo,
+		},
+		pallets = {
+			Balances: asset_hub_polkadot_runtime::Balances,
+			PolkadotXcm: asset_hub_polkadot_runtime::PolkadotXcm,
+			Assets: asset_hub_polkadot_runtime::Assets,
+		}
+	},
+	pub struct AssetHubRococo {
+		genesis = asset_hub_polkadot::genesis(),
+		on_init = {
+			asset_hub_polkadot_runtime::AuraExt::on_initialize(1);
+		},
+		runtime = asset_hub_polkadot_runtime,
+		core = {
+			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
+			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
+			LocationToAccountId: asset_hub_polkadot_runtime::xcm_config::LocationToAccountId,
+			ParachainInfo: asset_hub_polkadot_runtime::ParachainInfo,
+		},
+		pallets = {
+			Balances: asset_hub_polkadot_runtime::Balances,
+			PolkadotXcm: asset_hub_polkadot_runtime::PolkadotXcm,
+			Assets: asset_hub_polkadot_runtime::Assets,
+		}
+	},
+
 }

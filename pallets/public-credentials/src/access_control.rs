@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::dispatch::Weight;
 use sp_runtime::DispatchError;
+use sp_weights::Weight;
 
 pub trait AccessControl<AttesterId, AuthorizationId, Ctype, CredentialId> {
 	/// Decides whether the account is allowed to issue a credential with the

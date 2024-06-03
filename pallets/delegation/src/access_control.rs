@@ -16,10 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{dispatch::Weight, ensure};
+use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
+use sp_weights::Weight;
 
 use attestation::ClaimHashOf;
 use ctype::CtypeHashOf;

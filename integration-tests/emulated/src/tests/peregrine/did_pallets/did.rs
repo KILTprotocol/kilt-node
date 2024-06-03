@@ -23,13 +23,13 @@ use frame_support::{
 };
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{DoubleEncoded, VersionedXcm};
-use xcm_emulator::{assert_expected_events, OriginKind, Parachain, TestExt};
+use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
+use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
 	mock::{
 		network::MockNetworkRococo,
-		para_chains::{AssetHubRococo, AssetHubRococoPallet, Peregrine},
+		para_chains::{AssetHubRococo, AssetHubRococoPallet, Peregrine, PeregrinePallet},
 		relay_chains::Rococo,
 	},
 	tests::peregrine::did_pallets::utils::{
@@ -40,7 +40,7 @@ use crate::{
 fn get_xcm_message_create_did(origin_kind: OriginKind, withdraw_balance: Balance) -> VersionedXcm<()> {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
-	let call: DoubleEncoded<()> = <Peregrine as Parachain>::RuntimeCall::Did(did::Call::create_from_account {
+	let call: DoubleEncoded<()> = <Peregrine as Chain>::RuntimeCall::Did(did::Call::create_from_account {
 		authentication_key: DidVerificationKey::Account(asset_hub_sovereign_account),
 	})
 	.encode()
@@ -53,7 +53,7 @@ fn get_xcm_message_create_did(origin_kind: OriginKind, withdraw_balance: Balance
 fn test_did_creation_from_asset_hub_successful() {
 	MockNetworkRococo::reset();
 
-	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
@@ -74,7 +74,7 @@ fn test_did_creation_from_asset_hub_successful() {
 			Box::new(xcm_create_did_msg.clone())
 		));
 
-		type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			AssetHubRococo,
 			vec![
@@ -84,7 +84,7 @@ fn test_did_creation_from_asset_hub_successful() {
 	});
 
 	Peregrine::execute_with(|| {
-		type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+		type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			Peregrine,
 			vec![
@@ -96,7 +96,7 @@ fn test_did_creation_from_asset_hub_successful() {
 			]
 		);
 
-		let balance_on_hold = <<Peregrine as Parachain>::Balances as Inspect<AccountId>>::balance_on_hold(
+		let balance_on_hold = <<Peregrine as PeregrinePallet>::Balances as Inspect<AccountId>>::balance_on_hold(
 			&peregrine_runtime::RuntimeHoldReason::from(did::HoldReason::Deposit),
 			&asset_hub_sovereign_account,
 		);
@@ -114,7 +114,7 @@ fn test_did_creation_from_asset_hub_successful() {
 
 #[test]
 fn test_did_creation_from_asset_hub_unsuccessful() {
-	let sudo_origin = <AssetHubRococo as Parachain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 100;
 	let withdraw_balance = init_balance / 2;
@@ -140,7 +140,7 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 				Box::new(xcm_create_did_msg)
 			));
 
-			type RuntimeEvent = <AssetHubRococo as Parachain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
 			assert_expected_events!(
 				AssetHubRococo,
 				vec![
@@ -150,7 +150,7 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 		});
 
 		Peregrine::execute_with(|| {
-			type PeregrineRuntimeEvent = <Peregrine as Parachain>::RuntimeEvent;
+			type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 			let is_create_event_present = Peregrine::events().iter().any(|event| {
 				matches!(

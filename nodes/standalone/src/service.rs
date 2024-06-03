@@ -23,7 +23,7 @@ use futures::FutureExt;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
-pub use sc_executor::NativeElseWasmExecutor;
+use sc_executor::NativeElseWasmExecutor;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
@@ -34,7 +34,7 @@ use std::{sync::Arc, time::Duration};
 use kestrel_runtime::{self, opaque::Block, RuntimeApi};
 
 // Our native executor instance.
-pub struct ExecutorDispatch;
+pub(crate) struct ExecutorDispatch;
 
 impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
 	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
@@ -48,15 +48,20 @@ impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
 	}
 }
 
-pub(crate) type FullClient = sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
+type FullClient = sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
+
+/// The minimum period of blocks on which justifications will be
+/// imported and generated.
+/// Value is copied from the solo chain template: <https://github.com/paritytech/polkadot-sdk/blob/2352982717edc8976b55525274b1f9c9aa01aadd/templates/solochain/node/src/service.rs#L24>
+const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
 type PartialComponents = sc_service::PartialComponents<
 	FullClient,
 	FullBackend,
 	FullSelectChain,
-	sc_consensus::DefaultImportQueue<Block, FullClient>,
+	sc_consensus::DefaultImportQueue<Block>,
 	sc_transaction_pool::FullPool<Block, FullClient>,
 	(
 		sc_consensus_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
@@ -65,7 +70,7 @@ type PartialComponents = sc_service::PartialComponents<
 	),
 >;
 
-pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceError> {
+pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceError> {
 	let telemetry = config
 		.telemetry_endpoints
 		.clone()
@@ -103,6 +108,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceE
 
 	let (grandpa_block_import, grandpa_link) = sc_consensus_grandpa::block_import(
 		client.clone(),
+		GRANDPA_JUSTIFICATION_PERIOD,
 		&(Arc::clone(&client) as Arc<_>),
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
@@ -144,7 +150,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceE
 }
 
 /// Builds a new service for a full client.
-pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
+pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 	let sc_service::PartialComponents {
 		client,
 		backend,
@@ -297,7 +303,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		let grandpa_config = sc_consensus_grandpa::Config {
 			// FIXME #1578 make this available through chainspec
 			gossip_duration: Duration::from_millis(333),
-			justification_period: 512,
+			justification_generation_period: GRANDPA_JUSTIFICATION_PERIOD,
 			name: Some(name),
 			observer_enabled: false,
 			keystore,
