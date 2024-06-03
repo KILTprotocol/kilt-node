@@ -1,4 +1,7 @@
 import { Keyring } from '@polkadot/keyring'
+import { u8aToHex } from '@polkadot/util'
+import { decodeAddress } from '@polkadot/util-crypto'
+import { ExpectStatic } from 'vitest'
 
 const keyring = new Keyring({ type: 'ed25519', ss58Format: 38 })
 
@@ -12,6 +15,31 @@ export function toNumber(value: string | undefined): number | undefined {
 	}
 
 	return Number(value)
+}
+
+export function hexAddress(addr: string) {
+	return u8aToHex(decodeAddress(addr))
+}
+
+export function validateBalanceWithPrecision(
+	previousBalance: bigint,
+	receivedBalance: bigint,
+	removedBalance: bigint,
+	expect: ExpectStatic,
+	precision: bigint
+) {
+	if (precision < BigInt(0) || precision > BigInt(100)) {
+		throw new Error('Precision must be between 0 and 100')
+	}
+
+	const allowedError = BigInt(100) - precision
+	const lowerBound = previousBalance - (previousBalance * allowedError) / BigInt(100)
+	const upperBound = previousBalance + (previousBalance * allowedError) / BigInt(100)
+
+	const newBalance = previousBalance + receivedBalance - removedBalance
+
+	expect(newBalance).toBeGreaterThanOrEqual(lowerBound)
+	expect(newBalance).toBeLessThanOrEqual(upperBound)
 }
 
 export const KILT = BigInt(1e15)

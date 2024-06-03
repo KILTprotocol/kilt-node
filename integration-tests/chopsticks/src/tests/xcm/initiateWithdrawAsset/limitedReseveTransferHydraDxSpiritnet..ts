@@ -25,9 +25,6 @@
 
 // test('Limited Reserve Transfers from HydraDx Account Alice -> Spiritnet Account Alice', async ({ expect }) => {
 
-// 	// check initial balance of alice
-// 	await checkBalance(getFreeBalanceHydraDxKilt, keysAlice.address, expect, initialBalanceKILT)
-
 // 	const signedTx = hydradxContext.api.tx.xTokens
 // 		.transfer(HydraDxConfig.kiltTokenId, KILT, aliceLocation, 'Unlimited')
 // 		.signAsync(keysAlice)

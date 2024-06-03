@@ -13,9 +13,8 @@ export const getSetupOptions = (
 		port: toNumber(process.env.HYDRADX_PORT) || 9001,
 		blockNumber,
 		wasmOverride,
+		runtimeLogLevel: 5,
 	}) as SetupOption
-
-export const kiltTokenId = 28
 
 /// Sets the [TechnicalCommittee] and [Council] governance to the given accounts
 export function setGovernance(addr: string[]) {
@@ -34,7 +33,7 @@ export function assignNativeTokensToAccounts(addr: string[], balance: bigint = i
 	}
 }
 
-/// Assigns KILT tokens to an accounts
+/// Assigns KILT tokens to accounts
 export function assignKiltTokensToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
 		Tokens: {
@@ -43,7 +42,7 @@ export function assignKiltTokensToAccounts(addr: string[], balance: bigint = ini
 	}
 }
 
-export const KILTLocation = { Concrete: { parents: 1, interior: { X1: [{ Parachain: 2086 }] } } }
+export const kiltTokenId = 28
 
 /// HydraDX ParaId
 export const paraId = 2034
