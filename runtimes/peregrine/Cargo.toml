@@ -98,10 +98,11 @@ cumulus-primitives-utility      = { workspace = true }
 parachain-info                  = { workspace = true }
 
 # Polkadot dependencies
-pallet-xcm   = { workspace = true }
-xcm          = { workspace = true }
-xcm-builder  = { workspace = true }
-xcm-executor = { workspace = true }
+pallet-xcm              = { workspace = true }
+polkadot-runtime-common = { workspace = true }
+xcm                     = { workspace = true }
+xcm-builder             = { workspace = true }
+xcm-executor            = { workspace = true }
 
 # Benchmarking dependencies
 cumulus-pallet-session-benchmarking = { workspace = true, optional = true }

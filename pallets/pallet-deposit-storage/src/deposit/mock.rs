@@ -88,6 +88,7 @@ impl frame_system::Config for TestRuntime {
 }
 
 impl pallet_balances::Config for TestRuntime {
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = ConstU32<50>;

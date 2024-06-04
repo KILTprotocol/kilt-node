@@ -21,20 +21,22 @@ use crate::{
 	RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
+use cumulus_primitives_core::ParaId;
 use frame_support::{
 	parameter_types,
 	traits::{Contains, Everything, Nothing},
 };
 use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
+use polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery;
 use sp_core::ConstU32;
 use sp_std::prelude::ToOwned;
 use xcm::v3::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
-	EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-	UsingComponents, WithComputedOrigin,
+	EnsureXcmOrigin, FixedWeightBounds, FrameTransactionalProcessor, NativeAsset, RelayChainAsNative,
+	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
+	TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -195,6 +197,7 @@ impl xcm_executor::Config for XcmConfig {
 	type CallDispatcher = WithOriginFilter<SafeCallFilter>;
 	type SafeCallFilter = SafeCallFilter;
 	type Aliasers = Nothing;
+	type TransactionalProcessor = FrameTransactionalProcessor;
 }
 
 /// Allows only local `Signed` origins to be converted into `MultiLocation`s by
@@ -260,7 +263,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
 	type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
 	// TODO: Most chains use `NoPriceForMessageDelivery`, merged in https://github.com/paritytech/polkadot-sdk/pull/1234.
-	type PriceForSiblingDelivery = ();
+	type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {

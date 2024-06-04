@@ -89,6 +89,7 @@ impl frame_system::Config for TestRuntime {
 }
 
 impl pallet_balances::Config for TestRuntime {
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type AccountStore = System;
 	type Balance = Balance;
 	type DustRemoval = ();

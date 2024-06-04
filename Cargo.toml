@@ -177,6 +177,7 @@ try-runtime-cli                            = { git = "https://github.com/parityt
 # Polkadot (with default disabled)
 pallet-xcm                  = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 polkadot-parachain          = { package = "polkadot-parachain-primitives", git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
+polkadot-runtime-common     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 polkadot-runtime-parachains = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 polkadot-test-runtime       = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 rococo-runtime              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }

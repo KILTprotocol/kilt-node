@@ -253,6 +253,7 @@ parameter_types! {
 impl pallet_balances::Config for Runtime {
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 	type MaxLocks = MaxLocks;

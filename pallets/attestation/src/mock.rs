@@ -273,6 +273,7 @@ pub(crate) mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
+		type RuntimeFreezeReason = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;

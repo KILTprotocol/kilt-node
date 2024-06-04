@@ -52,6 +52,26 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `pallet_treasury`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_treasury::WeightInfo for WeightInfo<T> {
+
+	fn check_status() -> Weight {
+		todo!()
+	}
+
+ 
+
+	fn payout() -> Weight {
+		todo!()
+	}
+
+	fn spend_local() -> Weight {
+		todo!()
+	}
+	fn void_spend() -> Weight {
+		todo!()
+	}
+
+
+
 	fn spend() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`

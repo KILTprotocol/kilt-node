@@ -207,6 +207,7 @@ impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	type FreezeIdentifier = RuntimeFreezeReason;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
@@ -322,8 +323,7 @@ impl pallet_preimage::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type ManagerOrigin = EnsureRoot<AccountId>;
-	type BaseDeposit = constants::preimage::PreimageBaseDeposit;
-	type ByteDeposit = constants::ByteDeposit;
+	type Consideration = ();
 }
 
 parameter_types! {

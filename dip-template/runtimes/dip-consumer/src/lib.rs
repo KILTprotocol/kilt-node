@@ -302,6 +302,7 @@ impl pallet_balances::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type WeightInfo = ();
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
