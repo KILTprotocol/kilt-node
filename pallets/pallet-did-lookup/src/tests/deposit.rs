@@ -53,7 +53,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
 					ACCOUNT_00.into()
 				),
-				TokenError::CannotCreateHold
+				TokenError::FundsUnavailable
 			);
 		})
 }
