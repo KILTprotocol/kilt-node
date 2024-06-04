@@ -47,6 +47,7 @@ impl frame_system::Config for TestRuntime {
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<TestRuntime>;
 	type BlockHashCount = ConstU64<256>;
+	type RuntimeTask = ();
 	type BlockLength = ();
 	type BlockWeights = ();
 	type DbWeight = ();
@@ -73,7 +74,6 @@ parameter_types! {
 
 impl cumulus_pallet_parachain_system::Config for TestRuntime {
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
-	type DmpMessageHandler = ();
 	type OnSystemEvent = ();
 	type OutboundXcmpMessageSource = ();
 	type ReservedDmpWeight = ();
@@ -82,6 +82,8 @@ impl cumulus_pallet_parachain_system::Config for TestRuntime {
 	type SelfParaId = ParachainId;
 	type XcmpMessageHandler = ();
 	type ConsensusHook = cumulus_pallet_parachain_system::ExpectParentIncluded;
+	type WeightInfo = ();
+	type DmpQueue = frame_support::traits::EnqueueWithOrigin<MessageQueue, xcm_config::RelayOrigin>;
 }
 
 impl crate::Config for TestRuntime {

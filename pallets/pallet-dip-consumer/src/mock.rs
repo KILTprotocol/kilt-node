@@ -48,6 +48,7 @@ impl frame_system::Config for TestRuntime {
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<TestRuntime>;
 	type BlockHashCount = ConstU64<256>;
+	type RuntimeTask = ();
 	type BlockLength = ();
 	type BlockWeights = ();
 	type DbWeight = ();
@@ -75,7 +76,6 @@ impl pallet_balances::Config for TestRuntime {
 	type ExistentialDeposit = ConstU64<1>;
 	type FreezeIdentifier = [u8; 8];
 	type MaxFreezes = ConstU32<10>;
-	type MaxHolds = ConstU32<10>;
 	type MaxLocks = ConstU32<10>;
 	type MaxReserves = ConstU32<10>;
 	type ReserveIdentifier = [u8; 8];

@@ -90,6 +90,7 @@ pub(crate) mod runtime {
 
 	impl frame_system::Config for Test {
 		type BaseCallFilter = frame_support::traits::Everything;
+		type RuntimeTask = ();
 		type BlockWeights = ();
 		type BlockLength = ();
 		type DbWeight = ();
@@ -127,7 +128,6 @@ pub(crate) mod runtime {
 		type FreezeIdentifier = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
-		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = RuntimeEvent;

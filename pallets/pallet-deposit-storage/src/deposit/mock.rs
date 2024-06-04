@@ -65,6 +65,7 @@ impl frame_system::Config for TestRuntime {
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type AccountId = AccountId32;
 	type BaseCallFilter = Everything;
+	type RuntimeTask = ();
 	type Block = MockBlock<TestRuntime>;
 	type BlockHashCount = ConstU64<256>;
 	type BlockLength = ();
@@ -92,7 +93,6 @@ impl pallet_balances::Config for TestRuntime {
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = ConstU32<50>;
-	type MaxHolds = ConstU32<50>;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;

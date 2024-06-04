@@ -226,6 +226,7 @@ pub(crate) mod runtime {
 		type RuntimeCall = RuntimeCall;
 		type Block = Block;
 		type Nonce = u64;
+		type RuntimeTask = ();
 
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
@@ -255,7 +256,6 @@ pub(crate) mod runtime {
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
 		pub const MaxHolds: u32 = 50;
-		pub const MaxFreezes: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
@@ -263,7 +263,6 @@ pub(crate) mod runtime {
 		type FreezeIdentifier = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
-		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();

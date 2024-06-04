@@ -48,6 +48,7 @@ impl frame_system::Config for TestRuntime {
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<TestRuntime>;
 	type BlockHashCount = ConstU64<256>;
+	type RuntimeTask = ();
 	type BlockLength = ();
 	type BlockWeights = ();
 	type DbWeight = ();

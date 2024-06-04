@@ -58,6 +58,7 @@ pub mod runtime {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Block = Block;
+		type RuntimeTask = ();
 		type Nonce = u64;
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
@@ -94,7 +95,6 @@ pub mod runtime {
 		type FreezeIdentifier = ();
 		type RuntimeHoldReason = ();
 		type MaxFreezes = MaxFreezes;
-		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();
