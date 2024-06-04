@@ -29,8 +29,9 @@ use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
+		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp,
+		ConstU32, EitherOfDiverse, Everything, InstanceFilter, LinearStoragePrice, PrivilegeCmp,
 	},
 	weights::{ConstantMultiplier, Weight},
 };
@@ -319,6 +320,7 @@ parameter_types! {
 	pub const MaxClaims: u32 = 50;
 	pub const UsableBalance: Balance = KILT;
 	pub const AutoUnlockBound: u32 = 100;
+	pub const PreImageHoldReason: RuntimeHoldReason = RuntimeHoldReason::Preimage(pallet_preimage::HoldReason::Preimage);
 }
 
 impl pallet_preimage::Config for Runtime {
@@ -326,7 +328,12 @@ impl pallet_preimage::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type ManagerOrigin = EnsureRoot<AccountId>;
-	type Consideration = ();
+	type Consideration = HoldConsideration<
+		AccountId,
+		Balances,
+		PreImageHoldReason,
+		LinearStoragePrice<constants::preimage::PreimageBaseDeposit, constants::ByteDeposit, Balance>,
+	>;
 }
 
 parameter_types! {
