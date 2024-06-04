@@ -158,14 +158,14 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 		Some(Subcommand::Benchmark(cmd)) => {
 
 			let shared_params = match cmd {
-				BenchmarkCmd::Block(c) => &c.shared_params,  
-				BenchmarkCmd::Pallet(c) => &c.shared_params,  
+				BenchmarkCmd::Block(c) => &c.shared_params,
+				BenchmarkCmd::Pallet(c) => &c.shared_params,
 				BenchmarkCmd::Extrinsic(c) => &c.shared_params,
-				BenchmarkCmd::Machine(c) => &c.shared_params, 
-				BenchmarkCmd::Overhead(c) => &c.shared_params,  
+				BenchmarkCmd::Machine(c) => &c.shared_params,
+				BenchmarkCmd::Overhead(c) => &c.shared_params,
 				BenchmarkCmd::Storage(c) => &c.shared_params,
 			};
- 
+
 			let (_, runtime) = get_selected_chainspec(shared_params)?;
 
 			let runner = cli.create_runner(cmd)?;
