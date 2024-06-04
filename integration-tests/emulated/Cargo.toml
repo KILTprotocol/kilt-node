@@ -40,7 +40,6 @@ polkadot-parachain           = { workspace = true, default-features = true }
 polkadot-primitives          = { workspace = true, default-features = true }
 polkadot-runtime-parachains  = { workspace = true, default-features = true }
 polkadot-service             = { workspace = true, default-features = true }
-polkadot-test-runtime        = { workspace = true, default-features = true }
 public-credentials           = { workspace = true, features = ["mock"], default-features = true }
 rococo-runtime               = { workspace = true, default-features = true }
 runtime-common               = { workspace = true, default-features = true }
@@ -71,7 +70,6 @@ runtime-benchmarks = [
   "integration-tests-common/runtime-benchmarks",
   "penpal-runtime/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
-  "polkadot-test-runtime/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",

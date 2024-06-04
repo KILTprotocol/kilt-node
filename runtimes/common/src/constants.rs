@@ -441,6 +441,7 @@ pub mod treasury {
 	parameter_types! {
 		pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
 		pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
+		pub const PayoutPeriod: BlockNumber = DAYS * 30;
 	}
 }
 

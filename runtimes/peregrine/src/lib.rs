@@ -28,7 +28,10 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
+	traits::{
+		tokens::{PayFromAccount, UnityAssetBalanceConversion},
+		ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp,
+	},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
@@ -41,7 +44,7 @@ use sp_api::impl_runtime_apis;
 use sp_core::{ConstBool, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, IdentityLookup, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Perbill, Permill, RuntimeDebug,
 };
@@ -438,6 +441,7 @@ parameter_types! {
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
 	pub MaxProposalWeight: Weight = Perbill::from_percent(50) * BlockWeights::get().max_block;
+	pub TreasuryAccount: AccountId = pallet_treasury::Pallet::<Runtime>::account_id();
 }
 
 type ApproveOrigin = EitherOfDiverse<
@@ -467,6 +471,15 @@ impl pallet_treasury::Config for Runtime {
 	type SpendFunds = ();
 	type WeightInfo = weights::pallet_treasury::WeightInfo<Runtime>;
 	type MaxApprovals = MaxApprovals;
+	type AssetKind = ();
+	type BalanceConverter = UnityAssetBalanceConversion;
+	type Beneficiary = AccountId;
+	type BeneficiaryLookup = IdentityLookup<Self::Beneficiary>;
+	type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
+	type PayoutPeriod = runtime_common::constants::treasury::PayoutPeriod;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 type CouncilCollective = pallet_collective::Instance1;
@@ -534,6 +547,7 @@ impl pallet_tips::Config for Runtime {
 	type TipReportDepositBase = constants::tips::TipReportDepositBase;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pallet_tips::WeightInfo<Runtime>;
+	type MaxTipAmount = ();
 }
 
 impl attestation::Config for Runtime {

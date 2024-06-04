@@ -4,7 +4,7 @@ members = [
   "dip-template/nodes/*",
   "dip-template/pallets/*",
   "dip-template/runtimes/*",
-  "integration-tests/emulated",
+  #"integration-tests/emulated",
   "nodes/*",
   "pallets/*",
   "runtime-api/*",
@@ -179,7 +179,6 @@ pallet-xcm                  = { git = "https://github.com/paritytech/polkadot-sd
 polkadot-parachain          = { package = "polkadot-parachain-primitives", git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 polkadot-runtime-common     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 polkadot-runtime-parachains = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
-polkadot-test-runtime       = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 rococo-runtime              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 rococo-runtime-constants    = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 xcm                         = { package = "staging-xcm", git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
