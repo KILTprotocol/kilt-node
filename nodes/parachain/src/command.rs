@@ -35,7 +35,7 @@ use crate::{
 
 // Returns the provided (`--chain`, <selected_runtime>) given only a reference
 // to the global `Cli` object.
- 
+
 fn get_selected_chainspec(params: &sc_cli::SharedParams) -> Result<(String, ParachainRuntime), sc_cli::Error> {
 	let chain_id = params.chain_id(params.is_dev());
 	let runtime = chain_id.parse::<ParachainRuntime>().map_err(sc_cli::Error::Input)?;
@@ -167,8 +167,6 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			};
  
 			let (_, runtime) = get_selected_chainspec(shared_params)?;
-
-			println!("Benchmarking runtime: {runtime}."	);
 
 			let runner = cli.create_runner(cmd)?;
 
