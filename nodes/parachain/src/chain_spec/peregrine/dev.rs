@@ -18,10 +18,7 @@
 
 //! KILT chain specification
 
-use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
-	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, TechnicalCommitteeConfig, WASM_BINARY,
-};
+use peregrine_runtime::{SessionKeys, WASM_BINARY};
 use runtime_common::{
 	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance,
@@ -72,40 +69,46 @@ fn get_genesis_config() -> serde_json::Value {
 	];
 
 	let initial_authorities = vec![alice.clone(), bob.clone()];
-	let root_key = get_account_id_from_secret::<ed25519::Public>("//Alice");
+
+	let stakers = [alice.clone(), bob.clone()]
+		.into_iter()
+		.map(|(acc, _)| -> (AccountId, Option<AccountId>, Balance) { (acc, None, 2 * MinCollatorStake::get()) })
+		.collect::<Vec<_>>();
+
+	let balances = endowed_accounts
+		.iter()
+		.cloned()
+		.map(|acc| (acc, 1000 * KILT))
+		.collect::<Vec<_>>();
+
+	let keys = initial_authorities
+		.into_iter()
+		.map(|(acc, aura)| (acc.clone(), acc, SessionKeys { aura }))
+		.collect::<Vec<_>>();
+
+	let members = vec![alice.clone().0, bob.clone().0];
 
 	serde_json::json!({
 		"balances": {
-			"balances": endowed_accounts.iter().cloned().map(|k| (k, 1u64 << 60)).collect::<Vec<_>>(),
+			"balances": balances,
 		},
 		"session": {
-			"keys": initial_authorities
-				.into_iter()
-				.map(|(acc, aura)| {
-					(
-						acc.clone(),                 // account id
-						acc,                         // validator id
-						SessionKeys { aura },		 // session keys
-					)
-				})
-			.collect::<Vec<_>>(),
+			"keys": keys,
 		},
-		"sudo": { "key": Some(alice.clone().0) },
+		"sudo": { "key": Some(alice.0) },
 		"parachain_info": {
-			"parachain_id": KILT_PARA_ID.into(),
+			"parachain_id": KILT_PARA_ID,
 		},
 		"parachain_staking": {
-			"stakers": [alice.clone(), bob.clone()]
-				.map(|(acc, _)| -> (AccountId, Option<AccountId>, Balance) { (acc, None, 2 * MinCollatorStake::get()) })
-				.to_vec(),
+			"stakers": stakers,
 			"inflation_config": kilt_inflation_config(),
 			"max_candidate_stake": MAX_COLLATOR_STAKE,
 		},
 		"council": {
-			"members": [alice.clone().0, bob.clone().0],
+			"members": members,
 		},
 		"technical_committee": {
-			"members": [alice.0, bob.0],
+			"members": members,
 		},
 		"polkadot_xcm": {
 			"safe_xcm_version": Some(SAFE_XCM_VERSION),

@@ -19,7 +19,7 @@
 use cumulus_primitives_core::ParaId;
 use dip_consumer_runtime_template::{
 	AccountId, AuraId, BalancesConfig, CollatorSelectionConfig, ParachainInfoConfig, RuntimeGenesisConfig,
-	SessionConfig, SessionKeys, Signature, SudoConfig, SystemConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
+	SessionConfig, SessionKeys, Signature, SudoConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
 };
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::{ChainType, GenericChainSpec};

@@ -19,7 +19,7 @@
 //! KILT chain specification
 
 use sc_service::ChainType;
-use spiritnet_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, WASM_BINARY};
+use spiritnet_runtime::WASM_BINARY;
 
 use crate::chain_spec::{
 	spiritnet::{ChainSpec, SAFE_XCM_VERSION},
@@ -29,34 +29,29 @@ use crate::chain_spec::{
 
 pub(crate) fn generate_chain_spec() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("WASM binary not available");
-	ChainSpec::from_genesis(
-		"KILT Spiritnet New (change title)",
-		"kilt_spiritnet_new",
-		ChainType::Live,
-		generate_genesis_state,
-		vec![],
-		None,
-		None,
-		None,
-		Some(get_properties("KILT", 15, 38)),
+
+	ChainSpec::builder(
+		wasm_binary,
 		Extensions {
 			relay_chain: "relay".into(),
 			para_id: KILT_PARA_ID,
 		},
-		wasm_binary,
 	)
+	.with_name("KILT Spiritnet New (change title)")
+	.with_id("kilt_spiritnet_new")
+	.with_chain_type(ChainType::Live)
+	.with_properties(get_properties("KILT", 15, 38))
+	.with_genesis_config(get_genesis_config())
+	.build()
 }
 
-fn generate_genesis_state() -> RuntimeGenesisConfig {
-	RuntimeGenesisConfig {
-		parachain_info: ParachainInfoConfig {
-			parachain_id: KILT_PARA_ID.into(),
-			..Default::default()
+fn get_genesis_config() -> serde_json::Value {
+	serde_json::json!({
+		"parachain_info": {
+			"parachain_id": KILT_PARA_ID,
 		},
-		polkadot_xcm: PolkadotXcmConfig {
-			safe_xcm_version: Some(SAFE_XCM_VERSION),
-			..Default::default()
+		"polkadot_xcm": {
+			"safe_xcm_version": SAFE_XCM_VERSION,
 		},
-		..Default::default()
-	}
+	})
 }

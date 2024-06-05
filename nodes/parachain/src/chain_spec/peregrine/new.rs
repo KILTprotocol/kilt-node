@@ -18,7 +18,7 @@
 
 //! KILT chain specification
 
-use peregrine_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, WASM_BINARY};
+use peregrine_runtime::WASM_BINARY;
 use sc_service::ChainType;
 
 use crate::chain_spec::{
@@ -33,7 +33,7 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 	ChainSpec::builder(
 		wasm_binary,
 		Extensions {
-			relay_chain: relaychain_name.into(),
+			relay_chain: "relay".into(),
 			para_id: KILT_PARA_ID,
 		},
 	)
@@ -48,7 +48,7 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 fn get_genesis_config() -> serde_json::Value {
 	serde_json::json!({
 		"parachain_info": {
-			"parachain_id": KILT_PARA_ID.into(),
+			"parachain_id": KILT_PARA_ID,
 		},
 		"polkadot_xcm": {
 			"safe_xcm_version": SAFE_XCM_VERSION,
