@@ -72,6 +72,7 @@ pallet-collective          = { workspace = true }
 pallet-democracy           = { workspace = true }
 pallet-indices             = { workspace = true }
 pallet-membership          = { workspace = true }
+pallet-message-queue       = { workspace = true }
 pallet-multisig            = { workspace = true }
 pallet-preimage            = { workspace = true }
 pallet-proxy               = { workspace = true }
@@ -95,6 +96,7 @@ cumulus-primitives-core         = { workspace = true }
 cumulus-primitives-timestamp    = { workspace = true }
 cumulus-primitives-utility      = { workspace = true }
 parachain-info                  = { workspace = true }
+parachains-common               = { workspace = true }
 
 # Polkadot dependencies
 pallet-xcm              = { workspace = true }
@@ -212,6 +214,7 @@ std = [
   "pallet-xcm/std",
   "parachain-info/std",
   "parachain-staking/std",
+  "parachains-common/std",
   "parity-scale-codec/std",
   "public-credentials/std",
   "runtime-common/std",

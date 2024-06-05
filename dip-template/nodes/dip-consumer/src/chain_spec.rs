@@ -72,12 +72,7 @@ fn testnet_genesis(
 	id: ParaId,
 ) -> RuntimeGenesisConfig {
 	RuntimeGenesisConfig {
-		system: SystemConfig {
-			code: WASM_BINARY
-				.expect("WASM binary was not build, please build it!")
-				.to_vec(),
-			..Default::default()
-		},
+		system: Default::default(),
 		parachain_system: Default::default(),
 		parachain_info: ParachainInfoConfig {
 			parachain_id: id,
@@ -107,6 +102,7 @@ fn testnet_genesis(
 }
 
 pub fn development_config() -> ChainSpec {
+	let wasm_binary = WASM_BINARY.expect("WASM binary was not build, please build it!");
 	let mut properties = Properties::new();
 	properties.insert("tokenSymbol".into(), "REILT".into());
 	properties.insert("tokenDecimals".into(), 12.into());
@@ -142,5 +138,6 @@ pub fn development_config() -> ChainSpec {
 			relay_chain: "rococo-local".into(),
 			para_id: PARA_ID,
 		},
+		wasm_binary,
 	)
 }

@@ -18,7 +18,7 @@
 
 //! KILT chain specification
 
-use peregrine_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SystemConfig, WASM_BINARY};
+use peregrine_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, WASM_BINARY};
 use sc_service::ChainType;
 
 use crate::chain_spec::{
@@ -28,6 +28,7 @@ use crate::chain_spec::{
 };
 
 pub(crate) fn generate_chain_spec() -> ChainSpec {
+	let wasm_binary = WASM_BINARY.expect("WASM binary not available");
 	ChainSpec::from_genesis(
 		"KILT Peregrine New (change title)",
 		"kilt_peregrine_new",
@@ -42,17 +43,12 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 			relay_chain: "relay".into(),
 			para_id: KILT_PARA_ID,
 		},
+		wasm_binary,
 	)
 }
 
 fn generate_genesis_state() -> RuntimeGenesisConfig {
-	let wasm_binary = WASM_BINARY.expect("WASM binary not available");
-
 	RuntimeGenesisConfig {
-		system: SystemConfig {
-			code: wasm_binary.to_vec(),
-			..Default::default()
-		},
 		parachain_info: ParachainInfoConfig {
 			parachain_id: KILT_PARA_ID.into(),
 			..Default::default()

@@ -83,7 +83,7 @@ impl<T: frame_system::Config> pallet_preimage::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
 
-	fn ensure_updated(n: u32, ) -> Weight {
+	fn ensure_updated(_n: u32, ) -> Weight {
 		todo!()
 	}
 	/// Storage: Preimage StatusFor (r:1 w:1)

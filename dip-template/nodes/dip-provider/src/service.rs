@@ -244,8 +244,14 @@ async fn start_node_impl(
 
 	if let Some(hwbench) = hwbench {
 		print_hwbench(&hwbench);
-		if !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) && validator {
-			log::warn!("⚠️  The hardware does not meet the minimal requirements for role 'Authority'.");
+		match SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
+			Err(err) if validator => {
+				log::warn!(
+					"⚠️  The hardware does not meet the minimal requirements {} for role 'Authority'.",
+					err
+				);
+			}
+			_ => {}
 		}
 
 		if let Some(ref mut telemetry) = telemetry {

@@ -107,6 +107,7 @@ cumulus-primitives-core         = { version = "0.5.0", default-features = false 
 cumulus-primitives-timestamp    = { version = "0.5.0", default-features = false }
 cumulus-primitives-utility      = { version = "0.5.0", default-features = false }
 parachain-info                  = { version = "0.5.0", package = "staging-parachain-info", default-features = false }
+parachains-common               = { version = "5.0.0", default-features = false }
 
 # XCM Emulator tests
 asset-hub-kusama-runtime     = { version = "0.13.0", default-features = false }

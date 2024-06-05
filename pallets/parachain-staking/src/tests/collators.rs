@@ -318,7 +318,7 @@ fn execute_leave_candidates_with_delay() {
 			assert_ok!(StakePallet::init_leave_candidates(RuntimeOrigin::signed(8)));
 			assert_ok!(StakePallet::init_leave_candidates(RuntimeOrigin::signed(2)));
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![4, 3]);
-			for owner in vec![1, 2, 5, 6, 7, 8, 9, 10].iter() {
+			for owner in [1, 2, 5, 6, 7, 8, 9, 10].iter() {
 				assert!(StakePallet::candidate_pool(owner)
 					.unwrap()
 					.can_exit(1 + <Test as Config>::ExitQueueDelay::get()));
@@ -407,7 +407,7 @@ fn execute_leave_candidates_with_delay() {
 			roll_to(10, vec![]);
 			assert_eq!(StakePallet::total_collator_stake(), total_stake);
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![4, 3]);
-			for owner in vec![1, 2, 5, 6, 7, 8, 9, 10].iter() {
+			for owner in [1, 2, 5, 6, 7, 8, 9, 10].iter() {
 				assert!(StakePallet::candidate_pool(owner)
 					.unwrap()
 					.can_exit(1 + <Test as Config>::ExitQueueDelay::get()));

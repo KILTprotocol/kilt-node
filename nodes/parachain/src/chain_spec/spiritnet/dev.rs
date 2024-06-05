@@ -26,7 +26,7 @@ use sc_service::ChainType;
 use sp_core::sr25519;
 use spiritnet_runtime::{
 	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
-	RuntimeGenesisConfig, SessionConfig, SessionKeys, SystemConfig, TechnicalCommitteeConfig, WASM_BINARY,
+	RuntimeGenesisConfig, SessionConfig, SessionKeys, TechnicalCommitteeConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{
@@ -36,6 +36,7 @@ use crate::chain_spec::{
 };
 
 pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
+	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
 	ChainSpec::from_genesis(
 		"KILT Spiritnet Develop",
 		"kilt_spiritnet_dev",
@@ -50,11 +51,11 @@ pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 			relay_chain: relaychain_name.into(),
 			para_id: KILT_PARA_ID,
 		},
+		wasm_binary,
 	)
 }
 
 fn generate_genesis_state() -> RuntimeGenesisConfig {
-	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
 	let alice = (
 		get_account_id_from_secret::<sr25519::Public>("Alice"),
 		get_public_key_from_secret::<AuthorityId>("Alice"),
@@ -73,10 +74,6 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 	];
 
 	RuntimeGenesisConfig {
-		system: SystemConfig {
-			code: wasm_binary.to_vec(),
-			..Default::default()
-		},
 		balances: BalancesConfig {
 			balances: endowed_accounts.map(|acc| (acc, 10_000_000 * KILT)).to_vec(),
 		},

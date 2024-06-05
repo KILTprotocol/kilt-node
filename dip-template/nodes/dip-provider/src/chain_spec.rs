@@ -19,7 +19,7 @@
 use cumulus_primitives_core::ParaId;
 use dip_provider_runtime_template::{
 	AccountId, AuraId, BalancesConfig, CollatorSelectionConfig, ParachainInfoConfig, RuntimeGenesisConfig,
-	SessionConfig, SessionKeys, Signature, SudoConfig, SystemConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
+	SessionConfig, SessionKeys, Signature, SudoConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
 };
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::{ChainType, GenericChainSpec};
@@ -72,12 +72,8 @@ fn testnet_genesis(
 	id: ParaId,
 ) -> RuntimeGenesisConfig {
 	RuntimeGenesisConfig {
-		system: SystemConfig {
-			code: WASM_BINARY
-				.expect("WASM binary was not build, please build it!")
-				.to_vec(),
-			..Default::default()
-		},
+		system: Default::default(),
+
 		parachain_system: Default::default(),
 		parachain_info: ParachainInfoConfig {
 			parachain_id: id,
@@ -108,6 +104,7 @@ fn testnet_genesis(
 }
 
 pub fn development_config() -> ChainSpec {
+	let wasm_binary = WASM_BINARY.expect("WASM binary was not build, please build it!");
 	let mut properties = Properties::new();
 	properties.insert("tokenSymbol".into(), "SEILT".into());
 	properties.insert("tokenDecimals".into(), 12.into());
@@ -143,5 +140,6 @@ pub fn development_config() -> ChainSpec {
 			relay_chain: "rococo-local".into(),
 			para_id: PARA_ID,
 		},
+		wasm_binary,
 	)
 }

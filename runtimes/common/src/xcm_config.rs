@@ -17,19 +17,25 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use core::{marker::PhantomData, ops::ControlFlow};
+use cumulus_primitives_core::AggregateMessageOrigin;
 use frame_support::{match_types, parameter_types, traits::ProcessMessageError, weights::Weight};
 use polkadot_parachain::primitives::Sibling;
+use sp_runtime::Perbill;
 use xcm::v3::prelude::*;
 use xcm_builder::{AccountId32Aliases, CurrencyAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};
 use xcm_executor::traits::{Properties, ShouldExecute};
 
-use crate::AccountId;
+use crate::{AccountId, BlockWeights};
 
 parameter_types! {
 	// One XCM operation is 200_000_000 weight, cross-chain transfer ~= 2x of transfer.
 	pub UnitWeightCost: Weight = Weight::from_parts(200_000_000, 0);
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
+	pub const MaxStale: u32 = 8;
+	pub const HeapSize: u32 = 64 * 1024;
+	pub ServiceWeight: Weight = Perbill::from_percent(35) * BlockWeights::get().max_block;
+	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
 match_types! {

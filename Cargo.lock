@@ -6784,6 +6784,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-asset-tx-payment"
+version = "26.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4dcf0e784d36876635b64bd8959b115755b7cc294b215e2f2d84d4992d5c485d"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-transaction-payment",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-assets"
+version = "27.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13cc6cd2b461cd113816f3899099ee5298d1a08a1238f38d82f90764bc54297a"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-aura"
 version = "25.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8111,6 +8147,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "parachains-common"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f216e2ae898b16c8e4ee6e7c67a82844f5a918b5697a3056243cec0a3920ca18"
+dependencies = [
+ "cumulus-primitives-core",
+ "cumulus-primitives-utility",
+ "frame-support",
+ "frame-system",
+ "log",
+ "num-traits",
+ "pallet-asset-tx-payment",
+ "pallet-assets",
+ "pallet-authorship",
+ "pallet-balances",
+ "pallet-collator-selection",
+ "pallet-message-queue",
+ "parity-scale-codec",
+ "polkadot-core-primitives",
+ "polkadot-primitives",
+ "rococo-runtime-constants",
+ "scale-info",
+ "smallvec",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-parachain-info",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "substrate-wasm-builder",
+ "westend-runtime-constants",
+]
+
+[[package]]
 name = "parity-db"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8326,6 +8398,7 @@ dependencies = [
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
+ "pallet-message-queue",
  "pallet-migration",
  "pallet-multisig",
  "pallet-preimage",
@@ -8343,6 +8416,7 @@ dependencies = [
  "pallet-web3-names",
  "pallet-xcm",
  "parachain-staking",
+ "parachains-common",
  "parity-scale-codec",
  "polkadot-runtime-common",
  "public-credentials",
@@ -13450,6 +13524,7 @@ dependencies = [
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
+ "pallet-message-queue",
  "pallet-migration",
  "pallet-multisig",
  "pallet-preimage",
@@ -13466,6 +13541,7 @@ dependencies = [
  "pallet-web3-names",
  "pallet-xcm",
  "parachain-staking",
+ "parachains-common",
  "parity-scale-codec",
  "polkadot-runtime-common",
  "public-credentials",
@@ -13640,6 +13716,7 @@ dependencies = [
  "sc-telemetry",
  "sc-transaction-pool",
  "sc-transaction-pool-api",
+ "serde_json",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
