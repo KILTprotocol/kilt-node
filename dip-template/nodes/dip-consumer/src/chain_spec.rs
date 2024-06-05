@@ -18,8 +18,7 @@
 
 use cumulus_primitives_core::ParaId;
 use dip_consumer_runtime_template::{
-	AccountId, AuraId, BalancesConfig, CollatorSelectionConfig, ParachainInfoConfig, RuntimeGenesisConfig,
-	SessionConfig, SessionKeys, Signature, SudoConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
+	AccountId, AuraId, RuntimeGenesisConfig, SessionKeys, Signature, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
 };
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::{ChainType, GenericChainSpec};
@@ -70,35 +69,26 @@ fn testnet_genesis(
 	invulnerables: Vec<(AccountId, AuraId)>,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
-) -> RuntimeGenesisConfig {
-	RuntimeGenesisConfig {
-		system: Default::default(),
-		parachain_system: Default::default(),
-		parachain_info: ParachainInfoConfig {
-			parachain_id: id,
-			..Default::default()
+) -> serde_json::Value {
+	serde_json::json!({
+		"parachain_info": {
+			"parachain_id": id,
 		},
-		sudo: SudoConfig {
-			key: Some(endowed_accounts.first().unwrap().clone()),
+		"sudo": {
+			"key": Some(endowed_accounts.first().unwrap().clone()),
 		},
-		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+		"balances": {
+			"balances": endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect::<Vec<_>>(),
 		},
-		transaction_payment: Default::default(),
-		collator_selection: CollatorSelectionConfig {
-			invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
-			candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
-			..Default::default()
+		"collator_selection": {
+			"invulnerables": invulnerables.iter().cloned().map(|(acc, _)| acc).collect::<Vec<_>>(),
+			"candidacy_bond": EXISTENTIAL_DEPOSIT * 16,
 		},
-		session: SessionConfig {
-			keys: invulnerables
-				.into_iter()
-				.map(|(acc, aura)| (acc.clone(), acc, template_session_keys(aura)))
-				.collect(),
+		"session": {
+			"keys": invulnerables.into_iter().map(|(acc, aura)| (acc.clone(), acc, template_session_keys(aura))).collect::<Vec<_>>(),
 		},
-		aura: Default::default(),
-		aura_ext: Default::default(),
-	}
+
+	})
 }
 
 pub fn development_config() -> ChainSpec {
@@ -108,36 +98,32 @@ pub fn development_config() -> ChainSpec {
 	properties.insert("tokenDecimals".into(), 12.into());
 	properties.insert("ss58Format".into(), SS58_PREFIX.into());
 
-	ChainSpec::from_genesis(
-		"DIP consumer dev",
-		"dip-consumer-dev",
-		ChainType::Development,
-		move || {
-			testnet_genesis(
-				vec![(
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_collator_keys_from_seed("Alice"),
-				)],
-				vec![
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Bob"),
-					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-				],
-				PARA_ID.into(),
-			)
-		},
-		Vec::new(),
-		None,
-		"dip-consumer-dev".into(),
-		None,
-		None,
+	ChainSpec::builder(
+		wasm_binary,
 		Extensions {
 			relay_chain: "rococo-local".into(),
 			para_id: PARA_ID,
 		},
-		wasm_binary,
 	)
+	.with_name("DIP consumer dev")
+	.with_id("dip-consumer-dev")
+	.with_chain_type(ChainType::Development)
+	.with_protocol_id("dip-consumer-dev")
+	.with_properties(properties)
+	.with_genesis_config(testnet_genesis(
+		vec![(
+			get_account_id_from_seed::<sr25519::Public>("Alice"),
+			get_collator_keys_from_seed("Alice"),
+		)],
+		vec![
+			get_account_id_from_seed::<sr25519::Public>("Alice"),
+			get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+			get_account_id_from_seed::<sr25519::Public>("Bob"),
+			get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+			get_account_id_from_seed::<sr25519::Public>("Charlie"),
+			get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+		],
+		PARA_ID.into(),
+	))
+	.build()
 }
