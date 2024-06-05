@@ -36,7 +36,7 @@ pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
 use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberMonotonicallyIncreases};
-use cumulus_primitives_core::CollationInfo;
+use cumulus_primitives_core::{AggregateMessageOrigin, CollationInfo};
 use did::{DidRawOrigin, EnsureDidOrigin};
 use frame_support::{
 	construct_runtime,
@@ -252,9 +252,12 @@ type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
 	UNINCLUDED_SEGMENT_CAPACITY,
 >;
 
+parameter_types! {
+	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
+}
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
-	type DmpMessageHandler = ();
 	type OnSystemEvent = ();
 	type OutboundXcmpMessageSource = ();
 	type ReservedDmpWeight = ();
@@ -263,6 +266,8 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type SelfParaId = ParachainInfo;
 	type XcmpMessageHandler = ();
 	type ConsensusHook = ConsensusHook;
+	type WeightInfo = ();
+	type DmpQueue = frame_support::traits::EnqueueWithOrigin<(), RelayOrigin>;
 }
 
 impl pallet_timestamp::Config for Runtime {
