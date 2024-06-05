@@ -11,6 +11,7 @@ members = [
   "runtimes/*",
   "support",
 ]
+resolver = "2"
 
 [workspace.package]
 authors       = ["KILT <info@kilt.io>"]

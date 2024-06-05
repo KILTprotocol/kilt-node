@@ -472,7 +472,10 @@ impl pallet_treasury::Config for Runtime {
 	type ProposalBondMinimum = ProposalBondMinimum;
 	type ProposalBondMaximum = ();
 	type SpendPeriod = SpendPeriod;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type SpendOrigin = runtime_common::benchmarks::BenchmarkOriginHelper;
 	type Burn = Burn;
 	type BurnDestination = ();
 	type SpendFunds = ();
