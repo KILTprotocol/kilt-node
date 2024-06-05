@@ -47,6 +47,7 @@ impl frame_system::Config for TestRuntime {
 	type Block = MockBlock<TestRuntime>;
 	type BlockHashCount = BlockHashCount;
 	type BlockLength = BlockLength;
+	type RuntimeTask = ();
 	type BlockWeights = BlockWeights;
 	type DbWeight = ();
 	type Hash = Hash;
@@ -71,7 +72,6 @@ impl pallet_balances::Config for TestRuntime {
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = ConstU32<10>;
-	type MaxHolds = ConstU32<10>;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;

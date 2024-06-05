@@ -221,6 +221,7 @@ mod tests {
 		type SystemWeightInfo = ();
 		type SS58Prefix = ();
 		type OnSetCode = ();
+		type RuntimeTask = ();
 		type MaxConsumers = frame_support::traits::ConstU32<16>;
 	}
 
@@ -230,7 +231,6 @@ mod tests {
 		type RuntimeFreezeReason = RuntimeFreezeReason;
 		type RuntimeHoldReason = ();
 		type MaxFreezes = ();
-		type MaxHolds = ();
 		type RuntimeEvent = RuntimeEvent;
 		type DustRemoval = ();
 		type ExistentialDeposit = ConstU64<1>;

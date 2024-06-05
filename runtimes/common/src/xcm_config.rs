@@ -20,7 +20,7 @@ use core::{marker::PhantomData, ops::ControlFlow};
 use frame_support::{match_types, parameter_types, traits::ProcessMessageError, weights::Weight};
 use polkadot_parachain::primitives::Sibling;
 use xcm::v3::prelude::*;
-use xcm_builder::{AccountId32Aliases, CurrencyAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};
+use xcm_builder::{AccountId32Aliases, FungibleAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};
 use xcm_executor::traits::{Properties, ShouldExecute};
 
 use crate::AccountId;
@@ -148,7 +148,7 @@ pub type LocationToAccountId<NetworkId> = (
 );
 
 /// Means for transacting assets on this chain.
-pub type LocalAssetTransactor<Currency, NetworkId> = CurrencyAdapter<
+pub type LocalAssetTransactor<Currency, NetworkId> = FungibleAdapter<
 	// Use this currency:
 	Currency,
 	// Use this currency when it is a fungible asset matching the given location or name:
