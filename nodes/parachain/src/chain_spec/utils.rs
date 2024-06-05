@@ -41,14 +41,11 @@ pub(crate) fn get_public_key_from_secret<TPublic: Public>(seed: &str) -> <TPubli
 }
 
 pub(crate) fn get_properties(symbol: &str, decimals: u32, ss58format: u32) -> Properties {
-	Properties::from_iter(
-		[
-			("tokenSymbol".into(), symbol.into()),
-			("tokenDecimals".into(), decimals.into()),
-			("ss58Format".into(), ss58format.into()),
-		]
-		.into_iter(),
-	)
+	Properties::from_iter([
+		("tokenSymbol".into(), symbol.into()),
+		("tokenDecimals".into(), decimals.into()),
+		("ss58Format".into(), ss58format.into()),
+	])
 }
 
 pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {

@@ -1164,6 +1164,7 @@ mod benches {
 		[pallet_migration, Migration]
 		[pallet_dip_provider, DipProvider]
 		[pallet_deposit_storage, DepositStorage]
+		[pallet_message_queue, MessageQueue]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 }

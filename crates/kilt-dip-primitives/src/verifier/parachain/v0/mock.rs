@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberStrictlyIncreases};
-use cumulus_primitives_core::ParaId;
+use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
 use did::{
 	did_details::{DidPublicKeyDetails, DidVerificationKey},
 	DidIdentifierOf, DidVerificationKeyRelationship, KeyIdOf,
@@ -83,11 +83,12 @@ impl frame_system::Config for TestRuntime {
 
 parameter_types! {
 	pub const ParachainId: ParaId = ParaId::new(2_001);
+	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
 impl cumulus_pallet_parachain_system::Config for TestRuntime {
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
-	type DmpMessageHandler = ();
+	type DmpQueue = frame_support::traits::EnqueueWithOrigin<(), RelayOrigin>;
 	type OnSystemEvent = ();
 	type OutboundXcmpMessageSource = ();
 	type ReservedDmpWeight = ();
@@ -96,6 +97,7 @@ impl cumulus_pallet_parachain_system::Config for TestRuntime {
 	type SelfParaId = ParachainId;
 	type XcmpMessageHandler = ();
 	type ConsensusHook = cumulus_pallet_parachain_system::consensus_hook::RequireParentIncluded;
+	type WeightInfo = ();
 }
 
 impl pallet_relay_store::Config for TestRuntime {

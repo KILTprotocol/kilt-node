@@ -78,7 +78,7 @@ fn testnet_genesis(
 			"key": Some(endowed_accounts.first().unwrap().clone()),
 		},
 		"balances": {
-			"balances": endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect::<Vec<_>>(),
+			"balances": endowed_accounts.iter().cloned().map(|k| (k, EXISTENTIAL_DEPOSIT * 1_000_000)).collect::<Vec<_>>(),
 		},
 		"collator_selection": {
 			"invulnerables": invulnerables.iter().cloned().map(|(acc, _)| acc).collect::<Vec<_>>(),

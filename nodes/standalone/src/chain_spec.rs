@@ -40,13 +40,10 @@ type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 
 fn generate_dev_chain_spec() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
-	let properties = Properties::from_iter(
-		[
-			("tokenDecimals".into(), 15.into()),
-			("tokenSymbol".into(), "DILT".into()),
-		]
-		.into_iter(),
-	);
+	let properties = Properties::from_iter([
+		("tokenDecimals".into(), 15.into()),
+		("tokenSymbol".into(), "DILT".into()),
+	]);
 
 	ChainSpec::builder(wasm_binary, None)
 		.with_name("Standalone Node (Dev)")
