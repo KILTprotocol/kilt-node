@@ -26,7 +26,7 @@ use frame_support::{
 		AccountId32,
 	},
 	storage_alias,
-	traits::{ConstU16, ConstU32, ConstU64, EnqueueMessage, EnqueueWithOrigin, Everything},
+	traits::{ConstU16, ConstU32, ConstU64, EnqueueWithOrigin, Everything},
 };
 use frame_system::mocking::MockBlock;
 use sp_runtime::BoundedVec;

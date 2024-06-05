@@ -31,7 +31,7 @@ use sp_runtime::{traits::IdentifyAccount, DispatchError, MultiSigner};
 use sp_weights::Weight;
 
 use ctype::CtypeHashOf;
-use kilt_support::{mock::SubjectId, traits::StorageDepositCollector, Deposit};
+use kilt_support::{mock::SubjectId, traits::StorageDepositCollector};
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttestationDetailsOf,
@@ -82,7 +82,7 @@ where
 		authorization_id: None,
 		ctype_hash: ctype::mock::get_ctype_hash::<T>(true),
 		revoked: false,
-		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+		deposit: kilt_support::Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: payer,
 			amount: deposit,
 		},

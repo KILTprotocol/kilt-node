@@ -24,7 +24,7 @@ use frame_support::{
 		Get,
 	},
 };
-use kilt_support::Deposit;
+
 use sp_core::H256;
 
 use crate::{
@@ -134,7 +134,7 @@ pub fn generate_base_delegation_node<T: Config>(
 		children: BoundedBTreeSet::new(),
 		hierarchy_root_id: hierarchy_id,
 		parent,
-		deposit: Deposit {
+		deposit: kilt_support::Deposit {
 			owner: deposit_owner,
 			amount: <T as Config>::Deposit::get(),
 		},
