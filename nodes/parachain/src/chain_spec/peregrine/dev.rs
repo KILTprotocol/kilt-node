@@ -37,25 +37,23 @@ use crate::chain_spec::{
 
 pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
-	ChainSpec::from_genesis(
-		"KILT Peregrine Develop",
-		"kilt_peregrine_dev",
-		ChainType::Development,
-		generate_genesis_state,
-		vec![],
-		None,
-		None,
-		None,
-		Some(get_properties("PILT", 15, 38)),
+
+	ChainSpec::builder(
+		wasm_binary,
 		Extensions {
 			relay_chain: relaychain_name.into(),
 			para_id: KILT_PARA_ID,
 		},
-		wasm_binary,
 	)
+	.with_name("KILT Peregrine Develop")
+	.with_id("kilt_peregrine_dev")
+	.with_chain_type(ChainType::Development)
+	.with_properties(get_properties("PILT", 15, 38))
+	.with_genesis_config(get_genesis_config())
+	.build()
 }
 
-fn generate_genesis_state() -> RuntimeGenesisConfig {
+fn get_genesis_config() -> serde_json::Value {
 	let alice = (
 		get_account_id_from_secret::<sr25519::Public>("Alice"),
 		get_public_key_from_secret::<AuthorityId>("Alice"),
@@ -73,41 +71,44 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 		get_account_id_from_secret::<sr25519::Public>("Ferdie"),
 	];
 
-	RuntimeGenesisConfig {
-		balances: BalancesConfig {
-			balances: endowed_accounts.map(|acc| (acc, 10_000_000 * KILT)).to_vec(),
+	let initial_authorities = vec![alice.clone(), bob.clone()];
+	let root_key = get_account_id_from_secret::<ed25519::Public>("//Alice");
+
+	serde_json::json!({
+		"balances": {
+			"balances": endowed_accounts.iter().cloned().map(|k| (k, 1u64 << 60)).collect::<Vec<_>>(),
 		},
-		session: SessionConfig {
-			keys: [alice.clone(), bob.clone()]
-				.map(|(acc, key)| (acc.clone(), acc, SessionKeys { aura: key }))
-				.to_vec(),
+		"session": {
+			"keys": initial_authorities
+				.into_iter()
+				.map(|(acc, aura)| {
+					(
+						acc.clone(),                 // account id
+						acc,                         // validator id
+						SessionKeys { aura },		 // session keys
+					)
+				})
+			.collect::<Vec<_>>(),
 		},
-		sudo: SudoConfig {
-			key: Some(alice.0.clone()),
+		"sudo": { "key": Some(alice.clone().0) },
+		"parachain_info": {
+			"parachain_id": KILT_PARA_ID.into(),
 		},
-		parachain_info: ParachainInfoConfig {
-			parachain_id: KILT_PARA_ID.into(),
-			..Default::default()
-		},
-		parachain_staking: ParachainStakingConfig {
-			stakers: [alice.clone(), bob.clone()]
+		"parachain_staking": {
+			"stakers": [alice.clone(), bob.clone()]
 				.map(|(acc, _)| -> (AccountId, Option<AccountId>, Balance) { (acc, None, 2 * MinCollatorStake::get()) })
 				.to_vec(),
-			inflation_config: kilt_inflation_config(),
-			max_candidate_stake: MAX_COLLATOR_STAKE,
+			"inflation_config": kilt_inflation_config(),
+			"max_candidate_stake": MAX_COLLATOR_STAKE,
 		},
-		council: CouncilConfig {
-			members: [alice.clone(), bob.clone()].map(|(acc, _)| acc).to_vec(),
-			phantom: Default::default(),
+		"council": {
+			"members": [alice.clone().0, bob.clone().0],
 		},
-		technical_committee: TechnicalCommitteeConfig {
-			members: [alice, bob].map(|(acc, _)| acc).to_vec(),
-			phantom: Default::default(),
+		"technical_committee": {
+			"members": [alice.0, bob.0],
 		},
-		polkadot_xcm: PolkadotXcmConfig {
-			safe_xcm_version: Some(SAFE_XCM_VERSION),
-			..Default::default()
-		},
-		..Default::default()
-	}
+		"polkadot_xcm": {
+			"safe_xcm_version": Some(SAFE_XCM_VERSION),
+		}
+	})
 }
