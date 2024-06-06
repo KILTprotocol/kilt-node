@@ -45,7 +45,7 @@ use sp_api::impl_runtime_apis;
 use sp_core::{ConstBool, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, IdentityLookup, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Perbill, Permill, RuntimeDebug,
 };
@@ -448,7 +448,7 @@ parameter_types! {
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
 	pub MaxProposalWeight: Weight = Perbill::from_percent(50) * BlockWeights::get().max_block;
-	pub TreasuryAccount: AccountId = pallet_treasury::Pallet::<Runtime>::account_id();
+	pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
 type ApproveOrigin = EitherOfDiverse<
@@ -475,7 +475,7 @@ impl pallet_treasury::Config for Runtime {
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type SpendOrigin = runtime_common::benchmarks::BenchmarkOriginHelper;
+	type SpendOrigin = frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, benches::MaxBalance>;
 	type Burn = Burn;
 	type BurnDestination = ();
 	type SpendFunds = ();
@@ -484,12 +484,12 @@ impl pallet_treasury::Config for Runtime {
 	type AssetKind = ();
 	type BalanceConverter = UnityAssetBalanceConversion;
 	type Beneficiary = AccountId;
-	type BeneficiaryLookup = IdentityLookup<Self::Beneficiary>;
+	type BeneficiaryLookup = AccountIdLookup<Self::Beneficiary, ()>;
 	type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
 	type PayoutPeriod = runtime_common::constants::treasury::PayoutPeriod;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
+	type BenchmarkHelper = runtime_common::benchmarks::BenchmarkHelper;
 }
 
 type CouncilCollective = pallet_collective::Instance1;
@@ -1131,6 +1131,11 @@ pub type Executive = frame_executive::Executive<
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
+
+	frame_support::parameter_types! {
+		pub const MaxBalance: crate::Balance = crate::Balance::max_value();
+	}
+
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_timestamp, Timestamp]

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use frame_support::traits::EnsureOrigin;
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+use pallet_treasury::ArgumentsFactory;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -31,20 +31,14 @@ impl<A> From<(A, Vec<u8>)> for DummySignature {
 	}
 }
 
-/// [`EnsureOrigin`] implementation that always succeeds.
-pub struct BenchmarkOriginHelper;
+pub struct BenchmarkHelper;
 
-impl EnsureOrigin<AccountId> for BenchmarkOriginHelper {
-	type Success = AccountId;
-
-	fn try_origin(o: AccountId) -> Result<Self::Success, AccountId> {
-		Ok(o)
+impl ArgumentsFactory<(), AccountId> for BenchmarkHelper {
+	fn create_asset_kind(_seed: u32) -> () {
+		()
 	}
 
-	#[cfg(feature = "runtime-benchmarks")]
-	fn try_successful_origin() -> Result<Self::Success, ()> {
-		use sp_core::{sr25519, Pair};
-		let (pair, _) = sr25519::Pair::generate();
-		Ok(pair.public().into())
+	fn create_beneficiary(seed: [u8; 32]) -> AccountId {
+		AccountId::from(seed)
 	}
 }
