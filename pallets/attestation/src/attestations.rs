@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
@@ -34,7 +33,7 @@ pub struct AttestationDetails<CtypeHash, AttesterId, AuthorizationId, AccountId,
 	pub revoked: bool,
 	/// The deposit that was taken to incentivise fair use of the on chain
 	/// storage.
-	pub deposit: Deposit<AccountId, Balance>,
+	pub deposit: kilt_support::Deposit<AccountId, Balance>,
 }
 
 #[cfg(test)]

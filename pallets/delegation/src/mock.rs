@@ -24,7 +24,6 @@ use frame_support::{
 		Get,
 	},
 };
-
 use sp_core::H256;
 
 use crate::{
