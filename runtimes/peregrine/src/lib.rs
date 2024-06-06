@@ -1168,7 +1168,7 @@ mod benches {
 		[pallet_did_lookup, DidLookup]
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
-		[pallet_xcm, PolkadotXcm]
+		//[pallet_xcm, PolkadotXcm]
 		[pallet_migration, Migration]
 		[pallet_dip_provider, DipProvider]
 		[pallet_deposit_storage, DepositStorage]

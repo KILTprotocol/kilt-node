@@ -21,7 +21,7 @@
 use peregrine_runtime::{SessionKeys, WASM_BINARY};
 use runtime_common::{
 	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
-	AccountId, AuthorityId, Balance,
+	AccountId, AuthorityId,
 };
 use sc_service::ChainType;
 use sp_core::sr25519;
@@ -72,13 +72,15 @@ fn get_genesis_config() -> serde_json::Value {
 
 	let stakers = [alice.clone(), bob.clone()]
 		.into_iter()
-		.map(|(acc, _)| -> (AccountId, Option<AccountId>, Balance) { (acc, None, 2 * MinCollatorStake::get()) })
+		.map(|(acc, _)| -> (AccountId, Option<AccountId>, String) {
+			(acc, None, (2 * MinCollatorStake::get()).to_string())
+		})
 		.collect::<Vec<_>>();
 
 	let balances = endowed_accounts
 		.iter()
 		.cloned()
-		.map(|acc| (acc, 1000 * KILT))
+		.map(|acc| (acc, (1000 * KILT).to_string()))
 		.collect::<Vec<_>>();
 
 	let keys = initial_authorities
@@ -102,7 +104,7 @@ fn get_genesis_config() -> serde_json::Value {
 		"parachain_staking": {
 			"stakers": stakers,
 			"inflation_config": kilt_inflation_config(),
-			"max_candidate_stake": MAX_COLLATOR_STAKE,
+			"max_candidate_stake": MAX_COLLATOR_STAKE.to_string(),
 		},
 		"council": {
 			"members": members,
