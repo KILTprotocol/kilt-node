@@ -41,13 +41,10 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 
 fn generate_dev_chain_spec() -> ChainSpec {
-	let properties = Properties::from_iter(
-		[
-			("tokenDecimals".into(), 15.into()),
-			("tokenSymbol".into(), "DILT".into()),
-		]
-		.into_iter(),
-	);
+	let properties = Properties::from_iter([
+		("tokenDecimals".into(), 15.into()),
+		("tokenSymbol".into(), "DILT".into()),
+	]);
 
 	ChainSpec::from_genesis(
 		"Standalone Node (Dev)",
