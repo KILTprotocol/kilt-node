@@ -202,6 +202,7 @@ mod tests {
 		type RuntimeOrigin = RuntimeOrigin;
 		type Block = Block;
 		type Nonce = u64;
+		type RuntimeTask = RuntimeTask;
 
 		type RuntimeCall = RuntimeCall;
 		type Hash = H256;
@@ -230,7 +231,6 @@ mod tests {
 		type RuntimeFreezeReason = RuntimeFreezeReason;
 		type RuntimeHoldReason = ();
 		type MaxFreezes = ();
-		type MaxHolds = ();
 		type RuntimeEvent = RuntimeEvent;
 		type DustRemoval = ();
 		type ExistentialDeposit = ConstU64<1>;
