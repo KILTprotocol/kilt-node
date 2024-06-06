@@ -126,15 +126,18 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 			println!("Dispatching task for spec id: {chain_spec_id}.");
 			println!("The following runtime was chosen based on the spec id: {runtime}.");
+			println!("spec : {:?}", spec);
 
 			let runner = cli.create_runner(cmd)?;
 
 			match runtime {
 				ParachainRuntime::Spiritnet(_) => runner.sync_run(|config| {
+					println!("Running export genesis state for Spiritnet runtime.");
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
+					println!("Partials: created" );
 					cmd.run::<Block>(&*spec, &*partials.client)
 				}),
 				ParachainRuntime::Peregrine(_) => runner.sync_run(|config| {

@@ -151,11 +151,14 @@ where
 
 	let executor = sc_service::new_native_or_wasm_executor(config);
 
+	println!("try to create client: {:?}", config);
+
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
 		config,
 		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 		executor,
 	)?;
+	println!("client created");
 	let client = Arc::new(client);
 
 	let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
