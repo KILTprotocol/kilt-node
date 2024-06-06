@@ -32,11 +32,8 @@ impl<A> From<(A, Vec<u8>)> for DummySignature {
 }
 
 pub struct BenchmarkHelper;
-
 impl ArgumentsFactory<(), AccountId> for BenchmarkHelper {
-	fn create_asset_kind(_seed: u32) -> () {
-		()
-	}
+	fn create_asset_kind(_seed: u32) {}
 
 	fn create_beneficiary(seed: [u8; 32]) -> AccountId {
 		AccountId::from(seed)
