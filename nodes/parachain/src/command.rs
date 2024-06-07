@@ -15,22 +15,56 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-
-use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
 use runtime_common::Block;
-use sc_cli::SubstrateCli;
+use sc_cli::{SubstrateCli, ChainSpec};
 use sc_executor::NativeExecutionDispatch;
 use sp_core::hexdisplay::HexDisplay;
-use sp_runtime::traits::AccountIdConversion;
+use sp_runtime::{traits::{AccountIdConversion, Block as BlockT, Header as HeaderT, Hash as HashT , Zero}, StateVersion };
+use parity_scale_codec::Encode;
 
 use crate::{
 	chain_spec::{self, ParachainRuntime},
 	cli::{Cli, RelayChainCli, Subcommand},
 	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
 };
+
+pub fn generate_genesis_block<Block: BlockT>(
+	chain_spec: &dyn ChainSpec,
+	genesis_state_version: StateVersion,
+) -> Result<Block, String> {
+	let storage = chain_spec.build_storage()?;
+
+	let child_roots = storage.children_default.iter().map(|(sk, child_content)| {
+		let state_root = <<<Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(
+			child_content.data.clone().into_iter().collect(),
+			genesis_state_version,
+		);
+		(sk.clone(), state_root.encode())
+	});
+	let state_root = <<<Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(
+		storage.top.clone().into_iter().chain(child_roots).collect(),
+		genesis_state_version,
+	);
+
+	let extrinsics_root = <<<Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(
+		Vec::new(),
+		genesis_state_version,
+	);
+
+	Ok(Block::new(
+		<<Block as BlockT>::Header as HeaderT>::new(
+			Zero::zero(),
+			extrinsics_root,
+			state_root,
+			Default::default(),
+			Default::default(),
+		),
+		Default::default(),
+	))
+}
 
 // Returns the provided (`--chain`, <selected_runtime>) given only a reference
 // to the global `Cli` object.
@@ -121,7 +155,6 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 		}
 		Some(Subcommand::ExportGenesisState(cmd)) => {
 			let (chain_spec_id, runtime) = get_selected_chainspec(&cmd.shared_params)?;
-			let spec = cli.load_spec(chain_spec_id.as_str())?;
 
 			println!("Dispatching task for spec id: {chain_spec_id}.");
 			println!("The following runtime was chosen based on the spec id: {runtime}.");
@@ -130,8 +163,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 			match runtime {
 				ParachainRuntime::Spiritnet(_) => runner.sync_run(|config| {
-					
-
+					config.
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,

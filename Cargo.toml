@@ -39,7 +39,7 @@ futures            = { version = "0.3.21", default-features = false }
 hash-db            = { version = "0.16.0", default-features = false }
 hex                = { version = "0.4.0", default-features = false }
 hex-literal        = { version = "0.3.4" }
-jsonrpsee          = { version = "0.16.2" }
+jsonrpsee          = { version = "0.20.3" }
 libsecp256k1       = { version = "0.7", default-features = false }
 log                = { version = "0.4.17" }
 parity-scale-codec = { version = "3.1.5", default-features = false }

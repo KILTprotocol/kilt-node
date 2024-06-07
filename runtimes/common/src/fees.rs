@@ -153,11 +153,7 @@ mod tests {
 		AccountId, BlockExecutionWeight, ExtrinsicBaseWeight, AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT,
 		NORMAL_DISPATCH_RATIO,
 	};
-	use frame_support::{
-		dispatch::DispatchClass,
-		parameter_types,
-		traits::{fungible::Unbalanced, FindAuthor},
-	};
+	use frame_support::{dispatch::DispatchClass, parameter_types, traits::FindAuthor};
 	use frame_system::limits;
 	use sp_core::{ConstU64, H256};
 	use sp_runtime::{
@@ -252,7 +248,7 @@ mod tests {
 	impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
 		fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 			// Must resolve into existing but better to be safe.
-			<pallet_balances::Pallet<Test>>::resolve(&TREASURY_ACC, amount);
+			let _ = <pallet_balances::Pallet<Test>>::resolve(&TREASURY_ACC, amount);
 		}
 	}
 
