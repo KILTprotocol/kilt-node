@@ -67,7 +67,7 @@ use runtime_common::{
 	},
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
-	fees::{ToAuthor, ToAuthorCredit, WeightToFee},
+	fees::{ToAuthorCredit, WeightToFee},
 	pallet_id,
 	xcm_config::RelayOrigin,
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
