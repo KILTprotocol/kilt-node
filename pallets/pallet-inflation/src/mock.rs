@@ -59,6 +59,7 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
+	type RuntimeTask = RuntimeTask;
 	type BaseCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
@@ -95,7 +96,6 @@ impl pallet_balances::Config for Test {
 	type FreezeIdentifier = ();
 	type RuntimeHoldReason = ();
 	type MaxFreezes = ();
-	type MaxHolds = ();
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];

@@ -49,6 +49,12 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `pallet_xcm`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_xcm::WeightInfo for WeightInfo<T> {
+	fn claim_assets() -> Weight {
+		todo!()
+	}
+	fn transfer_assets() -> Weight {
+		todo!()
+	}
 	fn take_response() -> cumulus_primitives_core::Weight { todo!() }
 	fn new_query() -> cumulus_primitives_core::Weight { todo!() }
 	/// Storage: `PolkadotXcm::SupportedVersion` (r:1 w:0)

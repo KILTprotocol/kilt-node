@@ -39,15 +39,15 @@ use crate::{constants::MILLI_KILT, AccountId, Balance, CreditOf, NegativeImbalan
 pub struct SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>(
 	sp_std::marker::PhantomData<(R, Ratio, Beneficiary1, Beneficiary2)>,
 );
-impl<R, Ratio, Beneficiary1, Beneficiary2> OnUnbalanced<NegativeImbalanceOf<R>>
+impl<R, Ratio, Beneficiary1, Beneficiary2> OnUnbalanced<CreditOf<R>>
 	for SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>
 where
 	R: pallet_balances::Config,
-	Beneficiary1: OnUnbalanced<NegativeImbalanceOf<R>>,
-	Beneficiary2: OnUnbalanced<NegativeImbalanceOf<R>>,
+	Beneficiary1: OnUnbalanced<CreditOf<R>>,
+	Beneficiary2: OnUnbalanced<CreditOf<R>>,
 	Ratio: Get<(u32, u32)>,
 {
-	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalanceOf<R>>) {
+	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = CreditOf<R>>) {
 		let ratio = Ratio::get();
 		if let Some(fees) = fees_then_tips.next() {
 			let mut split = fees.ration(ratio.0, ratio.1);
@@ -288,7 +288,9 @@ mod tests {
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 0);
 			assert_eq!(Balances::free_balance(AUTHOR_ACC), 0);
 
-			SplitFeesByRatio::<Test, Ratio, ToBeneficiary, ToAuthor<Test>>::on_unbalanceds(vec![fee, tip].into_iter());
+			SplitFeesByRatio::<Test, Ratio, ToBeneficiary, ToAuthorCredit<Test>>::on_unbalanceds(
+				vec![fee, tip].into_iter(),
+			);
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 5);
 			assert_eq!(Balances::free_balance(AUTHOR_ACC), 25);

@@ -57,7 +57,7 @@ use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
 use pallet_dip_provider::{traits::IdentityProvider, IdentityProviderOf};
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
-use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
+use pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo};
 use runtime_common::dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
@@ -206,6 +206,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	type AccountData = AccountData<Balance>;
+	type RuntimeTask = RuntimeTask;
 	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
 	type BlockHashCount = ConstU64<256>;
@@ -301,7 +302,6 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type MaxFreezes = ConstU32<50>;
-	type MaxHolds = ConstU32<50>;
 	type MaxLocks = ConstU32<50>;
 	type MaxReserves = ConstU32<50>;
 	type ReserveIdentifier = [u8; 8];
@@ -312,7 +312,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+	type OnChargeTransaction = FungibleAdapter<Balances, ()>;
 	type FeeMultiplierUpdate = ();
 	type LengthToFee = IdentityFee<Balance>;
 	type OperationalFeeMultiplier = ConstU8<1>;

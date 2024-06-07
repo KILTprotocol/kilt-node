@@ -35,16 +35,19 @@ use sp_std::prelude::ToOwned;
 use xcm::v3::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
-	EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-	UsingComponents, WithComputedOrigin,
+	EnsureXcmOrigin, FixedWeightBounds, FrameTransactionalProcessor, NativeAsset, RelayChainAsNative,
+	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
+	TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
-use runtime_common::xcm_config::{
-	DenyReserveTransferToRelayChain, DenyThenTry, HeapSize, HereLocation, LocalAssetTransactor, LocationToAccountId,
-	MaxAssetsIntoHolding, MaxInstructions, MaxStale, ParentLocation, ParentOrSiblings, RelayOrigin, ServiceWeight,
-	UnitWeightCost,
+use runtime_common::{
+	xcm_config::{
+		DenyReserveTransferToRelayChain, DenyThenTry, HeapSize, HereLocation, LocalAssetTransactor,
+		LocationToAccountId, MaxAssetsIntoHolding, MaxInstructions, MaxStale, ParentLocation, ParentOrSiblings,
+		RelayOrigin, ServiceWeight, UnitWeightCost,
+	},
+	SendDustAndFeesToTreasury,
 };
 
 parameter_types! {
@@ -184,7 +187,8 @@ impl xcm_executor::Config for XcmConfig {
 	// How weight is transformed into fees. The fees are not taken out of the
 	// Balances pallet here. Balances is only used if fees are dropped without being
 	// used. In that case they are put into the treasury.
-	type Trader = UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>;
+	type Trader =
+		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, SendDustAndFeesToTreasury<Runtime>>;
 	type ResponseHandler = PolkadotXcm;
 	// What happens with assets that are left in the register after the XCM message
 	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset
@@ -202,6 +206,7 @@ impl xcm_executor::Config for XcmConfig {
 	type CallDispatcher = WithOriginFilter<SafeCallFilter>;
 	type SafeCallFilter = SafeCallFilter;
 	type Aliasers = Nothing;
+	type TransactionalProcessor = FrameTransactionalProcessor;
 }
 
 /// Allows only local `Signed` origins to be converted into `MultiLocation`s by

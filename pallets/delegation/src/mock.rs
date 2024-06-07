@@ -221,6 +221,7 @@ pub(crate) mod runtime {
 	}
 
 	impl frame_system::Config for Test {
+		type RuntimeTask = RuntimeTask;
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Block = Block;
@@ -253,7 +254,6 @@ pub(crate) mod runtime {
 		pub const ExistentialDeposit: Balance = 1;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
-		pub const MaxHolds: u32 = 50;
 		pub const MaxFreezes: u32 = 50;
 	}
 
@@ -262,7 +262,6 @@ pub(crate) mod runtime {
 		type FreezeIdentifier = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
-		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();

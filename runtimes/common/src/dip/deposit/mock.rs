@@ -41,6 +41,7 @@ pub(crate) const SUBJECT: AccountId = AccountId::new([100u8; 32]);
 pub(crate) const SUBMITTER: AccountId = AccountId::new([200u8; 32]);
 
 impl frame_system::Config for TestRuntime {
+	type RuntimeTask = RuntimeTask;
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
@@ -71,7 +72,6 @@ impl pallet_balances::Config for TestRuntime {
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = ConstU32<10>;
-	type MaxHolds = ConstU32<10>;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;

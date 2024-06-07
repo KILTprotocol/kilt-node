@@ -49,6 +49,7 @@ construct_runtime!(
 );
 
 impl frame_system::Config for TestRuntime {
+	type RuntimeTask = RuntimeTask;
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type AccountId = AccountId32;
 	type BaseCallFilter = Everything;
@@ -78,7 +79,6 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 500;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
-	pub const MaxHolds: u32 = 50;
 	pub const MaxFreezes: u32 = 50;
 }
 
@@ -87,7 +87,6 @@ impl pallet_balances::Config for TestRuntime {
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
-	type MaxHolds = MaxHolds;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;

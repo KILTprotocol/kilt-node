@@ -69,6 +69,7 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
+	type RuntimeTask = RuntimeTask;
 	type BaseCallFilter = frame_support::traits::Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
@@ -96,7 +97,6 @@ impl frame_system::Config for Test {
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 1;
 	pub const MaxFreezes : u32 = 50;
-	pub const MaxHolds : u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
@@ -104,7 +104,6 @@ impl pallet_balances::Config for Test {
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
-	type MaxHolds = MaxHolds;
 	type MaxLocks = ();
 	type MaxReserves = ();
 	type ReserveIdentifier = [u8; 8];

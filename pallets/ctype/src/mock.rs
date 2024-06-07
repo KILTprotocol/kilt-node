@@ -75,6 +75,7 @@ pub mod runtime {
 	}
 
 	impl frame_system::Config for Test {
+		type RuntimeTask = RuntimeTask;
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Block = Block;
@@ -113,7 +114,6 @@ pub mod runtime {
 		type FreezeIdentifier = ();
 		type RuntimeHoldReason = ();
 		type MaxFreezes = ();
-		type MaxHolds = ();
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();

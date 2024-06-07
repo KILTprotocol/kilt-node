@@ -64,6 +64,7 @@ construct_runtime!(
 
 impl frame_system::Config for TestRuntime {
 	type AccountData = pallet_balances::AccountData<Balance>;
+	type RuntimeTask = RuntimeTask;
 	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<TestRuntime>;
@@ -96,7 +97,6 @@ impl pallet_balances::Config for TestRuntime {
 	type ExistentialDeposit = ConstU128<KILT>;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type MaxFreezes = ConstU32<50>;
-	type MaxHolds = ConstU32<50>;
 	type MaxLocks = ConstU32<50>;
 	type MaxReserves = ConstU32<50>;
 	type ReserveIdentifier = [u8; 8];
