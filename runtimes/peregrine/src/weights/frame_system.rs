@@ -52,6 +52,12 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `frame_system`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> frame_system::WeightInfo for WeightInfo<T> {
+	fn apply_authorized_upgrade() -> Weight {
+		todo!()
+	}
+	fn authorize_upgrade() -> Weight {
+		todo!()
+	}
 	fn set_code() -> Weight {
 		Weight::from_parts(87_586_619_000, 1485)
 			.saturating_add(T::DbWeight::get().reads(1_u64))

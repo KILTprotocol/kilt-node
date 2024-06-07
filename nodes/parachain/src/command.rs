@@ -20,12 +20,11 @@ use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
-use parity_scale_codec::Encode;
 use runtime_common::Block;
 use sc_cli::SubstrateCli;
 use sc_executor::NativeExecutionDispatch;
 use sp_core::hexdisplay::HexDisplay;
-use sp_runtime::traits::{AccountIdConversion, Block as BlockT};
+use sp_runtime::traits::AccountIdConversion;
 
 use crate::{
 	chain_spec::{self, ParachainRuntime},
@@ -126,26 +125,26 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 			println!("Dispatching task for spec id: {chain_spec_id}.");
 			println!("The following runtime was chosen based on the spec id: {runtime}.");
-			println!("spec : {:?}", spec);
 
 			let runner = cli.create_runner(cmd)?;
 
 			match runtime {
 				ParachainRuntime::Spiritnet(_) => runner.sync_run(|config| {
-					println!("Running export genesis state for Spiritnet runtime.");
+					
+
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
-					println!("Partials: created" );
-					cmd.run::<Block>(&*spec, &*partials.client)
+					
+					cmd.run(partials.client)
 				}),
 				ParachainRuntime::Peregrine(_) => runner.sync_run(|config| {
 					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
-					cmd.run::<Block>(&*spec, &*partials.client)
+					cmd.run(partials.client)
 				}),
 			}
 		}

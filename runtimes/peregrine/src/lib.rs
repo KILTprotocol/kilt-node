@@ -67,11 +67,11 @@ use runtime_common::{
 	},
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
-	fees::{ToAuthor, WeightToFee},
+	fees::{ToAuthorCredit, WeightToFee},
 	pallet_id,
 	xcm_config::RelayOrigin,
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
-	Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
+	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
 #[cfg(feature = "std")]
@@ -181,7 +181,6 @@ parameter_types! {
 	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
-	pub const MaxHolds: u32 = 50;
 	pub const MaxFreezes: u32 = 50;
 }
 
@@ -231,8 +230,10 @@ impl pallet_balances::Config for Runtime {
 
 impl pallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type OnChargeTransaction =
-		pallet_transaction_payment::CurrencyAdapter<Balances, FeeSplit<Runtime, Treasury, ToAuthor<Runtime>>>;
+	type OnChargeTransaction = pallet_transaction_payment::FungibleAdapter<
+		Balances,
+		FeeSplit<Runtime, SendDustAndFeesToTreasury<Runtime>, ToAuthorCredit<Runtime>>,
+	>;
 	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = WeightToFee<Runtime>;
 	type LengthToFee = ConstantMultiplier<Balance, constants::fee::TransactionByteFee>;

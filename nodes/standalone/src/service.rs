@@ -168,10 +168,10 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 	);
 
 	let mut net_config = sc_network::config::FullNetworkConfiguration::new(&config.network);
+	let (grandpa_protocol_config, grandpa_notification_service) =
+		sc_consensus_grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone());
 
-	net_config.add_notification_protocol(sc_consensus_grandpa::grandpa_peers_set_config(
-		grandpa_protocol_name.clone(),
-	));
+	net_config.add_notification_protocol(grandpa_protocol_config);
 
 	let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
 		backend.clone(),
@@ -329,6 +329,7 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 			shared_voter_state: SharedVoterState::empty(),
 			offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool),
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
+			notification_service: grandpa_notification_service,
 		};
 
 		// the GRANDPA voter task is considered infallible, i.e.

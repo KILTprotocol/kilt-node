@@ -153,7 +153,11 @@ mod tests {
 		AccountId, BlockExecutionWeight, ExtrinsicBaseWeight, AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT,
 		NORMAL_DISPATCH_RATIO,
 	};
-	use frame_support::{dispatch::DispatchClass, parameter_types, traits::FindAuthor};
+	use frame_support::{
+		dispatch::DispatchClass,
+		parameter_types,
+		traits::{fungible::Unbalanced, FindAuthor},
+	};
 	use frame_system::limits;
 	use sp_core::{ConstU64, H256};
 	use sp_runtime::{
@@ -245,10 +249,10 @@ mod tests {
 	const AUTHOR_ACC: AccountId = AccountId::new([2; 32]);
 
 	pub struct ToBeneficiary();
-	impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
-		fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
+	impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
+		fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 			// Must resolve into existing but better to be safe.
-			<pallet_balances::Pallet<Test>>::resolve_creating(&TREASURY_ACC, amount);
+			<pallet_balances::Pallet<Test>>::resolve(&TREASURY_ACC, amount);
 		}
 	}
 
@@ -282,8 +286,8 @@ mod tests {
 	#[test]
 	fn test_fees_and_tip_split() {
 		new_test_ext().execute_with(|| {
-			let fee = <Balances as Currency<<Test as frame_system::Config>::AccountId>>::issue(10);
-			let tip = <Balances as Currency<<Test as frame_system::Config>::AccountId>>::issue(20);
+			let fee = <Balances as Balanced<<Test as frame_system::Config>::AccountId>>::issue(10);
+			let tip = <Balances as Balanced<<Test as frame_system::Config>::AccountId>>::issue(20);
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 0);
 			assert_eq!(Balances::free_balance(AUTHOR_ACC), 0);

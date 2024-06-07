@@ -112,11 +112,9 @@ parachains-common               = { version = "8.0.0", default-features = false 
 # XCM Emulator tests
 asset-hub-kusama-runtime     = { version = "0.13.0", default-features = false }
 asset-hub-polkadot-runtime   = { version = "0.13.0", default-features = false }
-asset-hub-rococo-runtime     = { version = "0.12.0", default-features = false }
 asset-hub-westend-runtime    = { version = "0.16.0", default-features = false }
 bridge-hub-kusama-runtime    = { version = "0.5.0", default-features = false }
 bridge-hub-polkadot-runtime  = { version = "0.5.0", default-features = false }
-bridge-hub-rococo-runtime    = { version = "0.6.0", default-features = false }
 collectives-polkadot-runtime = { version = "5.0.0", default-features = false }
 integration-tests-common     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.3.0" }
 penpal-runtime               = { version = "0.15.1", default-features = false }
@@ -182,7 +180,6 @@ polkadot-parachain          = { version = "7.0.0", package = "polkadot-parachain
 polkadot-runtime-common     = { version = "8.0.2", default-features = false }
 polkadot-runtime-parachains = { version = "8.0.3", default-features = false }
 rococo-runtime              = { version = "8.0.0", default-features = false }
-rococo-runtime-constants    = { version = "8.0.0", default-features = false }
 xcm                         = { version = "8.0.1", package = "staging-xcm", default-features = false }
 xcm-builder                 = { version = "8.0.2", package = "staging-xcm-builder", default-features = false }
 xcm-executor                = { version = "8.0.2", package = "staging-xcm-executor", default-features = false }

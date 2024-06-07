@@ -18,7 +18,7 @@
 
 use crate::{
 	AccountId, AllPalletsWithSystem, Balances, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-	RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
+	RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
@@ -32,7 +32,7 @@ use parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling};
 use polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery;
 use sp_core::ConstU32;
 use sp_std::prelude::ToOwned;
-use xcm::v3::prelude::*;
+use xcm::v4::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
 	EnsureXcmOrigin, FixedWeightBounds, FrameTransactionalProcessor, NativeAsset, RelayChainAsNative,
@@ -52,11 +52,11 @@ use runtime_common::{
 
 parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
-	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
+	pub Ancestry: Location = Parachain(ParachainInfo::parachain_id().into()).into();
 	// TODO: This needs to be updated once we deploy Peregrine on Rococo/Paseo
 	pub const RelayNetworkId: Option<NetworkId> = None;
 	// TODO: This needs to be updated once we deploy Peregrine on Rococo/Paseo.
-	pub UniversalLocation: InteriorMultiLocation =
+	pub UniversalLocation: xcm::v4::prelude::InteriorLocation =
 		Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
@@ -224,7 +224,7 @@ pub type XcmRouter = (
 
 #[cfg(feature = "runtime-benchmarks")]
 parameter_types! {
-	pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
+	pub ReachableDest: Option<Location> = Some(Parent.into());
 }
 
 impl pallet_xcm::Config for Runtime {

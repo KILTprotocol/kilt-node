@@ -204,6 +204,7 @@ parameter_types! {
 pub const SS58_PREFIX: u16 = 101;
 
 impl frame_system::Config for Runtime {
+	type RuntimeTask = RuntimeTask;
 	type AccountData = AccountData<Balance>;
 	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
@@ -300,7 +301,6 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type MaxFreezes = ConstU32<50>;
-	type MaxHolds = ConstU32<50>;
 	type MaxLocks = ConstU32<50>;
 	type MaxReserves = ConstU32<50>;
 	type ReserveIdentifier = [u8; 8];
