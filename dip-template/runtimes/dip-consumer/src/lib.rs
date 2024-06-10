@@ -57,7 +57,7 @@ use frame_system::{
 use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
-use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
+use pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
 use sp_core::{crypto::KeyTypeId, ConstBool, ConstU128, ConstU16, OpaqueMetadata};
@@ -311,7 +311,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+	type OnChargeTransaction = FungibleAdapter<Balances, ()>;
 	type FeeMultiplierUpdate = ();
 	type LengthToFee = IdentityFee<Balance>;
 	type OperationalFeeMultiplier = ConstU8<1>;
