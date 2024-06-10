@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+#![allow(unused_doc_comments)]
 
 pub mod attestation;
 pub mod ctype;
