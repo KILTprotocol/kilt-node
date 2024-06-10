@@ -163,7 +163,6 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 			match runtime {
 				ParachainRuntime::Spiritnet(_) => runner.sync_run(|config| {
-					config.
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
