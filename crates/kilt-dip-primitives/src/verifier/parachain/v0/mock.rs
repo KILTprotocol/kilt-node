@@ -57,6 +57,7 @@ construct_runtime!(
 
 impl frame_system::Config for TestRuntime {
 	type AccountData = ();
+	type RuntimeTask = RuntimeTask;
 	type AccountId = AccountId32;
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<Self>;
