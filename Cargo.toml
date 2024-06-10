@@ -179,7 +179,7 @@ pallet-xcm                  = { version = "8.0.5", default-features = false }
 polkadot-parachain          = { version = "7.0.0", package = "polkadot-parachain-primitives", default-features = false }
 polkadot-runtime-common     = { version = "8.0.2", default-features = false }
 polkadot-runtime-parachains = { version = "8.0.3", default-features = false }
-rococo-runtime              = { version = "8.0.0", default-features = false }
+rococo-runtime              = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0", default-features = false }
 xcm                         = { version = "8.0.1", package = "staging-xcm", default-features = false }
 xcm-builder                 = { version = "8.0.2", package = "staging-xcm-builder", default-features = false }
 xcm-executor                = { version = "8.0.2", package = "staging-xcm-executor", default-features = false }
