@@ -202,6 +202,7 @@ cumulus-relay-chain-minimal-node        = { git = "https://github.com/paritytech
 cumulus-relay-chain-rpc-interface       = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
 pallet-transaction-payment-rpc          = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
 polkadot-cli                            = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
+polkadot-overseer                       = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0", default-features = false }
 polkadot-primitives                     = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
 polkadot-service                        = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
 sc-basic-authorship                     = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }

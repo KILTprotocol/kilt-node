@@ -4902,6 +4902,7 @@ dependencies = [
  "parity-scale-codec",
  "peregrine-runtime",
  "polkadot-cli",
+ "polkadot-overseer",
  "polkadot-primitives",
  "polkadot-service",
  "runtime-common",

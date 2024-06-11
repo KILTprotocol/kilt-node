@@ -81,6 +81,7 @@ cumulus-primitives-parachain-inherent   = { workspace = true, features = ["std"]
 cumulus-relay-chain-inprocess-interface = { workspace = true }
 cumulus-relay-chain-interface           = { workspace = true }
 cumulus-relay-chain-minimal-node        = { workspace = true }
+polkadot-overseer                       = { workspace = true }
 # Polkadot dependencies
 polkadot-cli        = { workspace = true }
 polkadot-primitives = { workspace = true, features = ["std"] }
