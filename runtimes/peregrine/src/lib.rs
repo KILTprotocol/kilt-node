@@ -1170,7 +1170,7 @@ mod benches {
 		[pallet_did_lookup, DidLookup]
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
-		//[pallet_xcm, PolkadotXcm]
+		[pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pallet_migration, Migration]
 		[pallet_dip_provider, DipProvider]
 		[pallet_deposit_storage, DepositStorage]
@@ -1472,6 +1472,7 @@ impl_runtime_apis! {
 			use frame_system_benchmarking::Pallet as SystemBench;
 			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 			use frame_benchmarking::baseline::Pallet as Baseline;
+			use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
@@ -1488,6 +1489,51 @@ impl_runtime_apis! {
 			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 			use frame_benchmarking::baseline::Pallet as Baseline;
 			use frame_support::traits::TrackedStorageKey;
+			use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+			use xcm::lts::prelude::*;
+
+			parameter_types! {
+				pub ExistentialDepositAsset: Option<Asset> = Some((
+					Location::parent(),
+					0
+				).into());
+			}
+
+			impl pallet_xcm::benchmarking::Config for Runtime {
+				type DeliveryHelper = cumulus_primitives_utility::ToParentDeliveryHelper<xcm_config::XcmConfig, ExistentialDepositAsset, ()>;
+
+				fn reachable_dest() -> Option<Location> {
+					Some(Parent.into())
+				}
+
+				fn teleportable_asset_and_dest() -> Option<(Asset, Location)> {
+					Some((
+						Asset {
+							fun: Fungible(ExistentialDeposit::get()),
+							id: AssetId(Parent.into())
+						},
+						Parent.into(),
+					))
+				}
+
+				fn reserve_transferable_asset_and_dest() -> Option<(Asset, Location)> {
+					Some((
+						Asset {
+							fun: Fungible(ExistentialDeposit::get()),
+							id: AssetId(Parent.into())
+						},
+						Parent.into(),
+					))
+				}
+
+					fn get_asset() -> Asset {
+						Asset {
+							fun: Fungible(ExistentialDeposit::get()),
+							id: AssetId(Parent.into())
+						}
+					}
+
+			}
 
 			impl frame_system_benchmarking::Config for Runtime {}
 			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
