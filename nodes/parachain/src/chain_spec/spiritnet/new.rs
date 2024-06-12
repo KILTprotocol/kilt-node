@@ -41,17 +41,17 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 	.with_id("kilt_spiritnet_new")
 	.with_chain_type(ChainType::Live)
 	.with_properties(get_properties("KILT", 15, 38))
-	.with_genesis_config(get_genesis_config())
+	.with_genesis_config_patch(get_genesis_config())
 	.build()
 }
 
 fn get_genesis_config() -> serde_json::Value {
 	serde_json::json!({
-		"parachain_info": {
-			"parachain_id": KILT_PARA_ID,
+		"parachainInfo": {
+			"parachainId": KILT_PARA_ID,
 		},
-		"polkadot_xcm": {
-			"safe_xcm_version": SAFE_XCM_VERSION,
+		"polkadotXcm": {
+			"safeXcmVersion": SAFE_XCM_VERSION,
 		},
 	})
 }

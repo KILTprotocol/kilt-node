@@ -48,10 +48,10 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 fn get_genesis_config() -> serde_json::Value {
 	serde_json::json!({
 		"parachain_info": {
-			"parachain_id": KILT_PARA_ID,
+			"parachainId": KILT_PARA_ID,
 		},
 		"polkadot_xcm": {
-			"safe_xcm_version": SAFE_XCM_VERSION,
+			"safeXcmVersion": SAFE_XCM_VERSION,
 		},
 	})
 }

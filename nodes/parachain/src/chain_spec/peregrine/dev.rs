@@ -98,10 +98,10 @@ fn get_genesis_config() -> serde_json::Value {
 			"keys": keys,
 		},
 		"sudo": { "key": Some(alice.0) },
-		"parachain_info": {
-			"parachain_id": KILT_PARA_ID,
+		"parachainInfo": {
+			"parachainId": KILT_PARA_ID,
 		},
-		"parachain_staking": {
+		"parachainStaking": {
 			"stakers": stakers,
 			"inflation_config": kilt_inflation_config(),
 			"max_candidate_stake": MAX_COLLATOR_STAKE.to_string(),
@@ -109,11 +109,11 @@ fn get_genesis_config() -> serde_json::Value {
 		"council": {
 			"members": members,
 		},
-		"technical_committee": {
+		"technicalCommittee": {
 			"members": members,
 		},
-		"polkadot_xcm": {
-			"safe_xcm_version": Some(SAFE_XCM_VERSION),
+		"polkadotXcm": {
+			"safeXcmVersion": Some(SAFE_XCM_VERSION),
 		}
 	})
 }

@@ -153,11 +153,8 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				cmd.run(config, polkadot_config)
 			})
 		}
-		Some(Subcommand::ExportGenesisState(cmd)) => {
-			let (chain_spec_id, runtime) = get_selected_chainspec(&cmd.shared_params)?;
-
-			println!("Dispatching task for spec id: {chain_spec_id}.");
-			println!("The following runtime was chosen based on the spec id: {runtime}.");
+		Some(Subcommand::ExportGenesisHead(cmd)) => {
+			let (_, runtime) = get_selected_chainspec(&cmd.shared_params)?;
 
 			let runner = cli.create_runner(cmd)?;
 
@@ -180,10 +177,17 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			}
 		}
 		Some(Subcommand::ExportGenesisWasm(cmd)) => {
+			println!("hi");
 			let runner = cli.create_runner(cmd)?;
+			println!("runner created");
 			runner.sync_run(|_config| {
+				
 				let (chain_spec_id, _) = get_selected_chainspec(&cmd.shared_params)?;
+
+				println!("chain_spec selected: {}", chain_spec_id);
 				let spec = cli.load_spec(chain_spec_id.as_str())?;
+
+				println!("spec loaded {:#?}", spec.as_json(true) );
 
 				cmd.run(&*spec)
 			})

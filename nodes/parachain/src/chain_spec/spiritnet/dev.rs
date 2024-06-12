@@ -46,7 +46,7 @@ pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 	.with_id("kilt_spiritnet_dev")
 	.with_chain_type(ChainType::Development)
 	.with_properties(get_properties("KILT", 15, 38))
-	.with_genesis_config(get_genesis_config())
+	.with_genesis_config_patch(get_genesis_config())
 	.build()
 }
 
@@ -72,9 +72,7 @@ fn get_genesis_config() -> serde_json::Value {
 
 	let stakers = [alice.clone(), bob.clone()]
 		.into_iter()
-		.map(|(acc, _)| -> (AccountId, Option<AccountId>, String) {
-			(acc, None, (2 * MinCollatorStake::get()).to_string())
-		})
+		.map(|(acc, _)| -> (AccountId, Option<AccountId>, u64) { (acc, None, (2 * MinCollatorStake::get())) })
 		.collect::<Vec<_>>();
 
 	let balances = endowed_accounts
@@ -98,22 +96,22 @@ fn get_genesis_config() -> serde_json::Value {
 			"session": {
 				"keys": keys,
 			},
-			"parachain_info": {
-				"parachain_id": KILT_PARA_ID,
+			"parachainInfo": {
+				"parachainId": KILT_PARA_ID,
 			},
 			"parachain_staking": {
 				"stakers": stakers,
 				"inflation_config": kilt_inflation_config(),
-				"max_candidate_stake": MAX_COLLATOR_STAKE.to_string(),
+				"maxCandidateStake": 0,
 			},
 			"council": {
 				"members": members,
 			},
-			"technical_committee": {
+			"technicalCommittee": {
 				"members": members,
 			},
-			"polkadot_xcm": {
-				"safe_xcm_version": SAFE_XCM_VERSION,
+			"polkadotXcm": {
+				"safeXcmVersion": SAFE_XCM_VERSION,
 			},
 		}
 	)
