@@ -1,3 +1,16 @@
+## Adding CI Caching
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
+  CARGO_TARGET_DIR: $CI_PROJECT_DIR/target
+cache:
+  key: ${CI_COMMIT_REF_SLUG}-rust
+  paths:
+    - target
+    - .cargo/bin/
+    - .cargo/registry/index/
+    - .cargo/registry/cache/
+    - .cargo/git/db/
+
 .check_skip_rust:
   before_script:
     - |-
@@ -67,6 +80,7 @@ integration-tests:
   timeout: 30 minutes
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
+  cache: {}
   variables:
     CI: "true"
   script:
