@@ -156,6 +156,7 @@ runtime-benchmarks = [
   "pallet-web3-names/runtime-benchmarks",
   "pallet-xcm/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
+  "polkadot-runtime-common/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",

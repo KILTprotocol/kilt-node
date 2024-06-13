@@ -26,6 +26,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
+use frame_benchmarking::whitelisted_caller;
 use frame_support::{
 	construct_runtime,
 	genesis_builder_helper::{build_config, create_default_config},
@@ -71,7 +72,7 @@ use runtime_common::{
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthorCredit, WeightToFee},
 	pallet_id,
-	xcm_config::RelayOrigin,
+	xcm_config::{HereLocation, RelayOrigin},
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
 	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
@@ -1486,46 +1487,39 @@ impl_runtime_apis! {
 			use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 			use xcm::lts::prelude::*;
 
+
 			parameter_types! {
+				pub const RandomParaId: cumulus_primitives_core::ParaId = cumulus_primitives_core::ParaId::new(43211234);
 				pub ExistentialDepositAsset: Option<Asset> = Some((
-					Location::parent(),
-					0
+					Here,
+					ExistentialDeposit::get()
 				).into());
 			}
 
 			impl pallet_xcm::benchmarking::Config for Runtime {
-				type DeliveryHelper = cumulus_primitives_utility::ToParentDeliveryHelper<xcm_config::XcmConfig, ExistentialDepositAsset, ()>;
+
+				type DeliveryHelper = polkadot_runtime_common::xcm_sender::ToParachainDeliveryHelper<xcm_config::XcmConfig, ExistentialDepositAsset, polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery<cumulus_primitives_core::ParaId>,RandomParaId,ParachainSystem>;
 
 				fn reachable_dest() -> Option<Location> {
-					Some(Parent.into())
-				}
-
-				fn teleportable_asset_and_dest() -> Option<(Asset, Location)> {
-					Some((
-						Asset {
-							fun: Fungible(ExistentialDeposit::get()),
-							id: AssetId(Parent.into())
-						},
-						Parent.into(),
-					))
+					Some(ParentThen(Parachain(RandomParaId::get().into()).into()).into())
 				}
 
 				fn reserve_transferable_asset_and_dest() -> Option<(Asset, Location)> {
 					Some((
 						Asset {
 							fun: Fungible(ExistentialDeposit::get()),
-							id: AssetId(Parent.into())
+							id: AssetId(Here.into())
 						},
-						Parent.into(),
+						ParentThen(Parachain(RandomParaId::get().into() ).into()).into(),
 					))
 				}
 
-					fn get_asset() -> Asset {
-						Asset {
-							fun: Fungible(ExistentialDeposit::get()),
-							id: AssetId(Parent.into())
-						}
+				fn get_asset() -> Asset {
+					Asset {
+						fun: Fungible(ExistentialDeposit::get()),
+						id: AssetId(Here.into())
 					}
+				}
 
 			}
 
