@@ -496,7 +496,7 @@ impl pallet_treasury::Config for Runtime {
 	type PayoutPeriod = runtime_common::constants::treasury::PayoutPeriod;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = runtime_common::benchmarks::BenchmarkHelper;
+	type BenchmarkHelper = runtime_common::benchmarks::treasury::BenchmarkHelper<Runtime>;
 }
 
 type CouncilCollective = pallet_collective::Instance1;
