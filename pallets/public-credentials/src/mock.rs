@@ -148,10 +148,6 @@ where
 		_credential_id: &CredentialIdOf<T>,
 		authorization_id: &T::AuthorizationId,
 	) -> Result<Weight, DispatchError> {
-		#[cfg(test)]
-		println!("{:#?}", who);
-		#[cfg(test)]
-		println!("{:#?}", authorization_id);
 		if authorization_id == who {
 			Ok(Weight::zero())
 		} else {

@@ -72,13 +72,13 @@ fn get_genesis_config() -> serde_json::Value {
 
 	let stakers = [alice.clone(), bob.clone()]
 		.into_iter()
-		.map(|(acc, _)| -> (AccountId, Option<AccountId>, u64) { (acc, None, (2 * MinCollatorStake::get())) })
+		.map(|(acc, _)| -> (AccountId, Option<AccountId>, u128) { (acc, None, (2 * MinCollatorStake::get())) })
 		.collect::<Vec<_>>();
 
 	let balances = endowed_accounts
 		.iter()
 		.cloned()
-		.map(|acc| (acc, (1_000_000 * KILT).to_string()))
+		.map(|acc| (acc, 1_000_000 * KILT))
 		.collect::<Vec<_>>();
 
 	let keys = initial_authorities
@@ -99,10 +99,10 @@ fn get_genesis_config() -> serde_json::Value {
 			"parachainInfo": {
 				"parachainId": KILT_PARA_ID,
 			},
-			"parachain_staking": {
+			"parachainStaking": {
 				"stakers": stakers,
-				"inflation_config": kilt_inflation_config(),
-				"maxCandidateStake": 0,
+				"inflationConfig": kilt_inflation_config(),
+				"maxCandidateStake": MAX_COLLATOR_STAKE,
 			},
 			"council": {
 				"members": members,

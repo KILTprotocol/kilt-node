@@ -88,7 +88,6 @@ impl SubstrateCli for Cli {
 	}
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
-		println!("Loading spec for parachain");
 		chain_spec::load_spec(id)
 	}
 }

@@ -46,7 +46,7 @@ pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 	.with_id("kilt_peregrine_dev")
 	.with_chain_type(ChainType::Development)
 	.with_properties(get_properties("PILT", 15, 38))
-	.with_genesis_config(get_genesis_config())
+	.with_genesis_config_patch(get_genesis_config())
 	.build()
 }
 
@@ -72,15 +72,13 @@ fn get_genesis_config() -> serde_json::Value {
 
 	let stakers = [alice.clone(), bob.clone()]
 		.into_iter()
-		.map(|(acc, _)| -> (AccountId, Option<AccountId>, String) {
-			(acc, None, (2 * MinCollatorStake::get()).to_string())
-		})
+		.map(|(acc, _)| -> (AccountId, Option<AccountId>, u128) { (acc, None, 2 * MinCollatorStake::get()) })
 		.collect::<Vec<_>>();
 
 	let balances = endowed_accounts
 		.iter()
 		.cloned()
-		.map(|acc| (acc, (1000 * KILT).to_string()))
+		.map(|acc| (acc, 1_000_000 * KILT))
 		.collect::<Vec<_>>();
 
 	let keys = initial_authorities
@@ -103,8 +101,8 @@ fn get_genesis_config() -> serde_json::Value {
 		},
 		"parachainStaking": {
 			"stakers": stakers,
-			"inflation_config": kilt_inflation_config(),
-			"max_candidate_stake": MAX_COLLATOR_STAKE.to_string(),
+			"inflationConfig": kilt_inflation_config(),
+			"maxCandidateStake": MAX_COLLATOR_STAKE,
 		},
 		"council": {
 			"members": members,
