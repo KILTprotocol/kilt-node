@@ -4,7 +4,7 @@ members = [
   "dip-template/nodes/*",
   "dip-template/pallets/*",
   "dip-template/runtimes/*",
-  #"integration-tests/emulated",
+  "integration-tests/emulated",
   "nodes/*",
   "pallets/*",
   "runtime-api/*",
@@ -110,17 +110,23 @@ parachain-info                  = { package = "staging-parachain-info", git = "h
 parachains-common               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 
 # XCM Emulator tests
-asset-hub-kusama-runtime     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-asset-hub-polkadot-runtime   = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-asset-hub-rococo-runtime     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-asset-hub-westend-runtime    = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-bridge-hub-kusama-runtime    = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-bridge-hub-polkadot-runtime  = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-bridge-hub-rococo-runtime    = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-collectives-polkadot-runtime = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-integration-tests-common     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-penpal-runtime               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
-xcm-emulator                 = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+asset-hub-kusama-runtime          = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+asset-hub-polkadot-runtime        = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+asset-hub-rococo-emulated-chain   = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+asset-hub-rococo-runtime          = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+asset-hub-westend-runtime         = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+bridge-hub-kusama-runtime         = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+bridge-hub-polkadot-runtime       = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+bridge-hub-rococo-runtime         = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+collectives-polkadot-runtime      = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+emulated-integration-tests-common = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+penpal-runtime                    = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+rococo-emulated-chain             = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+xcm-emulator                      = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+
+asset-hub-polkadot-emulated-chain = { git = "https://github.com/polkadot-fellows/runtimes", default-features = false, tag = "v1.2.7" }
+polkadot-emulated-chain           = { git = "https://github.com/polkadot-fellows/runtimes", default-features = false, tag = "v1.2.7" }
+polkadot-runtime                  = { git = "https://github.com/polkadot-fellows/runtimes", default-features = false, tag = "v1.2.7" }
 
 # Substrate (with default disabled)
 frame-benchmarking                         = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }

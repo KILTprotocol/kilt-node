@@ -14,38 +14,37 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use integration_tests_common::constants::{polkadot, rococo};
-use xcm_emulator::{decl_test_relay_chains, DefaultMessageProcessor};
+use emulated_integration_tests_common::{
+	impl_accounts_helpers_for_relay_chain, impl_assert_events_helpers_for_relay_chain,
+	impl_hrmp_channels_helpers_for_relay_chain, impl_send_transact_helpers_for_relay_chain,
+	xcm_emulator::decl_test_relay_chains,
+};
+use polkadot_emulated_chain::genesis;
 
+// Polkadot declaration
 decl_test_relay_chains! {
-	#[api_version(5)]
+	#[api_version(10)]
 	pub struct Polkadot {
-		genesis = polkadot::genesis(),
+		genesis = genesis::genesis(),
 		on_init = (),
 		runtime = polkadot_runtime,
 		core = {
-			MessageProcessor: DefaultMessageProcessor<Polkadot>,
 			SovereignAccountOf: polkadot_runtime::xcm_config::SovereignAccountOf,
 		},
 		pallets = {
 			XcmPallet: polkadot_runtime::XcmPallet,
 			Balances: polkadot_runtime::Balances,
+			Treasury: polkadot_runtime::Treasury,
+			AssetRate: polkadot_runtime::AssetRate,
 			Hrmp: polkadot_runtime::Hrmp,
-		}
-	},
-	#[api_version(5)]
-	pub struct Rococo {
-		genesis = rococo::genesis(),
-		on_init = (),
-		runtime = rococo_runtime,
-		core = {
-			MessageProcessor: DefaultMessageProcessor<Rococo>,
-			SovereignAccountOf: rococo_runtime::xcm_config::LocationConverter,
-		},
-		pallets = {
-			XcmPallet: rococo_runtime::XcmPallet,
-			Sudo: rococo_runtime::Sudo,
-			Balances: rococo_runtime::Balances,
+			Identity: polkadot_runtime::Identity,
+			IdentityMigrator: polkadot_runtime::IdentityMigrator,
 		}
 	},
 }
+
+// Polkadot implementation
+impl_accounts_helpers_for_relay_chain!(Polkadot);
+impl_assert_events_helpers_for_relay_chain!(Polkadot);
+impl_hrmp_channels_helpers_for_relay_chain!(Polkadot);
+impl_send_transact_helpers_for_relay_chain!(Polkadot);

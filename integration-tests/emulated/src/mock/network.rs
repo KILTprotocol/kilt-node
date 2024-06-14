@@ -14,11 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use asset_hub_polkadot_emulated_chain::AssetHubPolkadot;
+use asset_hub_rococo_emulated_chain::AssetHubRococo;
+use rococo_emulated_chain::Rococo;
 use xcm_emulator::decl_test_networks;
 
 use crate::mock::{
-	para_chains::{AssetHubPolkadot, AssetHubRococo, Peregrine, Spiritnet},
-	relay_chains::{Polkadot, Rococo},
+	para_chains::{Peregrine, Spiritnet},
+	relay_chains::Polkadot,
 };
 
 decl_test_networks! {
