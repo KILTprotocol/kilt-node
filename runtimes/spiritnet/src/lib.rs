@@ -26,7 +26,6 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
-use frame_benchmarking::whitelisted_caller;
 use frame_support::{
 	construct_runtime,
 	genesis_builder_helper::{build_config, create_default_config},
@@ -72,7 +71,7 @@ use runtime_common::{
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthorCredit, WeightToFee},
 	pallet_id,
-	xcm_config::{HereLocation, RelayOrigin},
+	xcm_config::RelayOrigin,
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
 	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
