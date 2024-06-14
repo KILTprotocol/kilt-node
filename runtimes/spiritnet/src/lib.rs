@@ -1484,42 +1484,27 @@ impl_runtime_apis! {
 			use frame_benchmarking::baseline::Pallet as Baseline;
 			use frame_support::traits::TrackedStorageKey;
 			use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+			use runtime_common::benchmarks::xcm_benchmarking;
 			use xcm::lts::prelude::*;
 
 
-			parameter_types! {
-				pub const RandomParaId: cumulus_primitives_core::ParaId = cumulus_primitives_core::ParaId::new(43211234);
-				pub ExistentialDepositAsset: Option<Asset> = Some((
-					Here,
-					ExistentialDeposit::get()
-				).into());
-			}
-
 			impl pallet_xcm::benchmarking::Config for Runtime {
-
-				type DeliveryHelper = polkadot_runtime_common::xcm_sender::ToParachainDeliveryHelper<xcm_config::XcmConfig, ExistentialDepositAsset, polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery<cumulus_primitives_core::ParaId>,RandomParaId,ParachainSystem>;
+				type DeliveryHelper = xcm_benchmarking::ParachainDeliveryHelper<ParachainSystem, xcm_config::XcmConfig >;
 
 				fn reachable_dest() -> Option<Location> {
-					Some(ParentThen(Parachain(RandomParaId::get().into()).into()).into())
+					Some(xcm_benchmarking::ParachainLocation::get())
 				}
 
 				fn reserve_transferable_asset_and_dest() -> Option<(Asset, Location)> {
 					Some((
-						Asset {
-							fun: Fungible(ExistentialDeposit::get()),
-							id: AssetId(Here.into())
-						},
-						ParentThen(Parachain(RandomParaId::get().into() ).into()).into(),
+						xcm_benchmarking::NativeAsset::get(),
+						xcm_benchmarking::ParachainLocation::get(),
 					))
 				}
 
 				fn get_asset() -> Asset {
-					Asset {
-						fun: Fungible(ExistentialDeposit::get()),
-						id: AssetId(Here.into())
-					}
+					xcm_benchmarking::NativeAsset::get()
 				}
-
 			}
 
 			impl frame_system_benchmarking::Config for Runtime {}

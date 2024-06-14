@@ -59,10 +59,11 @@ sp-weights                      = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 # Polkadot dependencies
-polkadot-parachain = { workspace = true }
-xcm                = { workspace = true }
-xcm-builder        = { workspace = true }
-xcm-executor       = { workspace = true }
+polkadot-parachain      = { workspace = true }
+polkadot-runtime-common = { workspace = true }
+xcm                     = { workspace = true }
+xcm-builder             = { workspace = true }
+xcm-executor            = { workspace = true }
 
 #benchmarking
 frame-benchmarking = { workspace = true, optional = true }
@@ -86,6 +87,7 @@ runtime-benchmarks = [
   "pallet-tips/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
+  "polkadot-runtime-common/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
@@ -121,6 +123,7 @@ std = [
   "parity-scale-codec/std",
   "parity-scale-codec/std",
   "polkadot-parachain/std",
+  "polkadot-runtime-common/std",
   "public-credentials/std",
   "scale-info/std",
   "sp-consensus-aura/std",

@@ -10271,6 +10271,7 @@ dependencies = [
  "parachain-staking",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
+ "polkadot-runtime-common",
  "public-credentials",
  "scale-info",
  "smallvec",

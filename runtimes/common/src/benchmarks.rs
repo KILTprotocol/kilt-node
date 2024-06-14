@@ -67,3 +67,34 @@ pub mod treasury {
 		}
 	}
 }
+
+pub mod xcm_benchmarking {
+	use super::*;
+
+	use cumulus_primitives_core::ParaId;
+	use frame_support::parameter_types;
+	use polkadot_runtime_common::xcm_sender::{NoPriceForMessageDelivery, ToParachainDeliveryHelper};
+	use xcm::lts::prelude::*;
+
+	parameter_types! {
+		pub const RandomParaId: cumulus_primitives_core::ParaId = cumulus_primitives_core::ParaId::new(42424242);
+		pub ExistentialDepositAsset: Option<Asset> = Some((
+			Here,
+			KILT
+		).into());
+
+		pub ParachainLocation: Location = ParentThen(Parachain(RandomParaId::get().into()).into()).into();
+		pub NativeAsset: Asset = Asset {
+						fun: Fungible(KILT),
+						id: AssetId(Here.into())
+					};
+	}
+
+	pub type ParachainDeliveryHelper<ParachainSystem, XcmConfig> = ToParachainDeliveryHelper<
+		XcmConfig,
+		ExistentialDepositAsset,
+		NoPriceForMessageDelivery<ParaId>,
+		RandomParaId,
+		ParachainSystem,
+	>;
+}
