@@ -1,0 +1,38 @@
+name: try-runtime Workflow
+
+on: [pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        runtime: [ peregrine, spiritnet ]
+    runs-on: paritytech/ci-unified:bullseye-1.70.0
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Build
+        run: cargo build --release -p ${{ matrix.runtime }}-runtime --features try-runtime
+
+      - name: Run tests
+        uses: NodleCode/action-try-runtime@v0.5.1
+        with:
+          url: ${metrix.rpc-endpoint}
+          snap: snapshots/eden-snapshot-full
+          runtime: target/release/wbuild/${metrix.runtime}-runtime/peregrine_runtime.compact.compressed.wasm
+          checks: "all"
+          options: "----disable-spec-version-check"
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: wasm-artifact
+          path: target/release/wbuild/*-runtime/*.wasm
