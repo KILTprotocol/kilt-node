@@ -15,6 +15,9 @@
 # ignore vscode settings
 .vscode
 
+# ignore .cargo in CI
+.cargo/
+
 **/__pycache__
 
 **/node_modules

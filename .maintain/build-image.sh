@@ -7,7 +7,7 @@ docker build \
     --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder \
     -t $AWS_REGISTRY/kilt-parachain/collator:builder \
     .
-docker push $AWS_REGISTRY/kilt-parachain/collator:builder
+docker push $AWS_REGISTRY/kilt-parachain/collator:builder &
 
 # build parachain image and standalone image
 docker build \

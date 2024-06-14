@@ -1,0 +1,106 @@
+build-wasm-peregrine:
+  interruptible: true
+  image:
+    name: paritytech/srtool:1.70.0
+    entrypoint: [""]
+  stage: release
+  only:
+    - develop
+    - master
+    - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+  script:
+    - export PACKAGE=peregrine-runtime
+    - export RUNTIME_DIR=runtimes/peregrine
+    - export PARACHAIN_PALLET_ID=0x50
+    - export AUTHORIZE_UPGRADE_PREFIX=0x02
+    - cp -r * /build
+    - /srtool/build build
+    - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
+    - subwasm get -o peregrine-live.wasm wss://peregrine.kilt.io
+    - subwasm diff --no-color peregrine-live.wasm /out/peregrine_runtime.compact.wasm | tee /out/peregrine-diff.txt
+    - mkdir ./out
+    - mv /out/* ./out/
+  artifacts:
+    paths:
+      - out/*.wasm
+      - out/*.json
+      - out/*.txt
+    expire_in: 12 week
+
+build-wasm-spiritnet:
+  interruptible: true
+  image:
+    name: paritytech/srtool:1.70.0
+    entrypoint: [""]
+  stage: release
+  only:
+    - develop
+    - master
+    - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+  needs:
+    - build-wasm-peregrine
+  script:
+    - export PACKAGE=spiritnet-runtime
+    - export RUNTIME_DIR=runtimes/spiritnet
+    - export PARACHAIN_PALLET_ID=0x50
+    - export AUTHORIZE_UPGRADE_PREFIX=0x02
+    - cp -r * /build
+    - /srtool/build build
+    - subwasm meta --format=json+scale /out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
+    - subwasm get -o spiritnet-live.wasm wss://spiritnet.kilt.io
+    - subwasm diff --no-color spiritnet-live.wasm /out/spiritnet_runtime.compact.wasm | tee /out/spiritnet-diff.txt
+    - mkdir ./out
+    - mv /out/* ./out/
+  artifacts:
+    paths:
+      - out/*.wasm
+      - out/*.json
+      - out/*.txt
+    expire_in: 12 week
+
+build-wasm-try-runtime:
+  interruptible: true
+  parallel:
+    matrix:
+      - RUNTIME: "peregrine"
+      - RUNTIME: "spiritnet"
+  image:
+    name: paritytech/ci-unified:bullseye-1.70.0
+    entrypoint: [""]
+  stage: release
+  only:
+    - develop
+    - master
+    - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+  script:
+    - cargo build --release -p ${RUNTIME}-runtime --features try-runtime
+    - mkdir ./out
+    - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm ./dangerous_${RUNTIME}.try-runtime.wasm
+  artifacts:
+    name: ${RUNTIME}_try-runtime
+    paths:
+      - ./dangerous_${RUNTIME}.try-runtime.wasm
+    expire_in: 12 week
+
+test-try-runtime:
+  extends: .check_skip_rust
+  interruptible: true
+  parallel:
+    matrix:
+      - RUNTIME: "peregrine"
+        ENDPOINT: "wss://peregrine.kilt.io:443"
+      - RUNTIME: "spiritnet"
+        ENDPOINT: "wss://spiritnet.kilt.io:443"
+  timeout: 2 hours
+  image: paritytech/ci-unified:bullseye-1.70.0
+  stage: release
+  needs:
+    - build-wasm-try-runtime
+  artifacts:
+    paths:
+      - out/*
+    when: on_success
+  script:
+    - cargo install --git https://github.com/paritytech/try-runtime-cli --tag ${TRY_RUNTIME_CLI_VERSION_TAG} --locked
+    - ./.cargo/bin/try-runtime --version
+    - ./try-runtime --runtime ./out/dangerous_${RUNTIME}.try-runtime.wasm on-runtime-upgrade --disable-spec-version-check --checks=all live --uri=${ENDPOINT}

@@ -1,0 +1,59 @@
+clippy-and-docs:
+  extends: .check_skip_rust
+  interruptible: true
+  timeout: 2 hours
+  image: paritytech/ci-unified:bullseye-1.70.0
+  stage: test
+  script:
+    - cargo clippy --all-features --all-targets --locked -- -D warnings
+    - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
+
+fmt:
+  interruptible: true
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.70.0
+  stage: test
+  script:
+    - cargo fmt -- --check
+    - cargo install taplo-cli --version 0.9.0
+    - ./.cargo/bin/taplo fmt --check
+
+test:
+  interruptible: true
+  extends: .check_skip_rust
+  timeout: 2 hours
+  image: paritytech/ci-unified:bullseye-1.70.0
+  stage: test
+  script:
+    - cargo test --all --all-targets --locked
+
+test-features:
+  extends: .check_skip_rust
+  interruptible: true
+  timeout: 2 hours
+  image: paritytech/ci-unified:bullseye-1.70.0
+  stage: test
+  needs:
+    - test
+  script:
+    - cargo test --all --all-features --all-targets --locked
+
+integration-tests:
+  extends: .check_skip_integration_tests
+  interruptible: true
+  timeout: 30 minutes
+  image: paritytech/ci-unified:bullseye-1.70.0
+  stage: test
+  cache: {}
+  variables:
+    CI: "true"
+  script:
+    - cd ./integration-tests/chopsticks
+    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use
+    - eval "[ -f .nvmrc ] && nvm install" && nvm use
+    - yarn --immutable
+    - yarn ts-check
+    - yarn lint
+    - yarn test:CI
+
