@@ -124,10 +124,6 @@ penpal-runtime                    = { git = "https://github.com/paritytech/polka
 rococo-emulated-chain             = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 xcm-emulator                      = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 
-asset-hub-polkadot-emulated-chain = { git = "https://github.com/polkadot-fellows/runtimes", default-features = false, tag = "v1.2.7" }
-polkadot-emulated-chain           = { git = "https://github.com/polkadot-fellows/runtimes", default-features = false, tag = "v1.2.7" }
-polkadot-runtime                  = { git = "https://github.com/polkadot-fellows/runtimes", default-features = false, tag = "v1.2.7" }
-
 # Substrate (with default disabled)
 frame-benchmarking                         = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-benchmarking-cli                     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
@@ -209,7 +205,6 @@ cumulus-relay-chain-minimal-node        = { git = "https://github.com/paritytech
 cumulus-relay-chain-rpc-interface       = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
 pallet-transaction-payment-rpc          = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
 polkadot-cli                            = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
-polkadot-overseer                       = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0", default-features = false }
 polkadot-primitives                     = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
 polkadot-service                        = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }
 sc-basic-authorship                     = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-crates-io-v1.7.0" }

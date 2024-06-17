@@ -33,8 +33,7 @@ use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 use crate::{
 	mock::{
 		network::MockNetworkPolkadot,
-		para_chains::{AssetHubPolkadot, Spiritnet, SpiritnetPallet},
-		relay_chains::Polkadot,
+		para_chains::{AssetHubPolkadot, Spiritnet},
 	},
 	utils::get_account_id_from_seed,
 };

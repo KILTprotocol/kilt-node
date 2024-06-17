@@ -35,7 +35,7 @@ pub mod spiritnet {
 		BalancesConfig, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SessionConfig, SessionKeys,
 	};
 
-	pub const PARA_ID: u32 = 2_000;
+	pub const PARA_ID: u32 = 2_001;
 
 	pub fn genesis() -> Storage {
 		RuntimeGenesisConfig {
@@ -60,7 +60,7 @@ pub mod spiritnet {
 				balances: accounts::init_balances()
 					.iter()
 					.cloned()
-					.map(|k| (k, ED * 4096))
+					.map(|k| (k, ED * 1_000_000_000))
 					.collect(),
 			},
 			..Default::default()
@@ -102,7 +102,7 @@ pub mod peregrine {
 				balances: accounts::init_balances()
 					.iter()
 					.cloned()
-					.map(|k| (k, ED * 4096))
+					.map(|k| (k, ED * 1_000_000_000))
 					.collect(),
 			},
 			..Default::default()
@@ -113,7 +113,7 @@ pub mod peregrine {
 }
 
 decl_test_parachains! {
-	pub struct Spiritnet {
+	pub struct SpiritnetParachain {
 		genesis = spiritnet::genesis(),
 		on_init = {
 			spiritnet_runtime::AuraExt::on_initialize(1);
@@ -136,7 +136,7 @@ decl_test_parachains! {
 			PublicCredentials: spiritnet_runtime::PublicCredentials,
 		}
 	},
-	pub struct Peregrine {
+	pub struct PeregrineParachain {
 		genesis = peregrine::genesis(),
 		on_init = {
 			peregrine_runtime::AuraExt::on_initialize(1);
@@ -160,11 +160,3 @@ decl_test_parachains! {
 		}
 	},
 }
-
-impl_accounts_helpers_for_parachain!(Spiritnet);
-impl_assert_events_helpers_for_parachain!(Spiritnet);
-impl_xcm_helpers_for_parachain!(Spiritnet);
-
-impl_accounts_helpers_for_parachain!(Peregrine);
-impl_assert_events_helpers_for_parachain!(Peregrine);
-impl_xcm_helpers_for_parachain!(Peregrine);

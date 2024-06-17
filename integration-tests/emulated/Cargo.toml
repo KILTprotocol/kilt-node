@@ -11,7 +11,6 @@ repository    = { workspace = true }
 version       = { workspace = true }
 
 [dependencies]
-asset-hub-polkadot-emulated-chain = { workspace = true, default-features = true }
 asset-hub-rococo-emulated-chain   = { workspace = true, default-features = true }
 attestation                       = { workspace = true, default-features = true }
 ctype                             = { workspace = true, default-features = true }
@@ -30,10 +29,8 @@ pallet-web3-names                 = { workspace = true, default-features = true 
 pallet-xcm                        = { workspace = true, default-features = true }
 parity-scale-codec                = { workspace = true, features = ["derive"], default-features = true }
 peregrine-runtime                 = { workspace = true, default-features = true }
-polkadot-emulated-chain           = { workspace = true, default-features = true }
 polkadot-parachain                = { workspace = true, default-features = true }
 polkadot-primitives               = { workspace = true, default-features = true }
-polkadot-runtime                  = { workspace = true, default-features = true }
 polkadot-runtime-parachains       = { workspace = true, default-features = true }
 polkadot-service                  = { workspace = true, default-features = true }
 public-credentials                = { workspace = true, features = ["mock"], default-features = true }
@@ -58,7 +55,6 @@ runtime-benchmarks = [
   "ctype/runtime-benchmarks",
   "did/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
-  "polkadot-runtime/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
@@ -69,7 +65,6 @@ try-runtime = [
   "did/try-runtime",
   "pallet-bags-list/try-runtime",
   "peregrine-runtime/try-runtime",
-  "polkadot-runtime/try-runtime",
   "rococo-runtime/try-runtime",
   "spiritnet-runtime/try-runtime",
 ]
