@@ -47,6 +47,6 @@ pub struct SwapPairInfo<AccountId> {
 
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
 pub struct SwapRequestLocalAsset<Balance> {
-	local_asset_id: VersionedInteriorMultiLocation,
-	local_asset_amount: Balance,
+	pub local_asset_id: VersionedInteriorMultiLocation,
+	pub local_asset_amount: Balance,
 }

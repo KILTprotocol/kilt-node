@@ -19,7 +19,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod swap;
-mod traits;
 
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::TrailingZeroInput;
@@ -33,7 +32,6 @@ const LOG_TARGET: &str = "runtime::pallet-asset-swap";
 pub mod pallet {
 	use crate::{
 		swap::{SwapPairInfo, SwapPairRatio, SwapRequestLocalAsset},
-		traits::SwapHooks,
 		LOG_TARGET,
 	};
 
@@ -42,6 +40,7 @@ pub mod pallet {
 		traits::{
 			fungible::Inspect as InspectFungible,
 			fungibles::{Inspect as InspectFungibles, Mutate as MutateFungibles},
+			tokens::{DepositConsequence, Provenance, WithdrawConsequence},
 			EnsureOrigin,
 		},
 		Blake2_128Concat,
@@ -54,6 +53,10 @@ pub mod pallet {
 	pub type SwapPairInfoOf<T> = SwapPairInfo<<T as frame_system::Config>::AccountId>;
 	pub type SwapRequestLocalAssetOf<T> = SwapRequestLocalAsset<LocalAssetsBalanceOf<T>>;
 
+	type AssetIdOf<T> =
+		<<T as Config>::LocalAssets as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
+	type WithdrawConsequenceOf<T> = WithdrawConsequence<LocalAssetsBalanceOf<T>>;
+
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	#[pallet::config]
@@ -63,7 +66,7 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type ManagerOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
-		type SwapHooks: SwapHooks;
+		type SubmitterOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 	}
 
 	#[pallet::pallet]
@@ -88,10 +91,14 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
+		AssetIdMismatch,
+		CannotDepositIntoSwapPool,
+		CannotWithdrawFromSubmitter,
+		LocalAssetAmountOverflow,
 		LocalAssetExisting,
 		LocalAssetNotFound,
-		AssetIdMismatch,
-		Hook(u8),
+		PoolNotEnabled,
+		RemoteReserveDrained,
 		Internal,
 	}
 
@@ -106,7 +113,10 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, VersionedAssetId, (VersionedMultiLocation, VersionedInteriorMultiLocation)>;
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		AssetIdOf<T>: From<VersionedInteriorMultiLocation>,
+	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(u64::MAX)]
 		pub fn create_swap_pair(
@@ -138,9 +148,6 @@ pub mod pallet {
 			LocalToRemoteAssets::<T>::insert(&(*local_asset_id), swap_pair_info);
 			RemoteToLocalAssets::<T>::insert(&(*remote_asset_id), (*reserve_location_base, *local_asset_id.clone()));
 
-			T::SwapHooks::on_swap_pair_created(&local_asset_id, &remote_asset_id)
-				.map_err(|e| Error::<T>::Hook(e.into()))?;
-
 			Self::deposit_event(Event::<T>::SwapPairCreated {
 				local_asset_id,
 				maximum_issuance,
@@ -171,9 +178,6 @@ pub mod pallet {
 				return Err(Error::<T>::Internal.into());
 			}
 
-			T::SwapHooks::on_swap_pair_removed(&local_asset_id, &remote_asset_id)
-				.map_err(|e| Error::<T>::Hook(e.into()))?;
-
 			Self::deposit_event(Event::<T>::SwapPairRemoved {
 				local_asset_id,
 				remote_asset_id,
@@ -201,9 +205,6 @@ pub mod pallet {
 				Ok::<_, Error<T>>(())
 			})?;
 
-			T::SwapHooks::on_swap_pair_paused(&local_asset_id, &remote_asset_id)
-				.map_err(|e| Error::<T>::Hook(e.into()))?;
-
 			Ok(())
 		}
 
@@ -226,9 +227,6 @@ pub mod pallet {
 				Ok::<_, Error<T>>(())
 			})?;
 
-			T::SwapHooks::on_swap_pair_resumed(&local_asset_id, &remote_asset_id)
-				.map_err(|e| Error::<T>::Hook(e.into()))?;
-
 			Ok(())
 		}
 
@@ -238,7 +236,61 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			local_asset: Box<SwapRequestLocalAssetOf<T>>,
 			remote_asset_id: Box<VersionedAssetId>,
+			beneficiary: Box<VersionedMultiLocation>,
 		) -> DispatchResult {
+			let submitter = T::SubmitterOrigin::ensure_origin(origin)?;
+
+			let SwapRequestLocalAssetOf::<T> {
+				local_asset_id,
+				local_asset_amount,
+			} = *local_asset;
+
+			// 1. Verify pool for (local asset, remote asset) exists.
+			let swap_pair = LocalToRemoteAssets::<T>::get(&local_asset_id).ok_or(Error::<T>::LocalAssetNotFound)?;
+			ensure!(
+				swap_pair.remote_asset_id == *remote_asset_id,
+				Error::<T>::AssetIdMismatch
+			);
+
+			// 2. Verify pool is running.
+			ensure!(swap_pair.running, Error::<T>::PoolNotEnabled);
+
+			// 3. Verify tx submitter has enough of the specified asset.
+			let can_withdraw_from_submitter = matches!(
+				T::LocalAssets::can_withdraw(local_asset_id.clone().into(), &submitter, local_asset_amount),
+				WithdrawConsequenceOf::<T>::Success
+			);
+			ensure!(can_withdraw_from_submitter, Error::<T>::CannotWithdrawFromSubmitter);
+
+			// 4. Verify we can transfer those tokens into the swap pool account.
+			let can_deposit_into_pool = matches!(
+				T::LocalAssets::can_deposit(
+					local_asset_id.into(),
+					&swap_pair.pool_account,
+					local_asset_amount,
+					Provenance::Extant
+				),
+				DepositConsequence::Success
+			);
+			ensure!(can_deposit_into_pool, Error::<T>::CannotDepositIntoSwapPool);
+
+			// 5. Verify we have enough balance on the remote location to perform the
+			//    transfer.
+			let can_send_from_remote_reserve = {
+				let local_asset_amount_as_u128: u128 = local_asset_amount
+					.try_into()
+					.map_err(|_| Error::<T>::LocalAssetAmountOverflow)?;
+
+				// TODO: This probably has to change
+				let remote_asset_amount =
+					(local_asset_amount_as_u128 / swap_pair.ratio.local_asset) * swap_pair.ratio.remote_asset;
+				remote_asset_amount <= swap_pair.remote_asset_balance
+			};
+			ensure!(can_send_from_remote_reserve, Error::<T>::RemoteReserveDrained);
+
+			// TODO: Perform transfer, and compose XCM message.
+			// TODO: Think about XCM fees management.
+
 			Ok(())
 		}
 	}
