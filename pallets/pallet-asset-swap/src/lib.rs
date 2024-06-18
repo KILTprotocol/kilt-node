@@ -21,6 +21,11 @@
 mod swap;
 mod xcm;
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 use ::xcm::{VersionedAssetId, VersionedMultiLocation};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::TrailingZeroInput;
@@ -153,7 +158,7 @@ pub mod pallet {
 				Error::<T>::LiquidityNotMet
 			);
 
-			Self::set_swap_pair_bypass_checks(reserve_location, remote_asset_id, ratio, locked_supply, pool_account);
+			Self::set_swap_pair_bypass_checks(*reserve_location, *remote_asset_id, ratio, locked_supply, pool_account);
 
 			Ok(())
 		}
@@ -170,7 +175,13 @@ pub mod pallet {
 			ensure_root(origin)?;
 
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
-			Self::set_swap_pair_bypass_checks(reserve_location, remote_asset_id, ratio, maximum_issuance, pool_account);
+			Self::set_swap_pair_bypass_checks(
+				*reserve_location,
+				*remote_asset_id,
+				ratio,
+				maximum_issuance,
+				pool_account,
+			);
 
 			Ok(())
 		}
@@ -312,8 +323,8 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	fn set_swap_pair_bypass_checks(
-		reserve_location: Box<VersionedMultiLocation>,
-		remote_asset_id: Box<VersionedAssetId>,
+		reserve_location: VersionedMultiLocation,
+		remote_asset_id: VersionedAssetId,
 		ratio: SwapPairRatio,
 		maximum_issuance: u128,
 		pool_account: T::AccountId,
@@ -322,8 +333,8 @@ impl<T: Config> Pallet<T> {
 			pool_account: pool_account.clone(),
 			ratio: ratio.clone(),
 			remote_asset_balance: maximum_issuance,
-			remote_asset_id: *remote_asset_id.clone(),
-			remote_reserve_location: *reserve_location,
+			remote_asset_id: remote_asset_id.clone(),
+			remote_reserve_location: reserve_location,
 			status: SwapPairStatus::Paused,
 		};
 
@@ -333,7 +344,7 @@ impl<T: Config> Pallet<T> {
 			maximum_issuance,
 			pool_account,
 			ratio,
-			remote_asset_id: *remote_asset_id,
+			remote_asset_id,
 		});
 	}
 
