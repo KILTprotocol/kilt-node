@@ -401,7 +401,7 @@ fn start_consensus(
 		proposer,
 		collator_service,
 		authoring_duration: Duration::from_millis(500),
-		reinitialize: true,
+		reinitialize: false,
 	};
 
 	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _, _>(params);
