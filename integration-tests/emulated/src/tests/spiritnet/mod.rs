@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// mod did_pallets;
+mod did_pallets;
 mod reserve_transfers;
 mod sudo;
 mod teleportation;
