@@ -2531,7 +2531,10 @@ pub mod pallet {
 			if collators.is_empty() {
 				// we never want to pass an empty set of collators. This would brick the chain.
 
-				log::error!("💥 keeping old session because of empty collator set!");
+				if !cfg!(test) {
+					log::error!("💥 keeping old session because of empty collator set!");
+				}
+
 				None
 			} else {
 				Some(collators)

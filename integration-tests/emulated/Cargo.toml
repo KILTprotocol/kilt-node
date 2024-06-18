@@ -49,22 +49,3 @@ spiritnet-runtime                 = { workspace = true, default-features = true 
 xcm                               = { workspace = true, default-features = true }
 xcm-emulator                      = { workspace = true, default-features = true }
 xcm-executor                      = { workspace = true, default-features = true }
-
-[features]
-runtime-benchmarks = [
-  "ctype/runtime-benchmarks",
-  "did/runtime-benchmarks",
-  "peregrine-runtime/runtime-benchmarks",
-  "rococo-runtime/runtime-benchmarks",
-  "runtime-common/runtime-benchmarks",
-  "spiritnet-runtime/runtime-benchmarks",
-]
-
-try-runtime = [
-  "ctype/try-runtime",
-  "did/try-runtime",
-  "pallet-bags-list/try-runtime",
-  "peregrine-runtime/try-runtime",
-  "rococo-runtime/try-runtime",
-  "spiritnet-runtime/try-runtime",
-]

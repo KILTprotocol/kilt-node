@@ -102,7 +102,6 @@ fn test_attestation_creation_from_asset_hub_successful() {
 		);
 	});
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	Spiritnet::execute_with(|| {
 		type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
