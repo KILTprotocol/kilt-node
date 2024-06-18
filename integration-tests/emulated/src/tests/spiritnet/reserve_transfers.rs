@@ -18,11 +18,11 @@
 
 use asset_hub_rococo_emulated_chain::genesis::ED;
 use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
-use emulated_integration_tests_common::{accounts::ALICE, impls::cumulus_pallet_parachain_system::Module};
+use emulated_integration_tests_common::accounts::ALICE;
 use frame_support::{assert_err, assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
 use runtime_common::AccountId;
 use sp_core::sr25519;
-use sp_runtime::{traits::Zero, DispatchError, ModuleError};
+use sp_runtime::traits::Zero;
 use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;
 use xcm::lts::{
 	prelude::{Here, Junction, Junctions, Parent, ParentThen},

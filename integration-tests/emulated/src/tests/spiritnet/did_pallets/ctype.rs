@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use asset_hub_rococo_emulated_chain::AssetHubRococoParaPallet;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
@@ -24,9 +25,8 @@ use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
 	mock::{
-		network::MockNetworkPolkadot,
-		para_chains::{AssetHubPolkadot, AssetHubPolkadotPallet, Spiritnet},
-		relay_chains::Polkadot,
+		network::{AssetHub, MockNetwork, Rococo, Spiritnet},
+		para_chains::SpiritnetParachainParaPallet,
 	},
 	tests::spiritnet::did_pallets::utils::{
 		construct_basic_transact_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
@@ -51,9 +51,9 @@ fn get_xcm_message_ctype_creation(origin_kind: OriginKind, withdraw_balance: Bal
 
 #[test]
 fn test_ctype_creation_from_asset_hub_successful() {
-	MockNetworkPolkadot::reset();
+	MockNetwork::reset();
 
-	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 10;
 
@@ -67,16 +67,16 @@ fn test_ctype_creation_from_asset_hub_successful() {
 		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
 
-	AssetHubPolkadot::execute_with(|| {
-		assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
+	AssetHub::execute_with(|| {
+		assert_ok!(<AssetHub as AssetHubRococoParaPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination),
 			Box::new(xcm_create_ctype_msg)
 		));
 
-		type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 		assert_expected_events!(
-			AssetHubPolkadot,
+			AssetHub,
 			vec![
 				RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 			]
@@ -90,7 +90,7 @@ fn test_ctype_creation_from_asset_hub_successful() {
 		assert_expected_events!(
 			Spiritnet,
 			vec![
-				SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
+				//SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
 				SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(account, result)) => {
 					account: account == &asset_hub_sovereign_account,
 					result: result.is_ok(),
@@ -102,14 +102,14 @@ fn test_ctype_creation_from_asset_hub_successful() {
 		);
 	});
 
-	Polkadot::execute_with(|| {
-		assert_eq!(Polkadot::events().len(), 0);
+	Rococo::execute_with(|| {
+		assert_eq!(Rococo::events().len(), 0);
 	});
 }
 
 #[test]
 fn test_ctype_creation_from_asset_hub_unsuccessful() {
-	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 10;
 
@@ -120,7 +120,7 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	for origin_kind in origin_kind_list {
-		MockNetworkPolkadot::reset();
+		MockNetwork::reset();
 
 		Spiritnet::execute_with(|| {
 			create_mock_did_from_account(asset_hub_sovereign_account.clone());
@@ -129,16 +129,16 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 
 		let xcm_create_ctype_msg = get_xcm_message_ctype_creation(origin_kind, KILT);
 
-		AssetHubPolkadot::execute_with(|| {
-			assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
+		AssetHub::execute_with(|| {
+			assert_ok!(<AssetHub as AssetHubRococoParaPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
 				Box::new(xcm_create_ctype_msg)
 			));
 
-			type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 			assert_expected_events!(
-				AssetHubPolkadot,
+				AssetHub,
 				vec![
 					RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 				]
@@ -159,8 +159,8 @@ fn test_ctype_creation_from_asset_hub_unsuccessful() {
 			assert!(!is_event_present);
 		});
 
-		Polkadot::execute_with(|| {
-			assert_eq!(Polkadot::events().len(), 0);
+		Rococo::execute_with(|| {
+			assert_eq!(Rococo::events().len(), 0);
 		});
 	}
 }

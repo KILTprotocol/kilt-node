@@ -31,7 +31,7 @@ use xcm::{
 		prelude::{OriginKind, Transact, UnpaidExecution},
 		Junction, Junctions, Outcome, ParentThen, WeightLimit, Xcm,
 	},
-	DoubleEncoded, VersionedMultiLocation, VersionedXcm,
+	DoubleEncoded, VersionedLocation, VersionedXcm,
 };
 use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 
@@ -45,7 +45,7 @@ fn test_unpaid_execution_from_asset_hub_to_peregrine() {
 	MockNetwork::reset();
 
 	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
-	let parachain_destination: VersionedMultiLocation =
+	let parachain_destination: VersionedLocation =
 		ParentThen(Junctions::X1([Junction::Parachain(Peregrine::para_id().into())].into())).into();
 
 	let weight_limit = WeightLimit::Unlimited;
@@ -98,7 +98,7 @@ fn test_unpaid_execution_from_rococo_to_peregrine() {
 	MockNetwork::reset();
 
 	let sudo_origin = <Rococo as Chain>::RuntimeOrigin::root();
-	let parachain_destination: VersionedMultiLocation =
+	let parachain_destination: VersionedLocation =
 		Junctions::X1([Junction::Parachain(Peregrine::para_id().into())].into()).into();
 	let init_balance = <peregrine_runtime::Runtime as did::Config>::BaseDeposit::get()
 		+ <peregrine_runtime::Runtime as did::Config>::Fee::get()

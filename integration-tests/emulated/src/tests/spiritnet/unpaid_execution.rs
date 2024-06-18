@@ -31,7 +31,7 @@ use xcm::{
 		prelude::{OriginKind, Transact, UnpaidExecution},
 		Junction, Junctions, Outcome, ParentThen, WeightLimit, Xcm,
 	},
-	DoubleEncoded, VersionedMultiLocation, VersionedXcm,
+	DoubleEncoded, VersionedLocation, VersionedXcm,
 };
 use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 
@@ -45,7 +45,7 @@ fn test_unpaid_execution_to_spiritnet() {
 	MockNetwork::reset();
 
 	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
-	let parachain_destination: VersionedMultiLocation =
+	let parachain_destination: VersionedLocation =
 		ParentThen(Junctions::X1([Junction::Parachain(Spiritnet::para_id().into())].into())).into();
 
 	let weight_limit = WeightLimit::Unlimited;
@@ -77,6 +77,7 @@ fn test_unpaid_execution_to_spiritnet() {
 	// Execution should be blocked by barrier
 	Spiritnet::execute_with(|| {
 		type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
+		println!("Emmited events, {:?} ", Spiritnet::events());
 		assert_expected_events!(
 			Spiritnet,
 			vec![
@@ -99,7 +100,7 @@ fn test_unpaid_execution_from_rococo_to_spiritnet() {
 	MockNetwork::reset();
 
 	let sudo_origin = <Rococo as Chain>::RuntimeOrigin::root();
-	let parachain_destination: VersionedMultiLocation =
+	let parachain_destination: VersionedLocation =
 		Junctions::X1([Junction::Parachain(<Spiritnet as Parachain>::para_id().into())].into()).into();
 	let init_balance = <spiritnet_runtime::Runtime as did::Config>::BaseDeposit::get()
 		+ <spiritnet_runtime::Runtime as did::Config>::Fee::get()
