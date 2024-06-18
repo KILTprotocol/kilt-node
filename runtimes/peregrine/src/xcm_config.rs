@@ -56,7 +56,7 @@ parameter_types! {
 	// TODO: This needs to be updated once we deploy Peregrine on Rococo/Paseo
 	pub const RelayNetworkId: Option<NetworkId> = None;
 	// TODO: This needs to be updated once we deploy Peregrine on Rococo/Paseo.
-	pub UniversalLocation: xcm::v4::prelude::InteriorLocation =
+	pub UniversalLocation: InteriorLocation =
 		Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
@@ -287,10 +287,4 @@ impl pallet_message_queue::Config for Runtime {
 	type HeapSize = HeapSize;
 	type MaxStale = MaxStale;
 	type ServiceWeight = ServiceWeight;
-}
-
-impl cumulus_pallet_dmp_queue::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
-	type WeightInfo = cumulus_pallet_dmp_queue::weights::SubstrateWeight<Self>;
 }

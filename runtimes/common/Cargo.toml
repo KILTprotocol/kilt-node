@@ -35,7 +35,6 @@ parachain-staking      = { workspace = true }
 public-credentials     = { workspace = true }
 
 # Substrate dependencies
-cumulus-pallet-dmp-queue        = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-xcmp-queue       = { workspace = true }
 frame-support                   = { workspace = true }
@@ -95,7 +94,6 @@ runtime-benchmarks = [
 ]
 std = [
   "attestation/std",
-  "cumulus-pallet-dmp-queue/std",
   "cumulus-pallet-parachain-system/std",
   "cumulus-pallet-xcmp-queue/std",
   "cumulus-primitives-core/std",
@@ -138,7 +136,6 @@ std = [
 ]
 try-runtime = [
   "attestation/try-runtime",
-  "cumulus-pallet-dmp-queue/try-runtime",
   "cumulus-pallet-parachain-system/try-runtime",
   "cumulus-pallet-xcmp-queue/try-runtime",
   "frame-support/try-runtime",

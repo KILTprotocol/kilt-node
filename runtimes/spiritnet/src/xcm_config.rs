@@ -54,7 +54,7 @@ parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: Location = Parachain(ParachainInfo::parachain_id().into()).into();
 	pub const RelayNetworkId: NetworkId = NetworkId::Polkadot;
-	pub UniversalLocation: xcm::v4::prelude::InteriorLocation = Junctions::X2([GlobalConsensus(RelayNetworkId::get()), Parachain(ParachainInfo::parachain_id().into())].into());
+	pub UniversalLocation: InteriorLocation = Junctions::X2([GlobalConsensus(RelayNetworkId::get()), Parachain(ParachainInfo::parachain_id().into())].into());
 }
 
 /// This type specifies how a `MultiLocation` can be converted into an
@@ -283,10 +283,4 @@ impl pallet_message_queue::Config for Runtime {
 	type HeapSize = HeapSize;
 	type MaxStale = MaxStale;
 	type ServiceWeight = ServiceWeight;
-}
-
-impl cumulus_pallet_dmp_queue::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
-	type WeightInfo = cumulus_pallet_dmp_queue::weights::SubstrateWeight<Self>;
 }

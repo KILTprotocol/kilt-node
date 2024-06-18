@@ -1038,8 +1038,7 @@ construct_runtime! {
 		// Does nothing cool, just provides an origin.
 		CumulusXcm: cumulus_pallet_xcm exclude_parts { Call } = 84,
 		// Queue and pass DMP messages on to be executed.
-		DmpQueue: cumulus_pallet_dmp_queue = 85,
-		MessageQueue: pallet_message_queue = 86,
+		MessageQueue: pallet_message_queue = 85,
 	}
 }
 
