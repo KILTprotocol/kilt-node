@@ -157,6 +157,7 @@ fn test_unpaid_execution_from_rococo_to_spiritnet() {
 		assert_expected_events!(
 			Spiritnet,
 			vec![
+				SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true,  .. }) => {},
 				SpiritnetRuntimeEvent::Did(did::Event::DidCreated(account, did_identifier)) => {
 					account: account == &rococo_sovereign_account,
 					did_identifier:  did_identifier == &rococo_sovereign_account,

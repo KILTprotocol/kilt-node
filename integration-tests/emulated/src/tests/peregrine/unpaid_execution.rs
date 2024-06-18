@@ -153,10 +153,7 @@ fn test_unpaid_execution_from_rococo_to_peregrine() {
 		assert_expected_events!(
 			Peregrine,
 			vec![
-				// PeregrineRuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-				// 	outcome: Outcome::Complete(_),
-				// 	..
-				// }) => {},
+				PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true,  .. }) => {},
 				PeregrineRuntimeEvent::Did(did::Event::DidCreated(account, did_identifier)) => {
 					account: account == &rococo_sovereign_account,
 					did_identifier:  did_identifier == &rococo_sovereign_account,

@@ -41,7 +41,7 @@ pallets=(
 	cumulus_pallet_parachain_system
 )
 
-// Add Peregrine-only pallets here!
+# Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
   pallets+=()
 fi
