@@ -216,6 +216,12 @@ pub mod pallet {
 			Ok(())
 		}
 
+		// TODO: Assuming we start supporting DOTs, this might be possible to do
+		// entirely via the XCM executor. Investigate that.
+		// TODO: How do we get DOTs from AssetHub and back to AssetHub? I suspect it
+		// would have to be a reserve-based transfer if we don't want to have a
+		// derivative token created.
+		// TODO: How would it change if we would create our own foreign asset?
 		#[pallet::call_index(5)]
 		#[pallet::weight(u64::MAX)]
 		pub fn swap(
