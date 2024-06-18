@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use core::marker::PhantomData;
-
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+use core::marker::PhantomData;
 use pallet_treasury::ArgumentsFactory;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
