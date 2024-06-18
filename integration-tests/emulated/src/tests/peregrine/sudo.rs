@@ -31,7 +31,7 @@ fn get_sovereign_account_id_of_asset_hub() -> AccountId {
 }
 
 fn get_parachain_destination_from_parachain() -> VersionedLocation {
-	ParentThen(Junctions::X1([Junction::Parachain(Peregrine::para_id().into())].into()).into()).into()
+	ParentThen(Junctions::X1([Junction::Parachain(Peregrine::para_id().into())].into())).into()
 }
 
 fn get_parachain_destination_from_relay_chain() -> VersionedLocation {
