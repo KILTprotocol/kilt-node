@@ -37,6 +37,8 @@ pallets=(
 	public-credentials
 	pallet-deposit-storage
 	pallet-dip-provider
+	pallet_message_queue
+	cumulus_pallet_parachain_system
 )
 
 // Add Peregrine-only pallets here!
