@@ -31,12 +31,16 @@ const LOG_TARGET: &str = "runtime::pallet-asset-swap";
 
 #[frame_support::pallet]
 pub mod pallet {
-	use crate::swap::{SwapPairInfo, SwapPairRatio, SwapPairStatus};
+	use crate::{
+		swap::{SwapPairInfo, SwapPairRatio, SwapPairStatus},
+		LOG_TARGET,
+	};
 
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
+			tokens::{Fortitude, Preservation},
 			EnsureOrigin,
 		},
 	};
@@ -86,6 +90,8 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
+		InvalidLiquidityDetails,
+		PoolLiquidityNotMet,
 		SwapPairAlreadyCreated,
 		SwapPairNotFound,
 		Internal,
@@ -104,13 +110,37 @@ pub mod pallet {
 			reserve_location: Box<VersionedMultiLocation>,
 			remote_asset_id: Box<VersionedAssetId>,
 			ratio: SwapPairRatio,
-			maximum_issuance: u128,
+			total_issuance: u128,
+			circulating_supply: u128,
 		) -> DispatchResult {
 			T::SwapOrigin::ensure_origin(origin)?;
 
+			// 1. Verify swap pair has not already been set.
 			ensure!(!SwapPair::<T>::exists(), Error::<T>::SwapPairAlreadyCreated);
+			// 2. Verify that total issuance >= circulating supply and take the difference
+			//    as the amount of assets we control on destination.
+			let locked_supply = total_issuance
+				.checked_sub(circulating_supply)
+				.ok_or(Error::<T>::InvalidLiquidityDetails)?;
+			// 3. Verify the pool account has enough local assets to cover for all potential
+			//    remote -> local swaps, according to the specified swap ratio.
+			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
+			// Local assets are calculated from the circulating supply * (local/remote) swap
+			// rate.
+			let minimum_local_assets_required = (circulating_supply / ratio.remote_asset) * ratio.local_asset;
+			let pool_account_reducible_balance_as_u128: u128 =
+				T::Currency::reducible_balance(&pool_account, Preservation::Expendable, Fortitude::Polite)
+					.try_into()
+					.map_err(|_| {
+						log::error!(target: LOG_TARGET, "Failed to cast pool account reducible balance to u128.");
+						Error::<T>::Internal
+					})?;
+			ensure!(
+				pool_account_reducible_balance_as_u128 >= minimum_local_assets_required,
+				Error::<T>::PoolLiquidityNotMet
+			);
 
-			Self::set_swap_pair_bypass_checks(reserve_location, remote_asset_id, ratio, maximum_issuance)?;
+			Self::set_swap_pair_bypass_checks(reserve_location, remote_asset_id, ratio, locked_supply, pool_account);
 
 			Ok(())
 		}
@@ -126,7 +156,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_root(origin)?;
 
-			Self::set_swap_pair_bypass_checks(reserve_location, remote_asset_id, ratio, maximum_issuance)?;
+			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
+			Self::set_swap_pair_bypass_checks(reserve_location, remote_asset_id, ratio, maximum_issuance, pool_account);
 
 			Ok(())
 		}
@@ -194,7 +225,7 @@ pub mod pallet {
 			// ensure!(can_withdraw_from_submitter,
 			// Error::<T>::CannotWithdrawFromSubmitter);
 
-			// // 4. Verify we can transfer those tokens into the swap pool account.
+			// // 4. Verify we can transfer those assets into the swap pool account.
 			// let can_deposit_into_pool = matches!(
 			// 	T::LocalAssets::can_deposit(
 			// 		local_asset_id.into(),
@@ -234,9 +265,8 @@ impl<T: Config> Pallet<T> {
 		remote_asset_id: Box<VersionedAssetId>,
 		ratio: SwapPairRatio,
 		maximum_issuance: u128,
-	) -> Result<(), Error<T>> {
-		let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
-
+		pool_account: T::AccountId,
+	) {
 		let swap_pair_info = SwapPairInfoOf::<T> {
 			pool_account: pool_account.clone(),
 			ratio: ratio.clone(),
@@ -254,8 +284,6 @@ impl<T: Config> Pallet<T> {
 			ratio,
 			remote_asset_id: *remote_asset_id,
 		});
-
-		Ok(())
 	}
 
 	fn unset_swap_pair_bypass_checks() {
