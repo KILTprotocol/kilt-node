@@ -24,6 +24,7 @@ sp-io              = { workspace = true }
 sp-runtime         = { workspace = true }
 sp-std             = { workspace = true }
 xcm                = { workspace = true }
+xcm-executor       = { workspace = true }
 
 [features]
 default = ["std"]
@@ -36,5 +37,6 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
+  "xcm-executor/std",
   "xcm/std",
 ]

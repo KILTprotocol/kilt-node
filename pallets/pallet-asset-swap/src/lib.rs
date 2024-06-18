@@ -19,10 +19,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod swap;
+mod xcm;
 
+use ::xcm::{VersionedAssetId, VersionedMultiLocation};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::TrailingZeroInput;
-use xcm::{VersionedAssetId, VersionedMultiLocation};
 
 pub use crate::pallet::*;
 use crate::swap::{SwapPairRatio, SwapPairStatus};
