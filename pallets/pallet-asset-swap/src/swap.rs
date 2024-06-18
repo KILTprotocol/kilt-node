@@ -54,7 +54,7 @@ pub enum SwapPairStatus {
 }
 
 impl<AccountId> SwapPairInfo<AccountId> {
-	fn can_swap(&self) -> bool {
+	pub(crate) fn can_swap(&self) -> bool {
 		matches!(self.status, SwapPairStatus::Running)
 	}
 }

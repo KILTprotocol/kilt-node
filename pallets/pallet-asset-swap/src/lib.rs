@@ -40,12 +40,19 @@ pub mod pallet {
 		pallet_prelude::*,
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
-			tokens::{Fortitude, Preservation},
+			tokens::{Fortitude, Preservation, Provenance},
 			EnsureOrigin,
 		},
 	};
 	use frame_system::{ensure_root, pallet_prelude::*};
-	use xcm::{VersionedAssetId, VersionedMultiLocation};
+	use xcm::{
+		v3::{
+			validate_send, AssetId,
+			Instruction::{SetFeesMode, TransferAsset, WithdrawAsset},
+			Junctions, MultiLocation, SendXcm, Xcm,
+		},
+		VersionedAssetId, VersionedMultiLocation,
+	};
 
 	pub type CurrencyBalanceOf<T> =
 		<<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
@@ -62,6 +69,7 @@ pub mod pallet {
 		type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type SubmitterOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
+		type XcmRouter: SendXcm;
 	}
 
 	#[pallet::pallet]
@@ -90,10 +98,14 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		InvalidLiquidityDetails,
-		PoolLiquidityNotMet,
-		SwapPairAlreadyCreated,
-		SwapPairNotFound,
+		AlreadyExisting,
+		InvalidInput,
+		LiquidityNotMet,
+		NotEnabled,
+		NotFound,
+		RemotePoolBalance,
+		UserBalance,
+		Xcm,
 		Internal,
 	}
 
@@ -116,12 +128,12 @@ pub mod pallet {
 			T::SwapOrigin::ensure_origin(origin)?;
 
 			// 1. Verify swap pair has not already been set.
-			ensure!(!SwapPair::<T>::exists(), Error::<T>::SwapPairAlreadyCreated);
+			ensure!(!SwapPair::<T>::exists(), Error::<T>::AlreadyExisting);
 			// 2. Verify that total issuance >= circulating supply and take the difference
 			//    as the amount of assets we control on destination.
 			let locked_supply = total_issuance
 				.checked_sub(circulating_supply)
-				.ok_or(Error::<T>::InvalidLiquidityDetails)?;
+				.ok_or(Error::<T>::InvalidInput)?;
 			// 3. Verify the pool account has enough local assets to cover for all potential
 			//    remote -> local swaps, according to the specified swap ratio.
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
@@ -137,7 +149,7 @@ pub mod pallet {
 					})?;
 			ensure!(
 				pool_account_reducible_balance_as_u128 >= minimum_local_assets_required,
-				Error::<T>::PoolLiquidityNotMet
+				Error::<T>::LiquidityNotMet
 			);
 
 			Self::set_swap_pair_bypass_checks(reserve_location, remote_asset_id, ratio, locked_supply, pool_account);
@@ -199,60 +211,98 @@ pub mod pallet {
 			local_asset_amount: CurrencyBalanceOf<T>,
 			beneficiary: Box<VersionedMultiLocation>,
 		) -> DispatchResult {
-			let submitter = T::SubmitterOrigin::ensure_origin(origin)?;
+			let submitter = T::SubmitterOrigin::ensure_origin(origin).map_err(DispatchError::from)?;
 
-			// let SwapRequestLocalAssetOf::<T> {
-			// 	local_asset_id,
-			// 	local_asset_amount,
-			// } = *local_asset;
+			// 1. Retrieve swap pair info from storage, else fail.
+			let swap_pair = SwapPair::<T>::get().ok_or(DispatchError::from(Error::<T>::NotFound))?;
 
-			// // 1. Verify pool for (local asset, remote asset) exists.
-			// let swap_pair =
-			// LocalToRemoteAssets::<T>::get(&local_asset_id).
-			// ok_or(Error::<T>::LocalAssetNotFound)?; ensure!(
-			// 	swap_pair.remote_asset_id == *remote_asset_id,
-			// 	Error::<T>::AssetIdMismatch
-			// );
+			// 2. Check if swaps are enabled.
+			ensure!(swap_pair.can_swap(), DispatchError::from(Error::<T>::NotEnabled));
 
-			// // 2. Verify pool is running.
-			// ensure!(swap_pair.running, Error::<T>::PoolNotEnabled);
+			// 3. Verify the tx submitter has enough local assets for the swap.
+			let balance_to_withdraw = T::Currency::can_withdraw(&submitter, local_asset_amount).into_result(true)?;
+			ensure!(balance_to_withdraw == local_asset_amount, Error::<T>::UserBalance);
 
-			// // 3. Verify tx submitter has enough of the specified asset.
-			// let can_withdraw_from_submitter = matches!(
-			// 	T::LocalAssets::can_withdraw(local_asset_id.clone().into(), &submitter,
-			// local_asset_amount), 	WithdrawConsequenceOf::<T>::Success
-			// );
-			// ensure!(can_withdraw_from_submitter,
-			// Error::<T>::CannotWithdrawFromSubmitter);
+			// 4. Verify the local assets can be transferred to the swap pool account
+			T::Currency::can_deposit(&swap_pair.pool_account, local_asset_amount, Provenance::Extant).into_result()?;
 
-			// // 4. Verify we can transfer those assets into the swap pool account.
-			// let can_deposit_into_pool = matches!(
-			// 	T::LocalAssets::can_deposit(
-			// 		local_asset_id.into(),
-			// 		&swap_pair.pool_account,
-			// 		local_asset_amount,
-			// 		Provenance::Extant
-			// 	),
-			// 	DepositConsequence::Success
-			// );
-			// ensure!(can_deposit_into_pool, Error::<T>::CannotDepositIntoSwapPool);
+			// 5. Verify we have enough balance on the remote location to perform the
+			//    transfer
+			let local_asset_amount_as_u128: u128 = local_asset_amount.try_into().map_err(|_| {
+				log::error!(target: LOG_TARGET, "Failed to cast user-specified account to u128.");
+				DispatchError::from(Error::<T>::Internal)
+			})?;
+			let corresponding_remote_assets =
+				(local_asset_amount_as_u128 / swap_pair.ratio.local_asset) * swap_pair.ratio.remote_asset;
+			ensure!(
+				swap_pair.remote_asset_balance >= corresponding_remote_assets,
+				Error::<T>::RemotePoolBalance
+			);
+			// TODO: Convert to version based on destination
+			let asset_id_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert asset ID {:?} into v3 `AssetId` with error {:?}", swap_pair.remote_asset_id, e);
+				DispatchError::from(Error::<T>::Internal)
+			})?;
+			let beneficiary_v3: MultiLocation = (*beneficiary.clone()).try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert beneficiary {:?} into v3 `Multilocation` with error {:?}", beneficiary, e);
+				DispatchError::from(Error::<T>::Internal)
+			})?;
+			let destination_v3: MultiLocation = swap_pair.remote_reserve_location.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert remote reserve location {:?} into v3 `Multilocation` with error {:?}", swap_pair.remote_reserve_location, e);
+				DispatchError::from(Error::<T>::Internal)
+			})?;
 
-			// // 5. Verify we have enough balance on the remote location to perform the
-			// //    transfer.
-			// let can_send_from_remote_reserve = {
-			// 	let local_asset_amount_as_u128: u128 = local_asset_amount
-			// 		.try_into()
-			// 		.map_err(|_| Error::<T>::LocalAssetAmountOverflow)?;
+			// 6. Compose and validate XCM message
+			let remote_xcm: Xcm<()> = vec![
+				WithdrawAsset((Junctions::Here, 1_000_000_000).into()),
+				SetFeesMode { jit_withdraw: true },
+				TransferAsset {
+					assets: (asset_id_v3, corresponding_remote_assets).into(),
+					beneficiary: beneficiary_v3,
+				},
+				// TODO: Add try-catch and asset refund
+			]
+			.into();
+			let xcm_ticket = validate_send::<T::XcmRouter>(destination_v3, remote_xcm.clone()).map_err(|e| {
+				log::error!(
+					"Failed to call validate_send for destination {:?} and remote XCM {:?} with error {:?}",
+					destination_v3,
+					remote_xcm,
+					e
+				);
+				DispatchError::from(Error::<T>::Xcm)
+			})?;
 
-			// 	// TODO: This probably has to change
-			// 	let remote_asset_amount =
-			// 		(local_asset_amount_as_u128 / swap_pair.ratio.local_asset) *
-			// swap_pair.ratio.remote_asset; 	remote_asset_amount <=
-			// swap_pair.remote_asset_balance };
-			// ensure!(can_send_from_remote_reserve, Error::<T>::RemoteReserveDrained);
+			// 7. Transfer funds from user to pool
+			let transferred_amount = T::Currency::transfer(
+				&submitter,
+				&swap_pair.pool_account,
+				local_asset_amount,
+				Preservation::Preserve,
+			)?;
+			if transferred_amount != local_asset_amount {
+				log::error!(
+					"Transferred amount {:?} does not match expected user-specified amount {:?}",
+					transferred_amount,
+					local_asset_amount
+				);
+				return Err(Error::<T>::Internal.into());
+			}
 
-			// // TODO: Perform transfer, and compose XCM message.
-			// // TODO: Think about XCM fees management.
+			// 8. Send XCM out
+			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
+				log::error!("Failed to deliver ticket with error {:?}", e);
+				DispatchError::from(Error::<T>::Xcm)
+			})?;
+
+			// TODO: Get right XCM version based on destination (we could default to always
+			// use v3 for now, and v4 when we update to a newer polkadot-sdk version).
+			// TODO: Delegate XCM message composition to a trait Config as well, depending
+			// on the destination (choosing which asset to use for payments, what amount,
+			// etc).
+			// TODO: Add hook to check the swap parameters (restricting
+			// where remote assets can be sent to).
+			// TODO: Think about XCM fees management.
 
 			Ok(())
 		}
@@ -297,7 +347,7 @@ impl<T: Config> Pallet<T> {
 
 	fn set_swap_pair_status(new_status: SwapPairStatus) -> Result<(), Error<T>> {
 		let event = SwapPair::<T>::try_mutate(|entry| {
-			let swap_pair = entry.as_mut().ok_or(Error::<T>::SwapPairNotFound)?;
+			let swap_pair = entry.as_mut().ok_or(Error::<T>::NotFound)?;
 			let event = match new_status {
 				SwapPairStatus::Running => Event::<T>::SwapPairResumed {
 					remote_asset_id: swap_pair.remote_asset_id.clone(),
