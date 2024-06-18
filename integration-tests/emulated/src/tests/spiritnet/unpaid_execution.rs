@@ -45,10 +45,8 @@ fn test_unpaid_execution_to_spiritnet() {
 	MockNetwork::reset();
 
 	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
-	let parachain_destination: VersionedMultiLocation = ParentThen(Junctions::X1(
-		[Junction::Parachain(<Spiritnet as Parachain>::para_id().into())].into(),
-	))
-	.into();
+	let parachain_destination: VersionedMultiLocation =
+		ParentThen(Junctions::X1([Junction::Parachain(Spiritnet::para_id().into())].into())).into();
 
 	let weight_limit = WeightLimit::Unlimited;
 	let check_origin = None;

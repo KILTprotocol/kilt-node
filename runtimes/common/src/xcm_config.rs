@@ -80,6 +80,7 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 		_max_weight: Weight,
 		_properties: &mut Properties,
 	) -> Result<(), ProcessMessageError> {
+		println!("Ich bin hier: {:?}", message);
 		xcm_builder::MatchXcm::match_next_inst_while(
 			xcm_builder::CreateMatcher::matcher(message),
 			|_| true,
@@ -100,6 +101,13 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 				}
 				| TransferReserveAsset {
 					dest: Location {
+						parents: 1,
+						interior: Here,
+					},
+					..
+				}
+				| TransferAsset {
+					beneficiary: Location {
 						parents: 1,
 						interior: Here,
 					},

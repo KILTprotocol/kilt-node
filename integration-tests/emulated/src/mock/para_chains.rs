@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use asset_hub_rococo_emulated_chain::genesis::ED;
 use emulated_integration_tests_common::accounts;
 use frame_support::traits::OnInitialize;
-use rococo_emulated_chain::genesis::ED;
 use runtime_common::AuthorityId;
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
@@ -57,7 +57,7 @@ pub mod spiritnet {
 				balances: accounts::init_balances()
 					.iter()
 					.cloned()
-					.map(|k| (k, ED * 1_000_000_000))
+					.map(|k| (k, ED * 1_000_000_000_000_000_000))
 					.collect(),
 			},
 			..Default::default()
@@ -99,7 +99,7 @@ pub mod peregrine {
 				balances: accounts::init_balances()
 					.iter()
 					.cloned()
-					.map(|k| (k, ED * 1_000_000_000))
+					.map(|k| (k, ED * 1_000_000_000_000_000_000))
 					.collect(),
 			},
 			..Default::default()
