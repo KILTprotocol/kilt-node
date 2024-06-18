@@ -19,7 +19,17 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
-use xcm::{VersionedAssetId, VersionedInteriorMultiLocation};
+use xcm::{VersionedAssetId, VersionedMultiLocation};
+
+#[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
+pub struct SwapPairInfo<AccountId> {
+	pub pool_account: AccountId,
+	pub ratio: SwapPairRatio,
+	pub remote_asset_balance: u128,
+	pub remote_asset_id: VersionedAssetId,
+	pub remote_reserve_location: VersionedMultiLocation,
+	pub status: SwapPairStatus,
+}
 
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
 pub struct SwapPairRatio {
@@ -36,17 +46,15 @@ impl SwapPairRatio {
 	}
 }
 
-#[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
-pub struct SwapPairInfo<AccountId> {
-	pub pool_account: AccountId,
-	pub ratio: SwapPairRatio,
-	pub remote_asset_balance: u128,
-	pub remote_asset_id: VersionedAssetId,
-	pub running: bool,
+#[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone, Default)]
+pub enum SwapPairStatus {
+	#[default]
+	Paused,
+	Running,
 }
 
-#[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
-pub struct SwapRequestLocalAsset<Balance> {
-	pub local_asset_id: VersionedInteriorMultiLocation,
-	pub local_asset_amount: Balance,
+impl<AccountId> SwapPairInfo<AccountId> {
+	fn can_swap(&self) -> bool {
+		matches!(self.status, SwapPairStatus::Running)
+	}
 }
