@@ -20,9 +20,13 @@ use xcm_emulator::decl_test_networks;
 
 use crate::mock::para_chains::{PeregrineParachain, SpiritnetParachain};
 
+#[cfg(test)]
 pub type Rococo = RococoChain<MockNetwork>;
+#[cfg(test)]
 pub type Spiritnet = SpiritnetParachain<MockNetwork>;
+#[cfg(test)]
 pub type Peregrine = PeregrineParachain<MockNetwork>;
+#[cfg(test)]
 pub type AssetHub = AssetHubParachain<MockNetwork>;
 
 decl_test_networks! {
