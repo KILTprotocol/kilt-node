@@ -16,8 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{construct_runtime, traits::Everything};
+use frame_support::{
+	construct_runtime,
+	traits::{
+		fungible::{Mutate, MutateFreeze, MutateHold},
+		Everything,
+	},
+};
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
@@ -60,19 +68,22 @@ impl frame_system::Config for MockRuntime {
 	type Version = ();
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, MaxEncodedLen, Encode, Decode, Debug, TypeInfo, Default)]
+pub struct MockRuntimeHoldReason;
+
 impl pallet_balances::Config for MockRuntime {
 	type AccountStore = System;
 	type Balance = u64;
 	type DustRemoval = ();
 	type ExistentialDeposit = ConstU64<1>;
-	type FreezeIdentifier = [u8; 8];
+	type FreezeIdentifier = [u8; 1];
 	type MaxFreezes = ConstU32<10>;
 	type MaxHolds = ConstU32<10>;
 	type MaxLocks = ConstU32<10>;
 	type MaxReserves = ConstU32<10>;
-	type ReserveIdentifier = [u8; 8];
+	type ReserveIdentifier = [u8; 1];
 	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeHoldReason = MockRuntimeHoldReason;
 	type WeightInfo = ();
 }
 
@@ -87,14 +98,19 @@ impl crate::Config for MockRuntime {
 }
 
 #[derive(Default)]
-pub(crate) struct ExtBuilder<T: Config>(Option<SwapPairInfoOf<T>>);
+pub(crate) struct ExtBuilder<T: Config>(Option<SwapPairInfoOf<T>>, Vec<(AccountId32, u64, u64, u64)>);
 
 impl<T> ExtBuilder<T>
 where
-	T: Config,
+	T: Config + pallet_balances::Config,
 {
 	pub(crate) fn with_swap_pair_info(mut self, swap_pair_info: SwapPairInfoOf<T>) -> Self {
 		self.0 = Some(swap_pair_info);
+		self
+	}
+
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountId32, u64, u64, u64)>) -> Self {
+		self.1 = balances;
 		self
 	}
 
@@ -118,6 +134,13 @@ where
 					remote_asset_balance,
 					pool_account,
 				);
+			}
+			for (account, free, frozen, locked) in self.1 {
+				<Balances as Mutate<AccountId32>>::set_balance(&account, free);
+				<Balances as MutateFreeze<AccountId32>>::set_freeze(b"1", &account, frozen)
+					.expect("Failed to freeze balance on account.");
+				<Balances as MutateHold<AccountId32>>::hold(&MockRuntimeHoldReason::default(), &account, locked)
+					.expect("Failed to hold balance on account.");
 			}
 		});
 
