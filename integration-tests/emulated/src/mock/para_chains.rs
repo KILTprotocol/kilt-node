@@ -45,7 +45,7 @@ pub mod spiritnet {
 				..Default::default()
 			},
 			session: SessionConfig {
-				keys: vec![(
+				keys: [(
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_from_seed::<AuthorityId>("Alice"),
 				)]
@@ -87,7 +87,7 @@ pub mod peregrine {
 				..Default::default()
 			},
 			session: SessionConfig {
-				keys: vec![(
+				keys: [(
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_from_seed::<AuthorityId>("Alice"),
 				)]

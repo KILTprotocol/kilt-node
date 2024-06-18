@@ -16231,6 +16231,7 @@ name = "xcm-integration-tests"
 version = "1.14.0-dev"
 dependencies = [
  "asset-hub-rococo-emulated-chain",
+ "asset-hub-rococo-runtime",
  "attestation",
  "ctype",
  "cumulus-pallet-dmp-queue",
@@ -16240,7 +16241,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-asset-dids",
- "pallet-bags-list",
  "pallet-did-lookup",
  "pallet-message-queue",
  "pallet-web3-names",
