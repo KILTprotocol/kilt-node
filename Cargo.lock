@@ -6922,7 +6922,8 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orchestra"
 version = "0.3.6"
-source = "git+https://github.com/paritytech/orchestra.git?tag=v0.3.6#32e9b380eec438e53594d923aea3614bf4c9e32a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92829eef0328a3d1cd22a02c0e51deb92a5362df3e7d21a4e9bdc38934694e66"
 dependencies = [
  "async-trait",
  "dyn-clonable",
@@ -6930,7 +6931,7 @@ dependencies = [
  "futures-timer",
  "orchestra-proc-macro",
  "pin-project",
- "prioritized-metered-channel 0.6.1 (git+https://github.com/paritytech/orchestra.git?tag=v0.3.6)",
+ "prioritized-metered-channel",
  "thiserror",
  "tracing",
 ]
@@ -6938,7 +6939,8 @@ dependencies = [
 [[package]]
 name = "orchestra-proc-macro"
 version = "0.3.6"
-source = "git+https://github.com/paritytech/orchestra.git?tag=v0.3.6#32e9b380eec438e53594d923aea3614bf4c9e32a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1344346d5af32c95bbddea91b18a88cc83eac394192d20ef2fc4c40a74332355"
 dependencies = [
  "expander 2.2.1",
  "indexmap 2.2.6",
@@ -9549,7 +9551,7 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "polkadot-primitives",
- "prioritized-metered-channel 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prioritized-metered-channel",
  "sc-cli",
  "sc-service",
  "sc-tracing",
@@ -9666,7 +9668,7 @@ dependencies = [
  "polkadot-node-subsystem-types",
  "polkadot-overseer",
  "polkadot-primitives",
- "prioritized-metered-channel 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prioritized-metered-channel",
  "rand",
  "sc-client-api",
  "schnellru",
@@ -10182,21 +10184,6 @@ name = "prioritized-metered-channel"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a172e6cc603231f2cf004232eabcecccc0da53ba576ab286ef7baa0cfc7927ad"
-dependencies = [
- "coarsetime",
- "crossbeam-queue",
- "derive_more",
- "futures",
- "futures-timer",
- "nanorand",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "prioritized-metered-channel"
-version = "0.6.1"
-source = "git+https://github.com/paritytech/orchestra.git?tag=v0.3.6#32e9b380eec438e53594d923aea3614bf4c9e32a"
 dependencies = [
  "coarsetime",
  "crossbeam-queue",
