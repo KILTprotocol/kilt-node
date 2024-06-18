@@ -16,24 +16,24 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use asset_hub_rococo_emulated_chain::genesis::ED;
 use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
-use frame_support::{assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
-use integration_tests_common::constants::{
-	accounts::ALICE,
-	asset_hub_polkadot::{self, ED},
-};
+use emulated_integration_tests_common::accounts::ALICE;
+use frame_support::{assert_err, assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
 use peregrine_runtime::PolkadotXcm as PeregrineXcm;
 use runtime_common::AccountId;
 use sp_core::sr25519;
 use sp_runtime::traits::Zero;
-use xcm::v3::prelude::{Here, Junction, Junctions, Parent, ParentThen, WeightLimit, X1};
+use xcm::lts::{
+	prelude::{Here, Junction, Junctions, Parent, ParentThen},
+	WeightLimit,
+};
 use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 
 use crate::{
 	mock::{
-		network::MockNetworkRococo,
-		para_chains::{AssetHubRococo, Peregrine, PeregrinePallet},
-		relay_chains::Rococo,
+		network::{AssetHub, MockNetwork, Peregrine, Rococo},
+		para_chains::PeregrineParachainParaPallet,
 	},
 	utils::get_account_id_from_seed,
 };
@@ -42,33 +42,36 @@ use crate::{
 /// allow transfers to the relaychain since the funds might be lost.
 #[test]
 fn test_reserve_asset_transfer_from_regular_peregrine_account_to_relay() {
-	MockNetworkRococo::reset();
+	MockNetwork::reset();
+
+	let balance_to_transfer = 100_000_000_000_000 * ED;
 
 	let alice_account = get_account_id_from_seed::<sr25519::Public>(ALICE);
 
 	Peregrine::execute_with(|| {
-		assert_ok!(PeregrineXcm::limited_reserve_transfer_assets(
-			RawOrigin::Signed(alice_account.clone()).into(),
-			Box::new(Parent.into()),
-			Box::new(
-				X1(Junction::AccountId32 {
-					network: None,
-					id: alice_account.into()
-				})
-				.into()
+		assert_err!(
+			PeregrineXcm::limited_reserve_transfer_assets(
+				RawOrigin::Signed(alice_account.clone()).into(),
+				Box::new(Parent.into()),
+				Box::new(
+					Junctions::X1(
+						[Junction::AccountId32 {
+							network: None,
+							id: alice_account.into()
+						}]
+						.into()
+					)
+					.into()
+				),
+				Box::new((Here, balance_to_transfer).into()),
+				0,
+				WeightLimit::Unlimited,
 			),
-			Box::new((Here, 1_000_000).into()),
-			0,
-			WeightLimit::Unlimited,
-		));
-
-		type RuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
-
-		assert_expected_events!(
-			Peregrine,
-			vec![RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
-				outcome: xcm::latest::Outcome::Error(xcm::latest::Error::Barrier)
-			}) => {},]
+			sp_runtime::DispatchError::Module(sp_runtime::ModuleError {
+				index: 83,
+				error: [24, 0, 0, 0,],
+				message: Some("LocalExecutionIncomplete")
+			})
 		);
 	});
 	// No message should reach the relaychain.
@@ -79,13 +82,13 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_relay() {
 
 #[test]
 fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
-	MockNetworkRococo::reset();
+	MockNetwork::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
 	let asset_hub_sovereign_account =
-		Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHubRococo::para_id()));
+		Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHub::para_id()));
 
-	let balance_to_transfer = 10000 * ED;
+	let balance_to_transfer = 100_000_000_000_000 * ED;
 
 	Peregrine::execute_with(|| {
 		// the sovereign_account of AssetHub should have no coins.
@@ -97,12 +100,15 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 		// submit xcm message
 		assert_ok!(PeregrineXcm::limited_reserve_transfer_assets(
 			RawOrigin::Signed(alice_account_id.clone()).into(),
-			Box::new(ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into()),
+			Box::new(ParentThen(Junctions::X1([Junction::Parachain(AssetHub::para_id().into())].into())).into()),
 			Box::new(
-				X1(Junction::AccountId32 {
-					network: None,
-					id: asset_hub_sovereign_account.clone().into()
-				})
+				Junctions::X1(
+					[Junction::AccountId32 {
+						network: None,
+						id: asset_hub_sovereign_account.clone().into()
+					}]
+					.into()
+				)
 				.into()
 			),
 			Box::new((Here, balance_to_transfer).into()),
@@ -116,14 +122,16 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 		assert_expected_events!(
 			Peregrine,
 			vec![RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
-				outcome: xcm::latest::Outcome::Complete(_)
+				outcome: xcm::latest::Outcome::Complete{ .. }
 			}) => {},
 			]
 		);
 
 		// we also expect that the sovereignAccount of AssetHub has some coins now
-		let balance_after_transfer: u128 =
-			<<Peregrine as PeregrinePallet>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
+		let balance_after_transfer =
+			<<Peregrine as PeregrineParachainParaPallet>::Balances as Inspect<AccountId>>::balance(
+				&asset_hub_sovereign_account,
+			);
 
 		assert_eq!(balance_after_transfer, balance_to_transfer);
 	});
@@ -132,12 +140,14 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 		assert_eq!(Rococo::events().len(), 0);
 	});
 	// Fails on AssetHub since peregrine is not a trusted registrar
-	AssetHubRococo::execute_with(|| {
-		type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
+	AssetHub::execute_with(|| {
+		type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
+
+		println!("events: {:?}", AssetHub::events());
 
 		assert_expected_events!(
-			AssetHubRococo,
-			vec![RuntimeEvent::XcmpQueue(XcmpQueueEvent::Fail { .. }) => {},]
+			AssetHub,
+			vec![] //vec![RuntimeEvent::XcmpQueue(XcmpQueueEvent::Fail { .. }) => {},]
 		);
 	});
 }

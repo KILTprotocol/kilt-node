@@ -21,24 +21,21 @@ use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use rococo_emulated_chain::RococoRelayPallet;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{lts::prelude::*, opaque::*, DoubleEncoded, VersionedMultiLocation};
+use xcm::{lts::prelude::*, opaque::*, DoubleEncoded, VersionedLocation};
 use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, RelayChain, TestExt, Weight};
 
-use crate::mock::{
-	network::{AssetHub, MockNetwork, Rococo, Spiritnet},
-	para_chains::spiritnet,
-};
+use crate::mock::network::{AssetHub, MockNetwork, Rococo, Spiritnet};
 
 fn get_sovereign_account_id_of_asset_hub() -> AccountId {
 	Spiritnet::sovereign_account_id_of(Spiritnet::sibling_location_of(AssetHub::para_id()))
 }
 
-fn get_parachain_destination_from_parachain() -> VersionedMultiLocation {
-	ParentThen(Junctions::X1([Junction::Parachain(spiritnet::PARA_ID)].into())).into()
+fn get_parachain_destination_from_parachain() -> VersionedLocation {
+	ParentThen(Junctions::X1([Junction::Parachain(Spiritnet::para_id().into())].into())).into()
 }
 
-fn get_parachain_destination_from_relay_chain() -> VersionedMultiLocation {
-	Rococo::child_location_of(spiritnet::PARA_ID.into()).into_versioned()
+fn get_parachain_destination_from_relay_chain() -> VersionedLocation {
+	Rococo::child_location_of(Spiritnet::para_id()).into_versioned()
 }
 
 fn get_unpaid_xcm_message(origin_kind: OriginKind) -> VersionedXcm {

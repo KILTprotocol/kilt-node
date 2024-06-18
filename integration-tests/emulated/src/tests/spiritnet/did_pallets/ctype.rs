@@ -20,7 +20,7 @@ use asset_hub_rococo_emulated_chain::AssetHubRococoParaPallet;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
+use xcm::{lts::prelude::OriginKind, DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
@@ -83,7 +83,6 @@ fn test_ctype_creation_from_asset_hub_successful() {
 		);
 	});
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	Spiritnet::execute_with(|| {
 		type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 

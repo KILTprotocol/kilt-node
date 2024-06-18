@@ -41,12 +41,7 @@ fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 		assert_noop!(
 			SpiritnetXcm::limited_teleport_assets(
 				RawOrigin::Signed(alice_account_id.clone()).into(),
-				Box::new(
-					ParentThen(Junctions::X1(
-						[Junction::Parachain(<AssetHub as Parachain>::para_id().into())].into()
-					))
-					.into()
-				),
+				Box::new(ParentThen(Junctions::X1([Junction::Parachain(AssetHub::para_id().into())].into())).into()),
 				Box::new(
 					Junctions::X1(
 						[Junction::AccountId32 {
