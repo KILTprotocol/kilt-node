@@ -83,9 +83,9 @@ where
 	}
 }
 
-pub struct SwapPairReserveCheck<T>(PhantomData<T>);
+pub struct OnlySwapRemoteAsset<T>(PhantomData<T>);
 
-impl<T> ContainsPair<MultiAsset, MultiLocation> for SwapPairReserveCheck<T>
+impl<T> ContainsPair<MultiAsset, MultiLocation> for OnlySwapRemoteAsset<T>
 where
 	T: Config,
 {

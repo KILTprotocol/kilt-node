@@ -297,7 +297,7 @@ pub mod pallet {
 			})?;
 
 			// TODO: Get right XCM version based on destination (we could default to always
-			// use v3 for now, and v4 when we update to a newer polkadot-sdk version).
+			// use latest).
 			// TODO: Delegate XCM message composition to a trait Config as well, depending
 			// on the destination (choosing which asset to use for payments, what amount,
 			// etc).
