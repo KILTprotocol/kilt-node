@@ -124,10 +124,7 @@ fn test_sudo_call_from_relay_chain_to_spiritnet() {
 			assert_expected_events!(
 				Spiritnet,
 				vec![
-					// SpiritnetRuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-					// 	outcome: xcm::v3::Outcome::Incomplete(_, xcm::v3::Error::NoPermission),
-					// 	..
-					// }) => {},
+					SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});
@@ -188,10 +185,7 @@ fn test_sudo_call_from_asset_hub_to_spiritnet() {
 			assert_expected_events!(
 				Spiritnet,
 				vec![
-					// SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-					// 	error: xcm::v3::Error::NoPermission,
-					// 	..
-					// }) => {},
+					SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});

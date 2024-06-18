@@ -24,10 +24,7 @@ use xcm::{lts::prelude::OriginKind, DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
-	mock::{
-		network::{AssetHub, MockNetwork, Peregrine, Rococo},
-		para_chains::SpiritnetParachainParaPallet,
-	},
+	mock::network::{AssetHub, MockNetwork, Peregrine, Rococo},
 	tests::peregrine::did_pallets::utils::{
 		construct_basic_transact_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
 		get_sibling_destination_peregrine,
@@ -111,14 +108,10 @@ fn test_not_allowed_did_call() {
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
-			// All calls should have [NoPermission] error
 			assert_expected_events!(
 				Peregrine,
 				vec![
-					// PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-					// 	error: xcm::v3::Error::NoPermission,
-					// 	..
-					// }) => {},
+					PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});
@@ -177,10 +170,7 @@ fn test_recursion_did_call() {
 			assert_expected_events!(
 				Peregrine,
 				vec![
-					// PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-					// 	error: xcm::v3::Error::NoPermission,
-					// 	..
-					// }) => {},
+					PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});

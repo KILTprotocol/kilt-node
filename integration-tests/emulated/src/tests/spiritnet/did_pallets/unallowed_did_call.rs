@@ -24,10 +24,7 @@ use xcm::{lts::prelude::OriginKind, DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
-	mock::{
-		network::{AssetHub, MockNetwork, Rococo, Spiritnet},
-		para_chains::SpiritnetParachainParaPallet,
-	},
+	mock::network::{AssetHub, MockNetwork, Rococo, Spiritnet},
 	tests::spiritnet::did_pallets::utils::{
 		construct_basic_transact_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
 		get_sibling_destination_spiritnet,
@@ -111,14 +108,10 @@ fn test_not_allowed_did_call() {
 		Spiritnet::execute_with(|| {
 			type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
-			// All calls should have [NoPermission] error
 			assert_expected_events!(
 				Spiritnet,
 				vec![
-					// SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-					// 	error: xcm::v3::Error::NoPermission,
-					// 	..
-					// }) => {},
+					SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});
@@ -173,14 +166,10 @@ fn test_recursion_did_call() {
 		Spiritnet::execute_with(|| {
 			type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
 
-			// All calls should have [NoPermission] error
 			assert_expected_events!(
 				Spiritnet,
 				vec![
-					// SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-					// 	error: xcm::v3::Error::NoPermission,
-					// 	..
-					// }) => {},
+					SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});

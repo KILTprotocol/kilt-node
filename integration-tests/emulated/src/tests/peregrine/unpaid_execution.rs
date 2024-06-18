@@ -29,7 +29,7 @@ use runtime_common::{constants::EXISTENTIAL_DEPOSIT, AccountId};
 use xcm::{
 	lts::{
 		prelude::{OriginKind, Transact, UnpaidExecution},
-		Junction, Junctions, Outcome, ParentThen, WeightLimit, Xcm,
+		Junction, Junctions, ParentThen, WeightLimit, Xcm,
 	},
 	DoubleEncoded, VersionedLocation, VersionedXcm,
 };
@@ -37,7 +37,7 @@ use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 
 use crate::mock::{
 	network::{AssetHub, MockNetwork, Peregrine, Rococo},
-	para_chains::{PeregrineParachainParaPallet, SpiritnetParachainParaPallet},
+	para_chains::PeregrineParachainParaPallet,
 };
 
 #[test]
@@ -79,10 +79,7 @@ fn test_unpaid_execution_from_asset_hub_to_peregrine() {
 		assert_expected_events!(
 			Peregrine,
 			vec![
-				// PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-				// 	error: xcm::v3::Error::Barrier,
-				// 	..
-				// }) => {},
+				PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::ProcessingFailed { .. }) => {},
 			]
 		);
 	});

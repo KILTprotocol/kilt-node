@@ -25,10 +25,7 @@ use xcm::{lts::prelude::OriginKind, DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
-	mock::{
-		network::{AssetHub, MockNetwork, Rococo, Spiritnet},
-		para_chains::SpiritnetParachainParaPallet,
-	},
+	mock::network::{AssetHub, MockNetwork, Rococo, Spiritnet},
 	tests::spiritnet::did_pallets::utils::{
 		construct_basic_transact_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
 		get_sibling_destination_spiritnet,
@@ -91,7 +88,7 @@ fn test_claim_w3n_from_asset_hub_successful() {
 		assert_expected_events!(
 			Spiritnet,
 			vec![
-				//SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
+				SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
 				SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(account, result)) => {
 					account: account == &asset_hub_sovereign_account,
 					result: result.is_ok(),
@@ -151,10 +148,7 @@ fn test_claim_w3n_from_asset_hub_unsuccessful() {
 				matches!(
 					event,
 					SpiritnetRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
-						| SpiritnetRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed {
-							owner: _,
-							name: _
-						})
+						| SpiritnetRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed { .. })
 				)
 			});
 

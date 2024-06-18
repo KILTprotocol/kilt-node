@@ -88,7 +88,7 @@ fn test_did_creation_from_asset_hub_successful() {
 		assert_expected_events!(
 			Peregrine,
 			vec![
-				//PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
+				PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
 				PeregrineRuntimeEvent::Did(did::Event::DidCreated(account, did_identifier)) => {
 					account: account == &asset_hub_sovereign_account,
 					did_identifier:  did_identifier == &asset_hub_sovereign_account,

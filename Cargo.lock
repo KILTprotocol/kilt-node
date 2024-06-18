@@ -16234,7 +16234,6 @@ dependencies = [
  "attestation",
  "ctype",
  "cumulus-pallet-dmp-queue",
- "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "did",
  "emulated-integration-tests-common",

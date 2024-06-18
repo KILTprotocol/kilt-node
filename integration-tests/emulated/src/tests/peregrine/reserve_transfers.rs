@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use asset_hub_rococo_emulated_chain::genesis::ED;
-use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
+
 use emulated_integration_tests_common::accounts::ALICE;
 use frame_support::{assert_err, assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
 use peregrine_runtime::PolkadotXcm as PeregrineXcm;
@@ -143,11 +143,11 @@ fn test_reserve_asset_transfer_from_regular_peregrine_account_to_asset_hub() {
 	AssetHub::execute_with(|| {
 		type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 
-		println!("events: {:?}", AssetHub::events());
-
 		assert_expected_events!(
 			AssetHub,
-			vec![] //vec![RuntimeEvent::XcmpQueue(XcmpQueueEvent::Fail { .. }) => {},]
+			vec![
+				RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
+			]
 		);
 	});
 }

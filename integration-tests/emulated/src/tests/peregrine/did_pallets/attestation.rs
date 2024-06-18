@@ -25,10 +25,7 @@ use xcm::{lts::prelude::OriginKind, VersionedXcm};
 use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
-	mock::{
-		network::{AssetHub, MockNetwork, Peregrine, Rococo},
-		para_chains::SpiritnetParachainParaPallet,
-	},
+	mock::network::{AssetHub, MockNetwork, Peregrine, Rococo},
 	tests::peregrine::did_pallets::utils::{
 		construct_basic_transact_xcm_message, create_mock_ctype, create_mock_did_from_account,
 		get_asset_hub_sovereign_account, get_sibling_destination_peregrine,
@@ -108,7 +105,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 		assert_expected_events!(
 			Peregrine,
 			vec![
-			//	PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
+				PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
 				PeregrineRuntimeEvent::Attestation(attestation::Event::AttestationCreated { attester, claim_hash, authorization: _ , ctype_hash }) => {
 					attester: attester == &asset_hub_sovereign_account,
 					claim_hash: claim_hash == &claim_hash_value,

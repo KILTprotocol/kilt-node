@@ -124,10 +124,7 @@ fn test_sudo_call_from_relay_chain_to_peregrine() {
 			assert_expected_events!(
 				Peregrine,
 				vec![
-					// PeregrineRuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-					// 	outcome: xcm::v3::Outcome::Incomplete(_, xcm::v3::Error::NoPermission),
-					// 	..
-					// }) => {},
+					PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});
@@ -182,17 +179,13 @@ fn test_sudo_call_from_asset_hub_to_peregrine() {
 			);
 		});
 
-		// We expect to get the [NoPermission] error
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				Peregrine,
 				vec![
-					// PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-					// 	error: xcm::v3::Error::NoPermission,
-					// 	..
-					// }) => {},
+					PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});

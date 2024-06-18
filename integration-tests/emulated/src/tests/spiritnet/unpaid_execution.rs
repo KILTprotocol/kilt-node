@@ -29,7 +29,7 @@ use runtime_common::{constants::EXISTENTIAL_DEPOSIT, AccountId};
 use xcm::{
 	lts::{
 		prelude::{OriginKind, Transact, UnpaidExecution},
-		Junction, Junctions, Outcome, ParentThen, WeightLimit, Xcm,
+		Junction, Junctions, ParentThen, WeightLimit, Xcm,
 	},
 	DoubleEncoded, VersionedLocation, VersionedXcm,
 };
@@ -77,14 +77,10 @@ fn test_unpaid_execution_to_spiritnet() {
 	// Execution should be blocked by barrier
 	Spiritnet::execute_with(|| {
 		type SpiritnetRuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
-		println!("Emmited events, {:?} ", Spiritnet::events());
 		assert_expected_events!(
 			Spiritnet,
 			vec![
-				// SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-				// 	error: xcm::v3::Error::Barrier,
-				// 	..
-				// }) => {},
+				SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::ProcessingFailed { .. }) => {},
 			]
 		);
 	});
