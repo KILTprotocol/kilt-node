@@ -45,7 +45,7 @@ use runtime_common::{
 	xcm_config::{
 		DenyReserveTransferToRelayChain, DenyThenTry, HeapSize, HereLocation, LocalAssetTransactor,
 		LocationToAccountId, MaxAssetsIntoHolding, MaxInstructions, MaxStale, ParentLocation, ParentOrSiblings,
-		RelayOrigin, ServiceWeight, UnitWeightCost,
+		ServiceWeight, UnitWeightCost,
 	},
 	SendDustAndFeesToTreasury,
 };
