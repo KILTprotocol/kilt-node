@@ -136,7 +136,7 @@ build:
 build-wasm-peregrine:
   interruptible: true
   image:
-    name: paritytech/srtool:1.70.0
+    name: paritytech/srtool:1.74.0
     entrypoint: [""]
   stage: build
   only:
@@ -165,7 +165,7 @@ build-wasm-peregrine:
 build-wasm-spiritnet:
   interruptible: true
   image:
-    name: paritytech/srtool:1.70.0
+    name: paritytech/srtool:1.74.0
     entrypoint: [""]
   stage: build
   only:
