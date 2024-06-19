@@ -26,7 +26,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-use ::xcm::{VersionedAssetId, VersionedMultiLocation};
+use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::TrailingZeroInput;
 
@@ -42,6 +42,7 @@ pub mod pallet {
 		LOG_TARGET,
 	};
 
+	use ::xcm::{v3::MultiLocation, VersionedMultiAsset};
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
@@ -51,14 +52,16 @@ pub mod pallet {
 		},
 	};
 	use frame_system::{ensure_root, pallet_prelude::*};
+	use sp_runtime::traits::TryConvert;
 	use xcm::{
 		v3::{
 			validate_send, AssetId,
 			Instruction::{SetFeesMode, TransferAsset, WithdrawAsset},
-			Junctions, MultiLocation, SendXcm, Xcm,
+			Junction, Junctions, MultiAsset, SendXcm, Xcm, XcmContext, XcmHash,
 		},
 		VersionedAssetId, VersionedMultiLocation,
 	};
+	use xcm_executor::traits::TransactAsset;
 
 	pub type CurrencyBalanceOf<T> =
 		<<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
@@ -70,7 +73,10 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		const PALLET_ID: [u8; 8];
 
+		type AccountIdConverter: TryConvert<Self::AccountId, Junction>;
+		type AssetTransactor: TransactAsset;
 		type Currency: MutateFungible<Self::AccountId>;
+		type FeeOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type SwapOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -87,6 +93,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		SwapPairCreated {
 			remote_asset_id: VersionedAssetId,
+			remote_fee: VersionedMultiAsset,
 			ratio: SwapPairRatio,
 			maximum_issuance: u128,
 			pool_account: T::AccountId,
@@ -100,10 +107,15 @@ pub mod pallet {
 		SwapPairPaused {
 			remote_asset_id: VersionedAssetId,
 		},
+		SwapPairFeeUpdated {
+			old: VersionedMultiAsset,
+			new: VersionedMultiAsset,
+		},
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
+		AccountConversion,
 		AlreadyExisting,
 		InvalidInput,
 		LiquidityNotMet,
@@ -127,6 +139,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			reserve_location: Box<VersionedMultiLocation>,
 			remote_asset_id: Box<VersionedAssetId>,
+			remote_fee: Box<VersionedMultiAsset>,
 			ratio: SwapPairRatio,
 			total_issuance: u128,
 			circulating_supply: u128,
@@ -158,7 +171,14 @@ pub mod pallet {
 				Error::<T>::LiquidityNotMet
 			);
 
-			Self::set_swap_pair_bypass_checks(*reserve_location, *remote_asset_id, ratio, locked_supply, pool_account);
+			Self::set_swap_pair_bypass_checks(
+				*reserve_location,
+				*remote_asset_id,
+				*remote_fee,
+				ratio,
+				locked_supply,
+				pool_account,
+			);
 
 			Ok(())
 		}
@@ -169,6 +189,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			reserve_location: Box<VersionedMultiLocation>,
 			remote_asset_id: Box<VersionedAssetId>,
+			remote_fee: Box<VersionedMultiAsset>,
 			ratio: SwapPairRatio,
 			maximum_issuance: u128,
 		) -> DispatchResult {
@@ -178,6 +199,7 @@ pub mod pallet {
 			Self::set_swap_pair_bypass_checks(
 				*reserve_location,
 				*remote_asset_id,
+				*remote_fee,
 				ratio,
 				maximum_issuance,
 				pool_account,
@@ -216,13 +238,26 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO: Assuming we start supporting DOTs, this might be possible to do
-		// entirely via the XCM executor. Investigate that.
-		// TODO: How do we get DOTs from AssetHub and back to AssetHub? I suspect it
-		// would have to be a reserve-based transfer if we don't want to have a
-		// derivative token created.
-		// TODO: How would it change if we would create our own foreign asset?
 		#[pallet::call_index(5)]
+		#[pallet::weight(u64::MAX)]
+		pub fn update_remote_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult {
+			T::FeeOrigin::ensure_origin(origin)?;
+
+			SwapPair::<T>::try_mutate(|entry| {
+				let SwapPairInfoOf::<T> { remote_fee, .. } = entry.as_mut().ok_or(Error::<T>::NotFound)?;
+				let old_remote_fee = remote_fee.clone();
+				*remote_fee = *new.clone();
+				Self::deposit_event(Event::<T>::SwapPairFeeUpdated {
+					old: old_remote_fee,
+					new: *new,
+				});
+				Ok::<_, Error<T>>(())
+			})?;
+
+			Ok(())
+		}
+
+		#[pallet::call_index(6)]
 		#[pallet::weight(u64::MAX)]
 		pub fn swap(
 			origin: OriginFor<T>,
@@ -307,7 +342,34 @@ pub mod pallet {
 				return Err(Error::<T>::Internal.into());
 			}
 
-			// 8. Send XCM out
+			// 8. Transfer XCM fee from submitter to pool account.
+			let remote_fee_asset_v3: MultiAsset = swap_pair.remote_fee.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert remote fee asset{:?} into v3 `MultiAsset` with error {:?}",swap_pair.remote_fee, e);
+				DispatchError::from(Error::<T>::Internal)
+			})?;
+			let submitter_as_multilocation = T::AccountIdConverter::try_convert(submitter.clone())
+				.map_err(|e| {
+					log::info!(target: LOG_TARGET, "Failed to convert account {:?} into `MultiLocation` with error {:?}", submitter, e);
+					DispatchError::from(Error::<T>::AccountConversion)
+				})
+				.map(|j| j.into_location())?;
+			let swap_pair_pool_account_as_multilocation = T::AccountIdConverter::try_convert(swap_pair.pool_account.clone())
+				.map_err(|e| {
+					log::error!(target: LOG_TARGET, "Failed to convert pool account {:?} into `MultiLocation` with error {:?}", submitter, e);
+					DispatchError::from(Error::<T>::Internal)
+				})
+				.map(|j| j.into_location())?;
+			T::AssetTransactor::transfer_asset(
+				&remote_fee_asset_v3,
+				&submitter_as_multilocation,
+				&swap_pair_pool_account_as_multilocation,
+				&XcmContext::with_message_id(XcmHash::default()),
+			).map_err(|e| {
+				log::info!(target: LOG_TARGET, "Failed to transfer asset {:?} from {:?} to {:?} with error {:?}", remote_fee_asset_v3, submitter_as_multilocation, swap_pair_pool_account_as_multilocation, e);
+				DispatchError::from(Error::<T>::Internal)
+			})?;
+
+			// 9. Send XCM out
 			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
 				log::error!("Failed to deliver ticket with error {:?}", e);
 				DispatchError::from(Error::<T>::Xcm)
@@ -331,6 +393,7 @@ impl<T: Config> Pallet<T> {
 	fn set_swap_pair_bypass_checks(
 		reserve_location: VersionedMultiLocation,
 		remote_asset_id: VersionedAssetId,
+		remote_fee: VersionedMultiAsset,
 		ratio: SwapPairRatio,
 		maximum_issuance: u128,
 		pool_account: T::AccountId,
@@ -340,6 +403,7 @@ impl<T: Config> Pallet<T> {
 			ratio: ratio.clone(),
 			remote_asset_balance: maximum_issuance,
 			remote_asset_id: remote_asset_id.clone(),
+			remote_fee: remote_fee.clone(),
 			remote_reserve_location: reserve_location,
 			status: SwapPairStatus::Paused,
 		};
@@ -351,6 +415,7 @@ impl<T: Config> Pallet<T> {
 			pool_account,
 			ratio,
 			remote_asset_id,
+			remote_fee,
 		});
 	}
 
@@ -365,16 +430,20 @@ impl<T: Config> Pallet<T> {
 
 	fn set_swap_pair_status(new_status: SwapPairStatus) -> Result<(), Error<T>> {
 		let event = SwapPair::<T>::try_mutate(|entry| {
-			let swap_pair = entry.as_mut().ok_or(Error::<T>::NotFound)?;
+			let SwapPairInfoOf::<T> {
+				remote_asset_id,
+				status,
+				..
+			} = entry.as_mut().ok_or(Error::<T>::NotFound)?;
 			let event = match new_status {
 				SwapPairStatus::Running => Event::<T>::SwapPairResumed {
-					remote_asset_id: swap_pair.remote_asset_id.clone(),
+					remote_asset_id: remote_asset_id.clone(),
 				},
 				SwapPairStatus::Paused => Event::<T>::SwapPairPaused {
-					remote_asset_id: swap_pair.remote_asset_id.clone(),
+					remote_asset_id: remote_asset_id.clone(),
 				},
 			};
-			swap_pair.status = new_status;
+			*status = new_status;
 			Ok::<_, Error<T>>(event)
 		})?;
 		Self::deposit_event(event);

@@ -19,7 +19,7 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
-use xcm::{VersionedAssetId, VersionedMultiLocation};
+use xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
 pub struct SwapPairInfo<AccountId> {
@@ -27,6 +27,7 @@ pub struct SwapPairInfo<AccountId> {
 	pub ratio: SwapPairRatio,
 	pub remote_asset_balance: u128,
 	pub remote_asset_id: VersionedAssetId,
+	pub remote_fee: VersionedMultiAsset,
 	pub remote_reserve_location: VersionedMultiLocation,
 	pub status: SwapPairStatus,
 }

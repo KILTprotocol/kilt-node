@@ -89,7 +89,11 @@ impl pallet_balances::Config for MockRuntime {
 
 impl crate::Config for MockRuntime {
 	const PALLET_ID: [u8; 8] = *b"lcl_crcy";
+
+	type AccountIdConverter = ();
+	type AssetTransactor = ();
 	type Currency = Balances;
+	type FeeOrigin = EnsureSigned<Self::AccountId>;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
@@ -125,11 +129,13 @@ where
 					remote_asset_balance,
 					remote_asset_id,
 					remote_reserve_location,
+					remote_fee,
 					..
 				} = swap_pair_info;
 				Pallet::<T>::set_swap_pair_bypass_checks(
 					remote_reserve_location,
 					remote_asset_id,
+					remote_fee,
 					ratio,
 					remote_asset_balance,
 					pool_account,

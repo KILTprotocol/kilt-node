@@ -24,8 +24,10 @@ use integration_tests_common::constants::{
 };
 use sp_core::sr25519;
 use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;
-use xcm::v3::prelude::{Here, Junction, Junctions, ParentThen, X1};
-use xcm::v3::WeightLimit;
+use xcm::v3::{
+	prelude::{Here, Junction, Junctions, ParentThen, X1},
+	WeightLimit,
+};
 use xcm_emulator::{Chain, Network, TestExt};
 
 use crate::{
