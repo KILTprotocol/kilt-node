@@ -25,7 +25,7 @@ use xcm::lts::prelude::{Here, Junction, Junctions, ParentThen, WeightLimit};
 use xcm_emulator::{Chain, Network, Parachain, TestExt};
 
 use crate::{
-	mock::network:chains:::{AssetHub, MockNetwork, Rococo, Spiritnet},
+	mock::network::chains::{AssetHub, MockNetwork, Rococo, Spiritnet},
 	utils::get_account_id_from_seed,
 };
 
