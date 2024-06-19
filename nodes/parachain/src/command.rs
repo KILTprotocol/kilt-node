@@ -18,12 +18,15 @@
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
+use parity_scale_codec::Encode;
 use runtime_common::Block;
-use sc_cli::{SubstrateCli, ChainSpec};
+use sc_cli::{ChainSpec, SubstrateCli};
 use sc_executor::NativeExecutionDispatch;
 use sp_core::hexdisplay::HexDisplay;
-use sp_runtime::{traits::{AccountIdConversion, Block as BlockT, Header as HeaderT, Hash as HashT , Zero}, StateVersion };
-use parity_scale_codec::Encode;
+use sp_runtime::{
+	traits::{AccountIdConversion, Block as BlockT, Hash as HashT, Header as HeaderT, Zero},
+	StateVersion,
+};
 
 use crate::{
 	chain_spec::{self, ParachainRuntime},
@@ -49,10 +52,8 @@ pub fn generate_genesis_block<Block: BlockT>(
 		genesis_state_version,
 	);
 
-	let extrinsics_root = <<<Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(
-		Vec::new(),
-		genesis_state_version,
-	);
+	let extrinsics_root =
+		<<<Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(Vec::new(), genesis_state_version);
 
 	Ok(Block::new(
 		<<Block as BlockT>::Header as HeaderT>::new(
@@ -164,7 +165,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 						&config,
 						crate::service::build_import_queue,
 					)?;
-					
+
 					cmd.run(partials.client)
 				}),
 				ParachainRuntime::Peregrine(_) => runner.sync_run(|config| {
@@ -179,7 +180,6 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 		Some(Subcommand::ExportGenesisWasm(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
 			runner.sync_run(|_config| {
-				
 				let (chain_spec_id, _) = get_selected_chainspec(&cmd.shared_params)?;
 				let spec = cli.load_spec(chain_spec_id.as_str())?;
 
