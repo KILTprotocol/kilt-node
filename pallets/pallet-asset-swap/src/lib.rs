@@ -382,13 +382,6 @@ pub mod pallet {
 				Ok(())
 			})?;
 
-			// TODO: Delegate XCM message composition to a trait Config as well, depending
-			// on the destination (choosing which asset to use for payments, what amount,
-			// etc).
-			// TODO: Add hook to check the swap parameters (restricting
-			// where remote assets can be sent to).
-			// TODO: Add configurable ratio for local/remote swaps.
-
 			Ok(())
 		}
 	}
