@@ -24,7 +24,7 @@ use crate::mock::para_chains::{PeregrineParachain, SpiritnetParachain};
 #[cfg(test)]
 pub mod chains {
 
-	use super::*;
+	pub use super::*;
 
 	pub type Rococo = RococoChain<MockNetwork>;
 	pub type Spiritnet = SpiritnetParachain<MockNetwork>;
