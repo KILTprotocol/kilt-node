@@ -19,5 +19,7 @@
 mod force_set_swap_pair;
 mod force_unset_swap_pair;
 mod pause_swap_pair;
+mod resume_swap_pair;
 mod set_swap_pair;
 mod swap;
+mod update_remote_fee;

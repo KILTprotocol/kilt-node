@@ -28,27 +28,7 @@ use crate::{
 
 #[test]
 fn successful() {
-	// Stopping a running swap pair generates an event.
-	ExtBuilder::default()
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
-			pool_account: [0u8; 32].into(),
-			remote_asset_balance: 1_000,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
-		})
-		.build()
-		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::pause_swap_pair(RawOrigin::Root.into()));
-			assert_eq!(SwapPair::<MockRuntime>::get().unwrap().status, SwapPairStatus::Paused);
-			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwapPairPaused {
-					remote_asset_id: REMOTE_ERC20_ASSET_ID.into()
-				}
-				.into()));
-		});
-	// Stopping a non-running swap pair generates no event.
+	// Resuming a non-running swap pair generates an event.
 	ExtBuilder::default()
 		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
 			pool_account: [0u8; 32].into(),
@@ -60,10 +40,30 @@ fn successful() {
 		})
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::pause_swap_pair(RawOrigin::Root.into()));
-			assert_eq!(SwapPair::<MockRuntime>::get().unwrap().status, SwapPairStatus::Paused);
+			assert_ok!(Pallet::<MockRuntime>::resume_swap_pair(RawOrigin::Root.into()));
+			assert_eq!(SwapPair::<MockRuntime>::get().unwrap().status, SwapPairStatus::Running);
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::SwapPairResumed {
+					remote_asset_id: REMOTE_ERC20_ASSET_ID.into()
+				}
+				.into()));
+		});
+	// Resuming a running swap pair generates no event.
+	ExtBuilder::default()
+		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
+			pool_account: [0u8; 32].into(),
+			remote_asset_balance: 1_000,
+			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_fee: XCM_ASSET_FEE.into(),
+			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			status: SwapPairStatus::Running,
+		})
+		.build()
+		.execute_with(|| {
+			assert_ok!(Pallet::<MockRuntime>::resume_swap_pair(RawOrigin::Root.into()));
+			assert_eq!(SwapPair::<MockRuntime>::get().unwrap().status, SwapPairStatus::Running);
 			assert!(System::events().into_iter().map(|e| e.event).all(|e| e
-				!= Event::<MockRuntime>::SwapPairPaused {
+				!= Event::<MockRuntime>::SwapPairResumed {
 					remote_asset_id: REMOTE_ERC20_ASSET_ID.into()
 				}
 				.into()));
@@ -74,7 +74,7 @@ fn successful() {
 fn fails_on_non_existing_pair() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::pause_swap_pair(RawOrigin::Root.into()),
+			Pallet::<MockRuntime>::resume_swap_pair(RawOrigin::Root.into()),
 			Error::<MockRuntime>::NotFound
 		);
 	});
@@ -84,7 +84,7 @@ fn fails_on_non_existing_pair() {
 fn fails_on_invalid_origin() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::pause_swap_pair(RawOrigin::None.into()),
+			Pallet::<MockRuntime>::resume_swap_pair(RawOrigin::None.into()),
 			DispatchError::BadOrigin
 		);
 	});

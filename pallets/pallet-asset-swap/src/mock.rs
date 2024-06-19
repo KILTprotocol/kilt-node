@@ -31,8 +31,14 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32,
 };
+use xcm::v3::{
+	AssetId, Fungibility,
+	Junction::{AccountKey20, GlobalConsensus, Parachain},
+	Junctions::{Here, X1, X2},
+	MultiAsset, MultiLocation, NetworkId,
+};
 
-use crate::{Config, Pallet, SwapPairInfoOf};
+use crate::{Pallet, SwapPair, SwapPairInfoOf};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -93,7 +99,7 @@ impl crate::Config for MockRuntime {
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
 	type Currency = Balances;
-	type FeeOrigin = EnsureSigned<Self::AccountId>;
+	type FeeOrigin = EnsureRoot<Self::AccountId>;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
@@ -102,13 +108,10 @@ impl crate::Config for MockRuntime {
 }
 
 #[derive(Default)]
-pub(crate) struct ExtBuilder<T: Config>(Option<SwapPairInfoOf<T>>, Vec<(AccountId32, u64, u64, u64)>);
+pub(crate) struct ExtBuilder(Option<SwapPairInfoOf<MockRuntime>>, Vec<(AccountId32, u64, u64, u64)>);
 
-impl<T> ExtBuilder<T>
-where
-	T: Config + pallet_balances::Config,
-{
-	pub(crate) fn with_swap_pair_info(mut self, swap_pair_info: SwapPairInfoOf<T>) -> Self {
+impl ExtBuilder {
+	pub(crate) fn with_swap_pair_info(mut self, swap_pair_info: SwapPairInfoOf<MockRuntime>) -> Self {
 		self.0 = Some(swap_pair_info);
 		self
 	}
@@ -122,22 +125,25 @@ where
 		let mut ext = sp_io::TestExternalities::default();
 
 		ext.execute_with(|| {
+			System::set_block_number(1);
+
 			if let Some(swap_pair_info) = self.0 {
-				let SwapPairInfoOf::<T> {
+				let SwapPairInfoOf::<MockRuntime> {
 					pool_account,
 					remote_asset_balance,
 					remote_asset_id,
 					remote_reserve_location,
 					remote_fee,
-					..
+					status,
 				} = swap_pair_info;
-				Pallet::<T>::set_swap_pair_bypass_checks(
+				Pallet::<MockRuntime>::set_swap_pair_bypass_checks(
 					remote_reserve_location,
 					remote_asset_id,
 					remote_fee,
 					remote_asset_balance,
 					pool_account,
 				);
+				SwapPair::<MockRuntime>::mutate(|entry| entry.as_mut().unwrap().status = status);
 			}
 			for (account, free, frozen, locked) in self.1 {
 				<Balances as Mutate<AccountId32>>::set_balance(&account, free);
@@ -151,3 +157,29 @@ where
 		ext
 	}
 }
+
+pub(crate) const XCM_ASSET_FEE: MultiAsset = MultiAsset {
+	id: PARENT_NATIVE_CURRENCY,
+	fun: Fungibility::Fungible(1_000),
+};
+const PARENT_NATIVE_CURRENCY: AssetId = AssetId::Concrete(PARENT_LOCATION);
+const PARENT_LOCATION: MultiLocation = MultiLocation {
+	parents: 1,
+	interior: Here,
+};
+
+pub(crate) const ASSET_HUB_LOCATION: MultiLocation = MultiLocation {
+	parents: 1,
+	interior: X1(Parachain(1_000)),
+};
+
+pub(crate) const REMOTE_ERC20_ASSET_ID: AssetId = AssetId::Concrete(MultiLocation {
+	parents: 2,
+	interior: X2(
+		GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+		AccountKey20 {
+			network: None,
+			key: *b"!!test_eth_address!!",
+		},
+	),
+});

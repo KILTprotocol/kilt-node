@@ -114,14 +114,14 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		AccountConversion,
 		AlreadyExisting,
 		InvalidInput,
 		LiquidityNotMet,
 		NotEnabled,
 		NotFound,
 		RemotePoolBalance,
-		UserBalance,
+		UserTxBalance,
+		UserXcmBalance,
 		Xcm,
 		Internal,
 	}
@@ -184,16 +184,20 @@ pub mod pallet {
 			reserve_location: Box<VersionedMultiLocation>,
 			remote_asset_id: Box<VersionedAssetId>,
 			remote_fee: Box<VersionedMultiAsset>,
-			maximum_issuance: u128,
+			total_issuance: u128,
+			circulating_supply: u128,
 		) -> DispatchResult {
 			ensure_root(origin)?;
 
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
+			let locked_supply = total_issuance
+				.checked_sub(circulating_supply)
+				.ok_or(Error::<T>::InvalidInput)?;
 			Self::set_swap_pair_bypass_checks(
 				*reserve_location,
 				*remote_asset_id,
 				*remote_fee,
-				maximum_issuance,
+				locked_supply,
 				pool_account,
 			);
 
@@ -239,10 +243,12 @@ pub mod pallet {
 				let SwapPairInfoOf::<T> { remote_fee, .. } = entry.as_mut().ok_or(Error::<T>::NotFound)?;
 				let old_remote_fee = remote_fee.clone();
 				*remote_fee = *new.clone();
-				Self::deposit_event(Event::<T>::SwapPairFeeUpdated {
-					old: old_remote_fee,
-					new: *new,
-				});
+				if old_remote_fee != *new {
+					Self::deposit_event(Event::<T>::SwapPairFeeUpdated {
+						old: old_remote_fee,
+						new: *new,
+					});
+				};
 				Ok::<_, Error<T>>(())
 			})?;
 
@@ -339,8 +345,8 @@ pub mod pallet {
 			})?;
 			let submitter_as_multilocation = T::AccountIdConverter::try_convert(submitter.clone())
 				.map_err(|e| {
-					log::trace!(target: LOG_TARGET, "Failed to convert account {:?} into `MultiLocation` with error {:?}", submitter, e);
-					DispatchError::from(Error::<T>::AccountConversion)
+					log::error!(target: LOG_TARGET, "Failed to convert account {:?} into `MultiLocation` with error {:?}", submitter, e);
+					DispatchError::from(Error::<T>::Internal)
 				})
 				.map(|j| j.into_location())?;
 			let swap_pair_pool_account_as_multilocation = T::AccountIdConverter::try_convert(swap_pair.pool_account)
@@ -356,7 +362,7 @@ pub mod pallet {
 				&XcmContext::with_message_id(XcmHash::default()),
 			).map_err(|e| {
 				log::trace!(target: LOG_TARGET, "Failed to transfer asset {:?} from {:?} to {:?} with error {:?}", remote_fee_asset_v3, submitter_as_multilocation, swap_pair_pool_account_as_multilocation, e);
-				DispatchError::from(Error::<T>::Internal)
+				DispatchError::from(Error::<T>::UserXcmBalance)
 			})?;
 
 			// 9. Send XCM out
@@ -424,13 +430,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn set_swap_pair_status(new_status: SwapPairStatus) -> Result<(), Error<T>> {
-		let event = SwapPair::<T>::try_mutate(|entry| {
+		SwapPair::<T>::try_mutate(|entry| {
 			let SwapPairInfoOf::<T> {
 				remote_asset_id,
 				status,
 				..
 			} = entry.as_mut().ok_or(Error::<T>::NotFound)?;
-			let event = match new_status {
+			let relevant_event = match new_status {
 				SwapPairStatus::Running => Event::<T>::SwapPairResumed {
 					remote_asset_id: remote_asset_id.clone(),
 				},
@@ -438,10 +444,14 @@ impl<T: Config> Pallet<T> {
 					remote_asset_id: remote_asset_id.clone(),
 				},
 			};
+			let old_status = status.clone();
 			*status = new_status;
-			Ok::<_, Error<T>>(event)
+			// If state was actually changed, generate an event, otherwise this is a no-op.
+			if old_status != *status {
+				Self::deposit_event(relevant_event);
+			}
+			Ok::<_, Error<T>>(())
 		})?;
-		Self::deposit_event(event);
 		Ok(())
 	}
 }
