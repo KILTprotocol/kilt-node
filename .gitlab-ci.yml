@@ -29,7 +29,7 @@ clippy-and-docs:
   timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
-  script: 
+  script:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
 
