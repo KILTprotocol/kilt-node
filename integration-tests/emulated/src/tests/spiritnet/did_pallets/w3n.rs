@@ -25,7 +25,7 @@ use xcm::{lts::prelude::OriginKind, DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
-	mock::network::{AssetHub, MockNetwork, Rococo, Spiritnet},
+	mock::network:chains:::{AssetHub, MockNetwork, Rococo, Spiritnet},
 	tests::spiritnet::did_pallets::utils::{
 		construct_basic_transact_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
 		get_sibling_destination_spiritnet,
