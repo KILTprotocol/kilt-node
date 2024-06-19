@@ -125,7 +125,6 @@ where
 			if let Some(swap_pair_info) = self.0 {
 				let SwapPairInfoOf::<T> {
 					pool_account,
-					ratio,
 					remote_asset_balance,
 					remote_asset_id,
 					remote_reserve_location,
@@ -136,7 +135,6 @@ where
 					remote_reserve_location,
 					remote_asset_id,
 					remote_fee,
-					ratio,
 					remote_asset_balance,
 					pool_account,
 				);

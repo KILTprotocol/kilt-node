@@ -31,14 +31,14 @@ use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::TrailingZeroInput;
 
 pub use crate::pallet::*;
-use crate::swap::{SwapPairRatio, SwapPairStatus};
+use crate::swap::SwapPairStatus;
 
 const LOG_TARGET: &str = "runtime::pallet-asset-swap";
 
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::{
-		swap::{SwapPairInfo, SwapPairRatio, SwapPairStatus},
+		swap::{SwapPairInfo, SwapPairStatus},
 		LOG_TARGET,
 	};
 
@@ -94,7 +94,6 @@ pub mod pallet {
 		SwapPairCreated {
 			remote_asset_id: VersionedAssetId,
 			remote_fee: VersionedMultiAsset,
-			ratio: SwapPairRatio,
 			maximum_issuance: u128,
 			pool_account: T::AccountId,
 		},
@@ -140,7 +139,6 @@ pub mod pallet {
 			reserve_location: Box<VersionedMultiLocation>,
 			remote_asset_id: Box<VersionedAssetId>,
 			remote_fee: Box<VersionedMultiAsset>,
-			ratio: SwapPairRatio,
 			total_issuance: u128,
 			circulating_supply: u128,
 		) -> DispatchResult {
@@ -154,11 +152,8 @@ pub mod pallet {
 				.checked_sub(circulating_supply)
 				.ok_or(Error::<T>::InvalidInput)?;
 			// 3. Verify the pool account has enough local assets to cover for all potential
-			//    remote -> local swaps, according to the specified swap ratio.
+			//    remote -> local swaps.
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
-			// Local assets are calculated from the circulating supply * (local/remote) swap
-			// rate.
-			let minimum_local_assets_required = (circulating_supply / ratio.remote_asset) * ratio.local_asset;
 			let pool_account_reducible_balance_as_u128: u128 =
 				T::Currency::reducible_balance(&pool_account, Preservation::Expendable, Fortitude::Polite)
 					.try_into()
@@ -167,7 +162,7 @@ pub mod pallet {
 						Error::<T>::Internal
 					})?;
 			ensure!(
-				pool_account_reducible_balance_as_u128 >= minimum_local_assets_required,
+				pool_account_reducible_balance_as_u128 >= locked_supply,
 				Error::<T>::LiquidityNotMet
 			);
 
@@ -175,7 +170,6 @@ pub mod pallet {
 				*reserve_location,
 				*remote_asset_id,
 				*remote_fee,
-				ratio,
 				locked_supply,
 				pool_account,
 			);
@@ -190,7 +184,6 @@ pub mod pallet {
 			reserve_location: Box<VersionedMultiLocation>,
 			remote_asset_id: Box<VersionedAssetId>,
 			remote_fee: Box<VersionedMultiAsset>,
-			ratio: SwapPairRatio,
 			maximum_issuance: u128,
 		) -> DispatchResult {
 			ensure_root(origin)?;
@@ -200,7 +193,6 @@ pub mod pallet {
 				*reserve_location,
 				*remote_asset_id,
 				*remote_fee,
-				ratio,
 				maximum_issuance,
 				pool_account,
 			);
@@ -285,10 +277,8 @@ pub mod pallet {
 				log::error!(target: LOG_TARGET, "Failed to cast user-specified account to u128.");
 				DispatchError::from(Error::<T>::Internal)
 			})?;
-			let corresponding_remote_assets =
-				(local_asset_amount_as_u128 / swap_pair.ratio.local_asset) * swap_pair.ratio.remote_asset;
 			ensure!(
-				swap_pair.remote_asset_balance >= corresponding_remote_assets,
+				swap_pair.remote_asset_balance >= local_asset_amount_as_u128,
 				Error::<T>::RemotePoolBalance
 			);
 			// TODO: Convert to version based on destination
@@ -310,7 +300,7 @@ pub mod pallet {
 				WithdrawAsset((Junctions::Here, 1_000_000_000).into()),
 				SetFeesMode { jit_withdraw: true },
 				TransferAsset {
-					assets: (asset_id_v3, corresponding_remote_assets).into(),
+					assets: (asset_id_v3, local_asset_amount_as_u128).into(),
 					beneficiary: beneficiary_v3,
 				},
 				// TODO: Add try-catch and asset refund to user account, since we already take them on this chain
@@ -375,11 +365,29 @@ pub mod pallet {
 				DispatchError::from(Error::<T>::Xcm)
 			})?;
 
+			// 10. Update remote asset balance
+			SwapPair::<T>::try_mutate(|entry| {
+				let Some(SwapPairInfoOf::<T> {
+					remote_asset_balance, ..
+				}) = entry.as_mut()
+				else {
+					log::error!(target: LOG_TARGET, "Failed to borrow stored swap pair info as mut.");
+					return Err(Error::<T>::Internal);
+				};
+				let Some(new_balance) = remote_asset_balance.checked_sub(local_asset_amount_as_u128) else {
+					log::error!(target: LOG_TARGET, "Failed to subtract {:?} from stored remote balance {:?}.", transferred_amount, remote_asset_balance);
+					return Err(Error::<T>::Internal);
+				};
+				*remote_asset_balance = new_balance;
+				Ok(())
+			})?;
+
 			// TODO: Delegate XCM message composition to a trait Config as well, depending
 			// on the destination (choosing which asset to use for payments, what amount,
 			// etc).
 			// TODO: Add hook to check the swap parameters (restricting
 			// where remote assets can be sent to).
+			// TODO: Add configurable ratio for local/remote swaps.
 
 			Ok(())
 		}
@@ -391,13 +399,11 @@ impl<T: Config> Pallet<T> {
 		reserve_location: VersionedMultiLocation,
 		remote_asset_id: VersionedAssetId,
 		remote_fee: VersionedMultiAsset,
-		ratio: SwapPairRatio,
 		maximum_issuance: u128,
 		pool_account: T::AccountId,
 	) {
 		let swap_pair_info = SwapPairInfoOf::<T> {
 			pool_account: pool_account.clone(),
-			ratio: ratio.clone(),
 			remote_asset_balance: maximum_issuance,
 			remote_asset_id: remote_asset_id.clone(),
 			remote_fee: remote_fee.clone(),
@@ -410,7 +416,6 @@ impl<T: Config> Pallet<T> {
 		Self::deposit_event(Event::<T>::SwapPairCreated {
 			maximum_issuance,
 			pool_account,
-			ratio,
 			remote_asset_id,
 			remote_fee,
 		});

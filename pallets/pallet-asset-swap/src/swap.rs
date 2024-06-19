@@ -24,27 +24,11 @@ use xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
 pub struct SwapPairInfo<AccountId> {
 	pub pool_account: AccountId,
-	pub ratio: SwapPairRatio,
 	pub remote_asset_balance: u128,
 	pub remote_asset_id: VersionedAssetId,
 	pub remote_fee: VersionedMultiAsset,
 	pub remote_reserve_location: VersionedMultiLocation,
 	pub status: SwapPairStatus,
-}
-
-#[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
-pub struct SwapPairRatio {
-	pub local_asset: u128,
-	pub remote_asset: u128,
-}
-
-impl SwapPairRatio {
-	pub fn from_components((local_asset, remote_asset): (u128, u128)) -> Self {
-		Self {
-			local_asset,
-			remote_asset,
-		}
-	}
 }
 
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone, Default)]
