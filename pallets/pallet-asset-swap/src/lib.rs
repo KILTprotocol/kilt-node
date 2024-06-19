@@ -313,7 +313,7 @@ pub mod pallet {
 					assets: (asset_id_v3, corresponding_remote_assets).into(),
 					beneficiary: beneficiary_v3,
 				},
-				// TODO: Add try-catch and asset refund
+				// TODO: Add try-catch and asset refund to user account, since we already take them on this chain
 			]
 			.into();
 			let xcm_ticket = validate_send::<T::XcmRouter>(destination_v3, remote_xcm.clone()).map_err(|e| {
@@ -349,11 +349,11 @@ pub mod pallet {
 			})?;
 			let submitter_as_multilocation = T::AccountIdConverter::try_convert(submitter.clone())
 				.map_err(|e| {
-					log::info!(target: LOG_TARGET, "Failed to convert account {:?} into `MultiLocation` with error {:?}", submitter, e);
+					log::trace!(target: LOG_TARGET, "Failed to convert account {:?} into `MultiLocation` with error {:?}", submitter, e);
 					DispatchError::from(Error::<T>::AccountConversion)
 				})
 				.map(|j| j.into_location())?;
-			let swap_pair_pool_account_as_multilocation = T::AccountIdConverter::try_convert(swap_pair.pool_account.clone())
+			let swap_pair_pool_account_as_multilocation = T::AccountIdConverter::try_convert(swap_pair.pool_account)
 				.map_err(|e| {
 					log::error!(target: LOG_TARGET, "Failed to convert pool account {:?} into `MultiLocation` with error {:?}", submitter, e);
 					DispatchError::from(Error::<T>::Internal)
@@ -365,7 +365,7 @@ pub mod pallet {
 				&swap_pair_pool_account_as_multilocation,
 				&XcmContext::with_message_id(XcmHash::default()),
 			).map_err(|e| {
-				log::info!(target: LOG_TARGET, "Failed to transfer asset {:?} from {:?} to {:?} with error {:?}", remote_fee_asset_v3, submitter_as_multilocation, swap_pair_pool_account_as_multilocation, e);
+				log::trace!(target: LOG_TARGET, "Failed to transfer asset {:?} from {:?} to {:?} with error {:?}", remote_fee_asset_v3, submitter_as_multilocation, swap_pair_pool_account_as_multilocation, e);
 				DispatchError::from(Error::<T>::Internal)
 			})?;
 
@@ -375,14 +375,11 @@ pub mod pallet {
 				DispatchError::from(Error::<T>::Xcm)
 			})?;
 
-			// TODO: Get right XCM version based on destination (we could default to always
-			// use latest).
 			// TODO: Delegate XCM message composition to a trait Config as well, depending
 			// on the destination (choosing which asset to use for payments, what amount,
 			// etc).
 			// TODO: Add hook to check the swap parameters (restricting
 			// where remote assets can be sent to).
-			// TODO: Think about XCM fees management.
 
 			Ok(())
 		}

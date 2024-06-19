@@ -88,7 +88,7 @@ impl pallet_balances::Config for MockRuntime {
 }
 
 impl crate::Config for MockRuntime {
-	const PALLET_ID: [u8; 8] = *b"lcl_crcy";
+	const PALLET_ID: [u8; 8] = *b"eKILT/AH";
 
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
