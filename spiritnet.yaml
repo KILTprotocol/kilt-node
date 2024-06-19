@@ -1,0 +1,5 @@
+endpoint: wss://spiritnet.kilt.io
+mock-signature-host: true
+db: ./db.sqlite
+wasm-override: ./target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm
+allow-unresolved-imports: true
