@@ -3,10 +3,13 @@ import type { SetupOption } from '@acala-network/chopsticks-testing'
 import { initialBalanceDOT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the HydraDx context
-export const getSetupOptions = (
-	blockNumber: number | undefined = undefined,
-	wasmOverride: string | undefined = undefined
-) =>
+export const getSetupOptions = ({
+	blockNumber = undefined,
+	wasmOverride = undefined,
+}: {
+	blockNumber?: number
+	wasmOverride?: string
+}) =>
 	({
 		endpoint: process.env.POLKADOT_WS || [
 			'wss://rpc.polkadot.io',

@@ -3,28 +3,32 @@ import * as PolkadotConfig from './relay.js'
 import * as HydraDxConfig from './hydraDx.js'
 import { ChainConfigs } from '../types.js'
 
-function getEnvVariable(name: string): number {
+function getEnvVariable(name: string): string {
 	const value = process.env[name]
 	if (value === undefined) {
 		throw new Error(`Environment variable ${name} is not set.`)
 	}
-	return Number(value)
+	return value
 }
 
 export const all: ChainConfigs = {
 	spiritnet: {
-		config: SpiritnetConfig.getSetupOptions,
-		blockNumber: getEnvVariable('SPIRITNET_BLOCK_NUMBER'),
-		name: 'spiritnet',
+		getConfig: SpiritnetConfig.getSetupOptions,
+		parameters: {
+			blockNumber: Number(getEnvVariable('SPIRITNET_BLOCK_NUMBER')),
+			wasmOverride: getEnvVariable('SPIRITNET_WASM_OVERRIDE'),
+		},
 	},
 	hydraDx: {
-		config: HydraDxConfig.getSetupOptions,
-		blockNumber: getEnvVariable('HYDRADX_BLOCK_NUMBER'),
-		name: 'hydradx',
+		getConfig: HydraDxConfig.getSetupOptions,
+		parameters: {
+			blockNumber: Number(getEnvVariable('HYDRADX_BLOCK_NUMBER')),
+		},
 	},
 	polkadot: {
-		config: PolkadotConfig.getSetupOptions,
-		blockNumber: getEnvVariable('POLKADOT_BLOCK_NUMBER'),
-		name: 'polkadot',
+		getConfig: PolkadotConfig.getSetupOptions,
+		parameters: {
+			blockNumber: Number(getEnvVariable('POLKADOT_BLOCK_NUMBER')),
+		},
 	},
 }

@@ -89,6 +89,57 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events
 ]
 `;
 
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "polkadotXcm" 2`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "polkadotXcm" 3`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "polkadotXcm" 4`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
 exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "xcmpQueue" 1`] = `
 [
   {
@@ -101,7 +152,82 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events
 ]
 `;
 
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "xcmpQueue" 2`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "xcmpQueue" 3`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "xcmpQueue" 4`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
 exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events {"section":"balances","method":"Withdraw"} 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events {"section":"balances","method":"Withdraw"} 2`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events {"section":"balances","method":"Withdraw"} 3`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events {"section":"balances","method":"Withdraw"} 4`] = `
 [
   {
     "data": {
@@ -203,7 +329,94 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events
 ]
 `;
 
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "polkadotXcm" 2`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "polkadotXcm" 3`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "polkadotXcm" 4`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
 exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "xcmpQueue" 2`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "xcmpQueue" 3`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "xcmpQueue" 4`] = `
 [
   {
     "data": {
@@ -224,6 +437,197 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events
     },
     "method": "Withdraw",
     "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events {"section":"balances","method":"Withdraw"} 2`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events {"section":"balances","method":"Withdraw"} 3`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events {"section":"balances","method":"Withdraw"} 4`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > receiver events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+      "messageId": "(hash)",
+      "weight": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Success",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > receiver events "xcmpQueue" 2`] = `[]`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > receiver events "xcmpQueue" 3`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+      "messageId": "(hash)",
+      "weight": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Success",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "polkadotXcm" 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "polkadotXcm" 2`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "polkadotXcm" 3`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "polkadotXcm" 4`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "xcmpQueue" 2`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "xcmpQueue" 3`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "xcmpQueue" 4`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
   },
 ]
 `;
@@ -262,7 +666,65 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > sender events "po
 ]
 `;
 
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > sender events "polkadotXcm" 2`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > sender events "polkadotXcm" 3`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
 exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > sender events "xcmpQueue" 2`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > sender events "xcmpQueue" 3`] = `
 [
   {
     "data": {
@@ -309,6 +771,272 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx live status V2 > sender eve
 `;
 
 exports[`Limited Reserve Transfers > Kilt -> HydraDx live status V2 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v2 > receiver events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+      "messageId": "(hash)",
+      "weight": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Success",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v2 > sender events "polkadotXcm" 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v2 > sender events "polkadotXcm" 2`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v2 > sender events "polkadotXcm" 3`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v2 > sender events "polkadotXcm" 4`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v2 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v2 > sender events "xcmpQueue" 2`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v2 > sender events "xcmpQueue" 3`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v2 > sender events "xcmpQueue" 4`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v3 > receiver events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+      "messageId": "(hash)",
+      "weight": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Success",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v3 > sender events "polkadotXcm" 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v3 > sender events "polkadotXcm" 2`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v3 > sender events "polkadotXcm" 3`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v3 > sender events "polkadotXcm" 4`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v3 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v3 > sender events "xcmpQueue" 2`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v3 > sender events "xcmpQueue" 3`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt DEV -> HydraDx live v3 > sender events "xcmpQueue" 4`] = `
 [
   {
     "data": {

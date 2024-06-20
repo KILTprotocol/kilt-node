@@ -3,10 +3,13 @@ import { SetupOption } from '@acala-network/chopsticks-testing'
 import { initialBalanceKILT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the Spiritnet context
-export const getSetupOptions = (
-	blockNumber: number | undefined = undefined,
-	wasmOverride: string | undefined = undefined
-) =>
+export const getSetupOptions = ({
+	blockNumber = undefined,
+	wasmOverride = undefined,
+}: {
+	blockNumber?: number
+	wasmOverride?: string
+}) =>
 	({
 		endpoint: process.env.SPIRITNET_WS || 'wss://kilt-rpc.dwellir.com',
 		db: './db/spiritnet.db.sqlite',

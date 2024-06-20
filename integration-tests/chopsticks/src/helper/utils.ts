@@ -24,7 +24,7 @@ export function hexAddress(addr: string) {
 export function validateBalanceWithPrecision(
 	previousBalance: bigint,
 	receivedBalance: bigint,
-	removedBalance: bigint,
+	deltaBalance: bigint,
 	expect: ExpectStatic,
 	precision: bigint
 ) {
@@ -33,13 +33,13 @@ export function validateBalanceWithPrecision(
 	}
 
 	const allowedError = BigInt(100) - precision
-	const lowerBound = previousBalance - (previousBalance * allowedError) / BigInt(100)
-	const upperBound = previousBalance + (previousBalance * allowedError) / BigInt(100)
+	const expectedBalance = previousBalance + deltaBalance
 
-	const newBalance = previousBalance + receivedBalance - removedBalance
+	const lowerBound = expectedBalance - (expectedBalance * allowedError) / BigInt(100)
+	const upperBound = expectedBalance + (expectedBalance * allowedError) / BigInt(100)
 
-	expect(newBalance).toBeGreaterThanOrEqual(lowerBound)
-	expect(newBalance).toBeLessThanOrEqual(upperBound)
+	expect(receivedBalance).toBeGreaterThanOrEqual(lowerBound)
+	expect(receivedBalance).toBeLessThanOrEqual(upperBound)
 }
 
 export const KILT = BigInt(1e15)

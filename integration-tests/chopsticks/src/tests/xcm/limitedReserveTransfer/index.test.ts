@@ -10,8 +10,8 @@ import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 
 describe.each(testPairsLimitedReserveTransfers)(
 	'Limited Reserve Transfers',
-	{ timeout: 30_000, skip: true },
-	async ({ blockchain, storage, accounts, query, sovereignAccount, test, config }) => {
+	{ timeout: 30_000 },
+	async ({ network, storage, accounts, query, sovereignAccount, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config
@@ -20,7 +20,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 		const { desc, precision } = config
 
 		beforeEach(async () => {
-			const { receiver, sender, relay } = blockchain
+			const { receiver, sender, relay } = network
 
 			const { receiverChainContext, senderChainContext, relayChainContext } = await setupNetwork(
 				relay,
@@ -56,7 +56,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			// test parameters
-			const { pallets, tx, balanceToTransfer } = test
+			const { pallets, tx, balanceToTransfer } = txContext
 
 			// Balance of the receiver sovereign account before the transfer
 			const receiverSovereignAccountBalanceBeforeTransfer = await query.sender(
@@ -95,10 +95,12 @@ describe.each(testPairsLimitedReserveTransfers)(
 				receiverSovereignAccountBalanceBeforeTransfer + BigInt(balanceToTransfer)
 			)
 
+			const removedBalance = balanceToTransfer * BigInt(-1)
+
 			validateBalanceWithPrecision(
 				initialBalanceSender,
 				balanceSenderAfterTransfer,
-				balanceToTransfer,
+				removedBalance,
 				expect,
 				precision
 			)

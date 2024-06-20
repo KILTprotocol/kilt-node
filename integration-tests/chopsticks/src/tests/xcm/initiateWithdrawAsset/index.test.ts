@@ -10,9 +10,9 @@ import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 
 describe.each(testPairsLimitedReserveTransfers)(
-	'Limited Reserve Transfers',
+	'Withdraw Asset',
 	{ timeout: 30_000 },
-	async ({ blockchain, storage, accounts, query, sovereignAccount, test, config }) => {
+	async ({ network, storage, accounts, query, sovereignAccount, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config
@@ -21,7 +21,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 		const { desc, precision } = config
 
 		beforeEach(async () => {
-			const { receiver, sender, relay } = blockchain
+			const { receiver, sender, relay } = network
 
 			const { receiverChainContext, senderChainContext, relayChainContext } = await setupNetwork(
 				relay,
@@ -53,10 +53,10 @@ describe.each(testPairsLimitedReserveTransfers)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 0 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
-			const { pallets, tx, balanceToTransfer } = test
+			const { pallets, tx, balanceToTransfer } = txContext
 
 			// Balance of the receiver sovereign account before the transfer
 			const receiverSovereignAccountBalanceBeforeTransfer = await query.receiver(
@@ -88,13 +88,15 @@ describe.each(testPairsLimitedReserveTransfers)(
 
 			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
 
-			// validateBalanceWithPrecision(
-			// 	balanceSenderBeforeTransfer,
-			// 	balanceSenderAfterTransfer,
-			// 	balanceToTransfer,
-			// 	expect,
-			// 	precision
-			// )
+			const removedBalance = balanceToTransfer * BigInt(-1)
+
+			validateBalanceWithPrecision(
+				balanceSenderBeforeTransfer,
+				balanceSenderAfterTransfer,
+				removedBalance,
+				expect,
+				precision
+			)
 
 			// check receiver state
 			await createBlock(receiverContext)
@@ -113,13 +115,13 @@ describe.each(testPairsLimitedReserveTransfers)(
 
 			const balanceReceiverAfterTransfer = await query.receiver(receiverContext, receiverAccount.address)
 
-			// validateBalanceWithPrecision(
-			// 	initialBalanceReceiver,
-			// 	balanceReceiverAfterTransfer,
-			// 	balanceToTransfer,
-			// 	expect,
-			// 	precision
-			// )
+			validateBalanceWithPrecision(
+				initialBalanceReceiver,
+				balanceReceiverAfterTransfer,
+				balanceToTransfer,
+				expect,
+				precision
+			)
 		})
 	}
 )

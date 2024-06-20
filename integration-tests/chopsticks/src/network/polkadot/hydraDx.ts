@@ -3,17 +3,19 @@ import { SetupOption } from '@acala-network/chopsticks-testing'
 import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the HydraDx context
-export const getSetupOptions = (
-	blockNumber: number | undefined = undefined,
-	wasmOverride: string | undefined = undefined
-) =>
+export const getSetupOptions = ({
+	blockNumber,
+	wasmOverride,
+}: {
+	blockNumber?: number
+	wasmOverride?: string
+} = {}) =>
 	({
 		endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
 		db: './db/hydradx.db.sqlite',
 		port: toNumber(process.env.HYDRADX_PORT) || 9001,
 		blockNumber,
 		wasmOverride,
-		runtimeLogLevel: 5,
 	}) as SetupOption
 
 /// Sets the [TechnicalCommittee] and [Council] governance to the given accounts

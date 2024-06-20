@@ -1,91 +1,36 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { KeyringPair } from '@polkadot/keyring/types'
-
 import * as PolkadotChainConfigs from '../../../network/polkadot/index.js'
 import { initialBalanceHDX, initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
 import * as SpiritnetConfig from '../../../network/polkadot/spiritnet.js'
 import * as HydraDxConfig from '../../../network/polkadot/hydraDx.js'
 import { tx, query } from '../../../helper/api.js'
-import { ApiPromise } from '@polkadot/api'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { EventFilter, SetupOption } from '@acala-network/chopsticks-testing'
 
-interface Config {
-	desc: string
+import type { ApiPromise } from '@polkadot/api'
+import type { BasicConfig, BasicXcmTestConfiguration, BasisTxContext } from '../types.js'
+import type { SubmittableExtrinsic } from '@polkadot/api/types'
+
+interface Config extends BasicConfig {
 	precision: bigint
 }
 
-interface Blockchain {
-	sender: SetupOption
-	receiver: SetupOption
-	relay: SetupOption
-}
-
 interface Query {
-	sender: (
-		{
-			api,
-		}: {
-			api: ApiPromise
-		},
-		address: string
-	) => Promise<bigint>
-	receiver: (
-		{
-			api,
-		}: {
-			api: ApiPromise
-		},
-		address: string
-	) => Promise<bigint>
+	sender: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
+	receiver: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
 }
 
-interface Test {
-	tx: (
-		{
-			api,
-		}: {
-			api: ApiPromise
-		},
-		acc: string,
-		amount: number | string
-	) => SubmittableExtrinsic<'promise'>
-	pallets: {
-		sender: EventFilter[]
-		receiver: EventFilter[]
-	}
+interface TxContext extends BasisTxContext {
 	balanceToTransfer: bigint
+	tx: ({ api }: { api: ApiPromise }, submitter: string, amount: string | number) => SubmittableExtrinsic<'promise'>
 }
 
-interface Accounts {
-	senderAccount: KeyringPair
-	receiverAccount: KeyringPair
-}
-
-interface Storage {
-	senderStorage: Record<string, Record<string, unknown>>
-	receiverStorage: Record<string, Record<string, unknown>>
-	relayStorage: Record<string, Record<string, unknown>>
-}
-
-interface SovereignAccount {
-	sender: string
-	receiver: string
-}
-
-interface LimitedReserveTestConfiguration {
+interface WithdrawAssetTestConfiguration extends BasicXcmTestConfiguration {
 	config: Config
-	blockchain: Blockchain
 	query: Query
-	test: Test
-	accounts: Accounts
-	storage: Storage
-	sovereignAccount: SovereignAccount
+	txContext: TxContext
 }
-
 // Test pairs for limited reserve transfers
-export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[] = [
+export const testPairsLimitedReserveTransfers: WithdrawAssetTestConfiguration[] = [
 	// Kilt -> HydraDx
 	{
 		config: {
@@ -93,10 +38,10 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			precision: BigInt(95),
 		},
 
-		blockchain: {
-			sender: PolkadotChainConfigs.all.hydraDx.config(),
-			receiver: PolkadotChainConfigs.all.spiritnet.config(),
-			relay: PolkadotChainConfigs.all.polkadot.config(),
+		network: {
+			sender: PolkadotChainConfigs.all.hydraDx.getConfig({}),
+			receiver: PolkadotChainConfigs.all.spiritnet.getConfig({}),
+			relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
 		},
 		accounts: {
 			senderAccount: keysAlice,
@@ -106,7 +51,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			sender: query.tokens(HydraDxConfig.kiltTokenId),
 			receiver: query.balances,
 		},
-		test: {
+		txContext: {
 			tx: tx.xtokens.transfer(HydraDxConfig.kiltTokenId, tx.xtokens.parachainV3(SpiritnetConfig.paraId)),
 			pallets: {
 				sender: [],
