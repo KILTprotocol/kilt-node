@@ -1,5 +1,5 @@
 include:
-  - local: '.gitlab/check.yml'
+  - local: '.gitlab/check-skip.yml'
   - local: '.gitlab/test.yml'
   - local: '.gitlab/build.yml'
   - local: '.gitlab/release.yml'
@@ -7,20 +7,15 @@ include:
 variables:
   CARGO_HOME: $CI_PROJECT_DIR/.cargo
   CARGO_TARGET_DIR: $CI_PROJECT_DIR/target
-  DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
-  DOCKER_HUB_STANDALONE: "kiltprotocol/standalone-node"
-  DOCKER_HUB_DIP_PROVIDER_TEMPLATE: "kiltprotocol/dip-provider-node-template"
-  DOCKER_HUB_DIP_CONSUMER_TEMPLATE: "kiltprotocol/dip-consumer-node-template"
-  TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0
-
-cache:
-  key: ${CI_COMMIT_REF_SLUG}-rust
-  paths:
-    - target
-    - .cargo/bin/
-    - .cargo/registry/index/
-    - .cargo/registry/cache/
-    - .cargo/git/db/
+default:
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-rust
+    paths:
+      - target
+      - .cargo/bin/
+      - .cargo/registry/index/
+      - .cargo/registry/cache/
+      - .cargo/git/db/
 
 workflow:
   auto_cancel:

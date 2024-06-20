@@ -1,0 +1,14 @@
+on: push
+name: Clippy check
+
+env:
+  RUSTFLAGS: ''-D warnings' cargo doc --all-features --no-deps --locked
+
+jobs:
+  clippy_check:
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Clippy
+        uses: paritytech/ci-unified:bullseye-1.77.0
+        run: cargo clippy --all-features --all-targets --locked -- -D warnings
