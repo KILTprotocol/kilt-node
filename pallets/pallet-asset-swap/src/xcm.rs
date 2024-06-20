@@ -42,6 +42,7 @@ impl TryConvert<AccountId32, Junction> for AccountId32ToAccountId32JunctionConve
 	}
 }
 
+// TODO: Add unit tests
 pub struct SwapPairTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
 
 impl<AccountIdConverter, T> TransactAsset for SwapPairTransactor<AccountIdConverter, T>
@@ -107,6 +108,7 @@ where
 	}
 }
 
+// TODO: Add unit tests
 pub struct AllowOnlySwapAssetFromConfiguredLocation<T>(PhantomData<T>);
 
 impl<T> ContainsPair<MultiAsset, MultiLocation> for AllowOnlySwapAssetFromConfiguredLocation<T>
@@ -157,6 +159,7 @@ where
 
 // TODO: Could all be unified into one so that we access storage only once,
 // although with caching this should not really be an issue.
+// TODO: Add unit tests
 pub struct AllowOnlyXcmFeeAssetFromConfiguredLocation<T>(PhantomData<T>);
 
 impl<T> ContainsPair<MultiAsset, MultiLocation> for AllowOnlyXcmFeeAssetFromConfiguredLocation<T>
