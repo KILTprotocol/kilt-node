@@ -288,3 +288,14 @@ impl pallet_message_queue::Config for Runtime {
 	type MaxStale = MaxStale;
 	type ServiceWeight = ServiceWeight;
 }
+
+// Remove me in 1.15.0
+parameter_types! {
+	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
+}
+
+impl cumulus_pallet_dmp_queue::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
+	type WeightInfo = ();
+}

@@ -2245,6 +2245,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "cumulus-pallet-dmp-queue"
+version = "0.8.0"
+source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.7.0#e046d3b2caaca6c43a60f26594052c5c806b980e"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+]
+
+[[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.8.1"
 source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.7.0#e046d3b2caaca6c43a60f26594052c5c806b980e"
@@ -8767,6 +8785,7 @@ dependencies = [
  "attestation",
  "ctype",
  "cumulus-pallet-aura-ext",
+ "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-xcm",
@@ -13819,6 +13838,7 @@ dependencies = [
  "attestation",
  "ctype",
  "cumulus-pallet-aura-ext",
+ "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-xcm",
