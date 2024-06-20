@@ -92,7 +92,7 @@ where
 			&swap_pair.pool_account,
 			&beneficiary,
 			fungible_amount_as_currency_balance,
-			Preservation::Preserve,
+			Preservation::Expendable,
 		)
 		.map_err(|e| {
 			log::error!(
