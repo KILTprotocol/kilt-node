@@ -166,7 +166,6 @@ std = [
   "attestation/std",
   "ctype/std",
   "cumulus-pallet-aura-ext/std",
-
   "cumulus-pallet-parachain-system/std",
   "cumulus-pallet-session-benchmarking/std",
   "cumulus-pallet-xcm/std",

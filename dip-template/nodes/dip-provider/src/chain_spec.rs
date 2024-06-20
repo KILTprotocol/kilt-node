@@ -71,8 +71,8 @@ fn testnet_genesis(
 	id: ParaId,
 ) -> serde_json::Value {
 	serde_json::json!({
-		"parachain_info": {
-			"parachain_id": id,
+		"parachainInfo": {
+			"parachainId": id,
 		},
 		"sudo": {
 			"key": Some(endowed_accounts.first().unwrap().clone()),
@@ -80,9 +80,9 @@ fn testnet_genesis(
 		"balances": {
 			"balances": endowed_accounts.iter().cloned().map(|k| (k, EXISTENTIAL_DEPOSIT * 1_000_000)).collect::<Vec<_>>(),
 		},
-		"collator_selection": {
+		"collatorSelection": {
 			"invulnerables": invulnerables.iter().cloned().map(|(acc, _)| acc).collect::<Vec<_>>(),
-			"candidacy_bond": EXISTENTIAL_DEPOSIT * 16,
+			"candidacyBond": EXISTENTIAL_DEPOSIT * 16,
 		},
 		"session": {
 			"keys": invulnerables.into_iter().map(|(acc, aura)| (acc.clone(), acc, template_session_keys(aura))).collect::<Vec<_>>(),
