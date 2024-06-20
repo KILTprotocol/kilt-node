@@ -28,14 +28,14 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentityLookup, TryConvert},
 	AccountId32,
 };
 use xcm::v3::{
 	AssetId, Error as XcmError, Fungibility,
-	Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
+	Junction::{self, AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
 	Junctions::{Here, X1, X2},
-	MultiAsset, MultiLocation, NetworkId, XcmContext,
+	MultiAsset, MultiLocation, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
 };
 use xcm_executor::{traits::TransactAsset, Assets};
 
@@ -94,8 +94,30 @@ impl pallet_balances::Config for MockRuntime {
 	type WeightInfo = ();
 }
 
+pub struct AccountId32ToAccountId32JunctionConverter;
+
+impl TryConvert<AccountId32, Junction> for AccountId32ToAccountId32JunctionConverter {
+	fn try_convert(account: AccountId32) -> Result<Junction, AccountId32> {
+		Ok(AccountId32Junction {
+			network: None,
+			id: account.into(),
+		})
+	}
+}
+
 static mut BALANCES: Vec<(MultiLocation, u128)> = vec![];
 pub struct MockFungibleAssetTransactor;
+
+impl MockFungibleAssetTransactor {
+	pub(crate) fn get_balance_for(account: &MultiLocation) -> u128 {
+		unsafe {
+			BALANCES
+				.iter()
+				.find_map(|e| if e.0 == *account { Some(e.1) } else { None })
+				.unwrap_or_default()
+		}
+	}
+}
 
 impl TransactAsset for MockFungibleAssetTransactor {
 	fn withdraw_asset(
@@ -150,10 +172,24 @@ impl TransactAsset for MockFungibleAssetTransactor {
 	}
 }
 
+pub struct AlwaysSuccessfulXcmRouter;
+
+impl SendXcm for AlwaysSuccessfulXcmRouter {
+	type Ticket = ();
+
+	fn validate(_destination: &mut Option<MultiLocation>, _message: &mut Option<Xcm<()>>) -> SendResult<Self::Ticket> {
+		Ok(((), vec![].into()))
+	}
+
+	fn deliver(_ticket: Self::Ticket) -> Result<XcmHash, SendError> {
+		Ok(XcmHash::default())
+	}
+}
+
 impl crate::Config for MockRuntime {
 	const PALLET_ID: [u8; 8] = *b"eKILT/AH";
 
-	type AccountIdConverter = ();
+	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = MockFungibleAssetTransactor;
 	type Currency = Balances;
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
@@ -161,7 +197,7 @@ impl crate::Config for MockRuntime {
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwapOrigin = EnsureRoot<Self::AccountId>;
-	type XcmRouter = ();
+	type XcmRouter = AlwaysSuccessfulXcmRouter;
 }
 
 #[derive(Default)]

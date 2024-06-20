@@ -275,9 +275,9 @@ pub mod pallet {
 			// 2. Check if swaps are enabled.
 			ensure!(swap_pair.can_swap(), DispatchError::from(Error::<T>::NotEnabled));
 
-			// 3. Verify the tx submitter has enough local assets for the swap.
-			let balance_to_withdraw = T::Currency::can_withdraw(&submitter, local_asset_amount).into_result(true)?;
-			ensure!(balance_to_withdraw == local_asset_amount, Error::<T>::UserSwapBalance);
+			// 3. Verify the tx submitter has enough local assets for the swap, without
+			//    having their balance go to zero.
+			T::Currency::can_withdraw(&submitter, local_asset_amount).into_result(true)?;
 
 			// 4. Verify the local assets can be transferred to the swap pool account
 			T::Currency::can_deposit(&swap_pair.pool_account, local_asset_amount, Provenance::Extant).into_result()?;
