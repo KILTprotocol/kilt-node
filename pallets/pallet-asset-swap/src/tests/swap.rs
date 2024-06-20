@@ -18,10 +18,16 @@
 
 use frame_support::{assert_ok, traits::fungible::Inspect};
 use frame_system::RawOrigin;
-use sp_runtime::{traits::One, AccountId32};
+use sp_runtime::{
+	traits::{One, TryConvert, Zero},
+	AccountId32,
+};
 
 use crate::{
-	mock::{Balances, ExtBuilder, MockRuntime, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
+	mock::{
+		AccountId32ToAccountId32JunctionConverter, Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime,
+		ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
+	},
 	swap::SwapPairStatus,
 	Pallet, SwapPair, SwapPairInfoOf,
 };
@@ -44,17 +50,36 @@ fn successful() {
 		})
 		.build()
 		.execute_with(|| {
+			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
 			assert_ok!(Pallet::<MockRuntime>::swap(
 				RawOrigin::Signed(user.clone()).into(),
 				99_999,
 				Box::new(ASSET_HUB_LOCATION.into())
 			));
+			let total_currency_issuance_after = <Balances as Inspect<AccountId32>>::total_issuance();
+			// Total issuance of currency has not changed
+			assert_eq!(total_currency_issuance_after, total_currency_issuance_before);
 			// User's currency balance is reduced by swap amount
 			assert!(<Balances as Inspect<AccountId32>>::total_balance(&user).is_one());
 			// Pool's currency balance is increased by swap amount
 			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
 			// Pool's remote balance is decreased by swap amount
 			assert!(SwapPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
+			// User's fungible balance is reduced by XCM fee
+			assert!(MockFungibleAssetTransactor::get_balance_for(
+				&AccountId32ToAccountId32JunctionConverter::try_convert(user)
+					.unwrap()
+					.into()
+			)
+			.is_zero());
+			// Pool's fungible balance is not changed (we're testing that fees are burnt and
+			// not transferred).
+			assert!(MockFungibleAssetTransactor::get_balance_for(
+				&AccountId32ToAccountId32JunctionConverter::try_convert(pool_account)
+					.unwrap()
+					.into()
+			)
+			.is_zero());
 		});
 }
 

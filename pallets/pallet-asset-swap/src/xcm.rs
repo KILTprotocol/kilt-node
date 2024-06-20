@@ -44,11 +44,14 @@ where
 		);
 
 		// 3. Verify the asset matches the other side of the swap pair.
-		let stored_asset_id_as_required_version: AssetId = swap_pair
-			.remote_asset_id.clone()
-			.try_into()
-			.map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into required version with error {:?}.", swap_pair.remote_asset_id, e);
+		let stored_asset_id_as_required_version: AssetId =
+			swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to convert stored asset ID {:?} into required version with error {:?}.",
+					swap_pair.remote_asset_id,
+					e
+				);
 				XcmError::FailedToTransactAsset("Failed to convert stored asset ID into required version.")
 			})?;
 		ensure!(
@@ -75,7 +78,11 @@ where
 			Preservation::Preserve,
 		)
 		.map_err(|e| {
-			log::error!(target: LOG_TARGET, "Failed to transfer assets from pool account with error {:?}", e);
+			log::error!(
+				target: LOG_TARGET,
+				"Failed to transfer assets from pool account with error {:?}",
+				e
+			);
 			XcmError::FailedToTransactAsset("Failed to transfer assets from pool account")
 		})?;
 
@@ -102,7 +109,12 @@ where
 			e
 		 }) else { return false; };
 		if stored_remote_reserve_location_as_required_version != *b {
-			log::trace!(target: LOG_TARGET, "Remote origin {:?} does not match expected origin {:?}", b, stored_remote_reserve_location_as_required_version);
+			log::trace!(
+				target: LOG_TARGET,
+				"Remote origin {:?} does not match expected origin {:?}",
+				b,
+				stored_remote_reserve_location_as_required_version
+			);
 			return false;
 		}
 
@@ -113,7 +125,12 @@ where
 			e
 		 }) else { return false; };
 		if stored_remote_asset_id != a.id {
-			log::trace!(target: LOG_TARGET, "Remote asset {:?} does not match expected one {:?}", a.id, stored_remote_asset_id);
+			log::trace!(
+				target: LOG_TARGET,
+				"Remote asset {:?} does not match expected one {:?}",
+				a.id,
+				stored_remote_asset_id
+			);
 			return false;
 		}
 
@@ -142,7 +159,12 @@ where
 			e
 		 }) else { return false; };
 		if stored_remote_reserve_location_as_required_version != *b {
-			log::trace!(target: LOG_TARGET, "Remote origin {:?} does not match expected origin {:?}", b, stored_remote_reserve_location_as_required_version);
+			log::trace!(
+				target: LOG_TARGET,
+				"Remote origin {:?} does not match expected origin {:?}",
+				b,
+				stored_remote_reserve_location_as_required_version
+			);
 			return false;
 		}
 
@@ -152,7 +174,12 @@ where
 			e
 		 }) else { return false; };
 		if stored_remote_asset_fee != *a {
-			log::trace!(target: LOG_TARGET, "Remote asset {:?} does not match expected one for fee payment {:?}", a, stored_remote_asset_fee);
+			log::trace!(
+				target: LOG_TARGET,
+				"Remote asset {:?} does not match expected one for fee payment {:?}",
+				a,
+				stored_remote_asset_fee
+			);
 			return false;
 		}
 

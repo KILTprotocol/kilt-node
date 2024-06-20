@@ -57,7 +57,7 @@ pub mod pallet {
 		v3::{
 			validate_send, AssetId,
 			Instruction::{SetFeesMode, TransferAsset, WithdrawAsset},
-			Junction, Junctions, MultiAsset, SendXcm, Xcm, XcmContext, XcmHash,
+			Junction, Junctions, MultiAsset, SendXcm, Xcm,
 		},
 		VersionedAssetId, VersionedMultiLocation,
 	};
@@ -163,7 +163,10 @@ pub mod pallet {
 				T::Currency::reducible_balance(&pool_account, Preservation::Expendable, Fortitude::Polite)
 					.try_into()
 					.map_err(|_| {
-						log::error!(target: LOG_TARGET, "Failed to cast pool account reducible balance to u128.");
+						log::error!(
+							target: LOG_TARGET,
+							"Failed to cast pool account reducible balance to u128."
+						);
 						Error::<T>::Internal
 					})?;
 			ensure!(
@@ -294,15 +297,30 @@ pub mod pallet {
 			);
 			// TODO: Convert to version based on destination
 			let asset_id_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert asset ID {:?} into v3 `AssetId` with error {:?}", swap_pair.remote_asset_id, e);
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to convert asset ID {:?} into v3 `AssetId` with error {:?}",
+					swap_pair.remote_asset_id,
+					e
+				);
 				DispatchError::from(Error::<T>::Internal)
 			})?;
 			let beneficiary_v3: MultiLocation = (*beneficiary.clone()).try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert beneficiary {:?} into v3 `Multilocation` with error {:?}", beneficiary, e);
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to convert beneficiary {:?} into v3 `Multilocation` with error {:?}",
+					beneficiary,
+					e
+				);
 				DispatchError::from(Error::<T>::Internal)
 			})?;
 			let destination_v3: MultiLocation = swap_pair.remote_reserve_location.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert remote reserve location {:?} into v3 `Multilocation` with error {:?}", swap_pair.remote_reserve_location, e);
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to convert remote reserve location {:?} into v3 `Multilocation` with error {:?}",
+					swap_pair.remote_reserve_location,
+					e
+				);
 				DispatchError::from(Error::<T>::Internal)
 			})?;
 
@@ -343,32 +361,49 @@ pub mod pallet {
 				return Err(Error::<T>::Internal.into());
 			}
 
-			// 8. Transfer XCM fee from submitter to pool account.
+			// 8. Take XCM fee from submitter.
 			let remote_fee_asset_v3: MultiAsset = swap_pair.remote_fee.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert remote fee asset{:?} into v3 `MultiAsset` with error {:?}",swap_pair.remote_fee, e);
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to convert remote fee asset{:?} into v3 `MultiAsset` with error {:?}",
+					swap_pair.remote_fee,
+					e
+				);
 				DispatchError::from(Error::<T>::Internal)
 			})?;
 			let submitter_as_multilocation = T::AccountIdConverter::try_convert(submitter.clone())
 				.map_err(|e| {
-					log::error!(target: LOG_TARGET, "Failed to convert account {:?} into `MultiLocation` with error {:?}", submitter, e);
+					log::error!(
+						target: LOG_TARGET,
+						"Failed to convert account {:?} into `MultiLocation` with error {:?}",
+						submitter,
+						e
+					);
 					DispatchError::from(Error::<T>::Internal)
 				})
 				.map(|j| j.into_location())?;
-			let swap_pair_pool_account_as_multilocation = T::AccountIdConverter::try_convert(swap_pair.pool_account)
-				.map_err(|e| {
-					log::error!(target: LOG_TARGET, "Failed to convert pool account {:?} into `MultiLocation` with error {:?}", submitter, e);
-					DispatchError::from(Error::<T>::Internal)
-				})
-				.map(|j| j.into_location())?;
-			T::AssetTransactor::transfer_asset(
-				&remote_fee_asset_v3,
-				&submitter_as_multilocation,
-				&swap_pair_pool_account_as_multilocation,
-				&XcmContext::with_message_id(XcmHash::default()),
-			).map_err(|e| {
-				log::trace!(target: LOG_TARGET, "Failed to transfer asset {:?} from {:?} to {:?} with error {:?}", remote_fee_asset_v3, submitter_as_multilocation, swap_pair_pool_account_as_multilocation, e);
-				DispatchError::from(Error::<T>::UserXcmBalance)
-			})?;
+			let withdrawn_fees =
+				T::AssetTransactor::withdraw_asset(&remote_fee_asset_v3, &submitter_as_multilocation, None).map_err(
+					|e| {
+						log::trace!(
+							target: LOG_TARGET,
+							"Failed to withdraw asset {:?} from location {:?} with error {:?}",
+							remote_fee_asset_v3,
+							submitter_as_multilocation,
+							e
+						);
+						DispatchError::from(Error::<T>::UserXcmBalance)
+					},
+				)?;
+			if withdrawn_fees != vec![remote_fee_asset_v3.clone()].into() {
+				log::error!(
+					target: LOG_TARGET,
+					"Withdrawn fees {:?} does not match expected fee {:?}.",
+					withdrawn_fees,
+					remote_fee_asset_v3
+				);
+				return Err(Error::<T>::Internal.into());
+			}
 
 			// 9. Send XCM out
 			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
@@ -472,7 +507,12 @@ impl<T: Config> Pallet<T> {
 		let hash_input = (T::PALLET_ID, b'.', remote_asset_id.clone()).encode();
 		let hash_output = sp_io::hashing::blake2_256(hash_input.as_slice());
 		T::AccountId::decode(&mut TrailingZeroInput::new(hash_output.as_slice())).map_err(|e| {
-			log::error!(target: LOG_TARGET, "Failed to generate pool ID from remote asset {:?} with error: {:?}", remote_asset_id, e);
+			log::error!(
+				target: LOG_TARGET,
+				"Failed to generate pool ID from remote asset {:?} with error: {:?}",
+				remote_asset_id,
+				e
+			);
 			Error::<T>::Internal
 		})
 	}

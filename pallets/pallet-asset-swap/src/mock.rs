@@ -224,6 +224,7 @@ impl ExtBuilder {
 	}
 
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
+		let _ = env_logger::try_init();
 		let mut ext = sp_io::TestExternalities::default();
 
 		ext.execute_with(|| {
