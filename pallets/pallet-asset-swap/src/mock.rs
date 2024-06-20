@@ -17,11 +17,12 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	construct_runtime,
+	construct_runtime, storage_alias,
 	traits::{
 		fungible::{Mutate, MutateFreeze, MutateHold},
 		Everything,
 	},
+	Twox64Concat,
 };
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -39,7 +40,7 @@ use xcm::v3::{
 };
 use xcm_executor::{traits::TransactAsset, Assets};
 
-use crate::{Pallet, SwapPair, SwapPairInfoOf};
+use crate::{Config, Pallet, SwapPair, SwapPairInfoOf};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -105,17 +106,15 @@ impl TryConvert<AccountId32, Junction> for AccountId32ToAccountId32JunctionConve
 	}
 }
 
-static mut BALANCES: Vec<(MultiLocation, u128)> = vec![];
+// Used to temporarily store balances used in the mock.
+#[storage_alias]
+type BalancesStorage<T: Config> = StorageMap<Pallet<T>, Twox64Concat, MultiLocation, u128>;
+
 pub struct MockFungibleAssetTransactor;
 
 impl MockFungibleAssetTransactor {
 	pub(crate) fn get_balance_for(account: &MultiLocation) -> u128 {
-		unsafe {
-			BALANCES
-				.iter()
-				.find_map(|e| if e.0 == *account { Some(e.1) } else { None })
-				.unwrap_or_default()
-		}
+		BalancesStorage::<MockRuntime>::get(account).unwrap_or_default()
 	}
 }
 
@@ -132,18 +131,16 @@ impl TransactAsset for MockFungibleAssetTransactor {
 		else {
 			return Err(XcmError::FailedToTransactAsset("Only fungible assets supported."));
 		};
-		unsafe {
-			let from_entry = BALANCES
-				.iter_mut()
-				.find(|e| e.0 == *who)
+		BalancesStorage::<MockRuntime>::try_mutate(who, |entry| {
+			let balance = entry
+				.as_mut()
 				.ok_or(XcmError::FailedToTransactAsset("No balance found for user."))?;
-			let new_from_balance = from_entry
-				.1
+			let new_balance = balance
 				.checked_sub(amount)
 				.ok_or(XcmError::FailedToTransactAsset("No enough balance for user."))?;
-			from_entry.1 = new_from_balance;
+			*balance = new_balance;
 			Ok::<_, XcmError>(())
-		}?;
+		})?;
 		Ok(vec![what.clone()].into())
 	}
 
@@ -155,19 +152,14 @@ impl TransactAsset for MockFungibleAssetTransactor {
 		else {
 			return Err(XcmError::FailedToTransactAsset("Only fungible assets supported."));
 		};
-		unsafe {
-			let to_entry = BALANCES.iter_mut().find(|e| e.0 == *who);
-			if let Some(to_entry) = to_entry {
-				let new_to_balance = to_entry
-					.1
-					.checked_add(amount)
-					.ok_or(XcmError::FailedToTransactAsset("Balance overflow for destination."))?;
-				to_entry.1 = new_to_balance;
-			} else {
-				BALANCES.push((*who, amount));
-			}
+		BalancesStorage::<MockRuntime>::mutate(who, |entry| {
+			let new_balance = entry
+				.unwrap_or_default()
+				.checked_add(amount)
+				.ok_or(XcmError::FailedToTransactAsset("Balance overflow for destination."))?;
+			*entry = Some(new_balance);
 			Ok::<_, XcmError>(())
-		}?;
+		})?;
 		Ok(())
 	}
 }
@@ -207,6 +199,9 @@ pub(crate) struct ExtBuilder(
 	Vec<(AccountId32, MultiAsset)>,
 );
 
+pub(crate) const FREEZE_REASON: [u8; 1] = *b"1";
+pub(crate) const HOLD_REASON: MockRuntimeHoldReason = MockRuntimeHoldReason {};
+
 impl ExtBuilder {
 	pub(crate) fn with_swap_pair_info(mut self, swap_pair_info: SwapPairInfoOf<MockRuntime>) -> Self {
 		self.0 = Some(swap_pair_info);
@@ -228,9 +223,6 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::default();
 
 		ext.execute_with(|| {
-			unsafe {
-				BALANCES = vec![];
-			}
 			System::set_block_number(1);
 
 			if let Some(swap_pair_info) = self.0 {
@@ -251,11 +243,11 @@ impl ExtBuilder {
 				);
 				SwapPair::<MockRuntime>::mutate(|entry| entry.as_mut().unwrap().status = status);
 			}
-			for (account, free, frozen, locked) in self.1 {
+			for (account, free, frozen, held) in self.1 {
 				<Balances as Mutate<AccountId32>>::set_balance(&account, free);
-				<Balances as MutateFreeze<AccountId32>>::set_freeze(b"1", &account, frozen)
+				<Balances as MutateFreeze<AccountId32>>::set_freeze(&FREEZE_REASON, &account, frozen)
 					.expect("Failed to freeze balance on account.");
-				<Balances as MutateHold<AccountId32>>::hold(&MockRuntimeHoldReason::default(), &account, locked)
+				<Balances as MutateHold<AccountId32>>::hold(&HOLD_REASON, &account, held)
 					.expect("Failed to hold balance on account.");
 			}
 

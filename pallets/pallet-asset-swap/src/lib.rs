@@ -124,6 +124,7 @@ pub mod pallet {
 		LiquidityNotMet,
 		NotEnabled,
 		NotFound,
+		LocalPoolBalance,
 		RemotePoolBalance,
 		UserSwapBalance,
 		UserXcmBalance,
@@ -280,10 +281,14 @@ pub mod pallet {
 
 			// 3. Verify the tx submitter has enough local assets for the swap, without
 			//    having their balance go to zero.
-			T::Currency::can_withdraw(&submitter, local_asset_amount).into_result(true)?;
+			T::Currency::can_withdraw(&submitter, local_asset_amount)
+				.into_result(true)
+				.map_err(|_| Error::<T>::UserSwapBalance)?;
 
 			// 4. Verify the local assets can be transferred to the swap pool account
-			T::Currency::can_deposit(&swap_pair.pool_account, local_asset_amount, Provenance::Extant).into_result()?;
+			T::Currency::can_deposit(&swap_pair.pool_account, local_asset_amount, Provenance::Extant)
+				.into_result()
+				.map_err(|_| Error::<T>::LocalPoolBalance)?;
 
 			// 5. Verify we have enough balance on the remote location to perform the
 			//    transfer
