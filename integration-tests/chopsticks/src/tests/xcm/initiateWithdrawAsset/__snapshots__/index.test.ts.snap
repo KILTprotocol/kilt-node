@@ -17,42 +17,19 @@ exports[`Withdraw Asset > HydraDx -> KILT DEV > receiver events "xcmpQueue" 1`] 
 ]
 `;
 
-exports[`Withdraw Asset > HydraDx -> KILT DEV > receiver events {"section":"System","method":"NewAccount"} 1`] = `[]`;
-
-exports[`Withdraw Asset > HydraDx -> KILT DEV > receiver events {"section":"system","method":"Endowed"} 1`] = `[]`;
+exports[`Withdraw Asset > HydraDx -> KILT DEV > receiver events {"section":"system","method":"NewAccount"} 1`] = `
+[
+  {
+    "data": {
+      "account": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
+    },
+    "method": "NewAccount",
+    "section": "system",
+  },
+]
+`;
 
 exports[`Withdraw Asset > HydraDx -> KILT DEV > sender events "xcmpQueue" 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT DEV live V3 > receiver events "xcmpQueue" 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-      "messageId": "(hash)",
-      "weight": {
-        "proofSize": 0,
-        "refTime": 800000000,
-      },
-    },
-    "method": "Success",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT DEV live V3 > receiver events {"section":"system","method":"Endowed"} 1`] = `[]`;
-
-exports[`Withdraw Asset > HydraDx -> KILT DEV live V3 > sender events "xcmpQueue" 1`] = `
 [
   {
     "data": {
@@ -81,8 +58,6 @@ exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events "xcmpQueue"
 ]
 `;
 
-exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events {"section":"System","method":"NewAccount"} 1`] = `[]`;
-
 exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events {"section":"balances","method":"Withdraw"} 1`] = `
 [
   {
@@ -92,6 +67,18 @@ exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events {"section":
     },
     "method": "Withdraw",
     "section": "balances",
+  },
+]
+`;
+
+exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events {"section":"system","method":"NewAccount"} 1`] = `
+[
+  {
+    "data": {
+      "account": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
+    },
+    "method": "NewAccount",
+    "section": "system",
   },
 ]
 `;
@@ -148,42 +135,19 @@ exports[`Withdraw Asset > HydraDx -> KILT live > receiver events "xcmpQueue" 1`]
 ]
 `;
 
-exports[`Withdraw Asset > HydraDx -> KILT live > receiver events {"section":"System","method":"NewAccount"} 1`] = `[]`;
-
-exports[`Withdraw Asset > HydraDx -> KILT live > receiver events {"section":"system","method":"Endowed"} 1`] = `[]`;
+exports[`Withdraw Asset > HydraDx -> KILT live > receiver events {"section":"system","method":"NewAccount"} 1`] = `
+[
+  {
+    "data": {
+      "account": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
+    },
+    "method": "NewAccount",
+    "section": "system",
+  },
+]
+`;
 
 exports[`Withdraw Asset > HydraDx -> KILT live > sender events "xcmpQueue" 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT live V3 > receiver events "xcmpQueue" 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-      "messageId": "(hash)",
-      "weight": {
-        "proofSize": 0,
-        "refTime": 800000000,
-      },
-    },
-    "method": "Success",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT live V3 > receiver events {"section":"system","method":"Endowed"} 1`] = `[]`;
-
-exports[`Withdraw Asset > HydraDx -> KILT live V3 > sender events "xcmpQueue" 1`] = `
 [
   {
     "data": {

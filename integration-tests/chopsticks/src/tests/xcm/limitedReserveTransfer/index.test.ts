@@ -10,7 +10,7 @@ import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 
 describe.each(testPairsLimitedReserveTransfers)(
 	'Limited Reserve Transfers',
-	{ timeout: 30_000, skip: true },
+	{ timeout: 30_000 },
 	async ({ network, storage, accounts, query, sovereignAccount, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
