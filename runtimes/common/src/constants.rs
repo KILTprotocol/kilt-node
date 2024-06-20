@@ -492,6 +492,7 @@ pub mod tips {
 		pub const TipCountdown: BlockNumber = DAYS;
 		pub const TipFindersFee: Percent = Percent::from_percent(0);
 		pub const TipReportDepositBase: Balance = deposit(1, 1);
+		pub const MaxTipAmount: Balance = 1_000_000 * KILT;
 	}
 }
 

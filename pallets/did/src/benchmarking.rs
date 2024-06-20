@@ -99,6 +99,9 @@ where
 		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::BaseDeposit::get()
+		+ <T as Config>::BaseDeposit::get()
+		+ <T as Config>::BaseDeposit::get()
+		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::Fee::get();
 	<CurrencyOf<T> as Mutate<AccountIdOf<T>>>::set_balance(account, balance);
 }

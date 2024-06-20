@@ -49,14 +49,14 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `pallet_collective`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
-	/// Storage: `TechnicalCommittee::Members` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Proposals` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Voting` (r:100 w:100)
-	/// Proof: `TechnicalCommittee::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Prime` (r:0 w:1)
-	/// Proof: `TechnicalCommittee::Prime` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Members` (r:1 w:1)
+	/// Proof: `Council::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Proposals` (r:1 w:0)
+	/// Proof: `Council::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Voting` (r:100 w:100)
+	/// Proof: `Council::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Prime` (r:0 w:1)
+	/// Proof: `Council::Prime` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `m` is `[0, 100]`.
 	/// The range of component `n` is `[0, 100]`.
 	/// The range of component `p` is `[0, 100]`.
@@ -67,13 +67,13 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0 + m * (3232 ±0) + p * (3194 ±0)`
 		//  Estimated: `15736 + m * (1967 ±16) + p * (4336 ±16)`
-		// Minimum execution time: 17_288_000 picoseconds.
-		Weight::from_parts(17_437_000, 0)
+		// Minimum execution time: 17_127_000 picoseconds.
+		Weight::from_parts(17_385_000, 0)
 			.saturating_add(Weight::from_parts(0, 15736))
-			// Standard Error: 48_678
-			.saturating_add(Weight::from_parts(5_691_758, 0).saturating_mul(m.into()))
-			// Standard Error: 48_678
-			.saturating_add(Weight::from_parts(8_091_284, 0).saturating_mul(p.into()))
+			// Standard Error: 45_513
+			.saturating_add(Weight::from_parts(5_253_083, 0).saturating_mul(m.into()))
+			// Standard Error: 45_513
+			.saturating_add(Weight::from_parts(7_817_774, 0).saturating_mul(p.into()))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(p.into())))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -81,8 +81,8 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 			.saturating_add(Weight::from_parts(0, 1967).saturating_mul(m.into()))
 			.saturating_add(Weight::from_parts(0, 4336).saturating_mul(p.into()))
 	}
-	/// Storage: `TechnicalCommittee::Members` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Members` (r:1 w:0)
+	/// Proof: `Council::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `b` is `[2, 1024]`.
 	/// The range of component `m` is `[1, 100]`.
 	/// The range of component `b` is `[2, 1024]`.
@@ -91,20 +91,20 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `69 + m * (32 ±0)`
 		//  Estimated: `1555 + m * (32 ±0)`
-		// Minimum execution time: 14_057_000 picoseconds.
-		Weight::from_parts(13_185_267, 0)
+		// Minimum execution time: 14_162_000 picoseconds.
+		Weight::from_parts(13_322_279, 0)
 			.saturating_add(Weight::from_parts(0, 1555))
-			// Standard Error: 9
-			.saturating_add(Weight::from_parts(1_424, 0).saturating_mul(b.into()))
-			// Standard Error: 92
-			.saturating_add(Weight::from_parts(15_524, 0).saturating_mul(m.into()))
+			// Standard Error: 12
+			.saturating_add(Weight::from_parts(1_373, 0).saturating_mul(b.into()))
+			// Standard Error: 129
+			.saturating_add(Weight::from_parts(17_558, 0).saturating_mul(m.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(Weight::from_parts(0, 32).saturating_mul(m.into()))
 	}
-	/// Storage: `TechnicalCommittee::Members` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::ProposalOf` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Members` (r:1 w:0)
+	/// Proof: `Council::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::ProposalOf` (r:1 w:0)
+	/// Proof: `Council::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `b` is `[2, 1024]`.
 	/// The range of component `m` is `[1, 100]`.
 	/// The range of component `b` is `[2, 1024]`.
@@ -113,26 +113,26 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `69 + m * (32 ±0)`
 		//  Estimated: `3535 + m * (32 ±0)`
-		// Minimum execution time: 16_793_000 picoseconds.
-		Weight::from_parts(15_692_123, 0)
+		// Minimum execution time: 16_922_000 picoseconds.
+		Weight::from_parts(16_012_744, 0)
 			.saturating_add(Weight::from_parts(0, 3535))
-			// Standard Error: 10
-			.saturating_add(Weight::from_parts(1_559, 0).saturating_mul(b.into()))
-			// Standard Error: 106
-			.saturating_add(Weight::from_parts(26_823, 0).saturating_mul(m.into()))
+			// Standard Error: 15
+			.saturating_add(Weight::from_parts(1_408, 0).saturating_mul(b.into()))
+			// Standard Error: 164
+			.saturating_add(Weight::from_parts(26_194, 0).saturating_mul(m.into()))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(Weight::from_parts(0, 32).saturating_mul(m.into()))
 	}
-	/// Storage: `TechnicalCommittee::Members` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::ProposalOf` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Proposals` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::ProposalCount` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::ProposalCount` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Voting` (r:0 w:1)
-	/// Proof: `TechnicalCommittee::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Members` (r:1 w:0)
+	/// Proof: `Council::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::ProposalOf` (r:1 w:1)
+	/// Proof: `Council::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Proposals` (r:1 w:1)
+	/// Proof: `Council::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::ProposalCount` (r:1 w:1)
+	/// Proof: `Council::ProposalCount` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Voting` (r:0 w:1)
+	/// Proof: `Council::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `b` is `[2, 1024]`.
 	/// The range of component `m` is `[2, 100]`.
 	/// The range of component `p` is `[1, 100]`.
@@ -143,47 +143,47 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `359 + m * (32 ±0) + p * (36 ±0)`
 		//  Estimated: `3751 + m * (33 ±0) + p * (36 ±0)`
-		// Minimum execution time: 22_061_000 picoseconds.
-		Weight::from_parts(22_676_021, 0)
+		// Minimum execution time: 22_288_000 picoseconds.
+		Weight::from_parts(23_020_266, 0)
 			.saturating_add(Weight::from_parts(0, 3751))
-			// Standard Error: 47
-			.saturating_add(Weight::from_parts(2_344, 0).saturating_mul(b.into()))
-			// Standard Error: 494
-			.saturating_add(Weight::from_parts(18_206, 0).saturating_mul(m.into()))
-			// Standard Error: 488
-			.saturating_add(Weight::from_parts(131_495, 0).saturating_mul(p.into()))
+			// Standard Error: 45
+			.saturating_add(Weight::from_parts(2_143, 0).saturating_mul(b.into()))
+			// Standard Error: 475
+			.saturating_add(Weight::from_parts(17_356, 0).saturating_mul(m.into()))
+			// Standard Error: 469
+			.saturating_add(Weight::from_parts(127_516, 0).saturating_mul(p.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
 			.saturating_add(Weight::from_parts(0, 33).saturating_mul(m.into()))
 			.saturating_add(Weight::from_parts(0, 36).saturating_mul(p.into()))
 	}
-	/// Storage: `TechnicalCommittee::Members` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Voting` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Members` (r:1 w:0)
+	/// Proof: `Council::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Voting` (r:1 w:1)
+	/// Proof: `Council::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `m` is `[5, 100]`.
 	/// The range of component `m` is `[5, 100]`.
 	fn vote(m: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `812 + m * (64 ±0)`
 		//  Estimated: `4276 + m * (64 ±0)`
-		// Minimum execution time: 20_609_000 picoseconds.
-		Weight::from_parts(20_976_275, 0)
+		// Minimum execution time: 20_473_000 picoseconds.
+		Weight::from_parts(20_980_238, 0)
 			.saturating_add(Weight::from_parts(0, 4276))
-			// Standard Error: 180
-			.saturating_add(Weight::from_parts(32_967, 0).saturating_mul(m.into()))
+			// Standard Error: 241
+			.saturating_add(Weight::from_parts(34_890, 0).saturating_mul(m.into()))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
 			.saturating_add(Weight::from_parts(0, 64).saturating_mul(m.into()))
 	}
-	/// Storage: `TechnicalCommittee::Voting` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Members` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Proposals` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::ProposalOf` (r:0 w:1)
-	/// Proof: `TechnicalCommittee::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Voting` (r:1 w:1)
+	/// Proof: `Council::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Members` (r:1 w:0)
+	/// Proof: `Council::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Proposals` (r:1 w:1)
+	/// Proof: `Council::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::ProposalOf` (r:0 w:1)
+	/// Proof: `Council::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `m` is `[4, 100]`.
 	/// The range of component `p` is `[1, 100]`.
 	/// The range of component `m` is `[4, 100]`.
@@ -192,26 +192,26 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `401 + m * (64 ±0) + p * (36 ±0)`
 		//  Estimated: `3846 + m * (65 ±0) + p * (36 ±0)`
-		// Minimum execution time: 24_396_000 picoseconds.
-		Weight::from_parts(24_836_443, 0)
+		// Minimum execution time: 24_449_000 picoseconds.
+		Weight::from_parts(25_080_084, 0)
 			.saturating_add(Weight::from_parts(0, 3846))
-			// Standard Error: 358
-			.saturating_add(Weight::from_parts(21_912, 0).saturating_mul(m.into()))
-			// Standard Error: 349
-			.saturating_add(Weight::from_parts(123_919, 0).saturating_mul(p.into()))
+			// Standard Error: 371
+			.saturating_add(Weight::from_parts(21_044, 0).saturating_mul(m.into()))
+			// Standard Error: 362
+			.saturating_add(Weight::from_parts(121_602, 0).saturating_mul(p.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))
 			.saturating_add(Weight::from_parts(0, 65).saturating_mul(m.into()))
 			.saturating_add(Weight::from_parts(0, 36).saturating_mul(p.into()))
 	}
-	/// Storage: `TechnicalCommittee::Voting` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Members` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::ProposalOf` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Proposals` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Voting` (r:1 w:1)
+	/// Proof: `Council::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Members` (r:1 w:0)
+	/// Proof: `Council::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::ProposalOf` (r:1 w:1)
+	/// Proof: `Council::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Proposals` (r:1 w:1)
+	/// Proof: `Council::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `b` is `[2, 1024]`.
 	/// The range of component `m` is `[4, 100]`.
 	/// The range of component `p` is `[1, 100]`.
@@ -222,29 +222,29 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `703 + b * (1 ±0) + m * (64 ±0) + p * (40 ±0)`
 		//  Estimated: `4020 + b * (1 ±0) + m * (66 ±0) + p * (40 ±0)`
-		// Minimum execution time: 34_121_000 picoseconds.
-		Weight::from_parts(35_358_772, 0)
+		// Minimum execution time: 34_184_000 picoseconds.
+		Weight::from_parts(35_618_407, 0)
 			.saturating_add(Weight::from_parts(0, 4020))
-			// Standard Error: 121
-			.saturating_add(Weight::from_parts(2_254, 0).saturating_mul(b.into()))
-			// Standard Error: 1_246
-			.saturating_add(Weight::from_parts(158_784, 0).saturating_mul(p.into()))
+			// Standard Error: 132
+			.saturating_add(Weight::from_parts(2_288, 0).saturating_mul(b.into()))
+			// Standard Error: 1_360
+			.saturating_add(Weight::from_parts(161_338, 0).saturating_mul(p.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 			.saturating_add(Weight::from_parts(0, 1).saturating_mul(b.into()))
 			.saturating_add(Weight::from_parts(0, 66).saturating_mul(m.into()))
 			.saturating_add(Weight::from_parts(0, 40).saturating_mul(p.into()))
 	}
-	/// Storage: `TechnicalCommittee::Voting` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Members` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Prime` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Prime` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Proposals` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::ProposalOf` (r:0 w:1)
-	/// Proof: `TechnicalCommittee::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Voting` (r:1 w:1)
+	/// Proof: `Council::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Members` (r:1 w:0)
+	/// Proof: `Council::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Prime` (r:1 w:0)
+	/// Proof: `Council::Prime` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Proposals` (r:1 w:1)
+	/// Proof: `Council::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::ProposalOf` (r:0 w:1)
+	/// Proof: `Council::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `m` is `[4, 100]`.
 	/// The range of component `p` is `[1, 100]`.
 	/// The range of component `m` is `[4, 100]`.
@@ -253,28 +253,28 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `421 + m * (64 ±0) + p * (36 ±0)`
 		//  Estimated: `3866 + m * (65 ±0) + p * (36 ±0)`
-		// Minimum execution time: 26_223_000 picoseconds.
-		Weight::from_parts(26_430_301, 0)
+		// Minimum execution time: 26_319_000 picoseconds.
+		Weight::from_parts(26_797_711, 0)
 			.saturating_add(Weight::from_parts(0, 3866))
-			// Standard Error: 364
-			.saturating_add(Weight::from_parts(26_087, 0).saturating_mul(m.into()))
-			// Standard Error: 355
-			.saturating_add(Weight::from_parts(125_092, 0).saturating_mul(p.into()))
+			// Standard Error: 383
+			.saturating_add(Weight::from_parts(25_373, 0).saturating_mul(m.into()))
+			// Standard Error: 373
+			.saturating_add(Weight::from_parts(122_574, 0).saturating_mul(p.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 			.saturating_add(Weight::from_parts(0, 65).saturating_mul(m.into()))
 			.saturating_add(Weight::from_parts(0, 36).saturating_mul(p.into()))
 	}
-	/// Storage: `TechnicalCommittee::Voting` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Members` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Prime` (r:1 w:0)
-	/// Proof: `TechnicalCommittee::Prime` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::ProposalOf` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Proposals` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Voting` (r:1 w:1)
+	/// Proof: `Council::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Members` (r:1 w:0)
+	/// Proof: `Council::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Prime` (r:1 w:0)
+	/// Proof: `Council::Prime` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::ProposalOf` (r:1 w:1)
+	/// Proof: `Council::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Proposals` (r:1 w:1)
+	/// Proof: `Council::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `b` is `[2, 1024]`.
 	/// The range of component `m` is `[4, 100]`.
 	/// The range of component `p` is `[1, 100]`.
@@ -285,36 +285,36 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `723 + b * (1 ±0) + m * (64 ±0) + p * (40 ±0)`
 		//  Estimated: `4040 + b * (1 ±0) + m * (66 ±0) + p * (40 ±0)`
-		// Minimum execution time: 35_960_000 picoseconds.
-		Weight::from_parts(37_518_596, 0)
+		// Minimum execution time: 35_481_000 picoseconds.
+		Weight::from_parts(37_683_844, 0)
 			.saturating_add(Weight::from_parts(0, 4040))
-			// Standard Error: 124
-			.saturating_add(Weight::from_parts(2_054, 0).saturating_mul(b.into()))
-			// Standard Error: 1_281
-			.saturating_add(Weight::from_parts(159_335, 0).saturating_mul(p.into()))
+			// Standard Error: 134
+			.saturating_add(Weight::from_parts(2_186, 0).saturating_mul(b.into()))
+			// Standard Error: 1_388
+			.saturating_add(Weight::from_parts(162_214, 0).saturating_mul(p.into()))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(3))
 			.saturating_add(Weight::from_parts(0, 1).saturating_mul(b.into()))
 			.saturating_add(Weight::from_parts(0, 66).saturating_mul(m.into()))
 			.saturating_add(Weight::from_parts(0, 40).saturating_mul(p.into()))
 	}
-	/// Storage: `TechnicalCommittee::Proposals` (r:1 w:1)
-	/// Proof: `TechnicalCommittee::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::Voting` (r:0 w:1)
-	/// Proof: `TechnicalCommittee::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TechnicalCommittee::ProposalOf` (r:0 w:1)
-	/// Proof: `TechnicalCommittee::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Proposals` (r:1 w:1)
+	/// Proof: `Council::Proposals` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::Voting` (r:0 w:1)
+	/// Proof: `Council::Voting` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Council::ProposalOf` (r:0 w:1)
+	/// Proof: `Council::ProposalOf` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `p` is `[1, 100]`.
 	/// The range of component `p` is `[1, 100]`.
 	fn disapprove_proposal(p: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `226 + p * (32 ±0)`
 		//  Estimated: `1711 + p * (32 ±0)`
-		// Minimum execution time: 13_685_000 picoseconds.
-		Weight::from_parts(15_455_318, 0)
+		// Minimum execution time: 13_892_000 picoseconds.
+		Weight::from_parts(15_735_140, 0)
 			.saturating_add(Weight::from_parts(0, 1711))
-			// Standard Error: 363
-			.saturating_add(Weight::from_parts(114_184, 0).saturating_mul(p.into()))
+			// Standard Error: 391
+			.saturating_add(Weight::from_parts(113_233, 0).saturating_mul(p.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(3))
 			.saturating_add(Weight::from_parts(0, 32).saturating_mul(p.into()))

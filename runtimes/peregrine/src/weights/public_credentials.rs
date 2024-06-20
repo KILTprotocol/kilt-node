@@ -66,11 +66,11 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `363`
 		//  Estimated: `3940`
-		// Minimum execution time: 64_513_000 picoseconds.
-		Weight::from_parts(60_400_609, 0)
+		// Minimum execution time: 64_142_000 picoseconds.
+		Weight::from_parts(60_364_017, 0)
 			.saturating_add(Weight::from_parts(0, 3940))
 			// Standard Error: 7
-			.saturating_add(Weight::from_parts(2_626, 0).saturating_mul(c.into()))
+			.saturating_add(Weight::from_parts(2_346, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}
@@ -82,8 +82,8 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `919`
 		//  Estimated: `3940`
-		// Minimum execution time: 24_356_000 picoseconds.
-		Weight::from_parts(24_791_000, 0)
+		// Minimum execution time: 23_510_000 picoseconds.
+		Weight::from_parts(23_875_000, 0)
 			.saturating_add(Weight::from_parts(0, 3940))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -96,8 +96,8 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `919`
 		//  Estimated: `3940`
-		// Minimum execution time: 23_961_000 picoseconds.
-		Weight::from_parts(24_205_000, 0)
+		// Minimum execution time: 23_121_000 picoseconds.
+		Weight::from_parts(23_516_000, 0)
 			.saturating_add(Weight::from_parts(0, 3940))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -116,8 +116,8 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `1160`
 		//  Estimated: `3940`
-		// Minimum execution time: 61_558_000 picoseconds.
-		Weight::from_parts(62_173_000, 0)
+		// Minimum execution time: 60_541_000 picoseconds.
+		Weight::from_parts(61_311_000, 0)
 			.saturating_add(Weight::from_parts(0, 3940))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -136,8 +136,8 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `1160`
 		//  Estimated: `3940`
-		// Minimum execution time: 61_413_000 picoseconds.
-		Weight::from_parts(62_108_000, 0)
+		// Minimum execution time: 60_765_000 picoseconds.
+		Weight::from_parts(61_538_000, 0)
 			.saturating_add(Weight::from_parts(0, 3940))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -156,8 +156,8 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `1265`
 		//  Estimated: `6326`
-		// Minimum execution time: 96_830_000 picoseconds.
-		Weight::from_parts(97_567_000, 0)
+		// Minimum execution time: 96_668_000 picoseconds.
+		Weight::from_parts(97_393_000, 0)
 			.saturating_add(Weight::from_parts(0, 6326))
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(5))
@@ -176,8 +176,8 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `1084`
 		//  Estimated: `3940`
-		// Minimum execution time: 83_441_000 picoseconds.
-		Weight::from_parts(84_306_000, 0)
+		// Minimum execution time: 83_073_000 picoseconds.
+		Weight::from_parts(83_965_000, 0)
 			.saturating_add(Weight::from_parts(0, 3940))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(4))
