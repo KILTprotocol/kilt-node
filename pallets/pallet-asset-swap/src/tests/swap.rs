@@ -16,8 +16,41 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::{assert_ok, traits::fungible::Inspect};
+use frame_system::RawOrigin;
+use sp_runtime::{traits::Zero, AccountId32};
+
+use crate::{
+	mock::{Balances, ExtBuilder, MockRuntime, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
+	swap::SwapPairStatus,
+	Pallet, SwapPairInfoOf,
+};
+
 #[test]
-fn successful() {}
+fn successful() {
+	let user = AccountId32::from([0; 32]);
+	let pool_account = AccountId32::from([1; 32]);
+	ExtBuilder::default()
+		.with_balances(vec![(user.clone(), 100_000, 0, 0)])
+		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
+			pool_account,
+			remote_asset_balance: 100_000,
+			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_fee: XCM_ASSET_FEE.into(),
+			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			status: SwapPairStatus::Running,
+		})
+		.build()
+		.execute_with(|| {
+			assert_ok!(Pallet::<MockRuntime>::swap(
+				RawOrigin::Signed(user.clone()).into(),
+				100_000,
+				Box::new(ASSET_HUB_LOCATION.into())
+			));
+		});
+	// User's currency balance is reduced by swap amount
+	assert!(<Balances as Inspect<AccountId32>>::total_balance(&user).is_zero());
+}
 
 #[test]
 fn fails_on_invalid_origin() {}

@@ -32,11 +32,12 @@ use sp_runtime::{
 	AccountId32,
 };
 use xcm::v3::{
-	AssetId, Fungibility,
-	Junction::{AccountKey20, GlobalConsensus, Parachain},
+	AssetId, Error as XcmError, Fungibility,
+	Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
 	Junctions::{Here, X1, X2},
-	MultiAsset, MultiLocation, NetworkId,
+	MultiAsset, MultiLocation, NetworkId, XcmContext,
 };
+use xcm_executor::{traits::TransactAsset, Assets};
 
 use crate::{Pallet, SwapPair, SwapPairInfoOf};
 
@@ -93,11 +94,67 @@ impl pallet_balances::Config for MockRuntime {
 	type WeightInfo = ();
 }
 
+static mut BALANCES: Vec<(MultiLocation, u128)> = vec![];
+pub struct MockFungibleAssetTransactor;
+
+impl TransactAsset for MockFungibleAssetTransactor {
+	fn withdraw_asset(
+		what: &MultiAsset,
+		who: &MultiLocation,
+		_maybe_context: Option<&XcmContext>,
+	) -> Result<Assets, XcmError> {
+		let MultiAsset {
+			fun: Fungibility::Fungible(amount),
+			..
+		} = *what
+		else {
+			return Err(XcmError::FailedToTransactAsset("Only fungible assets supported."));
+		};
+		unsafe {
+			let from_entry = BALANCES
+				.iter_mut()
+				.find(|e| e.0 == *who)
+				.ok_or(XcmError::FailedToTransactAsset("No balance found for user."))?;
+			let new_from_balance = from_entry
+				.1
+				.checked_sub(amount)
+				.ok_or(XcmError::FailedToTransactAsset("No enough balance for user."))?;
+			from_entry.1 = new_from_balance;
+			Ok::<_, XcmError>(())
+		}?;
+		Ok(vec![what.clone()].into())
+	}
+
+	fn deposit_asset(what: &MultiAsset, who: &MultiLocation, _context: &XcmContext) -> Result<(), XcmError> {
+		let MultiAsset {
+			fun: Fungibility::Fungible(amount),
+			..
+		} = *what
+		else {
+			return Err(XcmError::FailedToTransactAsset("Only fungible assets supported."));
+		};
+		unsafe {
+			let to_entry = BALANCES.iter_mut().find(|e| e.0 == *who);
+			if let Some(to_entry) = to_entry {
+				let new_to_balance = to_entry
+					.1
+					.checked_add(amount)
+					.ok_or(XcmError::FailedToTransactAsset("Balance overflow for destination."))?;
+				to_entry.1 = new_to_balance;
+			} else {
+				BALANCES.push((*who, amount));
+			}
+			Ok::<_, XcmError>(())
+		}?;
+		Ok(())
+	}
+}
+
 impl crate::Config for MockRuntime {
 	const PALLET_ID: [u8; 8] = *b"eKILT/AH";
 
 	type AccountIdConverter = ();
-	type AssetTransactor = ();
+	type AssetTransactor = MockFungibleAssetTransactor;
 	type Currency = Balances;
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
@@ -108,7 +165,11 @@ impl crate::Config for MockRuntime {
 }
 
 #[derive(Default)]
-pub(crate) struct ExtBuilder(Option<SwapPairInfoOf<MockRuntime>>, Vec<(AccountId32, u64, u64, u64)>);
+pub(crate) struct ExtBuilder(
+	Option<SwapPairInfoOf<MockRuntime>>,
+	Vec<(AccountId32, u64, u64, u64)>,
+	Vec<(AccountId32, MultiAsset)>,
+);
 
 impl ExtBuilder {
 	pub(crate) fn with_swap_pair_info(mut self, swap_pair_info: SwapPairInfoOf<MockRuntime>) -> Self {
@@ -121,10 +182,18 @@ impl ExtBuilder {
 		self
 	}
 
+	pub(crate) fn with_fungibles(mut self, fungibles: Vec<(AccountId32, MultiAsset)>) -> Self {
+		self.2 = fungibles;
+		self
+	}
+
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
 		let mut ext = sp_io::TestExternalities::default();
 
 		ext.execute_with(|| {
+			unsafe {
+				BALANCES = vec![];
+			}
 			System::set_block_number(1);
 
 			if let Some(swap_pair_info) = self.0 {
@@ -151,6 +220,26 @@ impl ExtBuilder {
 					.expect("Failed to freeze balance on account.");
 				<Balances as MutateHold<AccountId32>>::hold(&MockRuntimeHoldReason::default(), &account, locked)
 					.expect("Failed to hold balance on account.");
+			}
+
+			for (account, asset) in self.2 {
+				MockFungibleAssetTransactor::deposit_asset(
+					&asset,
+					&MultiLocation {
+						parents: 0,
+						interior: X1(AccountId32Junction {
+							network: None,
+							id: account.clone().into(),
+						}),
+					},
+					&XcmContext::with_message_id([0; 32]),
+				)
+				.unwrap_or_else(|_| {
+					panic!(
+						"Should not fail to deposit asset {:?} into account {:?}",
+						asset, account
+					)
+				});
 			}
 		});
 
