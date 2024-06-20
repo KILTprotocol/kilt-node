@@ -22,8 +22,10 @@ use sp_runtime::DispatchError;
 use xcm::v3::{Fungibility, MultiAsset};
 
 use crate::{
-	mock::{ExtBuilder, MockRuntime, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
-	Error, Event, Pallet, SwapPair, SwapPairInfoOf,
+	mock::{
+		ExtBuilder, MockRuntime, NewSwapPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
+	},
+	Error, Event, Pallet, SwapPair,
 };
 
 #[test]
@@ -34,13 +36,14 @@ fn successful() {
 		..XCM_ASSET_FEE
 	};
 	ExtBuilder::default()
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
 			pool_account: [0u8; 32].into(),
-			remote_asset_balance: 1_000,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: Default::default(),
+			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {
@@ -61,13 +64,14 @@ fn successful() {
 		});
 	// Setting the fee to the same value does not generate an event.
 	ExtBuilder::default()
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
 			pool_account: [0u8; 32].into(),
-			remote_asset_balance: 1_000,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: Default::default(),
+			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {
@@ -100,7 +104,7 @@ fn fails_on_non_existing_swap_pair() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::update_remote_fee(RawOrigin::Root.into(), Box::new(XCM_ASSET_FEE.into()),),
-			Error::<MockRuntime>::NotFound
+			Error::<MockRuntime>::SwapPairNotFound
 		);
 	});
 }

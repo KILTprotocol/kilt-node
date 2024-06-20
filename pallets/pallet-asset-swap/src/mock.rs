@@ -29,18 +29,23 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
-	traits::{BlakeTwo256, IdentityLookup, TryConvert},
+	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32,
 };
-use xcm::v3::{
-	AssetId, Error as XcmError, Fungibility,
-	Junction::{self, AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
-	Junctions::{Here, X1, X2},
-	MultiAsset, MultiLocation, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
+use xcm::{
+	v3::{
+		AssetId, Error as XcmError, Fungibility,
+		Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
+		Junctions::{Here, X1, X2},
+		MultiAsset, MultiLocation, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
+	},
+	VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
 };
 use xcm_executor::{traits::TransactAsset, Assets};
 
-use crate::{Config, Pallet, SwapPair, SwapPairInfoOf};
+use crate::{
+	swap::SwapPairStatus, xcm::AccountId32ToAccountId32JunctionConverter, Config, Pallet, SwapPair, SwapPairInfoOf,
+};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -93,17 +98,6 @@ impl pallet_balances::Config for MockRuntime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = MockRuntimeHoldReason;
 	type WeightInfo = ();
-}
-
-pub struct AccountId32ToAccountId32JunctionConverter;
-
-impl TryConvert<AccountId32, Junction> for AccountId32ToAccountId32JunctionConverter {
-	fn try_convert(account: AccountId32) -> Result<Junction, AccountId32> {
-		Ok(AccountId32Junction {
-			network: None,
-			id: account.into(),
-		})
-	}
 }
 
 // Used to temporarily store balances used in the mock.
@@ -179,12 +173,12 @@ impl SendXcm for AlwaysSuccessfulXcmRouter {
 }
 
 impl crate::Config for MockRuntime {
-	const PALLET_ID: [u8; 8] = *b"eKILT/AH";
+	const POOL_ADDRESS_GENERATION_ENTROPY: [u8; 8] = *b"eKILT/AH";
 
 	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = MockFungibleAssetTransactor;
-	type Currency = Balances;
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
+	type LocalCurrency = Balances;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
@@ -192,9 +186,34 @@ impl crate::Config for MockRuntime {
 	type XcmRouter = AlwaysSuccessfulXcmRouter;
 }
 
+#[derive(Clone)]
+pub(crate) struct NewSwapPairInfo {
+	pub(crate) circulating_supply: u128,
+	pub(crate) pool_account: AccountId32,
+	pub(crate) remote_asset_id: VersionedAssetId,
+	pub(crate) remote_fee: VersionedMultiAsset,
+	pub(crate) remote_reserve_location: VersionedMultiLocation,
+	pub(crate) status: SwapPairStatus,
+	pub(crate) total_issuance: u128,
+}
+
+impl From<NewSwapPairInfo> for SwapPairInfoOf<MockRuntime> {
+	fn from(new_swap_pair_info: NewSwapPairInfo) -> Self {
+		let remote_asset_balance = new_swap_pair_info.total_issuance - new_swap_pair_info.circulating_supply;
+		Self {
+			remote_asset_balance,
+			pool_account: new_swap_pair_info.pool_account,
+			remote_asset_id: new_swap_pair_info.remote_asset_id,
+			remote_fee: new_swap_pair_info.remote_fee,
+			remote_reserve_location: new_swap_pair_info.remote_reserve_location,
+			status: new_swap_pair_info.status,
+		}
+	}
+}
+
 #[derive(Default)]
 pub(crate) struct ExtBuilder(
-	Option<SwapPairInfoOf<MockRuntime>>,
+	Option<NewSwapPairInfo>,
 	Vec<(AccountId32, u64, u64, u64)>,
 	Vec<(AccountId32, MultiAsset)>,
 );
@@ -203,7 +222,7 @@ pub(crate) const FREEZE_REASON: [u8; 1] = *b"1";
 pub(crate) const HOLD_REASON: MockRuntimeHoldReason = MockRuntimeHoldReason {};
 
 impl ExtBuilder {
-	pub(crate) fn with_swap_pair_info(mut self, swap_pair_info: SwapPairInfoOf<MockRuntime>) -> Self {
+	pub(crate) fn with_swap_pair_info(mut self, swap_pair_info: NewSwapPairInfo) -> Self {
 		self.0 = Some(swap_pair_info);
 		self
 	}
@@ -226,22 +245,15 @@ impl ExtBuilder {
 			System::set_block_number(1);
 
 			if let Some(swap_pair_info) = self.0 {
-				let SwapPairInfoOf::<MockRuntime> {
-					pool_account,
-					remote_asset_balance,
-					remote_asset_id,
-					remote_reserve_location,
-					remote_fee,
-					status,
-				} = swap_pair_info;
 				Pallet::<MockRuntime>::set_swap_pair_bypass_checks(
-					remote_reserve_location,
-					remote_asset_id,
-					remote_fee,
-					remote_asset_balance,
-					pool_account,
+					swap_pair_info.remote_reserve_location,
+					swap_pair_info.remote_asset_id,
+					swap_pair_info.remote_fee,
+					swap_pair_info.total_issuance,
+					swap_pair_info.circulating_supply,
+					swap_pair_info.pool_account,
 				);
-				SwapPair::<MockRuntime>::mutate(|entry| entry.as_mut().unwrap().status = status);
+				SwapPair::<MockRuntime>::mutate(|entry| entry.as_mut().unwrap().status = swap_pair_info.status);
 			}
 			for (account, free, frozen, held) in self.1 {
 				<Balances as Mutate<AccountId32>>::set_balance(&account, free);

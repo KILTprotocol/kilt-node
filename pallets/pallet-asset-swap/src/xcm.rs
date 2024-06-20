@@ -20,11 +20,27 @@ use frame_support::{
 	ensure,
 	traits::{fungible::Mutate, tokens::Preservation, ContainsPair},
 };
+use sp_runtime::{traits::TryConvert, AccountId32};
 use sp_std::marker::PhantomData;
-use xcm::prelude::{AssetId, Fungibility, MultiAsset, MultiLocation, XcmContext, XcmError, XcmResult};
+use xcm::prelude::{
+	AssetId, Fungibility,
+	Junction::{self, AccountId32 as AccountId32Junction},
+	MultiAsset, MultiLocation, XcmContext, XcmError, XcmResult,
+};
 use xcm_executor::traits::{ConvertLocation, TransactAsset};
 
-use crate::{Config, CurrencyBalanceOf, SwapPair, LOG_TARGET};
+use crate::{Config, LocalCurrencyBalanceOf, SwapPair, LOG_TARGET};
+
+pub struct AccountId32ToAccountId32JunctionConverter;
+
+impl TryConvert<AccountId32, Junction> for AccountId32ToAccountId32JunctionConverter {
+	fn try_convert(account: AccountId32) -> Result<Junction, AccountId32> {
+		Ok(AccountId32Junction {
+			network: None,
+			id: account.into(),
+		})
+	}
+}
 
 pub struct SwapPairTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
 
@@ -68,10 +84,11 @@ where
 				"Deposited token expected to be fungible.",
 			));
 		};
-		let fungible_amount_as_currency_balance: CurrencyBalanceOf<T> = fungible_amount.try_into().map_err(|_| {
-			XcmError::FailedToTransactAsset("Failed to convert fungible amount to balance of local currency.")
-		})?;
-		T::Currency::transfer(
+		let fungible_amount_as_currency_balance: LocalCurrencyBalanceOf<T> =
+			fungible_amount.try_into().map_err(|_| {
+				XcmError::FailedToTransactAsset("Failed to convert fungible amount to balance of local currency.")
+			})?;
+		T::LocalCurrency::transfer(
 			&swap_pair.pool_account,
 			&beneficiary,
 			fungible_amount_as_currency_balance,

@@ -29,11 +29,12 @@ use xcm::v3::{Fungibility, MultiAsset};
 
 use crate::{
 	mock::{
-		AccountId32ToAccountId32JunctionConverter, Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime,
-		ASSET_HUB_LOCATION, FREEZE_REASON, HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
+		Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime, NewSwapPairInfo, ASSET_HUB_LOCATION,
+		FREEZE_REASON, HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
 	swap::SwapPairStatus,
-	Error, Pallet, SwapPair, SwapPairInfoOf,
+	xcm::AccountId32ToAccountId32JunctionConverter,
+	Error, Pallet, SwapPair,
 };
 
 #[test]
@@ -44,13 +45,14 @@ fn successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
 			pool_account: pool_account.clone(),
-			remote_asset_balance: 100_000,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwapPairStatus::Running,
+			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
@@ -88,18 +90,20 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
+			// TODO: Test for event generation
 		});
 	// It works with balance partially frozen.
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 1, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
 			pool_account: pool_account.clone(),
-			remote_asset_balance: 100_000,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwapPairStatus::Running,
+			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
@@ -137,19 +141,21 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
+			// TODO: Test for event generation
 		});
 	// It works with balance partially held.
 	ExtBuilder::default()
 		// Free balance not allowed to go to zero.
 		.with_balances(vec![(user.clone(), 100_001, 0, 1)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
 			pool_account: pool_account.clone(),
-			remote_asset_balance: 100_000,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwapPairStatus::Running,
+			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
@@ -187,6 +193,7 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
+			// TODO: Test for event generation
 		});
 }
 
@@ -206,7 +213,7 @@ fn fails_on_non_existing_pool() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::swap(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
-			Error::<MockRuntime>::NotFound
+			Error::<MockRuntime>::SwapPairNotFound
 		);
 	});
 }
@@ -216,19 +223,20 @@ fn fails_on_pool_not_running() {
 	let user = AccountId32::from([0; 32]);
 	let pool_account = AccountId32::from([1; 32]);
 	ExtBuilder::default()
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
-			pool_account: pool_account,
-			remote_asset_balance: 100_000,
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
+			pool_account,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwapPairStatus::Paused,
+			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::swap(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
-				Error::<MockRuntime>::NotEnabled
+				Error::<MockRuntime>::SwapPairNotEnabled
 			);
 		});
 }
@@ -239,13 +247,14 @@ fn fails_on_not_enough_user_local_balance() {
 	let pool_account = AccountId32::from([1; 32]);
 	// Fails if user has not enough balance.
 	ExtBuilder::default()
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
 			pool_account: pool_account.clone(),
-			remote_asset_balance: 100_000,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwapPairStatus::Running,
+			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
@@ -261,13 +270,14 @@ fn fails_on_not_enough_user_local_balance() {
 	// Fails if user has frozen balance.
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 1, 0)])
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
 			pool_account: pool_account.clone(),
-			remote_asset_balance: 100_000,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwapPairStatus::Running,
+			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
@@ -283,13 +293,14 @@ fn fails_on_not_enough_user_local_balance() {
 	// Fails if user has held balance.
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 1)])
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
-			pool_account: pool_account.clone(),
-			remote_asset_balance: 100_000,
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
+			pool_account,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwapPairStatus::Running,
+			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
@@ -310,13 +321,14 @@ fn fails_on_not_enough_remote_balance() {
 	let pool_account = AccountId32::from([1; 32]);
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 1)])
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
-			pool_account: pool_account.clone(),
-			remote_asset_balance: 50_000,
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
+			pool_account,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwapPairStatus::Running,
+			total_issuance: 50_000,
 		})
 		.build()
 		.execute_with(|| {
@@ -326,7 +338,7 @@ fn fails_on_not_enough_remote_balance() {
 					50_001,
 					Box::new(ASSET_HUB_LOCATION.into())
 				),
-				Error::<MockRuntime>::RemotePoolBalance
+				Error::<MockRuntime>::Liquidity
 			);
 		});
 }
@@ -345,13 +357,14 @@ fn fails_on_not_enough_user_xcm_balance() {
 				..XCM_ASSET_FEE
 			},
 		)])
-		.with_swap_pair_info(SwapPairInfoOf::<MockRuntime> {
-			pool_account: pool_account.clone(),
-			remote_asset_balance: 100_000,
+		.with_swap_pair_info(NewSwapPairInfo {
+			circulating_supply: 0,
+			pool_account,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwapPairStatus::Running,
+			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
