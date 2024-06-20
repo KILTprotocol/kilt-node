@@ -13,5 +13,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Clippy
-        uses: actions/checkout@v4
         run: cargo clippy --all-features --all-targets --locked -- -D warnings && cargo doc --all-features --no-deps --locked
