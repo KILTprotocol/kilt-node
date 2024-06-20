@@ -1503,10 +1503,12 @@ impl_runtime_apis! {
 				type DeliveryHelper = xcm_benchmarking::ParachainDeliveryHelper<ParachainSystem, xcm_config::XcmConfig >;
 
 				fn reachable_dest() -> Option<Location> {
+					ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(xcm_benchmarking::RandomParaId::get().into());
 					Some(xcm_benchmarking::ParachainLocation::get())
 				}
 
 				fn reserve_transferable_asset_and_dest() -> Option<(Asset, Location)> {
+					ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(xcm_benchmarking::RandomParaId::get().into());
 					Some((
 						xcm_benchmarking::NativeAsset::get(),
 						xcm_benchmarking::ParachainLocation::get(),

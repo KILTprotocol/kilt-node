@@ -77,7 +77,7 @@ pub mod xcm_benchmarking {
 	use xcm::lts::prelude::*;
 
 	parameter_types! {
-		pub const RandomParaId: cumulus_primitives_core::ParaId = cumulus_primitives_core::ParaId::new(1000);
+		pub const RandomParaId: cumulus_primitives_core::ParaId = cumulus_primitives_core::ParaId::new(42424242);
 		pub ExistentialDepositAsset: Option<Asset> = Some((
 			Here,
 			KILT
