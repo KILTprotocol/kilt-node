@@ -8,20 +8,15 @@ jobs:
       matrix:
         runtime: [ peregrine, spiritnet ]
         uri: [ 'wss://peregrine.kilt.io:443', 'wss://peregrine.kilt.io:443' ]
-    runs-on: [self-hosted]
+    runs-on: [ self-hosted ]
+    container:
+      image: paritytech/ci-unified:bullseye-1.77.0
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: false
-
       - name: Build
-        uses: paritytech/ci-unified:bullseye-1.77.0
         run: cargo build --release -p ${{ matrix.runtime }}-runtime --features try-runtime --locked
 
       - name: Run tests

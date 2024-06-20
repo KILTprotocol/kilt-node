@@ -1,14 +1,17 @@
 on: push
 name: Clippy check
 
+# Make sure CI fails on all warnings, including Clippy lints
 env:
-  RUSTFLAGS: ''-D warnings' cargo doc --all-features --no-deps --locked
+  RUSTFLAGS: "-Dwarnings"
 
 jobs:
   clippy_check:
     runs-on: [self-hosted]
+    container:
+      image: paritytech/ci-unified:bullseye-1.77.0
     steps:
       - uses: actions/checkout@v4
       - name: Run Clippy
-        uses: paritytech/ci-unified:bullseye-1.77.0
-        run: cargo clippy --all-features --all-targets --locked -- -D warnings
+        uses: actions/checkout@v4
+        run: cargo clippy --all-features --all-targets --locked -- -D warnings && cargo doc --all-features --no-deps --locked
