@@ -9,6 +9,10 @@ jobs:
         runtime: [ peregrine, spiritnet ]
         uri: [ 'wss://peregrine.kilt.io:443', 'wss://peregrine.kilt.io:443' ]
     runs-on: [ self-hosted ]
+    services:
+      docker:
+        image: docker:20.10.8-dind
+        privileged: true
     container:
       image: paritytech/ci-unified:bullseye-1.77.0
 
