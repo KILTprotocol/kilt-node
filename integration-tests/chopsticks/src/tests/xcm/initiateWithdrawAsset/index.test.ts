@@ -1,15 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, beforeEach, it, afterEach } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
 import { createBlock, setStorage } from '../../../network/utils.js'
 import { hexAddress, validateBalanceWithPrecision } from '../../../helper/utils.js'
-import { testPairsLimitedReserveTransfers } from './config.js'
+import { testPairsWithdrawAssets } from './config.js'
 import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 
-describe.each(testPairsLimitedReserveTransfers)(
+describe.each(testPairsWithdrawAssets)(
 	'Withdraw Asset',
 	{ timeout: 30_000 },
 	async ({ network, storage, accounts, query, sovereignAccount, txContext, config }) => {

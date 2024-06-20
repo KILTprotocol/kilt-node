@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as PolkadotChainConfigs from '../../../network/polkadot/index.js'
 import { initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
 import * as SpiritnetConfig from '../../../network/polkadot/spiritnet.js'

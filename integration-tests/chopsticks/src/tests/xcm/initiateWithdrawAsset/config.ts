@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as PolkadotChainConfigs from '../../../network/polkadot/index.js'
 import { initialBalanceHDX, initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
 import * as SpiritnetConfig from '../../../network/polkadot/spiritnet.js'
@@ -29,13 +27,12 @@ interface WithdrawAssetTestConfiguration extends BasicXcmTestConfiguration {
 	query: Query
 	txContext: TxContext
 }
-// Test pairs for limited reserve transfers
-export const testPairsLimitedReserveTransfers: WithdrawAssetTestConfiguration[] = [
-	// Kilt -> HydraDx
+// Test pairs for WithdrawAssets
+export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 	{
 		config: {
 			desc: 'HydraDx -> KILT live',
-			precision: BigInt(95),
+			precision: BigInt(96),
 		},
 
 		network: {
@@ -54,8 +51,100 @@ export const testPairsLimitedReserveTransfers: WithdrawAssetTestConfiguration[] 
 		txContext: {
 			tx: tx.xtokens.transfer(HydraDxConfig.kiltTokenId, tx.xtokens.parachainV3(SpiritnetConfig.paraId)),
 			pallets: {
-				sender: [],
-				receiver: [],
+				sender: ['xcmpQueue'],
+				receiver: ['xcmpQueue', { section: 'System', method: 'NewAccount' }],
+			},
+			balanceToTransfer: BigInt(1e15),
+		},
+		storage: {
+			senderStorage: {
+				...HydraDxConfig.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
+				...HydraDxConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceHDX),
+			},
+			receiverStorage: {},
+			relayStorage: {},
+		},
+		sovereignAccount: {
+			sender: SpiritnetConfig.hydraDxSovereignAccount,
+			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+		},
+	},
+
+	{
+		config: {
+			desc: 'HydraDx -> KILT DEV',
+			precision: BigInt(96),
+		},
+
+		network: {
+			sender: PolkadotChainConfigs.all.hydraDx.getConfig({}),
+			receiver: PolkadotChainConfigs.all.spiritnet.getConfig(PolkadotChainConfigs.all.spiritnet.parameters),
+			relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
+		},
+		accounts: {
+			senderAccount: keysAlice,
+			receiverAccount: keysBob,
+		},
+		query: {
+			sender: query.tokens(HydraDxConfig.kiltTokenId),
+			receiver: query.balances,
+		},
+		txContext: {
+			tx: tx.xtokens.transfer(HydraDxConfig.kiltTokenId, tx.xtokens.parachainV3(SpiritnetConfig.paraId)),
+			pallets: {
+				sender: ['xcmpQueue'],
+				receiver: ['xcmpQueue', { section: 'System', method: 'NewAccount' }],
+			},
+			balanceToTransfer: BigInt(1e15),
+		},
+		storage: {
+			senderStorage: {
+				...HydraDxConfig.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
+				...HydraDxConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceHDX),
+			},
+			receiverStorage: {},
+			relayStorage: {},
+		},
+		sovereignAccount: {
+			sender: SpiritnetConfig.hydraDxSovereignAccount,
+			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+		},
+	},
+
+	{
+		config: {
+			desc: 'HydraDx -> KILT at Block',
+			precision: BigInt(99),
+		},
+
+		network: {
+			sender: PolkadotChainConfigs.all.hydraDx.getConfig({
+				blockNumber: PolkadotChainConfigs.all.hydraDx.parameters.blockNumber,
+			}),
+			receiver: PolkadotChainConfigs.all.spiritnet.getConfig({
+				blockNumber: PolkadotChainConfigs.all.spiritnet.parameters.blockNumber,
+			}),
+			relay: PolkadotChainConfigs.all.polkadot.getConfig({
+				blockNumber: PolkadotChainConfigs.all.polkadot.parameters.blockNumber,
+			}),
+		},
+		accounts: {
+			senderAccount: keysAlice,
+			receiverAccount: keysBob,
+		},
+		query: {
+			sender: query.tokens(HydraDxConfig.kiltTokenId),
+			receiver: query.balances,
+		},
+		txContext: {
+			tx: tx.xtokens.transfer(HydraDxConfig.kiltTokenId, tx.xtokens.parachainV3(SpiritnetConfig.paraId)),
+			pallets: {
+				sender: ['xcmpQueue', { section: 'currencies', method: 'Withdrawn' }],
+				receiver: [
+					'xcmpQueue',
+					{ section: 'balances', method: 'Withdraw' },
+					{ section: 'System', method: 'NewAccount' },
+				],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
