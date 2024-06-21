@@ -57,28 +57,10 @@ where
 			log::error!(target: LOG_TARGET, "Failed to convert stored remote asset ID {:?} into required version with error {:?}.", swap_pair.remote_asset_id, e);
 			e
 		 }) else { return false; };
-		if stored_remote_asset_id != a.id {
-			log::trace!(
-				target: LOG_TARGET,
-				"Remote asset {:?} does not match expected one {:?}",
-				a.id,
-				stored_remote_asset_id
-			);
-			return false;
-		}
 		let Ok(stored_remote_asset_fee): Result<MultiAsset, _> = swap_pair.remote_fee.clone().try_into().map_err(|e| {
 			log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into required version with error {:?}.", swap_pair.remote_fee, e);
 			e
 		 }) else { return false; };
-		if stored_remote_asset_fee != *a {
-			log::trace!(
-				target: LOG_TARGET,
-				"Remote asset {:?} does not match expected one for fee payment {:?}",
-				a,
-				stored_remote_asset_fee
-			);
-			return false;
-		}
 
 		match a.id {
 			remote_asset_id if remote_asset_id == stored_remote_asset_id => true,
