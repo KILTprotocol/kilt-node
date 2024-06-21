@@ -7455,6 +7455,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-asset-swap-runtime-api"
+version = "1.14.0-dev"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "staging-xcm",
+]
+
+[[package]]
 name = "pallet-asset-tx-payment"
 version = "23.0.0"
 source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.1.0#72dd732e5aebfa97dbb774cd3345d9ed6ee8aaf0"
