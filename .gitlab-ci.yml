@@ -75,6 +75,7 @@ integration-tests:
     - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use
     - eval "[ -f .nvmrc ] && nvm install" && nvm use
     - yarn --immutable
+    - cargo build --p spiritnet-runtime
     - yarn ts-check
     - yarn lint
     - yarn test:CI
