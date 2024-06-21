@@ -68,7 +68,10 @@ integration-tests:
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   variables:
-    CI: "true"
+    SPIRITNET_BLOCK_NUMBER: 6390611
+    HYDRADX_BLOCK_NUMBER: 5235787
+    POLKADOT_BLOCK_NUMBER: 21010819 
+    SPIRITNET_WASM_OVERRIDE: "../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.compact.compressed.wasm" 
   script:
     - cd ./integration-tests/chopsticks
     - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -78,7 +81,7 @@ integration-tests:
     - cargo build --p spiritnet-runtime
     - yarn ts-check
     - yarn lint
-    - yarn test:CI
+    - yarn test
 
 # TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
 test-try-runtime:
