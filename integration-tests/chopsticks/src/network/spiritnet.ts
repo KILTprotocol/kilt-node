@@ -1,6 +1,6 @@
 import { SetupOption } from '@acala-network/chopsticks-testing'
 
-import { initialBalanceKILT, toNumber } from '../../helper/utils.js'
+import { initialBalanceKILT, toNumber } from '../helper/utils.js'
 
 /// Options used to create the Spiritnet context
 export const getSetupOptions = ({
@@ -39,5 +39,5 @@ export function setGovernance(addr: string[]) {
 export const paraId = 2086
 export const KILT = { Concrete: { parents: 0, interior: 'Here' } }
 
-/// The sovereign account of HydraDx in Spiritnet
-export const hydraDxSovereignAccount = '4qXPdpioJ6D8cgdeYXaukV2Y2oAQUHaX1VnGhdbSRqJn2CBt'
+/// Sibling sovereign account
+export const siblingSovereignAccount = '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'

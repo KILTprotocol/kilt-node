@@ -1,6 +1,6 @@
 import { SetupOption } from '@acala-network/chopsticks-testing'
 
-import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../../helper/utils.js'
+import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../helper/utils.js'
 
 /// Options used to create the HydraDx context
 export const getSetupOptions = ({
@@ -43,6 +43,9 @@ export function assignKiltTokensToAccounts(addr: string[], balance: bigint = ini
 		},
 	}
 }
+
+// Sibling Sovereign Account
+export const siblingSovereignAccount = '5Eg2fntQqFi3EvFWAf71G66Ecjjah26bmFzoANAeHFgj9Lia'
 
 export const kiltTokenId = 28
 

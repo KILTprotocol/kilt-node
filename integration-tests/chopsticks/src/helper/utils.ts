@@ -9,6 +9,9 @@ export const keysAlice = keyring.addFromUri('//alice', undefined, 'ed25519')
 export const keysBob = keyring.addFromUri('//bob', undefined, 'ed25519')
 export const keysCharlie = keyring.addFromUri('//charlie', undefined, 'ed25519')
 
+/**
+ * Converts a given value to a Number
+ */
 export function toNumber(value: string | undefined): number | undefined {
 	if (value === undefined) {
 		return undefined
@@ -17,10 +20,32 @@ export function toNumber(value: string | undefined): number | undefined {
 	return Number(value)
 }
 
+/**
+ * Converts a given address to its hexadecimal representation.
+ *
+ * @param addr - The address to be converted. It should be a string representation of an address.
+ */
 export function hexAddress(addr: string) {
 	return u8aToHex(decodeAddress(addr))
 }
 
+/**
+ * Validates if the received balance is within the expected range considering a certain precision.
+ *
+ * @param previousBalance - The balance before the operation.
+ * @param receivedBalance - The balance after the operation.
+ * @param deltaBalance - The expected change in balance.
+ * @param expect - The assertion function from the testing library.
+ * @param precision - The precision of the balance validation. It must be a value between 0 and 100.
+ *
+ * The function calculates the expected balance by adding the deltaBalance to the previousBalance.
+ * It then calculates the lower and upper bounds of the expected balance considering the precision.
+ * The received balance is then checked if it falls within the range of the lower and upper bounds.
+ *
+ * If the precision is not between 0 and 100, the function throws an error.
+ *
+ * @throws {Error} If the precision is not between 0 and 100.
+ */
 export function validateBalanceWithPrecision(
 	previousBalance: bigint,
 	receivedBalance: bigint,

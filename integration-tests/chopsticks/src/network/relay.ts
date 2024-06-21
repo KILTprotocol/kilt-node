@@ -1,6 +1,6 @@
 import type { SetupOption } from '@acala-network/chopsticks-testing'
 
-import { initialBalanceDOT, toNumber } from '../../helper/utils.js'
+import { initialBalanceDOT, toNumber } from '../helper/utils.js'
 
 /// Options used to create the HydraDx context
 export const getSetupOptions = ({

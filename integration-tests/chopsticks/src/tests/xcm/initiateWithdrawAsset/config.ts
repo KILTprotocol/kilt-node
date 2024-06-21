@@ -1,7 +1,7 @@
-import * as PolkadotChainConfigs from '../../../network/polkadot/index.js'
+import * as PolkadotChainConfigs from '../../../network/index.js'
 import { initialBalanceHDX, initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
-import * as SpiritnetConfig from '../../../network/polkadot/spiritnet.js'
-import * as HydraDxConfig from '../../../network/polkadot/hydraDx.js'
+import * as SpiritnetConfig from '../../../network/spiritnet.js'
+import * as HydraDxConfig from '../../../network/hydraDx.js'
 import { tx, query } from '../../../helper/api.js'
 
 import type { ApiPromise } from '@polkadot/api'
@@ -65,8 +65,8 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: SpiritnetConfig.hydraDxSovereignAccount,
-			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+			sender: SpiritnetConfig.siblingSovereignAccount,
+			receiver: HydraDxConfig.siblingSovereignAccount,
 		},
 	},
 
@@ -106,8 +106,8 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: SpiritnetConfig.hydraDxSovereignAccount,
-			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+			sender: SpiritnetConfig.siblingSovereignAccount,
+			receiver: HydraDxConfig.siblingSovereignAccount,
 		},
 	},
 
@@ -157,8 +157,8 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: SpiritnetConfig.hydraDxSovereignAccount,
-			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+			sender: SpiritnetConfig.siblingSovereignAccount,
+			receiver: HydraDxConfig.siblingSovereignAccount,
 		},
 	},
 ] as const

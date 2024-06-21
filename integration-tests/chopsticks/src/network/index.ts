@@ -1,7 +1,7 @@
 import * as SpiritnetConfig from './spiritnet.js'
 import * as PolkadotConfig from './relay.js'
 import * as HydraDxConfig from './hydraDx.js'
-import { ChainConfigs } from '../types.js'
+import { ChainConfigs } from './types.js'
 
 function getEnvVariable(name: string): string {
 	const value = process.env[name]

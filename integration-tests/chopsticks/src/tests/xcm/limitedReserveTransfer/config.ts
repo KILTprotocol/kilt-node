@@ -1,7 +1,7 @@
-import * as PolkadotChainConfigs from '../../../network/polkadot/index.js'
+import * as PolkadotChainConfigs from '../../../network/index.js'
 import { initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
-import * as SpiritnetConfig from '../../../network/polkadot/spiritnet.js'
-import * as HydraDxConfig from '../../../network/polkadot/hydraDx.js'
+import * as SpiritnetConfig from '../../../network/spiritnet.js'
+import * as HydraDxConfig from '../../../network/hydraDx.js'
 import { tx, query } from '../../../helper/api.js'
 
 import type { ApiPromise } from '@polkadot/api'
@@ -66,8 +66,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: SpiritnetConfig.hydraDxSovereignAccount,
-			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+			sender: HydraDxConfig.siblingSovereignAccount,
+			receiver: SpiritnetConfig.siblingSovereignAccount,
 		},
 	},
 
@@ -113,8 +113,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: SpiritnetConfig.hydraDxSovereignAccount,
-			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+			sender: HydraDxConfig.siblingSovereignAccount,
+			receiver: SpiritnetConfig.siblingSovereignAccount,
 		},
 	},
 
@@ -154,8 +154,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: SpiritnetConfig.hydraDxSovereignAccount,
-			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+			sender: HydraDxConfig.siblingSovereignAccount,
+			receiver: SpiritnetConfig.siblingSovereignAccount,
 		},
 	},
 
@@ -201,8 +201,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: SpiritnetConfig.hydraDxSovereignAccount,
-			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+			sender: HydraDxConfig.siblingSovereignAccount,
+			receiver: SpiritnetConfig.siblingSovereignAccount,
 		},
 	},
 
@@ -242,8 +242,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: SpiritnetConfig.hydraDxSovereignAccount,
-			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+			sender: HydraDxConfig.siblingSovereignAccount,
+			receiver: SpiritnetConfig.siblingSovereignAccount,
 		},
 	},
 
@@ -283,8 +283,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: SpiritnetConfig.hydraDxSovereignAccount,
-			receiver: SpiritnetConfig.hydraDxSovereignAccount,
+			sender: HydraDxConfig.siblingSovereignAccount,
+			receiver: SpiritnetConfig.siblingSovereignAccount,
 		},
 	},
 ] as const

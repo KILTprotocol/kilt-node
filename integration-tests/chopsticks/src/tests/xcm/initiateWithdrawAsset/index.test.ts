@@ -57,8 +57,8 @@ describe.each(testPairsWithdrawAssets)(
 
 			const { pallets, tx, balanceToTransfer } = txContext
 
-			// Balance of the receiver sovereign account before the transfer
-			const receiverSovereignAccountBalanceBeforeTransfer = await query.receiver(
+			// Balance of the sender sovereign account before the transfer
+			const senderSovereignAccountBalanceBeforeTransfer = await query.receiver(
 				receiverContext,
 				sovereignAccount.receiver
 			)
@@ -100,12 +100,13 @@ describe.each(testPairsWithdrawAssets)(
 			// check receiver state
 			await createBlock(receiverContext)
 
-			const receiverSovereignAccountBalanceAfterTransfer = await query.receiver(
+			const senderSovereignAccountBalanceAfterTransfer = await query.receiver(
 				receiverContext,
 				sovereignAccount.receiver
 			)
-			expect(receiverSovereignAccountBalanceAfterTransfer).toBe(
-				receiverSovereignAccountBalanceBeforeTransfer - BigInt(balanceToTransfer)
+
+			expect(senderSovereignAccountBalanceAfterTransfer).toBe(
+				senderSovereignAccountBalanceBeforeTransfer - BigInt(balanceToTransfer)
 			)
 
 			pallets.receiver.map((pallet) =>
