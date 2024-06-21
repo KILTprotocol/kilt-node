@@ -39,6 +39,7 @@ pallets=(
 	pallet-dip-provider
 	pallet_message_queue
 	cumulus_pallet_parachain_system
+	cumulus_pallet_dmp_queue
 )
 
 # Add Peregrine-only pallets here!
