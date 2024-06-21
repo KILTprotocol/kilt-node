@@ -264,7 +264,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedXcmpWeight = ReservedXcmpWeight;
 	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
 	type ConsensusHook = ConsensusHook;
-	type WeightInfo = ();
+	type WeightInfo = weights::cumulus_pallet_parachain_system::WeightInfo<Runtime>;
 }
 
 impl parachain_info::Config for Runtime {}
