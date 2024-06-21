@@ -9260,6 +9260,7 @@ dependencies = [
  "log",
  "pallet-asset-swap",
  "pallet-asset-swap-runtime-api",
+ "pallet-assets",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",

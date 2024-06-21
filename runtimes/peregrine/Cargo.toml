@@ -27,26 +27,28 @@ hex-literal = { workspace = true, optional = true }
 # RPC & Runtime API
 frame-system-rpc-runtime-api               = { workspace = true }
 kilt-runtime-api-did                       = { workspace = true }
+kilt-runtime-api-dip-provider              = { workspace = true }
 kilt-runtime-api-public-credentials        = { workspace = true }
 kilt-runtime-api-staking                   = { workspace = true }
+pallet-asset-swap-runtime-api              = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 
 # KILT pallets & primitives
-attestation                   = { workspace = true }
-ctype                         = { workspace = true }
-delegation                    = { workspace = true }
-did                           = { workspace = true }
-kilt-runtime-api-dip-provider = { workspace = true }
-kilt-support                  = { workspace = true }
-pallet-deposit-storage        = { workspace = true }
-pallet-did-lookup             = { workspace = true }
-pallet-dip-provider           = { workspace = true }
-pallet-inflation              = { workspace = true }
-pallet-migration              = { workspace = true }
-pallet-web3-names             = { workspace = true }
-parachain-staking             = { workspace = true }
-public-credentials            = { workspace = true }
-runtime-common                = { workspace = true }
+attestation            = { workspace = true }
+ctype                  = { workspace = true }
+delegation             = { workspace = true }
+did                    = { workspace = true }
+kilt-support           = { workspace = true }
+pallet-asset-swap      = { workspace = true }
+pallet-deposit-storage = { workspace = true }
+pallet-did-lookup      = { workspace = true }
+pallet-dip-provider    = { workspace = true }
+pallet-inflation       = { workspace = true }
+pallet-migration       = { workspace = true }
+pallet-web3-names      = { workspace = true }
+parachain-staking      = { workspace = true }
+public-credentials     = { workspace = true }
+runtime-common         = { workspace = true }
 
 # Substrate dependencies
 sp-api              = { workspace = true }
@@ -65,6 +67,7 @@ sp-weights          = { workspace = true }
 frame-executive            = { workspace = true }
 frame-support              = { workspace = true }
 frame-system               = { workspace = true }
+pallet-assets              = { workspace = true }
 pallet-aura                = { workspace = true }
 pallet-authorship          = { workspace = true }
 pallet-balances            = { workspace = true }
@@ -128,6 +131,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "hex-literal",
   "kilt-support/runtime-benchmarks",
+  "pallet-assets/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
@@ -185,6 +189,9 @@ std = [
   "kilt-runtime-api-staking/std",
   "kilt-support/std",
   "log/std",
+  "pallet-asset-swap-runtime-api/std",
+  "pallet-asset-swap/std",
+  "pallet-assets/std",
   "pallet-aura/std",
   "pallet-authorship/std",
   "pallet-balances/std",
@@ -249,6 +256,7 @@ try-runtime = [
   "frame-system/try-runtime",
   "frame-try-runtime",
   "kilt-support/try-runtime",
+  "pallet-assets/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",

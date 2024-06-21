@@ -28,17 +28,16 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
+	traits::{
+		AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, EnsureOrigin, Everything, InstanceFilter, PrivilegeCmp,
+	},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
+use pallet_asset_swap::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwapPairXcmFeeAsset};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-
-#[cfg(feature = "try-runtime")]
-use frame_try_runtime::UpgradeCheckSelect;
-
 use sp_api::impl_runtime_apis;
-use sp_core::{ConstBool, OpaqueMetadata};
+use sp_core::{ConstBool, ConstU128, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
@@ -47,6 +46,13 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
+use xcm::{
+	v3::{Junctions::Here, MultiLocation},
+	VersionedAssetId,
+};
+
+#[cfg(feature = "try-runtime")]
+use frame_try_runtime::UpgradeCheckSelect;
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
@@ -67,9 +73,13 @@ use runtime_common::{
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
 };
+use xcm_builder::{FungiblesAdapter, NoChecking};
+use xcm_executor::traits::ConvertLocation;
 
+use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+
 #[cfg(feature = "runtime-benchmarks")]
 use {kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
@@ -937,6 +947,92 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
+parameter_types! {
+	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
+}
+
+// TODO: Fix this configuration after investigating how the pallet works.
+impl pallet_asset_swap::Config for Runtime {
+	const POOL_ADDRESS_GENERATION_ENTROPY: [u8; 8] = *b"per/swap";
+
+	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
+	type AssetTransactor = FungiblesAdapter<
+		Fungibles,
+		MatchesSwapPairXcmFeeAsset<Runtime>,
+		LocationToAccountIdConverter,
+		AccountId,
+		NoChecking,
+		// Not used, but still required.
+		CheckingAccount,
+	>;
+	type FeeOrigin = EnsureRoot<AccountId>;
+	type LocalCurrency = Balances;
+	type PauseOrigin = EnsureRoot<AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type SubmitterOrigin = EnsureSigned<AccountId>;
+	type SwapOrigin = EnsureRoot<AccountId>;
+	type XcmRouter = XcmRouter;
+}
+
+// TODO: These are test structs used to be able to deploy the pallet-assets
+// instance.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct NoopBenchmarkHelper;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl pallet_assets::BenchmarkHelper<MultiLocation> for NoopBenchmarkHelper {
+	fn create_asset_id_parameter(id: u32) -> MultiLocation {
+		MultiLocation {
+			parents: 0,
+			interior: Here,
+		}
+	}
+}
+
+// Returns the `Here` conversion to AccountId if the origin is a sudo origin.
+pub struct EnsureRootAsAccount;
+
+impl EnsureOrigin<RuntimeOrigin> for EnsureRootAsAccount {
+	type Success = AccountId;
+
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		EnsureRoot::try_origin(o.clone())?;
+
+		let here_as_account_id =
+			<LocationToAccountIdConverter as ConvertLocation<AccountId>>::convert_location(&Here.into()).ok_or(o)?;
+		Ok(here_as_account_id)
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		EnsureRoot::try_successful_origin()
+	}
+}
+
+// TODO: Fix this configuration after investigating how this pallet works.
+impl pallet_assets::Config for Runtime {
+	type ApprovalDeposit = ConstU128<0>;
+	type AssetAccountDeposit = ConstU128<0>;
+	type AssetDeposit = ConstU128<0>;
+	type AssetId = MultiLocation;
+	type AssetIdParameter = MultiLocation;
+	type Balance = u128;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = NoopBenchmarkHelper;
+	type CallbackHandle = ();
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsAccount>;
+	type Currency = Balances;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
+	type MetadataDepositBase = ConstU128<0>;
+	type MetadataDepositPerByte = ConstU128<0>;
+	type RemoveItemsLimit = ConstU32<1_000>;
+	type RuntimeEvent = RuntimeEvent;
+	type StringLimit = ConstU32<4>;
+	type WeightInfo = ();
+}
+
 construct_runtime! {
 	pub enum Runtime
 	{
@@ -987,6 +1083,9 @@ construct_runtime! {
 		Tips: pallet_tips = 46,
 
 		Multisig: pallet_multisig = 47,
+
+		AssetSwap: pallet_asset_swap = 48,
+		Fungibles: pallet_assets = 49,
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
@@ -1421,6 +1520,13 @@ impl_runtime_apis! {
 			log::info!(target: "runtime_api::dip_provider", "Identity details retrieved for request {:#?}: {:#?}", request, identity_details);
 
 			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(dip::runtime_api::DipProofError::MerkleProof)
+		}
+	}
+
+	// TODO: I think it's fine to panic in runtime APIs, but should double chek that
+	impl pallet_asset_swap_runtime_api::AssetSwap<Block, AccountId> for Runtime {
+		fn pool_account_id(remote_asset_id: VersionedAssetId) -> AccountId {
+			pallet_asset_swap::Pallet::<Runtime>::pool_account_id_for_remote_asset(&remote_asset_id).expect("Should never fail to generate a pool account for a given asset.")
 		}
 	}
 
