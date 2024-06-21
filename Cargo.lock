@@ -9258,6 +9258,8 @@ dependencies = [
  "kilt-runtime-api-staking",
  "kilt-support",
  "log",
+ "pallet-asset-swap",
+ "pallet-asset-swap-runtime-api",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",

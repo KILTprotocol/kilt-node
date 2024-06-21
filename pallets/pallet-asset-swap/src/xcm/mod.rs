@@ -17,5 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 pub mod convert;
+pub use convert::AccountId32ToAccountId32JunctionConverter;
+
 pub mod reserve;
+pub use reserve::ReserveTransfersOfXcmFeeAssetAndRemoteAsset;
+
 pub mod transact;
+pub use transact::SwapPairTransactor;

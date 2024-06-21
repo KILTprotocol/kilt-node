@@ -24,7 +24,7 @@ use sp_std::marker::PhantomData;
 use xcm::prelude::{AssetId, Fungibility, MultiAsset, MultiLocation, XcmContext, XcmError, XcmResult};
 use xcm_executor::traits::{ConvertLocation, TransactAsset};
 
-use crate::{Config, LocalCurrencyBalanceOf, SwapPair, LOG_TARGET};
+use crate::{Config, LocalCurrencyBalanceOf, SwapPair, SwapPairInfoOf, LOG_TARGET};
 
 // TODO: Add unit tests
 pub struct SwapPairTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
@@ -60,7 +60,7 @@ where
 			XcmError::FailedToTransactAsset("Unrecognized incoming asset.")
 		);
 
-		// 4. Perform the transfer
+		// 4. Perform the local transfer
 		let beneficiary = AccountIdConverter::convert_location(who).ok_or(XcmError::FailedToTransactAsset(
 			"Failed to convert beneficiary to valid account.",
 		))?;
@@ -86,6 +86,24 @@ where
 				e
 			);
 			XcmError::FailedToTransactAsset("Failed to transfer assets from pool account")
+		})?;
+
+		// 5. Increase the balance of the remote asset
+		let new_remote_balance =
+			swap_pair
+				.remote_asset_balance
+				.checked_add(fungible_amount)
+				.ok_or(XcmError::FailedToTransactAsset(
+					"Failed to transfer assets from pool account",
+				))?;
+		SwapPair::<T>::try_mutate(|entry| {
+			let SwapPairInfoOf::<T> {
+				remote_asset_balance, ..
+			} = entry
+				.as_mut()
+				.ok_or(XcmError::FailedToTransactAsset("SwapPair should not be None."))?;
+			*remote_asset_balance = new_remote_balance;
+			Ok::<_, XcmError>(())
 		})?;
 
 		Ok(())

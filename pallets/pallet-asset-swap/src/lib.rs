@@ -18,8 +18,10 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod xcm;
+
 mod swap;
-mod xcm;
+pub use swap::{SwapPairInfo, SwapPairStatus};
 
 #[cfg(test)]
 mod mock;
@@ -29,9 +31,9 @@ mod tests;
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::TrailingZeroInput;
+use sp_std::boxed::Box;
 
 pub use crate::pallet::*;
-use crate::swap::SwapPairStatus;
 
 const LOG_TARGET: &str = "runtime::pallet-asset-swap";
 
@@ -53,6 +55,7 @@ pub mod pallet {
 	};
 	use frame_system::{ensure_root, pallet_prelude::*};
 	use sp_runtime::traits::TryConvert;
+	use sp_std::{boxed::Box, vec};
 	use xcm::{
 		v3::{
 			validate_send, AssetId,
@@ -329,6 +332,7 @@ pub mod pallet {
 
 			// 6. Compose and validate XCM message
 			let remote_xcm: Xcm<()> = vec![
+				// TODO: Change this to the configured fee
 				WithdrawAsset((Junctions::Here, 1_000_000_000).into()),
 				SetFeesMode { jit_withdraw: true },
 				TransferAsset {
@@ -514,7 +518,7 @@ impl<T: Config> Pallet<T> {
 }
 
 impl<T: Config> Pallet<T> {
-	fn pool_account_id_for_remote_asset(remote_asset_id: &VersionedAssetId) -> Result<T::AccountId, Error<T>> {
+	pub fn pool_account_id_for_remote_asset(remote_asset_id: &VersionedAssetId) -> Result<T::AccountId, Error<T>> {
 		let hash_input = (T::POOL_ADDRESS_GENERATION_ENTROPY, b'.', remote_asset_id.clone()).encode();
 		let hash_output = sp_io::hashing::blake2_256(hash_input.as_slice());
 		T::AccountId::decode(&mut TrailingZeroInput::new(hash_output.as_slice())).map_err(|e| {
