@@ -61,7 +61,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 			// Balance of the receiver sovereign account before the transfer
 			const receiverSovereignAccountBalanceBeforeTransfer = await query.sender(
 				senderContext,
-				sovereignAccount.receiver
+				sovereignAccount.sender
 			)
 
 			const initialBalanceSender = await query.sender(senderContext, senderAccount.address)
@@ -89,7 +89,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
 			const receiverSovereignAccountBalanceAfterTransfer = await query.sender(
 				senderContext,
-				sovereignAccount.receiver
+				sovereignAccount.sender
 			)
 			expect(receiverSovereignAccountBalanceAfterTransfer).toBe(
 				receiverSovereignAccountBalanceBeforeTransfer + BigInt(balanceToTransfer)
