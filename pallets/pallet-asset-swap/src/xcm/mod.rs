@@ -19,6 +19,9 @@
 pub mod convert;
 pub use convert::AccountId32ToAccountId32JunctionConverter;
 
+pub mod match_fungible;
+pub use match_fungible::MatchesSwapPairXcmFeeAsset;
+
 pub mod reserve;
 pub use reserve::ReserveTransfersOfXcmFeeAssetAndRemoteAsset;
 
