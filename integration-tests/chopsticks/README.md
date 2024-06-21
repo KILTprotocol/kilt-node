@@ -61,7 +61,7 @@ To automatically fix style issues, run:
 yarn lint:fix
 ```
 
-## Design
+## Adding a new test case
 
 To add a new test case, you need to insert a new object into the list of test cases. For example, if you want to add a new instance of `LimitedReserveTestConfiguration`, you would insert it into the `testPairsLimitedReserveTransfers` list. Here's a step-by-step guide:
 
