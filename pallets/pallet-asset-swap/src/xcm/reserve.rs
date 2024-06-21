@@ -16,97 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	ensure,
-	traits::{fungible::Mutate, tokens::Preservation, ContainsPair},
-};
-use sp_runtime::{traits::TryConvert, AccountId32};
+use frame_support::traits::ContainsPair;
 use sp_std::marker::PhantomData;
-use xcm::prelude::{
-	AssetId, Fungibility,
-	Junction::{self, AccountId32 as AccountId32Junction},
-	MultiAsset, MultiLocation, XcmContext, XcmError, XcmResult,
-};
-use xcm_executor::traits::{ConvertLocation, TransactAsset};
+use xcm::prelude::{AssetId, MultiAsset, MultiLocation};
 
-use crate::{Config, LocalCurrencyBalanceOf, SwapPair, LOG_TARGET};
-
-pub struct AccountId32ToAccountId32JunctionConverter;
-
-impl TryConvert<AccountId32, Junction> for AccountId32ToAccountId32JunctionConverter {
-	fn try_convert(account: AccountId32) -> Result<Junction, AccountId32> {
-		Ok(AccountId32Junction {
-			network: None,
-			id: account.into(),
-		})
-	}
-}
-
-// TODO: Add unit tests
-pub struct SwapPairTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
-
-impl<AccountIdConverter, T> TransactAsset for SwapPairTransactor<AccountIdConverter, T>
-where
-	AccountIdConverter: ConvertLocation<T::AccountId>,
-	T: Config,
-{
-	fn deposit_asset(what: &MultiAsset, who: &MultiLocation, _context: &XcmContext) -> XcmResult {
-		// 1. Verify the swap pair exists.
-		let swap_pair = SwapPair::<T>::get().ok_or(XcmError::FailedToTransactAsset("No swap pair found."))?;
-
-		// 2. Verify the swap pair is running.
-		ensure!(
-			swap_pair.can_swap(),
-			XcmError::FailedToTransactAsset("Swap pair not enabled.")
-		);
-
-		// 3. Verify the asset matches the other side of the swap pair.
-		let stored_asset_id_as_required_version: AssetId =
-			swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert stored asset ID {:?} into required version with error {:?}.",
-					swap_pair.remote_asset_id,
-					e
-				);
-				XcmError::FailedToTransactAsset("Failed to convert stored asset ID into required version.")
-			})?;
-		ensure!(
-			stored_asset_id_as_required_version == what.id,
-			XcmError::FailedToTransactAsset("Unrecognized incoming asset.")
-		);
-
-		// 4. Perform the transfer
-		let beneficiary = AccountIdConverter::convert_location(who).ok_or(XcmError::FailedToTransactAsset(
-			"Failed to convert beneficiary to valid account.",
-		))?;
-		let Fungibility::Fungible(fungible_amount) = what.fun else {
-			return Err(XcmError::FailedToTransactAsset(
-				"Deposited token expected to be fungible.",
-			));
-		};
-		let fungible_amount_as_currency_balance: LocalCurrencyBalanceOf<T> =
-			fungible_amount.try_into().map_err(|_| {
-				XcmError::FailedToTransactAsset("Failed to convert fungible amount to balance of local currency.")
-			})?;
-		T::LocalCurrency::transfer(
-			&swap_pair.pool_account,
-			&beneficiary,
-			fungible_amount_as_currency_balance,
-			Preservation::Expendable,
-		)
-		.map_err(|e| {
-			log::error!(
-				target: LOG_TARGET,
-				"Failed to transfer assets from pool account with error {:?}",
-				e
-			);
-			XcmError::FailedToTransactAsset("Failed to transfer assets from pool account")
-		})?;
-
-		Ok(())
-	}
-}
+use crate::{Config, SwapPair, LOG_TARGET};
 
 // TODO: Add unit tests
 pub struct AllowOnlySwapAssetFromConfiguredLocation<T>(PhantomData<T>);

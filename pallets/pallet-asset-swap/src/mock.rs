@@ -44,7 +44,8 @@ use xcm::{
 use xcm_executor::{traits::TransactAsset, Assets};
 
 use crate::{
-	swap::SwapPairStatus, xcm::AccountId32ToAccountId32JunctionConverter, Config, Pallet, SwapPair, SwapPairInfoOf,
+	swap::SwapPairStatus, xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, Pallet, SwapPair,
+	SwapPairInfoOf,
 };
 
 construct_runtime!(

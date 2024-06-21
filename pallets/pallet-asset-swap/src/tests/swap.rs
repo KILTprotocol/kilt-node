@@ -33,7 +33,7 @@ use crate::{
 		FREEZE_REASON, HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
 	swap::SwapPairStatus,
-	xcm::AccountId32ToAccountId32JunctionConverter,
+	xcm::convert::AccountId32ToAccountId32JunctionConverter,
 	Error, Pallet, SwapPair,
 };
 
