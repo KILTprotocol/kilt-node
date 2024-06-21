@@ -19,6 +19,7 @@ describe.each(testPairsWithdrawAssets)(
 		let receiverAccount: KeyringPair
 		const { desc, precision } = config
 
+		// Create the network context
 		beforeEach(async () => {
 			const { receiver, sender, relay } = network
 
@@ -42,6 +43,7 @@ describe.each(testPairsWithdrawAssets)(
 			receiverAccount = b
 		}, 20_000)
 
+		// Shut down the network
 		afterEach(async () => {
 			try {
 				await shutDownNetwork([senderContext, receiverContext, relayContext])
@@ -57,19 +59,19 @@ describe.each(testPairsWithdrawAssets)(
 
 			const { pallets, tx, balanceToTransfer } = txContext
 
-			// Balance of the sender sovereign account before the transfer
+			// Balance of the sovereign account before the transfer
 			const senderSovereignAccountBalanceBeforeTransfer = await query.receiver(
 				receiverContext,
 				sovereignAccount.receiver
 			)
 
 			const balanceSenderBeforeTransfer = await query.sender(senderContext, senderAccount.address)
-
 			const initialBalanceReceiver = await query.receiver(receiverContext, receiverAccount.address)
 
 			// Check initial balance receiver should be zero
 			expect(initialBalanceReceiver).toBe(BigInt(0))
 
+			// Fire tx
 			const signedTx = tx(
 				senderContext,
 				hexAddress(receiverAccount.address),
@@ -86,7 +88,6 @@ describe.each(testPairsWithdrawAssets)(
 			)
 
 			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
-
 			const removedBalance = balanceToTransfer * BigInt(-1)
 
 			validateBalanceWithPrecision(

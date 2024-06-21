@@ -3,6 +3,9 @@ import * as PolkadotConfig from './relay.js'
 import * as HydraDxConfig from './hydraDx.js'
 import { ChainConfigs } from './types.js'
 
+/*
+ * Get an environment variable and throw an error if it is not set.
+ */
 function getEnvVariable(name: string): string {
 	const value = process.env[name]
 	if (value === undefined) {
@@ -11,6 +14,9 @@ function getEnvVariable(name: string): string {
 	return value
 }
 
+/*
+ * Object with all the chain configurations.
+ */
 export const all: ChainConfigs = {
 	spiritnet: {
 		getConfig: SpiritnetConfig.getSetupOptions,

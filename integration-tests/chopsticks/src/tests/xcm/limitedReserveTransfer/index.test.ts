@@ -54,11 +54,9 @@ describe.each(testPairsLimitedReserveTransfers)(
 
 		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
-
-			// test parameters
 			const { pallets, tx, balanceToTransfer } = txContext
 
-			// Balance of the receiver sovereign account before the transfer
+			// Balance of the sovereign account before the transfer
 			const receiverSovereignAccountBalanceBeforeTransfer = await query.sender(
 				senderContext,
 				sovereignAccount.sender

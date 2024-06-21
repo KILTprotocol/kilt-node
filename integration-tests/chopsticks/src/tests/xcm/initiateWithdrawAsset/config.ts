@@ -22,6 +22,9 @@ interface TxContext extends BasisTxContext {
 	tx: ({ api }: { api: ApiPromise }, submitter: string, amount: string | number) => SubmittableExtrinsic<'promise'>
 }
 
+/*
+ * Configuration for the WithdrawAssets test extends the BasicXcmTestConfiguration
+ **/
 interface WithdrawAssetTestConfiguration extends BasicXcmTestConfiguration {
 	config: Config
 	query: Query
