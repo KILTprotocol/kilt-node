@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ApiPromise } from '@polkadot/api'
 
+/**
+ * All possible ways to submit an XCM message for the xtokens pallet.
+ * different structs for the xcm versions are provided
+ */
 export const xtokens = {
 	parachainV2: (paraId: number) => (acc: any) => ({
 		V1: {
@@ -39,6 +43,10 @@ export const xtokens = {
 			api.tx.xTokens.transfer(token, amount, dest(acc), weight),
 }
 
+/**
+ * All possible ways to submit an XCM message for the xcmPallet.
+ * different structs for the xcm versions are provided
+ */
 export const xcmPallet = {
 	parachainV2: (parents: number, paraId: number) => ({
 		V2: {
@@ -144,10 +152,19 @@ export const xcmPallet = {
 			),
 }
 
+/**
+ * Different pallets to submit xcm messages.
+ */
 export const tx = {
 	xtokens,
 	xcmPallet,
 }
+
+/**
+ * Query functions for different chains.
+ * Native tokens are fetched via the system pallet, while other tokens are fetched via the tokens pallet.
+ *
+ */
 
 export const query = {
 	balances: async ({ api }: { api: ApiPromise }, address: string) =>

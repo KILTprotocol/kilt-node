@@ -1,3 +1,0 @@
-- split network into chains -> runtimes + utilty chain 
-- investigate if limitedReserveTransferAssets should be split into different versions  (Outcome: each testpairs for different versions.)
-- For the future: Test against generic transact
