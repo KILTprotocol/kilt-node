@@ -7460,7 +7460,6 @@ version = "1.14.0-dev"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
- "staging-xcm",
 ]
 
 [[package]]

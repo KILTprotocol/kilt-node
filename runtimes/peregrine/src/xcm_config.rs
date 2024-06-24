@@ -26,6 +26,7 @@ use frame_support::{
 	traits::{Contains, Everything, Nothing},
 };
 use frame_system::EnsureRoot;
+use pallet_asset_swap::xcm::{ReserveTransfersOfXcmFeeAssetAndRemoteAsset, SwapPairTransactor};
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use sp_std::prelude::ToOwned;
@@ -166,10 +167,13 @@ impl xcm_executor::Config for XcmConfig {
 	// How we send Xcm messages.
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
-	type AssetTransactor = LocalAssetTransactor<Balances, RelayNetworkId>;
+	type AssetTransactor = (
+		LocalAssetTransactor<Balances, RelayNetworkId>,
+		SwapPairTransactor<LocationToAccountIdConverter, Runtime>,
+	);
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	// Reserving is disabled.
-	type IsReserve = NativeAsset;
+	type IsReserve = (NativeAsset, ReserveTransfersOfXcmFeeAssetAndRemoteAsset<Runtime>);
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	type UniversalLocation = UniversalLocation;

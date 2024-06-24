@@ -46,10 +46,7 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
-use xcm::{
-	v3::{Junctions::Here, MultiLocation},
-	VersionedAssetId,
-};
+use xcm::{v3::MultiLocation, VersionedAssetId};
 
 #[cfg(feature = "try-runtime")]
 use frame_try_runtime::UpgradeCheckSelect;
@@ -74,7 +71,6 @@ use runtime_common::{
 	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
 };
 use xcm_builder::{FungiblesAdapter, NoChecking};
-use xcm_executor::traits::ConvertLocation;
 
 use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
 #[cfg(feature = "std")]
@@ -998,9 +994,8 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureRootAsAccount {
 	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
 		EnsureRoot::try_origin(o.clone())?;
 
-		let here_as_account_id =
-			<LocationToAccountIdConverter as ConvertLocation<AccountId>>::convert_location(&Here.into()).ok_or(o)?;
-		Ok(here_as_account_id)
+		// Return treasury account ID if successful.
+		Ok(pallet_treasury::Pallet::<Runtime>::account_id())
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
@@ -1523,8 +1518,8 @@ impl_runtime_apis! {
 		}
 	}
 
-	// TODO: I think it's fine to panic in runtime APIs, but should double chek that
-	impl pallet_asset_swap_runtime_api::AssetSwap<Block, AccountId> for Runtime {
+	// TODO: I think it's fine to panic in runtime APIs, but should double check that
+	impl pallet_asset_swap_runtime_api::AssetSwap<Block, VersionedAssetId, AccountId> for Runtime {
 		fn pool_account_id(remote_asset_id: VersionedAssetId) -> AccountId {
 			pallet_asset_swap::Pallet::<Runtime>::pool_account_id_for_remote_asset(&remote_asset_id).expect("Should never fail to generate a pool account for a given asset.")
 		}
