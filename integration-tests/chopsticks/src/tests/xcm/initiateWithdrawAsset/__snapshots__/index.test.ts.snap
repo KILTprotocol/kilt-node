@@ -41,42 +41,6 @@ exports[`Withdraw Asset > HydraDx -> KILT DEV > sender events "xcmpQueue" 1`] = 
 ]
 `;
 
-exports[`Withdraw Asset > HydraDx -> KILT DEV > sender events "xcmpQueue" 2`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT DEV > sender events "xcmpQueue" 3`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT DEV > sender events "xcmpQueue" 4`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
 exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events "xcmpQueue" 1`] = `
 [
   {
@@ -131,112 +95,7 @@ exports[`Withdraw Asset > HydraDx -> KILT at Block > sender events "xcmpQueue" 1
 ]
 `;
 
-exports[`Withdraw Asset > HydraDx -> KILT at Block > sender events "xcmpQueue" 2`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT at Block > sender events "xcmpQueue" 3`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT at Block > sender events "xcmpQueue" 4`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
 exports[`Withdraw Asset > HydraDx -> KILT at Block > sender events {"section":"currencies","method":"Withdrawn"} 1`] = `
-[
-  {
-    "data": {
-      "amount": "(rounded 440000000000)",
-      "currencyId": 0,
-      "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
-    },
-    "method": "Withdrawn",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": 1000000000000000,
-      "currencyId": 28,
-      "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
-    },
-    "method": "Withdrawn",
-    "section": "currencies",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT at Block > sender events {"section":"currencies","method":"Withdrawn"} 2`] = `
-[
-  {
-    "data": {
-      "amount": "(rounded 440000000000)",
-      "currencyId": 0,
-      "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
-    },
-    "method": "Withdrawn",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": 1000000000000000,
-      "currencyId": 28,
-      "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
-    },
-    "method": "Withdrawn",
-    "section": "currencies",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT at Block > sender events {"section":"currencies","method":"Withdrawn"} 3`] = `
-[
-  {
-    "data": {
-      "amount": "(rounded 440000000000)",
-      "currencyId": 0,
-      "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
-    },
-    "method": "Withdrawn",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": 1000000000000000,
-      "currencyId": 28,
-      "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
-    },
-    "method": "Withdrawn",
-    "section": "currencies",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT at Block > sender events {"section":"currencies","method":"Withdrawn"} 4`] = `
 [
   {
     "data": {
@@ -289,42 +148,6 @@ exports[`Withdraw Asset > HydraDx -> KILT live > receiver events {"section":"sys
 `;
 
 exports[`Withdraw Asset > HydraDx -> KILT live > sender events "xcmpQueue" 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT live > sender events "xcmpQueue" 2`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT live > sender events "xcmpQueue" 3`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT live > sender events "xcmpQueue" 4`] = `
 [
   {
     "data": {
