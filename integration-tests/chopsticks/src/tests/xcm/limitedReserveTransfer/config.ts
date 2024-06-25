@@ -1,7 +1,8 @@
 import * as PolkadotChainConfigs from '../../../network/index.js'
-import { initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
+import { initialBalanceDOT, initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
 import * as SpiritnetConfig from '../../../network/spiritnet.js'
 import * as HydraDxConfig from '../../../network/hydraDx.js'
+import * as AssetHubConfig from '../../../network/assethub.js'
 import { tx, query } from '../../../helper/api.js'
 
 import type { ApiPromise } from '@polkadot/api'
@@ -287,6 +288,46 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 		sovereignAccount: {
 			sender: HydraDxConfig.siblingSovereignAccount,
+			receiver: SpiritnetConfig.siblingSovereignAccount,
+		},
+	},
+	{
+		config: {
+			desc: 'DOT from AssetHub -> KILT',
+			precision: BigInt(96),
+		},
+
+		network: {
+			sender: PolkadotChainConfigs.all.assetHub.getConfig(PolkadotChainConfigs.all.assetHub.parameters),
+			receiver: PolkadotChainConfigs.all.spiritnet.getConfig({}),
+			relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
+		},
+		accounts: {
+			senderAccount: keysAlice,
+			receiverAccount: keysBob,
+		},
+		query: {
+			sender: query.balances,
+			receiver: query.balances,
+		},
+		txContext: {
+			tx: tx.xcmPallet.limitedReserveTransferAssetsV2(
+				AssetHubConfig.DOT,
+				tx.xcmPallet.parachainV2(1, SpiritnetConfig.paraId)
+			),
+			pallets: {
+				sender: ['xcmpQueue', 'polkadotXcm'],
+				receiver: ['xcmpQueue'],
+			},
+			balanceToTransfer: BigInt(1e10),
+		},
+		storage: {
+			senderStorage: AssetHubConfig.assignDotTokensToAccounts([keysAlice.address], initialBalanceDOT),
+			receiverStorage: {},
+			relayStorage: {},
+		},
+		sovereignAccount: {
+			sender: AssetHubConfig.siblingSovereignAccount,
 			receiver: SpiritnetConfig.siblingSovereignAccount,
 		},
 	},

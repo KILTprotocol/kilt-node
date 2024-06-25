@@ -1,0 +1,17 @@
+endpoint:
+  - wss://rococo-asset-hub-rpc.polkadot.io
+mock-signature-host: true
+db: db/asset-hub.sqlite
+
+import-storage:
+  System:
+    Account:
+      -
+        -
+          - 5DPiZzQQdoJJucxGMCgrJEdeUkLfPs6fndeCMA1E4ZgAkWyh
+        - providers: 1
+          data:
+            free: '100000000000000000000000'
+  foreignAssets:
+    asset:
+      -  [ [{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0xc9f05326311bc2a55426761bec20057685fb80f7"}}]}}], {"owner":"5GjRnmh5o3usSYzVmsxBWzHEpvJyHK4tKNPhjpUR3ASrruBy","issuer":"5DPiZzQQdoJJucxGMCgrJEdeUkLfPs6fndeCMA1E4ZgAkWyh","admin":"5DPiZzQQdoJJucxGMCgrJEdeUkLfPs6fndeCMA1E4ZgAkWyh","freezer": "5DPiZzQQdoJJucxGMCgrJEdeUkLfPs6fndeCMA1E4ZgAkWyh", "supply": "4242424242424242424242", "deposit": 100000000000,"minBalance": 1,"isSufficient":false,"accounts": 1,"sufficients":0,"approvals":0,"status":"Live"}]
