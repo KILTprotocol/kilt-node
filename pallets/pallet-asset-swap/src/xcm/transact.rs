@@ -27,22 +27,21 @@ use xcm_executor::traits::{ConvertLocation, TransactAsset};
 use crate::{Config, LocalCurrencyBalanceOf, SwapPair, SwapPairInfoOf, LOG_TARGET};
 
 // TODO: Add unit tests
-pub struct SwapPairTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
+pub struct SwapPairRemoteAssetTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
 
-impl<AccountIdConverter, T> TransactAsset for SwapPairTransactor<AccountIdConverter, T>
+impl<AccountIdConverter, T> TransactAsset for SwapPairRemoteAssetTransactor<AccountIdConverter, T>
 where
 	AccountIdConverter: ConvertLocation<T::AccountId>,
 	T: Config,
 {
 	fn deposit_asset(what: &MultiAsset, who: &MultiLocation, _context: &XcmContext) -> XcmResult {
 		// 1. Verify the swap pair exists.
-		let swap_pair = SwapPair::<T>::get().ok_or(XcmError::FailedToTransactAsset("No swap pair found."))?;
+		let swap_pair = SwapPair::<T>::get().ok_or(XcmError::AssetNotFound)?;
+		log::trace!(target: LOG_TARGET, "11111");
 
 		// 2. Verify the swap pair is running.
-		ensure!(
-			swap_pair.can_swap(),
-			XcmError::FailedToTransactAsset("Swap pair not enabled.")
-		);
+		ensure!(swap_pair.can_swap(), XcmError::AssetNotFound);
+		log::trace!(target: LOG_TARGET, "22222");
 
 		// 3. Verify the asset matches the other side of the swap pair.
 		let stored_asset_id_as_required_version: AssetId =
@@ -53,17 +52,16 @@ where
 					swap_pair.remote_asset_id,
 					e
 				);
-				XcmError::FailedToTransactAsset("Failed to convert stored asset ID into required version.")
+				XcmError::AssetNotFound
 			})?;
-		ensure!(
-			stored_asset_id_as_required_version == what.id,
-			XcmError::FailedToTransactAsset("Unrecognized incoming asset.")
-		);
+		log::trace!(target: LOG_TARGET, "33333");
+		ensure!(stored_asset_id_as_required_version == what.id, XcmError::AssetNotFound);
+		log::trace!(target: LOG_TARGET, "44444");
+		// After this ensure, we know we need to be transacting with this asset, so any
+		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
 		// 4. Perform the local transfer
-		let beneficiary = AccountIdConverter::convert_location(who).ok_or(XcmError::FailedToTransactAsset(
-			"Failed to convert beneficiary to valid account.",
-		))?;
+		let beneficiary = AccountIdConverter::convert_location(who).ok_or(XcmError::AssetNotFound)?;
 		let Fungibility::Fungible(fungible_amount) = what.fun else {
 			return Err(XcmError::FailedToTransactAsset(
 				"Deposited token expected to be fungible.",

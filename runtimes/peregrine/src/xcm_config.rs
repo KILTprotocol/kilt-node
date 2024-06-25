@@ -27,7 +27,8 @@ use frame_support::{
 };
 use frame_system::EnsureRoot;
 use pallet_asset_swap::xcm::{
-	ReserveTransfersOfXcmFeeAssetAndRemoteAsset, SwapPairTransactor, UsingComponentsForXcmFeeAsset,
+	MatchesSwapPairXcmFeeAsset, ReserveTransfersOfXcmFeeAssetAndRemoteAsset, SwapPairRemoteAssetTransactor,
+	UsingComponentsForXcmFeeAsset,
 };
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
@@ -35,9 +36,9 @@ use sp_std::prelude::ToOwned;
 use xcm::v3::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
-	EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-	UsingComponents, WithComputedOrigin,
+	EnsureXcmOrigin, FixedWeightBounds, FungiblesAdapter, NativeAsset, NoChecking, RelayChainAsNative,
+	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
+	TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -163,6 +164,11 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 	}
 }
 
+// TODO: Check checking account to something else
+parameter_types! {
+	pub const CheckingAccount: AccountId = AccountId::new([1; 32]);
+}
+
 // TODO: Implement logic that restricts using DOTs to only reserve-based
 // transfers of DOTs.
 pub struct XcmConfig;
@@ -171,9 +177,24 @@ impl xcm_executor::Config for XcmConfig {
 	// How we send Xcm messages.
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
+	// The swap pair transactor wrapper must come before the balances wrapper.
+	// TODO: We can refactor the `UsingComponents` to wrap around fungibles, so that
+	// we don't use our local token by default. Or maybe we can, but it should be an
+	// explicitly different type.
 	type AssetTransactor = (
+		// Converts remote token deposits into transfers from the swap pair pool.
+		SwapPairRemoteAssetTransactor<LocationToAccountIdConverter, Runtime>,
+		// Allow deposits of assets used to pay for XCM fees.
+		FungiblesAdapter<
+			Fungibles,
+			MatchesSwapPairXcmFeeAsset<Runtime>,
+			LocationToAccountIdConverter,
+			AccountId,
+			NoChecking,
+			CheckingAccount,
+		>,
+		// Wrapper around the local currency.
 		LocalAssetTransactor<Balances, RelayNetworkId>,
-		SwapPairTransactor<LocationToAccountIdConverter, Runtime>,
 	);
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	// Reserving is disabled.

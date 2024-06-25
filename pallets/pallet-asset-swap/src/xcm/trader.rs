@@ -46,14 +46,20 @@ where
 	fn buy_weight(&mut self, weight: Weight, payment: Assets, context: &XcmContext) -> Result<Assets, XcmError> {
 		log::trace!(target: "xcm::weight", "UsingComponentsForXcmFeeAsset::buy_weight weight: {:?}, payment: {:?}, context: {:?}", weight, payment, context);
 		let swap_pair = SwapPair::<T>::get().ok_or(XcmError::AssetNotFound)?;
+		log::trace!(target: "xcm::weight", "Inside 1");
 		let amount = WeightToFee::weight_to_fee(&weight);
+		log::trace!(target: "xcm::weight", "Inside 2 with amount {:?}", amount);
 		let u128_amount: u128 = amount.try_into().map_err(|_| XcmError::Overflow)?;
-		let remote_asset_id_as_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
-			log::error!(target: "xcm::weight", "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", swap_pair.remote_asset_id, e);
+		log::trace!(target: "xcm::weight", "Inside 3 with u128 amount {:?}", u128_amount);
+		let xcm_fee_asset_as_v3: MultiAsset = swap_pair.remote_fee.clone().try_into().map_err(|e| {
+			log::error!(target: "xcm::weight", "Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}", swap_pair.remote_fee, e);
 			XcmError::FailedToTransactAsset("Failed to convert swap pair asset ID into required version.")
 		})?;
-		let required = (remote_asset_id_as_v3, u128_amount).into();
+		log::trace!(target: "xcm::weight", "Inside 4 {:?}", xcm_fee_asset_as_v3);
+		let required = (xcm_fee_asset_as_v3.id, u128_amount).into();
+		log::trace!(target: "xcm::weight", "Inside 5 {:?}", (xcm_fee_asset_as_v3.id, u128_amount));
 		let unused = payment.checked_sub(required).map_err(|_| XcmError::TooExpensive)?;
+		log::trace!(target: "xcm::weight", "Inside 6 {:?}", unused);
 		self.0 = self.0.saturating_add(weight);
 		self.1 = self.1.saturating_add(amount);
 		Ok(unused)

@@ -29,4 +29,4 @@ pub mod trader;
 pub use trader::UsingComponentsForXcmFeeAsset;
 
 pub mod transact;
-pub use transact::SwapPairTransactor;
+pub use transact::SwapPairRemoteAssetTransactor;

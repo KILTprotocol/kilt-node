@@ -1,6 +1,8 @@
 endpoint:
-  - wss://asset-hub-rococo-rpc.dwellir.com
+  - wss://rococo-asset-hub-rpc.polkadot.io
 mock-signature-host: true
+port: 9001
+runtime-log-level: 5
 db: db/asset-hub.sqlite
 
 import-storage:
