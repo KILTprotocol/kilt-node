@@ -980,7 +980,7 @@ impl pallet_assets::BenchmarkHelper<MultiLocation> for NoopBenchmarkHelper {
 	fn create_asset_id_parameter(id: u32) -> MultiLocation {
 		MultiLocation {
 			parents: 0,
-			interior: Here,
+			interior: xcm::prelude::Here,
 		}
 	}
 }
@@ -992,7 +992,7 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureRootAsAccount {
 	type Success = AccountId;
 
 	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
-		EnsureRoot::try_origin(o.clone())?;
+		EnsureRoot::try_origin(o)?;
 
 		// Return treasury account ID if successful.
 		Ok(pallet_treasury::Pallet::<Runtime>::account_id())

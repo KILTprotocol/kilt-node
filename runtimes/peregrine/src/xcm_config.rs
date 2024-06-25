@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balances, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall,
-	RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balances, Fungibles, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
+	RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
 use frame_support::{
@@ -26,7 +26,9 @@ use frame_support::{
 	traits::{Contains, Everything, Nothing},
 };
 use frame_system::EnsureRoot;
-use pallet_asset_swap::xcm::{ReserveTransfersOfXcmFeeAssetAndRemoteAsset, SwapPairTransactor};
+use pallet_asset_swap::xcm::{
+	ReserveTransfersOfXcmFeeAssetAndRemoteAsset, SwapPairTransactor, UsingComponentsForXcmFeeAsset,
+};
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use sp_std::prelude::ToOwned;
@@ -185,7 +187,13 @@ impl xcm_executor::Config for XcmConfig {
 	// How weight is transformed into fees. The fees are not taken out of the
 	// Balances pallet here. Balances is only used if fees are dropped without being
 	// used. In that case they are put into the treasury.
-	type Trader = UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>;
+	type Trader = (
+		// The fungibles wrapper must come before the balances wrapper.
+		// TODO: We can refactor the `UsingComponents` to wrap around fungibles, so that we don't use our local token
+		// by default. Or maybe we can, but it should be an explicitly different type.
+		UsingComponentsForXcmFeeAsset<Runtime, WeightToFee<Runtime>, Fungibles>,
+		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>,
+	);
 	type ResponseHandler = PolkadotXcm;
 	// What happens with assets that are left in the register after the XCM message
 	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset
