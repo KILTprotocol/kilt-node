@@ -163,6 +163,8 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 	}
 }
 
+// TODO: Implement logic that restricts using DOTs to only reserve-based
+// transfers of DOTs.
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
