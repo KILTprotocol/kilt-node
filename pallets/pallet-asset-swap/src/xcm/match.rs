@@ -21,16 +21,24 @@ use sp_std::marker::PhantomData;
 use xcm::v3::{AssetId, Fungibility, MultiAsset, MultiLocation};
 use xcm_executor::traits::{Error as XcmExecutorError, MatchesFungibles};
 
-use crate::{Config, SwapPair, SwapPairInfoOf, LOG_TARGET};
+use crate::{Config, SwapPair, SwapPairInfoOf};
 
-pub struct MatchesSwapPairXcmFeeAsset<T>(PhantomData<T>);
+const LOG_TARGET: &str = "xcm::pallet-asset-swap::MatchesSwapPairXcmFeeFungibleAsset";
 
-impl<T, FungiblesBalance> MatchesFungibles<MultiLocation, FungiblesBalance> for MatchesSwapPairXcmFeeAsset<T>
+/// Type implementing `MatchesFungibles<MultiLocation, FungiblesBalance>` and
+/// returns the provided fungible amount if the specified `MultiLocation`
+/// matches the asset used by the swap pallet to pay for XCM fees at
+/// destination (`swap_pair_info.remote_fee`).
+// TODO: Add unit tests
+pub struct MatchesSwapPairXcmFeeFungibleAsset<T>(PhantomData<T>);
+
+impl<T, FungiblesBalance> MatchesFungibles<MultiLocation, FungiblesBalance> for MatchesSwapPairXcmFeeFungibleAsset<T>
 where
 	T: Config,
 	FungiblesBalance: From<u128>,
 {
 	fn matches_fungibles(a: &MultiAsset) -> Result<(MultiLocation, FungiblesBalance), XcmExecutorError> {
+		log::trace!(target: LOG_TARGET, "matches_fungibles {:?}", a);
 		// 1. Retrieve swap pair from storage.
 		let SwapPairInfoOf::<T> { remote_fee, .. } = SwapPair::<T>::get().ok_or(XcmExecutorError::AssetNotHandled)?;
 
@@ -40,6 +48,8 @@ where
 			XcmExecutorError::AssetNotHandled
 		})?;
 		ensure!(id == a.id, XcmExecutorError::AssetNotHandled);
+		// After this ensure, we know we need to be transacting with this asset, so any
+		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
 		// 3. Force stored asset as a concrete and fungible one and return its amount.
 		let AssetId::Concrete(location) = id else {
