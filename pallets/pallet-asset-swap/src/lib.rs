@@ -59,8 +59,8 @@ pub mod pallet {
 	use xcm::{
 		v3::{
 			validate_send, AssetId,
-			Instruction::{SetFeesMode, TransferAsset, WithdrawAsset},
-			Junction, Junctions, MultiAsset, SendXcm, Xcm,
+			Instruction::{BuyExecution, TransferAsset, WithdrawAsset},
+			Junction, Junctions, MultiAsset, SendXcm, WeightLimit, Xcm,
 		},
 		VersionedAssetId, VersionedMultiLocation,
 	};
@@ -333,8 +333,28 @@ pub mod pallet {
 			// 6. Compose and validate XCM message
 			let remote_xcm: Xcm<()> = vec![
 				// TODO: Change this to the configured fee
-				WithdrawAsset((Junctions::Here, 1_000_000_000).into()),
-				SetFeesMode { jit_withdraw: true },
+				WithdrawAsset(
+					(
+						MultiLocation {
+							parents: 1,
+							interior: Junctions::Here,
+						},
+						10_000_000_000u128,
+					)
+						.into(),
+				),
+				BuyExecution {
+					weight_limit: WeightLimit::Unlimited,
+					// Change this also to match the `WithdrawAsset` instruction
+					fees: (
+						MultiLocation {
+							parents: 1,
+							interior: Junctions::Here,
+						},
+						10_000_000_000u128,
+					)
+						.into(),
+				},
 				TransferAsset {
 					assets: (asset_id_v3, local_asset_amount_as_u128).into(),
 					beneficiary: beneficiary_v3,

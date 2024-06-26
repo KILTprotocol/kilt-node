@@ -25,5 +25,8 @@ pub use match_fungible::MatchesSwapPairXcmFeeAsset;
 pub mod reserve;
 pub use reserve::ReserveTransfersOfXcmFeeAssetAndRemoteAsset;
 
+pub mod trader;
+pub use trader::{UsingComponentsForSwapPairRemoteAsset, UsingComponentsForXcmFeeAsset};
+
 pub mod transact;
-pub use transact::SwapPairTransactor;
+pub use transact::SwapPairRemoteAssetTransactor;
