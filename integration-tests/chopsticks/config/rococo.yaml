@@ -1,8 +1,8 @@
 endpoint:
   - wss://rococo-rpc.polkadot.io
 mock-signature-host: true
+port: 50000
 db: db/rococo.sqlite
-
 
 import-storage:
   Sudo:

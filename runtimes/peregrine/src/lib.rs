@@ -1079,6 +1079,9 @@ construct_runtime! {
 
 		Multisig: pallet_multisig = 47,
 
+		AssetSwap: pallet_asset_swap = 48,
+		Fungibles: pallet_assets = 49,
+
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
 		Ctype: ctype = 61,
@@ -1093,8 +1096,6 @@ construct_runtime! {
 		Migration: pallet_migration = 70,
 		DipProvider: pallet_dip_provider = 71,
 		DepositStorage: pallet_deposit_storage = 72,
-		AssetSwap: pallet_asset_swap = 73,
-		Fungibles: pallet_assets = 74,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 

@@ -3,4 +3,5 @@ endpoint:
 mock-signature-host: true
 db: db/peregrine.sqlite
 runtime-log-level: 5
+port: 50002
 wasm-override: /home/antonio/Developer/kilt-node/target/debug/wbuild/peregrine-runtime/peregrine_runtime.compact.compressed.wasm
