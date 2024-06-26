@@ -4,13 +4,13 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import { createBlock, setStorage } from '../../../network/utils.js'
 import { validateBalanceWithPrecision, hexAddress } from '../../../helper/utils.js'
-import { testPairsLimitedReserveTransfers } from './config.js'
+import { testPairsSwapAssets } from './config.js'
 import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 
-describe.each(testPairsLimitedReserveTransfers)(
-	'Limited Reserve Transfers',
-	{ timeout: 30_000, skip: true },
+describe.each(testPairsSwapAssets)(
+	'Swap Assets',
+	{ timeout: 30_000 },
 	async ({ network, storage, accounts, query, sovereignAccount, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -52,7 +52,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000, retry: 0 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 			const { pallets, tx, balanceToTransfer } = txContext
 
@@ -69,56 +69,55 @@ describe.each(testPairsLimitedReserveTransfers)(
 			// Check initial balance receiver should be zero
 			expect(initialBalanceReceiver).toBe(BigInt(0))
 
-			const signedTx = tx(
-				senderContext,
-				hexAddress(receiverAccount.address),
-				balanceToTransfer.toString()
-			).signAsync(senderAccount)
+			console.log(txContext.destination.V3.interior)
+			const signedTx = tx(senderContext, txContext.destination, balanceToTransfer.toString()).signAsync(
+				senderAccount
+			)
 
 			const events = await sendTransaction(signedTx)
 
 			// check sender state
 			await createBlock(senderContext)
 
-			pallets.sender.map((pallet) =>
-				checkEvents(events, pallet).toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
-			)
+			// pallets.sender.map((pallet) =>
+			// 	checkEvents(events, pallet).toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
+			// )
 
-			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
-			const receiverSovereignAccountBalanceAfterTransfer = await query.sender(
-				senderContext,
-				sovereignAccount.sender
-			)
-			expect(receiverSovereignAccountBalanceAfterTransfer).toBe(
-				receiverSovereignAccountBalanceBeforeTransfer + BigInt(balanceToTransfer)
-			)
+			// const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
+			// const receiverSovereignAccountBalanceAfterTransfer = await query.sender(
+			// 	senderContext,
+			// 	sovereignAccount.sender
+			// )
+			// expect(receiverSovereignAccountBalanceAfterTransfer).toBe(
+			// 	receiverSovereignAccountBalanceBeforeTransfer + BigInt(balanceToTransfer)
+			// )
 
-			const removedBalance = balanceToTransfer * BigInt(-1)
+			// const removedBalance = balanceToTransfer * BigInt(-1)
 
-			validateBalanceWithPrecision(
-				initialBalanceSender,
-				balanceSenderAfterTransfer,
-				removedBalance,
-				expect,
-				precision
-			)
+			// validateBalanceWithPrecision(
+			// 	initialBalanceSender,
+			// 	balanceSenderAfterTransfer,
+			// 	removedBalance,
+			// 	expect,
+			// 	precision
+			// )
 
-			// check receiver state
-			await createBlock(receiverContext)
+			// // check receiver state
+			// await createBlock(receiverContext)
 
-			pallets.receiver.map((pallet) =>
-				checkSystemEvents(receiverContext, pallet).toMatchSnapshot(`receiver events ${JSON.stringify(pallet)}`)
-			)
+			// pallets.receiver.map((pallet) =>
+			// 	checkSystemEvents(receiverContext, pallet).toMatchSnapshot(`receiver events ${JSON.stringify(pallet)}`)
+			// )
 
-			const balanceReceiverAfterTransfer = await query.receiver(receiverContext, receiverAccount.address)
+			// const balanceReceiverAfterTransfer = await query.receiver(receiverContext, receiverAccount.address)
 
-			validateBalanceWithPrecision(
-				initialBalanceReceiver,
-				balanceReceiverAfterTransfer,
-				balanceToTransfer,
-				expect,
-				precision
-			)
+			// validateBalanceWithPrecision(
+			// 	initialBalanceReceiver,
+			// 	balanceReceiverAfterTransfer,
+			// 	balanceToTransfer,
+			// 	expect,
+			// 	precision
+			// )
 		})
 	}
 )

@@ -152,12 +152,32 @@ export const xcmPallet = {
 			),
 }
 
+const assetSwap = {
+	beneficiaryV3: (account: string) => ({
+		V3: {
+			parents: 0,
+			interior: {
+				X1: {
+					AccountId32: {
+						id: account,
+					},
+				},
+			},
+		},
+	}),
+	swap:
+		() =>
+		({ api }: { api: ApiPromise }, beneficiary: any, amount: number | string) =>
+			api.tx.assetSwap.swap(amount, beneficiary),
+}
+
 /**
  * Different pallets to submit xcm messages.
  */
 export const tx = {
 	xtokens,
 	xcmPallet,
+	assetSwap,
 }
 
 /**

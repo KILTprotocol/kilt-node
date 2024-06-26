@@ -23,32 +23,39 @@ export function createForeignAsset(manager: string) {
 		foreignAssets: {
 			asset: [
 				[
-					{
-						parents: 2,
-						interior: {
-							X2: [
-								{ GlobalConsensus: { Ethereum: { chainId: 11155111 } } },
-								// Todo: replace with the actual address
-								{ AccountKey20: { network: null, key: '0x06012c8cf97bead5deae237070f9587f8e7a266d' } },
-							],
+					[
+						{
+							parents: 2,
+							interior: {
+								X2: [
+									{ GlobalConsensus: { Ethereum: { chainId: 11155111 } } },
+									// Todo: replace with the actual address
+									{
+										AccountKey20: {
+											network: null,
+											key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+										},
+									},
+								],
+							},
 						},
+					],
+					{
+						// owner is set to relay chain sovereign account. Check out if this is correct.
+						owner: '5Dt6dpkWPwLaH4BBCKJwjiWrFVAGyYk3tLUabvyn4v7KtESG',
+						issuer: manager,
+						admin: manager,
+						freezer: manager,
+						supply: '4242424242424242424242',
+						deposit: 100000000000,
+						minBalance: 100,
+						isSufficient: false,
+						accounts: 1,
+						sufficients: 0,
+						approvals: 0,
+						status: 'Live',
 					},
 				],
-				{
-					// owner is set to relay chain sovereign account. Check out if this is correct.
-					owner: '5Dt6dpkWPwLaH4BBCKJwjiWrFVAGyYk3tLUabvyn4v7KtESG',
-					issuer: manager,
-					admin: manager,
-					freezer: manager,
-					supply: '4242424242424242424242',
-					deposit: 100000000000,
-					minBalance: 100,
-					isSufficient: false,
-					accounts: 1,
-					sufficients: 0,
-					approvals: 0,
-					status: 'Live',
-				},
 			],
 		},
 	}
@@ -57,30 +64,35 @@ export function createForeignAsset(manager: string) {
 export function assignForeignAssetToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
 		foreignAssets: {
-			account: addr.map(
-				(addr) => [
-					{
-						parents: 2,
-						interior: {
-							X2: [
-								{
-									GlobalConsensus: { Ethereum: { chainId: 11155111 } },
-								},
-								{
-									AccountKey20: { network: null, key: '0x06012c8cf97bead5deae237070f9587f8e7a266d' },
-								},
-							],
+			account: [
+				addr.map(
+					(addr) => [
+						{
+							parents: 2,
+							interior: {
+								X2: [
+									{
+										GlobalConsensus: { Ethereum: { chainId: 11155111 } },
+									},
+									{
+										AccountKey20: {
+											network: null,
+											key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+										},
+									},
+								],
+							},
 						},
-					},
-					addr,
-				],
-				{
-					balance: balance,
-					status: 'Liquid',
-					reason: 'Consumer',
-					extra: null,
-				}
-			),
+						addr,
+					],
+					{
+						balance: balance,
+						status: 'Liquid',
+						reason: 'Consumer',
+						extra: null,
+					}
+				),
+			],
 		},
 	}
 }
