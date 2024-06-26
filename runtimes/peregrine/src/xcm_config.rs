@@ -27,8 +27,8 @@ use frame_support::{
 };
 use frame_system::EnsureRoot;
 use pallet_asset_swap::xcm::{
-	MatchesSwapPairXcmFeeAsset, ReserveTransfersOfXcmFeeAssetAndRemoteAsset, SwapPairRemoteAssetTransactor,
-	UsingComponentsForXcmFeeAsset,
+	trader::UsingComponentsForSwapPairRemoteAsset, MatchesSwapPairXcmFeeAsset,
+	ReserveTransfersOfXcmFeeAssetAndRemoteAsset, SwapPairRemoteAssetTransactor, UsingComponentsForXcmFeeAsset,
 };
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
@@ -215,6 +215,7 @@ impl xcm_executor::Config for XcmConfig {
 		// TODO: We can refactor the `UsingComponents` to wrap around fungibles, so that we don't use our local token
 		// by default. Or maybe we can, but it should be an explicitly different type.
 		UsingComponentsForXcmFeeAsset<Runtime, WeightToFee<Runtime>, Fungibles>,
+		UsingComponentsForSwapPairRemoteAsset<Runtime, WeightToFee<Runtime>>,
 		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>,
 	);
 	type ResponseHandler = PolkadotXcm;

@@ -86,3 +86,53 @@ where
 }
 
 // TODO: Implement `Drop` for this weight trader
+
+pub struct UsingComponentsForSwapPairRemoteAsset<T: frame_system::Config, WeightToFee>(
+	Weight,
+	u128,
+	PhantomData<(T, WeightToFee)>,
+);
+
+impl<T, WeightToFee> WeightTrader for UsingComponentsForSwapPairRemoteAsset<T, WeightToFee>
+where
+	T: Config,
+	WeightToFee: WeightToFeeT<Balance = u128>,
+{
+	fn new() -> Self {
+		Self(Weight::zero(), Zero::zero(), PhantomData)
+	}
+
+	fn buy_weight(&mut self, weight: Weight, payment: Assets, context: &XcmContext) -> Result<Assets, XcmError> {
+		log::trace!(target: "xcm::weight", "UsingComponentsForSwapPairRemoteAsset::buy_weight weight: {:?}, payment: {:?}, context: {:?}", weight, payment, context);
+		let swap_pair = SwapPair::<T>::get().ok_or(XcmError::AssetNotFound)?;
+		let amount = WeightToFee::weight_to_fee(&weight);
+		let swap_pair_remote_asset_as_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
+			log::error!(target: "xcm::weight", "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", swap_pair.remote_asset_id, e);
+			XcmError::FailedToTransactAsset("Failed to convert swap pair asset ID into required version.")
+		})?;
+		let required = (swap_pair_remote_asset_as_v3, amount).into();
+		let unused = payment.checked_sub(required).map_err(|_| XcmError::TooExpensive)?;
+		self.0 = self.0.saturating_add(weight);
+		self.1 = self.1.saturating_add(amount);
+		Ok(unused)
+	}
+
+	fn refund_weight(&mut self, weight: Weight, context: &XcmContext) -> Option<MultiAsset> {
+		log::trace!(target: "xcm::weight", "UsingComponents::refund_weight weight: {:?}, context: {:?}", weight, context);
+		let swap_pair = SwapPair::<T>::get()?;
+		let swap_pair_remote_asset_as_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
+			log::error!(target: "xcm::weight", "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", swap_pair.remote_asset_id, e);
+			XcmError::FailedToTransactAsset("Failed to convert swap pair asset ID into required version.")
+		}).ok()?;
+		let weight = weight.min(self.0);
+		let amount = WeightToFee::weight_to_fee(&weight);
+		self.0 -= weight;
+		self.1 = self.1.saturating_sub(amount);
+		let amount: u128 = amount.saturated_into();
+		if amount > 0 {
+			Some((swap_pair_remote_asset_as_v3, amount).into())
+		} else {
+			None
+		}
+	}
+}
