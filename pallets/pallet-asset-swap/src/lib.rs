@@ -160,9 +160,10 @@ pub mod pallet {
 
 			// 1. Verify swap pair has not already been set.
 			ensure!(!SwapPair::<T>::exists(), Error::<T>::SwapPairAlreadyExisting);
-			// 2. Verify that total issuance >= circulating supply and take the difference
-			//    as the amount of assets we control on destination.
+
+			// 2. Verify that total issuance >= circulating supply.
 			ensure!(total_issuance >= circulating_supply, Error::<T>::InvalidInput);
+
 			// 3. Verify the pool account has enough local assets to match the circulating
 			//    supply of eKILTs to cover for all potential remote -> local swaps.
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
@@ -197,8 +198,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_root(origin)?;
 
-			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
 			ensure!(total_issuance >= circulating_supply, Error::<T>::InvalidInput);
+			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
 
 			Self::set_swap_pair_bypass_checks(
 				*reserve_location,
