@@ -24,7 +24,7 @@ use sp_std::marker::PhantomData;
 use xcm::prelude::{AssetId, Fungibility, MultiAsset, MultiLocation, XcmContext, XcmError, XcmResult};
 use xcm_executor::traits::{ConvertLocation, TransactAsset};
 
-use crate::{Config, LocalCurrencyBalanceOf, SwapPair, SwapPairInfoOf, LOG_TARGET};
+use crate::{Config, Event, LocalCurrencyBalanceOf, Pallet, SwapPair, SwapPairInfoOf, LOG_TARGET};
 
 // TODO: Add unit tests
 pub struct SwapPairRemoteAssetTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
@@ -101,6 +101,12 @@ where
 			*remote_asset_balance = new_remote_balance;
 			Ok::<_, XcmError>(())
 		})?;
+
+		Pallet::<T>::deposit_event(Event::<T>::RemoteToLocalSwapExecuted {
+			amount: fungible_amount,
+			from: (*who).into_versioned(),
+			to: beneficiary,
+		});
 
 		Ok(())
 	}

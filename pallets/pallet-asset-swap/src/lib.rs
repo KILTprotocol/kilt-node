@@ -115,10 +115,15 @@ pub mod pallet {
 			old: VersionedMultiAsset,
 			new: VersionedMultiAsset,
 		},
-		SwapExecuted {
+		LocalToRemoteSwapExecuted {
 			from: T::AccountId,
 			to: VersionedMultiLocation,
 			amount: LocalCurrencyBalanceOf<T>,
+		},
+		RemoteToLocalSwapExecuted {
+			from: VersionedMultiLocation,
+			to: T::AccountId,
+			amount: u128,
 		},
 	}
 
@@ -454,7 +459,7 @@ pub mod pallet {
 				Ok(())
 			})?;
 
-			Self::deposit_event(Event::<T>::SwapExecuted {
+			Self::deposit_event(Event::<T>::LocalToRemoteSwapExecuted {
 				from: submitter,
 				to: *beneficiary,
 				amount: local_asset_amount,

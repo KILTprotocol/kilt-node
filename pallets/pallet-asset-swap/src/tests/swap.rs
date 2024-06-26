@@ -94,7 +94,7 @@ fn successful() {
 			// Invariant is held
 			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwapExecuted {
+				== Event::<MockRuntime>::LocalToRemoteSwapExecuted {
 					amount: 99_999,
 					from: user.clone(),
 					to: ASSET_HUB_LOCATION.into()
@@ -153,7 +153,7 @@ fn successful() {
 			// Invariant is held
 			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwapExecuted {
+				== Event::<MockRuntime>::LocalToRemoteSwapExecuted {
 					amount: 99_999,
 					from: user.clone(),
 					to: ASSET_HUB_LOCATION.into()
@@ -213,7 +213,7 @@ fn successful() {
 			// Invariant is held
 			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwapExecuted {
+				== Event::<MockRuntime>::LocalToRemoteSwapExecuted {
 					amount: 99_999,
 					from: user.clone(),
 					to: ASSET_HUB_LOCATION.into()
