@@ -1,0 +1,14 @@
+endpoint:
+  - wss://asset-hub-rococo-rpc.dwellir.com
+mock-signature-host: true
+db: db/asset-hub.sqlite
+
+import-storage:
+  System:
+    Account:
+      -
+        -
+          - 5Go9qhpqq2EzAZ1SKkkx6bTjnSoTnHEB8FHCnieNS57TimEF
+        - providers: 1
+          data:
+            free: '100000000000000000000000'
