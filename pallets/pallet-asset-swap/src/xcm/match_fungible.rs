@@ -44,15 +44,11 @@ where
 		// 3. Force stored asset as a concrete and fungible one and return its amount.
 		let AssetId::Concrete(location) = id else {
 			log::error!(target: LOG_TARGET, "Configured XCM fee asset {:?} is supposed to be concrete but it is not.", id);
-			// TODO: Change error to something else, now that we now the asset is the right
-			// asset (based on the ensure! above)
-			return Err(XcmExecutorError::AssetNotHandled);
+			return Err(XcmExecutorError::AssetIdConversionFailed);
 		};
 		let Fungibility::Fungible(amount) = a.fun else {
 			log::error!(target: LOG_TARGET, "Input asset {:?} is supposed to be fungible but it is not.", a);
-			// TODO: Change error to something else, now that we now the asset is the right
-			// asset (based on the ensure! above)
-			return Err(XcmExecutorError::AssetNotHandled);
+			return Err(XcmExecutorError::AmountToBalanceConversionFailed);
 		};
 
 		Ok((location, amount.into()))

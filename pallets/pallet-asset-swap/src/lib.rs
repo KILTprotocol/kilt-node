@@ -37,14 +37,13 @@ pub use crate::pallet::*;
 
 const LOG_TARGET: &str = "runtime::pallet-asset-swap";
 
-#[frame_support::pallet]
+#[frame_support::pallet(dev_mode)]
 pub mod pallet {
 	use crate::{
 		swap::{SwapPairInfo, SwapPairStatus},
 		LOG_TARGET,
 	};
 
-	use ::xcm::{v3::MultiLocation, VersionedMultiAsset};
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
@@ -59,10 +58,10 @@ pub mod pallet {
 	use xcm::{
 		v3::{
 			validate_send, AssetId,
-			Instruction::{BuyExecution, TransferAsset, WithdrawAsset},
-			Junction, Junctions, MultiAsset, SendXcm, WeightLimit, Xcm,
+			Instruction::{BuyExecution, DepositAsset, RefundSurplus, SetAppendix, TransferAsset, WithdrawAsset},
+			Junction, MultiAsset, MultiAssetFilter, MultiLocation, SendXcm, WeightLimit, WildMultiAsset, Xcm,
 		},
-		VersionedAssetId, VersionedMultiLocation,
+		VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
 	};
 	use xcm_executor::traits::TransactAsset;
 
@@ -95,12 +94,12 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		SwapPairCreated {
+			circulating_supply: u128,
+			pool_account: T::AccountId,
 			remote_asset_id: VersionedAssetId,
 			remote_asset_reserve_location: VersionedMultiLocation,
 			remote_xcm_fee: Box<VersionedMultiAsset>,
 			total_issuance: u128,
-			circulating_supply: u128,
-			pool_account: T::AccountId,
 		},
 		SwapPairRemoved {
 			remote_asset_id: VersionedAssetId,
@@ -130,8 +129,8 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		InvalidInput,
-		LocalPoolBalance,
 		Liquidity,
+		LocalPoolBalance,
 		PoolInitialLiquidityRequirement,
 		SwapPairAlreadyExisting,
 		SwapPairNotEnabled,
@@ -152,7 +151,7 @@ pub mod pallet {
 		LocalCurrencyBalanceOf<T>: Into<u128>,
 	{
 		#[pallet::call_index(0)]
-		#[pallet::weight(u64::MAX)]
+		#[pallet::weight(0)]
 		pub fn set_swap_pair(
 			origin: OriginFor<T>,
 			reserve_location: Box<VersionedMultiLocation>,
@@ -192,7 +191,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(1)]
-		#[pallet::weight(u64::MAX)]
+		#[pallet::weight(0)]
 		pub fn force_set_swap_pair(
 			origin: OriginFor<T>,
 			reserve_location: Box<VersionedMultiLocation>,
@@ -219,7 +218,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(2)]
-		#[pallet::weight(u64::MAX)]
+		#[pallet::weight(0)]
 		pub fn force_unset_swap_pair(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
 
@@ -229,7 +228,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(3)]
-		#[pallet::weight(u64::MAX)]
+		#[pallet::weight(0)]
 		pub fn pause_swap_pair(origin: OriginFor<T>) -> DispatchResult {
 			T::PauseOrigin::ensure_origin(origin)?;
 
@@ -239,7 +238,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(4)]
-		#[pallet::weight(u64::MAX)]
+		#[pallet::weight(0)]
 		pub fn resume_swap_pair(origin: OriginFor<T>) -> DispatchResult {
 			T::SwapOrigin::ensure_origin(origin)?;
 
@@ -249,7 +248,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(5)]
-		#[pallet::weight(u64::MAX)]
+		#[pallet::weight(0)]
 		pub fn update_remote_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult {
 			T::FeeOrigin::ensure_origin(origin)?;
 
@@ -270,7 +269,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(6)]
-		#[pallet::weight(u64::MAX)]
+		#[pallet::weight(0)]
 		pub fn swap(
 			origin: OriginFor<T>,
 			local_asset_amount: LocalCurrencyBalanceOf<T>,
@@ -300,12 +299,12 @@ pub mod pallet {
 
 			// 5. Verify we have enough balance on the remote location to perform the
 			//    transfer
-			let local_asset_amount_as_u128: u128 = local_asset_amount.into();
+			let remote_asset_amount_as_u128 = local_asset_amount.into();
 			ensure!(
-				swap_pair.remote_asset_balance >= local_asset_amount_as_u128,
+				swap_pair.remote_asset_balance >= remote_asset_amount_as_u128,
 				Error::<T>::Liquidity
 			);
-			// TODO: Convert to version based on destination
+
 			let asset_id_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
@@ -315,10 +314,19 @@ pub mod pallet {
 				);
 				DispatchError::from(Error::<T>::Internal)
 			})?;
+			let remote_asset_fee_v3: MultiAsset = swap_pair.remote_fee.clone().try_into().map_err(|e| {
+				log::info!(
+					target: LOG_TARGET,
+					"Failed to convert remote XCM asset fee {:?} into v3 `MultiAssset` with error {:?}",
+					swap_pair.remote_fee,
+					e
+				);
+				DispatchError::from(Error::<T>::Xcm)
+			})?;
 			let destination_v3: MultiLocation = swap_pair.remote_reserve_location.clone().try_into().map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
-					"Failed to convert remote reserve location {:?} into v3 `Multilocation` with error {:?}",
+					"Failed to convert remote reserve location {:?} into v3 `MultiLocation` with error {:?}",
 					swap_pair.remote_reserve_location,
 					e
 				);
@@ -327,43 +335,46 @@ pub mod pallet {
 			let beneficiary_v3: MultiLocation = (*beneficiary.clone()).try_into().map_err(|e| {
 				log::info!(
 					target: LOG_TARGET,
-					"Failed to convert beneficiary {:?} into v3 `Multilocation` with error {:?}",
+					"Failed to convert beneficiary {:?} into v3 `MultiLocation` with error {:?}",
 					beneficiary,
 					e
 				);
 				DispatchError::from(Error::<T>::Xcm)
 			})?;
+			// Use the same local `AccountIdConverter` to generate a `MultiLocation` to use
+			// to send funds on remote.
+			let submitter_as_multilocation = T::AccountIdConverter::try_convert(submitter.clone())
+				.map(|j| j.into_location())
+				.map_err(|e| {
+					log::error!(
+						target: LOG_TARGET,
+						"Failed to convert account {:?} into `MultiLocation` with error {:?}",
+						submitter,
+						e
+					);
+					DispatchError::from(Error::<T>::Xcm)
+				})?;
 
 			// 6. Compose and validate XCM message
+			let appendix: Xcm<()> = vec![
+				RefundSurplus,
+				DepositAsset {
+					assets: MultiAssetFilter::Wild(WildMultiAsset::All),
+					beneficiary: submitter_as_multilocation,
+				},
+			]
+			.into();
 			let remote_xcm: Xcm<()> = vec![
-				// TODO: Change this to the configured fee
-				WithdrawAsset(
-					(
-						MultiLocation {
-							parents: 1,
-							interior: Junctions::Here,
-						},
-						10_000_000_000u128,
-					)
-						.into(),
-				),
+				WithdrawAsset(remote_asset_fee_v3.clone().into()),
 				BuyExecution {
 					weight_limit: WeightLimit::Unlimited,
-					// Change this also to match the `WithdrawAsset` instruction
-					fees: (
-						MultiLocation {
-							parents: 1,
-							interior: Junctions::Here,
-						},
-						10_000_000_000u128,
-					)
-						.into(),
+					fees: remote_asset_fee_v3.clone(),
 				},
 				TransferAsset {
-					assets: (asset_id_v3, local_asset_amount_as_u128).into(),
+					assets: (asset_id_v3, remote_asset_amount_as_u128).into(),
 					beneficiary: beneficiary_v3,
 				},
-				// TODO: Add try-catch and asset refund to user account, since we already take them on this chain
+				SetAppendix(appendix),
 			]
 			.into();
 			let xcm_ticket = validate_send::<T::XcmRouter>(destination_v3, remote_xcm.clone()).map_err(|e| {
@@ -393,45 +404,25 @@ pub mod pallet {
 			}
 
 			// 8. Take XCM fee from submitter.
-			let remote_fee_asset_v3: MultiAsset = swap_pair.remote_fee.clone().try_into().map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert remote fee asset{:?} into v3 `MultiAsset` with error {:?}",
-					swap_pair.remote_fee,
-					e
-				);
-				DispatchError::from(Error::<T>::Internal)
-			})?;
-			let submitter_as_multilocation = T::AccountIdConverter::try_convert(submitter.clone())
-				.map(|j| j.into_location())
-				.map_err(|e| {
-					log::error!(
-						target: LOG_TARGET,
-						"Failed to convert account {:?} into `MultiLocation` with error {:?}",
-						submitter,
-						e
-					);
-					DispatchError::from(Error::<T>::Xcm)
-				})?;
 			let withdrawn_fees =
-				T::AssetTransactor::withdraw_asset(&remote_fee_asset_v3, &submitter_as_multilocation, None).map_err(
+				T::AssetTransactor::withdraw_asset(&remote_asset_fee_v3, &submitter_as_multilocation, None).map_err(
 					|e| {
 						log::info!(
 							target: LOG_TARGET,
 							"Failed to withdraw asset {:?} from location {:?} with error {:?}",
-							remote_fee_asset_v3,
+							remote_asset_fee_v3,
 							submitter_as_multilocation,
 							e
 						);
 						DispatchError::from(Error::<T>::UserXcmBalance)
 					},
 				)?;
-			if withdrawn_fees != vec![remote_fee_asset_v3.clone()].into() {
+			if withdrawn_fees != vec![remote_asset_fee_v3.clone()].into() {
 				log::error!(
 					target: LOG_TARGET,
 					"Withdrawn fees {:?} does not match expected fee {:?}.",
 					withdrawn_fees,
-					remote_fee_asset_v3
+					remote_asset_fee_v3
 				);
 				return Err(DispatchError::from(Error::<T>::Internal));
 			}
@@ -451,7 +442,7 @@ pub mod pallet {
 					log::error!(target: LOG_TARGET, "Failed to borrow stored swap pair info as mut.");
 					return Err(Error::<T>::Internal);
 				};
-				let Some(new_balance) = remote_asset_balance.checked_sub(local_asset_amount_as_u128) else {
+				let Some(new_balance) = remote_asset_balance.checked_sub(remote_asset_amount_as_u128) else {
 					log::error!(target: LOG_TARGET, "Failed to subtract {:?} from stored remote balance {:?}.", transferred_amount, remote_asset_balance);
 					return Err(Error::<T>::Internal);
 				};

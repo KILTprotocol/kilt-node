@@ -7,4 +7,3 @@ Besides the TODOs in the code, the following points must be tackled (ordered by 
 * [REQUIRED FOR V2] Add constraints about which beneficiary people can send their tokens to.
 * [REQUIRED FOR V2] Improve logging, also for cases other than errors. Check how XCM implements them.
 * [OPTIONAL] Add configurable ratio for local/remote swaps.
-* [OPTIONAL] Delegate XCM message composition to a trait Config as well, depending on the destination (choosing which asset to use for payments, what amount, etc).
