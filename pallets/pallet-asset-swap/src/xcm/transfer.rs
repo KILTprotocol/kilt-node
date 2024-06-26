@@ -16,66 +16,110 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::ContainsPair;
-use sp_std::marker::PhantomData;
-use xcm::v3::{AssetId, MultiAsset, MultiLocation};
+pub use xcm_fee_asset::IsSwapPairXcmFeeAsset;
+mod xcm_fee_asset {
+	use frame_support::traits::ContainsPair;
+	use sp_std::marker::PhantomData;
+	use xcm::v3::{MultiAsset, MultiLocation};
 
-use crate::{Config, SwapPair};
+	use crate::{Config, SwapPair};
 
-const LOG_TARGET: &str = "xcm::pallet-asset-swap::ReserveTransfersOfXcmFeeAssetAndRemoteAsset";
+	const LOG_TARGET: &str = "xcm::pallet-asset-swap::AllowXcmFeeAsset";
 
-/// Type implementing `ContainsPair<MultiAsset, MultiLocation>` and returns
-/// `true` if any of these cases:
-/// 1. The specified asset matches the swap pair remote asset, which must be
-///    reserve transferred to this chain to be traded back for the local token.
-/// 2. The specified asset matches the swap pair remote XCM fee asset, which
-///    must be reserve transferred to this chain in order to be withdrawn from
-///    the user's balance to pay for XCM fees at destination.
-// TODO: Add unit tests
-pub struct ReserveTransfersOfXcmFeeAssetAndRemoteAsset<T>(PhantomData<T>);
+	/// Type implementing `ContainsPair<MultiAsset, MultiLocation>` and returns
+	/// `true` if the specified asset matches the swap pair remote XCM fee
+	/// asset, which must be reserve transferred to this chain in order to be
+	/// withdrawn from the user's balance to pay for XCM fees at destination.
+	// TODO: Add unit tests
+	pub struct IsSwapPairXcmFeeAsset<T>(PhantomData<T>);
 
-impl<T> ContainsPair<MultiAsset, MultiLocation> for ReserveTransfersOfXcmFeeAssetAndRemoteAsset<T>
-where
-	T: Config,
-{
-	fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
-		log::trace!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
-		// 1. Verify a swap pair has been set.
-		let Some(swap_pair) = SwapPair::<T>::get() else {
-			return false;
-		};
+	impl<T> ContainsPair<MultiAsset, MultiLocation> for IsSwapPairXcmFeeAsset<T>
+	where
+		T: Config,
+	{
+		fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
+			log::trace!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
+			// 1. Verify a swap pair has been set.
+			let Some(swap_pair) = SwapPair::<T>::get() else {
+				return false;
+			};
 
-		// 2. For both XCM fee asset and remote asset, we only trust the configured
-		//    remote location.
-		let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = swap_pair.remote_reserve_location.clone().try_into().map_err(|e| {
-			log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", swap_pair.remote_reserve_location, e);
-			e
-		 }) else { return false; };
-		if stored_remote_reserve_location_v3 != *b {
-			log::trace!(
-				target: LOG_TARGET,
-				"Remote origin {:?} does not match expected origin {:?}",
-				b,
-				stored_remote_reserve_location_v3
-			);
-			return false;
+			// 2. We only trust the configured remote location.
+			let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = swap_pair.remote_reserve_location.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", swap_pair.remote_reserve_location, e);
+				e
+			 }) else { return false; };
+			if stored_remote_reserve_location_v3 != *b {
+				log::trace!(
+					target: LOG_TARGET,
+					"Remote origin {:?} does not match expected origin {:?}",
+					b,
+					stored_remote_reserve_location_v3
+				);
+				return false;
+			}
+
+			// 3. Verify the asset matches the configured XCM fee asset.
+			let Ok(stored_remote_asset_fee): Result<MultiAsset, _> = swap_pair.remote_fee.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into v3 with error {:?}.", swap_pair.remote_fee, e);
+				e
+			 }) else { return false; };
+
+			a.id == stored_remote_asset_fee.id
 		}
+	}
+}
 
-		// 3. Verify the asset matches either the configured XCM fee asset or remote
-		//    asset to swap for local ones.
-		let Ok(stored_remote_asset_id): Result<AssetId, _> = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
-			log::error!(target: LOG_TARGET, "Failed to convert stored remote asset ID {:?} into v3 with error {:?}.", swap_pair.remote_asset_id, e);
-			e
-		 }) else { return false; };
-		let Ok(stored_remote_asset_fee): Result<MultiAsset, _> = swap_pair.remote_fee.clone().try_into().map_err(|e| {
-			log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into v3 with error {:?}.", swap_pair.remote_fee, e);
-			e
-		 }) else { return false; };
+pub use swap_pair_remote_asset::IsSwapPairRemoteAsset;
+mod swap_pair_remote_asset {
+	use frame_support::traits::ContainsPair;
+	use sp_std::marker::PhantomData;
+	use xcm::v3::{AssetId, MultiAsset, MultiLocation};
 
-		match a.id {
-			remote_asset_id if remote_asset_id == stored_remote_asset_id => true,
-			xcm_fee_asset_id if xcm_fee_asset_id == stored_remote_asset_fee.id => true,
-			_ => false,
+	use crate::{Config, SwapPair};
+
+	const LOG_TARGET: &str = "xcm::pallet-asset-swap::AllowSwapPairRemoteAsset";
+
+	/// Type implementing `ContainsPair<MultiAsset, MultiLocation>` and returns
+	/// `true` if the specified asset matches the swap pair remote asset, which
+	/// must be reserve transferred to this chain to be traded back for the
+	/// local token.
+	// TODO: Add unit tests
+	pub struct IsSwapPairRemoteAsset<T>(PhantomData<T>);
+
+	impl<T> ContainsPair<MultiAsset, MultiLocation> for IsSwapPairRemoteAsset<T>
+	where
+		T: Config,
+	{
+		fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
+			log::trace!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
+			// 1. Verify a swap pair has been set.
+			let Some(swap_pair) = SwapPair::<T>::get() else {
+				return false;
+			};
+
+			// 2. We only trust the configured remote location.
+			let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = swap_pair.remote_reserve_location.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", swap_pair.remote_reserve_location, e);
+				e
+			 }) else { return false; };
+			if stored_remote_reserve_location_v3 != *b {
+				log::trace!(
+					target: LOG_TARGET,
+					"Remote origin {:?} does not match expected origin {:?}",
+					b,
+					stored_remote_reserve_location_v3
+				);
+				return false;
+			}
+
+			// 3. Verify the asset matches the remote asset to swap for local ones.
+			let Ok(stored_remote_asset_id): Result<AssetId, _> = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset ID {:?} into v3 with error {:?}.", swap_pair.remote_asset_id, e);
+				e
+			 }) else { return false; };
+
+			a.id == stored_remote_asset_id
 		}
 	}
 }

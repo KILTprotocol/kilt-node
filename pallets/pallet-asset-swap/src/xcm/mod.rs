@@ -23,7 +23,7 @@ pub mod r#match;
 pub use r#match::MatchesSwapPairXcmFeeFungibleAsset;
 
 pub mod transfer;
-pub use transfer::ReserveTransfersOfXcmFeeAssetAndRemoteAsset;
+pub use transfer::{IsSwapPairRemoteAsset, IsSwapPairXcmFeeAsset};
 
 pub mod trade;
 pub use trade::{UsingComponentsForSwapPairRemoteAsset, UsingComponentsForXcmFeeAsset};
