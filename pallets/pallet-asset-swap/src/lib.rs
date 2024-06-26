@@ -162,16 +162,14 @@ pub mod pallet {
 			ensure!(!SwapPair::<T>::exists(), Error::<T>::SwapPairAlreadyExisting);
 			// 2. Verify that total issuance >= circulating supply and take the difference
 			//    as the amount of assets we control on destination.
-			let locked_supply = total_issuance
-				.checked_sub(circulating_supply)
-				.ok_or(Error::<T>::InvalidInput)?;
-			// 3. Verify the pool account does not exist and has enough local assets to
-			//    cover for all potential remote -> local swaps.
+			ensure!(total_issuance >= circulating_supply, Error::<T>::InvalidInput);
+			// 3. Verify the pool account has enough local assets to match the circulating
+			//    supply of eKILTs to cover for all potential remote -> local swaps.
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
 			let pool_account_reducible_balance_as_u128: u128 =
 				T::LocalCurrency::reducible_balance(&pool_account, Preservation::Expendable, Fortitude::Polite).into();
 			ensure!(
-				pool_account_reducible_balance_as_u128 >= locked_supply,
+				pool_account_reducible_balance_as_u128 >= circulating_supply,
 				Error::<T>::PoolInitialLiquidityRequirement
 			);
 
