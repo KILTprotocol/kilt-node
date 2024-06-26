@@ -27,7 +27,7 @@ use frame_support::{
 };
 use frame_system::EnsureRoot;
 use pallet_asset_swap::xcm::{
-	MatchesSwapPairXcmFeeFungibleAsset, ReserveTransfersOfXcmFeeAssetAndRemoteAsset, SwapPairRemoteAssetTransactor,
+	IsSwapPairRemoteAsset, IsSwapPairXcmFeeAsset, MatchesSwapPairXcmFeeFungibleAsset, SwapPairRemoteAssetTransactor,
 	UsingComponentsForSwapPairRemoteAsset, UsingComponentsForXcmFeeAsset,
 };
 use pallet_xcm::XcmPassthrough;
@@ -189,7 +189,11 @@ impl xcm_executor::Config for XcmConfig {
 		LocalAssetTransactor<Balances, RelayNetworkId>,
 	);
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	type IsReserve = (NativeAsset, ReserveTransfersOfXcmFeeAssetAndRemoteAsset<Runtime>);
+	type IsReserve = (
+		NativeAsset,
+		IsSwapPairRemoteAsset<Runtime>,
+		IsSwapPairXcmFeeAsset<Runtime>,
+	);
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	type UniversalLocation = UniversalLocation;
