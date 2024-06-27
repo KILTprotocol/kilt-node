@@ -1,0 +1,34 @@
+.check_skip_rust:
+  before_script:
+    - |-
+      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-rust"; then
+        echo "Skipping rust tests due to commit title"
+        exit 0
+      fi
+
+.check_skip_integration_tests:
+  before_script:
+    - |-
+      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-integration-tests"; then
+        echo "Skipping integration tests due to commit title"
+        exit 0
+      fi
+
+cargo-clippy:
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.77.0
+  stage: check
+  variables:
+    RUSTFLAGS: "-D warnings"
+  script:
+    - cargo clippy --all-targets --locked --workspace --quiet
+    - cargo clippy --all-targets --all-features --locked --workspace --quiet
+
+check-toml-format:
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.77.0
+  stage: check
+  cache: {}
+  script:
+    - cargo fmt -- --check
+    - taplo fmt --check

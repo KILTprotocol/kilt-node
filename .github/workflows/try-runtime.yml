@@ -1,33 +1,51 @@
-name: try-runtime Workflow
+name: try-runtime
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
-on: [pull_request]
-
+on: push
 jobs:
-  build:
+  test-try-runtime:
     strategy:
       matrix:
-        runtime: [ peregrine, spiritnet ]
-        uri: [ 'wss://peregrine.kilt.io:443', 'wss://peregrine.kilt.io:443' ]
-    runs-on: [ self-hosted ]
-    services:
-      docker:
-        image: docker:20.10.8-dind
-        privileged: true
+        runtime: [peregrine, spiritnet]
+        uri: ['wss://peregrine.kilt.io', 'wss://spiritnet.kilt.io']
+        exclude:
+          - runtime: peregrine
+            uri: 'wss://spiritnet.kilt.io'
+          - runtime: spiritnet
+            uri: 'wss://peregrine.kilt.io'
+    runs-on: ubuntu-latest
     container:
       image: paritytech/ci-unified:bullseye-1.77.0
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Build
-        run: cargo build --release -p ${{ matrix.runtime }}-runtime --features try-runtime --locked
-
-      - name: Run tests
-        uses: NodleCode/action-try-runtime@v0.5.1
+      - name: Set up caching for Cargo
+        uses: actions/cache@v3
         with:
-          url: ${matrix.uri}
-          snap: snapshots/eden-snapshot-full
-          runtime: target/release/wbuild/${metrix.runtime}-runtime/peregrine_runtime.compact.compressed.wasm
-          checks: "all"
-          options: "----disable-spec-version-check"
+          path: |
+            ~/.cargo
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: script
+        run: |
+          echo "Running ${{ matrix.runtime }} runtime migration check"
+
+          echo "---------- Downloading try-runtime CLI ----------"
+          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/v0.7.0/try-runtime-x86_64-unknown-linux-musl -o try-runtime
+          chmod +x ./try-runtime
+          echo "Using try-runtime-cli version:"
+          ./try-runtime --version
+
+          echo "---------- Building ${{ matrix.runtime }} runtime ----------"
+          cargo build --release --locked -p ${{ matrix.runtime }}-runtime --features try-runtime
+
+          echo "---------- Executing on-runtime-upgrade for ${{ matrix.uri }} ----------"
+          ./try-runtime --runtime ./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm \
+              on-runtime-upgrade --disable-spec-version-check --checks=all ${{ matrix.subcommand_extra_args }} live --uri ${{ matrix.uri }}

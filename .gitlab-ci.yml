@@ -1,27 +1,19 @@
+default:
+  interruptible: true
 include:
-  - local: '.gitlab/check-skip.yml'
+  - local: '.gitlab/check.yml'
   - local: '.gitlab/test.yml'
   - local: '.gitlab/build.yml'
-  - local: '.gitlab/release.yml'
 
 variables:
   CARGO_HOME: $CI_PROJECT_DIR/.cargo
   CARGO_TARGET_DIR: $CI_PROJECT_DIR/target
-default:
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}-rust
-    paths:
-      - target
-      - .cargo/bin/
-      - .cargo/registry/index/
-      - .cargo/registry/cache/
-      - .cargo/git/db/
 
 workflow:
   auto_cancel:
     on_new_commit: interruptible
 
 stages:
+  - check
   - test
   - build
-  - release
