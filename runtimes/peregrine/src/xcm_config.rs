@@ -164,6 +164,10 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 	}
 }
 
+parameter_types! {
+	pub TreasuryAccountId: AccountId = Treasury::account_id();
+}
+
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
@@ -207,9 +211,9 @@ impl xcm_executor::Config for XcmConfig {
 	// used. In that case they are put into the treasury.
 	type Trader = (
 		// Can pay for fees with the remote XCM asset fee (when sending it into this system).
-		UsingComponentsForXcmFeeAsset<Runtime, WeightToFee<Runtime>, Fungibles>,
+		UsingComponentsForXcmFeeAsset<Runtime, WeightToFee<Runtime>>,
 		// Can pay for the remote asset of the swap pair (when "depositing" it into this system).
-		UsingComponentsForSwapPairRemoteAsset<Runtime, WeightToFee<Runtime>>,
+		UsingComponentsForSwapPairRemoteAsset<Runtime, WeightToFee<Runtime>, TreasuryAccountId>,
 		// Can pay with the fungible that matches the "Here" location.
 		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>,
 	);
