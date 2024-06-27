@@ -1,0 +1,41 @@
+name: Integration Tests
+
+on: pull_request
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v4
+        with:
+          path: ./integration-tests/chopsticks/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/integration-tests/chopsticks/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Set up Node.js environment
+        run: |
+          cd ./integration-tests/chopsticks
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          echo 'export NVM_DIR="$HOME/.nvm"' >> $HOME/.bashrc
+          echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $HOME/.bashrc
+          eval "$(cat $HOME/.bashrc | tail -n +10)"
+          nvm install
+          nvm use
+
+      - name: TypeScript dependencies
+        run: |
+          cd ./integration-tests/chopsticks
+          yarn --immutable
+          yarn ts-check
+
+      - name: Lint & Test
+        run: |
+          cd ./integration-tests/chopsticks
+          yarn lint
+          yarn test:CI
