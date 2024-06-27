@@ -29,7 +29,6 @@ const LOG_TARGET: &str = "xcm::pallet-asset-swap::MatchesSwapPairXcmFeeFungibleA
 /// returns the provided fungible amount if the specified `MultiLocation`
 /// matches the asset used by the swap pallet to pay for XCM fees at
 /// destination (`swap_pair_info.remote_fee`).
-// TODO: Add unit tests
 pub struct MatchesSwapPairXcmFeeFungibleAsset<T>(PhantomData<T>);
 
 impl<T, FungiblesBalance> MatchesFungibles<MultiLocation, FungiblesBalance> for MatchesSwapPairXcmFeeFungibleAsset<T>
@@ -38,7 +37,7 @@ where
 	FungiblesBalance: From<u128>,
 {
 	fn matches_fungibles(a: &MultiAsset) -> Result<(MultiLocation, FungiblesBalance), XcmExecutorError> {
-		log::trace!(target: LOG_TARGET, "matches_fungibles {:?}", a);
+		log::info!(target: LOG_TARGET, "matches_fungibles {:?}", a);
 		// 1. Retrieve swap pair from storage.
 		let SwapPairInfoOf::<T> { remote_fee, .. } = SwapPair::<T>::get().ok_or(XcmExecutorError::AssetNotHandled)?;
 
@@ -57,10 +56,11 @@ where
 			return Err(XcmExecutorError::AssetIdConversionFailed);
 		};
 		let Fungibility::Fungible(amount) = a.fun else {
-			log::error!(target: LOG_TARGET, "Input asset {:?} is supposed to be fungible but it is not.", a);
+			log::info!(target: LOG_TARGET, "Input asset {:?} is supposed to be fungible but it is not.", a);
 			return Err(XcmExecutorError::AmountToBalanceConversionFailed);
 		};
 
+		log::trace!(target: LOG_TARGET, "matched {:?}", (location, amount));
 		Ok((location, amount.into()))
 	}
 }

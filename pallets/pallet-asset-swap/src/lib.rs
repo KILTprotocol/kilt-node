@@ -120,7 +120,6 @@ pub mod pallet {
 			amount: LocalCurrencyBalanceOf<T>,
 		},
 		RemoteToLocalSwapExecuted {
-			from: VersionedMultiLocation,
 			to: T::AccountId,
 			amount: u128,
 		},
@@ -315,7 +314,7 @@ pub mod pallet {
 				DispatchError::from(Error::<T>::Internal)
 			})?;
 			let remote_asset_fee_v3: MultiAsset = swap_pair.remote_fee.clone().try_into().map_err(|e| {
-				log::info!(
+				log::error!(
 					target: LOG_TARGET,
 					"Failed to convert remote XCM asset fee {:?} into v3 `MultiAssset` with error {:?}",
 					swap_pair.remote_fee,
@@ -346,7 +345,7 @@ pub mod pallet {
 			let submitter_as_multilocation = T::AccountIdConverter::try_convert(submitter.clone())
 				.map(|j| j.into_location())
 				.map_err(|e| {
-					log::error!(
+					log::info!(
 						target: LOG_TARGET,
 						"Failed to convert account {:?} into `MultiLocation` with error {:?}",
 						submitter,

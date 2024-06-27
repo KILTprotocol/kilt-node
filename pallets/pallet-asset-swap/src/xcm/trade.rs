@@ -36,7 +36,6 @@ mod xcm_fee_asset {
 	///
 	/// This trader is required in case there is no other mechanism to pay for
 	/// fees when transferring such an asset to this chain.
-	// TODO: Add unit tests
 	pub struct UsingComponentsForXcmFeeAsset<T: frame_system::Config, WeightToFee, Fungibles: Inspect<T::AccountId>>(
 		Weight,
 		Fungibles::Balance,
@@ -54,7 +53,7 @@ mod xcm_fee_asset {
 		}
 
 		fn buy_weight(&mut self, weight: Weight, payment: Assets, context: &XcmContext) -> Result<Assets, Error> {
-			log::trace!(target: LOG_TARGET, "buy_weight {:?}, {:?}, {:?}", weight, payment, context);
+			log::info!(target: LOG_TARGET, "buy_weight {:?}, {:?}, {:?}", weight, payment, context);
 			let swap_pair = SwapPair::<T>::get().ok_or(Error::AssetNotFound)?;
 			let amount = WeightToFee::weight_to_fee(&weight);
 			let u128_amount: u128 = amount.try_into().map_err(|_| Error::Overflow)?;
@@ -62,15 +61,16 @@ mod xcm_fee_asset {
 				log::error!(target: "xcm::weight", "Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}", swap_pair.remote_fee, e);
 				Error::FailedToTransactAsset("Failed to convert swap pair asset ID into required version.")
 			})?;
-			let required = (xcm_fee_asset_v3.id, u128_amount).into();
-			let unused = payment.checked_sub(required).map_err(|_| Error::TooExpensive)?;
+			let required: MultiAsset = (xcm_fee_asset_v3.id, u128_amount).into();
+			let unused = payment.checked_sub(required.clone()).map_err(|_| Error::TooExpensive)?;
+			log::trace!(target: LOG_TARGET, "required {:?} - unused {:?}", required, unused);
 			self.0 = self.0.saturating_add(weight);
 			self.1 = self.1.saturating_add(amount);
 			Ok(unused)
 		}
 
 		fn refund_weight(&mut self, weight: Weight, context: &XcmContext) -> Option<MultiAsset> {
-			log::trace!(target: LOG_TARGET, "refund_weight weight: {:?} {:?}", weight, context);
+			log::info!(target: LOG_TARGET, "refund_weight weight: {:?} {:?}", weight, context);
 			let swap_pair = SwapPair::<T>::get()?;
 			let remote_asset_id_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
 				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", swap_pair.remote_asset_id, e);
@@ -82,14 +82,14 @@ mod xcm_fee_asset {
 			self.1 = self.1.saturating_sub(amount);
 			let amount: u128 = amount.saturated_into();
 			if amount > 0 {
+				log::trace!(target: LOG_TARGET, "refund amount {:?}", (remote_asset_id_v3, amount));
 				Some((remote_asset_id_v3, amount).into())
 			} else {
+				log::trace!(target: LOG_TARGET, "No refund");
 				None
 			}
 		}
 	}
-
-	// TODO: Implement `Drop` for this weight trader
 }
 
 pub use swap_pair_remote_asset::UsingComponentsForSwapPairRemoteAsset;
@@ -109,7 +109,6 @@ mod swap_pair_remote_asset {
 	///
 	/// This trader is required in case there is no other mechanism to pay for
 	/// fees when transferring such an asset to this chain.
-	// TODO: Add unit tests
 	pub struct UsingComponentsForSwapPairRemoteAsset<T: frame_system::Config, WeightToFee>(
 		Weight,
 		u128,
@@ -126,15 +125,16 @@ mod swap_pair_remote_asset {
 		}
 
 		fn buy_weight(&mut self, weight: Weight, payment: Assets, context: &XcmContext) -> Result<Assets, Error> {
-			log::trace!(target: LOG_TARGET, "buy_weight {:?}, {:?}, {:?}", weight, payment, context);
+			log::info!(target: LOG_TARGET, "buy_weight {:?}, {:?}, {:?}", weight, payment, context);
 			let swap_pair = SwapPair::<T>::get().ok_or(Error::AssetNotFound)?;
 			let amount = WeightToFee::weight_to_fee(&weight);
 			let swap_pair_remote_asset_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
 				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", swap_pair.remote_asset_id, e);
 				Error::FailedToTransactAsset("Failed to convert swap pair asset ID into required version.")
 			})?;
-			let required = (swap_pair_remote_asset_v3, amount).into();
-			let unused = payment.checked_sub(required).map_err(|_| Error::TooExpensive)?;
+			let required: MultiAsset = (swap_pair_remote_asset_v3, amount).into();
+			let unused = payment.checked_sub(required.clone()).map_err(|_| Error::TooExpensive)?;
+			log::trace!(target: LOG_TARGET, "required {:?} - unused {:?}", required, unused);
 			self.0 = self.0.saturating_add(weight);
 			self.1 = self.1.saturating_add(amount);
 			Ok(unused)
@@ -153,11 +153,12 @@ mod swap_pair_remote_asset {
 			self.1 = self.1.saturating_sub(amount);
 			let amount: u128 = amount.saturated_into();
 			if amount > 0 {
+				log::trace!(target: LOG_TARGET, "refund amount {:?}", (swap_pair_remote_asset_v3, amount));
 				Some((swap_pair_remote_asset_v3, amount).into())
 			} else {
+				log::trace!(target: LOG_TARGET, "No refund");
 				None
 			}
 		}
 	}
-	// TODO: Implement `Drop` for this weight trader
 }

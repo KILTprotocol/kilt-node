@@ -28,7 +28,6 @@ use crate::{Config, Event, LocalCurrencyBalanceOf, Pallet, SwapPair, SwapPairInf
 
 const LOG_TARGET: &str = "xcm::pallet-asset-swap::SwapPairRemoteAssetTransactor";
 
-// TODO: Add unit tests
 pub struct SwapPairRemoteAssetTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
 
 impl<AccountIdConverter, T> TransactAsset for SwapPairRemoteAssetTransactor<AccountIdConverter, T>
@@ -37,7 +36,7 @@ where
 	T: Config,
 {
 	fn deposit_asset(what: &MultiAsset, who: &MultiLocation, context: &XcmContext) -> Result {
-		log::trace!(target: LOG_TARGET, "deposit_asset {:?} {:?} {:?}", what, who, context);
+		log::info!(target: LOG_TARGET, "deposit_asset {:?} {:?} {:?}", what, who, context);
 		// 1. Verify the swap pair exists.
 		let swap_pair = SwapPair::<T>::get().ok_or(Error::AssetNotFound)?;
 
@@ -107,7 +106,6 @@ where
 
 		Pallet::<T>::deposit_event(Event::<T>::RemoteToLocalSwapExecuted {
 			amount: fungible_amount,
-			from: (*who).into_versioned(),
 			to: beneficiary,
 		});
 

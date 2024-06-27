@@ -27,7 +27,7 @@ pub struct AccountId32ToAccountId32JunctionConverter;
 
 impl TryConvert<AccountId32, Junction> for AccountId32ToAccountId32JunctionConverter {
 	fn try_convert(account: AccountId32) -> Result<Junction, AccountId32> {
-		log::trace!(target: LOG_TARGET, "try_convert {:?}", account);
+		log::info!(target: LOG_TARGET, "try_convert {:?}", account);
 		Ok(AccountId32Junction {
 			network: None,
 			id: account.into(),
