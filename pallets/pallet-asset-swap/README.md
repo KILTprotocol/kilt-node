@@ -2,7 +2,6 @@ WIP.
 
 # TODO
 
-* [REQUIRED FOR V1] Implement `Drop` for XCM transactors.
 * [REQUIRED FOR V2] Add hook to check the swap parameters (restricting where remote assets can be sent to).
 * [REQUIRED FOR V2] Add constraints about which beneficiary people can send their tokens to.
 * [REQUIRED FOR V2] Make sure XCM fee asset can only be used for local XCM fees when transferring the asset itself, if possible.
