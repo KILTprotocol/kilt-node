@@ -1,14 +1,11 @@
 on: push
-name: Clippy check
+name: check fmt
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
-env:
-  RUSTFLAGS: "-Dwarnings"
-
 jobs:
-  clippy_check:
+  check-fmt:
     runs-on: ubuntu-latest
     services:
       docker:
@@ -18,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up caching for Cargo
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo
@@ -26,5 +23,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
-      - name: Run Clippy
-        run: cargo clippy --all-features --all-targets --locked -- -D warnings && cargo doc --all-features --no-deps --locked
+      - name: Run cargo fmt
+        run: cargo fmt -- --check
+      - name: Run taplo
+        run: taplo fmt --check
