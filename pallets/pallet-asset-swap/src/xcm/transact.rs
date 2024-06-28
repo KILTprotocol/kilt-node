@@ -28,17 +28,18 @@ use crate::{traits::SwapHooks, Config, Event, LocalCurrencyBalanceOf, Pallet, Sw
 
 const LOG_TARGET: &str = "xcm::pallet-asset-swap::SwapPairRemoteAssetTransactor";
 
-pub struct SwapPairRemoteAssetTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
+pub struct SwapPairRemoteAssetTransactor<AccountIdConverter, T, I>(PhantomData<(AccountIdConverter, T, I)>);
 
-impl<AccountIdConverter, T> TransactAsset for SwapPairRemoteAssetTransactor<AccountIdConverter, T>
+impl<AccountIdConverter, T, I> TransactAsset for SwapPairRemoteAssetTransactor<AccountIdConverter, T, I>
 where
 	AccountIdConverter: ConvertLocation<T::AccountId>,
-	T: Config,
+	T: Config<I>,
+	I: 'static,
 {
 	fn deposit_asset(what: &MultiAsset, who: &MultiLocation, context: &XcmContext) -> Result {
 		log::info!(target: LOG_TARGET, "deposit_asset {:?} {:?} {:?}", what, who, context);
 		// 1. Verify the swap pair exists.
-		let swap_pair = SwapPair::<T>::get().ok_or(Error::AssetNotFound)?;
+		let swap_pair = SwapPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
 
 		// 2. Verify the asset matches the other side of the swap pair.
 		let stored_asset_id_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
@@ -74,7 +75,7 @@ where
 		})?;
 
 		// 5. Perform the local transfer
-		let fungible_amount_as_currency_balance: LocalCurrencyBalanceOf<T> =
+		let fungible_amount_as_currency_balance: LocalCurrencyBalanceOf<T, I> =
 			fungible_amount.try_into().map_err(|_| {
 				Error::FailedToTransactAsset("Failed to convert fungible amount to balance of local currency.")
 			})?;
@@ -101,7 +102,7 @@ where
 				.ok_or(Error::FailedToTransactAsset(
 					"Failed to transfer assets from pool account",
 				))?;
-		SwapPair::<T>::try_mutate(|entry| {
+		SwapPair::<T, I>::try_mutate(|entry| {
 			let SwapPairInfoOf::<T> {
 				remote_asset_balance, ..
 			} = entry
@@ -117,7 +118,7 @@ where
 			Error::FailedToTransactAsset("Failed to validate postconditions for remote-to-local swap.")
 		})?;
 
-		Pallet::<T>::deposit_event(Event::<T>::RemoteToLocalSwapExecuted {
+		Pallet::<T, I>::deposit_event(Event::<T, I>::RemoteToLocalSwapExecuted {
 			amount: fungible_amount,
 			to: beneficiary,
 		});

@@ -30,6 +30,7 @@ mod mock;
 mod tests;
 
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
+use frame_support::traits::PalletInfoAccess;
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::TrailingZeroInput;
 use sp_std::boxed::Box;
@@ -67,35 +68,33 @@ pub mod pallet {
 	};
 	use xcm_executor::traits::TransactAsset;
 
-	pub type LocalCurrencyBalanceOf<T> =
-		<<T as Config>::LocalCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
+	pub type LocalCurrencyBalanceOf<T, I> =
+		<<T as Config<I>>::LocalCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 	pub type SwapPairInfoOf<T> = SwapPairInfo<<T as frame_system::Config>::AccountId>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
-		const POOL_ADDRESS_GENERATION_ENTROPY: [u8; 8];
-
+	pub trait Config<I: 'static = ()>: frame_system::Config {
 		type AccountIdConverter: TryConvert<Self::AccountId, Junction>;
 		type AssetTransactor: TransactAsset;
 		type FeeOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type LocalCurrency: MutateFungible<Self::AccountId>;
 		type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type SubmitterOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
-		type SwapHooks: SwapHooks<Self>;
+		type SwapHooks: SwapHooks<Self, I>;
 		type SwapOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type XcmRouter: SendXcm;
 	}
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
-	pub struct Pallet<T>(_);
+	pub struct Pallet<T, I = ()>(_);
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
+	pub enum Event<T: Config<I>, I: 'static = ()> {
 		SwapPairCreated {
 			circulating_supply: u128,
 			pool_account: T::AccountId,
@@ -120,7 +119,7 @@ pub mod pallet {
 		LocalToRemoteSwapExecuted {
 			from: T::AccountId,
 			to: VersionedMultiLocation,
-			amount: LocalCurrencyBalanceOf<T>,
+			amount: LocalCurrencyBalanceOf<T, I>,
 		},
 		RemoteToLocalSwapExecuted {
 			to: T::AccountId,
@@ -129,7 +128,7 @@ pub mod pallet {
 	}
 
 	#[pallet::error]
-	pub enum Error<T> {
+	pub enum Error<T, I = ()> {
 		InvalidInput,
 		Hook(u8),
 		Liquidity,
@@ -146,12 +145,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn swap_pair)]
-	pub(crate) type SwapPair<T> = StorageValue<_, SwapPairInfoOf<T>, OptionQuery>;
+	pub(crate) type SwapPair<T: Config<I>, I: 'static = ()> = StorageValue<_, SwapPairInfoOf<T>, OptionQuery>;
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T>
+	impl<T: Config<I>, I: 'static> Pallet<T, I>
 	where
-		LocalCurrencyBalanceOf<T>: Into<u128>,
+		LocalCurrencyBalanceOf<T, I>: Into<u128>,
+		I: Encode,
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
@@ -166,10 +166,10 @@ pub mod pallet {
 			T::SwapOrigin::ensure_origin(origin)?;
 
 			// 1. Verify swap pair has not already been set.
-			ensure!(!SwapPair::<T>::exists(), Error::<T>::SwapPairAlreadyExisting);
+			ensure!(!SwapPair::<T, I>::exists(), Error::<T, I>::SwapPairAlreadyExisting);
 
 			// 2. Verify that total issuance >= circulating supply.
-			ensure!(total_issuance >= circulating_supply, Error::<T>::InvalidInput);
+			ensure!(total_issuance >= circulating_supply, Error::<T, I>::InvalidInput);
 
 			// 3. Verify the pool account has enough local assets to match the circulating
 			//    supply of eKILTs to cover for all potential remote -> local swaps.
@@ -178,7 +178,7 @@ pub mod pallet {
 				T::LocalCurrency::reducible_balance(&pool_account, Preservation::Expendable, Fortitude::Polite).into();
 			ensure!(
 				pool_account_reducible_balance_as_u128 >= circulating_supply,
-				Error::<T>::PoolInitialLiquidityRequirement
+				Error::<T, I>::PoolInitialLiquidityRequirement
 			);
 
 			Self::set_swap_pair_bypass_checks(
@@ -205,7 +205,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_root(origin)?;
 
-			ensure!(total_issuance >= circulating_supply, Error::<T>::InvalidInput);
+			ensure!(total_issuance >= circulating_supply, Error::<T, I>::InvalidInput);
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
 
 			Self::set_swap_pair_bypass_checks(
@@ -255,17 +255,17 @@ pub mod pallet {
 		pub fn update_remote_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult {
 			T::FeeOrigin::ensure_origin(origin)?;
 
-			SwapPair::<T>::try_mutate(|entry| {
-				let SwapPairInfoOf::<T> { remote_fee, .. } = entry.as_mut().ok_or(Error::<T>::SwapPairNotFound)?;
+			SwapPair::<T, I>::try_mutate(|entry| {
+				let SwapPairInfoOf::<T> { remote_fee, .. } = entry.as_mut().ok_or(Error::<T, I>::SwapPairNotFound)?;
 				let old_remote_fee = remote_fee.clone();
 				*remote_fee = *new.clone();
 				if old_remote_fee != *new {
-					Self::deposit_event(Event::<T>::SwapPairFeeUpdated {
+					Self::deposit_event(Event::<T, I>::SwapPairFeeUpdated {
 						old: old_remote_fee,
 						new: *new,
 					});
 				};
-				Ok::<_, Error<T>>(())
+				Ok::<_, Error<T, I>>(())
 			})?;
 
 			Ok(())
@@ -275,37 +275,37 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn swap(
 			origin: OriginFor<T>,
-			local_asset_amount: LocalCurrencyBalanceOf<T>,
+			local_asset_amount: LocalCurrencyBalanceOf<T, I>,
 			beneficiary: Box<VersionedMultiLocation>,
 		) -> DispatchResult {
 			let submitter = T::SubmitterOrigin::ensure_origin(origin)?;
 
 			// 1. Retrieve swap pair info from storage, else fail.
-			let swap_pair = SwapPair::<T>::get().ok_or(DispatchError::from(Error::<T>::SwapPairNotFound))?;
+			let swap_pair = SwapPair::<T, I>::get().ok_or(DispatchError::from(Error::<T, I>::SwapPairNotFound))?;
 
 			// 2. Check if swaps are enabled.
 			ensure!(
 				swap_pair.can_swap(),
-				DispatchError::from(Error::<T>::SwapPairNotEnabled)
+				DispatchError::from(Error::<T, I>::SwapPairNotEnabled)
 			);
 
 			// 3. Verify the tx submitter has enough local assets for the swap, without
 			//    having their balance go to zero.
 			T::LocalCurrency::can_withdraw(&submitter, local_asset_amount)
 				.into_result(true)
-				.map_err(|_| DispatchError::from(Error::<T>::UserSwapBalance))?;
+				.map_err(|_| DispatchError::from(Error::<T, I>::UserSwapBalance))?;
 
 			// 4. Verify the local assets can be transferred to the swap pool account
 			T::LocalCurrency::can_deposit(&swap_pair.pool_account, local_asset_amount, Provenance::Extant)
 				.into_result()
-				.map_err(|_| DispatchError::from(Error::<T>::LocalPoolBalance))?;
+				.map_err(|_| DispatchError::from(Error::<T, I>::LocalPoolBalance))?;
 
 			// 5. Verify we have enough balance on the remote location to perform the
 			//    transfer
 			let remote_asset_amount_as_u128 = local_asset_amount.into();
 			ensure!(
 				swap_pair.remote_asset_balance >= remote_asset_amount_as_u128,
-				Error::<T>::Liquidity
+				Error::<T, I>::Liquidity
 			);
 
 			let asset_id_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
@@ -315,7 +315,7 @@ pub mod pallet {
 					swap_pair.remote_asset_id,
 					e
 				);
-				DispatchError::from(Error::<T>::Internal)
+				DispatchError::from(Error::<T, I>::Internal)
 			})?;
 			let remote_asset_fee_v3: MultiAsset = swap_pair.remote_fee.clone().try_into().map_err(|e| {
 				log::error!(
@@ -324,7 +324,7 @@ pub mod pallet {
 					swap_pair.remote_fee,
 					e
 				);
-				DispatchError::from(Error::<T>::Xcm)
+				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
 			let destination_v3: MultiLocation = swap_pair.remote_reserve_location.clone().try_into().map_err(|e| {
 				log::error!(
@@ -333,7 +333,7 @@ pub mod pallet {
 					swap_pair.remote_reserve_location,
 					e
 				);
-				DispatchError::from(Error::<T>::Internal)
+				DispatchError::from(Error::<T, I>::Internal)
 			})?;
 			let beneficiary_v3: MultiLocation = (*beneficiary.clone()).try_into().map_err(|e| {
 				log::info!(
@@ -342,7 +342,7 @@ pub mod pallet {
 					beneficiary,
 					e
 				);
-				DispatchError::from(Error::<T>::Xcm)
+				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
 			// Use the same local `AccountIdConverter` to generate a `MultiLocation` to use
 			// to send funds on remote.
@@ -355,7 +355,7 @@ pub mod pallet {
 						submitter,
 						e
 					);
-					DispatchError::from(Error::<T>::Xcm)
+					DispatchError::from(Error::<T, I>::Xcm)
 				})?;
 
 			// 6. Compose and validate XCM message
@@ -387,12 +387,12 @@ pub mod pallet {
 					remote_xcm,
 					e
 				);
-				DispatchError::from(Error::<T>::Xcm)
+				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
 
 			// 7. Call into hook pre-swap checks
 			T::SwapHooks::pre_local_to_remote_swap(&submitter, &beneficiary, local_asset_amount)
-				.map_err(|e| DispatchError::from(Error::<T>::Hook(e.into())))?;
+				.map_err(|e| DispatchError::from(Error::<T, I>::Hook(e.into())))?;
 
 			// 8. Transfer funds from user to pool
 			let transferred_amount = T::LocalCurrency::transfer(
@@ -407,7 +407,7 @@ pub mod pallet {
 					transferred_amount,
 					local_asset_amount
 				);
-				return Err(Error::<T>::Internal.into());
+				return Err(Error::<T, I>::Internal.into());
 			}
 
 			// 9. Take XCM fee from submitter.
@@ -421,7 +421,7 @@ pub mod pallet {
 							submitter_as_multilocation,
 							e
 						);
-						DispatchError::from(Error::<T>::UserXcmBalance)
+						DispatchError::from(Error::<T, I>::UserXcmBalance)
 					},
 				)?;
 			if withdrawn_fees != vec![remote_asset_fee_v3.clone()].into() {
@@ -431,27 +431,27 @@ pub mod pallet {
 					withdrawn_fees,
 					remote_asset_fee_v3
 				);
-				return Err(DispatchError::from(Error::<T>::Internal));
+				return Err(DispatchError::from(Error::<T, I>::Internal));
 			}
 
 			// 10. Send XCM out
 			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
 				log::info!("Failed to deliver ticket with error {:?}", e);
-				DispatchError::from(Error::<T>::Xcm)
+				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
 
 			// 11. Update remote asset balance
-			SwapPair::<T>::try_mutate(|entry| {
+			SwapPair::<T, I>::try_mutate(|entry| {
 				let Some(SwapPairInfoOf::<T> {
 					remote_asset_balance, ..
 				}) = entry.as_mut()
 				else {
 					log::error!(target: LOG_TARGET, "Failed to borrow stored swap pair info as mut.");
-					return Err(Error::<T>::Internal);
+					return Err(Error::<T, I>::Internal);
 				};
 				let Some(new_balance) = remote_asset_balance.checked_sub(remote_asset_amount_as_u128) else {
 					log::error!(target: LOG_TARGET, "Failed to subtract {:?} from stored remote balance {:?}.", transferred_amount, remote_asset_balance);
-					return Err(Error::<T>::Internal);
+					return Err(Error::<T, I>::Internal);
 				};
 				*remote_asset_balance = new_balance;
 				Ok(())
@@ -459,9 +459,9 @@ pub mod pallet {
 
 			// 12. Call into hook post-swap checks
 			T::SwapHooks::post_local_to_remote_swap(&submitter, &beneficiary, local_asset_amount)
-				.map_err(|e| DispatchError::from(Error::<T>::Hook(e.into())))?;
+				.map_err(|e| DispatchError::from(Error::<T, I>::Hook(e.into())))?;
 
-			Self::deposit_event(Event::<T>::LocalToRemoteSwapExecuted {
+			Self::deposit_event(Event::<T, I>::LocalToRemoteSwapExecuted {
 				from: submitter,
 				to: *beneficiary,
 				amount: local_asset_amount,
@@ -472,7 +472,7 @@ pub mod pallet {
 	}
 }
 
-impl<T: Config> Pallet<T> {
+impl<T: Config<I>, I: 'static + Encode> Pallet<T, I> {
 	fn set_swap_pair_bypass_checks(
 		reserve_location: VersionedMultiLocation,
 		remote_asset_id: VersionedAssetId,
@@ -495,9 +495,9 @@ impl<T: Config> Pallet<T> {
 			status: SwapPairStatus::Paused,
 		};
 
-		SwapPair::<T>::set(Some(swap_pair_info));
+		SwapPair::<T, I>::set(Some(swap_pair_info));
 
-		Self::deposit_event(Event::<T>::SwapPairCreated {
+		Self::deposit_event(Event::<T, I>::SwapPairCreated {
 			circulating_supply,
 			pool_account,
 			remote_asset_reserve_location: reserve_location,
@@ -508,26 +508,26 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn unset_swap_pair_bypass_checks() {
-		let swap_pair = SwapPair::<T>::take();
+		let swap_pair = SwapPair::<T, I>::take();
 		if let Some(swap_pair) = swap_pair {
-			Self::deposit_event(Event::<T>::SwapPairRemoved {
+			Self::deposit_event(Event::<T, I>::SwapPairRemoved {
 				remote_asset_id: swap_pair.remote_asset_id,
 			});
 		};
 	}
 
-	fn set_swap_pair_status(new_status: SwapPairStatus) -> Result<(), Error<T>> {
-		SwapPair::<T>::try_mutate(|entry| {
+	fn set_swap_pair_status(new_status: SwapPairStatus) -> Result<(), Error<T, I>> {
+		SwapPair::<T, I>::try_mutate(|entry| {
 			let SwapPairInfoOf::<T> {
 				remote_asset_id,
 				status,
 				..
-			} = entry.as_mut().ok_or(Error::<T>::SwapPairNotFound)?;
+			} = entry.as_mut().ok_or(Error::<T, I>::SwapPairNotFound)?;
 			let relevant_event = match new_status {
-				SwapPairStatus::Running => Event::<T>::SwapPairResumed {
+				SwapPairStatus::Running => Event::<T, I>::SwapPairResumed {
 					remote_asset_id: remote_asset_id.clone(),
 				},
-				SwapPairStatus::Paused => Event::<T>::SwapPairPaused {
+				SwapPairStatus::Paused => Event::<T, I>::SwapPairPaused {
 					remote_asset_id: remote_asset_id.clone(),
 				},
 			};
@@ -537,15 +537,17 @@ impl<T: Config> Pallet<T> {
 			if old_status != *status {
 				Self::deposit_event(relevant_event);
 			}
-			Ok::<_, Error<T>>(())
+			Ok::<_, Error<T, I>>(())
 		})?;
 		Ok(())
 	}
 }
 
-impl<T: Config> Pallet<T> {
-	pub fn pool_account_id_for_remote_asset(remote_asset_id: &VersionedAssetId) -> Result<T::AccountId, Error<T>> {
-		let hash_input = (T::POOL_ADDRESS_GENERATION_ENTROPY, b'.', remote_asset_id.clone()).encode();
+impl<T: Config<I>, I: 'static + Encode> Pallet<T, I> {
+	pub fn pool_account_id_for_remote_asset(remote_asset_id: &VersionedAssetId) -> Result<T::AccountId, Error<T, I>> {
+		let pallet_name = <Pallet<T, I> as PalletInfoAccess>::name();
+		let pallet_name_hashed = sp_io::hashing::blake2_256(pallet_name.as_bytes());
+		let hash_input = (pallet_name_hashed, b'.', remote_asset_id.clone()).encode();
 		let hash_output = sp_io::hashing::blake2_256(hash_input.as_slice());
 		T::AccountId::decode(&mut TrailingZeroInput::new(hash_output.as_slice())).map_err(|e| {
 			log::error!(
@@ -554,7 +556,7 @@ impl<T: Config> Pallet<T> {
 				remote_asset_id,
 				e
 			);
-			Error::<T>::Internal
+			Error::<T, I>::Internal
 		})
 	}
 }
