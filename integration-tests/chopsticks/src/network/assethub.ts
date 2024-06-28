@@ -11,14 +11,18 @@ export const getSetupOptions = ({
 	wasmOverride?: string
 }) =>
 	({
-		endpoint: process.env.ASSETHUB_WSS || 'wss://rococo-asset-hub-rpc.polkadot.io',
+		endpoint: process.env.ASSETHUB_WSS || 'wss://asset-hub-rococo-rpc.dwellir.com',
 		db: './db/assethub.db.sqlite',
 		port: toNumber(process.env.ASSETHUB_PORT) || 9003,
 		wasmOverride,
 		blockNumber,
 	}) as SetupOption
 
-export function createForeignAsset(manager: string) {
+export function createForeignAsset(
+	manager: string,
+	addr: string[],
+	balance: bigint = initialBalanceKILT * BigInt(1000000000000)
+) {
 	return {
 		foreignAssets: {
 			asset: [
@@ -57,6 +61,34 @@ export function createForeignAsset(manager: string) {
 					},
 				],
 			],
+
+			account: addr.map((addr) => [
+				[
+					{
+						parents: 2,
+						interior: {
+							X2: [
+								{
+									GlobalConsensus: { Ethereum: { chainId: 11155111 } },
+								},
+								{
+									AccountKey20: {
+										network: null,
+										key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+									},
+								},
+							],
+						},
+					},
+					addr,
+				],
+				{
+					balance: balance,
+					status: 'Liquid',
+					reason: 'Consumer',
+					extra: null,
+				},
+			]),
 		},
 	}
 }
@@ -98,10 +130,13 @@ export function assignForeignAssetToAccounts(addr: string[], balance: bigint = i
 }
 
 /// AssetHub has no own coin. Teleported dots are used as the native token.
-export function assignDotTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
+export function assignDotTokensToAccounts(
+	addr: string[],
+	balance: bigint = initialBalanceDOT * BigInt(100000000000000)
+) {
 	return {
 		System: {
-			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance } }]),
+			Account: addr.map((address) => [[address], { providers: 1, data: { free: '1000000000000000000000000' } }]),
 		},
 	}
 }

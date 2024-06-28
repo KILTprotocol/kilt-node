@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as PolkadotChainConfigs from '../../../network/index.js'
-import { hexAddress, initialBalanceDOT, initialBalanceKILT, keysAlice, keysCharlie } from '../../../helper/utils.js'
+import { initialBalanceDOT, keysAlice, keysCharlie } from '../../../helper/utils.js'
 import * as SpiritnetConfig from '../../../network/spiritnet.js'
 import * as AssetHubConfig from '../../../network/assethub.js'
 import { tx, query } from '../../../helper/api.js'
@@ -19,32 +19,30 @@ interface Query {
 }
 
 interface TxContext extends BasisTxContext {
-	balanceToTransfer: bigint
-	tx: ({ api }: { api: ApiPromise }, beneficiary: any, amount: string | number) => SubmittableExtrinsic<'promise'>
-	destination: any
+	tx: ({ api }: { api: ApiPromise }, beneficiary: any, funds: any) => SubmittableExtrinsic<'promise'>
 }
 
 /*
  * Configuration for the SwapPairConfiguration test extends the BasicXcmTestConfiguration
  **/
-interface SwapPairTestConfiguration extends BasicXcmTestConfiguration {
+interface ReverseSwapPairTestConfiguration extends BasicXcmTestConfiguration {
 	config: Config
 	query: Query
 	txContext: TxContext
 }
 
 // Test pairs for swapping assets
-export const testPairsSwapAssets: SwapPairTestConfiguration[] = [
+export const testPairsSwapAssets: ReverseSwapPairTestConfiguration[] = [
 	{
 		config: {
-			desc: 'KILT -> AssetHub',
+			desc: 'AssetHub -> KILT',
 			precision: BigInt(99),
 		},
 		network: {
-			sender: PolkadotChainConfigs.all.spiritnet.getConfig({
+			sender: PolkadotChainConfigs.all.assetHub.getConfig({}),
+			receiver: PolkadotChainConfigs.all.spiritnet.getConfig({
 				wasmOverride: PolkadotChainConfigs.all.spiritnet.parameters.wasmOverride,
 			}),
-			receiver: PolkadotChainConfigs.all.assetHub.getConfig({}),
 			relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
 		},
 		accounts: {
@@ -56,36 +54,40 @@ export const testPairsSwapAssets: SwapPairTestConfiguration[] = [
 			receiver: query.balances,
 		},
 		txContext: {
-			tx: tx.assetSwap.swap(),
+			tx: tx.assetSwap.transferAssetsUsingTypeAndThen(tx.xcmPallet.parachainV3(1, SpiritnetConfig.paraId), {
+				V3: { Concrete: tx.assetSwap.asset },
+			}),
 			pallets: {
 				sender: [],
 				receiver: [],
 			},
-			destination: tx.assetSwap.beneficiaryV3(hexAddress(keysAlice.address)),
-			balanceToTransfer: BigInt(1e16),
 		},
 		storage: {
 			senderStorage: {
-				...SpiritnetConfig.assignNativeTokensToAccounts(
-					[keysAlice.address, keysCharlie.address],
-					initialBalanceKILT
-				),
-				...SpiritnetConfig.setSwapPair(),
-				...SpiritnetConfig.setSafeXcmVersion3(),
-				...SpiritnetConfig.createAndAssignDots(keysCharlie.address, [keysAlice.address]),
-			},
-			receiverStorage: {
 				...AssetHubConfig.assignDotTokensToAccounts(
-					[keysAlice.address, SpiritnetConfig.siblingSovereignAccount],
+					[
+						keysAlice.address,
+						SpiritnetConfig.siblingSovereignAccount,
+						'5DPiZzQQdoJJucxGMCgrJEdeUkLfPs6fndeCMA1E4ZgAkWyh',
+					],
 					initialBalanceDOT
 				),
-				...AssetHubConfig.createForeignAsset(keysCharlie.address, [SpiritnetConfig.siblingSovereignAccount]),
+				...AssetHubConfig.createForeignAsset(keysCharlie.address, [
+					SpiritnetConfig.siblingSovereignAccount,
+					keysAlice.address,
+					'5DPiZzQQdoJJucxGMCgrJEdeUkLfPs6fndeCMA1E4ZgAkWyh',
+				]),
+			},
+			receiverStorage: {
+				...SpiritnetConfig.createAndAssignDots(keysCharlie.address, [keysAlice.address]),
+				...SpiritnetConfig.setSwapPair(),
+				...SpiritnetConfig.setSafeXcmVersion3(),
 			},
 			relayStorage: {},
 		},
 		sovereignAccount: {
-			sender: AssetHubConfig.siblingSovereignAccount,
-			receiver: SpiritnetConfig.siblingSovereignAccount,
+			sender: SpiritnetConfig.siblingSovereignAccount,
+			receiver: AssetHubConfig.siblingSovereignAccount,
 		},
 	},
 ]

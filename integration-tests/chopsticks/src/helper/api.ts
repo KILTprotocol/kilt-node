@@ -165,10 +165,96 @@ const assetSwap = {
 			},
 		},
 	}),
+
+	asset: {
+		parents: 2,
+		interior: {
+			X2: [
+				{ GlobalConsensus: { Ethereum: { chainId: 11155111 } } },
+				// Todo: replace with the actual address
+				{
+					AccountKey20: {
+						network: null,
+						key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+					},
+				},
+			],
+		},
+	},
+
 	swap:
 		() =>
 		({ api }: { api: ApiPromise }, beneficiary: any, amount: number | string) =>
 			api.tx.assetSwap.swap(amount, beneficiary),
+
+	transferAssetsUsingTypeAndThen: (dest: any, remoteFeeId: any) => {
+		return ({ api }: { api: ApiPromise }, acc: any, funds: any) => {
+			const copyRemoteFeeId = { ...remoteFeeId.V3 }
+
+			console.log('THESE ARE THE PROVIDED FUNDS', JSON.stringify(copyRemoteFeeId))
+
+			copyRemoteFeeId.fun = { Fungible: 1 }
+			copyRemoteFeeId.Concrete.parents = 10
+
+			const assets = {
+				V3: [copyRemoteFeeId],
+			}
+
+			console.log('Updated funds', JSON.stringify(assets))
+
+			const tx = api.tx.polkadotXcm.transferAssetsUsingTypeAndThen(
+				dest,
+				{
+					V3: [
+						{
+							Concrete: {
+								parents: '2',
+								interior: {
+									X2: [
+										{ GlobalConsensus: { Ethereum: { chainId: '11155111' } } },
+										// Todo: replace with the actual address
+										{
+											AccountKey20: {
+												network: null,
+												key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+											},
+										},
+									],
+								},
+							},
+							fun: { Fungible: 8888e9 },
+						},
+					],
+				},
+				'LocalReserve',
+				remoteFeeId,
+				'LocalReserve',
+				{
+					V3: [
+						{
+							DepositAsset: {
+								assets: { Wild: 'All' },
+								beneficiary: {
+									parents: 0,
+									interior: {
+										X1: {
+											AccountId32: {
+												id: acc,
+											},
+										},
+									},
+								},
+							},
+						},
+					],
+				},
+				'Unlimited'
+			)
+
+			console.log('DATA OF THE CALL', tx.data)
+			return tx
+		}
+	},
 }
 
 /**
