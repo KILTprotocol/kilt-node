@@ -24,7 +24,7 @@ use sp_std::marker::PhantomData;
 use xcm::v3::{AssetId, Error, Fungibility, MultiAsset, MultiLocation, Result, XcmContext};
 use xcm_executor::traits::{ConvertLocation, TransactAsset};
 
-use crate::{Config, Event, LocalCurrencyBalanceOf, Pallet, SwapPair, SwapPairInfoOf};
+use crate::{traits::SwapHooks, Config, Event, LocalCurrencyBalanceOf, Pallet, SwapPair, SwapPairInfoOf};
 
 const LOG_TARGET: &str = "xcm::pallet-asset-swap::SwapPairRemoteAssetTransactor";
 
@@ -60,13 +60,20 @@ where
 			Error::FailedToTransactAsset("Swap pair is not running.",)
 		);
 
-		// 4. Perform the local transfer
 		let beneficiary = AccountIdConverter::convert_location(who).ok_or(Error::FailedToTransactAsset(
 			"Failed to convert beneficiary to valid account.",
 		))?;
 		let Fungibility::Fungible(fungible_amount) = what.fun else {
 			return Err(Error::FailedToTransactAsset("Deposited token expected to be fungible."));
 		};
+
+		// 4. Call into the pre-swap hook
+		T::SwapHooks::pre_remote_to_local_swap(&beneficiary, fungible_amount).map_err(|e| {
+			log::error!(target: LOG_TARGET, "Hook pre-swap check failed with error code {:?}", e.into());
+			Error::FailedToTransactAsset("Failed to validate preconditions for remote-to-local swap.")
+		})?;
+
+		// 5. Perform the local transfer
 		let fungible_amount_as_currency_balance: LocalCurrencyBalanceOf<T> =
 			fungible_amount.try_into().map_err(|_| {
 				Error::FailedToTransactAsset("Failed to convert fungible amount to balance of local currency.")
@@ -86,7 +93,7 @@ where
 			Error::FailedToTransactAsset("Failed to transfer assets from pool account")
 		})?;
 
-		// 5. Increase the balance of the remote asset
+		// 6. Increase the balance of the remote asset
 		let new_remote_balance =
 			swap_pair
 				.remote_asset_balance
@@ -102,6 +109,12 @@ where
 				.ok_or(Error::FailedToTransactAsset("SwapPair should not be None."))?;
 			*remote_asset_balance = new_remote_balance;
 			Ok::<_, Error>(())
+		})?;
+
+		// 7. Call into the post-swap hook
+		T::SwapHooks::post_remote_to_local_swap(&beneficiary, fungible_amount).map_err(|e| {
+			log::error!(target: LOG_TARGET, "Hook post-swap check failed with error code {:?}", e.into());
+			Error::FailedToTransactAsset("Failed to validate postconditions for remote-to-local swap.")
 		})?;
 
 		Pallet::<T>::deposit_event(Event::<T>::RemoteToLocalSwapExecuted {

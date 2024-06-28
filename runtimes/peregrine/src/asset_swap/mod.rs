@@ -65,6 +65,14 @@ impl SwapHooks<Runtime> for RestrictSwapDestinationToSelf {
 	) -> Result<(), Self::Error> {
 		Ok(())
 	}
+
+	fn pre_remote_to_local_swap(_to: &AccountId, _amount: u128) -> Result<(), Self::Error> {
+		Ok(())
+	}
+
+	fn post_remote_to_local_swap(_to: &AccountId, _amount: u128) -> Result<(), Self::Error> {
+		Ok(())
+	}
 }
 
 #[cfg_attr(test, derive(enum_iterator::Sequence))]
