@@ -18,6 +18,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod traits;
 pub mod xcm;
 
 mod swap;
@@ -41,6 +42,7 @@ const LOG_TARGET: &str = "runtime::pallet-asset-swap";
 pub mod pallet {
 	use crate::{
 		swap::{SwapPairInfo, SwapPairStatus},
+		traits::SwapHooks,
 		LOG_TARGET,
 	};
 
@@ -82,6 +84,7 @@ pub mod pallet {
 		type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type SubmitterOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
+		type SwapHooks: SwapHooks<Self>;
 		type SwapOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type XcmRouter: SendXcm;
 	}
@@ -128,6 +131,7 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		InvalidInput,
+		Hook(u8),
 		Liquidity,
 		LocalPoolBalance,
 		PoolInitialLiquidityRequirement,
@@ -386,7 +390,11 @@ pub mod pallet {
 				DispatchError::from(Error::<T>::Xcm)
 			})?;
 
-			// 7. Transfer funds from user to pool
+			// 7. Call into hook pre-swap checks
+			T::SwapHooks::pre_local_to_remote_swap(&submitter, &beneficiary, local_asset_amount)
+				.map_err(|e| DispatchError::from(Error::<T>::Hook(e.into())))?;
+
+			// 8. Transfer funds from user to pool
 			let transferred_amount = T::LocalCurrency::transfer(
 				&submitter,
 				&swap_pair.pool_account,
@@ -402,7 +410,7 @@ pub mod pallet {
 				return Err(Error::<T>::Internal.into());
 			}
 
-			// 8. Take XCM fee from submitter.
+			// 9. Take XCM fee from submitter.
 			let withdrawn_fees =
 				T::AssetTransactor::withdraw_asset(&remote_asset_fee_v3, &submitter_as_multilocation, None).map_err(
 					|e| {
@@ -426,13 +434,13 @@ pub mod pallet {
 				return Err(DispatchError::from(Error::<T>::Internal));
 			}
 
-			// 9. Send XCM out
+			// 10. Send XCM out
 			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
 				log::info!("Failed to deliver ticket with error {:?}", e);
 				DispatchError::from(Error::<T>::Xcm)
 			})?;
 
-			// 10. Update remote asset balance
+			// 11. Update remote asset balance
 			SwapPair::<T>::try_mutate(|entry| {
 				let Some(SwapPairInfoOf::<T> {
 					remote_asset_balance, ..
@@ -448,6 +456,10 @@ pub mod pallet {
 				*remote_asset_balance = new_balance;
 				Ok(())
 			})?;
+
+			// 12. Call into hook post-swap checks
+			T::SwapHooks::post_local_to_remote_swap(&submitter, &beneficiary, local_asset_amount)
+				.map_err(|e| DispatchError::from(Error::<T>::Hook(e.into())))?;
 
 			Self::deposit_event(Event::<T>::LocalToRemoteSwapExecuted {
 				from: submitter,

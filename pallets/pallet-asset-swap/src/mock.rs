@@ -183,6 +183,7 @@ impl crate::Config for MockRuntime {
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
+	type SwapHooks = ();
 	type SwapOrigin = EnsureRoot<Self::AccountId>;
 	type XcmRouter = AlwaysSuccessfulXcmRouter;
 }
