@@ -947,13 +947,12 @@ parameter_types! {
 	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }
 
-impl pallet_asset_swap::Config for Runtime {
-	const POOL_ADDRESS_GENERATION_ENTROPY: [u8; 8] = *b"plt/eplt";
-
+pub type KiltToEKiltSwapPallet = pallet_asset_swap::Instance1;
+impl pallet_asset_swap::Config<KiltToEKiltSwapPallet> for Runtime {
 	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = FungiblesAdapter<
 		Fungibles,
-		MatchesSwapPairXcmFeeFungibleAsset<Runtime>,
+		MatchesSwapPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwapPallet>,
 		LocationToAccountIdConverter,
 		AccountId,
 		NoChecking,
@@ -1046,7 +1045,7 @@ construct_runtime! {
 
 		Multisig: pallet_multisig = 47,
 
-		AssetSwap: pallet_asset_swap = 48,
+		AssetSwap: pallet_asset_swap::<Instance1> = 48,
 		Fungibles: pallet_assets = 49,
 
 		// KILT Pallets. Start indices 60 to leave room
@@ -1487,8 +1486,18 @@ impl_runtime_apis! {
 
 		// TODO: I think it's fine to panic in runtime APIs, but should double check that.
 		impl pallet_asset_swap_runtime_api::AssetSwap<Block, VersionedAssetId, AccountId> for Runtime {
-			fn pool_account_id(remote_asset_id: VersionedAssetId) -> AccountId {
-				pallet_asset_swap::Pallet::<Runtime>::pool_account_id_for_remote_asset(&remote_asset_id).expect("Should never fail to generate a pool account for a given asset.")
+			fn pool_account_id(pool_id: Vec<u8>, asset_id: VersionedAssetId) -> AccountId {
+				use core::str;
+				use frame_support::traits::PalletInfoAccess;
+
+				let pool_id_as_string = str::from_utf8(pool_id.as_slice()).expect("Provided pool ID is not a valid UTF-8 string.");
+				match pool_id_as_string {
+					kilt_to_ekilt if kilt_to_ekilt == AssetSwap::name() => {
+						AssetSwap::pool_account_id_for_remote_asset(&asset_id).expect("Should never fail to generate a pool account for a given asset.")
+					},
+					_ => panic!("No pool with specified pool ID found")
+				}
+				// pallet_asset_swap::Pallet::<Runtime>::pool_account_id_for_remote_asset(&remote_asset_id).expect("Should never fail to generate a pool account for a given asset.")
 			}
 		}
 

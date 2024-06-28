@@ -151,7 +151,6 @@ pub mod pallet {
 	impl<T: Config<I>, I: 'static> Pallet<T, I>
 	where
 		LocalCurrencyBalanceOf<T, I>: Into<u128>,
-		I: Encode,
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
@@ -472,7 +471,7 @@ pub mod pallet {
 	}
 }
 
-impl<T: Config<I>, I: 'static + Encode> Pallet<T, I> {
+impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	fn set_swap_pair_bypass_checks(
 		reserve_location: VersionedMultiLocation,
 		remote_asset_id: VersionedAssetId,
@@ -543,7 +542,7 @@ impl<T: Config<I>, I: 'static + Encode> Pallet<T, I> {
 	}
 }
 
-impl<T: Config<I>, I: 'static + Encode> Pallet<T, I> {
+impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	pub fn pool_account_id_for_remote_asset(remote_asset_id: &VersionedAssetId) -> Result<T::AccountId, Error<T, I>> {
 		let pallet_name = <Pallet<T, I> as PalletInfoAccess>::name();
 		let pallet_name_hashed = sp_io::hashing::blake2_256(pallet_name.as_bytes());

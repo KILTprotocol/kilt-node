@@ -24,7 +24,7 @@ use xcm::{
 	VersionedMultiLocation,
 };
 
-use crate::Runtime;
+use crate::{KiltToEKiltSwapPallet, Runtime};
 
 const LOG_TARGET: &str = "runtime::peregrine::asset-swap::RestrictTransfersToSameUser";
 
@@ -33,7 +33,7 @@ const LOG_TARGET: &str = "runtime::peregrine::asset-swap::RestrictTransfersToSam
 /// swap.
 pub struct RestrictSwapDestinationToSelf;
 
-impl SwapHooks<Runtime> for RestrictSwapDestinationToSelf {
+impl SwapHooks<Runtime, KiltToEKiltSwapPallet> for RestrictSwapDestinationToSelf {
 	type Error = Error;
 
 	fn pre_local_to_remote_swap(
