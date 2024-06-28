@@ -6,5 +6,4 @@ WIP.
 * [REQUIRED FOR V2] Unit test the different XCM components.
 * [REQUIRED FOR V2] Add try-runtime support.
 * [REQUIRED FOR V2] Add benchmarks.
-* [OPTIONAL] Make pallet possible to deploy multiple times within the same runtime.
 * [OPTIONAL] Add configurable ratio for local/remote swaps.
