@@ -37,6 +37,10 @@ where
 		to: &VersionedMultiLocation,
 		amount: LocalCurrencyBalanceOf<T>,
 	) -> Result<(), Self::Error>;
+
+	fn pre_remote_to_local_swap(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
+
+	fn post_remote_to_local_swap(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
 }
 
 impl<T> SwapHooks<T> for ()
@@ -58,6 +62,14 @@ where
 		_to: &VersionedMultiLocation,
 		_amount: LocalCurrencyBalanceOf<T>,
 	) -> Result<(), Self::Error> {
+		Ok(())
+	}
+
+	fn pre_remote_to_local_swap(_to: &<T>::AccountId, _amount: u128) -> Result<(), Self::Error> {
+		Ok(())
+	}
+
+	fn post_remote_to_local_swap(_to: &<T>::AccountId, _amount: u128) -> Result<(), Self::Error> {
 		Ok(())
 	}
 }
