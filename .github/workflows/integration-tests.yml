@@ -1,6 +1,10 @@
-name: Integration Tests
+name: Integration tests
 
 on: pull_request
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
   integration-tests:

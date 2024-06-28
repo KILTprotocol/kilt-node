@@ -23,12 +23,3 @@ cargo-clippy:
   script:
     - cargo clippy --all-targets --locked --workspace --quiet
     - cargo clippy --all-targets --all-features --locked --workspace --quiet
-
-check-toml-format:
-  extends: .check_skip_rust
-  image: paritytech/ci-unified:bullseye-1.77.0
-  stage: check
-  cache: {}
-  script:
-    - cargo fmt -- --check
-    - taplo fmt --check

@@ -1,0 +1,95 @@
+name: srtool build
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+env:
+  SUBWASM_VERSION: 0.20.0
+  TOML_CLI_VERSION: 0.2.4
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        runtime: [peregrine, spiritnet]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache build and output directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            /build
+            /out
+          key: cache-wasm-${{ runner.os }}-${{ matrix.runtime }}
+          restore-keys: |
+            cache-wasm-${{ runner.os }}-
+
+      - name: Srtool build
+        id: srtool_build
+        uses: chevdor/srtool-actions@v0.9.2
+        env:
+          PARACHAIN_PALLET_ID: "0x50"
+          AUTHORIZE_UPGRADE_PREFIX: "0x02"
+        with:
+          chain: ${{ matrix.runtime }}
+          runtime_dir: runtimes/${{ matrix.runtime }}
+
+      - name: Summary
+        run: |
+          echo '${{ steps.srtool_build.outputs.json }}' | jq > ${{ matrix.runtime }}-srtool-digest.json
+          cat ${{ matrix.runtime }}-srtool-digest.json
+          echo "Compact Runtime: ${{ steps.srtool_build.outputs.wasm }}"
+          echo "Compressed Runtime: ${{ steps.srtool_build.outputs.wasm_compressed }}"
+
+      - name: Install subwasm
+        run: |
+          wget https://github.com/chevdor/subwasm/releases/download/v${{ env.SUBWASM_VERSION }}/subwasm_linux_amd64_v${{ env.SUBWASM_VERSION }}.deb
+          sudo dpkg -i subwasm_linux_amd64_v${{ env.SUBWASM_VERSION }}.deb
+          subwasm --version
+
+      - name: Show Runtime information
+        shell: bash
+        run: |
+          subwasm info ${{ steps.srtool_build.outputs.wasm }}
+          subwasm info ${{ steps.srtool_build.outputs.wasm_compressed }}
+          subwasm --json info ${{ steps.srtool_build.outputs.wasm }} > ${{ matrix.runtime }}-info.json
+          subwasm --json info ${{ steps.srtool_build.outputs.wasm_compressed }} > ${{ matrix.runtime }}-compressed-info.json
+
+      - name: Extract the metadata
+        shell: bash
+        run: |
+          subwasm meta ${{ steps.srtool_build.outputs.wasm }}
+          subwasm --json meta ${{ steps.srtool_build.outputs.wasm }} > ${{ matrix.runtime }}-metadata.json
+
+      - name: Check the metadata diff
+        shell: bash
+        run: |
+          subwasm get -o ${{ matrix.runtime }}-live.wasm wss://${{ matrix.runtime }}.kilt.io
+          subwasm diff --no-color ${{ matrix.runtime }}-live.wasm  ${{ steps.srtool_build.outputs.wasm }} || \
+            echo "Subwasm call failed, check the logs. This is likely because ${{ matrix.runtime }} is not known by subwasm" | \
+            tee ${{ matrix.chain }}-diff.txt
+
+      - name: Archive Subwasm results
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+        with:
+          name: ${{ matrix.runtime }}-runtime
+          path: |
+            ${{ matrix.runtime }}-info.json
+            ${{ matrix.runtime }}-compressed-info.json
+            ${{ matrix.runtime }}-metadata.json
+            ${{ matrix.runtime }}-diff.txt
+            ${{ steps.srtool_build.outputs.wasm }}
+            ${{ steps.srtool_build.outputs.wasm_compressed }}
+            ${{ matrix.runtime }}-srtool-digest.json
+

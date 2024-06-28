@@ -1,20 +1,16 @@
 name: try-runtime
+
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 on: push
+
 jobs:
   test-try-runtime:
     strategy:
       matrix:
         runtime: [peregrine, spiritnet]
-        uri: ['wss://peregrine.kilt.io', 'wss://spiritnet.kilt.io']
-        exclude:
-          - runtime: peregrine
-            uri: 'wss://spiritnet.kilt.io'
-          - runtime: spiritnet
-            uri: 'wss://peregrine.kilt.io'
     runs-on: ubuntu-latest
     container:
       image: paritytech/ci-unified:bullseye-1.77.0
@@ -46,6 +42,6 @@ jobs:
           echo "---------- Building ${{ matrix.runtime }} runtime ----------"
           cargo build --release --locked -p ${{ matrix.runtime }}-runtime --features try-runtime
 
-          echo "---------- Executing on-runtime-upgrade for ${{ matrix.uri }} ----------"
+          echo "---------- Executing on-runtime-upgrade for ${{ matrix.runtime }} ----------"
           ./try-runtime --runtime ./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm \
-              on-runtime-upgrade --disable-spec-version-check --checks=all ${{ matrix.subcommand_extra_args }} live --uri ${{ matrix.uri }}
+              on-runtime-upgrade --disable-spec-version-check --checks=all ${{ matrix.subcommand_extra_args }} live --uri wss://${{ matrix.runtime }}.kilt.io

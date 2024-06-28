@@ -1,5 +1,7 @@
-on: push
 name: check fmt
+
+on: pull_request
+
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
@@ -7,9 +9,6 @@ concurrency:
 jobs:
   check-fmt:
     runs-on: ubuntu-latest
-    services:
-      docker:
-        image: docker:20.10.8-dind
     container:
       image: paritytech/ci-unified:bullseye-1.77.0
     steps:
