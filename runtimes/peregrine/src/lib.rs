@@ -85,6 +85,7 @@ use frame_try_runtime::UpgradeCheckSelect;
 #[cfg(test)]
 mod tests;
 
+mod asset_swap;
 mod dip;
 mod weights;
 pub mod xcm_config;
@@ -964,6 +965,7 @@ impl pallet_asset_swap::Config for Runtime {
 	type PauseOrigin = EnsureRoot<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<AccountId>;
+	type SwapHooks = asset_swap::RestrictTransfersToSameUser;
 	type SwapOrigin = EnsureRoot<AccountId>;
 	type XcmRouter = XcmRouter;
 }
