@@ -19,13 +19,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use parity_scale_codec::Codec;
+use sp_std::vec::Vec;
 
 sp_api::decl_runtime_apis! {
-	/// Runtime API to compute the pool account for a given remote asset.
+	/// Runtime API to compute the pool account for a given pool ID and remote asset.
 	pub trait AssetSwap<AssetId, AccountId> where
 		AssetId: Codec,
 		AccountId: Codec,
 		{
-			fn pool_account_id(asset_id: AssetId) -> AccountId;
+			fn pool_account_id(pool_id: Vec<u8>, asset_id: AssetId) -> AccountId;
 		}
 }
