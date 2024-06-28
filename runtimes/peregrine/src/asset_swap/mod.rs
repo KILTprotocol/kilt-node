@@ -31,9 +31,9 @@ const LOG_TARGET: &str = "runtime::peregrine::asset-swap::RestrictTransfersToSam
 /// Check requiring the beneficiary be a single `AccountId32` junction
 /// containing the same account ID as the account on this chain initiating the
 /// swap.
-pub struct RestrictTransfersToSameUser;
+pub struct RestrictSwapDestinationToSelf;
 
-impl SwapHooks<Runtime> for RestrictTransfersToSameUser {
+impl SwapHooks<Runtime> for RestrictSwapDestinationToSelf {
 	type Error = Error;
 
 	fn pre_local_to_remote_swap(

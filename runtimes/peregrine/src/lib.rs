@@ -965,7 +965,7 @@ impl pallet_asset_swap::Config for Runtime {
 	type PauseOrigin = EnsureRoot<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<AccountId>;
-	type SwapHooks = asset_swap::RestrictTransfersToSameUser;
+	type SwapHooks = asset_swap::RestrictSwapDestinationToSelf;
 	type SwapOrigin = EnsureRoot<AccountId>;
 	type XcmRouter = XcmRouter;
 }
