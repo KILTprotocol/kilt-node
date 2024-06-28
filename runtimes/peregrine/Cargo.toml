@@ -14,7 +14,8 @@ version       = { workspace = true }
 substrate-wasm-builder = { workspace = true }
 
 [dev-dependencies]
-sp-io = { workspace = true }
+enum-iterator = { workspace = true }
+sp-io         = { workspace = true }
 
 [dependencies]
 # External dependencies
