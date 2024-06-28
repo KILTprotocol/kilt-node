@@ -33,19 +33,21 @@ mod xcm_fee_asset {
 	///
 	/// This trader is required in case there is no other mechanism to pay for
 	/// fees when transferring such an asset to this chain.
-	pub struct UsingComponentsForXcmFeeAsset<T, WeightToFee>
+	pub struct UsingComponentsForXcmFeeAsset<T, I, WeightToFee>
 	where
-		T: Config,
+		T: Config<I>,
+		I: 'static,
 	{
 		remaining_weight: Weight,
 		remaining_fungible_balance: u128,
 		consumed_xcm_hash: Option<XcmHash>,
-		_phantom: PhantomData<(T, WeightToFee)>,
+		_phantom: PhantomData<(T, I, WeightToFee)>,
 	}
 
-	impl<T, WeightToFee> WeightTrader for UsingComponentsForXcmFeeAsset<T, WeightToFee>
+	impl<T, I, WeightToFee> WeightTrader for UsingComponentsForXcmFeeAsset<T, I, WeightToFee>
 	where
-		T: Config,
+		T: Config<I>,
+		I: 'static,
 
 		WeightToFee: WeightToFeeT<Balance = u128>,
 	{
@@ -64,7 +66,7 @@ mod xcm_fee_asset {
 			// Prevent re-using the same trader more than once.
 			ensure!(self.consumed_xcm_hash.is_none(), Error::NotWithdrawable);
 			// Asset not relevant if no swap pair is set.
-			let swap_pair = SwapPair::<T>::get().ok_or(Error::AssetNotFound)?;
+			let swap_pair = SwapPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
 
 			let amount = WeightToFee::weight_to_fee(&weight);
 
@@ -93,7 +95,7 @@ mod xcm_fee_asset {
 				return None;
 			};
 
-			let Some(swap_pair) = SwapPair::<T>::get() else {
+			let Some(swap_pair) = SwapPair::<T, I>::get() else {
 				log::error!(target: LOG_TARGET, "Stored swap pair should not be None, but it is.");
 				return None;
 			};
@@ -123,9 +125,10 @@ mod xcm_fee_asset {
 	}
 
 	// We burn whatever surplus we have since we know we control it at destination.
-	impl<T, WeightToFee> Drop for UsingComponentsForXcmFeeAsset<T, WeightToFee>
+	impl<T, I, WeightToFee> Drop for UsingComponentsForXcmFeeAsset<T, I, WeightToFee>
 	where
-		T: Config,
+		T: Config<I>,
+		I: 'static,
 	{
 		fn drop(&mut self) {
 			log::trace!(target: LOG_TARGET, "Drop with remaining {:?}", (self.consumed_xcm_hash, self.remaining_fungible_balance, self.remaining_weight));
@@ -159,28 +162,30 @@ mod swap_pair_remote_asset {
 	/// Any unused fee is transferred from the swap pair pool account to the
 	/// specified account.
 	#[derive(Default)]
-	pub struct UsingComponentsForSwapPairRemoteAsset<T, WeightToFee, FeeDestinationAccount>
+	pub struct UsingComponentsForSwapPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
 	where
-		T: Config,
+		T: Config<I>,
+		I: 'static,
 		FeeDestinationAccount: Get<T::AccountId>,
 	{
 		remaining_weight: Weight,
 		remaining_fungible_balance: u128,
 		consumed_xcm_hash: Option<XcmHash>,
 		swap_pair: Option<SwapPairInfoOf<T>>,
-		_phantom: PhantomData<(WeightToFee, FeeDestinationAccount)>,
+		_phantom: PhantomData<(WeightToFee, I, FeeDestinationAccount)>,
 	}
 
-	impl<T, WeightToFee, FeeDestinationAccount> WeightTrader
-		for UsingComponentsForSwapPairRemoteAsset<T, WeightToFee, FeeDestinationAccount>
+	impl<T, I, WeightToFee, FeeDestinationAccount> WeightTrader
+		for UsingComponentsForSwapPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
 	where
-		T: Config,
+		T: Config<I>,
+		I: 'static,
 		FeeDestinationAccount: Get<T::AccountId>,
 
 		WeightToFee: WeightToFeeT<Balance = u128>,
 	{
 		fn new() -> Self {
-			let swap_pair = SwapPair::<T>::get();
+			let swap_pair = SwapPair::<T, I>::get();
 			Self {
 				consumed_xcm_hash: None,
 				remaining_fungible_balance: Zero::zero(),
@@ -257,17 +262,18 @@ mod swap_pair_remote_asset {
 	// Move any unused asset from the swap pool account to the specified account,
 	// and update the remote balance with the difference since we know we control
 	// the full amount on the remote location.
-	impl<T, WeightToFee, FeeDestinationAccount> Drop
-		for UsingComponentsForSwapPairRemoteAsset<T, WeightToFee, FeeDestinationAccount>
+	impl<T, I, WeightToFee, FeeDestinationAccount> Drop
+		for UsingComponentsForSwapPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
 	where
-		T: Config,
+		T: Config<I>,
+		I: 'static,
 		FeeDestinationAccount: Get<T::AccountId>,
 	{
 		fn drop(&mut self) {
 			log::trace!(target: LOG_TARGET, "Drop with remaining {:?}", (self.consumed_xcm_hash, self.remaining_fungible_balance, self.remaining_weight, &self.swap_pair));
 			match (self.remaining_fungible_balance, &self.swap_pair) {
 				(remaining_balance, Some(swap_pair)) if remaining_balance > Zero::zero() => {
-					let Ok(remaining_balance_as_local_currency) = LocalCurrencyBalanceOf::<T>::try_from(remaining_balance).map_err(|e| {
+					let Ok(remaining_balance_as_local_currency) = LocalCurrencyBalanceOf::<T, I>::try_from(remaining_balance).map_err(|e| {
 						log::error!(target: LOG_TARGET, "Failed to convert remaining balance {:?} to local currency balance", remaining_balance);
 						e
 					}) else { return; };
@@ -284,7 +290,7 @@ mod swap_pair_remote_asset {
 					});
 
 					// No error should ever be thrown from inside this block.
-					SwapPair::<T>::mutate(|entry| {
+					SwapPair::<T, I>::mutate(|entry| {
 						let Some(entry) = entry.as_mut() else {
 							log::error!(target: LOG_TARGET, "Stored swap pair should not be None but it is.");
 							return;

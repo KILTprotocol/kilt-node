@@ -30,16 +30,17 @@ mod xcm_fee_asset {
 	/// `true` if the specified asset matches the swap pair remote XCM fee
 	/// asset, which must be reserve transferred to this chain in order to be
 	/// withdrawn from the user's balance to pay for XCM fees at destination.
-	pub struct IsSwapPairXcmFeeAsset<T>(PhantomData<T>);
+	pub struct IsSwapPairXcmFeeAsset<T, I>(PhantomData<(T, I)>);
 
-	impl<T> ContainsPair<MultiAsset, MultiLocation> for IsSwapPairXcmFeeAsset<T>
+	impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwapPairXcmFeeAsset<T, I>
 	where
-		T: Config,
+		T: Config<I>,
+		I: 'static,
 	{
 		fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
 			log::info!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
 			// 1. Verify a swap pair has been set.
-			let Some(swap_pair) = SwapPair::<T>::get() else {
+			let Some(swap_pair) = SwapPair::<T, I>::get() else {
 				return false;
 			};
 
@@ -83,16 +84,17 @@ mod swap_pair_remote_asset {
 	/// `true` if the specified asset matches the swap pair remote asset, which
 	/// must be reserve transferred to this chain to be traded back for the
 	/// local token.
-	pub struct IsSwapPairRemoteAsset<T>(PhantomData<T>);
+	pub struct IsSwapPairRemoteAsset<T, I>(PhantomData<(T, I)>);
 
-	impl<T> ContainsPair<MultiAsset, MultiLocation> for IsSwapPairRemoteAsset<T>
+	impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwapPairRemoteAsset<T, I>
 	where
-		T: Config,
+		T: Config<I>,
+		I: 'static,
 	{
 		fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
 			log::info!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
 			// 1. Verify a swap pair has been set.
-			let Some(swap_pair) = SwapPair::<T>::get() else {
+			let Some(swap_pair) = SwapPair::<T, I>::get() else {
 				return false;
 			};
 
