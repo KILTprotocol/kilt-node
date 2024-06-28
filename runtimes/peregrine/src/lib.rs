@@ -1521,18 +1521,17 @@ impl_runtime_apis! {
 
 		// TODO: I think it's fine to panic in runtime APIs, but should double check that.
 		impl pallet_asset_swap_runtime_api::AssetSwap<Block, VersionedAssetId, AccountId> for Runtime {
-			fn pool_account_id(pool_id: Vec<u8>, asset_id: VersionedAssetId) -> AccountId {
+			fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> AccountId {
 				use core::str;
 				use frame_support::traits::PalletInfoAccess;
 
-				let pool_id_as_string = str::from_utf8(pool_id.as_slice()).expect("Provided pool ID is not a valid UTF-8 string.");
-				match pool_id_as_string {
+				let pair_id_as_string = str::from_utf8(pair_id.as_slice()).expect("Provided swap pair ID is not a valid UTF-8 string.");
+				match pair_id_as_string {
 					kilt_to_ekilt if kilt_to_ekilt == AssetSwap::name() => {
 						AssetSwap::pool_account_id_for_remote_asset(&asset_id).expect("Should never fail to generate a pool account for a given asset.")
 					},
-					_ => panic!("No pool with specified pool ID found")
+					_ => panic!("No swap pair with specified pool ID found")
 				}
-				// pallet_asset_swap::Pallet::<Runtime>::pool_account_id_for_remote_asset(&remote_asset_id).expect("Should never fail to generate a pool account for a given asset.")
 			}
 		}
 
