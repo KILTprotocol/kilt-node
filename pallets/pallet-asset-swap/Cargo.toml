@@ -1,6 +1,6 @@
 [package]
 authors       = { workspace = true }
-description   = "Pallet enabling local assets to be exchanged for remote assets with a predefined exchange ratio."
+description   = "Pallet enabling local currency to be exchanged for a remote asset on a remote location for a 1:1 exchange ratio."
 documentation = { workspace = true }
 edition       = { workspace = true }
 homepage      = { workspace = true }

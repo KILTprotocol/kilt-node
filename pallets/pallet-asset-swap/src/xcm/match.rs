@@ -21,36 +21,46 @@ use sp_std::marker::PhantomData;
 use xcm::v3::{AssetId, Fungibility, MultiAsset, MultiLocation};
 use xcm_executor::traits::{Error as XcmExecutorError, MatchesFungibles};
 
-use crate::{Config, SwapPair, SwapPairInfoOf, LOG_TARGET};
+use crate::{Config, SwapPair, SwapPairInfoOf};
 
-pub struct MatchesSwapPairXcmFeeAsset<T>(PhantomData<T>);
+const LOG_TARGET: &str = "xcm::pallet-asset-swap::MatchesSwapPairXcmFeeFungibleAsset";
 
-impl<T, FungiblesBalance> MatchesFungibles<MultiLocation, FungiblesBalance> for MatchesSwapPairXcmFeeAsset<T>
+/// Type implementing `MatchesFungibles<MultiLocation, FungiblesBalance>` and
+/// returns the provided fungible amount if the specified `MultiLocation`
+/// matches the asset used by the swap pallet to pay for XCM fees at
+/// destination (`swap_pair_info.remote_fee`).
+pub struct MatchesSwapPairXcmFeeFungibleAsset<T>(PhantomData<T>);
+
+impl<T, FungiblesBalance> MatchesFungibles<MultiLocation, FungiblesBalance> for MatchesSwapPairXcmFeeFungibleAsset<T>
 where
 	T: Config,
 	FungiblesBalance: From<u128>,
 {
 	fn matches_fungibles(a: &MultiAsset) -> Result<(MultiLocation, FungiblesBalance), XcmExecutorError> {
+		log::info!(target: LOG_TARGET, "matches_fungibles {:?}", a);
 		// 1. Retrieve swap pair from storage.
 		let SwapPairInfoOf::<T> { remote_fee, .. } = SwapPair::<T>::get().ok_or(XcmExecutorError::AssetNotHandled)?;
 
 		// 2. Match stored asset ID with input asset ID.
-		let MultiAsset { id, fun } = remote_fee.clone().try_into().map_err(|e| {
+		let MultiAsset { id, .. } = remote_fee.clone().try_into().map_err(|e| {
 			log::error!(target: LOG_TARGET, "Failed to convert stored remote fee asset {:?} into v3 MultiLocation with error {:?}.", remote_fee, e);
 			XcmExecutorError::AssetNotHandled
 		})?;
 		ensure!(id == a.id, XcmExecutorError::AssetNotHandled);
+		// After this ensure, we know we need to be transacting with this asset, so any
+		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
 		// 3. Force stored asset as a concrete and fungible one and return its amount.
 		let AssetId::Concrete(location) = id else {
 			log::error!(target: LOG_TARGET, "Configured XCM fee asset {:?} is supposed to be concrete but it is not.", id);
-			return Err(XcmExecutorError::AssetNotHandled);
+			return Err(XcmExecutorError::AssetIdConversionFailed);
 		};
-		let Fungibility::Fungible(fee_asset_balance) = fun else {
-			log::error!(target: LOG_TARGET, "Configured XCM fee asset {:?} is supposed to be fungible but it is not.", fun);
-			return Err(XcmExecutorError::AssetNotHandled);
+		let Fungibility::Fungible(amount) = a.fun else {
+			log::info!(target: LOG_TARGET, "Input asset {:?} is supposed to be fungible but it is not.", a);
+			return Err(XcmExecutorError::AmountToBalanceConversionFailed);
 		};
 
-		Ok((location, fee_asset_balance.into()))
+		log::trace!(target: LOG_TARGET, "matched {:?}", (location, amount));
+		Ok((location, amount.into()))
 	}
 }

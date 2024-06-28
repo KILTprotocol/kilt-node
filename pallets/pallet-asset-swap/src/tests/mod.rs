@@ -16,6 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use sp_runtime::AccountId32;
+
+use crate::mock::Balances;
+
 mod force_set_swap_pair;
 mod force_unset_swap_pair;
 mod pause_swap_pair;
@@ -23,3 +27,11 @@ mod resume_swap_pair;
 mod set_swap_pair;
 mod swap;
 mod update_remote_fee;
+
+fn assert_total_supply_invariant(
+	total_supply: impl Into<u128>,
+	remote_balance: impl Into<u128>,
+	pool_address: &AccountId32,
+) {
+	assert!(total_supply.into() - remote_balance.into() <= Balances::usable_balance(pool_address) as u128);
+}
