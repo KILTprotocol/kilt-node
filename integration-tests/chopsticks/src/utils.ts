@@ -17,7 +17,9 @@ export function toNumber(value: string | undefined): number | undefined {
 export const KILT = BigInt(1e15)
 export const DOT = BigInt(1e10)
 export const HDX = BigInt(1e12)
+export const ROC = BigInt(1e12)
 
 export const initialBalanceKILT = BigInt(100) * KILT
 export const initialBalanceDOT = BigInt(100) * DOT
 export const initialBalanceHDX = BigInt(100) * HDX
+export const initialBalanceROC = BigInt(100) * ROC

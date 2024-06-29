@@ -5,24 +5,35 @@ import { setTimeout } from 'timers/promises'
 import * as SpiritnetConfig from '../network/spiritnet.js'
 import * as PolkadotConfig from '../network/polkadot.js'
 import * as HydraDxConfig from '../network/hydraDx.js'
+import * as AssetHubConfig from '../network/assethub.js'
+import * as RococoConfig from '../network/rococo.js'
+import * as PeregrineConfig from '../network/peregrine.js'
 import type { Config } from '../network/types.js'
 
 export let spiritnetContext: Config
 export let hydradxContext: Config
 export let polkadotContext: Config
+export let assethubContext: Config
+export let peregrineContext: Config
+export let rococoContext: Config
 
 beforeAll(async () => {
 	spiritnetContext = await SpiritnetConfig.getContext()
 	hydradxContext = await HydraDxConfig.getContext()
 	polkadotContext = await PolkadotConfig.getContext()
+	assethubContext = await AssetHubConfig.getContext()
+	rococoContext = await RococoConfig.getContext()
+	peregrineContext = await PeregrineConfig.getContext()
 
-	// Setup network
-	//@ts-expect-error Something weird in the exported types
+	// Setup Polkadot network
 	await connectVertical(polkadotContext.chain, spiritnetContext.chain)
-	//@ts-expect-error Something weird in the exported types
 	await connectVertical(polkadotContext.chain, hydradxContext.chain)
-	//@ts-expect-error Something weird in the exported types
 	await connectParachains([spiritnetContext.chain, hydradxContext.chain])
+
+	// setup Rococo Network
+	await connectVertical(rococoContext.chain, assethubContext.chain)
+	await connectVertical(rococoContext.chain, peregrineContext.chain)
+	await connectParachains([assethubContext.chain, peregrineContext.chain])
 
 	const newBlockConfig = { count: 2 }
 	// fixes api runtime disconnect warning
@@ -32,6 +43,9 @@ beforeAll(async () => {
 		polkadotContext.dev.newBlock(newBlockConfig),
 		spiritnetContext.dev.newBlock(newBlockConfig),
 		hydradxContext.dev.newBlock(newBlockConfig),
+		assethubContext.dev.newBlock(newBlockConfig),
+		rococoContext.dev.newBlock(newBlockConfig),
+		peregrineContext.dev.newBlock(newBlockConfig),
 	])
 }, 300_000)
 
@@ -44,6 +58,38 @@ afterAll(async () => {
 export async function getFreeBalanceSpiritnet(account: string): Promise<bigint> {
 	const accountInfo = await spiritnetContext.api.query.system.account(account)
 	return accountInfo.data.free.toBigInt()
+}
+
+export async function getFreeBalancePeregrine(account: string): Promise<bigint> {
+	const accountInfo = await peregrineContext.api.query.system.account(account)
+	return accountInfo.data.free.toBigInt()
+}
+
+export async function getFreeRocPeregrine(account: string): Promise<bigint> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const accountInfo: any = await peregrineContext.api.query.fungibles.account(AssetHubConfig.ROC, account)
+	if (accountInfo.isNone) {
+		return BigInt(0)
+	}
+	return accountInfo.unwrap().balance.toBigInt()
+}
+
+export async function getFreeRocAssetHub(account: string): Promise<bigint> {
+	const accountInfo = await assethubContext.api.query.system.account(account)
+	return accountInfo.data.free.toBigInt()
+}
+
+export async function getFreeEkiltAssetHub(account: string): Promise<bigint> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const accountInfo: any = await assethubContext.api.query.foreignAssets.account(
+		AssetHubConfig.eKiltLocation,
+		account
+	)
+	if (accountInfo.isNone) {
+		return BigInt(0)
+	}
+
+	return accountInfo.unwrap().balance.toBigInt()
 }
 
 export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint> {
