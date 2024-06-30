@@ -19,11 +19,14 @@
 pub mod convert;
 pub use convert::AccountId32ToAccountId32JunctionConverter;
 
-pub mod match_fungible;
-pub use match_fungible::MatchesSwapPairXcmFeeAsset;
+pub mod r#match;
+pub use r#match::MatchesSwapPairXcmFeeFungibleAsset;
 
-pub mod reserve;
-pub use reserve::ReserveTransfersOfXcmFeeAssetAndRemoteAsset;
+pub mod transfer;
+pub use transfer::{IsSwapPairRemoteAsset, IsSwapPairXcmFeeAsset};
+
+pub mod trade;
+pub use trade::{UsingComponentsForSwapPairRemoteAsset, UsingComponentsForXcmFeeAsset};
 
 pub mod trader;
 pub use trader::UsingComponentsForXcmFeeAsset;

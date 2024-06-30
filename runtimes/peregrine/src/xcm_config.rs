@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balances, Fungibles, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-	RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, ParachainInfo, ParachainSystem, PolkadotXcm,
+	Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
 use frame_support::{
@@ -27,8 +27,8 @@ use frame_support::{
 };
 use frame_system::EnsureRoot;
 use pallet_asset_swap::xcm::{
-	trader::UsingComponentsForSwapPairRemoteAsset, MatchesSwapPairXcmFeeAsset,
-	ReserveTransfersOfXcmFeeAssetAndRemoteAsset, SwapPairRemoteAssetTransactor, UsingComponentsForXcmFeeAsset,
+	IsSwapPairRemoteAsset, IsSwapPairXcmFeeAsset, MatchesSwapPairXcmFeeFungibleAsset, SwapPairRemoteAssetTransactor,
+	UsingComponentsForSwapPairRemoteAsset, UsingComponentsForXcmFeeAsset,
 };
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
@@ -164,41 +164,40 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 	}
 }
 
-// TODO: Check checking account to something else
 parameter_types! {
-	pub const CheckingAccount: AccountId = AccountId::new([1; 32]);
+	pub TreasuryAccountId: AccountId = Treasury::account_id();
 }
 
-// TODO: Implement logic that restricts using DOTs to only reserve-based
-// transfers of DOTs.
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
 	// How we send Xcm messages.
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
-	// The swap pair transactor wrapper must come before the balances wrapper.
-	// TODO: We can refactor the `UsingComponents` to wrap around fungibles, so that
-	// we don't use our local token by default. Or maybe we can, but it should be an
-	// explicitly different type.
+	// Until fixed, `LocalAssetTransactor` must be last since it returns an error if
+	// the operation does not go through, i.e., it cannot be chained with other
+	// transactors.
 	type AssetTransactor = (
-		// Converts remote token deposits into transfers from the swap pair pool.
+		// Allow the asset from the other side of the pool to be "deposited" into the current system.
 		SwapPairRemoteAssetTransactor<LocationToAccountIdConverter, Runtime>,
-		// Allow deposits of assets used to pay for XCM fees.
+		// Allow the asset to pay for remote XCM fees to be deposited into the current system.
 		FungiblesAdapter<
 			Fungibles,
-			MatchesSwapPairXcmFeeAsset<Runtime>,
+			MatchesSwapPairXcmFeeFungibleAsset<Runtime>,
 			LocationToAccountIdConverter,
 			AccountId,
 			NoChecking,
 			CheckingAccount,
 		>,
-		// Wrapper around the local currency.
+		// Transactor for fungibles matching the "Here" location.
 		LocalAssetTransactor<Balances, RelayNetworkId>,
 	);
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	// Reserving is disabled.
-	type IsReserve = (NativeAsset, ReserveTransfersOfXcmFeeAssetAndRemoteAsset<Runtime>);
+	type IsReserve = (
+		NativeAsset,
+		IsSwapPairRemoteAsset<Runtime>,
+		IsSwapPairXcmFeeAsset<Runtime>,
+	);
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	type UniversalLocation = UniversalLocation;
@@ -211,11 +210,11 @@ impl xcm_executor::Config for XcmConfig {
 	// Balances pallet here. Balances is only used if fees are dropped without being
 	// used. In that case they are put into the treasury.
 	type Trader = (
-		// The fungibles wrapper must come before the balances wrapper.
-		// TODO: We can refactor the `UsingComponents` to wrap around fungibles, so that we don't use our local token
-		// by default. Or maybe we can, but it should be an explicitly different type.
-		UsingComponentsForXcmFeeAsset<Runtime, WeightToFee<Runtime>, Fungibles>,
-		UsingComponentsForSwapPairRemoteAsset<Runtime, WeightToFee<Runtime>>,
+		// Can pay for fees with the remote XCM asset fee (when sending it into this system).
+		UsingComponentsForXcmFeeAsset<Runtime, WeightToFee<Runtime>>,
+		// Can pay for the remote asset of the swap pair (when "depositing" it into this system).
+		UsingComponentsForSwapPairRemoteAsset<Runtime, WeightToFee<Runtime>, TreasuryAccountId>,
+		// Can pay with the fungible that matches the "Here" location.
 		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>,
 	);
 	type ResponseHandler = PolkadotXcm;

@@ -25,6 +25,7 @@ use crate::{
 		ExtBuilder, MockRuntime, NewSwapPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
 	swap::SwapPairStatus,
+	tests::assert_total_supply_invariant,
 	Error, Event, Pallet, SwapPair, SwapPairInfoOf,
 };
 
@@ -33,7 +34,7 @@ fn successful() {
 	let pool_account_address =
 		Pallet::<MockRuntime>::pool_account_id_for_remote_asset(&REMOTE_ERC20_ASSET_ID.into()).unwrap();
 	ExtBuilder::default()
-		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
+		.with_balances(vec![(pool_account_address.clone(), 1_000, 0, 0)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_swap_pair(
@@ -55,7 +56,8 @@ fn successful() {
 				remote_reserve_location: ASSET_HUB_LOCATION.into(),
 				status: SwapPairStatus::Paused,
 			};
-			assert_eq!(swap_pair, Some(expected_swap_pair));
+			assert_eq!(swap_pair, Some(expected_swap_pair.clone()));
+			assert_total_supply_invariant(u64::MAX, expected_swap_pair.remote_asset_balance, &pool_account_address);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwapPairCreated {
 					circulating_supply: 1_000,
@@ -67,41 +69,8 @@ fn successful() {
 				}
 				.into()));
 		});
-	// Case where all issuance is circulating supply requires 0 balance for the pool
-	// account
-	ExtBuilder::default().build().execute_with(|| {
-		assert_ok!(Pallet::<MockRuntime>::set_swap_pair(
-			RawOrigin::Root.into(),
-			Box::new(ASSET_HUB_LOCATION.into()),
-			Box::new(REMOTE_ERC20_ASSET_ID.into()),
-			Box::new(XCM_ASSET_FEE.into()),
-			u64::MAX as u128,
-			u64::MAX as u128,
-		));
-
-		let swap_pair = SwapPair::<MockRuntime>::get();
-		let expected_swap_pair = SwapPairInfoOf::<MockRuntime> {
-			pool_account: pool_account_address.clone(),
-			// No balance on remote since all circulating supply is unlocked.
-			remote_asset_balance: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Paused,
-		};
-		assert_eq!(swap_pair, Some(expected_swap_pair));
-		assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-			== Event::<MockRuntime>::SwapPairCreated {
-				circulating_supply: u64::MAX as u128,
-				pool_account: pool_account_address.clone(),
-				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-				remote_asset_reserve_location: ASSET_HUB_LOCATION.into(),
-				remote_xcm_fee: Box::new(XCM_ASSET_FEE.into()),
-				total_issuance: u64::MAX as u128,
-			}
-			.into()));
-	});
-	// Case where all issuance is locked and control by our sovereign account.
+	// Case where all issuance is circulating supply requires the same balance for
+	// the pool account
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
 		.build()
@@ -112,23 +81,24 @@ fn successful() {
 				Box::new(REMOTE_ERC20_ASSET_ID.into()),
 				Box::new(XCM_ASSET_FEE.into()),
 				u64::MAX as u128,
-				0,
+				u64::MAX as u128,
 			));
 
 			let swap_pair = SwapPair::<MockRuntime>::get();
 			let expected_swap_pair = SwapPairInfoOf::<MockRuntime> {
 				pool_account: pool_account_address.clone(),
-				// Max balance since all circulating supply is controlled by us.
-				remote_asset_balance: u64::MAX as u128,
+				// No balance on remote since all circulating supply is unlocked.
+				remote_asset_balance: 0,
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 				remote_fee: XCM_ASSET_FEE.into(),
 				remote_reserve_location: ASSET_HUB_LOCATION.into(),
 				status: SwapPairStatus::Paused,
 			};
-			assert_eq!(swap_pair, Some(expected_swap_pair));
+			assert_eq!(swap_pair, Some(expected_swap_pair.clone()));
+			assert_total_supply_invariant(u64::MAX, expected_swap_pair.remote_asset_balance, &pool_account_address);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwapPairCreated {
-					circulating_supply: 0,
+					circulating_supply: u64::MAX as u128,
 					pool_account: pool_account_address.clone(),
 					remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 					remote_asset_reserve_location: ASSET_HUB_LOCATION.into(),
@@ -137,6 +107,40 @@ fn successful() {
 				}
 				.into()));
 		});
+	// Case where all issuance is locked and controlled by our sovereign account.
+	ExtBuilder::default().build().execute_with(|| {
+		assert_ok!(Pallet::<MockRuntime>::set_swap_pair(
+			RawOrigin::Root.into(),
+			Box::new(ASSET_HUB_LOCATION.into()),
+			Box::new(REMOTE_ERC20_ASSET_ID.into()),
+			Box::new(XCM_ASSET_FEE.into()),
+			u64::MAX as u128,
+			0,
+		));
+
+		let swap_pair = SwapPair::<MockRuntime>::get();
+		let expected_swap_pair = SwapPairInfoOf::<MockRuntime> {
+			pool_account: pool_account_address.clone(),
+			// Max balance since all circulating supply is controlled by us.
+			remote_asset_balance: u64::MAX as u128,
+			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_fee: XCM_ASSET_FEE.into(),
+			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			status: SwapPairStatus::Paused,
+		};
+		assert_eq!(swap_pair, Some(expected_swap_pair.clone()));
+		assert_total_supply_invariant(u64::MAX, expected_swap_pair.remote_asset_balance, &pool_account_address);
+		assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+			== Event::<MockRuntime>::SwapPairCreated {
+				circulating_supply: 0,
+				pool_account: pool_account_address.clone(),
+				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+				remote_asset_reserve_location: ASSET_HUB_LOCATION.into(),
+				remote_xcm_fee: Box::new(XCM_ASSET_FEE.into()),
+				total_issuance: u64::MAX as u128,
+			}
+			.into()));
+	});
 }
 
 #[test]
@@ -218,7 +222,7 @@ fn fails_on_not_enough_funds_on_pool_balance() {
 					Box::new(REMOTE_ERC20_ASSET_ID.into()),
 					Box::new(XCM_ASSET_FEE.into()),
 					u64::MAX as u128,
-					0,
+					u64::MAX as u128,
 				),
 				Error::<MockRuntime>::PoolInitialLiquidityRequirement
 			);
@@ -235,7 +239,7 @@ fn fails_on_not_enough_funds_on_pool_balance() {
 					Box::new(REMOTE_ERC20_ASSET_ID.into()),
 					Box::new(XCM_ASSET_FEE.into()),
 					u64::MAX as u128,
-					0,
+					u64::MAX as u128,
 				),
 				Error::<MockRuntime>::PoolInitialLiquidityRequirement
 			);
@@ -252,7 +256,7 @@ fn fails_on_not_enough_funds_on_pool_balance() {
 					Box::new(REMOTE_ERC20_ASSET_ID.into()),
 					Box::new(XCM_ASSET_FEE.into()),
 					u64::MAX as u128,
-					0,
+					u64::MAX as u128,
 				),
 				Error::<MockRuntime>::PoolInitialLiquidityRequirement
 			);

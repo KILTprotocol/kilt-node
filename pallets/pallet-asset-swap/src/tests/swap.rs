@@ -29,12 +29,13 @@ use xcm::v3::{Fungibility, MultiAsset};
 
 use crate::{
 	mock::{
-		Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime, NewSwapPairInfo, ASSET_HUB_LOCATION,
+		Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime, NewSwapPairInfo, System, ASSET_HUB_LOCATION,
 		FREEZE_REASON, HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
 	swap::SwapPairStatus,
+	tests::assert_total_supply_invariant,
 	xcm::convert::AccountId32ToAccountId32JunctionConverter,
-	Error, Pallet, SwapPair,
+	Error, Event, Pallet, SwapPair,
 };
 
 #[test]
@@ -90,7 +91,15 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
-			// TODO: Test for event generation
+			// Invariant is held
+			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::LocalToRemoteSwapExecuted {
+					amount: 99_999,
+					from: user.clone(),
+					to: ASSET_HUB_LOCATION.into()
+				}
+				.into()));
 		});
 	// It works with balance partially frozen.
 	ExtBuilder::default()
@@ -141,7 +150,15 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
-			// TODO: Test for event generation
+			// Invariant is held
+			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::LocalToRemoteSwapExecuted {
+					amount: 99_999,
+					from: user.clone(),
+					to: ASSET_HUB_LOCATION.into()
+				}
+				.into()));
 		});
 	// It works with balance partially held.
 	ExtBuilder::default()
@@ -188,12 +205,20 @@ fn successful() {
 			// Pool's fungible balance is not changed (we're testing that fees are burnt and
 			// not transferred).
 			assert!(MockFungibleAssetTransactor::get_balance_for(
-				&AccountId32ToAccountId32JunctionConverter::try_convert(pool_account)
+				&AccountId32ToAccountId32JunctionConverter::try_convert(pool_account.clone())
 					.unwrap()
 					.into()
 			)
 			.is_zero());
-			// TODO: Test for event generation
+			// Invariant is held
+			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::LocalToRemoteSwapExecuted {
+					amount: 99_999,
+					from: user.clone(),
+					to: ASSET_HUB_LOCATION.into()
+				}
+				.into()));
 		});
 }
 
