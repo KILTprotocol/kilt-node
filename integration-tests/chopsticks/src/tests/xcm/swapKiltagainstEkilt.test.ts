@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
@@ -12,9 +11,9 @@ import {
 	getFreeEkiltAssetHub,
 	assethubContext,
 	getFreeRocAssetHub,
+	getRemoteLockedSupply,
 } from '../index.js'
-
-import { checkBalance, checkBalanceInRange, createBlock, setStorage, hexAddress } from '../utils.js'
+import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getAccountLocationV3 } from '../../network/utils.js'
 
 test('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
@@ -50,6 +49,7 @@ test('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const initialBalancePoolAccount = await getFreeBalancePeregrine(PeregrineConfig.poolAccountId)
 	const initialBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
 	const initialBalanceRocSovereignAccount = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const initialRemoteLockedSupply = await getRemoteLockedSupply()
 
 	// 50 PILTS
 	const balanceToTransfer = BigInt('50000000000000000')
@@ -85,7 +85,7 @@ test('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	await createBlock(assethubContext)
 
 	// check events receiver
-	checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot('receiver events messageQueue')
+	checkSystemEvents(assethubContext, 'xcmpQueue').toMatchSnapshot('receiver events messageQueue')
 	checkSystemEvents(assethubContext, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'receiver events Balances'
 	)
@@ -98,8 +98,11 @@ test('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const freeBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
 	expect(initialBalanceSovereignAccount - balanceToTransfer).eq(freeBalanceSovereignAccount)
 
-	const freeRocsSvereignAccount = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
-	expect(freeRocsSvereignAccount).toBeLessThan(initialBalanceRocSovereignAccount)
-
 	// sovereign account should have paid the fees
-}, 20_00000)
+	const freeRocsSovereignAccount = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
+	expect(freeRocsSovereignAccount).toBeLessThan(initialBalanceRocSovereignAccount)
+
+	// remote locked supply should have decreased by the amount of the transferred PILTs
+	const remoteLockedSupply = await getRemoteLockedSupply()
+	expect(remoteLockedSupply).eq(initialRemoteLockedSupply - balanceToTransfer)
+}, 20_000)

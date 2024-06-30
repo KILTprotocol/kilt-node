@@ -20,7 +20,7 @@ exports[`Swap PILTs against ePILTS on AssetHub > Swap events assetSwap pallet 1`
         },
       },
     },
-    "method": "SwapExecuted",
+    "method": "LocalToRemoteSwapExecuted",
     "section": "assetSwap",
   },
 ]

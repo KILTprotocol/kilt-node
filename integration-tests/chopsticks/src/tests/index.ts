@@ -51,8 +51,21 @@ beforeAll(async () => {
 
 afterAll(async () => {
 	// fixes api runtime disconnect warning
+	try {
+		await Promise.all([
+			spiritnetContext.teardown(),
+			hydradxContext.teardown(),
+			polkadotContext.teardown(),
+			assethubContext.teardown(),
+			rococoContext.teardown(),
+			peregrineContext.teardown(),
+		])
+	} catch (error) {
+		if (!(error instanceof TypeError)) {
+			console.error(error)
+		}
+	}
 	await setTimeout(50)
-	await Promise.all([spiritnetContext.teardown(), hydradxContext.teardown(), polkadotContext.teardown()])
 })
 
 export async function getFreeBalanceSpiritnet(account: string): Promise<bigint> {
@@ -77,6 +90,17 @@ export async function getFreeRocPeregrine(account: string): Promise<bigint> {
 export async function getFreeRocAssetHub(account: string): Promise<bigint> {
 	const accountInfo = await assethubContext.api.query.system.account(account)
 	return accountInfo.data.free.toBigInt()
+}
+
+export async function getRemoteLockedSupply(): Promise<bigint> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const swapPairInfo: any = await peregrineContext.api.query.assetSwap.swapPair()
+
+	if (swapPairInfo.isNone) {
+		return BigInt(0)
+	}
+
+	return swapPairInfo.unwrap().remoteAssetBalance.toBigInt()
 }
 
 export async function getFreeEkiltAssetHub(account: string): Promise<bigint> {

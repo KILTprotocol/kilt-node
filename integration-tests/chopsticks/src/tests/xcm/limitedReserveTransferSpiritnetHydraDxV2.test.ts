@@ -10,7 +10,7 @@ import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage 
 
 const KILT_ASSET_V2 = { V2: [getNativeAssetIdLocation(KILT)] }
 
-test.skip('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice', async ({ expect }) => {
+test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT tokens
