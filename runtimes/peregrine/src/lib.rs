@@ -993,7 +993,7 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureRootAsTreasury {
 		EnsureRoot::try_origin(o)?;
 
 		// Return treasury account ID if successful.
-		Ok(pallet_treasury::Pallet::<Runtime>::account_id())
+		Ok(Treasury::account_id())
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
