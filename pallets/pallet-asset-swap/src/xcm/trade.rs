@@ -292,16 +292,9 @@ mod swap_pair_remote_asset {
 							log::error!(target: LOG_TARGET, "Stored swap pair should not be None but it is.");
 							return;
 						};
-						let new_remote_asset_balance = entry
+						entry.remote_asset_balance = entry
 							.remote_asset_balance
-							// If `add` overflows, log a warning and saturate to max.
-							.checked_add(self.remaining_fungible_balance).unwrap_or_else(|| {
-								log::warn!(target: LOG_TARGET, "Overflow found when adding {:?} to remote asset balance {:?}", self.remaining_fungible_balance, entry
-								.remote_asset_balance);
-								// Should always be `u128::MAX`, but we return a saturating `add` anyway.
-								entry.remote_asset_balance.saturating_add(self.remaining_fungible_balance)
-							});
-						entry.remote_asset_balance = new_remote_asset_balance
+							.saturating_add(self.remaining_fungible_balance);
 					});
 				}
 			}
