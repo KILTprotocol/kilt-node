@@ -28,9 +28,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{
-		AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, EnsureOrigin, Everything, InstanceFilter, PrivilegeCmp,
-	},
+	traits::{AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
@@ -55,6 +53,7 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 use runtime_common::{
+	asset_swap::EnsureRootAsTreasury,
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
@@ -968,40 +967,6 @@ impl pallet_asset_swap::Config for Runtime {
 	type XcmRouter = XcmRouter;
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-pub struct NoopBenchmarkHelper;
-
-#[cfg(feature = "runtime-benchmarks")]
-impl pallet_assets::BenchmarkHelper<MultiLocation> for NoopBenchmarkHelper {
-	fn create_asset_id_parameter(id: u32) -> MultiLocation {
-		MultiLocation {
-			parents: 0,
-			interior: xcm::prelude::Here,
-		}
-	}
-}
-
-/// Returns the `treasury` address if the origin is the root origin.
-///
-/// Required by `type CreateOrigin` in `pallet_assets`.
-pub struct EnsureRootAsTreasury;
-
-impl EnsureOrigin<RuntimeOrigin> for EnsureRootAsTreasury {
-	type Success = AccountId;
-
-	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
-		EnsureRoot::try_origin(o)?;
-
-		// Return treasury account ID if successful.
-		Ok(Treasury::account_id())
-	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
-		EnsureRoot::try_successful_origin()
-	}
-}
-
 // No deposit is taken since creation is permissioned. Only the root origin can
 // create new assets, and the owner will be the treasury account.
 impl pallet_assets::Config for Runtime {
@@ -1012,9 +977,9 @@ impl pallet_assets::Config for Runtime {
 	type AssetIdParameter = MultiLocation;
 	type Balance = u128;
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = NoopBenchmarkHelper;
+	type BenchmarkHelper = runtime_common::asset_swap::NoopBenchmarkHelper;
 	type CallbackHandle = ();
-	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury>;
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
 	type Currency = Balances;
 	type Extra = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
