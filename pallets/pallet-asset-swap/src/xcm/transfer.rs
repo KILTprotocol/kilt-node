@@ -77,7 +77,7 @@ mod swap_pair_remote_asset {
 
 	use crate::{Config, SwapPair};
 
-	const LOG_TARGET: &str = "xcm::pallet-asset-swap::AllowSwapPairRemoteAsset";
+	const LOG_TARGET: &str = "xcm::barriers::pallet-asset-swap::AllowSwapPairRemoteAsset";
 
 	/// Type implementing `ContainsPair<MultiAsset, MultiLocation>` and returns
 	/// `true` if the specified asset matches the swap pair remote asset, which
