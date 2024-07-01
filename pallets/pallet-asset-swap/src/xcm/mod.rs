@@ -28,8 +28,5 @@ pub use transfer::{IsSwapPairRemoteAsset, IsSwapPairXcmFeeAsset};
 pub mod trade;
 pub use trade::{UsingComponentsForSwapPairRemoteAsset, UsingComponentsForXcmFeeAsset};
 
-pub mod trader;
-pub use trader::UsingComponentsForXcmFeeAsset;
-
 pub mod transact;
 pub use transact::SwapPairRemoteAssetTransactor;
