@@ -67,7 +67,6 @@ use runtime_common::{
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
 };
-use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
 
