@@ -1,5 +1,10 @@
 name: srtool build
 
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
@@ -7,11 +12,6 @@ concurrency:
 env:
   SUBWASM_VERSION: 0.20.0
   TOML_CLI_VERSION: 0.2.4
-
-on:
-  release:
-    types:
-      - published
 
 jobs:
   build-wasm:

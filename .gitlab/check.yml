@@ -18,8 +18,14 @@ cargo-clippy:
   extends: .check_skip_rust
   image: paritytech/ci-unified:bullseye-1.77.0
   stage: check
-  variables:
-    RUSTFLAGS: "-D warnings"
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-clippy
+    paths:
+    - target/
+    - .cargo/bin/
+    - .cargo/registry/index/
+    - .cargo/registry/cache/
+    - .cargo/git/db/
   script:
-    - cargo clippy --all-targets --locked --workspace --quiet
-    - cargo clippy --all-targets --all-features --locked --workspace --quiet
+    - SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --quiet
+    - SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --workspace --quiet

@@ -1,6 +1,9 @@
 name: check fmt
 
-on: pull_request
+on:
+  pull_request:
+      types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}
@@ -17,7 +20,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo
+            ~/.cargo/bin
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |

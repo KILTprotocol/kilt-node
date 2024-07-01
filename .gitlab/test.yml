@@ -12,13 +12,15 @@ test:
       - .cargo/registry/cache/
       - .cargo/git/db/
   script:
-    - cargo test --all --all-targets --locked
+    - time cargo test --all --all-targets --locked
 
 test-features:
   extends: .check_skip_rust
   timeout: 2 hours
   image: paritytech/ci-unified:bullseye-1.77.0
   stage: test
+  needs:
+    - test
   cache:
     key: cache-test
     paths:
@@ -28,4 +30,4 @@ test-features:
       - .cargo/registry/cache/
       - .cargo/git/db/
   script:
-    - cargo test --all --all-features --all-targets --locked
+    - time cargo test --all --all-features --all-targets --locked

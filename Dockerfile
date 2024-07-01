@@ -1,7 +1,7 @@
 # this container builds the kilt-parachain binary from source files and the runtime library
 # pinned the version to avoid build cache invalidation
 
-FROM paritytech/ci-unified:bullseye-1.77.0 as builder
+FROM paritytech/ci-unified:bullseye-1.70.0 as builder
 
 WORKDIR /build
 

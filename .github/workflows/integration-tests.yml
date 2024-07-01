@@ -1,6 +1,9 @@
 name: Integration tests
 
-on: pull_request
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}
