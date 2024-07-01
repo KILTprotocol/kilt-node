@@ -18,9 +18,9 @@ env_logger      = { workspace = true }
 pallet-balances = { workspace = true, features = ["std"] }
 
 [dependencies]
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-log = { workspace = true }
+frame-support      = { workspace = true }
+frame-system       = { workspace = true }
+log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info         = { workspace = true, features = ["derive"] }
 sp-core            = { workspace = true }
