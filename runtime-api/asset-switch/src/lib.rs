@@ -22,8 +22,8 @@ use parity_scale_codec::Codec;
 use sp_std::vec::Vec;
 
 sp_api::decl_runtime_apis! {
-	/// Runtime API to compute the pool account for a given swap pair ID and remote asset.
-	pub trait AssetSwap<AssetId, AccountId> where
+	/// Runtime API to compute the pool account for a given switch pair ID and remote asset.
+	pub trait AssetSwitch<AssetId, AccountId> where
 		AssetId: Codec,
 		AccountId: Codec,
 		{

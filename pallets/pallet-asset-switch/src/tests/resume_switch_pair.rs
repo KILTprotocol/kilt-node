@@ -19,92 +19,83 @@
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
-use xcm::v3::{Fungibility, MultiAsset};
 
 use crate::{
 	mock::{
-		ExtBuilder, MockRuntime, NewSwapPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
+		ExtBuilder, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
-	Error, Event, Pallet, SwapPair,
+	switch::SwitchPairStatus,
+	Error, Event, Pallet, SwitchPair,
 };
 
 #[test]
 fn successful() {
-	// Setting the fee to a new value generates an event.
-	let new_fee = MultiAsset {
-		fun: Fungibility::Fungible(1),
-		..XCM_ASSET_FEE
-	};
+	// Resuming a non-running switch pair generates an event.
 	ExtBuilder::default()
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: [0u8; 32].into(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: Default::default(),
+			status: SwitchPairStatus::Paused,
 			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::update_remote_fee(
-				RawOrigin::Root.into(),
-				Box::new(new_fee.clone().into())
-			));
+			assert_ok!(Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::Root.into()));
 			assert_eq!(
-				SwapPair::<MockRuntime>::get().unwrap().remote_fee,
-				new_fee.clone().into()
+				SwitchPair::<MockRuntime>::get().unwrap().status,
+				SwitchPairStatus::Running
 			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwapPairFeeUpdated {
-					old: XCM_ASSET_FEE.into(),
-					new: new_fee.clone().into()
+				== Event::<MockRuntime>::SwitchPairResumed {
+					remote_asset_id: REMOTE_ERC20_ASSET_ID.into()
 				}
 				.into()));
 		});
-	// Setting the fee to the same value does not generate an event.
+	// Resuming a running switch pair generates no event.
 	ExtBuilder::default()
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: [0u8; 32].into(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: Default::default(),
+			status: SwitchPairStatus::Running,
 			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::update_remote_fee(
-				RawOrigin::Root.into(),
-				Box::new(XCM_ASSET_FEE.into())
-			));
-			assert_eq!(SwapPair::<MockRuntime>::get().unwrap().remote_fee, XCM_ASSET_FEE.into());
+			assert_ok!(Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::Root.into()));
+			assert_eq!(
+				SwitchPair::<MockRuntime>::get().unwrap().status,
+				SwitchPairStatus::Running
+			);
 			assert!(System::events().into_iter().map(|e| e.event).all(|e| e
-				!= Event::<MockRuntime>::SwapPairFeeUpdated {
-					old: XCM_ASSET_FEE.into(),
-					new: XCM_ASSET_FEE.into(),
+				!= Event::<MockRuntime>::SwitchPairResumed {
+					remote_asset_id: REMOTE_ERC20_ASSET_ID.into()
 				}
 				.into()));
 		});
+}
+
+#[test]
+fn fails_on_non_existing_pair() {
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::Root.into()),
+			Error::<MockRuntime>::SwitchPairNotFound
+		);
+	});
 }
 
 #[test]
 fn fails_on_invalid_origin() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::update_remote_fee(RawOrigin::None.into(), Box::new(XCM_ASSET_FEE.into()),),
+			Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::None.into()),
 			DispatchError::BadOrigin
-		);
-	});
-}
-
-#[test]
-fn fails_on_non_existing_swap_pair() {
-	ExtBuilder::default().build().execute_with(|| {
-		assert_noop!(
-			Pallet::<MockRuntime>::update_remote_fee(RawOrigin::Root.into(), Box::new(XCM_ASSET_FEE.into()),),
-			Error::<MockRuntime>::SwapPairNotFound
 		);
 	});
 }

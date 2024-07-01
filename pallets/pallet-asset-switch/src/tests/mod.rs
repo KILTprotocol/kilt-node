@@ -16,17 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub mod convert;
-pub use convert::AccountId32ToAccountId32JunctionConverter;
+use sp_runtime::AccountId32;
 
-pub mod r#match;
-pub use r#match::MatchesSwapPairXcmFeeFungibleAsset;
+use crate::mock::Balances;
 
-pub mod transfer;
-pub use transfer::{IsSwapPairRemoteAsset, IsSwapPairXcmFeeAsset};
+mod force_set_switch_pair;
+mod force_unset_switch_pair;
+mod pause_switch_pair;
+mod resume_switch_pair;
+mod set_switch_pair;
+mod switch;
+mod update_remote_fee;
 
-pub mod trade;
-pub use trade::{UsingComponentsForSwapPairRemoteAsset, UsingComponentsForXcmFeeAsset};
-
-pub mod transact;
-pub use transact::SwapPairRemoteAssetTransactor;
+fn assert_total_supply_invariant(
+	total_supply: impl Into<u128>,
+	remote_balance: impl Into<u128>,
+	pool_address: &AccountId32,
+) {
+	assert!(total_supply.into() - remote_balance.into() <= Balances::usable_balance(pool_address) as u128);
+}

@@ -44,15 +44,15 @@ use xcm::{
 use xcm_executor::{traits::TransactAsset, Assets};
 
 use crate::{
-	swap::SwapPairStatus, xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, Pallet, SwapPair,
-	SwapPairInfoOf,
+	switch::SwitchPairStatus, xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, Pallet, SwitchPair,
+	SwitchPairInfoOf,
 };
 
 construct_runtime!(
 	pub enum MockRuntime {
 		System: frame_system,
 		Balances: pallet_balances,
-		AssetSwap: crate
+		Assetswitch: crate
 	}
 );
 
@@ -181,39 +181,39 @@ impl crate::Config for MockRuntime {
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
-	type SwapHooks = ();
-	type SwapOrigin = EnsureRoot<Self::AccountId>;
+	type SwitchHooks = ();
+	type SwitchOrigin = EnsureRoot<Self::AccountId>;
 	type XcmRouter = AlwaysSuccessfulXcmRouter;
 }
 
 #[derive(Clone)]
-pub(crate) struct NewSwapPairInfo {
+pub(crate) struct NewSwitchPairInfo {
 	pub(crate) circulating_supply: u128,
 	pub(crate) pool_account: AccountId32,
 	pub(crate) remote_asset_id: VersionedAssetId,
 	pub(crate) remote_fee: VersionedMultiAsset,
 	pub(crate) remote_reserve_location: VersionedMultiLocation,
-	pub(crate) status: SwapPairStatus,
+	pub(crate) status: SwitchPairStatus,
 	pub(crate) total_issuance: u128,
 }
 
-impl From<NewSwapPairInfo> for SwapPairInfoOf<MockRuntime> {
-	fn from(new_swap_pair_info: NewSwapPairInfo) -> Self {
-		let remote_asset_balance = new_swap_pair_info.total_issuance - new_swap_pair_info.circulating_supply;
+impl From<NewSwitchPairInfo> for SwitchPairInfoOf<MockRuntime> {
+	fn from(new_switch_pair_info: NewSwitchPairInfo) -> Self {
+		let remote_asset_balance = new_switch_pair_info.total_issuance - new_switch_pair_info.circulating_supply;
 		Self {
 			remote_asset_balance,
-			pool_account: new_swap_pair_info.pool_account,
-			remote_asset_id: new_swap_pair_info.remote_asset_id,
-			remote_fee: new_swap_pair_info.remote_fee,
-			remote_reserve_location: new_swap_pair_info.remote_reserve_location,
-			status: new_swap_pair_info.status,
+			pool_account: new_switch_pair_info.pool_account,
+			remote_asset_id: new_switch_pair_info.remote_asset_id,
+			remote_fee: new_switch_pair_info.remote_fee,
+			remote_reserve_location: new_switch_pair_info.remote_reserve_location,
+			status: new_switch_pair_info.status,
 		}
 	}
 }
 
 #[derive(Default)]
 pub(crate) struct ExtBuilder(
-	Option<NewSwapPairInfo>,
+	Option<NewSwitchPairInfo>,
 	Vec<(AccountId32, u64, u64, u64)>,
 	Vec<(AccountId32, MultiAsset)>,
 );
@@ -222,8 +222,8 @@ pub(crate) const FREEZE_REASON: [u8; 1] = *b"1";
 pub(crate) const HOLD_REASON: MockRuntimeHoldReason = MockRuntimeHoldReason {};
 
 impl ExtBuilder {
-	pub(crate) fn with_swap_pair_info(mut self, swap_pair_info: NewSwapPairInfo) -> Self {
-		self.0 = Some(swap_pair_info);
+	pub(crate) fn with_switch_pair_info(mut self, switch_pair_info: NewSwitchPairInfo) -> Self {
+		self.0 = Some(switch_pair_info);
 		self
 	}
 
@@ -244,16 +244,16 @@ impl ExtBuilder {
 		ext.execute_with(|| {
 			System::set_block_number(1);
 
-			if let Some(swap_pair_info) = self.0 {
-				Pallet::<MockRuntime>::set_swap_pair_bypass_checks(
-					swap_pair_info.remote_reserve_location,
-					swap_pair_info.remote_asset_id,
-					swap_pair_info.remote_fee,
-					swap_pair_info.total_issuance,
-					swap_pair_info.circulating_supply,
-					swap_pair_info.pool_account,
+			if let Some(switch_pair_info) = self.0 {
+				Pallet::<MockRuntime>::set_switch_pair_bypass_checks(
+					switch_pair_info.remote_reserve_location,
+					switch_pair_info.remote_asset_id,
+					switch_pair_info.remote_fee,
+					switch_pair_info.total_issuance,
+					switch_pair_info.circulating_supply,
+					switch_pair_info.pool_account,
 				);
-				SwapPair::<MockRuntime>::mutate(|entry| entry.as_mut().unwrap().status = swap_pair_info.status);
+				SwitchPair::<MockRuntime>::mutate(|entry| entry.as_mut().unwrap().status = switch_pair_info.status);
 			}
 			for (account, free, frozen, held) in self.1 {
 				<Balances as Mutate<AccountId32>>::set_balance(&account, free);

@@ -19,7 +19,7 @@
 use sp_runtime::{traits::TryConvert, AccountId32};
 use xcm::v3::Junction::{self, AccountId32 as AccountId32Junction};
 
-const LOG_TARGET: &str = "xcm::pallet-asset-swap::AccountId32ToAccountId32JunctionConverter";
+const LOG_TARGET: &str = "xcm::pallet-asset-switch::AccountId32ToAccountId32JunctionConverter";
 
 /// Type implementing `TryConvert<AccountId32, Junction>` and returns a
 /// `Junction` from an `AccountId32`.

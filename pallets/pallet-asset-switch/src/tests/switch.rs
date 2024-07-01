@@ -29,13 +29,13 @@ use xcm::v3::{Fungibility, MultiAsset};
 
 use crate::{
 	mock::{
-		Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime, NewSwapPairInfo, System, ASSET_HUB_LOCATION,
+		Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION,
 		FREEZE_REASON, HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
-	swap::SwapPairStatus,
+	switch::SwitchPairStatus,
 	tests::assert_total_supply_invariant,
 	xcm::convert::AccountId32ToAccountId32JunctionConverter,
-	Error, Event, Pallet, SwapPair,
+	Error, Event, Pallet, SwitchPair,
 };
 
 #[test]
@@ -46,19 +46,19 @@ fn successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: pool_account.clone(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
-			assert_ok!(Pallet::<MockRuntime>::swap(
+			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
 				99_999,
 				Box::new(ASSET_HUB_LOCATION.into())
@@ -66,16 +66,16 @@ fn successful() {
 			let total_currency_issuance_after = <Balances as Inspect<AccountId32>>::total_issuance();
 			// Total issuance of currency has not changed
 			assert_eq!(total_currency_issuance_after, total_currency_issuance_before);
-			// User's currency balance is reduced by swap amount
+			// User's currency balance is reduced by switch amount
 			assert!(<Balances as Inspect<AccountId32>>::total_balance(&user).is_one());
 			// User's frozen balance has remained unchanged.
 			assert!(<Balances as InspectFreeze<AccountId32>>::balance_frozen(&FREEZE_REASON, &user).is_zero());
 			// User's held balance has remained unchanged.
 			assert!(<Balances as InspectHold<AccountId32>>::balance_on_hold(&HOLD_REASON, &user).is_zero());
-			// Pool's currency balance is increased by swap amount
+			// Pool's currency balance is increased by switch amount
 			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
-			// Pool's remote balance is decreased by swap amount
-			assert!(SwapPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
+			// Pool's remote balance is decreased by switch amount
+			assert!(SwitchPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
 			// User's fungible balance is reduced by XCM fee
 			assert!(MockFungibleAssetTransactor::get_balance_for(
 				&AccountId32ToAccountId32JunctionConverter::try_convert(user.clone())
@@ -94,7 +94,7 @@ fn successful() {
 			// Invariant is held
 			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::LocalToRemoteSwapExecuted {
+				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
 					from: user.clone(),
 					to: ASSET_HUB_LOCATION.into()
@@ -105,19 +105,19 @@ fn successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 1, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: pool_account.clone(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
-			assert_ok!(Pallet::<MockRuntime>::swap(
+			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
 				99_999,
 				Box::new(ASSET_HUB_LOCATION.into())
@@ -125,16 +125,16 @@ fn successful() {
 			let total_currency_issuance_after = <Balances as Inspect<AccountId32>>::total_issuance();
 			// Total issuance of currency has not changed
 			assert_eq!(total_currency_issuance_after, total_currency_issuance_before);
-			// User's currency balance is reduced by swap amount
+			// User's currency balance is reduced by switch amount
 			assert!(<Balances as Inspect<AccountId32>>::total_balance(&user).is_one());
 			// User's frozen balance has remained unchanged.
 			assert!(<Balances as InspectFreeze<AccountId32>>::balance_frozen(&FREEZE_REASON, &user).is_one());
 			// User's held balance has remained unchanged.
 			assert!(<Balances as InspectHold<AccountId32>>::balance_on_hold(&HOLD_REASON, &user).is_zero());
-			// Pool's currency balance is increased by swap amount
+			// Pool's currency balance is increased by switch amount
 			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
-			// Pool's remote balance is decreased by swap amount
-			assert!(SwapPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
+			// Pool's remote balance is decreased by switch amount
+			assert!(SwitchPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
 			// User's fungible balance is reduced by XCM fee
 			assert!(MockFungibleAssetTransactor::get_balance_for(
 				&AccountId32ToAccountId32JunctionConverter::try_convert(user.clone())
@@ -153,7 +153,7 @@ fn successful() {
 			// Invariant is held
 			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::LocalToRemoteSwapExecuted {
+				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
 					from: user.clone(),
 					to: ASSET_HUB_LOCATION.into()
@@ -165,19 +165,19 @@ fn successful() {
 		// Free balance not allowed to go to zero.
 		.with_balances(vec![(user.clone(), 100_001, 0, 1)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: pool_account.clone(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
-			assert_ok!(Pallet::<MockRuntime>::swap(
+			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
 				99_999,
 				Box::new(ASSET_HUB_LOCATION.into())
@@ -185,16 +185,16 @@ fn successful() {
 			let total_currency_issuance_after = <Balances as Inspect<AccountId32>>::total_issuance();
 			// Total issuance of currency has not changed
 			assert_eq!(total_currency_issuance_after, total_currency_issuance_before);
-			// User's currency balance is reduced by swap amount
+			// User's currency balance is reduced by switch amount
 			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&user), 2);
 			// User's frozen balance has remained unchanged.
 			assert!(<Balances as InspectFreeze<AccountId32>>::balance_frozen(&FREEZE_REASON, &user).is_zero());
 			// User's held balance has remained unchanged.
 			assert!(<Balances as InspectHold<AccountId32>>::balance_on_hold(&HOLD_REASON, &user).is_one());
-			// Pool's currency balance is increased by swap amount
+			// Pool's currency balance is increased by switch amount
 			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
-			// Pool's remote balance is decreased by swap amount
-			assert!(SwapPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
+			// Pool's remote balance is decreased by switch amount
+			assert!(SwitchPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
 			// User's fungible balance is reduced by XCM fee
 			assert!(MockFungibleAssetTransactor::get_balance_for(
 				&AccountId32ToAccountId32JunctionConverter::try_convert(user.clone())
@@ -213,7 +213,7 @@ fn successful() {
 			// Invariant is held
 			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::LocalToRemoteSwapExecuted {
+				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
 					from: user.clone(),
 					to: ASSET_HUB_LOCATION.into()
@@ -226,7 +226,7 @@ fn successful() {
 fn fails_on_invalid_origin() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::swap(RawOrigin::Root.into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
+			Pallet::<MockRuntime>::switch(RawOrigin::Root.into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
 			DispatchError::BadOrigin
 		);
 	});
@@ -237,8 +237,8 @@ fn fails_on_non_existing_pool() {
 	let user = AccountId32::from([0; 32]);
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::swap(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
-			Error::<MockRuntime>::SwapPairNotFound
+			Pallet::<MockRuntime>::switch(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
+			Error::<MockRuntime>::SwitchPairNotFound
 		);
 	});
 }
@@ -248,20 +248,20 @@ fn fails_on_pool_not_running() {
 	let user = AccountId32::from([0; 32]);
 	let pool_account = AccountId32::from([1; 32]);
 	ExtBuilder::default()
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Paused,
+			status: SwitchPairStatus::Paused,
 			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<MockRuntime>::swap(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
-				Error::<MockRuntime>::SwapPairNotEnabled
+				Pallet::<MockRuntime>::switch(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
+				Error::<MockRuntime>::SwitchPairNotEnabled
 			);
 		});
 }
@@ -272,70 +272,70 @@ fn fails_on_not_enough_user_local_balance() {
 	let pool_account = AccountId32::from([1; 32]);
 	// Fails if user has not enough balance.
 	ExtBuilder::default()
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: pool_account.clone(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<MockRuntime>::swap(
+				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
 					100_000,
 					Box::new(ASSET_HUB_LOCATION.into())
 				),
-				Error::<MockRuntime>::UserSwapBalance
+				Error::<MockRuntime>::UserSwitchBalance
 			);
 		});
 	// Fails if user has frozen balance.
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 1, 0)])
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: pool_account.clone(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<MockRuntime>::swap(
+				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
 					100_000,
 					Box::new(ASSET_HUB_LOCATION.into())
 				),
-				Error::<MockRuntime>::UserSwapBalance
+				Error::<MockRuntime>::UserSwitchBalance
 			);
 		});
 	// Fails if user has held balance.
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 1)])
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<MockRuntime>::swap(
+				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user).into(),
 					100_000,
 					Box::new(ASSET_HUB_LOCATION.into())
 				),
-				Error::<MockRuntime>::UserSwapBalance
+				Error::<MockRuntime>::UserSwitchBalance
 			);
 		});
 }
@@ -346,19 +346,19 @@ fn fails_on_not_enough_remote_balance() {
 	let pool_account = AccountId32::from([1; 32]);
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 1)])
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: SwitchPairStatus::Running,
 			total_issuance: 50_000,
 		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<MockRuntime>::swap(
+				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
 					50_001,
 					Box::new(ASSET_HUB_LOCATION.into())
@@ -382,19 +382,19 @@ fn fails_on_not_enough_user_xcm_balance() {
 				..XCM_ASSET_FEE
 			},
 		)])
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
 		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<MockRuntime>::swap(
+				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
 					50_001,
 					Box::new(ASSET_HUB_LOCATION.into())

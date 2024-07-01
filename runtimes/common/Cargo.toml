@@ -40,7 +40,6 @@ cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-xcmp-queue       = { workspace = true }
 frame-support                   = { workspace = true }
 frame-system                    = { workspace = true }
-pallet-assets                   = { workspace = true }
 pallet-authorship               = { workspace = true }
 pallet-balances                 = { workspace = true }
 pallet-membership               = { workspace = true }
@@ -106,7 +105,6 @@ std = [
   "kilt-dip-primitives/std",
   "kilt-support/std",
   "log/std",
-  "pallet-assets/std",
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-deposit-storage/std",
