@@ -265,10 +265,13 @@ mod swap_pair_remote_asset {
 	{
 		fn drop(&mut self) {
 			log::trace!(target: LOG_TARGET, "Drop with remaining {:?}", (self.consumed_xcm_hash, self.remaining_fungible_balance, self.remaining_weight, &self.swap_pair));
-			match (self.remaining_fungible_balance, &self.swap_pair) {
-				(remaining_balance, Some(swap_pair)) if remaining_balance > Zero::zero() => {
-					let Ok(remaining_balance_as_local_currency) = LocalCurrencyBalanceOf::<T>::try_from(remaining_balance).map_err(|e| {
-						log::error!(target: LOG_TARGET, "Failed to convert remaining balance {:?} to local currency balance", remaining_balance);
+
+			// Nothing to refund if this trader was not called or if the leftover balance is
+			// zero.
+			if let Some(swap_pair) = &self.swap_pair {
+				if self.remaining_fungible_balance > Zero::zero() {
+					let Ok(remaining_balance_as_local_currency) = LocalCurrencyBalanceOf::<T>::try_from(self.remaining_fungible_balance).map_err(|e| {
+						log::error!(target: LOG_TARGET, "Failed to convert remaining balance {:?} to local currency balance", self.remaining_fungible_balance);
 						e
 					}) else { return; };
 
@@ -294,7 +297,6 @@ mod swap_pair_remote_asset {
 							.saturating_add(self.remaining_fungible_balance);
 					});
 				}
-				_ => {}
 			}
 		}
 	}
