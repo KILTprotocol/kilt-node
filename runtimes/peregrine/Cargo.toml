@@ -30,7 +30,7 @@ frame-system-rpc-runtime-api               = { workspace = true }
 kilt-runtime-api-did                       = { workspace = true }
 kilt-runtime-api-public-credentials        = { workspace = true }
 kilt-runtime-api-staking                   = { workspace = true }
-pallet-asset-swap-runtime-api              = { workspace = true }
+pallet-asset-switch-runtime-api            = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 
 # KILT pallets & primitives
@@ -40,7 +40,7 @@ delegation                    = { workspace = true }
 did                           = { workspace = true }
 kilt-runtime-api-dip-provider = { workspace = true }
 kilt-support                  = { workspace = true }
-pallet-asset-swap             = { workspace = true }
+pallet-asset-switch           = { workspace = true }
 pallet-deposit-storage        = { workspace = true }
 pallet-did-lookup             = { workspace = true }
 pallet-dip-provider           = { workspace = true }
@@ -190,8 +190,8 @@ std = [
   "kilt-runtime-api-staking/std",
   "kilt-support/std",
   "log/std",
-  "pallet-asset-swap-runtime-api/std",
-  "pallet-asset-swap/std",
+  "pallet-asset-switch-runtime-api/std",
+  "pallet-asset-switch/std",
   "pallet-assets/std",
   "pallet-aura/std",
   "pallet-authorship/std",

@@ -24,12 +24,12 @@ mod xcm_fee_asset {
 	use xcm::v3::{AssetId, Error, MultiAsset, Weight, XcmContext, XcmHash};
 	use xcm_executor::{traits::WeightTrader, Assets};
 
-	use crate::{Config, SwapPair};
+	use crate::{Config, SwitchPair};
 
-	const LOG_TARGET: &str = "xcm::pallet-asset-swap::UsingComponentsForXcmFeeAsset";
+	const LOG_TARGET: &str = "xcm::pallet-asset-switch::UsingComponentsForXcmFeeAsset";
 
 	/// Type implementing `WeightTrader` that allows to pay for XCM fees when
-	/// reserve transferring the XCM fee asset for the on-chain swap pair.
+	/// reserve transferring the XCM fee asset for the on-chain switch pair.
 	///
 	/// This trader is required in case there is no other mechanism to pay for
 	/// fees when transferring such an asset to this chain.
@@ -65,14 +65,14 @@ mod xcm_fee_asset {
 
 			// Prevent re-using the same trader more than once.
 			ensure!(self.consumed_xcm_hash.is_none(), Error::NotWithdrawable);
-			// Asset not relevant if no swap pair is set.
-			let swap_pair = SwapPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
+			// Asset not relevant if no switch pair is set.
+			let switch_pair = SwitchPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
 
 			let amount = WeightToFee::weight_to_fee(&weight);
 
-			let xcm_fee_asset_v3: MultiAsset = swap_pair.remote_fee.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}", swap_pair.remote_fee, e);
-				Error::FailedToTransactAsset("Failed to convert swap pair asset ID into required version.")
+			let xcm_fee_asset_v3: MultiAsset = switch_pair.remote_fee.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}", switch_pair.remote_fee, e);
+				Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
 			})?;
 
 			let required: MultiAsset = (xcm_fee_asset_v3.id, amount).into();
@@ -95,13 +95,13 @@ mod xcm_fee_asset {
 				return None;
 			};
 
-			let Some(swap_pair) = SwapPair::<T, I>::get() else {
-				log::error!(target: LOG_TARGET, "Stored swap pair should not be None, but it is.");
+			let Some(switch_pair) = SwitchPair::<T, I>::get() else {
+				log::error!(target: LOG_TARGET, "Stored switch pair should not be None, but it is.");
 				return None;
 			};
 
-			let remote_asset_id_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", swap_pair.remote_asset_id, e);
+			let remote_asset_id_v3: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", switch_pair.remote_asset_id, e);
 				e
 			}).ok()?;
 
@@ -136,8 +136,8 @@ mod xcm_fee_asset {
 	}
 }
 
-pub use swap_pair_remote_asset::UsingComponentsForSwapPairRemoteAsset;
-mod swap_pair_remote_asset {
+pub use switch_pair_remote_asset::UsingComponentsForSwitchPairRemoteAsset;
+mod switch_pair_remote_asset {
 	use frame_support::{
 		ensure,
 		traits::{fungible::Mutate, tokens::Preservation},
@@ -149,20 +149,20 @@ mod swap_pair_remote_asset {
 	use xcm::v3::{AssetId, Error, MultiAsset, Weight, XcmContext, XcmHash};
 	use xcm_executor::{traits::WeightTrader, Assets};
 
-	use crate::{Config, LocalCurrencyBalanceOf, SwapPair, SwapPairInfoOf};
+	use crate::{Config, LocalCurrencyBalanceOf, SwitchPair, SwitchPairInfoOf};
 
-	const LOG_TARGET: &str = "xcm::pallet-asset-swap::UsingComponentsForSwapPairRemoteAsset";
+	const LOG_TARGET: &str = "xcm::pallet-asset-switch::UsingComponentsForSwitchPairRemoteAsset";
 
 	/// Type implementing `WeightTrader` that allows to pay for XCM fees when
-	/// reserve transferring the remote asset of the on-chain swap pair.
+	/// reserve transferring the remote asset of the on-chain switch pair.
 	///
 	/// This trader is required in case there is no other mechanism to pay for
 	/// fees when transferring such an asset to this chain.
 	///
-	/// Any unused fee is transferred from the swap pair pool account to the
+	/// Any unused fee is transferred from the switch pair pool account to the
 	/// specified account.
 	#[derive(Default)]
-	pub struct UsingComponentsForSwapPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
+	pub struct UsingComponentsForSwitchPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
 	where
 		T: Config<I>,
 		I: 'static,
@@ -171,12 +171,12 @@ mod swap_pair_remote_asset {
 		remaining_weight: Weight,
 		remaining_fungible_balance: u128,
 		consumed_xcm_hash: Option<XcmHash>,
-		swap_pair: Option<SwapPairInfoOf<T>>,
+		switch_pair: Option<SwitchPairInfoOf<T>>,
 		_phantom: PhantomData<(WeightToFee, I, FeeDestinationAccount)>,
 	}
 
 	impl<T, I, WeightToFee, FeeDestinationAccount> WeightTrader
-		for UsingComponentsForSwapPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
+		for UsingComponentsForSwitchPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
 	where
 		T: Config<I>,
 		I: 'static,
@@ -185,12 +185,12 @@ mod swap_pair_remote_asset {
 		WeightToFee: WeightToFeeT<Balance = u128>,
 	{
 		fn new() -> Self {
-			let swap_pair = SwapPair::<T, I>::get();
+			let switch_pair = SwitchPair::<T, I>::get();
 			Self {
 				consumed_xcm_hash: None,
 				remaining_fungible_balance: Zero::zero(),
 				remaining_weight: Zero::zero(),
-				swap_pair,
+				switch_pair,
 				_phantom: PhantomData,
 			}
 		}
@@ -200,17 +200,17 @@ mod swap_pair_remote_asset {
 
 			// Prevent re-using the same trader more than once.
 			ensure!(self.consumed_xcm_hash.is_none(), Error::NotWithdrawable);
-			// Asset not relevant if no swap pair is set.
-			let swap_pair = self.swap_pair.as_ref().ok_or(Error::AssetNotFound)?;
+			// Asset not relevant if no switch pair is set.
+			let switch_pair = self.switch_pair.as_ref().ok_or(Error::AssetNotFound)?;
 
 			let amount = WeightToFee::weight_to_fee(&weight);
 
-			let swap_pair_remote_asset_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", swap_pair.remote_asset_id, e);
-				Error::FailedToTransactAsset("Failed to convert swap pair asset ID into required version.")
+			let switch_pair_remote_asset_v3: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", switch_pair.remote_asset_id, e);
+				Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
 			})?;
 
-			let required: MultiAsset = (swap_pair_remote_asset_v3, amount).into();
+			let required: MultiAsset = (switch_pair_remote_asset_v3, amount).into();
 			let unused = payment.checked_sub(required.clone()).map_err(|_| Error::TooExpensive)?;
 
 			// Set link to XCM message ID only if this is the trader used.
@@ -230,14 +230,14 @@ mod swap_pair_remote_asset {
 				return None;
 			};
 
-			let Some(ref swap_pair) = self.swap_pair else {
-				log::error!(target: LOG_TARGET, "Stored swap pair should not be None, but it is.");
+			let Some(ref switch_pair) = self.switch_pair else {
+				log::error!(target: LOG_TARGET, "Stored switch pair should not be None, but it is.");
 				return None;
 			};
 
-			let swap_pair_remote_asset_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", swap_pair.remote_asset_id, e);
-				Error::FailedToTransactAsset("Failed to convert swap pair asset ID into required version.")
+			let switch_pair_remote_asset_v3: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", switch_pair.remote_asset_id, e);
+				Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
 			}).ok()?;
 
 			let weight = weight.min(self.remaining_weight);
@@ -250,8 +250,8 @@ mod swap_pair_remote_asset {
 			self.remaining_weight = self.remaining_weight.saturating_sub(weight);
 
 			if amount > 0 {
-				log::trace!(target: LOG_TARGET, "Refund amount {:?}", (swap_pair_remote_asset_v3, amount));
-				Some((swap_pair_remote_asset_v3, amount).into())
+				log::trace!(target: LOG_TARGET, "Refund amount {:?}", (switch_pair_remote_asset_v3, amount));
+				Some((switch_pair_remote_asset_v3, amount).into())
 			} else {
 				log::trace!(target: LOG_TARGET, "No refund");
 				None
@@ -259,20 +259,20 @@ mod swap_pair_remote_asset {
 		}
 	}
 
-	// Move any unused asset from the swap pool account to the specified account,
+	// Move any unused asset from the switch pool account to the specified account,
 	// and update the remote balance with the difference since we know we control
 	// the full amount on the remote location.
 	impl<T, I, WeightToFee, FeeDestinationAccount> Drop
-		for UsingComponentsForSwapPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
+		for UsingComponentsForSwitchPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
 	where
 		T: Config<I>,
 		I: 'static,
 		FeeDestinationAccount: Get<T::AccountId>,
 	{
 		fn drop(&mut self) {
-			log::trace!(target: LOG_TARGET, "Drop with remaining {:?}", (self.consumed_xcm_hash, self.remaining_fungible_balance, self.remaining_weight, &self.swap_pair));
-			match (self.remaining_fungible_balance, &self.swap_pair) {
-				(remaining_balance, Some(swap_pair)) if remaining_balance > Zero::zero() => {
+			log::trace!(target: LOG_TARGET, "Drop with remaining {:?}", (self.consumed_xcm_hash, self.remaining_fungible_balance, self.remaining_weight, &self.switch_pair));
+			match (self.remaining_fungible_balance, &self.switch_pair) {
+				(remaining_balance, Some(switch_pair)) if remaining_balance > Zero::zero() => {
 					let Ok(remaining_balance_as_local_currency) = LocalCurrencyBalanceOf::<T, I>::try_from(remaining_balance).map_err(|e| {
 						log::error!(target: LOG_TARGET, "Failed to convert remaining balance {:?} to local currency balance", remaining_balance);
 						e
@@ -280,19 +280,19 @@ mod swap_pair_remote_asset {
 
 					// No error should ever be thrown from inside this block.
 					let _ = <T::LocalCurrency as Mutate<T::AccountId>>::transfer(
-						&swap_pair.pool_account,
+						&switch_pair.pool_account,
 						&FeeDestinationAccount::get(),
 						remaining_balance_as_local_currency,
 						Preservation::Expendable,
 					).map_err(|e| {
-						log::error!(target: LOG_TARGET, "Failed to transfer unused balance {:?} from swap pair pool account {:?} to specified account {:?}", remaining_balance_as_local_currency, swap_pair.pool_account, FeeDestinationAccount::get());
+						log::error!(target: LOG_TARGET, "Failed to transfer unused balance {:?} from switch pair pool account {:?} to specified account {:?}", remaining_balance_as_local_currency, switch_pair.pool_account, FeeDestinationAccount::get());
 						e
 					});
 
 					// No error should ever be thrown from inside this block.
-					SwapPair::<T, I>::mutate(|entry| {
+					SwitchPair::<T, I>::mutate(|entry| {
 						let Some(entry) = entry.as_mut() else {
-							log::error!(target: LOG_TARGET, "Stored swap pair should not be None but it is.");
+							log::error!(target: LOG_TARGET, "Stored switch pair should not be None but it is.");
 							return;
 						};
 						entry.remote_asset_balance = entry

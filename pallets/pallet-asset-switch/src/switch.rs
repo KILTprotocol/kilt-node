@@ -22,24 +22,24 @@ use sp_core::RuntimeDebug;
 use xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
-pub struct SwapPairInfo<AccountId> {
+pub struct SwitchPairInfo<AccountId> {
 	pub pool_account: AccountId,
 	pub remote_asset_balance: u128,
 	pub remote_asset_id: VersionedAssetId,
 	pub remote_fee: VersionedMultiAsset,
 	pub remote_reserve_location: VersionedMultiLocation,
-	pub status: SwapPairStatus,
+	pub status: SwitchPairStatus,
 }
 
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone, Default)]
-pub enum SwapPairStatus {
+pub enum SwitchPairStatus {
 	#[default]
 	Paused,
 	Running,
 }
 
-impl<AccountId> SwapPairInfo<AccountId> {
-	pub(crate) fn can_swap(&self) -> bool {
-		matches!(self.status, SwapPairStatus::Running)
+impl<AccountId> SwitchPairInfo<AccountId> {
+	pub(crate) fn can_switch(&self) -> bool {
+		matches!(self.status, SwitchPairStatus::Running)
 	}
 }

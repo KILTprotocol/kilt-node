@@ -56,7 +56,7 @@ attestation            = { path = "pallets/attestation", default-features = fals
 ctype                  = { path = "pallets/ctype", default-features = false }
 delegation             = { path = "pallets/delegation", default-features = false }
 did                    = { path = "pallets/did", default-features = false }
-pallet-asset-swap      = { path = "pallets/pallet-asset-swap", default-features = false }
+pallet-asset-switch    = { path = "pallets/pallet-asset-switch", default-features = false }
 pallet-configuration   = { path = "pallets/pallet-configuration", default-features = false }
 pallet-deposit-storage = { path = "pallets/pallet-deposit-storage", default-features = false }
 pallet-did-lookup      = { path = "pallets/pallet-did-lookup", default-features = false }
@@ -85,7 +85,7 @@ kilt-runtime-api-did                = { path = "runtime-api/did", default-featur
 kilt-runtime-api-dip-provider       = { path = "runtime-api/dip-provider", default-features = false }
 kilt-runtime-api-public-credentials = { path = "runtime-api/public-credentials", default-features = false }
 kilt-runtime-api-staking            = { path = "runtime-api/staking", default-features = false }
-pallet-asset-swap-runtime-api       = { path = "runtime-api/asset-swap", default-features = false }
+pallet-asset-switch-runtime-api     = { path = "runtime-api/asset-switch", default-features = false }
 
 # Internal KILT runtimes (with default disabled)
 kestrel-runtime   = { path = "runtimes/kestrel", default-features = false }

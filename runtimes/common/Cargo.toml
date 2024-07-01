@@ -27,7 +27,6 @@ attestation            = { workspace = true }
 did                    = { workspace = true }
 kilt-dip-primitives    = { workspace = true }
 kilt-support           = { workspace = true }
-pallet-asset-swap      = { workspace = true }
 pallet-deposit-storage = { workspace = true }
 pallet-did-lookup      = { workspace = true }
 pallet-dip-provider    = { workspace = true }
@@ -106,7 +105,6 @@ std = [
   "kilt-dip-primitives/std",
   "kilt-support/std",
   "log/std",
-  "pallet-asset-swap/std",
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-deposit-storage/std",

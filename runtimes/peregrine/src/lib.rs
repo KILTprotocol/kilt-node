@@ -34,7 +34,7 @@ use frame_support::{
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
-use pallet_asset_swap::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwapPairXcmFeeFungibleAsset};
+use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use sp_api::impl_runtime_apis;
 use sp_core::{ConstBool, ConstU128, OpaqueMetadata};
@@ -85,7 +85,7 @@ use frame_try_runtime::UpgradeCheckSelect;
 #[cfg(test)]
 mod tests;
 
-mod asset_swap;
+mod asset_switch;
 mod dip;
 mod weights;
 pub mod xcm_config;
@@ -948,12 +948,12 @@ parameter_types! {
 	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }
 
-pub type KiltToEKiltSwapPallet = pallet_asset_swap::Instance1;
-impl pallet_asset_swap::Config<KiltToEKiltSwapPallet> for Runtime {
+pub type KiltToEKiltSwitchPallet = pallet_asset_switch::Instance1;
+impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = FungiblesAdapter<
 		Fungibles,
-		MatchesSwapPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwapPallet>,
+		MatchesSwitchPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwitchPallet>,
 		LocationToAccountIdConverter,
 		AccountId,
 		NoChecking,
@@ -964,8 +964,8 @@ impl pallet_asset_swap::Config<KiltToEKiltSwapPallet> for Runtime {
 	type PauseOrigin = EnsureRoot<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<AccountId>;
-	type SwapHooks = asset_swap::RestrictSwapDestinationToSelf;
-	type SwapOrigin = EnsureRoot<AccountId>;
+	type SwitchHooks = asset_switch::RestrictswitchDestinationToSelf;
+	type SwitchOrigin = EnsureRoot<AccountId>;
 	type XcmRouter = XcmRouter;
 }
 
@@ -1080,7 +1080,7 @@ construct_runtime! {
 
 		Multisig: pallet_multisig = 47,
 
-		AssetSwap: pallet_asset_swap::<Instance1> = 48,
+		AssetSwitchPool1: pallet_asset_switch::<Instance1> = 48,
 		Fungibles: pallet_assets = 49,
 
 		// KILT Pallets. Start indices 60 to leave room
@@ -1520,17 +1520,17 @@ impl_runtime_apis! {
 	}
 
 		// TODO: I think it's fine to panic in runtime APIs, but should double check that.
-		impl pallet_asset_swap_runtime_api::AssetSwap<Block, VersionedAssetId, AccountId> for Runtime {
+		impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId> for Runtime {
 			fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> AccountId {
 				use core::str;
 				use frame_support::traits::PalletInfoAccess;
 
-				let pair_id_as_string = str::from_utf8(pair_id.as_slice()).expect("Provided swap pair ID is not a valid UTF-8 string.");
+				let pair_id_as_string = str::from_utf8(pair_id.as_slice()).expect("Provided switch pair ID is not a valid UTF-8 string.");
 				match pair_id_as_string {
-					kilt_to_ekilt if kilt_to_ekilt == AssetSwap::name() => {
-						AssetSwap::pool_account_id_for_remote_asset(&asset_id).expect("Should never fail to generate a pool account for a given asset.")
+					kilt_to_ekilt if kilt_to_ekilt == AssetSwitchPool1::name() => {
+						AssetSwitchPool1::pool_account_id_for_remote_asset(&asset_id).expect("Should never fail to generate a pool account for a given asset.")
 					},
-					_ => panic!("No swap pair with specified pool ID found")
+					_ => panic!("No switch pair with specified pool ID found")
 				}
 			}
 		}
