@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Reverse Swap ePILTs against PILTS on Peregrine > PolkadotXcm assethub 1`] = `
+exports[`Swap ePILTs against PILTS on Peregrine > PolkadotXcm assethub 1`] = `
 [
   {
     "data": {
@@ -19,7 +19,7 @@ exports[`Reverse Swap ePILTs against PILTS on Peregrine > PolkadotXcm assethub 1
 ]
 `;
 
-exports[`Reverse Swap ePILTs against PILTS on Peregrine > assetHubs events xcm queue pallet 1`] = `
+exports[`Swap ePILTs against PILTS on Peregrine > assetHubs events xcm queue pallet 1`] = `
 [
   {
     "data": {
@@ -31,7 +31,7 @@ exports[`Reverse Swap ePILTs against PILTS on Peregrine > assetHubs events xcm q
 ]
 `;
 
-exports[`Reverse Swap ePILTs against PILTS on Peregrine > peregrine asset swap pallet 1`] = `
+exports[`Swap ePILTs against PILTS on Peregrine > peregrine asset swap pallet 1`] = `
 [
   {
     "data": {
@@ -44,7 +44,7 @@ exports[`Reverse Swap ePILTs against PILTS on Peregrine > peregrine asset swap p
 ]
 `;
 
-exports[`Reverse Swap ePILTs against PILTS on Peregrine > peregrine balances pallet 1`] = `
+exports[`Swap ePILTs against PILTS on Peregrine > peregrine balances pallet 1`] = `
 [
   {
     "data": {
@@ -67,7 +67,7 @@ exports[`Reverse Swap ePILTs against PILTS on Peregrine > peregrine balances pal
 ]
 `;
 
-exports[`Reverse Swap ePILTs against PILTS on Peregrine > peregrine message queue 1`] = `
+exports[`Swap ePILTs against PILTS on Peregrine > peregrine message queue 1`] = `
 [
   {
     "data": {
@@ -84,7 +84,7 @@ exports[`Reverse Swap ePILTs against PILTS on Peregrine > peregrine message queu
 ]
 `;
 
-exports[`Reverse Swap ePILTs against PILTS on Peregrine > sender events foreignAssets 1`] = `
+exports[`Swap ePILTs against PILTS on Peregrine > sender events foreignAssets 1`] = `
 [
   {
     "data": {

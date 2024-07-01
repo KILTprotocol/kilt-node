@@ -1,7 +1,7 @@
 import { SetupOption, setupContext } from '@acala-network/chopsticks-testing'
 
 import type { Config } from './types.js'
-import { initialBalanceKILT, initialBalanceROC, toNumber } from '../utils.js'
+import { ROC, initialBalanceKILT, initialBalanceROC, toNumber } from '../utils.js'
 
 /// Options used to create the Peregrine context
 const options = {
@@ -116,7 +116,8 @@ export function setSwapPair() {
 /// Peregrine ParaId
 export const paraId = 2086
 export const PILT = { Concrete: { parents: 0, interior: 'Here' } }
-export const remoteFee = 10000
+// 0.1 ROC as remote fee
+export const remoteFee = ROC / BigInt(10)
 
 /// Sibling sovereign account for other chains
 export const siblingSovereignAccount = '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'
