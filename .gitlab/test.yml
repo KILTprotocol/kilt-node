@@ -7,10 +7,10 @@ test:
     key: cache-test
     paths:
       - target/
-      - .cargo/bin/
-      - .cargo/registry/index/
-      - .cargo/registry/cache/
-      - .cargo/git/db/
+      - $HOME/.cargo/bin/
+      - $HOME/.cargo/registry/index/
+      - $HOME/.cargo/registry/cache/
+      - $HOME/.cargo/git/db/
   script:
     - time cargo test --all --all-targets --locked
 
@@ -25,9 +25,9 @@ test-features:
     key: cache-test
     paths:
       - target/
-      - .cargo/bin/
-      - .cargo/registry/index/
-      - .cargo/registry/cache/
-      - .cargo/git/db/
+      - $HOME/.cargo/bin/
+      - $HOME/.cargo/registry/index/
+      - $HOME/.cargo/registry/cache/
+      - $HOME/.cargo/git/db/
   script:
     - time cargo test --all --all-features --all-targets --locked

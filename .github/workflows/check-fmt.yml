@@ -20,10 +20,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
+            $HOME/.cargo/bin
+            $HOME/.cargo/registry/index/
+            $HOME/.cargo/registry/cache/
+            $HOME/.cargo/git/db/
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |

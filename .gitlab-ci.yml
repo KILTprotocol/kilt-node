@@ -5,10 +5,6 @@ include:
   - local: '.gitlab/test.yml'
   - local: '.gitlab/build.yml'
 
-variables:
-  CARGO_HOME: $CI_PROJECT_DIR/.cargo
-  CARGO_TARGET_DIR: $CI_PROJECT_DIR/target
-
 workflow:
   auto_cancel:
     on_new_commit: interruptible

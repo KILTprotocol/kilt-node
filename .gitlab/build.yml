@@ -31,7 +31,7 @@ build:
     key: cache-build
     paths:
       - target/
-      - .cargo/bin/
-      - .cargo/registry/index/
-      - .cargo/registry/cache/
-      - .cargo/git/db/
+      - $HOME/.cargo/bin/
+      - $HOME/.cargo/registry/index/
+      - $HOME/.cargo/registry/cache/
+      - $HOME/.cargo/git/db/
