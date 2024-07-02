@@ -35,6 +35,7 @@
     "lint:fix": "eslint --fix src && prettier --write src",
     "clean": "rm -rf ./db",
     "test": "LOG_LEVEL=error vitest",
-    "test:CI": "vitest --bail 0  --no-file-parallelism"
+    "test:CI": "vitest --bail 0  --no-file-parallelism",
+    "spinup": "chopsticks xcm -r config/rococo.yaml -p config/asset-hub.yaml -p config/peregrine.yaml"
   }
 }

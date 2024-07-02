@@ -13,3 +13,21 @@ import-storage:
         - providers: 1
           data:
             free: '100000000000000000000000'
+      -
+        -
+          - 5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs
+        - providers: 1
+          data:
+            free: '1000000000000'
+      -
+        -
+          - 5HWhLo9t3h2Hn1ii21Tq8B25QVhhz2yKBtoZa2kbS5rC5sNW
+        - providers: 1
+          data:
+            free: '100000000000000'
+      -
+        -
+          - 5H5rjyjoNmiGyw1KCdB3Svhg8Lo8n6CiCMRnK6ZwJYQoaKYn
+        - providers: 1
+          data:
+            free: '1000000000000'
