@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balances, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall,
-	RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, ParachainInfo, ParachainSystem, PolkadotXcm,
+	Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
 use frame_support::{
@@ -26,15 +26,19 @@ use frame_support::{
 	traits::{Contains, Everything, Nothing},
 };
 use frame_system::EnsureRoot;
+use pallet_asset_swap::xcm::{
+	IsSwapPairRemoteAsset, IsSwapPairXcmFeeAsset, MatchesSwapPairXcmFeeFungibleAsset, SwapPairRemoteAssetTransactor,
+	UsingComponentsForSwapPairRemoteAsset, UsingComponentsForXcmFeeAsset,
+};
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use sp_std::prelude::ToOwned;
 use xcm::v3::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
-	EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative, SiblingParachainAsNative,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-	UsingComponents, WithComputedOrigin,
+	EnsureXcmOrigin, FixedWeightBounds, FungiblesAdapter, NativeAsset, NoChecking, RelayChainAsNative,
+	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
+	TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -160,16 +164,40 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 	}
 }
 
+parameter_types! {
+	pub TreasuryAccountId: AccountId = Treasury::account_id();
+}
+
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
 	// How we send Xcm messages.
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
-	type AssetTransactor = LocalAssetTransactor<Balances, RelayNetworkId>;
+	// Until fixed, `LocalAssetTransactor` must be last since it returns an error if
+	// the operation does not go through, i.e., it cannot be chained with other
+	// transactors.
+	type AssetTransactor = (
+		// Allow the asset from the other side of the pool to be "deposited" into the current system.
+		SwapPairRemoteAssetTransactor<LocationToAccountIdConverter, Runtime>,
+		// Allow the asset to pay for remote XCM fees to be deposited into the current system.
+		FungiblesAdapter<
+			Fungibles,
+			MatchesSwapPairXcmFeeFungibleAsset<Runtime>,
+			LocationToAccountIdConverter,
+			AccountId,
+			NoChecking,
+			CheckingAccount,
+		>,
+		// Transactor for fungibles matching the "Here" location.
+		LocalAssetTransactor<Balances, RelayNetworkId>,
+	);
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	// Reserving is disabled.
-	type IsReserve = NativeAsset;
+	type IsReserve = (
+		NativeAsset,
+		IsSwapPairRemoteAsset<Runtime>,
+		IsSwapPairXcmFeeAsset<Runtime>,
+	);
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	type UniversalLocation = UniversalLocation;
@@ -181,7 +209,14 @@ impl xcm_executor::Config for XcmConfig {
 	// How weight is transformed into fees. The fees are not taken out of the
 	// Balances pallet here. Balances is only used if fees are dropped without being
 	// used. In that case they are put into the treasury.
-	type Trader = UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>;
+	type Trader = (
+		// Can pay for fees with the remote XCM asset fee (when sending it into this system).
+		UsingComponentsForXcmFeeAsset<Runtime, WeightToFee<Runtime>>,
+		// Can pay for the remote asset of the swap pair (when "depositing" it into this system).
+		UsingComponentsForSwapPairRemoteAsset<Runtime, WeightToFee<Runtime>, TreasuryAccountId>,
+		// Can pay with the fungible that matches the "Here" location.
+		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>,
+	);
 	type ResponseHandler = PolkadotXcm;
 	// What happens with assets that are left in the register after the XCM message
 	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset

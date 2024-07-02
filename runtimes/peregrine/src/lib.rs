@@ -28,17 +28,14 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
+	traits::{AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
+use pallet_asset_swap::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwapPairXcmFeeFungibleAsset};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-
-#[cfg(feature = "try-runtime")]
-use frame_try_runtime::UpgradeCheckSelect;
-
 use sp_api::impl_runtime_apis;
-use sp_core::{ConstBool, OpaqueMetadata};
+use sp_core::{ConstBool, ConstU128, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
@@ -47,14 +44,16 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
+use xcm::{v3::MultiLocation, VersionedAssetId};
+use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
-
 use runtime_common::{
+	asset_swap::EnsureRootAsTreasury,
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
@@ -68,13 +67,19 @@ use runtime_common::{
 	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
 };
 
+use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-#[cfg(feature = "runtime-benchmarks")]
-use {kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+
+#[cfg(feature = "runtime-benchmarks")]
+use {kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
+
+#[cfg(feature = "try-runtime")]
+use frame_try_runtime::UpgradeCheckSelect;
 
 #[cfg(test)]
 mod tests;
@@ -937,6 +942,57 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
+parameter_types! {
+	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
+}
+
+impl pallet_asset_swap::Config for Runtime {
+	const POOL_ADDRESS_GENERATION_ENTROPY: [u8; 8] = *b"plt/eplt";
+
+	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
+	type AssetTransactor = FungiblesAdapter<
+		Fungibles,
+		MatchesSwapPairXcmFeeFungibleAsset<Runtime>,
+		LocationToAccountIdConverter,
+		AccountId,
+		NoChecking,
+		CheckingAccount,
+	>;
+	type FeeOrigin = EnsureRoot<AccountId>;
+	type LocalCurrency = Balances;
+	type PauseOrigin = EnsureRoot<AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type SubmitterOrigin = EnsureSigned<AccountId>;
+	type SwapOrigin = EnsureRoot<AccountId>;
+	type XcmRouter = XcmRouter;
+}
+
+// No deposit is taken since creation is permissioned. Only the root origin can
+// create new assets, and the owner will be the treasury account.
+impl pallet_assets::Config for Runtime {
+	type ApprovalDeposit = ConstU128<0>;
+	type AssetAccountDeposit = ConstU128<0>;
+	type AssetDeposit = ConstU128<0>;
+	type AssetId = MultiLocation;
+	type AssetIdParameter = MultiLocation;
+	type Balance = u128;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = runtime_common::asset_swap::NoopBenchmarkHelper;
+	type CallbackHandle = ();
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
+	type Currency = Balances;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
+	type MetadataDepositBase = ConstU128<0>;
+	type MetadataDepositPerByte = ConstU128<0>;
+	type RemoveItemsLimit = ConstU32<1_000>;
+	type RuntimeEvent = RuntimeEvent;
+	type StringLimit = ConstU32<4>;
+	// TODO: Change before release
+	type WeightInfo = ();
+}
+
 construct_runtime! {
 	pub enum Runtime
 	{
@@ -987,6 +1043,9 @@ construct_runtime! {
 		Tips: pallet_tips = 46,
 
 		Multisig: pallet_multisig = 47,
+
+		AssetSwap: pallet_asset_swap = 48,
+		Fungibles: pallet_assets = 49,
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
@@ -1423,6 +1482,13 @@ impl_runtime_apis! {
 			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(dip::runtime_api::DipProofError::MerkleProof)
 		}
 	}
+
+		// TODO: I think it's fine to panic in runtime APIs, but should double check that.
+		impl pallet_asset_swap_runtime_api::AssetSwap<Block, VersionedAssetId, AccountId> for Runtime {
+			fn pool_account_id(remote_asset_id: VersionedAssetId) -> AccountId {
+				pallet_asset_swap::Pallet::<Runtime>::pool_account_id_for_remote_asset(&remote_asset_id).expect("Should never fail to generate a pool account for a given asset.")
+			}
+		}
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
