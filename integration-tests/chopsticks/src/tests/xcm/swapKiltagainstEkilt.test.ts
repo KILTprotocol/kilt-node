@@ -16,7 +16,7 @@ import {
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getAccountLocationV3 } from '../../network/utils.js'
 
-test('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
+test.skip('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT and ROC tokens

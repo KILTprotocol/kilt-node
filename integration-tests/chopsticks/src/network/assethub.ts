@@ -15,7 +15,6 @@ export const getSetupOptions = ({
 		endpoint: process.env.ASSETHUB_WSS || 'wss://asset-hub-rococo-rpc.dwellir.com',
 		db: './db/assethub.db.sqlite',
 		port: toNumber(process.env.ASSETHUB_PORT) || 9003,
-		runtimeLogLevel: 5,
 		wasmOverride,
 		blockNumber,
 	}) as SetupOption

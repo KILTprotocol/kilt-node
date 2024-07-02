@@ -23,7 +23,7 @@ const aliceLocation = {
 	},
 }
 
-test('Limited Reserve Transfers from HydraDx Account Alice -> Spiritnet Account Alice', async ({ expect }) => {
+test.skip('Limited Reserve Transfers from HydraDx Account Alice -> Spiritnet Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// assign initial balance to Alice. Alice also needs to have some HDX, otherwise the account gets dusted

@@ -51,3 +51,10 @@ export function getNativeAssetIdLocation(amount: bigint) {
 		fun: { Fungible: amount },
 	}
 }
+
+export function getRelayNativeAssetIdLocation(amount: bigint) {
+	return {
+		id: { Concrete: { parents: 1, interior: 'Here' } },
+		fun: { Fungible: amount },
+	}
+}

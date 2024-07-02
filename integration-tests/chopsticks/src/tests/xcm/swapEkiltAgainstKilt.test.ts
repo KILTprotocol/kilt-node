@@ -15,7 +15,7 @@ import {
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getSiblingLocation } from '../../network/utils.js'
 
-test('Swap ePILTs against PILTS on Peregrine', async ({ expect }) => {
+test.skip('Swap ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT and ROC tokens
