@@ -6,6 +6,7 @@ import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../utils.js'
 export const options: SetupOption = {
 	endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
 	db: './db/hydradx.db.sqlite',
+	runtimeLogLevel: 5,
 	port: toNumber(process.env.HYDRADX_PORT) || 9001,
 }
 

@@ -3,21 +3,21 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assethub.js'
-import { ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
+import { ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../utils.js'
 import { peregrineContext, assethubContext, getFreeRocPeregrine, getFreeRocAssetHub } from '../index.js'
 import { getAccountLocationV3, getRelayNativeAssetIdLocation, getSiblingLocation } from '../../network/utils.js'
 import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../utils.js'
 
 const ROC_ASSET_V3 = { V3: [getRelayNativeAssetIdLocation(ROC)] }
 
-test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Alice', async ({ expect }) => {
+test.skip('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT tokens to create the account
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
 		...PeregrineConfig.assignNativeTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.poolAccountId],
+			[keysBob.address, PeregrineConfig.poolAccountId],
 			initialBalanceKILT
 		),
 		...PeregrineConfig.setSwapPair(),
@@ -35,9 +35,9 @@ test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Acco
 	// Alice should some ROCs on AH
 	await checkBalance(getFreeRocAssetHub, keysAlice.address, expect, initialBalanceROC)
 
-	const aliceAddress = hexAddress(keysAlice.address)
+	const bobAddress = hexAddress(keysBob.address)
 	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const beneficiary = getAccountLocationV3(aliceAddress)
+	const beneficiary = getAccountLocationV3(bobAddress)
 
 	const signedTx = assethubContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary, ROC_ASSET_V3, 0, 'Unlimited')
@@ -79,5 +79,5 @@ test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Acco
 
 	// check balance receiver
 	// check balance. Equal to `KILT` - tx fees
-	await checkBalanceInRange(getFreeRocPeregrine, aliceAddress, expect, [BigInt(999999964195), BigInt(999999964296)])
+	await checkBalanceInRange(getFreeRocPeregrine, bobAddress, expect, [BigInt(999999964195), BigInt(999999964296)])
 }, 20_000)

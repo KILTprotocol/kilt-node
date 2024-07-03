@@ -76,14 +76,14 @@ exports[`Limited Reserve Transfers from HydraDx Account Alice -> Spiritnet Accou
             "Fungible": 1000000000000000,
           },
           "id": {
-            "Concrete": {
-              "interior": {
-                "X1": {
+            "interior": {
+              "X1": [
+                {
                   "Parachain": "(rounded 2100)",
                 },
-              },
-              "parents": 1,
+              ],
             },
+            "parents": 1,
           },
         },
       ],
@@ -108,19 +108,19 @@ exports[`Limited Reserve Transfers from HydraDx Account Alice -> Spiritnet Accou
           "Fungible": 1000000000000000,
         },
         "id": {
-          "Concrete": {
-            "interior": {
-              "X1": {
+          "interior": {
+            "X1": [
+              {
                 "Parachain": "(rounded 2100)",
               },
-            },
-            "parents": 1,
+            ],
           },
+          "parents": 1,
         },
       },
       "sender": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
     },
-    "method": "TransferredMultiAssets",
+    "method": "TransferredAssets",
     "section": "xTokens",
   },
 ]

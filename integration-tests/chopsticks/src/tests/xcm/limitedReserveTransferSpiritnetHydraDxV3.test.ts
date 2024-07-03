@@ -10,7 +10,7 @@ import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage 
 
 const KILT_ASSET_V3 = { V3: [getNativeAssetIdLocation(KILT)] }
 
-test.skip('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx Account Alice', async ({ expect }) => {
+test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT tokens
@@ -69,7 +69,7 @@ test.skip('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx 
 	checkSystemEvents(hydradxContext, { section: 'currencies', method: 'Deposited' }).toMatchSnapshot(
 		'receiver events currencies'
 	)
-	checkSystemEvents(hydradxContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
+	checkSystemEvents(hydradxContext, 'messageQueue').toMatchSnapshot('receiver events messageQueue')
 
 	// check balance receiver
 	// check balance. Equal to `KILT` - tx fees

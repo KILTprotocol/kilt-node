@@ -9,7 +9,7 @@ exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine A
         "interior": "Here",
         "parents": 1,
       },
-      "owner": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+      "owner": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
     },
     "method": "Issued",
     "section": "fungibles",

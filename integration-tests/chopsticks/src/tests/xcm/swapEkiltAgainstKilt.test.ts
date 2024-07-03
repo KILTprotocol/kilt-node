@@ -135,12 +135,11 @@ test.skip('Swap ePILTs against PILTS on Peregrine', async ({ expect }) => {
 
 	// Pool account should have less locked PILTs
 	const freeBalancePoolAccount = await getFreeBalancePeregrine(PeregrineConfig.poolAccountId)
-	// 49 PILTS
-	expect(initialBalancePoolAccount - BigInt('49000000000000000')).toBeGreaterThan(freeBalancePoolAccount)
+	expect(initialBalancePoolAccount - balanceToTransfer).toBeGreaterThanOrEqual(freeBalancePoolAccount)
 
 	// remote locked supply should have increased by the amount of the transferred PILTs
 	const remoteLockedSupply = await getRemoteLockedSupply()
-	expect(remoteLockedSupply).toBeGreaterThan(initialRemoteLockedSupply + BigInt('49000000000000000'))
+	expect(remoteLockedSupply).toBeGreaterThanOrEqual(initialRemoteLockedSupply + balanceToTransfer)
 
 	//await peregrineContext.pause()
 }, 20_000)
