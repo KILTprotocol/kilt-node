@@ -17,26 +17,26 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::ensure;
-use pallet_asset_swap::traits::SwapHooks;
+use pallet_asset_switch::traits::SwitchHooks;
 use runtime_common::{AccountId, Balance};
 use xcm::{
 	v3::{Junction, MultiLocation},
 	VersionedMultiLocation,
 };
 
-use crate::{KiltToEKiltSwapPallet, Runtime};
+use crate::{KiltToEKiltSwitchPallet, Runtime};
 
-const LOG_TARGET: &str = "runtime::peregrine::asset-swap::RestrictTransfersToSameUser";
+const LOG_TARGET: &str = "runtime::peregrine::asset-switch::RestrictTransfersToSameUser";
 
 /// Check requiring the beneficiary be a single `AccountId32` junction
 /// containing the same account ID as the account on this chain initiating the
-/// swap.
-pub struct RestrictSwapDestinationToSelf;
+/// switch.
+pub struct RestrictswitchDestinationToSelf;
 
-impl SwapHooks<Runtime, KiltToEKiltSwapPallet> for RestrictSwapDestinationToSelf {
+impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestinationToSelf {
 	type Error = Error;
 
-	fn pre_local_to_remote_swap(
+	fn pre_local_to_remote_switch(
 		from: &AccountId,
 		to: &VersionedMultiLocation,
 		_amount: Balance,
@@ -57,8 +57,8 @@ impl SwapHooks<Runtime, KiltToEKiltSwapPallet> for RestrictSwapDestinationToSelf
 		Ok(())
 	}
 
-	// We don't need to take any actions after the swap is executed
-	fn post_local_to_remote_swap(
+	// We don't need to take any actions after the switch is executed
+	fn post_local_to_remote_switch(
 		_from: &AccountId,
 		_to: &VersionedMultiLocation,
 		_amount: Balance,
@@ -66,11 +66,11 @@ impl SwapHooks<Runtime, KiltToEKiltSwapPallet> for RestrictSwapDestinationToSelf
 		Ok(())
 	}
 
-	fn pre_remote_to_local_swap(_to: &AccountId, _amount: u128) -> Result<(), Self::Error> {
+	fn pre_remote_to_local_switch(_to: &AccountId, _amount: u128) -> Result<(), Self::Error> {
 		Ok(())
 	}
 
-	fn post_remote_to_local_swap(_to: &AccountId, _amount: u128) -> Result<(), Self::Error> {
+	fn post_remote_to_local_switch(_to: &AccountId, _amount: u128) -> Result<(), Self::Error> {
 		Ok(())
 	}
 }

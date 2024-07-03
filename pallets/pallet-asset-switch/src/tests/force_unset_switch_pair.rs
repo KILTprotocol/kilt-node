@@ -22,16 +22,16 @@ use sp_runtime::DispatchError;
 
 use crate::{
 	mock::{
-		ExtBuilder, MockRuntime, NewSwapPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
+		ExtBuilder, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
-	Event, Pallet, SwapPair,
+	Event, Pallet, SwitchPair,
 };
 
 #[test]
 fn successful() {
 	// Deletes and generates an event if there is a pool
 	ExtBuilder::default()
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: [0u8; 32].into(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
@@ -42,20 +42,20 @@ fn successful() {
 		})
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::force_unset_swap_pair(RawOrigin::Root.into()));
-			assert!(SwapPair::<MockRuntime>::get().is_none());
+			assert_ok!(Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::Root.into()));
+			assert!(SwitchPair::<MockRuntime>::get().is_none());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwapPairRemoved {
+				== Event::<MockRuntime>::SwitchPairRemoved {
 					remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 				}
 				.into()));
 		});
 	// Deletes and generates no event if there is no pool
 	ExtBuilder::default().build().execute_with(|| {
-		assert_ok!(Pallet::<MockRuntime>::force_unset_swap_pair(RawOrigin::Root.into()));
-		assert!(SwapPair::<MockRuntime>::get().is_none());
+		assert_ok!(Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::Root.into()));
+		assert!(SwitchPair::<MockRuntime>::get().is_none());
 		assert!(System::events().into_iter().map(|e| e.event).all(|e| e
-			!= Event::<MockRuntime>::SwapPairRemoved {
+			!= Event::<MockRuntime>::SwitchPairRemoved {
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			}
 			.into()));
@@ -66,7 +66,7 @@ fn successful() {
 fn fails_on_invalid_origin() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::force_unset_swap_pair(RawOrigin::None.into()),
+			Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::None.into()),
 			DispatchError::BadOrigin,
 		);
 	});

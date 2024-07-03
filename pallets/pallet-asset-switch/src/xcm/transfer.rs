@@ -16,37 +16,37 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub use xcm_fee_asset::IsSwapPairXcmFeeAsset;
+pub use xcm_fee_asset::IsSwitchPairXcmFeeAsset;
 mod xcm_fee_asset {
 	use frame_support::traits::ContainsPair;
 	use sp_std::marker::PhantomData;
 	use xcm::v3::{MultiAsset, MultiLocation};
 
-	use crate::{Config, SwapPair};
+	use crate::{Config, SwitchPair};
 
-	const LOG_TARGET: &str = "xcm::pallet-asset-swap::AllowXcmFeeAsset";
+	const LOG_TARGET: &str = "xcm::pallet-asset-switch::AllowXcmFeeAsset";
 
 	/// Type implementing `ContainsPair<MultiAsset, MultiLocation>` and returns
-	/// `true` if the specified asset matches the swap pair remote XCM fee
+	/// `true` if the specified asset matches the switch pair remote XCM fee
 	/// asset, which must be reserve transferred to this chain in order to be
 	/// withdrawn from the user's balance to pay for XCM fees at destination.
-	pub struct IsSwapPairXcmFeeAsset<T, I>(PhantomData<(T, I)>);
+	pub struct IsSwitchPairXcmFeeAsset<T, I>(PhantomData<(T, I)>);
 
-	impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwapPairXcmFeeAsset<T, I>
+	impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwitchPairXcmFeeAsset<T, I>
 	where
 		T: Config<I>,
 		I: 'static,
 	{
 		fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
 			log::info!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
-			// 1. Verify a swap pair has been set.
-			let Some(swap_pair) = SwapPair::<T, I>::get() else {
+			// 1. Verify a switch pair has been set.
+			let Some(switch_pair) = SwitchPair::<T, I>::get() else {
 				return false;
 			};
 
 			// 2. We only trust the configured remote location.
-			let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = swap_pair.remote_reserve_location.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", swap_pair.remote_reserve_location, e);
+			let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", switch_pair.remote_reserve_location, e);
 				e
 			 }) else { return false; };
 			if stored_remote_reserve_location_v3 != *b {
@@ -60,8 +60,8 @@ mod xcm_fee_asset {
 			}
 
 			// 3. Verify the asset matches the configured XCM fee asset.
-			let Ok(stored_remote_asset_fee): Result<MultiAsset, _> = swap_pair.remote_fee.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into v3 with error {:?}.", swap_pair.remote_fee, e);
+			let Ok(stored_remote_asset_fee): Result<MultiAsset, _> = switch_pair.remote_fee.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into v3 with error {:?}.", switch_pair.remote_fee, e);
 				e
 			 }) else { return false; };
 
@@ -70,37 +70,37 @@ mod xcm_fee_asset {
 	}
 }
 
-pub use swap_pair_remote_asset::IsSwapPairRemoteAsset;
-mod swap_pair_remote_asset {
+pub use switch_pair_remote_asset::IsSwitchPairRemoteAsset;
+mod switch_pair_remote_asset {
 	use frame_support::traits::ContainsPair;
 	use sp_std::marker::PhantomData;
 	use xcm::v3::{AssetId, MultiAsset, MultiLocation};
 
-	use crate::{Config, SwapPair};
+	use crate::{Config, SwitchPair};
 
-	const LOG_TARGET: &str = "xcm::barriers::pallet-asset-swap::AllowSwapPairRemoteAsset";
+	const LOG_TARGET: &str = "xcm::barriers::pallet-asset-switch::AllowSwitchPairRemoteAsset";
 
 	/// Type implementing `ContainsPair<MultiAsset, MultiLocation>` and returns
-	/// `true` if the specified asset matches the swap pair remote asset, which
+	/// `true` if the specified asset matches the switch pair remote asset, which
 	/// must be reserve transferred to this chain to be traded back for the
 	/// local token.
-	pub struct IsSwapPairRemoteAsset<T, I>(PhantomData<(T, I)>);
+	pub struct IsSwitchPairRemoteAsset<T, I>(PhantomData<(T, I)>);
 
-	impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwapPairRemoteAsset<T, I>
+	impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwitchPairRemoteAsset<T, I>
 	where
 		T: Config<I>,
 		I: 'static,
 	{
 		fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
 			log::info!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
-			// 1. Verify a swap pair has been set.
-			let Some(swap_pair) = SwapPair::<T, I>::get() else {
+			// 1. Verify a switch pair has been set.
+			let Some(switch_pair) = SwitchPair::<T, I>::get() else {
 				return false;
 			};
 
 			// 2. We only trust the configured remote location.
-			let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = swap_pair.remote_reserve_location.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", swap_pair.remote_reserve_location, e);
+			let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", switch_pair.remote_reserve_location, e);
 				e
 			 }) else { return false; };
 			if stored_remote_reserve_location_v3 != *b {
@@ -113,9 +113,9 @@ mod swap_pair_remote_asset {
 				return false;
 			}
 
-			// 3. Verify the asset matches the remote asset to swap for local ones.
-			let Ok(stored_remote_asset_id): Result<AssetId, _> = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset ID {:?} into v3 with error {:?}.", swap_pair.remote_asset_id, e);
+			// 3. Verify the asset matches the remote asset to switch for local ones.
+			let Ok(stored_remote_asset_id): Result<AssetId, _> = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset ID {:?} into v3 with error {:?}.", switch_pair.remote_asset_id, e);
 				e
 			 }) else { return false; };
 

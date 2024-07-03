@@ -21,18 +21,18 @@ use sp_std::marker::PhantomData;
 use xcm::v3::{AssetId, Fungibility, MultiAsset, MultiLocation};
 use xcm_executor::traits::{Error as XcmExecutorError, MatchesFungibles};
 
-use crate::{Config, SwapPair, SwapPairInfoOf};
+use crate::{Config, SwitchPair, SwitchPairInfoOf};
 
-const LOG_TARGET: &str = "xcm::pallet-asset-swap::MatchesSwapPairXcmFeeFungibleAsset";
+const LOG_TARGET: &str = "xcm::pallet-asset-switch::MatchesSwitchPairXcmFeeFungibleAsset";
 
 /// Type implementing `MatchesFungibles<MultiLocation, FungiblesBalance>` and
 /// returns the provided fungible amount if the specified `MultiLocation`
-/// matches the asset used by the swap pallet to pay for XCM fees at
-/// destination (`swap_pair_info.remote_fee`).
-pub struct MatchesSwapPairXcmFeeFungibleAsset<T, I>(PhantomData<(T, I)>);
+/// matches the asset used by the switch pallet to pay for XCM fees at
+/// destination (`switch_pair_info.remote_fee`).
+pub struct MatchesSwitchPairXcmFeeFungibleAsset<T, I>(PhantomData<(T, I)>);
 
 impl<T, I, FungiblesBalance> MatchesFungibles<MultiLocation, FungiblesBalance>
-	for MatchesSwapPairXcmFeeFungibleAsset<T, I>
+	for MatchesSwitchPairXcmFeeFungibleAsset<T, I>
 where
 	T: Config<I>,
 	I: 'static,
@@ -40,9 +40,9 @@ where
 {
 	fn matches_fungibles(a: &MultiAsset) -> Result<(MultiLocation, FungiblesBalance), XcmExecutorError> {
 		log::info!(target: LOG_TARGET, "matches_fungibles {:?}", a);
-		// 1. Retrieve swap pair from storage.
-		let SwapPairInfoOf::<T> { remote_fee, .. } =
-			SwapPair::<T, I>::get().ok_or(XcmExecutorError::AssetNotHandled)?;
+		// 1. Retrieve switch pair from storage.
+		let SwitchPairInfoOf::<T> { remote_fee, .. } =
+			SwitchPair::<T, I>::get().ok_or(XcmExecutorError::AssetNotHandled)?;
 
 		// 2. Match stored asset ID with input asset ID.
 		let MultiAsset { id, .. } = remote_fee.clone().try_into().map_err(|e| {

@@ -19,77 +19,95 @@
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
+use xcm::v3::{Fungibility, MultiAsset};
 
 use crate::{
 	mock::{
-		ExtBuilder, MockRuntime, NewSwapPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
+		ExtBuilder, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
-	swap::SwapPairStatus,
-	Error, Event, Pallet, SwapPair,
+	Error, Event, Pallet, SwitchPair,
 };
 
 #[test]
 fn successful() {
-	// Resuming a non-running swap pair generates an event.
+	// Setting the fee to a new value generates an event.
+	let new_fee = MultiAsset {
+		fun: Fungibility::Fungible(1),
+		..XCM_ASSET_FEE
+	};
 	ExtBuilder::default()
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: [0u8; 32].into(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Paused,
+			status: Default::default(),
 			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::resume_swap_pair(RawOrigin::Root.into()));
-			assert_eq!(SwapPair::<MockRuntime>::get().unwrap().status, SwapPairStatus::Running);
+			assert_ok!(Pallet::<MockRuntime>::update_remote_fee(
+				RawOrigin::Root.into(),
+				Box::new(new_fee.clone().into())
+			));
+			assert_eq!(
+				SwitchPair::<MockRuntime>::get().unwrap().remote_fee,
+				new_fee.clone().into()
+			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwapPairResumed {
-					remote_asset_id: REMOTE_ERC20_ASSET_ID.into()
+				== Event::<MockRuntime>::SwitchPairFeeUpdated {
+					old: XCM_ASSET_FEE.into(),
+					new: new_fee.clone().into()
 				}
 				.into()));
 		});
-	// Resuming a running swap pair generates no event.
+	// Setting the fee to the same value does not generate an event.
 	ExtBuilder::default()
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: [0u8; 32].into(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: Default::default(),
 			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::resume_swap_pair(RawOrigin::Root.into()));
-			assert_eq!(SwapPair::<MockRuntime>::get().unwrap().status, SwapPairStatus::Running);
+			assert_ok!(Pallet::<MockRuntime>::update_remote_fee(
+				RawOrigin::Root.into(),
+				Box::new(XCM_ASSET_FEE.into())
+			));
+			assert_eq!(
+				SwitchPair::<MockRuntime>::get().unwrap().remote_fee,
+				XCM_ASSET_FEE.into()
+			);
 			assert!(System::events().into_iter().map(|e| e.event).all(|e| e
-				!= Event::<MockRuntime>::SwapPairResumed {
-					remote_asset_id: REMOTE_ERC20_ASSET_ID.into()
+				!= Event::<MockRuntime>::SwitchPairFeeUpdated {
+					old: XCM_ASSET_FEE.into(),
+					new: XCM_ASSET_FEE.into(),
 				}
 				.into()));
 		});
-}
-
-#[test]
-fn fails_on_non_existing_pair() {
-	ExtBuilder::default().build().execute_with(|| {
-		assert_noop!(
-			Pallet::<MockRuntime>::resume_swap_pair(RawOrigin::Root.into()),
-			Error::<MockRuntime>::SwapPairNotFound
-		);
-	});
 }
 
 #[test]
 fn fails_on_invalid_origin() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::resume_swap_pair(RawOrigin::None.into()),
+			Pallet::<MockRuntime>::update_remote_fee(RawOrigin::None.into(), Box::new(XCM_ASSET_FEE.into()),),
 			DispatchError::BadOrigin
+		);
+	});
+}
+
+#[test]
+fn fails_on_non_existing_switch_pair() {
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			Pallet::<MockRuntime>::update_remote_fee(RawOrigin::Root.into(), Box::new(XCM_ASSET_FEE.into()),),
+			Error::<MockRuntime>::SwitchPairNotFound
 		);
 	});
 }
