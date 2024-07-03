@@ -9244,6 +9244,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
+ "enum-iterator",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
