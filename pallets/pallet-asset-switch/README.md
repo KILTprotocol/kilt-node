@@ -106,4 +106,24 @@ The pallet generates the following events:
 	5. The configured `SwitchHooks` returns an error in either the `pre-` or the `post-` switch checks.
 	6. The user does not have enough assets to pay for the required remote XCM fees as specified in the swap pair info and as returned by the configured `AssetTransactor`.
 
+## XCM components
+
+Because the switch functionality relies on XCM, the pallet provides a few XCM components that are to be included in a runtime in order to enable the whole set of interactions between the source chain and the configured remote reserve location.
+
+* `AccountId32ToAccountId32JunctionConverter` in [xcm::convert][xcm-convert]: provides an implementation for the pallet's `AccountIdConverter` config component, that converts local `AccountId32`s into a `AccountId32` XCM `Junction`. This works only for chains that use `AccountId32` as their overarching `AccountId` type.
+* `MatchesSwitchPairXcmFeeFungibleAsset` in [xcm::match][xcm-match]: provides an implementation of the `MatchesFungibles<MultiLocation, Fungibles::Balance>` that returns the input `MultiAsset` if its ID matches the XCM fee asset ID as configured in the switch pair, if present. If no switch pair is present or if the ID does not match, it returns a [XcmExecutorError::AssetNotHandled][XcmExecutorError::AssetNotHandled], which does not prevent other matchers after it to apply their matching logic. It can be used for the `AssetTransactor` property of the [XcmExecutor::Config][XcmExecutor::Config] and as the `AssetTransactor` component of this pallet in the runtime.
+* `UsingComponentsForXcmFeeAsset` in [xcm::trade][xcm-trade]: provides an implementation of `WeightTrader` that allows buying weight using the XCM fee asset configured in the switch pair. That is, if the XCM fee asset is DOT, and users need to send DOTs to this chain in order to pay for XCM fees, this component lets them use those very same DOTs that are being sent to pay for the XCM fees on this chain. Any unused weight is burnt, since this chain's sovereign account already controls the whole amount on the reserve location due to the nature of reserve-based transfers. It can be used for the `Trader` property of the [XcmExecutor::Config][XcmExecutor::Config].
+* `UsingComponentsForSwitchPairRemoteAsset` in [xcm::trade][xcm-trade]: provides an implementation of `WeightTrader` that allows buying weight using the remote asset configured in the switch pair when sending it to this chain to be switched for local tokens. Any unused weight is transferred from the switch pair account to the configured `FeeDestinationAccount`, as those local tokens do not need to back any remote assets because they have been used to pay for XCM fees. It can be used for the `Trader` property of the [XcmExecutor::Config][XcmExecutor::Config].
+* `SwitchPairRemoteAssetTransactor` in [xcm::transact][xcm-transact]: provides an implementation of `TransactAsset::deposit_asset` that matches the asset to be deposited with the remote asset configured in the swap pair '(else it returns [Error::AssetNotFound][Error::AssetNotFound]) and moves as many local tokens from the swap pair account to the specified `who` destination. It also calls into the `SwitchHooks` pre- and post- checks, and generates a `RemoteToLocalSwitchExecuted` if everything is completed successfully. It can be used for the `AssetTransactor` property of the [XcmExecutor::Config][XcmExecutor::Config].
+* `IsSwitchPairXcmFeeAsset` in [xcm::transfer][xcm-transfer]: provides an implementation of `ContainsPair<MultiAsset, MultiLocation>` that returns `true` if the given asset and sender match the stored switch pair XCM fee asset and reserve location respectively. It can be used for the `IsReserve` property of the [XcmExecutor::Config][XcmExecutor::Config].
+* `IsSwitchPairRemoteAsset` in [xcm::transfer][xcm-transfer]: provides an implementation of `ContainsPair<MultiAsset, MultiLocation>` that returns `true` if the given asset and sender match the stored switch pair remote asset and reserve location respectively. It can be used for the `IsReserve` property of the [XcmExecutor::Config][XcmExecutor::Config].
+
 [asset-switch-runtime-api]: ../../runtime-api/asset-switch/
+[xcm-convert]: ./src/xcm/convert.rs
+[xcm-match]: ./src/xcm/match.rs
+[XcmExecutorError::AssetNotHandled]: https://github.com/paritytech/polkadot-sdk/blob/33324fe01c5b1f341687cef2aa6e767f6acf40f3/polkadot/xcm/xcm-executor/src/traits/token_matching.rs#L54
+[XcmExecutor::Config]: https://github.com/paritytech/polkadot-sdk/blob/33324fe01c5b1f341687cef2aa6e767f6acf40f3/polkadot/xcm/xcm-executor/src/config.rs#L31
+[xcm-trade]: ./src/xcm/trade.rs
+[Error::AssetNotFound]: https://github.com/paritytech/polkadot-sdk/blob/e5791a56dcc35e308a80985cc3b6b7f2ed1eb6ec/polkadot/xcm/src/v3/traits.rs#L68
+[xcm-transact]: ./src/xcm/transact.rs
+[xcm-transfer]: ./src/xcm/transfer.rs

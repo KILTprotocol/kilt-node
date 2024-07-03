@@ -20,6 +20,8 @@ use xcm::VersionedMultiLocation;
 
 use crate::{Config, LocalCurrencyBalanceOf};
 
+/// Runtime-injected logic into the switch pallet around the time a switch takes
+/// place.
 pub trait SwitchHooks<T, I>
 where
 	T: Config<I>,
@@ -27,20 +29,28 @@ where
 {
 	type Error: Into<u8>;
 
+	/// Called before anything related to switch happens.
 	fn pre_local_to_remote_switch(
 		from: &T::AccountId,
 		to: &VersionedMultiLocation,
 		amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error>;
 
+	/// Called after the switch takes place and **after** the XCM message has
+	/// been sent to the reserve location.
 	fn post_local_to_remote_switch(
 		from: &T::AccountId,
 		to: &VersionedMultiLocation,
 		amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error>;
 
+	/// Called upon receiving an XCM message from the reserve location to
+	/// deposit some of the remote assets into a specified account, but before
+	/// the asset is actually deposited by the asset transactor.
 	fn pre_remote_to_local_switch(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
 
+	/// Same as [pre_remote_to_local_switch], but called after the transactor
+	/// has deposited the incoming remote asset.
 	fn post_remote_to_local_switch(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
 }
 

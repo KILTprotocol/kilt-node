@@ -28,8 +28,9 @@ mod xcm_fee_asset {
 
 	const LOG_TARGET: &str = "xcm::pallet-asset-switch::UsingComponentsForXcmFeeAsset";
 
-	/// Type implementing `WeightTrader` that allows to pay for XCM fees when
-	/// reserve transferring the XCM fee asset for the on-chain switch pair.
+	/// Type implementing [WeightTrader] that allows to
+	/// pay for XCM fees when reserve transferring the XCM fee asset for the
+	/// on-chain switch pair.
 	///
 	/// This trader is required in case there is no other mechanism to pay for
 	/// fees when transferring such an asset to this chain.
@@ -153,7 +154,7 @@ mod switch_pair_remote_asset {
 
 	const LOG_TARGET: &str = "xcm::pallet-asset-switch::UsingComponentsForSwitchPairRemoteAsset";
 
-	/// Type implementing `WeightTrader` that allows to pay for XCM fees when
+	/// Type implementing [WeightTrader] that allows to pay for XCM fees when
 	/// reserve transferring the remote asset of the on-chain switch pair.
 	///
 	/// This trader is required in case there is no other mechanism to pay for

@@ -25,10 +25,10 @@ use crate::{Config, SwitchPair, SwitchPairInfoOf};
 
 const LOG_TARGET: &str = "xcm::pallet-asset-switch::MatchesSwitchPairXcmFeeFungibleAsset";
 
-/// Type implementing `MatchesFungibles<MultiLocation, FungiblesBalance>` and
-/// returns the provided fungible amount if the specified `MultiLocation`
-/// matches the asset used by the switch pallet to pay for XCM fees at
-/// destination (`switch_pair_info.remote_fee`).
+/// Type implementing [MatchesFungibles] and returns the provided
+/// fungible amount if the specified `MultiLocation` matches the asset used by
+/// the switch pallet to pay for XCM fees at destination
+/// (`switch_pair_info.remote_fee`).
 pub struct MatchesSwitchPairXcmFeeFungibleAsset<T, I>(PhantomData<(T, I)>);
 
 impl<T, I, FungiblesBalance> MatchesFungibles<MultiLocation, FungiblesBalance>
