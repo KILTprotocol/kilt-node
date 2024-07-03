@@ -10,7 +10,7 @@ import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage 
 
 const ROC_ASSET_V3 = { V3: [getRelayNativeAssetIdLocation(ROC)] }
 
-test.skip('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob', async ({ expect }) => {
+test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT tokens to create the account

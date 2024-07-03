@@ -8,7 +8,6 @@ const options = {
 	endpoint: process.env.PEREGRINE_WS || 'wss://peregrine.kilt.io',
 	db: './db/peregrine.db.sqlite',
 	port: toNumber(process.env.PEREGRINE_PORT) || 9004,
-	runtimeLogLevel: 5,
 	wasmOverride: process.env.PEREGRINE_WASM_OVERRIDE || undefined,
 } as SetupOption
 
