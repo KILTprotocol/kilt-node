@@ -5,7 +5,7 @@ documentation = { workspace = true }
 edition       = { workspace = true }
 homepage      = { workspace = true }
 license-file  = { workspace = true }
-name          = "pallet-asset-swap"
+name          = "pallet-asset-switch"
 readme        = "README.md"
 repository    = { workspace = true }
 version       = { workspace = true }

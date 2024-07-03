@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, ParachainInfo, ParachainSystem, PolkadotXcm,
-	Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet, ParachainInfo,
+	ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
 use frame_support::{
@@ -26,9 +26,9 @@ use frame_support::{
 	traits::{Contains, Everything, Nothing},
 };
 use frame_system::EnsureRoot;
-use pallet_asset_swap::xcm::{
-	IsSwapPairRemoteAsset, IsSwapPairXcmFeeAsset, MatchesSwapPairXcmFeeFungibleAsset, SwapPairRemoteAssetTransactor,
-	UsingComponentsForSwapPairRemoteAsset, UsingComponentsForXcmFeeAsset,
+use pallet_asset_switch::xcm::{
+	IsSwitchPairRemoteAsset, IsSwitchPairXcmFeeAsset, MatchesSwitchPairXcmFeeFungibleAsset,
+	SwitchPairRemoteAssetTransactor, UsingComponentsForSwitchPairRemoteAsset, UsingComponentsForXcmFeeAsset,
 };
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
@@ -179,11 +179,11 @@ impl xcm_executor::Config for XcmConfig {
 	// transactors.
 	type AssetTransactor = (
 		// Allow the asset from the other side of the pool to be "deposited" into the current system.
-		SwapPairRemoteAssetTransactor<LocationToAccountIdConverter, Runtime>,
+		SwitchPairRemoteAssetTransactor<LocationToAccountIdConverter, Runtime, KiltToEKiltSwitchPallet>,
 		// Allow the asset to pay for remote XCM fees to be deposited into the current system.
 		FungiblesAdapter<
 			Fungibles,
-			MatchesSwapPairXcmFeeFungibleAsset<Runtime>,
+			MatchesSwitchPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwitchPallet>,
 			LocationToAccountIdConverter,
 			AccountId,
 			NoChecking,
@@ -195,8 +195,8 @@ impl xcm_executor::Config for XcmConfig {
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	type IsReserve = (
 		NativeAsset,
-		IsSwapPairRemoteAsset<Runtime>,
-		IsSwapPairXcmFeeAsset<Runtime>,
+		IsSwitchPairRemoteAsset<Runtime, KiltToEKiltSwitchPallet>,
+		IsSwitchPairXcmFeeAsset<Runtime, KiltToEKiltSwitchPallet>,
 	);
 	// Teleporting is disabled.
 	type IsTeleporter = ();
@@ -211,9 +211,14 @@ impl xcm_executor::Config for XcmConfig {
 	// used. In that case they are put into the treasury.
 	type Trader = (
 		// Can pay for fees with the remote XCM asset fee (when sending it into this system).
-		UsingComponentsForXcmFeeAsset<Runtime, WeightToFee<Runtime>>,
-		// Can pay for the remote asset of the swap pair (when "depositing" it into this system).
-		UsingComponentsForSwapPairRemoteAsset<Runtime, WeightToFee<Runtime>, TreasuryAccountId>,
+		UsingComponentsForXcmFeeAsset<Runtime, KiltToEKiltSwitchPallet, WeightToFee<Runtime>>,
+		// Can pay for the remote asset of the switch pair (when "depositing" it into this system).
+		UsingComponentsForSwitchPairRemoteAsset<
+			Runtime,
+			KiltToEKiltSwitchPallet,
+			WeightToFee<Runtime>,
+			TreasuryAccountId,
+		>,
 		// Can pay with the fungible that matches the "Here" location.
 		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>,
 	);

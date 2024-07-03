@@ -16,21 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_runtime::{traits::TryConvert, AccountId32};
-use xcm::v3::Junction::{self, AccountId32 as AccountId32Junction};
+#![cfg_attr(not(feature = "std"), no_std)]
 
-const LOG_TARGET: &str = "xcm::pallet-asset-swap::AccountId32ToAccountId32JunctionConverter";
+use parity_scale_codec::Codec;
+use sp_std::vec::Vec;
 
-/// Type implementing `TryConvert<AccountId32, Junction>` and returns a
-/// `Junction` from an `AccountId32`.
-pub struct AccountId32ToAccountId32JunctionConverter;
-
-impl TryConvert<AccountId32, Junction> for AccountId32ToAccountId32JunctionConverter {
-	fn try_convert(account: AccountId32) -> Result<Junction, AccountId32> {
-		log::info!(target: LOG_TARGET, "try_convert {:?}", account);
-		Ok(AccountId32Junction {
-			network: None,
-			id: account.into(),
-		})
-	}
+sp_api::decl_runtime_apis! {
+	/// Runtime API to compute the pool account for a given switch pair ID and remote asset.
+	pub trait AssetSwitch<AssetId, AccountId> where
+		AssetId: Codec,
+		AccountId: Codec,
+		{
+			fn pool_account_id(pair_id: Vec<u8>, asset_id: AssetId) -> AccountId;
+		}
 }

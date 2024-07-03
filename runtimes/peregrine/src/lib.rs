@@ -28,13 +28,11 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{
-		AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, EnsureOrigin, Everything, InstanceFilter, PrivilegeCmp,
-	},
+	traits::{AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
-use pallet_asset_swap::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwapPairXcmFeeFungibleAsset};
+use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use sp_api::impl_runtime_apis;
 use sp_core::{ConstBool, ConstU128, OpaqueMetadata};
@@ -55,6 +53,7 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 use runtime_common::{
+	asset_switch::EnsureRootAsTreasury,
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
@@ -85,6 +84,7 @@ use frame_try_runtime::UpgradeCheckSelect;
 #[cfg(test)]
 mod tests;
 
+mod asset_switch;
 mod dip;
 mod weights;
 pub mod xcm_config;
@@ -947,13 +947,12 @@ parameter_types! {
 	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }
 
-impl pallet_asset_swap::Config for Runtime {
-	const POOL_ADDRESS_GENERATION_ENTROPY: [u8; 8] = *b"plt/eplt";
-
+pub type KiltToEKiltSwitchPallet = pallet_asset_switch::Instance1;
+impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = FungiblesAdapter<
 		Fungibles,
-		MatchesSwapPairXcmFeeFungibleAsset<Runtime>,
+		MatchesSwitchPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwitchPallet>,
 		LocationToAccountIdConverter,
 		AccountId,
 		NoChecking,
@@ -964,42 +963,9 @@ impl pallet_asset_swap::Config for Runtime {
 	type PauseOrigin = EnsureRoot<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<AccountId>;
-	type SwapOrigin = EnsureRoot<AccountId>;
+	type SwitchHooks = asset_switch::RestrictswitchDestinationToSelf;
+	type SwitchOrigin = EnsureRoot<AccountId>;
 	type XcmRouter = XcmRouter;
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-pub struct NoopBenchmarkHelper;
-
-#[cfg(feature = "runtime-benchmarks")]
-impl pallet_assets::BenchmarkHelper<MultiLocation> for NoopBenchmarkHelper {
-	fn create_asset_id_parameter(id: u32) -> MultiLocation {
-		MultiLocation {
-			parents: 0,
-			interior: xcm::prelude::Here,
-		}
-	}
-}
-
-/// Returns the `treasury` address if the origin is the root origin.
-///
-/// Required by `type CreateOrigin` in `pallet_assets`.
-pub struct EnsureRootAsTreasury;
-
-impl EnsureOrigin<RuntimeOrigin> for EnsureRootAsTreasury {
-	type Success = AccountId;
-
-	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
-		EnsureRoot::try_origin(o)?;
-
-		// Return treasury account ID if successful.
-		Ok(pallet_treasury::Pallet::<Runtime>::account_id())
-	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
-		EnsureRoot::try_successful_origin()
-	}
 }
 
 // No deposit is taken since creation is permissioned. Only the root origin can
@@ -1012,9 +978,9 @@ impl pallet_assets::Config for Runtime {
 	type AssetIdParameter = MultiLocation;
 	type Balance = u128;
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = NoopBenchmarkHelper;
+	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 	type CallbackHandle = ();
-	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury>;
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
 	type Currency = Balances;
 	type Extra = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
@@ -1079,7 +1045,7 @@ construct_runtime! {
 
 		Multisig: pallet_multisig = 47,
 
-		AssetSwap: pallet_asset_swap = 48,
+		AssetSwitchPool1: pallet_asset_switch::<Instance1> = 48,
 		Fungibles: pallet_assets = 49,
 
 		// KILT Pallets. Start indices 60 to leave room
@@ -1519,9 +1485,18 @@ impl_runtime_apis! {
 	}
 
 		// TODO: I think it's fine to panic in runtime APIs, but should double check that.
-		impl pallet_asset_swap_runtime_api::AssetSwap<Block, VersionedAssetId, AccountId> for Runtime {
-			fn pool_account_id(remote_asset_id: VersionedAssetId) -> AccountId {
-				pallet_asset_swap::Pallet::<Runtime>::pool_account_id_for_remote_asset(&remote_asset_id).expect("Should never fail to generate a pool account for a given asset.")
+		impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId> for Runtime {
+			fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> AccountId {
+				use core::str;
+				use frame_support::traits::PalletInfoAccess;
+
+				let pair_id_as_string = str::from_utf8(pair_id.as_slice()).expect("Provided switch pair ID is not a valid UTF-8 string.");
+				match pair_id_as_string {
+					kilt_to_ekilt if kilt_to_ekilt == AssetSwitchPool1::name() => {
+						AssetSwitchPool1::pool_account_id_for_remote_asset(&asset_id).expect("Should never fail to generate a pool account for a given asset.")
+					},
+					_ => panic!("No switch pair with specified pool ID found")
+				}
 			}
 		}
 

@@ -7436,7 +7436,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-asset-swap"
+name = "pallet-asset-switch"
 version = "1.14.0-dev"
 dependencies = [
  "env_logger 0.10.1",
@@ -7456,11 +7456,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-asset-swap-runtime-api"
+name = "pallet-asset-switch-runtime-api"
 version = "1.14.0-dev"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
+ "sp-std",
 ]
 
 [[package]]
@@ -9244,6 +9245,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
+ "enum-iterator",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -9258,8 +9260,8 @@ dependencies = [
  "kilt-runtime-api-staking",
  "kilt-support",
  "log",
- "pallet-asset-swap",
- "pallet-asset-swap-runtime-api",
+ "pallet-asset-switch",
+ "pallet-asset-switch-runtime-api",
  "pallet-assets",
  "pallet-aura",
  "pallet-authorship",

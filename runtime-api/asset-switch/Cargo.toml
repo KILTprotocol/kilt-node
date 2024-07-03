@@ -1,11 +1,11 @@
 [package]
 authors       = { workspace = true }
-description   = "Runtime APIs for integrating the asset-swap pallet."
+description   = "Runtime APIs for integrating the asset-switch pallet."
 documentation = { workspace = true }
 edition       = { workspace = true }
 homepage      = { workspace = true }
 license-file  = { workspace = true }
-name          = "pallet-asset-swap-runtime-api"
+name          = "pallet-asset-switch-runtime-api"
 readme        = { workspace = true }
 repository    = { workspace = true }
 version       = { workspace = true }
@@ -16,7 +16,8 @@ parity-scale-codec = { workspace = true }
 
 # Substrate dependencies
 sp-api = { workspace = true }
+sp-std = { workspace = true }
 
 [features]
 default = ["std"]
-std     = ["parity-scale-codec/std", "sp-api/std"]
+std     = ["parity-scale-codec/std", "sp-api/std", "sp-std/std"]

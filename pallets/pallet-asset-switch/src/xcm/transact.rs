@@ -24,28 +24,29 @@ use sp_std::marker::PhantomData;
 use xcm::v3::{AssetId, Error, Fungibility, MultiAsset, MultiLocation, Result, XcmContext};
 use xcm_executor::traits::{ConvertLocation, TransactAsset};
 
-use crate::{Config, Event, LocalCurrencyBalanceOf, Pallet, SwapPair, SwapPairInfoOf};
+use crate::{traits::SwitchHooks, Config, Event, LocalCurrencyBalanceOf, Pallet, SwitchPair, SwitchPairInfoOf};
 
-const LOG_TARGET: &str = "xcm::pallet-asset-swap::SwapPairRemoteAssetTransactor";
+const LOG_TARGET: &str = "xcm::pallet-asset-switch::SwitchPairRemoteAssetTransactor";
 
-pub struct SwapPairRemoteAssetTransactor<AccountIdConverter, T>(PhantomData<(AccountIdConverter, T)>);
+pub struct SwitchPairRemoteAssetTransactor<AccountIdConverter, T, I>(PhantomData<(AccountIdConverter, T, I)>);
 
-impl<AccountIdConverter, T> TransactAsset for SwapPairRemoteAssetTransactor<AccountIdConverter, T>
+impl<AccountIdConverter, T, I> TransactAsset for SwitchPairRemoteAssetTransactor<AccountIdConverter, T, I>
 where
 	AccountIdConverter: ConvertLocation<T::AccountId>,
-	T: Config,
+	T: Config<I>,
+	I: 'static,
 {
 	fn deposit_asset(what: &MultiAsset, who: &MultiLocation, context: &XcmContext) -> Result {
 		log::info!(target: LOG_TARGET, "deposit_asset {:?} {:?} {:?}", what, who, context);
-		// 1. Verify the swap pair exists.
-		let swap_pair = SwapPair::<T>::get().ok_or(Error::AssetNotFound)?;
+		// 1. Verify the switch pair exists.
+		let switch_pair = SwitchPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
 
-		// 2. Verify the asset matches the other side of the swap pair.
-		let stored_asset_id_v3: AssetId = swap_pair.remote_asset_id.clone().try_into().map_err(|e| {
+		// 2. Verify the asset matches the other side of the switch pair.
+		let stored_asset_id_v3: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
 				"Failed to convert stored asset ID {:?} into required version with error {:?}.",
-				swap_pair.remote_asset_id,
+				switch_pair.remote_asset_id,
 				e
 			);
 			Error::AssetNotFound
@@ -54,25 +55,32 @@ where
 		// After this ensure, we know we need to be transacting with this asset, so any
 		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
-		// 3. Verify the swap pair is running.
+		// 3. Verify the switch pair is running.
 		ensure!(
-			swap_pair.can_swap(),
-			Error::FailedToTransactAsset("Swap pair is not running.",)
+			switch_pair.can_switch(),
+			Error::FailedToTransactAsset("switch pair is not running.",)
 		);
 
-		// 4. Perform the local transfer
 		let beneficiary = AccountIdConverter::convert_location(who).ok_or(Error::FailedToTransactAsset(
 			"Failed to convert beneficiary to valid account.",
 		))?;
 		let Fungibility::Fungible(fungible_amount) = what.fun else {
 			return Err(Error::FailedToTransactAsset("Deposited token expected to be fungible."));
 		};
-		let fungible_amount_as_currency_balance: LocalCurrencyBalanceOf<T> =
+
+		// 4. Call into the pre-switch hook
+		T::SwitchHooks::pre_remote_to_local_switch(&beneficiary, fungible_amount).map_err(|e| {
+			log::error!(target: LOG_TARGET, "Hook pre-switch check failed with error code {:?}", e.into());
+			Error::FailedToTransactAsset("Failed to validate preconditions for remote-to-local switch.")
+		})?;
+
+		// 5. Perform the local transfer
+		let fungible_amount_as_currency_balance: LocalCurrencyBalanceOf<T, I> =
 			fungible_amount.try_into().map_err(|_| {
 				Error::FailedToTransactAsset("Failed to convert fungible amount to balance of local currency.")
 			})?;
 		T::LocalCurrency::transfer(
-			&swap_pair.pool_account,
+			&switch_pair.pool_account,
 			&beneficiary,
 			fungible_amount_as_currency_balance,
 			Preservation::Expendable,
@@ -86,25 +94,31 @@ where
 			Error::FailedToTransactAsset("Failed to transfer assets from pool account")
 		})?;
 
-		// 5. Increase the balance of the remote asset
+		// 6. Increase the balance of the remote asset
 		let new_remote_balance =
-			swap_pair
+			switch_pair
 				.remote_asset_balance
 				.checked_add(fungible_amount)
 				.ok_or(Error::FailedToTransactAsset(
 					"Failed to transfer assets from pool account",
 				))?;
-		SwapPair::<T>::try_mutate(|entry| {
-			let SwapPairInfoOf::<T> {
+		SwitchPair::<T, I>::try_mutate(|entry| {
+			let SwitchPairInfoOf::<T> {
 				remote_asset_balance, ..
 			} = entry
 				.as_mut()
-				.ok_or(Error::FailedToTransactAsset("SwapPair should not be None."))?;
+				.ok_or(Error::FailedToTransactAsset("SwitchPair should not be None."))?;
 			*remote_asset_balance = new_remote_balance;
 			Ok::<_, Error>(())
 		})?;
 
-		Pallet::<T>::deposit_event(Event::<T>::RemoteToLocalSwapExecuted {
+		// 7. Call into the post-switch hook
+		T::SwitchHooks::post_remote_to_local_switch(&beneficiary, fungible_amount).map_err(|e| {
+			log::error!(target: LOG_TARGET, "Hook post-switch check failed with error code {:?}", e.into());
+			Error::FailedToTransactAsset("Failed to validate postconditions for remote-to-local switch.")
+		})?;
+
+		Pallet::<T, I>::deposit_event(Event::<T, I>::RemoteToLocalSwitchExecuted {
 			amount: fungible_amount,
 			to: beneficiary,
 		});

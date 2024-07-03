@@ -22,52 +22,58 @@ use sp_runtime::DispatchError;
 
 use crate::{
 	mock::{
-		ExtBuilder, MockRuntime, NewSwapPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
+		ExtBuilder, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
-	swap::SwapPairStatus,
-	Error, Event, Pallet, SwapPair,
+	switch::SwitchPairStatus,
+	Error, Event, Pallet, SwitchPair,
 };
 
 #[test]
 fn successful() {
-	// Stopping a running swap pair generates an event.
+	// Stopping a running switch pair generates an event.
 	ExtBuilder::default()
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: [0u8; 32].into(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Running,
+			status: SwitchPairStatus::Running,
 			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::pause_swap_pair(RawOrigin::Root.into()));
-			assert_eq!(SwapPair::<MockRuntime>::get().unwrap().status, SwapPairStatus::Paused);
+			assert_ok!(Pallet::<MockRuntime>::pause_switch_pair(RawOrigin::Root.into()));
+			assert_eq!(
+				SwitchPair::<MockRuntime>::get().unwrap().status,
+				SwitchPairStatus::Paused
+			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwapPairPaused {
+				== Event::<MockRuntime>::SwitchPairPaused {
 					remote_asset_id: REMOTE_ERC20_ASSET_ID.into()
 				}
 				.into()));
 		});
-	// Stopping a non-running swap pair generates no event.
+	// Stopping a non-running switch pair generates no event.
 	ExtBuilder::default()
-		.with_swap_pair_info(NewSwapPairInfo {
+		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
 			pool_account: [0u8; 32].into(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwapPairStatus::Paused,
+			status: SwitchPairStatus::Paused,
 			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::pause_swap_pair(RawOrigin::Root.into()));
-			assert_eq!(SwapPair::<MockRuntime>::get().unwrap().status, SwapPairStatus::Paused);
+			assert_ok!(Pallet::<MockRuntime>::pause_switch_pair(RawOrigin::Root.into()));
+			assert_eq!(
+				SwitchPair::<MockRuntime>::get().unwrap().status,
+				SwitchPairStatus::Paused
+			);
 			assert!(System::events().into_iter().map(|e| e.event).all(|e| e
-				!= Event::<MockRuntime>::SwapPairPaused {
+				!= Event::<MockRuntime>::SwitchPairPaused {
 					remote_asset_id: REMOTE_ERC20_ASSET_ID.into()
 				}
 				.into()));
@@ -78,8 +84,8 @@ fn successful() {
 fn fails_on_non_existing_pair() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::pause_swap_pair(RawOrigin::Root.into()),
-			Error::<MockRuntime>::SwapPairNotFound
+			Pallet::<MockRuntime>::pause_switch_pair(RawOrigin::Root.into()),
+			Error::<MockRuntime>::SwitchPairNotFound
 		);
 	});
 }
@@ -88,7 +94,7 @@ fn fails_on_non_existing_pair() {
 fn fails_on_invalid_origin() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::pause_swap_pair(RawOrigin::None.into()),
+			Pallet::<MockRuntime>::pause_switch_pair(RawOrigin::None.into()),
 			DispatchError::BadOrigin
 		);
 	});
