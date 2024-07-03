@@ -75,7 +75,35 @@ As the pallet is generic over the runtime specifics, the `Config` trait requires
 ## Storage
 
 The pallet has a single `SwitchPair` storage value that contains a `Option<SwitchPairInfo>`.
-
 If unset, no switch pair is configured hence no switch can happen.
-
 When set and its status is `Running`, switches are enabled in both directions.
+
+## Events
+
+The pallet generates the following events:
+
+- `SwitchPairCreated`: when a new switch pair is created by governance.
+- `SwitchPairRemoved`: when a switch pair is removed by the root origin.
+- `SwitchPairResumed`: when a switch pair has (re-)enabled local to remote asset switches.
+- `SwitchPairPaused`: when a switch pair has been paused.
+- `SwitchPairFeeUpdated`: when the XCM fee for the switch transfer has been updated.
+- `LocalToRemoteSwitchExecuted`: when a switch of some local tokens for the remote asset has taken place.
+- `RemoteToLocalSwitchExecuted`: when a switch of some remote assets for the local tokens has taken place.
+
+## Calls
+
+1. `pub fn set_switch_pair(origin: OriginFor<T>, reserve_location: Box<VersionedMultiLocation>, remote_asset_id: Box<VersionedAssetId>, remote_fee: Box<VersionedMultiAsset>, total_issuance: u128, circulating_supply: u128) -> DispatchResult`: Set a new switch pair between the local currency and the specified `remote_asset_id` on the `reserve_location`. The specified `total_issuance` includes both the `circulating_supply` (i.e., the remote asset amount that the chain does not control on the `reserve_location`) and the locked supply under the control of the chain's sovereign account on the `reserve_location`. For this reason, the value of `total_issuance` must be at least as large as `circulating_supply`. It is possible for `circulating_supply` to be `0`, in which case it means this chain controls all of the `total_issuance` of the remote asset, which can be obtained by locking a corresponding amount of local tokens via the `switch` call below. Furthermore, the pallet calculates the account that will hold the local tokens locked in exchange for remote tokens: this account is based on the pallet runtime name as returned by the `PalletInfoAccess` trait, and the value of `remote_asset_id`. The generated account must already have a balance of at least `circulating_supply`, ensuring that there are enough local tokens locked to satisfy all the requests to exchange the remote asset for local tokens. The balance of such account can be increased with a simple transfer, after obtaining the to-be-created swap pair pool account by interacting with the [asset-switch runtime API][asset-switch-runtime-api]: this requirement is bypassed with the `force_set_switch_pair` call. Only `SwitchOrigin` can call this, and in most cases it will most likely be a governance-based origin such as the one provided by referenda or collectives with high privileges.
+2. `pub fn force_set_switch_pair(origin: OriginFor<T>, reserve_location: Box<VersionedMultiLocation>, remote_asset_id: Box<VersionedAssetId>, remote_fee: Box<VersionedMultiAsset>, total_issuance: u128, circulating_supply: u128) -> DispatchResult`: It does the same as the `set_switch_pair`, but it skips the check over the swap pair pool account balance, and it requires the `root` origin for the call to be dispatched.
+3. `pub fn force_unset_switch_pair(origin: OriginFor<T>) -> DispatchResult`: Forcibly remove a previously-stored switch pair. This operation can only be accomplished by the `root` origin. **Any intermediate state, such as local tokens locked in the swap pair pool or remote assets that are not switchable anymore for local tokens must be taken care of with subsequent governance operations.**
+4. `pub fn pause_switch_pair(origin: OriginFor<T>) -> DispatchResult`: Allows the `PauseOrigin` to immediately pause switches in both directions.
+5. `pub fn resume_switch_pair(origin: OriginFor<T>) -> DispatchResult`: Allows the `SwitchOrigin` to resume swaps in both directions.
+6. `pub fn update_remote_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult`: Allows the `FeeOrigin` to update the required XCM fee to execute the transfer of remote asset on the reserve location from the chain's sovereign account to the beneficiary specified in the `switch` operation. For example, if the cost of sending an XCM message containing a `TransferAsset` instruction from the source chain to AssetHub (reserve location) changes from 0.1 DOTs to 0.2 DOTs, the fee will need to be updated accordingly to avoid transfers to fail on AssetHub, leaving the whole system in an inconsistent state. Since the pallet refunds any unused assets on the reserve location to the account initiating the switch on the source chain, it is not a big issue to overestimate this value here, since no funds will be burnt or unfairly taken from the user during the swap process.
+7. `pub fn switch(origin: OriginFor<T>, local_asset_amount: LocalCurrencyBalanceOf<T, I>, beneficiary: Box<VersionedMultiLocation>) -> DispatchResult`: Allows the `SubmitterOrigin` to perform a swap of some local tokens for the corresponding amount of remote assets on the configured `reserve_location`. The swap will fail already on the source chain if any of the following preconditions is not met:
+	1. The submitter does not have enough balance to pay for the tx fees on the source chain or to cover the amount of local tokens requested. Hence, the user's local balance must be greater than or equal to the amount of tokens requested in the swap + the cost of executing the extrinsic on the source chain.
+	2. No switch pair is set or the switch pair is currently not allowing switches.
+	3. There are not enough locked remote assets on the `reserve_location` to cover the switch request. E.g., if the chain sovereign account on the `reserve_location` only controls `10` remote assets, users can only switch up to `10` local tokens. Once the limit is reached, there needs to be someone performing the reverse operation (remote -> local switch) to free up some remote tokens.
+	4. The swap pair `reserve_location` is not reachable from the source chain, because the configured `XcmRouter` returns an error (e.g., there is no XCM channel between the two chains).
+	5. The configured `SwitchHooks` returns an error in either the `pre-` or the `post-` switch checks.
+	6. The user does not have enough assets to pay for the required remote XCM fees as specified in the swap pair info and as returned by the configured `AssetTransactor`.
+
+[asset-switch-runtime-api]: ../../runtime-api/asset-switch/
