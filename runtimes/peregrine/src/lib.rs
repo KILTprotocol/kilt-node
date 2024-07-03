@@ -53,7 +53,7 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 use runtime_common::{
-	asset_swap::EnsureRootAsTreasury,
+	asset_switch::EnsureRootAsTreasury,
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
@@ -978,7 +978,7 @@ impl pallet_assets::Config for Runtime {
 	type AssetIdParameter = MultiLocation;
 	type Balance = u128;
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = runtime_common::asset_swap::NoopBenchmarkHelper;
+	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 	type CallbackHandle = ();
 	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
 	type Currency = Balances;
