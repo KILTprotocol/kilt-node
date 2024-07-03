@@ -20,22 +20,23 @@ use xcm::VersionedMultiLocation;
 
 use crate::{Config, LocalCurrencyBalanceOf};
 
-pub trait SwapHooks<T>
+pub trait SwapHooks<T, I>
 where
-	T: Config,
+	T: Config<I>,
+	I: 'static,
 {
 	type Error: Into<u8>;
 
 	fn pre_local_to_remote_swap(
 		from: &T::AccountId,
 		to: &VersionedMultiLocation,
-		amount: LocalCurrencyBalanceOf<T>,
+		amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error>;
 
 	fn post_local_to_remote_swap(
 		from: &T::AccountId,
 		to: &VersionedMultiLocation,
-		amount: LocalCurrencyBalanceOf<T>,
+		amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error>;
 
 	fn pre_remote_to_local_swap(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
@@ -43,16 +44,17 @@ where
 	fn post_remote_to_local_swap(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
 }
 
-impl<T> SwapHooks<T> for ()
+impl<T, I> SwapHooks<T, I> for ()
 where
-	T: Config,
+	T: Config<I>,
+	I: 'static,
 {
 	type Error = u8;
 
 	fn pre_local_to_remote_swap(
 		_from: &T::AccountId,
 		_to: &VersionedMultiLocation,
-		_amount: LocalCurrencyBalanceOf<T>,
+		_amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error> {
 		Ok(())
 	}
@@ -60,7 +62,7 @@ where
 	fn post_local_to_remote_swap(
 		_from: &T::AccountId,
 		_to: &VersionedMultiLocation,
-		_amount: LocalCurrencyBalanceOf<T>,
+		_amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error> {
 		Ok(())
 	}

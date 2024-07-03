@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, ParachainInfo, ParachainSystem, PolkadotXcm,
-	Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, KiltToEKiltSwapPallet, ParachainInfo,
+	ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
 use frame_support::{
@@ -179,11 +179,11 @@ impl xcm_executor::Config for XcmConfig {
 	// transactors.
 	type AssetTransactor = (
 		// Allow the asset from the other side of the pool to be "deposited" into the current system.
-		SwapPairRemoteAssetTransactor<LocationToAccountIdConverter, Runtime>,
+		SwapPairRemoteAssetTransactor<LocationToAccountIdConverter, Runtime, KiltToEKiltSwapPallet>,
 		// Allow the asset to pay for remote XCM fees to be deposited into the current system.
 		FungiblesAdapter<
 			Fungibles,
-			MatchesSwapPairXcmFeeFungibleAsset<Runtime>,
+			MatchesSwapPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwapPallet>,
 			LocationToAccountIdConverter,
 			AccountId,
 			NoChecking,
@@ -195,8 +195,8 @@ impl xcm_executor::Config for XcmConfig {
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	type IsReserve = (
 		NativeAsset,
-		IsSwapPairRemoteAsset<Runtime>,
-		IsSwapPairXcmFeeAsset<Runtime>,
+		IsSwapPairRemoteAsset<Runtime, KiltToEKiltSwapPallet>,
+		IsSwapPairXcmFeeAsset<Runtime, KiltToEKiltSwapPallet>,
 	);
 	// Teleporting is disabled.
 	type IsTeleporter = ();
@@ -211,9 +211,9 @@ impl xcm_executor::Config for XcmConfig {
 	// used. In that case they are put into the treasury.
 	type Trader = (
 		// Can pay for fees with the remote XCM asset fee (when sending it into this system).
-		UsingComponentsForXcmFeeAsset<Runtime, WeightToFee<Runtime>>,
+		UsingComponentsForXcmFeeAsset<Runtime, KiltToEKiltSwapPallet, WeightToFee<Runtime>>,
 		// Can pay for the remote asset of the swap pair (when "depositing" it into this system).
-		UsingComponentsForSwapPairRemoteAsset<Runtime, WeightToFee<Runtime>, TreasuryAccountId>,
+		UsingComponentsForSwapPairRemoteAsset<Runtime, KiltToEKiltSwapPallet, WeightToFee<Runtime>, TreasuryAccountId>,
 		// Can pay with the fungible that matches the "Here" location.
 		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>,
 	);

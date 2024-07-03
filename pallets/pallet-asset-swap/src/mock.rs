@@ -174,8 +174,6 @@ impl SendXcm for AlwaysSuccessfulXcmRouter {
 }
 
 impl crate::Config for MockRuntime {
-	const POOL_ADDRESS_GENERATION_ENTROPY: [u8; 8] = *b"eKILT/AH";
-
 	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = MockFungibleAssetTransactor;
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
