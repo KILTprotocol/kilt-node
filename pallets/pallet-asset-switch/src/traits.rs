@@ -29,7 +29,7 @@ where
 {
 	type Error: Into<u8>;
 
-	/// Called before anything related to switch happens.
+	/// Called before anything related to a switch happens.
 	fn pre_local_to_remote_switch(
 		from: &T::AccountId,
 		to: &VersionedMultiLocation,

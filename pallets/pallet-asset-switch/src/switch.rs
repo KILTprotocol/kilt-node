@@ -35,7 +35,7 @@ pub struct SwitchPairInfo<AccountId> {
 	/// The assets to take from the user's balance on this chain to pay for XCM
 	/// execution fees on the reserve location.
 	pub remote_fee: VersionedMultiAsset,
-	/// The location of the location on which the remote asset lives.
+	/// The remote location on which the remote asset lives.
 	pub remote_reserve_location: VersionedMultiLocation,
 	/// The status of the switch pair.
 	pub status: SwitchPairStatus,
