@@ -16,15 +16,12 @@ test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Acco
 	// Assign alice some KILT tokens to create the account
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
-		...PeregrineConfig.assignNativeTokensToAccounts(
-			[keysBob.address, PeregrineConfig.poolAccountId],
-			initialBalanceKILT
-		),
-		...PeregrineConfig.setSwapPair(),
+		...PeregrineConfig.assignNativeTokensToAccounts([keysBob.address], initialBalanceKILT),
 	})
 
-	// Give Alice some Rocs
+	await setStorage(peregrineContext, PeregrineConfig.setSwapPair())
 
+	// Give Alice some Rocs
 	await setStorage(assethubContext, AssetHubConfig.assignDotTokensToAccounts([keysAlice.address], initialBalanceROC))
 
 	const peregrineSovereignAccountBalanceBeforeTx = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)

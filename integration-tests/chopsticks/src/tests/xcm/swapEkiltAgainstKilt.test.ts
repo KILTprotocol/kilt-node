@@ -20,7 +20,6 @@ test.skip('Swap ePILTs against PILTS on Peregrine', async ({ expect }) => {
 
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
-		...PeregrineConfig.assignNativeTokensToAccounts([PeregrineConfig.poolAccountId], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
 		...PeregrineConfig.setSwapPair(),
 		...PeregrineConfig.setSafeXcmVersion3(),
@@ -46,7 +45,7 @@ test.skip('Swap ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, initialBalanceKILT)
 
 	// initial balance of the pool account and sovereign account
-	const initialBalancePoolAccount = await getFreeBalancePeregrine(PeregrineConfig.poolAccountId)
+	const initialBalancePoolAccount = await getFreeBalancePeregrine(PeregrineConfig.initialPoolAccountId)
 	const initialBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
 	const initialRemoteLockedSupply = await getRemoteLockedSupply()
 
@@ -124,7 +123,7 @@ test.skip('Swap ePILTs against PILTS on Peregrine', async ({ expect }) => {
 
 	// check events receiver
 	checkSystemEvents(peregrineContext, 'xcmpQueue').toMatchSnapshot('peregrine message queue')
-	checkSystemEvents(peregrineContext, 'assetSwap').toMatchSnapshot('peregrine asset swap pallet')
+	checkSystemEvents(peregrineContext, 'assetSwitchPool1').toMatchSnapshot('peregrine asset swap pallet')
 	checkSystemEvents(peregrineContext, { section: 'balances', method: 'Transfer' }).toMatchSnapshot(
 		'peregrine balances pallet'
 	)
@@ -134,7 +133,7 @@ test.skip('Swap ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	expect(freeBalanceAlicePeregrine).toBeGreaterThan(BigInt(0))
 
 	// Pool account should have less locked PILTs
-	const freeBalancePoolAccount = await getFreeBalancePeregrine(PeregrineConfig.poolAccountId)
+	const freeBalancePoolAccount = await getFreeBalancePeregrine(PeregrineConfig.initialPoolAccountId)
 	expect(initialBalancePoolAccount - balanceToTransfer).toBeGreaterThanOrEqual(freeBalancePoolAccount)
 
 	// remote locked supply should have increased by the amount of the transferred PILTs

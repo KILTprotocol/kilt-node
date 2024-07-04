@@ -1,0 +1,57 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > Swap events assetSwitchPool1 pallet 1`] = `
+[
+  {
+    "data": {
+      "amount": 50000000000000000,
+      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+      "to": {
+        "V3": {
+          "interior": {
+            "X1": {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": null,
+              },
+            },
+          },
+          "parents": 0,
+        },
+      },
+    },
+    "method": "LocalToRemoteSwitchExecuted",
+    "section": "assetSwitchPool1",
+  },
+]
+`;
+
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > receiver events polkadotXcm 1`] = `[]`;
+
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > receiver events xcm queue pallet 1`] = `[]`;
+
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events Balances 1`] = `
+[
+  {
+    "data": {
+      "amount": 50000000000000000,
+      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+      "to": "4nv4phaKc4EcwENdRERuMF79ZSSB5xvnAk3zNySSbVbXhSwS",
+    },
+    "method": "Transfer",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events xcm queue pallet 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;

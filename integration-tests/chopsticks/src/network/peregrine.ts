@@ -63,13 +63,16 @@ export function createAndAssignRocs(manager: string, addr: string[], balance: bi
 	}
 }
 
-export function setSwapPair() {
+export function setSwapPair(
+	remoteAssetBalance: bigint = initialRemoteFeeAssetBalance,
+	poolAccountId: string = initialPoolAccountId
+) {
 	return {
-		assetSwap: {
-			swapPair: {
+		assetSwitchPool1: {
+			SwitchPair: {
 				// Todo: replace with the actual address
 				poolAccountId,
-				remoteAssetBalance: initialRemoteFeeAssetBalance.toString(),
+				remoteAssetBalance,
 				remoteAssetId: {
 					V3: {
 						Concrete: {
@@ -110,6 +113,9 @@ export function setSwapPair() {
 				status: 'Running',
 			},
 		},
+		System: {
+			Account: [[[poolAccountId], { providers: 1, data: { free: remoteAssetBalance } }]],
+		},
 	}
 }
 
@@ -122,7 +128,7 @@ export const remoteFee = ROC / BigInt(10)
 /// Sibling sovereign account for other chains
 export const siblingSovereignAccount = '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'
 
-export const poolAccountId = '4nv4phaKc4EcwENdRERuMF79ZSSB5xvnAk3zNySSbVbXhSwS'
+export const initialPoolAccountId = '4nv4phaKc4EcwENdRERuMF79ZSSB5xvnAk3zNySSbVbXhSwS'
 export const initialRemoteFeeAssetBalance = BigInt('100000000000000000000')
 
 export async function getContext(): Promise<Config> {

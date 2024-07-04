@@ -1,4 +1,4 @@
-import { beforeAll, afterAll } from 'vitest'
+import { beforeEach, afterEach } from 'vitest'
 import { connectParachains, connectVertical } from '@acala-network/chopsticks'
 import { setTimeout } from 'timers/promises'
 
@@ -17,7 +17,7 @@ export let assethubContext: Config
 export let peregrineContext: Config
 export let rococoContext: Config
 
-beforeAll(async () => {
+beforeEach(async () => {
 	spiritnetContext = await SpiritnetConfig.getContext()
 	hydradxContext = await HydraDxConfig.getContext()
 	polkadotContext = await PolkadotConfig.getContext()
@@ -47,9 +47,9 @@ beforeAll(async () => {
 		rococoContext.dev.newBlock(newBlockConfig),
 		peregrineContext.dev.newBlock(newBlockConfig),
 	])
-}, 300_000)
+}, 30_000)
 
-afterAll(async () => {
+afterEach(async () => {
 	// fixes api runtime disconnect warning
 	try {
 		await Promise.all([
@@ -94,13 +94,13 @@ export async function getFreeRocAssetHub(account: string): Promise<bigint> {
 
 export async function getRemoteLockedSupply(): Promise<bigint> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const swapPairInfo: any = await peregrineContext.api.query.assetSwap.swapPair()
+	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.SwitchPair()
 
-	if (swapPairInfo.isNone) {
+	if (switchPairInfo.isNone) {
 		return BigInt(0)
 	}
 
-	return swapPairInfo.unwrap().remoteAssetBalance.toBigInt()
+	return switchPairInfo.unwrap().remoteAssetBalance.toBigInt()
 }
 
 export async function getFreeEkiltAssetHub(account: string): Promise<bigint> {
