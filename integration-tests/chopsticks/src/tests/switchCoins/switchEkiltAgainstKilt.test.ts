@@ -15,13 +15,13 @@ import {
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getSiblingLocation } from '../../network/utils.js'
 
-test.skip('Swap ePILTs against PILTS on Peregrine', async ({ expect }) => {
+test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSwapPair(),
+		...PeregrineConfig.setSwitchPair(),
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
 
@@ -123,7 +123,7 @@ test.skip('Swap ePILTs against PILTS on Peregrine', async ({ expect }) => {
 
 	// check events receiver
 	checkSystemEvents(peregrineContext, 'xcmpQueue').toMatchSnapshot('peregrine message queue')
-	checkSystemEvents(peregrineContext, 'assetSwitchPool1').toMatchSnapshot('peregrine asset swap pallet')
+	checkSystemEvents(peregrineContext, 'assetSwitchPool1').toMatchSnapshot('peregrine asset switch pallet')
 	checkSystemEvents(peregrineContext, { section: 'balances', method: 'Transfer' }).toMatchSnapshot(
 		'peregrine balances pallet'
 	)

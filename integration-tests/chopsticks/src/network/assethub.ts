@@ -15,7 +15,6 @@ export const getSetupOptions = ({
 		endpoint: process.env.ASSETHUB_WSS || 'wss://asset-hub-rococo-rpc.dwellir.com',
 		db: './db/assethub.db.sqlite',
 		port: toNumber(process.env.ASSETHUB_PORT) || 9003,
-		runtimeLogLevel: 5,
 		wasmOverride,
 		blockNumber,
 	}) as SetupOption
@@ -52,11 +51,11 @@ export function createForeignAsset(
 						issuer: manager,
 						admin: manager,
 						freezer: manager,
-						supply: '4242424242424242424242',
+						supply: BigInt(addr.length) * balance,
 						deposit: 100000000000,
 						minBalance: 100,
 						isSufficient: false,
-						accounts: 1,
+						accounts: addr.length,
 						sufficients: 0,
 						approvals: 0,
 						status: 'Live',
@@ -95,6 +94,7 @@ export function createForeignAsset(
 	}
 }
 
+/// Assigns the foreign asset to the accounts. Does not check if supply is matching the sum of the account balances.
 export function assignForeignAssetToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
 		foreignAssets: {

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > Swap events assetSwitchPool1 pallet 1`] = `
+exports[`Switch PILTs against ePILTS on AssetHub > Switch events assetSwitchPool1 pallet 1`] = `
 [
   {
     "data": {
@@ -26,11 +26,11 @@ exports[`Switch PILTS against EPILTS no enough DOTs on AH > Swap events assetSwi
 ]
 `;
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > receiver events polkadotXcm 1`] = `[]`;
+exports[`Switch PILTs against ePILTS on AssetHub > receiver events Balances 1`] = `[]`;
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > receiver events xcm queue pallet 1`] = `[]`;
+exports[`Switch PILTs against ePILTS on AssetHub > receiver events messageQueue 1`] = `[]`;
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events Balances 1`] = `
+exports[`Switch PILTs against ePILTS on AssetHub > sender events Balances 1`] = `
 [
   {
     "data": {
@@ -44,7 +44,7 @@ exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events Balanc
 ]
 `;
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events xcm queue pallet 1`] = `
+exports[`Switch PILTs against ePILTS on AssetHub > sender events xcm queue pallet 1`] = `
 [
   {
     "data": {

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Alice > receiver events currencies 1`] = `
+exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > receiver events currencies 1`] = `
 [
   {
     "data": {
@@ -17,7 +17,7 @@ exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine A
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Alice > receiver events xcmpQueue 1`] = `
+exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > receiver events xcmpQueue 1`] = `
 [
   {
     "data": {
@@ -34,7 +34,7 @@ exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine A
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Alice > sender events Balances 1`] = `
+exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > sender events Balances 1`] = `
 [
   {
     "data": {
@@ -47,7 +47,7 @@ exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine A
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Alice > sender events xcm pallet 1`] = `
+exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > sender events xcm pallet 1`] = `
 [
   {
     "data": {
@@ -178,7 +178,7 @@ exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine A
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Alice > sender events xcm queue pallet 1`] = `
+exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > sender events xcm queue pallet 1`] = `
 [
   {
     "data": {

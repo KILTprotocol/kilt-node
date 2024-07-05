@@ -63,7 +63,7 @@ export function createAndAssignRocs(manager: string, addr: string[], balance: bi
 	}
 }
 
-export function setSwapPair(
+export function setSwitchPair(
 	remoteAssetBalance: bigint = initialRemoteFeeAssetBalance,
 	poolAccountId: string = initialPoolAccountId
 ) {

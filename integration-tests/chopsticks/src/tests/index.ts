@@ -94,7 +94,7 @@ export async function getFreeRocAssetHub(account: string): Promise<bigint> {
 
 export async function getRemoteLockedSupply(): Promise<bigint> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.SwitchPair()
+	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
 
 	if (switchPairInfo.isNone) {
 		return BigInt(0)

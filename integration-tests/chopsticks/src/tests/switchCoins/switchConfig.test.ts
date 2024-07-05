@@ -15,14 +15,15 @@ import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getAccountLocationV3 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-test.skip('Switch PILTS against EPILTS not same user', async ({ expect }) => {
+test('Switch PILTS against EPILTS not same user', async ({ expect }) => {
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSwapPair(),
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
+
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -66,14 +67,15 @@ test.skip('Switch PILTS against EPILTS not same user', async ({ expect }) => {
 	// Check sender state
 }, 20_000)
 
-test.skip('Switch PILTS against EPILTS user has not enough balance', async ({ expect }) => {
+test('Switch PILTS against EPILTS user has not enough balance', async ({ expect }) => {
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSwapPair(),
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
+
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -117,7 +119,7 @@ test.skip('Switch PILTS against EPILTS user has not enough balance', async ({ ex
 	// Check sender state
 }, 20_000)
 
-test.skip('Switch PILTS against EPILTS not enough pool account balance', async ({ expect }) => {
+test('Switch PILTS against EPILTS not enough pool account balance', async ({ expect }) => {
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT * BigInt(1000)),
@@ -125,8 +127,8 @@ test.skip('Switch PILTS against EPILTS not enough pool account balance', async (
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
 
-	// create swap pair and give pool account less coins
-	await setStorage(peregrineContext, PeregrineConfig.setSwapPair(initialBalanceKILT))
+	// create swtich pair and give pool account less coins
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(initialBalanceKILT))
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -170,7 +172,7 @@ test.skip('Switch PILTS against EPILTS not enough pool account balance', async (
 	expect(errorName).toBe('Liquidity')
 }, 20_000)
 
-test.skip('Switch PILTS against EPILTS user has no DOTs', async ({ expect }) => {
+test('Switch PILTS against EPILTS user has no DOTs', async ({ expect }) => {
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
@@ -178,8 +180,8 @@ test.skip('Switch PILTS against EPILTS user has no DOTs', async ({ expect }) => 
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
 
-	// create swap pair and give pool account less coins
-	await setStorage(peregrineContext, PeregrineConfig.setSwapPair())
+	// create switch pair and give pool account less coins
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -228,7 +230,7 @@ test.skip('Switch PILTS against EPILTS user has no DOTs', async ({ expect }) => 
 	expect(errorName).toBe('UserXcmBalance')
 }, 20_000)
 
-test.skip('Switch PILTS against EPILTS no SwitchPair', async ({ expect }) => {
+test('Switch PILTS against EPILTS no SwitchPair', async ({ expect }) => {
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
@@ -287,7 +289,7 @@ test('Switch PILTS against EPILTS no enough DOTs on AH', async ({ expect }) => {
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwapPair())
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts([PeregrineConfig.siblingSovereignAccount], initialBalanceROC),
@@ -316,7 +318,7 @@ test('Switch PILTS against EPILTS no enough DOTs on AH', async ({ expect }) => {
 	await createBlock(peregrineContext)
 
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot('Swap events assetSwitchPool1 pallet')
+	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot('Switch events assetSwitchPool1 pallet')
 	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot('sender events Balances')
 
 	await createBlock(assethubContext)

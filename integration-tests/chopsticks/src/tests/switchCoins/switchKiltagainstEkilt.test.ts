@@ -16,16 +16,17 @@ import {
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getAccountLocationV3 } from '../../network/utils.js'
 
-test.skip('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
+test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSwapPair(),
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
+
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -53,7 +54,7 @@ test.skip('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
 
 	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
 
-	const signedTx = peregrineContext.api.tx.assetSwitchPool1.swap(balanceToTransfer.toString(), beneficiary)
+	const signedTx = peregrineContext.api.tx.assetSwitchPool1.switch(balanceToTransfer.toString(), beneficiary)
 
 	const events = await sendTransaction(signedTx.signAsync(keysAlice))
 
@@ -62,7 +63,7 @@ test.skip('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
 
 	// Check events sender
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot('Swap events assetSwitchPool1 pallet')
+	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot('Switch events assetSwitchPool1 pallet')
 	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot('sender events Balances')
 
 	// check balance. Alice should have less then 50 PILTs
@@ -73,7 +74,7 @@ test.skip('Swap PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const freeRocBalanceAlice = await getFreeRocPeregrine(keysAlice.address)
 	expect(freeRocBalanceAlice).eq(initialBalanceROC - BigInt(PeregrineConfig.remoteFee))
 
-	// the swap pool account should have 50 more PILTs
+	// the Switch pool account should have 50 more PILTs
 	const balancePoolAccountAfterTx = await getFreeBalancePeregrine(PeregrineConfig.initialPoolAccountId)
 	expect(balancePoolAccountAfterTx).eq(initialBalancePoolAccount + balanceToTransfer)
 

@@ -19,7 +19,7 @@ test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Acco
 		...PeregrineConfig.assignNativeTokensToAccounts([keysBob.address], initialBalanceKILT),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwapPair())
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
 
 	// Give Alice some Rocs
 	await setStorage(assethubContext, AssetHubConfig.assignDotTokensToAccounts([keysAlice.address], initialBalanceROC))

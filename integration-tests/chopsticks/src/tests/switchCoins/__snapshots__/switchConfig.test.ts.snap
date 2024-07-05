@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Swap PILTs against ePILTS on AssetHub > Swap events assetSwap pallet 1`] = `
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > Switch events assetSwitchPool1 pallet 1`] = `
 [
   {
     "data": {
@@ -20,17 +20,17 @@ exports[`Swap PILTs against ePILTS on AssetHub > Swap events assetSwap pallet 1`
         },
       },
     },
-    "method": "LocalToRemoteSwapExecuted",
-    "section": "assetSwap",
+    "method": "LocalToRemoteSwitchExecuted",
+    "section": "assetSwitchPool1",
   },
 ]
 `;
 
-exports[`Swap PILTs against ePILTS on AssetHub > receiver events Balances 1`] = `[]`;
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > receiver events polkadotXcm 1`] = `[]`;
 
-exports[`Swap PILTs against ePILTS on AssetHub > receiver events messageQueue 1`] = `[]`;
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > receiver events xcm queue pallet 1`] = `[]`;
 
-exports[`Swap PILTs against ePILTS on AssetHub > sender events Balances 1`] = `
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events Balances 1`] = `
 [
   {
     "data": {
@@ -44,7 +44,7 @@ exports[`Swap PILTs against ePILTS on AssetHub > sender events Balances 1`] = `
 ]
 `;
 
-exports[`Swap PILTs against ePILTS on AssetHub > sender events xcm queue pallet 1`] = `
+exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events xcm queue pallet 1`] = `
 [
   {
     "data": {
