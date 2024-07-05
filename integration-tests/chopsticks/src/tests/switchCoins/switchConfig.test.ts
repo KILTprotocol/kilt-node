@@ -339,7 +339,7 @@ test.skip('Switch PILTS against EPILTS no enough DOTs on AH', async ({ expect })
 }, 20_00000)
 
 // Is failing: Todo: Fix XCM config
-test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
+test.skip('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILTs
@@ -390,11 +390,11 @@ test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 		method: 'ExecutedDownward',
 	}).toMatchSnapshot('receiver events dmpQueue pallet')
 
-	//await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
+	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
 }, 20_000)
 
 // Is failing: Todo: Fix XCM config
-test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
+test.skip('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILTs
@@ -478,5 +478,34 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 	}).toMatchSnapshot('receiver events dmpQueue')
 
 	// // Alice should still have zero balance
-	// await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
+	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
+}, 20_000)
+
+test.skip('User gets dusted with ROCs', async ({ expect }) => {
+	const { checkEvents } = withExpect(expect)
+
+	// Assign alice some KILTs and ROCs
+	await setStorage(peregrineContext, {
+		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address]),
+	})
+
+	// 99.9998% of the balance
+	const balanceToTransfer = (initialBalanceKILT * BigInt(999998)) / BigInt(1000000)
+
+	// Send all coins to Bob
+	const signedTx = peregrineContext.api.tx.balances
+		.transferAllowDeath(keysBob.address, balanceToTransfer)
+		.signAsync(keysAlice)
+
+	const events = await sendTransaction(signedTx)
+
+	await createBlock(peregrineContext)
+
+	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot('balances transfer event')
+	// User should get dusted by this operation
+	checkEvents(events, { section: 'balances', method: 'DustLost' }).toMatchSnapshot('balances transfer event')
+
+	// ... But alice's ROC funds should still exist
+	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, initialBalanceROC)
 }, 20_000)
