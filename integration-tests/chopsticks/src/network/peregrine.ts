@@ -33,12 +33,7 @@ export function createAndAssignRocs(manager: string, addr: string[], balance: bi
 		fungibles: {
 			asset: [
 				[
-					[
-						{
-							parents: 1,
-							interior: 'Here',
-						},
-					],
+					[ROC_LOCATION],
 					{
 						owner: '4qPZ8fv6BjGoGKzfx5LtBFnEUp2b5Q5C1ErrjBNGmoFTLNHG',
 						issuer: manager,
@@ -122,6 +117,10 @@ export function setSwitchPair(
 /// Peregrine ParaId
 export const paraId = 2086
 export const PILT = { Concrete: { parents: 0, interior: 'Here' } }
+export const ROC_LOCATION = {
+	parents: 1,
+	interior: 'Here',
+}
 // 0.1 ROC as remote fee
 export const remoteFee = ROC / BigInt(10)
 

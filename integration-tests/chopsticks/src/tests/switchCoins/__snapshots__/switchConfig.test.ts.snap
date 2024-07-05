@@ -374,3 +374,21 @@ exports[`User gets dusted with ROCs > balances transfer event 2`] = `
   },
 ]
 `;
+
+exports[`User transfers all of his dots > balances transfer event 1`] = `
+[
+  {
+    "data": {
+      "amount": 100000000000000,
+      "assetId": {
+        "interior": "Here",
+        "parents": 1,
+      },
+      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+      "to": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
+    },
+    "method": "Transferred",
+    "section": "fungibles",
+  },
+]
+`;

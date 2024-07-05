@@ -15,7 +15,7 @@ import {
 	basiliskContext,
 	rococoContext,
 } from '../index.js'
-import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
+import { checkBalance, createBlock, setStorage, hexAddress, checkBalanceInRange } from '../utils.js'
 import { getAccountLocationV3, getChildLocation, getNativeAssetIdLocation } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
@@ -508,4 +508,35 @@ test.skip('User gets dusted with ROCs', async ({ expect }) => {
 
 	// ... But alice's ROC funds should still exist
 	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, initialBalanceROC)
+}, 20_000)
+
+test('User transfers all of his dots', async ({ expect }) => {
+	const { checkEvents } = withExpect(expect)
+
+	// Assign alice some KILTs and ROCs
+	await setStorage(peregrineContext, {
+		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address, keysBob.address], initialBalanceKILT),
+		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address]),
+	})
+
+	// Send all ROCs to Bob
+	const signedTx = peregrineContext.api.tx.fungibles
+		.transfer(PeregrineConfig.ROC_LOCATION, keysBob.address, initialBalanceROC)
+		.signAsync(keysAlice)
+
+	const events = await sendTransaction(signedTx)
+
+	await createBlock(peregrineContext)
+
+	checkEvents(events, { section: 'fungibles', method: 'Transferred' }).toMatchSnapshot('balances transfer event')
+
+	// Alice should have no ROCs anymore
+	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
+	// Bob should hold them
+	await checkBalance(getFreeRocPeregrine, keysBob.address, expect, initialBalanceROC)
+	// ... But alice should still exist
+	await checkBalanceInRange(getFreeBalancePeregrine, keysAlice.address, expect, [
+		BigInt('99999800999995545'),
+		initialBalanceKILT,
+	])
 }, 20_000)
