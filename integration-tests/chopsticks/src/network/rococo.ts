@@ -4,11 +4,7 @@ import { initialBalanceROC, toNumber } from '../utils.js'
 
 /// Options used to create the HydraDx context
 export const options: SetupOption = {
-	endpoint: process.env.ROCOCO_WS || [
-		'wss://rpc.polkadot.io',
-		'wss://polkadot-rpc.dwellir.com',
-		'wss://rpc.ibp.network/polkadot',
-	],
+	endpoint: process.env.ROCOCO_WS || ['wss://rococo-rpc.polkadot.io'],
 	db: './db/rococo.db.sqlite',
 	port: toNumber(process.env.ROCOCO_PORT) || 8999,
 }

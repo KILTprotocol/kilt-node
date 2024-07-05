@@ -7,6 +7,15 @@ export function getSiblingLocation(paraId: number) {
 	}
 }
 
+export function getChildLocation(paraId: number) {
+	return {
+		parents: 0,
+		interior: {
+			X1: { Parachain: paraId },
+		},
+	}
+}
+
 export function getParentLocation() {
 	return {
 		parents: 1,

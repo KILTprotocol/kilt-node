@@ -12,7 +12,7 @@ export const getSetupOptions = ({
 	wasmOverride?: string
 }) =>
 	({
-		endpoint: process.env.ASSETHUB_WSS || 'wss://asset-hub-rococo-rpc.dwellir.com',
+		endpoint: process.env.ASSETHUB_WSS || 'wss://rococo-asset-hub-rpc.polkadot.io',
 		db: './db/assethub.db.sqlite',
 		port: toNumber(process.env.ASSETHUB_PORT) || 9003,
 		wasmOverride,
@@ -94,7 +94,8 @@ export function createForeignAsset(
 	}
 }
 
-/// Assigns the foreign asset to the accounts. Does not check if supply is matching the sum of the account balances.
+/// Assigns the foreign asset to the accounts.
+/// Does not check if supply is matching the sum of the account balances.
 export function assignForeignAssetToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
 		foreignAssets: {

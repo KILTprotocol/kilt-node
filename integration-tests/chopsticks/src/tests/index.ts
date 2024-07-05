@@ -7,6 +7,7 @@ import * as PolkadotConfig from '../network/polkadot.js'
 import * as HydraDxConfig from '../network/hydraDx.js'
 import * as AssetHubConfig from '../network/assethub.js'
 import * as RococoConfig from '../network/rococo.js'
+import * as BasiliskConfig from '../network/basilisk.js'
 import * as PeregrineConfig from '../network/peregrine.js'
 import type { Config } from '../network/types.js'
 
@@ -16,6 +17,7 @@ export let polkadotContext: Config
 export let assethubContext: Config
 export let peregrineContext: Config
 export let rococoContext: Config
+export let basiliskContext: Config
 
 beforeEach(async () => {
 	spiritnetContext = await SpiritnetConfig.getContext()
@@ -24,6 +26,7 @@ beforeEach(async () => {
 	assethubContext = await AssetHubConfig.getContext()
 	rococoContext = await RococoConfig.getContext()
 	peregrineContext = await PeregrineConfig.getContext()
+	basiliskContext = await BasiliskConfig.getContext()
 
 	// Setup Polkadot network
 	await connectVertical(polkadotContext.chain, spiritnetContext.chain)
@@ -33,7 +36,8 @@ beforeEach(async () => {
 	// setup Rococo Network
 	await connectVertical(rococoContext.chain, assethubContext.chain)
 	await connectVertical(rococoContext.chain, peregrineContext.chain)
-	await connectParachains([assethubContext.chain, peregrineContext.chain])
+	await connectVertical(rococoContext.chain, basiliskContext.chain)
+	await connectParachains([peregrineContext.chain, basiliskContext.chain, assethubContext.chain])
 
 	const newBlockConfig = { count: 2 }
 	// fixes api runtime disconnect warning
@@ -46,6 +50,7 @@ beforeEach(async () => {
 		assethubContext.dev.newBlock(newBlockConfig),
 		rococoContext.dev.newBlock(newBlockConfig),
 		peregrineContext.dev.newBlock(newBlockConfig),
+		basiliskContext.dev.newBlock(newBlockConfig),
 	])
 }, 30_000)
 
@@ -59,6 +64,7 @@ afterEach(async () => {
 			assethubContext.teardown(),
 			rococoContext.teardown(),
 			peregrineContext.teardown(),
+			basiliskContext.teardown(),
 		])
 	} catch (error) {
 		if (!(error instanceof TypeError)) {
