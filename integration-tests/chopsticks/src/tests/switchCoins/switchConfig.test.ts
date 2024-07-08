@@ -725,3 +725,82 @@ test.skip('Swap Pair does not exist', async ({ expect }) => {
 		'receiver events xcm queue pallet'
 	)
 }, 20_000)
+
+test('User has no eKILT', async ({ expect }) => {
+	// create foreign asset on assethub and assign Alice more eKILTs then existing
+	await setStorage(assethubContext, {
+		...AssetHubConfig.assignDotTokensToAccounts(
+			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
+			initialBalanceROC
+		),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [keysAlice.address], initialBalanceKILT),
+	})
+
+	// Check initial state
+	checkBalance(getFreeBalancePeregrine, PeregrineConfig.initialPoolAccountId, expect, initialBalanceKILT)
+	checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, initialBalanceKILT)
+
+	const balanceToTransfer = initialBalanceKILT * BigInt(2)
+
+	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
+
+	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
+
+	const funds = {
+		V3: [
+			{
+				id: { Concrete: AssetHubConfig.eKiltLocation },
+				fun: { Fungible: balanceToTransfer },
+			},
+		],
+	}
+
+	const xcmMessage = {
+		V3: [
+			{
+				DepositAsset: {
+					assets: { Wild: 'All' },
+					beneficiary: {
+						parents: 0,
+						interior: {
+							X1: {
+								AccountId32: {
+									id: hexAddress(keysAlice.address),
+								},
+							},
+						},
+					},
+				},
+			},
+		],
+	}
+
+	let section: string = ''
+	let errorName: string = ''
+
+	await assethubContext.api.tx.polkadotXcm
+		.transferAssetsUsingTypeAndThen(
+			dest,
+			funds,
+			'LocalReserve',
+			remoteFeeId,
+			'LocalReserve',
+			xcmMessage,
+			'Unlimited'
+		)
+		.signAndSend(keysAlice, ({ dispatchError }) => {
+			if (dispatchError) {
+				console.log('ICH BIN HIER DU WIXAAA')
+				const decoded = assethubContext.api.registry.findMetaError(dispatchError.asModule)
+				console.log(decoded)
+				section = decoded.section
+				errorName = decoded.name
+				console.log(section, errorName)
+			}
+		})
+
+	await createBlock(assethubContext)
+
+	expect(section).toBe('polkadotXcm')
+	expect(errorName).toBe('LocalExecutionIncomplete')
+}, 20_000)
