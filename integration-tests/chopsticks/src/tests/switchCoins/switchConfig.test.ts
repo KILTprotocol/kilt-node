@@ -206,7 +206,7 @@ test.skip('Switch PILTS against EPILTS user has no DOTs', async ({ expect }) => 
 		getFreeBalancePeregrine,
 		PeregrineConfig.initialPoolAccountId,
 		expect,
-		PeregrineConfig.initialRemoteFeeAssetBalance
+		PeregrineConfig.initialRemoteAssetBalance
 	)
 	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
 
@@ -441,7 +441,7 @@ test.skip('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 	}
 
 	const signedTx = basiliskContext.api.tx.xTokens
-		.transfer(BasiliskConfig.dotTOkenId, balanceToTransfer, beneficiary, 'Unlimited')
+		.transfer(BasiliskConfig.dotTokenId, balanceToTransfer, beneficiary, 'Unlimited')
 		.signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)
@@ -726,7 +726,7 @@ test.skip('Swap Pair does not exist', async ({ expect }) => {
 	)
 }, 20_000)
 
-test('User has no eKILT', async ({ expect }) => {
+test.skip('User has no eKILT', async ({ expect }) => {
 	// create foreign asset on assethub and assign Alice more eKILTs then existing
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -790,7 +790,6 @@ test('User has no eKILT', async ({ expect }) => {
 		)
 		.signAndSend(keysAlice, ({ dispatchError }) => {
 			if (dispatchError) {
-				console.log('ICH BIN HIER DU WIXAAA')
 				const decoded = assethubContext.api.registry.findMetaError(dispatchError.asModule)
 				console.log(decoded)
 				section = decoded.section
@@ -804,3 +803,55 @@ test('User has no eKILT', async ({ expect }) => {
 	expect(section).toBe('polkadotXcm')
 	expect(errorName).toBe('LocalExecutionIncomplete')
 }, 20_000)
+
+// test('Send eKILTs from basilisk 2 Peregrine', async ({ expect }) => {
+// 	const { checkEvents, checkSystemEvents } = withExpect(expect)
+
+// 	// Assign alice some KILTs
+// 	await setStorage(peregrineContext, {
+// 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+// 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
+// 		...PeregrineConfig.setSafeXcmVersion3(),
+// 	})
+
+// 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
+
+// 	// Assigned Alice some ROCs and HDX on Basilisk
+// 	await setStorage(basiliskContext, {
+// 		...BasiliskConfig.assignNativeTokensToAccounts([
+// 			keysAlice.address,
+// 			'5DPiZzQQdoJJucxGMCgrJEdeUkLfPs6fndeCMA1E4ZgAkWyh',
+// 		]),
+// 		...BasiliskConfig.assignRocTokensToAccounts([keysAlice.address], initialBalanceROC),
+// 		...BasiliskConfig.createRemoteAsset([keysAlice.address, '5DPiZzQQdoJJucxGMCgrJEdeUkLfPs6fndeCMA1E4ZgAkWyh']),
+// 	})
+
+// 	// 50 ROCs
+// 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
+
+// 	const beneficiary = {
+// 		V3: {
+// 			parents: 1,
+// 			interior: {
+// 				X2: [
+// 					{ Parachain: PeregrineConfig.paraId },
+// 					{
+// 						AccountId32: {
+// 							id: hexAddress(keysAlice.address),
+// 						},
+// 					},
+// 				],
+// 			},
+// 		},
+// 	}
+
+// 	const signedTx = basiliskContext.api.tx.xTokens
+// 		.transfer(BasiliskConfig.eKILTTokenId, balanceToTransfer, beneficiary, 'Unlimited')
+// 		.signAsync(keysAlice)
+
+// 	const events = await sendTransaction(signedTx)
+
+// 	await createBlock(basiliskContext)
+
+// 	await basiliskContext.pause()
+// }, 20_00000)

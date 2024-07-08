@@ -9,7 +9,6 @@ const options = {
 	db: './db/peregrine.db.sqlite',
 	port: toNumber(process.env.PEREGRINE_PORT) || 9004,
 	wasmOverride: process.env.PEREGRINE_WASM_OVERRIDE || undefined,
-	runtimeLogLevel: 5,
 } as SetupOption
 
 /// Assigns the native tokens to an accounts
@@ -60,8 +59,9 @@ export function createAndAssignRocs(manager: string, addr: string[], balance: bi
 }
 
 export function setSwitchPair(
-	remoteAssetBalance: bigint = initialRemoteFeeAssetBalance,
-	poolAccountId: string = initialPoolAccountId
+	remoteAssetBalance: bigint = initialRemoteAssetBalance,
+	poolAccountId: string = initialPoolAccountId,
+	status: 'Running' | 'Paused' = 'Running'
 ) {
 	return {
 		assetSwitchPool1: {
@@ -106,7 +106,7 @@ export function setSwitchPair(
 						interior: { X1: { Parachain: { id: 1000 } } },
 					},
 				},
-				status: 'Running',
+				status,
 			},
 		},
 		System: {
@@ -129,7 +129,7 @@ export const remoteFee = ROC / BigInt(10)
 export const siblingSovereignAccount = '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'
 
 export const initialPoolAccountId = '4nv4phaKc4EcwENdRERuMF79ZSSB5xvnAk3zNySSbVbXhSwS'
-export const initialRemoteFeeAssetBalance = BigInt('100000000000000000000')
+export const initialRemoteAssetBalance = BigInt('100000000000000000000')
 
 export async function getContext(): Promise<Config> {
 	return setupContext(options)

@@ -1,16 +1,19 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types.js'
-import { initialBalanceDOT, initialBalanceHDX, toNumber } from '../utils.js'
+import { initialBalanceDOT, initialBalanceHDX, initialBalanceKILT, toNumber } from '../utils.js'
 
 /// Options used to create the HydraDx context
 export const options: SetupOption = {
 	endpoint: process.env.BASILISK_WS || ['wss://basilisk-rococo-rpc.play.hydration.cloud'],
 	db: './db/basilisk.db.sqlite',
 	port: toNumber(process.env.HYDRADX_PORT) || 9005,
+	runtimeLogLevel: 5,
 }
 
 // On Basilisk, there is only KSM. We use that currency and treat it as ROC, since the location is {parents: 1, interior: Here}
-export const dotTOkenId = 5
+export const dotTokenId = 5
+
+export const eKILTTokenId = 90
 
 /// Assigns the native tokens to an accounts
 export function assignNativeTokensToAccounts(addr: string[], balance: bigint = initialBalanceHDX) {
@@ -25,7 +28,41 @@ export function assignNativeTokensToAccounts(addr: string[], balance: bigint = i
 export function assignRocTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
 	return {
 		Tokens: {
-			Accounts: addr.map((address) => [[address, dotTOkenId], { free: balance }]),
+			Accounts: addr.map((address) => [[address, dotTokenId], { free: balance }]),
+		},
+	}
+}
+
+export function createRemoteAsset(addr: string[], balance: bigint = initialBalanceKILT) {
+	return {
+		assetRegistry: {
+			assetIds: [[['eKILT'], 90]],
+			assetLocations: [
+				[
+					[90],
+					{
+						parents: 2,
+						interior: {
+							X2: [
+								{
+									GlobalConsensus: { Ethereum: { chainId: 11155111 } },
+								},
+								{
+									AccountKey20: {
+										network: null,
+										key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+									},
+								},
+							],
+						},
+					},
+				],
+			],
+			assetMetadataMap: [[[90], { symbol: 'eKILT', decimals: 15 }]],
+		},
+
+		tokens: {
+			accounts: addr.map((acc) => [[acc, 90], { free: balance }]),
 		},
 	}
 }
