@@ -58,6 +58,14 @@ export function createAndAssignRocs(manager: string, addr: string[], balance: bi
 	}
 }
 
+export function setSudoKey(sudoKey: string) {
+	return {
+		Sudo: {
+			key: sudoKey,
+		},
+	}
+}
+
 export function setSwitchPair(
 	remoteAssetBalance: bigint = initialRemoteAssetBalance,
 	poolAccountId: string = initialPoolAccountId,

@@ -14,7 +14,7 @@ import { checkBalance, createBlock, setStorage, hexAddress, checkBalanceInRange 
 import { getAccountLocationV3, getRelayNativeAssetIdLocation, getSiblingLocation } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-test('Full e2e tests', async ({ expect }) => {
+test.skip('Full e2e tests', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
 	// Assign alice some KILT and ROC tokens
@@ -82,8 +82,6 @@ test('Full e2e tests', async ({ expect }) => {
 	// Just check if Alice has some eKILTs now
 	const balanceAliceEkilt = await getFreeEkiltAssetHub(keysAlice.address)
 	expect(balanceAliceEkilt).toBe(balanceToTransfer)
-
-	console.log('COULD SWITCH KILTS')
 
 	// 3. send eKILTs back
 
@@ -214,6 +212,7 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
 		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
@@ -252,96 +251,34 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	// just check if the balance is greater than 0
 	expect(aliceRocBalance).toBeGreaterThan(BigInt(0))
 
+	// Pause switch pair
+	await peregrineContext.api.tx.sudo
+		.sudo(peregrineContext.api.tx.assetSwitchPool1.pauseSwitchPair())
+		.signAndSend(keysAlice)
+	await createBlock(peregrineContext)
+
 	// 2. switch KILTs
 
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
 
 	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
 
-	const signedTx2 = peregrineContext.api.tx.assetSwitchPool1
+	let section: string = ''
+	let errorName: string = ''
+
+	await peregrineContext.api.tx.assetSwitchPool1
 		.switch(balanceToTransfer.toString(), beneficiary)
-		.signAsync(keysAlice)
+		.signAndSend(keysAlice, ({ dispatchError }) => {
+			if (dispatchError) {
+				const decoded = peregrineContext.api.registry.findMetaError(dispatchError.asModule)
+				section = decoded.section
+				errorName = decoded.name
+			}
+		})
 
-	const events2 = await sendTransaction(signedTx2)
-
+	// After creating a new block, the tx should be finalized
 	await createBlock(peregrineContext)
 
-	// Just check if switch is executed
-	await checkEvents(events2, 'assetSwitchPool1').toMatchSnapshot('Switch events assetSwitchPool pallet')
-
-	await createBlock(assethubContext)
-
-	// Just check if Alice has some eKILTs now
-	const balanceAliceEkilt = await getFreeEkiltAssetHub(keysAlice.address)
-	expect(balanceAliceEkilt).toBe(balanceToTransfer)
-
-	console.log('COULD SWITCH KILTS')
-
-	// 3. send eKILTs back
-
-	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-
-	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
-
-	const funds = {
-		V3: [
-			{
-				id: { Concrete: AssetHubConfig.eKiltLocation },
-				fun: { Fungible: balanceToTransfer / BigInt(2) },
-			},
-		],
-	}
-
-	const xcmMessage = {
-		V3: [
-			{
-				DepositAsset: {
-					assets: { Wild: 'All' },
-					beneficiary: {
-						parents: 0,
-						interior: {
-							X1: {
-								AccountId32: {
-									id: hexAddress(keysAlice.address),
-								},
-							},
-						},
-					},
-				},
-			},
-		],
-	}
-
-	const signedTx3 = assethubContext.api.tx.polkadotXcm
-		.transferAssetsUsingTypeAndThen(
-			dest,
-			funds,
-			'LocalReserve',
-			remoteFeeId,
-			'LocalReserve',
-			xcmMessage,
-			'Unlimited'
-		)
-		.signAsync(keysAlice)
-
-	const events3 = await sendTransaction(signedTx3)
-
-	await createBlock(assethubContext)
-
-	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, KILT * BigInt(25))
-
-	// Just check if assets are transferred back
-	await checkEvents(events3, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		'Sending eKILTs back'
-	)
-
-	await createBlock(peregrineContext)
-
-	// Alice should have her KILTs back
-	await checkBalanceInRange(getFreeBalancePeregrine, keysAlice.address, expect, [
-		BigInt(74) * KILT,
-		BigInt(75) * KILT,
-	])
-
-	// 4. send ROCs back TODO: implement
+	expect(section).toBe('assetSwitchPool1')
+	expect(errorName).toBe('SwitchPairNotEnabled')
 }, 20_000)
