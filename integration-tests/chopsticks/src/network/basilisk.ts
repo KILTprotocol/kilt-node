@@ -7,7 +7,6 @@ export const options: SetupOption = {
 	endpoint: process.env.BASILISK_WS || ['wss://basilisk-rococo-rpc.play.hydration.cloud'],
 	db: './db/basilisk.db.sqlite',
 	port: toNumber(process.env.HYDRADX_PORT) || 9005,
-	runtimeLogLevel: 5,
 }
 
 // On Basilisk, there is only KSM. We use that currency and treat it as ROC, since the location is {parents: 1, interior: Here}

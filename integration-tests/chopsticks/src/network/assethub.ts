@@ -17,7 +17,6 @@ export const getSetupOptions = ({
 		port: toNumber(process.env.ASSETHUB_PORT) || 9003,
 		wasmOverride,
 		blockNumber,
-		runtimeLogLevel: 5,
 	}) as SetupOption
 
 export function createForeignAsset(
