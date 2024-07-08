@@ -37,7 +37,7 @@ The pallet can be added one or more times to the runtime.
 
 For multiple deployments of the same pallet (e.g., to bridge the local currency to different remote assets), pass runtime configuration to the pallet's `Config` trait.
 
-```rust
+```rust,ignore
 pub type SwitchPool1 = pallet_asset_switch::Instance1;
 impl pallet_asset_switch::Config<SwitchPool1> for Runtime {
 	// Config
@@ -82,7 +82,7 @@ When set and its status is `Running`, switches are enabled in both directions.
 
 The pallet generates the following events:
 
-- `SwitchPairCreated`: when a new switch pair is created by governance.
+- `SwitchPairCreated`: when a new switch pair is created by the required origin, e.g., governance.
 - `SwitchPairRemoved`: when a switch pair is removed by the root origin.
 - `SwitchPairResumed`: when a switch pair has (re-)enabled local to remote asset switches.
 - `SwitchPairPaused`: when a switch pair has been paused.
