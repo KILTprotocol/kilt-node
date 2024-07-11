@@ -58,10 +58,8 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 
 	const events = await sendTransaction(signedTx.signAsync(keysAlice))
 
-	// Check sender state
 	await createBlock(peregrineContext)
 
-	// Check events sender
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot('Switch events assetSwitchPool1 pallet')
 	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot('sender events Balances')
@@ -78,11 +76,8 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const balancePoolAccountAfterTx = await getFreeBalancePeregrine(PeregrineConfig.initialPoolAccountId)
 	expect(balancePoolAccountAfterTx).eq(initialBalancePoolAccount + balanceToTransfer)
 
-	// Check receiver state
-
 	await createBlock(assethubContext)
 
-	// check events receiver
 	checkSystemEvents(assethubContext, 'xcmpQueue').toMatchSnapshot('receiver events messageQueue')
 	checkSystemEvents(assethubContext, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'receiver events Balances'

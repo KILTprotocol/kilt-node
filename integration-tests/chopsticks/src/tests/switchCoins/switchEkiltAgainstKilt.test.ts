@@ -18,7 +18,6 @@ import { getSiblingLocation } from '../../network/utils.js'
 test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
-	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
 		...PeregrineConfig.setSwitchPair(),
@@ -41,10 +40,8 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	await checkBalance(getFreeBalancePeregrine, keysAlice.address, expect, BigInt(0))
 	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, initialBalanceROC)
 
-	// Alice should some eKILT on AH
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, initialBalanceKILT)
 
-	// initial balance of the pool account and sovereign account
 	const initialBalancePoolAccount = await getFreeBalancePeregrine(PeregrineConfig.initialPoolAccountId)
 	const initialBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
 	const initialRemoteLockedSupply = await getRemoteLockedSupply()
@@ -97,31 +94,24 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 
 	const events = await sendTransaction(signedTx.signAsync(keysAlice))
 
-	// Check sender state
 	await createBlock(assethubContext)
 
-	// Check events sender
 	checkEvents(events, 'xcmpQueue').toMatchSnapshot('assetHubs events xcm queue pallet')
 	checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot('PolkadotXcm assethub')
 	checkEvents(events, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'sender events foreignAssets'
 	)
 
-	// check balance. Alice should have less then 50 PILTs
+	// check balance. Alice should have >= 50 PILTs
 	const freeBalanceAlice = await getFreeEkiltAssetHub(keysAlice.address)
 	expect(freeBalanceAlice).toBeLessThanOrEqual(balanceToTransfer)
-
-	// check balance Alice. Some fees should have been paid with her rocs:
 
 	// the sovereign account should have 50 more PILTs
 	const balanceSovereignAccountAfterTx = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
 	expect(balanceSovereignAccountAfterTx).eq(initialBalanceSovereignAccount + balanceToTransfer)
 
-	// Check receiver state
-
 	await createBlock(peregrineContext)
 
-	// check events receiver
 	checkSystemEvents(peregrineContext, 'xcmpQueue').toMatchSnapshot('peregrine message queue')
 	checkSystemEvents(peregrineContext, 'assetSwitchPool1').toMatchSnapshot('peregrine asset switch pallet')
 	checkSystemEvents(peregrineContext, { section: 'balances', method: 'Transfer' }).toMatchSnapshot(
@@ -139,6 +129,4 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	// remote locked supply should have increased by the amount of the transferred PILTs
 	const remoteLockedSupply = await getRemoteLockedSupply()
 	expect(remoteLockedSupply).toBeGreaterThanOrEqual(initialRemoteLockedSupply + balanceToTransfer)
-
-	//await peregrineContext.pause()
 }, 20_000)

@@ -65,299 +65,7 @@ exports[`Pool accounts funds goes to zero > sender events foreignAssets 1`] = `
 ]
 `;
 
-exports[`Send DOTs from Relay 2 Peregrine > receiver events dmpQueue pallet 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-      "messageId": "(hash)",
-      "outcome": {
-        "Complete": {
-          "proofSize": 0,
-          "refTime": 1000000000,
-        },
-      },
-    },
-    "method": "ExecutedDownward",
-    "section": "dmpQueue",
-  },
-]
-`;
-
-exports[`Send DOTs from Relay 2 Peregrine > receiver events parachainSystem pallet 1`] = `
-[
-  {
-    "data": {
-      "count": 1,
-    },
-    "method": "DownwardMessagesReceived",
-    "section": "parachainSystem",
-  },
-]
-`;
-
-exports[`Send DOTs from Relay 2 Peregrine > sender events xcmPallet 1`] = `
-[
-  {
-    "data": {
-      "outcome": {
-        "Complete": {
-          "used": {
-            "proofSize": "(rounded 6200)",
-            "refTime": "(rounded 300000000)",
-          },
-        },
-      },
-    },
-    "method": "Attempted",
-    "section": "xcmPallet",
-  },
-  {
-    "data": {
-      "fees": [
-        {
-          "fun": {
-            "Fungible": "(rounded 130000000)",
-          },
-          "id": {
-            "interior": "Here",
-            "parents": 0,
-          },
-        },
-      ],
-      "paying": {
-        "interior": {
-          "X1": [
-            {
-              "AccountId32": {
-                "id": "(hash)",
-                "network": "Rococo",
-              },
-            },
-          ],
-        },
-        "parents": 0,
-      },
-    },
-    "method": "FeesPaid",
-    "section": "xcmPallet",
-  },
-  {
-    "data": {
-      "destination": {
-        "interior": {
-          "X1": [
-            {
-              "Parachain": "(rounded 2100)",
-            },
-          ],
-        },
-        "parents": 0,
-      },
-      "message": [
-        {
-          "ReserveAssetDeposited": [
-            {
-              "fun": {
-                "Fungible": 50000000000000,
-              },
-              "id": {
-                "interior": "Here",
-                "parents": 1,
-              },
-            },
-          ],
-        },
-        "ClearOrigin",
-        {
-          "BuyExecution": {
-            "fees": {
-              "fun": {
-                "Fungible": 50000000000000,
-              },
-              "id": {
-                "interior": "Here",
-                "parents": 1,
-              },
-            },
-            "weightLimit": "Unlimited",
-          },
-        },
-        {
-          "DepositAsset": {
-            "assets": {
-              "Wild": {
-                "AllCounted": 1,
-              },
-            },
-            "beneficiary": {
-              "interior": {
-                "X1": [
-                  {
-                    "AccountId32": {
-                      "id": "(hash)",
-                      "network": null,
-                    },
-                  },
-                ],
-              },
-              "parents": 0,
-            },
-          },
-        },
-      ],
-      "messageId": "(hash)",
-      "origin": {
-        "interior": {
-          "X1": [
-            {
-              "AccountId32": {
-                "id": "(hash)",
-                "network": "Rococo",
-              },
-            },
-          ],
-        },
-        "parents": 0,
-      },
-    },
-    "method": "Sent",
-    "section": "xcmPallet",
-  },
-]
-`;
-
-exports[`Send DOTs from basilisk 2 Peregrine > relayer events balances Burned 1`] = `
-[
-  {
-    "data": {
-      "amount": 50000000000000,
-      "who": "5Ec4AhNugFBakYoh6kD3mgCkUDhy4vVm5o78KDtG42yrXKwS",
-    },
-    "method": "Burned",
-    "section": "balances",
-  },
-]
-`;
-
-exports[`Send DOTs from basilisk 2 Peregrine > relayer events balances minted 1`] = `
-[
-  {
-    "data": {
-      "amount": "(rounded 50000000000000)",
-      "who": "5Ec4AhNtskxrg56TpEJ8zweU5h4JVUmGgxDqnoE1grqycu6q",
-    },
-    "method": "Minted",
-    "section": "balances",
-  },
-  {
-    "data": {
-      "amount": "(rounded 130000000)",
-      "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
-    },
-    "method": "Minted",
-    "section": "balances",
-  },
-]
-`;
-
-exports[`Send DOTs from basilisk 2 Peregrine > relayer events messageQueue 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Ump": {
-          "Para": "(rounded 2100)",
-        },
-      },
-      "success": true,
-      "weightUsed": {
-        "proofSize": 7200,
-        "refTime": "(rounded 630000000)",
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
-
-exports[`Send DOTs from basilisk 2 Peregrine > sender events tokens 1`] = `
-[
-  {
-    "data": {
-      "amount": 50000000000000,
-      "currencyId": 5,
-      "who": "bXmKs2MD6WHcgPEjjDNfgAU7nTzxz3zm9DF6xHajqETdpYBP3",
-    },
-    "method": "Withdrawn",
-    "section": "tokens",
-  },
-]
-`;
-
-exports[`Send DOTs from basilisk 2 Peregrine > sender events tokens 2`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "UpwardMessageSent",
-    "section": "parachainSystem",
-  },
-]
-`;
-
-exports[`Send DOTs from basilisk 2 Peregrine > sender events xTokens 1`] = `
-[
-  {
-    "data": {
-      "assets": [
-        {
-          "fun": {
-            "Fungible": 50000000000000,
-          },
-          "id": {
-            "interior": "Here",
-            "parents": 1,
-          },
-        },
-      ],
-      "dest": {
-        "interior": {
-          "X2": [
-            {
-              "Parachain": "(rounded 2100)",
-            },
-            {
-              "AccountId32": {
-                "id": "(hash)",
-                "network": null,
-              },
-            },
-          ],
-        },
-        "parents": 1,
-      },
-      "fee": {
-        "fun": {
-          "Fungible": 50000000000000,
-        },
-        "id": {
-          "interior": "Here",
-          "parents": 1,
-        },
-      },
-      "sender": "bXmKs2MD6WHcgPEjjDNfgAU7nTzxz3zm9DF6xHajqETdpYBP3",
-    },
-    "method": "TransferredAssets",
-    "section": "xTokens",
-  },
-]
-`;
-
-exports[`Swap Pair does not exist > PolkadotXcm assethub 1`] = `
+exports[`Send eKILT while switch Pair does not exist > PolkadotXcm assethub 1`] = `
 [
   {
     "data": {
@@ -376,7 +84,7 @@ exports[`Swap Pair does not exist > PolkadotXcm assethub 1`] = `
 ]
 `;
 
-exports[`Swap Pair does not exist > assetHubs events xcm queue pallet 1`] = `
+exports[`Send eKILT while switch Pair does not exist > assetHubs events xcm queue pallet 1`] = `
 [
   {
     "data": {
@@ -388,7 +96,9 @@ exports[`Swap Pair does not exist > assetHubs events xcm queue pallet 1`] = `
 ]
 `;
 
-exports[`Swap Pair does not exist > receiver events xcm queue pallet 1`] = `
+exports[`Send eKILT while switch Pair does not exist > receiver events switch pallet 1`] = `[]`;
+
+exports[`Send eKILT while switch Pair does not exist > receiver events xcm queue pallet 1`] = `
 [
   {
     "data": {
@@ -406,7 +116,7 @@ exports[`Swap Pair does not exist > receiver events xcm queue pallet 1`] = `
 ]
 `;
 
-exports[`Swap Pair does not exist > sender events foreignAssets 1`] = `
+exports[`Send eKILT while switch Pair does not exist > sender events foreignAssets 1`] = `
 [
   {
     "data": {
@@ -440,7 +150,7 @@ exports[`Swap Pair does not exist > sender events foreignAssets 1`] = `
 ]
 `;
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > Switch events assetSwitchPool1 pallet 1`] = `
+exports[`Switch KILTs against EKILTs no enough DOTs on AH > Switch events assetSwitchPool1 pallet 1`] = `
 [
   {
     "data": {
@@ -466,11 +176,11 @@ exports[`Switch PILTS against EPILTS no enough DOTs on AH > Switch events assetS
 ]
 `;
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > receiver events polkadotXcm 1`] = `[]`;
+exports[`Switch KILTs against EKILTs no enough DOTs on AH > receiver events polkadotXcm 1`] = `[]`;
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > receiver events xcm queue pallet 1`] = `[]`;
+exports[`Switch KILTs against EKILTs no enough DOTs on AH > receiver events xcm queue pallet 1`] = `[]`;
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events Balances 1`] = `
+exports[`Switch KILTs against EKILTs no enough DOTs on AH > sender events Balances 1`] = `
 [
   {
     "data": {
@@ -484,7 +194,7 @@ exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events Balanc
 ]
 `;
 
-exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events xcm queue pallet 1`] = `
+exports[`Switch KILTs against EKILTs no enough DOTs on AH > sender events xcm queue pallet 1`] = `
 [
   {
     "data": {
@@ -492,51 +202,6 @@ exports[`Switch PILTS against EPILTS no enough DOTs on AH > sender events xcm qu
     },
     "method": "XcmpMessageSent",
     "section": "xcmpQueue",
-  },
-]
-`;
-
-exports[`User gets dusted with ROCs > balances transfer event 1`] = `
-[
-  {
-    "data": {
-      "amount": "(rounded 100000000000000000)",
-      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
-      "to": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
-    },
-    "method": "Transfer",
-    "section": "balances",
-  },
-]
-`;
-
-exports[`User gets dusted with ROCs > balances transfer event 2`] = `
-[
-  {
-    "data": {
-      "account": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
-      "amount": "(rounded 51000000000)",
-    },
-    "method": "DustLost",
-    "section": "balances",
-  },
-]
-`;
-
-exports[`User transfers all of his dots > balances transfer event 1`] = `
-[
-  {
-    "data": {
-      "amount": 100000000000000,
-      "assetId": {
-        "interior": "Here",
-        "parents": 1,
-      },
-      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
-      "to": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
-    },
-    "method": "Transferred",
-    "section": "fungibles",
   },
 ]
 `;

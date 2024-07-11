@@ -97,8 +97,6 @@ test.skip('Initiate withdraw assets Peregrine Account Alice -> AH Account Bob', 
 	const assetHubDestination = { V3: getSiblingLocation(AssetHubConfig.paraId) }
 	const xcmMessage = getXcmMessage(ROC.toString(), keysBob.address)
 
-	console.log(keysAlice.address)
-
 	const signedTx = peregrineContext.api.tx.polkadotXcm.send(assetHubDestination, xcmMessage).signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)
