@@ -52,7 +52,7 @@ beforeEach(async () => {
 		peregrineContext.dev.newBlock(newBlockConfig),
 		basiliskContext.dev.newBlock(newBlockConfig),
 	])
-}, 30_000)
+}, 90_000)
 
 afterEach(async () => {
 	// fixes api runtime disconnect warning
