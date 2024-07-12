@@ -1,16 +1,16 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-import * as SpiritnetConfig from '../../network/spiritnet.js'
-import * as HydraDxConfig from '../../network/hydraDx.js'
-import { KILT, initialBalanceKILT, keysAlice } from '../../utils.js'
-import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../index.js'
-import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocation } from '../../network/utils.js'
-import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../utils.js'
+import * as SpiritnetConfig from '../../../network/spiritnet.js'
+import * as HydraDxConfig from '../../../network/hydraDx.js'
+import { KILT, initialBalanceKILT, keysAlice } from '../../../utils.js'
+import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../../index.js'
+import { getAccountLocationV2, getNativeAssetIdLocation, getSiblingLocation } from '../../../network/utils.js'
+import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../../utils.js'
 
-const KILT_ASSET_V3 = { V3: [getNativeAssetIdLocation(KILT)] }
+const KILT_ASSET_V2 = { V2: [getNativeAssetIdLocation(KILT)] }
 
-test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx Account Alice', async ({ expect }) => {
+test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT tokens
@@ -26,15 +26,16 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx Accou
 
 	// check initial balance of Alice on Spiritnet
 	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect, initialBalanceKILT)
+
 	// Alice should have NO KILT on HydraDx
 	await checkBalance(getFreeBalanceHydraDxKilt, keysAlice.address, expect, BigInt(0))
 
 	const aliceAddress = hexAddress(keysAlice.address)
-	const hydraDxDestination = { V3: getSiblingLocation(HydraDxConfig.paraId) }
-	const beneficiary = getAccountLocationV3(aliceAddress)
+	const hydraDxDestination = { V2: getSiblingLocation(HydraDxConfig.paraId) }
+	const beneficiary = getAccountLocationV2(aliceAddress)
 
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
-		.limitedReserveTransferAssets(hydraDxDestination, beneficiary, KILT_ASSET_V3, 0, 'Unlimited')
+		.limitedReserveTransferAssets(hydraDxDestination, beneficiary, KILT_ASSET_V2, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)

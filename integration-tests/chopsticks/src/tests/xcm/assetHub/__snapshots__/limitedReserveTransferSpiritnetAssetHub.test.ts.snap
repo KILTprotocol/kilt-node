@@ -1,0 +1,43 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > sender events Balances 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > sender events xcm pallet 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "proofSize": 0,
+          "refTime": 400000000,
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice > sender events xcm queue pallet 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;

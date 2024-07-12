@@ -26,6 +26,14 @@ export function setGovernance(addr: string[]) {
 	}
 }
 
+export function setSafeXcmVersion3() {
+	return {
+		polkadotXcm: {
+			safeXcmVersion: 3,
+		},
+	}
+}
+
 /// Spiritnet ParaId
 export const paraId = 2086
 
