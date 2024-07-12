@@ -112,31 +112,31 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 
 	await createBlock(basiliskContext)
 
-	checkEvents(events, 'xTokens').toMatchSnapshot('sender events xTokens')
+	await checkEvents(events, 'xTokens').toMatchSnapshot('sender events xTokens')
 
-	checkEvents(events, 'tokens').toMatchSnapshot('sender events tokens')
+	await checkEvents(events, 'tokens').toMatchSnapshot('sender events tokens')
 
-	checkEvents(events, 'parachainSystem').toMatchSnapshot('sender events tokens')
+	await checkEvents(events, 'parachainSystem').toMatchSnapshot('sender events tokens')
 
 	await createBlock(rococoContext)
 
-	checkSystemEvents(rococoContext, 'messageQueue').toMatchSnapshot('relayer events messageQueue')
-	checkSystemEvents(rococoContext, { section: 'balances', method: 'Minted' }).toMatchSnapshot(
+	await checkSystemEvents(rococoContext, 'messageQueue').toMatchSnapshot('relayer events messageQueue')
+	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Minted' }).toMatchSnapshot(
 		'relayer events balances minted'
 	)
 
-	checkSystemEvents(rococoContext, { section: 'balances', method: 'Burned' }).toMatchSnapshot(
+	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Burned' }).toMatchSnapshot(
 		'relayer events balances Burned'
 	)
 
 	await createBlock(peregrineContext)
 
-	checkSystemEvents(peregrineContext, {
+	await checkSystemEvents(peregrineContext, {
 		section: 'parachainSystem',
 		method: 'DownwardMessagesReceived',
 	}).toMatchSnapshot('receiver events parachainSystem pallet')
 
-	checkSystemEvents(peregrineContext, {
+	await checkSystemEvents(peregrineContext, {
 		section: 'dmpQueue',
 		method: 'ExecutedDownward',
 	}).toMatchSnapshot('receiver events dmpQueue')

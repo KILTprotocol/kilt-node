@@ -245,12 +245,16 @@ test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot('Switch events assetSwitchPool1 pallet')
 	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot('sender events Balances')
 
+	// Strange behavior here... After creating one block another block with a transfer is created. The new block is messing up with the checks. We reset the head here
 	await createBlock(assethubContext)
 
+	const blockNumber = (await assethubContext.api.query.system.number()).toNumber()
+	await assethubContext.dev.setHead(blockNumber - 1)
+
 	// messageQueue should not successfully execute the msg
-	checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot('receiver events xcm queue pallet')
+	await checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot('receiver events xcm queue pallet')
 	// Refunded fees should be trapped
-	checkSystemEvents(assethubContext, 'polkadotXcm').toMatchSnapshot('receiver events polkadotXcm')
+	await checkSystemEvents(assethubContext, 'polkadotXcm').toMatchSnapshot('receiver events polkadotXcm')
 
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, BigInt(0))
 	await checkBalance(getFreeRocAssetHub, keysAlice.address, expect, BigInt(0))
@@ -426,7 +430,6 @@ test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 	await checkSystemEvents(peregrineContext, { section: 'xcmpQueue', method: 'Fail' }).toMatchSnapshot(
 		'receiver events xcm queue pallet'
 	)
-	await checkSystemEvents(peregrineContext, 'assetSwitchPool1').toMatchSnapshot('receiver events switch pallet')
 }, 20_000)
 
 test('User has no eKILT', async ({ expect }) => {

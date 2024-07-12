@@ -77,8 +77,12 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	expect(balancePoolAccountAfterTx).eq(initialBalancePoolAccount + balanceToTransfer)
 
 	await createBlock(assethubContext)
+	// Strange behavior here... After creating one block another block with a transfer tx is created. The new block is messing up with the checks. We reset the head here
 
-	checkSystemEvents(assethubContext, 'xcmpQueue').toMatchSnapshot('receiver events messageQueue')
+	const blockNumber = (await assethubContext.api.query.system.number()).toNumber()
+	await assethubContext.dev.setHead(blockNumber - 1)
+
+	checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot('receiver events messageQueue')
 	checkSystemEvents(assethubContext, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'receiver events Balances'
 	)

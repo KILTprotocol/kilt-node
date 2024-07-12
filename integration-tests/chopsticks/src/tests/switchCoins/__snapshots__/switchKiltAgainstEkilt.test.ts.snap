@@ -26,9 +26,59 @@ exports[`Switch PILTs against ePILTS on AssetHub > Switch events assetSwitchPool
 ]
 `;
 
-exports[`Switch PILTs against ePILTS on AssetHub > receiver events Balances 1`] = `[]`;
+exports[`Switch PILTs against ePILTS on AssetHub > receiver events Balances 1`] = `
+[
+  {
+    "data": {
+      "amount": 50000000000000000,
+      "assetId": {
+        "interior": {
+          "X2": [
+            {
+              "GlobalConsensus": {
+                "Ethereum": {
+                  "chainId": "(rounded 11000000)",
+                },
+              },
+            },
+            {
+              "AccountKey20": {
+                "key": "0x06012c8cf97bead5deae237070f9587f8e7a266d",
+                "network": null,
+              },
+            },
+          ],
+        },
+        "parents": 2,
+      },
+      "from": "5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs",
+      "to": "5Go9qhpqq2EzAZ1SKkkx6bTjnSoTnHEB8FHCnieNS57TimEF",
+    },
+    "method": "Transferred",
+    "section": "foreignAssets",
+  },
+]
+`;
 
-exports[`Switch PILTs against ePILTS on AssetHub > receiver events messageQueue 1`] = `[]`;
+exports[`Switch PILTs against ePILTS on AssetHub > receiver events messageQueue 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": "(rounded 2100)",
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": "(rounded 370000)",
+        "refTime": "(rounded 15000000000)",
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
 
 exports[`Switch PILTs against ePILTS on AssetHub > sender events Balances 1`] = `
 [
