@@ -245,7 +245,7 @@ test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot('Switch events assetSwitchPool1 pallet')
 	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot('sender events Balances')
 
-	// Strange behavior here... After creating one block another block with a transfer is created. The new block is messing up with the checks. We reset the head here
+	// Strange behavior here... After creating one block another block with a transfer tx is created. The new block is messing up with the checks. We reset the head here
 	await createBlock(assethubContext)
 
 	const blockNumber = (await assethubContext.api.query.system.number()).toNumber()

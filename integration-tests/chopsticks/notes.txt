@@ -1,9 +1,0 @@
-Xcm([WithdrawAsset(Assets([Asset { id: AssetId(Location { parents: 1, interior: X1([Parachain(2086)]) }), fun: Fungible(1000000000000000) }])), InitiateReserveWithdraw { assets: Wild(All), reserve: Location { parents: 1, interior: X1([Parachain(2086)]) }, xcm: Xcm([BuyExecution { fees: Asset { id: AssetId(Location { parents: 0, interior: Here }), fun: Fungible(1000000000000000) }, weight_limit: Unlimited }, DepositAsset { assets: Wild(AllCounted(1)), beneficiary: Location { parents: 0, interior: X1([AccountId32 { network: None, id: [209, 80, 181, 105, 168, 107, 149, 144, 25, 151, 225, 217, 129, 105, 167, 6, 79, 72, 110, 189, 197, 39, 45, 252, 243, 208, 242, 66, 0, 81, 197, 211] }]) } }]) }])
-
-
-0x530003010100a10f03080004000100000700e40b540210010001000813000100000700e40b5402000d0100000101003abc4b6047cbb1b6f94c6abe1b4f30fec1d11d48f80c513e76e5329a48a5f470
-
-
-
-
-0x340b03010100992003000101003abc4b6047cbb1b6f94c6abe1b4f30fec1d11d48f80c513e76e5329a48a5f470030400020209079edaa802030006012c8cf97bead5deae237070f9587f8e7a266d000f0080e03779c3110000000000
