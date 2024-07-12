@@ -69,12 +69,14 @@ integration-tests:
   stage: test
   variables:
     CI: "true"
+    PEREGRINE_WASM_OVERRIDE: "../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm"
   script:
     - cd ./integration-tests/chopsticks
     - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use
     - eval "[ -f .nvmrc ] && nvm install" && nvm use
     - yarn --immutable
+    - cargo build -p peregrine-runtime 
     - yarn ts-check
     - yarn lint
     - yarn test:CI
