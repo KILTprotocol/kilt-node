@@ -18,6 +18,14 @@ export function assignNativeTokensToAccounts(addr: string[], balance: bigint = i
 	}
 }
 
+export function setSudoKey(sudo: string) {
+	return {
+		Sudo: {
+			key: sudo,
+		},
+	}
+}
+
 export function removeDisputesAndMessageQueues() {
 	return {
 		ParasDisputes: {

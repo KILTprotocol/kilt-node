@@ -2,6 +2,7 @@ import { test } from 'vitest'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assethub.js'
+import * as RococoConfig from '../../network/rococo.js'
 import { initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../utils.js'
 import {
 	peregrineContext,
@@ -9,9 +10,10 @@ import {
 	getFreeEkiltAssetHub,
 	assethubContext,
 	getFreeRocAssetHub,
+	rococoContext,
 } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
-import { getAccountLocationV3, getSiblingLocation } from '../../network/utils.js'
+import { getAccountLocationV3, getChildLocation, getSiblingLocation } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 test('Switch KILTs against EKILTs not same user', async ({ expect }) => {
@@ -494,4 +496,71 @@ test('User has no eKILT', async ({ expect }) => {
 
 	expect(section).toBe('polkadotXcm')
 	expect(errorName).toBe('LocalExecutionIncomplete')
+}, 20_000)
+
+test('Send eKILT from other reserve location', async ({ expect }) => {
+	const { checkEvents, checkSystemEvents } = withExpect(expect)
+
+	await setStorage(rococoContext, {
+		...RococoConfig.setSudoKey(keysAlice.address),
+		...RococoConfig.assignNativeTokensToAccounts([keysAlice.address]),
+	})
+
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
+
+	const dest = { V3: getChildLocation(PeregrineConfig.paraId) }
+
+	const xcmMessage = {
+		V3: [
+			{
+				ReserveAssetDeposited: [
+					{
+						id: { Concrete: AssetHubConfig.eKiltLocation },
+						fun: { Fungible: initialBalanceKILT },
+					},
+				],
+			},
+			'ClearOrigin',
+			{
+				BuyExecution: {
+					fees: {
+						id: { Concrete: AssetHubConfig.eKiltLocation },
+						fun: { Fungible: initialBalanceKILT },
+					},
+					weightLimit: 'Unlimited',
+				},
+			},
+			{
+				DepositAsset: {
+					assets: { Wild: 'All' },
+					beneficiary: {
+						parents: 0,
+						interior: {
+							X1: {
+								AccountId32: {
+									id: hexAddress(keysAlice.address),
+								},
+							},
+						},
+					},
+				},
+			},
+		],
+	}
+
+	const innerTx = rococoContext.api.tx.xcmPallet.send(dest, xcmMessage)
+
+	const tx = rococoContext.api.tx.sudo.sudo(innerTx).signAsync(keysAlice)
+
+	const events = await sendTransaction(tx)
+
+	await createBlock(rococoContext)
+
+	// MSG should have been send
+	await checkEvents(events, 'xcmPallet').toMatchSnapshot('sender events xcm pallet')
+
+	await createBlock(peregrineContext)
+
+	// We expect the UntrustedReserveLocation error
+	await checkSystemEvents(peregrineContext, 'dmpQueue').toMatchSnapshot('receiver events xcm queue pallet')
 }, 20_000)
