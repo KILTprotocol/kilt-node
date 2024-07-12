@@ -8,7 +8,7 @@ import { spiritnetContext, assetHubContext } from '../../index.js'
 import { getSiblingLocation } from '../../../network/utils.js'
 import { createBlock, hexAddress, setStorage } from '../../utils.js'
 
-test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice', async ({ expect }) => {
+test('Teleport Transfers from AH Account Alice -> Spiritnet Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KSM
@@ -45,9 +45,9 @@ test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice
 		.transferAssetsUsingTypeAndThen(
 			spiritnetDestination,
 			KSMAsset,
-			'LocalReserve',
+			'Teleport',
 			remoteFeeId,
-			'LocalReserve',
+			'Teleport',
 			xcmMessage,
 			'Unlimited'
 		)
@@ -64,6 +64,6 @@ test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice
 	// ... But should fail on receiver side.
 	await createBlock(spiritnetContext)
 
-	// we expect to have the UntrustedReserveLocation error
+	// we expect to have the UntrustedTeleportLocation error
 	await checkSystemEvents(spiritnetContext, 'xcmpQueue').toMatchSnapshot('Spiritnet xcmpQueue')
 }, 20_000)
