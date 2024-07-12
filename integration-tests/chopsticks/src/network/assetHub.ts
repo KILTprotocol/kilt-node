@@ -19,23 +19,11 @@ export const getSetupOptions = ({
 		blockNumber,
 	}) as SetupOption
 
-export function assigneKSMtoAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
+export function assignKSMtoAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
 	return {
 		foreignAssets: {
 			account: addr.map((addr) => [
-				[
-					{
-						parents: 2,
-						interior: {
-							X1: [
-								{
-									GlobalConsensus: 'Kusama',
-								},
-							],
-						},
-					},
-					addr,
-				],
+				[KSMAssetLocation, addr],
 				{
 					balance: balance,
 					status: 'Liquid',
@@ -48,7 +36,7 @@ export function assigneKSMtoAccounts(addr: string[], balance: bigint = initialBa
 }
 
 /// AssetHub has no own coin. Teleported dots are used as the native token.
-export function assignDotTokensToAccounts(addr: string[], balance: bigint) {
+export function assignDotTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
 	return {
 		System: {
 			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance.toString() } }]),
@@ -58,6 +46,15 @@ export function assignDotTokensToAccounts(addr: string[], balance: bigint) {
 
 /// AssetHub ParaId
 export const paraId = 1000
+
+export const KSMAssetLocation = {
+	parents: 2,
+	interior: {
+		X1: {
+			GlobalConsensus: 'Kusama',
+		},
+	},
+}
 
 // Sibling Sovereign Account
 export const siblingSovereignAccount = '4qXPdpimHh8TR24RSk994yVzxx4TLfvKj5i1qH5puvWmfAqy'
