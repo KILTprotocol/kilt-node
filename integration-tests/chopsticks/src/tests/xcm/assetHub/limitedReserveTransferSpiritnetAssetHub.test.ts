@@ -17,7 +17,7 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 		...SpiritnetConfig.setSafeXcmVersion3(),
 	})
 
-	// Balance of the hydraDx sovereign account before the transfer
+	// Balance of the AH sovereign account before the transfer
 	const assetHubSovereignAccountBalance = await getFreeBalanceSpiritnet(AssetHubConfig.siblingSovereignAccount)
 
 	// check initial balance of Alice on Spiritnet
