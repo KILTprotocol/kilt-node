@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![doc = include_str!("../README.md")]
 
 pub mod traits;
 pub mod xcm;
@@ -76,15 +77,32 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config<I: 'static = ()>: frame_system::Config {
+		/// How to convert a local `AccountId` to a `Junction`, for the purpose
+		/// of taking XCM fees from the user's balance via the configured
+		/// `AssetTransactor`.
 		type AccountIdConverter: TryConvert<Self::AccountId, Junction>;
+		/// The asset transactor to charge user's for XCM fees as specified in
+		/// the switch pair.
 		type AssetTransactor: TransactAsset;
+		/// The origin that can update the XCM fee for a switch pair.
 		type FeeOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		/// The local currency.
 		type LocalCurrency: MutateFungible<Self::AccountId>;
+		/// The origin that can pause switches in both directions.
 		type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		/// The aggregate event type.
 		type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		/// The origin that can request a switch of some local tokens for some
+		/// remote assets.
 		type SubmitterOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
+		/// Runtime-injected logic to execute before and after a local -> remote
+		/// and remote -> local switch.
 		type SwitchHooks: SwitchHooks<Self, I>;
+		/// The origin that can set a new switch pair, remove one, or resume
+		/// switches.
 		type SwitchOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		/// The XCM router to route XCM transfers to the configured reserve
+		/// location.
 		type XcmRouter: SendXcm;
 	}
 
@@ -95,6 +113,7 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config<I>, I: 'static = ()> {
+		/// A new switch pair is created.
 		SwitchPairCreated {
 			circulating_supply: u128,
 			pool_account: T::AccountId,
@@ -103,43 +122,56 @@ pub mod pallet {
 			remote_xcm_fee: Box<VersionedMultiAsset>,
 			total_issuance: u128,
 		},
-		SwitchPairRemoved {
-			remote_asset_id: VersionedAssetId,
-		},
-		SwitchPairResumed {
-			remote_asset_id: VersionedAssetId,
-		},
-		SwitchPairPaused {
-			remote_asset_id: VersionedAssetId,
-		},
+		/// A switch pair is removed.
+		SwitchPairRemoved { remote_asset_id: VersionedAssetId },
+		/// A switch pair has enabled switches.
+		SwitchPairResumed { remote_asset_id: VersionedAssetId },
+		/// A switch pair has suspended switches.
+		SwitchPairPaused { remote_asset_id: VersionedAssetId },
+		/// The XCM fee for the switch has been updated.
 		SwitchPairFeeUpdated {
 			old: VersionedMultiAsset,
 			new: VersionedMultiAsset,
 		},
+		/// A switch of local -> remote asset has taken place.
 		LocalToRemoteSwitchExecuted {
 			from: T::AccountId,
 			to: VersionedMultiLocation,
 			amount: LocalCurrencyBalanceOf<T, I>,
 		},
-		RemoteToLocalSwitchExecuted {
-			to: T::AccountId,
-			amount: u128,
-		},
+		/// A switch of remote -> local asset has taken place.
+		RemoteToLocalSwitchExecuted { to: T::AccountId, amount: u128 },
 	}
 
 	#[pallet::error]
 	pub enum Error<T, I = ()> {
+		/// Provided switch pair info is not valid.
 		InvalidInput,
+		/// The runtime-injected logic returned an error with a specific code.
 		Hook(u8),
+		/// There are not enough remote assets to cover the specified amount of
+		/// local tokens to switch.
 		Liquidity,
+		/// Failure in transferring the local tokens from the user's balance to
+		/// the switch pair pool account.
 		LocalPoolBalance,
+		/// The calculated switch pair pool account does not have enough local
+		/// tokens to cover the specified `circulating_supply`.
 		PoolInitialLiquidityRequirement,
+		/// A switch pair has already been set.
 		SwitchPairAlreadyExisting,
+		/// The switch pair did not enable switches.
 		SwitchPairNotEnabled,
+		/// No switch pair found.
 		SwitchPairNotFound,
+		/// The user does not have enough local tokens to cover the requested
+		/// switch.
 		UserSwitchBalance,
+		/// The user does not have enough assets to pay for the remote XCM fees.
 		UserXcmBalance,
+		/// Something regarding XCM went wrong.
 		Xcm,
+		/// Internal error.
 		Internal,
 	}
 
@@ -152,6 +184,9 @@ pub mod pallet {
 	where
 		LocalCurrencyBalanceOf<T, I>: Into<u128>,
 	{
+		/// Set a new switch pair.
+		///
+		/// See the crate's README for more.
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
 		pub fn set_switch_pair(
@@ -192,6 +227,9 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Force-set a new switch pair.
+		///
+		/// See the crate's README for more.
 		#[pallet::call_index(1)]
 		#[pallet::weight(0)]
 		pub fn force_set_switch_pair(
@@ -219,6 +257,9 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Unset a switch pair.
+		///
+		/// See the crate's README for more.
 		#[pallet::call_index(2)]
 		#[pallet::weight(0)]
 		pub fn force_unset_switch_pair(origin: OriginFor<T>) -> DispatchResult {
@@ -229,6 +270,9 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Pause switches for a switch pair.
+		///
+		/// See the crate's README for more.
 		#[pallet::call_index(3)]
 		#[pallet::weight(0)]
 		pub fn pause_switch_pair(origin: OriginFor<T>) -> DispatchResult {
@@ -239,6 +283,9 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Resume switches for a switch pair.
+		///
+		/// See the crate's README for more.
 		#[pallet::call_index(4)]
 		#[pallet::weight(0)]
 		pub fn resume_switch_pair(origin: OriginFor<T>) -> DispatchResult {
@@ -249,6 +296,9 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Update the remote XCM fee for a switch pair.
+		///
+		/// See the crate's README for more.
 		#[pallet::call_index(5)]
 		#[pallet::weight(0)]
 		pub fn update_remote_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult {
@@ -271,6 +321,9 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Perform a local -> remote asset switch.
+		///
+		/// See the crate's README for more.
 		#[pallet::call_index(6)]
 		#[pallet::weight(0)]
 		pub fn switch(
@@ -546,6 +599,8 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 }
 
 impl<T: Config<I>, I: 'static> Pallet<T, I> {
+	/// Derive an `AccountId` for the provided `remote_asset_id` and the
+	/// pallet's name as configured in the runtime.
 	pub fn pool_account_id_for_remote_asset(remote_asset_id: &VersionedAssetId) -> Result<T::AccountId, Error<T, I>> {
 		let pallet_name = <Pallet<T, I> as PalletInfoAccess>::name();
 		let pallet_name_hashed = sp_io::hashing::blake2_256(pallet_name.as_bytes());
