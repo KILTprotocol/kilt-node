@@ -26,8 +26,8 @@ test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Acco
 
 	const peregrineSovereignAccountBalanceBeforeTx = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
 
-	// Alice should have no ROCs on Peregrine
-	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
+	// Bob should have no ROCs on Peregrine
+	await checkBalance(getFreeRocPeregrine, keysBob.address, expect, BigInt(0))
 
 	// Alice should some ROCs on AH
 	await checkBalance(getFreeRocAssetHub, keysAlice.address, expect, initialBalanceROC)
