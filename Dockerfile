@@ -30,7 +30,7 @@ USER node
 EXPOSE 30333 9933 9944
 VOLUME ["/data"]
 
-COPY ./dev-specs /node/dev-specs
+COPY ./chainspecs /node/chainspecs
 
 ENTRYPOINT ["/usr/local/bin/node-executable"]
 CMD ["--help"]
