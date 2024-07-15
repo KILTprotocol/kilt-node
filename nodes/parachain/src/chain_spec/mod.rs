@@ -32,7 +32,7 @@ pub(crate) mod spiritnet;
 pub(crate) mod utils;
 
 const KILT_PARA_ID: u32 = 2_086;
-const RILT_PARA_ID: u32 = 8310;
+const RILT_PARA_ID: u32 = 4483;
 
 /// The extensions for the `ChainSpec`.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
