@@ -87,7 +87,7 @@ where
 			&switch_pair.pool_account,
 			&beneficiary,
 			fungible_amount_as_currency_balance,
-			Preservation::Expendable,
+			Preservation::Protect,
 		)
 		.map_err(|e| {
 			log::error!(
@@ -118,7 +118,11 @@ where
 
 		// 7. Call into the post-switch hook
 		T::SwitchHooks::post_remote_to_local_switch(&beneficiary, fungible_amount).map_err(|e| {
-			log::error!(target: LOG_TARGET, "Hook post-switch check failed with error code {:?}", e.into());
+			log::error!(
+				target: LOG_TARGET,
+				"Hook post-switch check failed with error code {:?}",
+				e.into()
+			);
 			Error::FailedToTransactAsset("Failed to validate postconditions for remote-to-local switch.")
 		})?;
 
