@@ -70,9 +70,10 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 					.to_str()
 					.unwrap(),
 			)?)),
-			PeregrineRuntime::Rilt => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
+			PeregrineRuntime::Rilt => Ok(Box::new(chain_spec::rilt::load_chain_spec(
 				get_chainspec_full_path("rilt/peregrine-rilt.json").to_str().unwrap(),
 			)?)),
+			PeregrineRuntime::RiltNew => Ok(Box::new(chain_spec::rilt::new::generate_chain_spec())),
 			PeregrineRuntime::Other(s) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(s.as_str())?)),
 		},
 		ParachainRuntime::Spiritnet(sr) => match sr {
