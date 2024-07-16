@@ -44,6 +44,28 @@ mod benchmarks {
 		fun: Fungibility::Fungible(1_000),
 	};
 
+	fn configure_switch_pair<T, I>()
+	where
+		T: Config<I>,
+		I: 'static,
+		LocalCurrencyBalanceOf<T, I>: Into<u128>,
+	{
+		let reserve_location = Box::new(VersionedMultiLocation::from(RESERVE_LOCATION));
+		let remote_asset_id = Box::new(VersionedAssetId::from(REMOTE_ASSET_ID));
+		let remote_fee = Box::new(VersionedMultiAsset::from(REMOTE_FEE));
+
+		Pallet::<T, I>::force_set_switch_pair(
+			T::RuntimeOrigin::from(RawOrigin::Root),
+			reserve_location,
+			remote_asset_id,
+			remote_fee,
+			u128::MAX,
+			u128::zero(),
+		)
+		.unwrap();
+		assert!(Pallet::<T, I>::switch_pair().is_some());
+	}
+
 	#[benchmark]
 	fn set_switch_pair() {
 		let origin = <T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap();
@@ -66,21 +88,12 @@ mod benchmarks {
 
 	#[benchmark]
 	fn force_set_switch_pair() {
+		configure_switch_pair::<T, I>();
+
 		let origin: T::RuntimeOrigin = RawOrigin::Root.into();
 		let reserve_location = Box::new(VersionedMultiLocation::from(RESERVE_LOCATION));
 		let remote_asset_id = Box::new(VersionedAssetId::from(REMOTE_ASSET_ID));
 		let remote_fee = Box::new(VersionedMultiAsset::from(REMOTE_FEE));
-
-		Pallet::<T, I>::force_set_switch_pair(
-			origin.clone() as T::RuntimeOrigin,
-			reserve_location.clone(),
-			remote_asset_id.clone(),
-			remote_fee.clone(),
-			u128::MAX,
-			u128::zero(),
-		)
-		.unwrap();
-		assert!(Pallet::<T, I>::switch_pair().is_some());
 
 		#[extrinsic_call]
 		Pallet::<T, I>::force_set_switch_pair(
@@ -97,21 +110,9 @@ mod benchmarks {
 
 	#[benchmark]
 	fn force_unset_switch_pair() {
-		let origin: T::RuntimeOrigin = RawOrigin::Root.into();
-		let reserve_location = Box::new(VersionedMultiLocation::from(RESERVE_LOCATION));
-		let remote_asset_id = Box::new(VersionedAssetId::from(REMOTE_ASSET_ID));
-		let remote_fee = Box::new(VersionedMultiAsset::from(REMOTE_FEE));
+		configure_switch_pair::<T, I>();
 
-		Pallet::<T, I>::force_set_switch_pair(
-			origin.clone() as T::RuntimeOrigin,
-			reserve_location,
-			remote_asset_id,
-			remote_fee,
-			u128::MAX,
-			u128::zero(),
-		)
-		.unwrap();
-		assert!(Pallet::<T, I>::switch_pair().is_some());
+		let origin: T::RuntimeOrigin = RawOrigin::Root.into();
 
 		#[extrinsic_call]
 		Pallet::<T, I>::force_unset_switch_pair(origin as T::RuntimeOrigin);
@@ -121,21 +122,9 @@ mod benchmarks {
 
 	#[benchmark]
 	fn pause_switch_pair() {
-		let origin = <T as Config<I>>::PauseOrigin::try_successful_origin().unwrap();
-		let reserve_location = Box::new(VersionedMultiLocation::from(RESERVE_LOCATION));
-		let remote_asset_id = Box::new(VersionedAssetId::from(REMOTE_ASSET_ID));
-		let remote_fee = Box::new(VersionedMultiAsset::from(REMOTE_FEE));
+		configure_switch_pair::<T, I>();
 
-		Pallet::<T, I>::force_set_switch_pair(
-			T::RuntimeOrigin::from(RawOrigin::Root),
-			reserve_location,
-			remote_asset_id,
-			remote_fee,
-			u128::MAX,
-			u128::zero(),
-		)
-		.unwrap();
-		assert!(Pallet::<T, I>::switch_pair().is_some());
+		let origin = <T as Config<I>>::PauseOrigin::try_successful_origin().unwrap();
 
 		#[extrinsic_call]
 		Pallet::<T, I>::pause_switch_pair(origin as T::RuntimeOrigin);
@@ -145,21 +134,9 @@ mod benchmarks {
 
 	#[benchmark]
 	fn resume_switch_pair() {
-		let origin = <T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap();
-		let reserve_location = Box::new(VersionedMultiLocation::from(RESERVE_LOCATION));
-		let remote_asset_id = Box::new(VersionedAssetId::from(REMOTE_ASSET_ID));
-		let remote_fee = Box::new(VersionedMultiAsset::from(REMOTE_FEE));
+		configure_switch_pair::<T, I>();
 
-		Pallet::<T, I>::force_set_switch_pair(
-			T::RuntimeOrigin::from(RawOrigin::Root),
-			reserve_location,
-			remote_asset_id,
-			remote_fee,
-			u128::MAX,
-			u128::zero(),
-		)
-		.unwrap();
-		assert!(Pallet::<T, I>::switch_pair().is_some());
+		let origin = <T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap();
 
 		#[extrinsic_call]
 		Pallet::<T, I>::resume_switch_pair(origin as T::RuntimeOrigin);
@@ -169,21 +146,10 @@ mod benchmarks {
 
 	#[benchmark]
 	fn update_remote_fee() {
-		let origin = <T as Config<I>>::FeeOrigin::try_successful_origin().unwrap();
-		let reserve_location = Box::new(VersionedMultiLocation::from(RESERVE_LOCATION));
-		let remote_asset_id = Box::new(VersionedAssetId::from(REMOTE_ASSET_ID));
-		let remote_fee = Box::new(VersionedMultiAsset::from(REMOTE_FEE));
+		configure_switch_pair::<T, I>();
 
-		Pallet::<T, I>::force_set_switch_pair(
-			T::RuntimeOrigin::from(RawOrigin::Root),
-			reserve_location,
-			remote_asset_id,
-			remote_fee.clone(),
-			u128::MAX,
-			u128::zero(),
-		)
-		.unwrap();
-		assert!(Pallet::<T, I>::switch_pair().is_some());
+		let origin = <T as Config<I>>::FeeOrigin::try_successful_origin().unwrap();
+		let remote_fee = Box::new(VersionedMultiAsset::from(REMOTE_FEE));
 
 		#[extrinsic_call]
 		Pallet::<T, I>::update_remote_fee(origin as T::RuntimeOrigin, remote_fee);
@@ -191,22 +157,11 @@ mod benchmarks {
 
 	#[benchmark]
 	fn switch() {
+		configure_switch_pair::<T, I>();
+		Pallet::<T, I>::resume_switch_pair(<T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap()).unwrap();
+
 		let origin = <T as Config<I>>::SubmitterOrigin::try_successful_origin().unwrap();
 		let reserve_location = Box::new(VersionedMultiLocation::from(RESERVE_LOCATION));
-		let remote_asset_id = Box::new(VersionedAssetId::from(REMOTE_ASSET_ID));
-		let remote_fee = Box::new(VersionedMultiAsset::from(REMOTE_FEE));
-
-		Pallet::<T, I>::force_set_switch_pair(
-			T::RuntimeOrigin::from(RawOrigin::Root),
-			reserve_location.clone(),
-			remote_asset_id,
-			remote_fee,
-			u128::MAX,
-			u128::zero(),
-		)
-		.unwrap();
-		Pallet::<T, I>::resume_switch_pair(<T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap()).unwrap();
-		assert!(Pallet::<T, I>::switch_pair().is_some());
 
 		let account_id = <T as Config<I>>::SubmitterOrigin::ensure_origin(origin.clone()).unwrap();
 		let local_account_id_junction = <T as Config<I>>::AccountIdConverter::try_convert(account_id.clone()).unwrap();
