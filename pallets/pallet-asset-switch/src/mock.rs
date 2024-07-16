@@ -184,6 +184,9 @@ impl crate::Config for MockRuntime {
 	type SwitchHooks = ();
 	type SwitchOrigin = EnsureRoot<Self::AccountId>;
 	type XcmRouter = AlwaysSuccessfulXcmRouter;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 #[derive(Clone)]

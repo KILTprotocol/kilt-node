@@ -11631,6 +11631,7 @@ dependencies = [
  "kilt-dip-primitives",
  "kilt-support",
  "log",
+ "pallet-assets",
  "pallet-authorship",
  "pallet-balances",
  "pallet-deposit-storage",

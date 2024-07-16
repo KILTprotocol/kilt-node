@@ -107,6 +107,9 @@ pub mod pallet {
 		/// The XCM router to route XCM transfers to the configured reserve
 		/// location.
 		type XcmRouter: SendXcm;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper;
 	}
 
 	#[pallet::pallet]

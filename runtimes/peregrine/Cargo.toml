@@ -132,6 +132,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "hex-literal",
   "kilt-support/runtime-benchmarks",
+  "pallet-asset-switch/runtime-benchmarks",
   "pallet-assets/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",

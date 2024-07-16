@@ -1199,6 +1199,7 @@ mod benches {
 		[pallet_migration, Migration]
 		[pallet_dip_provider, DipProvider]
 		[pallet_deposit_storage, DepositStorage]
+		[pallet_asset_switch, AssetSwitchPool1]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 }
