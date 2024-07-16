@@ -152,30 +152,37 @@ mod benchmarks {
 		let remote_fee = Box::new(VersionedMultiAsset::from(REMOTE_FEE));
 
 		#[extrinsic_call]
-		Pallet::<T, I>::update_remote_fee(origin as T::RuntimeOrigin, remote_fee);
+		Pallet::<T, I>::update_remote_fee(origin as T::RuntimeOrigin, remote_fee.clone());
+
+		assert_eq!(Pallet::<T, I>::switch_pair().unwrap().remote_fee, *remote_fee);
 	}
 
 	#[benchmark]
 	fn switch() {
 		configure_switch_pair::<T, I>();
 		Pallet::<T, I>::resume_switch_pair(<T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap()).unwrap();
-
 		let origin = <T as Config<I>>::SubmitterOrigin::try_successful_origin().unwrap();
-		let reserve_location = Box::new(VersionedMultiLocation::from(RESERVE_LOCATION));
-
 		let account_id = <T as Config<I>>::SubmitterOrigin::ensure_origin(origin.clone()).unwrap();
-		let local_account_id_junction = <T as Config<I>>::AccountIdConverter::try_convert(account_id.clone()).unwrap();
-		let minimum_balance = <T as Config<I>>::LocalCurrency::minimum_balance();
-		<T as Config<I>>::LocalCurrency::set_balance(&account_id, minimum_balance + 1_000u32.into());
-		<T as Config<I>>::AssetTransactor::deposit_asset(
-			&REMOTE_FEE,
-			&(local_account_id_junction.into()),
-			&XcmContext::with_message_id(Default::default()),
-		)
-		.unwrap();
+		// Set submitter balance to ED + 1_000
+		{
+			let minimum_balance = <T as Config<I>>::LocalCurrency::minimum_balance();
+			<T as Config<I>>::LocalCurrency::set_balance(&account_id, minimum_balance + 1_000u32.into());
+		}
+		// Set submitter's fungible balance to the XCM fee
+		{
+			let local_account_id_junction = <T as Config<I>>::AccountIdConverter::try_convert(account_id).unwrap();
+			<T as Config<I>>::AssetTransactor::deposit_asset(
+				&REMOTE_FEE,
+				&(local_account_id_junction.into()),
+				&XcmContext::with_message_id(Default::default()),
+			)
+			.unwrap();
+		}
+
+		let beneficiary = Box::new(VersionedMultiLocation::from(RESERVE_LOCATION));
 
 		#[extrinsic_call]
-		Pallet::<T, I>::switch(origin as T::RuntimeOrigin, 1_000u32.into(), reserve_location);
+		Pallet::<T, I>::switch(origin as T::RuntimeOrigin, 1_000u32.into(), beneficiary);
 
 		assert_eq!(
 			<T as Config<I>>::LocalCurrency::balance(
