@@ -286,6 +286,14 @@ impl ExtBuilder {
 
 		ext
 	}
+
+	#[cfg(all(feature = "runtime-benchmarks", test))]
+	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
+		let keystore = sp_keystore::testing::MemoryKeystore::new();
+		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
+		ext
+	}
 }
 
 pub(crate) const XCM_ASSET_FEE: MultiAsset = MultiAsset {

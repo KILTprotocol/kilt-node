@@ -22,6 +22,9 @@
 pub mod traits;
 pub mod xcm;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 mod switch;
 pub use switch::{SwitchPairInfo, SwitchPairStatus};
 

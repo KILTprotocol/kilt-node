@@ -16,6 +16,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dev-dependencies]
 env_logger      = { workspace = true }
 pallet-balances = { workspace = true, features = ["std"] }
+sp-keystore     = { workspace = true }
 
 [dependencies]
 frame-support      = { workspace = true }
@@ -31,8 +32,17 @@ xcm                = { workspace = true }
 xcm-builder        = { workspace = true }
 xcm-executor       = { workspace = true }
 
+# Benchmarks
+frame-benchmarking = { workspace = true, optional = true }
+
 [features]
 default = ["std"]
+runtime-benchmarks = [
+  "frame-benchmarking",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "xcm-builder/runtime-benchmarks",
+]
 std = [
   "frame-support/std",
   "frame-system/std",
