@@ -55,7 +55,7 @@ pub mod pallet_id;
 pub mod xcm_config;
 
 #[cfg(feature = "runtime-benchmarks")]
-pub mod benchmarks;
+pub mod benchmark;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
