@@ -966,6 +966,9 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type SwitchHooks = asset_switch::RestrictswitchDestinationToSelf;
 	type SwitchOrigin = EnsureRoot<AccountId>;
 	type XcmRouter = XcmRouter;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = crate::benches::CreateFungibleForAssetSwitchPool1;
 }
 
 // No deposit is taken since creation is permissioned. Only the root origin can
@@ -1167,6 +1170,18 @@ pub type Executive = frame_executive::Executive<
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
+	use frame_system::RawOrigin;
+	use pallet_asset_switch::BenchmarkInfo;
+	use runtime_common::AccountId;
+	use xcm::v3::AssetId;
+	use xcm::v3::Fungibility;
+	use xcm::v3::Junctions;
+	use xcm::v3::MultiAsset;
+	use xcm::v3::MultiLocation;
+	use xcm::VersionedMultiAsset;
+
+	use crate::Fungibles;
+
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_timestamp, Timestamp]
@@ -1200,8 +1215,30 @@ mod benches {
 		[pallet_dip_provider, DipProvider]
 		[pallet_deposit_storage, DepositStorage]
 		[pallet_asset_switch, AssetSwitchPool1]
+		[pallet_assets, Fungibles]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
+
+	pub struct CreateFungibleForAssetSwitchPool1;
+
+	impl pallet_asset_switch::BenchmarkHelper for CreateFungibleForAssetSwitchPool1 {
+		fn setup() -> Option<BenchmarkInfo> {
+			let asset_location: MultiLocation = Junctions::Here.into();
+			Fungibles::create(
+				RawOrigin::Root.into(),
+				asset_location,
+				AccountId::from([0; 32]).into(),
+				1u32.into(),
+			)
+			.unwrap();
+			Some(BenchmarkInfo {
+				remote_fee: VersionedMultiAsset::V3(MultiAsset {
+					id: AssetId::Concrete(asset_location),
+					fun: Fungibility::Fungible(1_000),
+				}),
+			})
+		}
+	}
 }
 
 impl_runtime_apis! {

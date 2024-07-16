@@ -42,9 +42,15 @@ impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestination
 		_amount: Balance,
 	) -> Result<(), Self::Error> {
 		let to_as_v3: MultiLocation = to.clone().try_into().map_err(|e| {
-			log::error!(target: LOG_TARGET, "Failed to convert beneficiary Multilocation {:?} to v3 with error {:?}", to, e);
+			log::error!(
+				target: LOG_TARGET,
+				"Failed to convert beneficiary Multilocation {:?} to v3 with error {:?}",
+				to,
+				e
+			);
 			Error::Internal
 		})?;
+		// TODO: Use cfg_if! crate to let the benchmark go through
 		ensure!(
 			to_as_v3.interior
 				== Junction::AccountId32 {

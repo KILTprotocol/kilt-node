@@ -19,7 +19,7 @@
 use xcm::VersionedMultiAsset;
 
 pub struct BenchmarkInfo {
-	remote_fee: VersionedMultiAsset,
+	pub remote_fee: VersionedMultiAsset,
 }
 
 pub trait BenchmarkHelper {
@@ -59,7 +59,7 @@ mod benchmarks {
 	const REMOTE_ASSET_ID: AssetId = AssetId::Concrete(RESERVE_LOCATION);
 	const REMOTE_FEE: MultiAsset = MultiAsset {
 		id: REMOTE_ASSET_ID,
-		fun: Fungibility::Fungible(1_000),
+		fun: Fungibility::Fungible(100_000),
 	};
 
 	fn configure_switch_pair<T, I>() -> BenchmarkInfo
@@ -186,10 +186,12 @@ mod benchmarks {
 		let BenchmarkInfo { remote_fee } = configure_switch_pair::<T, I>();
 		Pallet::<T, I>::resume_switch_pair(<T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap()).unwrap();
 		let account_id = <T as Config<I>>::SubmitterOrigin::ensure_origin(origin.clone()).unwrap();
-		// Set submitter balance to ED + 1_000
+		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&REMOTE_ASSET_ID.into()).unwrap();
+		let minimum_balance = <T as Config<I>>::LocalCurrency::minimum_balance();
+		// Set submitter balance to ED + 1_000 and pool balance to ED
 		{
-			let minimum_balance = <T as Config<I>>::LocalCurrency::minimum_balance();
 			<T as Config<I>>::LocalCurrency::set_balance(&account_id, minimum_balance + 1_000u32.into());
+			<T as Config<I>>::LocalCurrency::set_balance(&pool_account, minimum_balance);
 		}
 		// Set submitter's fungible balance to the XCM fee
 		{
@@ -202,14 +204,22 @@ mod benchmarks {
 			.unwrap();
 		}
 
-		let beneficiary = Box::new(RESERVE_LOCATION.into());
+		let beneficiary = Box::new(MultiLocation::from(
+			Junction::AccountId32 {
+				network: None,
+				id: account_id,
+			}
+			.into(),
+		));
 		let amount = 1_000u32.into();
 
 		#[extrinsic_call]
 		Pallet::<T, I>::switch(origin as T::RuntimeOrigin, amount, beneficiary);
 
-		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&REMOTE_ASSET_ID.into()).unwrap();
-		assert_eq!(<T as Config<I>>::LocalCurrency::balance(&pool_account), 1_000u32.into());
+		assert_eq!(
+			<T as Config<I>>::LocalCurrency::balance(&pool_account),
+			minimum_balance + 1_000u32.into()
+		);
 	}
 
 	#[cfg(test)]

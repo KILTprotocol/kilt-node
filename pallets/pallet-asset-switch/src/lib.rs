@@ -22,9 +22,6 @@
 pub mod traits;
 pub mod xcm;
 
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
-
 mod switch;
 pub use switch::{SwitchPairInfo, SwitchPairStatus};
 
@@ -32,6 +29,11 @@ pub use switch::{SwitchPairInfo, SwitchPairStatus};
 mod mock;
 #[cfg(test)]
 mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::{BenchmarkHelper, BenchmarkInfo};
 
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 use frame_support::traits::PalletInfoAccess;
