@@ -168,6 +168,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = RuntimeTask;
 	/// Maximum number of block number to block hash mappings to keep (oldest
 	/// pruned first).
 	type BlockHashCount = BlockHashCount;
@@ -193,7 +194,6 @@ impl frame_system::Config for Runtime {
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
-	type RuntimeTask = RuntimeTask;
 }
 
 /// Maximum number of nominators per validator.

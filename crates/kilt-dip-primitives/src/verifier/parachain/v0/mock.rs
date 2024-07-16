@@ -57,7 +57,6 @@ construct_runtime!(
 
 impl frame_system::Config for TestRuntime {
 	type AccountData = ();
-	type RuntimeTask = RuntimeTask;
 	type AccountId = AccountId32;
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<Self>;
@@ -77,6 +76,7 @@ impl frame_system::Config for TestRuntime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = ();
 	type SS58Prefix = ConstU16<1>;
 	type SystemWeightInfo = ();
 	type Version = ();

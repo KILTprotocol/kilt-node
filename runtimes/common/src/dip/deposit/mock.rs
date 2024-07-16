@@ -41,7 +41,6 @@ pub(crate) const SUBJECT: AccountId = AccountId::new([100u8; 32]);
 pub(crate) const SUBMITTER: AccountId = AccountId::new([200u8; 32]);
 
 impl frame_system::Config for TestRuntime {
-	type RuntimeTask = RuntimeTask;
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
@@ -62,6 +61,7 @@ impl frame_system::Config for TestRuntime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = ();
 	type SS58Prefix = ();
 	type SystemWeightInfo = ();
 	type Version = ();

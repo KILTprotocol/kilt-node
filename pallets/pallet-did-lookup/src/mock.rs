@@ -56,7 +56,6 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type RuntimeTask = RuntimeTask;
 	type BaseCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
@@ -65,6 +64,7 @@ impl frame_system::Config for Test {
 	type Nonce = u64;
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
+	type RuntimeTask = ();
 	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;

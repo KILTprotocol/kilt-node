@@ -49,7 +49,6 @@ construct_runtime!(
 );
 
 impl frame_system::Config for TestRuntime {
-	type RuntimeTask = RuntimeTask;
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type AccountId = AccountId32;
 	type BaseCallFilter = Everything;
@@ -70,6 +69,7 @@ impl frame_system::Config for TestRuntime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = ();
 	type SS58Prefix = ConstU16<1>;
 	type SystemWeightInfo = ();
 	type Version = ();

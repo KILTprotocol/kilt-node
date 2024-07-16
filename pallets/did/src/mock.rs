@@ -84,7 +84,7 @@ parameter_types! {
 impl frame_system::Config for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type RuntimeTask = RuntimeTask;
+	type RuntimeTask = ();
 	type Block = Block;
 	type Nonce = u64;
 	type Hash = Hash;

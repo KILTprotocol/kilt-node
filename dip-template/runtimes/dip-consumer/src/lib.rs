@@ -204,7 +204,6 @@ parameter_types! {
 pub const SS58_PREFIX: u16 = 101;
 
 impl frame_system::Config for Runtime {
-	type RuntimeTask = RuntimeTask;
 	type AccountData = AccountData<Balance>;
 	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
@@ -225,6 +224,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = RuntimeTask;
 	type SS58Prefix = ConstU16<SS58_PREFIX>;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type Version = Version;

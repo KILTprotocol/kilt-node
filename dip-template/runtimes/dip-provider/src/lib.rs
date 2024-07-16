@@ -206,7 +206,6 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	type AccountData = AccountData<Balance>;
-	type RuntimeTask = RuntimeTask;
 	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
 	type BlockHashCount = ConstU64<256>;
@@ -226,6 +225,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = RuntimeTask;
 	type SS58Prefix = ConstU16<SS58_PREFIX>;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type Version = Version;

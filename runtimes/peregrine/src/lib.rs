@@ -145,6 +145,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = RuntimeTask;
 	/// Maximum number of block number to block hash mappings to keep (oldest
 	/// pruned first).
 	type BlockHashCount = BlockHashCount;
@@ -161,7 +162,7 @@ impl frame_system::Config for Runtime {
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
 	type SS58Prefix = SS58Prefix;
-	type RuntimeTask = RuntimeTask;
+
 	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
 	type MaxConsumers = frame_support::traits::ConstU32<16>;

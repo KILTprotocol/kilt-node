@@ -202,8 +202,7 @@ mod tests {
 		type RuntimeOrigin = RuntimeOrigin;
 		type Block = Block;
 		type Nonce = u64;
-		type RuntimeTask = RuntimeTask;
-
+		type RuntimeTask = ();
 		type RuntimeCall = RuntimeCall;
 		type Hash = H256;
 		type Hashing = BlakeTwo256;
