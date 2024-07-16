@@ -19,16 +19,16 @@
 use xcm::VersionedMultiAsset;
 
 pub struct BenchmarkInfo {
-	remote_fee: Option<VersionedMultiAsset>,
+	remote_fee: VersionedMultiAsset,
 }
 
 pub trait BenchmarkHelper {
-	fn setup() -> BenchmarkInfo;
+	fn setup() -> Option<BenchmarkInfo>;
 }
 
 impl BenchmarkHelper for () {
-	fn setup() -> BenchmarkInfo {
-		BenchmarkInfo { remote_fee: None }
+	fn setup() -> Option<BenchmarkInfo> {
+		None
 	}
 }
 
@@ -44,7 +44,7 @@ mod benchmarks {
 	use sp_runtime::traits::Zero;
 	use sp_std::boxed::Box;
 	use sp_std::vec;
-	use xcm::{v3::XcmContext, VersionedMultiAsset};
+	use xcm::v3::{AssetId, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, XcmContext};
 	use xcm_executor::traits::TransactAsset;
 
 	use crate::{
@@ -68,15 +68,14 @@ mod benchmarks {
 		I: 'static,
 		LocalCurrencyBalanceOf<T, I>: Into<u128>,
 	{
-		let remote_fee = {
-			let BenchmarkInfo { remote_fee } = <T as Config<I>>::BenchmarkHelper::setup();
-			remote_fee.unwrap_or(REMOTE_FEE.into())
-		};
+		let remote_fee = <T as Config<I>>::BenchmarkHelper::setup()
+			.map(|info| info.remote_fee)
+			.unwrap_or(REMOTE_FEE.into());
 
 		Pallet::<T, I>::force_set_switch_pair(
 			T::RuntimeOrigin::from(RawOrigin::Root),
-			Box::new(reserve_location.clone()),
-			Box::new(remote_asset_id.clone()),
+			Box::new(RESERVE_LOCATION.into()),
+			Box::new(REMOTE_ASSET_ID.into()),
 			Box::new(remote_fee.clone()),
 			u128::MAX,
 			u128::zero(),
@@ -84,22 +83,19 @@ mod benchmarks {
 		.unwrap();
 		assert!(Pallet::<T, I>::switch_pair().is_some());
 
-		BenchmarkInfo {
-			remote_fee: Some(remote_fee),
-		}
+		BenchmarkInfo { remote_fee }
 	}
 
 	#[benchmark]
 	fn set_switch_pair() {
 		let origin = <T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap();
-		let remote_fee = {
-			let BenchmarkInfo { remote_fee } = <T as Config<I>>::BenchmarkHelper::setup();
-			remote_fee.unwrap_or(REMOTE_FEE.into())
-		};
+		let remote_fee = <T as Config<I>>::BenchmarkHelper::setup()
+			.map(|info| info.remote_fee)
+			.unwrap_or(REMOTE_FEE.into());
 		let (remote_asset_id, remote_fee, reserve_location) = (
-			Box::new(REMOTE_ASSET_ID),
+			Box::new(REMOTE_ASSET_ID.into()),
 			Box::new(remote_fee),
-			Box::new(RESERVE_LOCATION),
+			Box::new(RESERVE_LOCATION.into()),
 		);
 
 		#[extrinsic_call]
@@ -118,11 +114,11 @@ mod benchmarks {
 	#[benchmark]
 	fn force_set_switch_pair() {
 		let origin: T::RuntimeOrigin = RawOrigin::Root.into();
-		let info = configure_switch_pair::<T, I>();
+		let BenchmarkInfo { remote_fee } = configure_switch_pair::<T, I>();
 		let (remote_asset_id, remote_fee, reserve_location) = (
-			Box::new(info.remote_asset_id),
-			Box::new(info.remote_fee),
-			Box::new(info.reserve_location),
+			Box::new(REMOTE_ASSET_ID.into()),
+			Box::new(remote_fee),
+			Box::new(RESERVE_LOCATION.into()),
 		);
 
 		#[extrinsic_call]
@@ -174,8 +170,8 @@ mod benchmarks {
 	#[benchmark]
 	fn update_remote_fee() {
 		let origin = <T as Config<I>>::FeeOrigin::try_successful_origin().unwrap();
-		let info = configure_switch_pair::<T, I>();
-		let remote_fee = Box::new(info.remote_fee);
+		let BenchmarkInfo { remote_fee } = configure_switch_pair::<T, I>();
+		let remote_fee = Box::new(remote_fee);
 		let remote_fee_2 = remote_fee.clone();
 
 		#[extrinsic_call]
@@ -187,11 +183,7 @@ mod benchmarks {
 	#[benchmark]
 	fn switch() {
 		let origin = <T as Config<I>>::SubmitterOrigin::try_successful_origin().unwrap();
-		let BenchmarkInfo {
-			remote_asset_id,
-			remote_fee,
-			reserve_location,
-		} = configure_switch_pair::<T, I>();
+		let BenchmarkInfo { remote_fee } = configure_switch_pair::<T, I>();
 		Pallet::<T, I>::resume_switch_pair(<T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap()).unwrap();
 		let account_id = <T as Config<I>>::SubmitterOrigin::ensure_origin(origin.clone()).unwrap();
 		// Set submitter balance to ED + 1_000
@@ -210,13 +202,13 @@ mod benchmarks {
 			.unwrap();
 		}
 
-		let beneficiary = Box::new(reserve_location);
+		let beneficiary = Box::new(RESERVE_LOCATION.into());
 		let amount = 1_000u32.into();
 
 		#[extrinsic_call]
 		Pallet::<T, I>::switch(origin as T::RuntimeOrigin, amount, beneficiary);
 
-		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&remote_asset_id).unwrap();
+		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&REMOTE_ASSET_ID.into()).unwrap();
 		assert_eq!(<T as Config<I>>::LocalCurrency::balance(&pool_account), 1_000u32.into());
 	}
 
