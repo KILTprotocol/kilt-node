@@ -1180,8 +1180,8 @@ mod benches {
 		[pallet_deposit_storage, DepositStorage]
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
-		[frame_benchmarking::baseline, Baseline::<Runtime>]
 		[cumulus_pallet_dmp_queue, DmpQueue]
+		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 }
 
