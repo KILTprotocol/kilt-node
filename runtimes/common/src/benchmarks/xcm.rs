@@ -19,21 +19,21 @@
 use cumulus_primitives_core::ParaId;
 use frame_support::parameter_types;
 use polkadot_runtime_common::xcm_sender::{NoPriceForMessageDelivery, ToParachainDeliveryHelper};
-use xcm::v3::prelude::*;
+use xcm::v4::prelude::*;
 
 use crate::constants::KILT;
 
 parameter_types! {
-	pub const RandomParaId: cumulus_primitives_core::ParaId = cumulus_primitives_core::ParaId::new(42424242);
-	pub ExistentialDepositAsset: Option<MultiAsset> = Some((
+	pub const RandomParaId: ParaId = ParaId::new(42424242);
+	pub ExistentialDepositAsset: Option<Asset> = Some((
 		Here,
 		KILT
 	).into());
 
 	pub ParachainLocation: Location = ParentThen(Parachain(RandomParaId::get().into()).into()).into();
-	pub NativeAsset: MultiAsset = MultiAsset {
+	pub NativeAsset: Asset = Asset {
 					fun: Fungible(KILT),
-					id: AssetId::Concrete(Here.into())
+					id: AssetId(Here.into())
 				};
 }
 

@@ -54,7 +54,6 @@ impl<T: frame_system::Config> frame_system::WeightInfo for WeightInfo<T> {
 	}
 	fn authorize_upgrade() -> Weight {
 		todo!()
-	
 	}
 	/// The range of component `b` is `[0, 3932160]`.
 	fn remark(b: u32, ) -> Weight {

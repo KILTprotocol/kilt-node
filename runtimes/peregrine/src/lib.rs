@@ -1504,7 +1504,7 @@ impl_runtime_apis! {
 			use frame_benchmarking::baseline::Pallet as Baseline;
 			use frame_support::traits::TrackedStorageKey;
 			use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
-			use runtime_common::benchmarks::xcm_benchmarking;
+			use runtime_common::benchmarks::xcm as xcm_benchmarking;
 			use xcm::lts::prelude::*;
 
 			impl pallet_xcm::benchmarking::Config for Runtime {
