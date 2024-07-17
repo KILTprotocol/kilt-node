@@ -7,12 +7,12 @@
   resolved "https://registry.yarnpkg.com/@aashutoshrathi/word-wrap/-/word-wrap-1.2.6.tgz#bd9154aec9983f77b3a034ecaa015c2e4201f6cf"
   integrity sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==
 
-"@acala-network/chopsticks-core@0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-core/-/chopsticks-core-0.10.0.tgz#0191a4ca9739b84f07e4267cb5e7d0ca7eccb7b9"
-  integrity sha512-JoxlHLLpKgs/STdG4xh8KkMIWM0Ssjo1aeMEoW8G0zgKcgGqUdrsMGtJoHsxxTFOYvsZCavV37ukGLZFmq1zMg==
+"@acala-network/chopsticks-core@0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-core/-/chopsticks-core-0.11.0.tgz#b3eb9377658c000c516db5a090f7f9a69ba910ae"
+  integrity sha512-3+ensuinkesviDh2EI97XUv/M2gOAovUdOGQEeB/xC3ynNBP0t9zVi39C+L9fuW0PGjr2bqZlM30JXI0VQVXqA==
   dependencies:
-    "@acala-network/chopsticks-executor" "0.10.0"
+    "@acala-network/chopsticks-executor" "0.11.0"
     "@polkadot/rpc-provider" "^10.11.2"
     "@polkadot/types" "^10.11.2"
     "@polkadot/types-codec" "^10.11.2"
@@ -28,112 +28,50 @@
     rxjs "^7.8.1"
     zod "^3.22.4"
 
-"@acala-network/chopsticks-core@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-core/-/chopsticks-core-0.10.1.tgz#11920c95db7f609d26b93d57ea1d30732b8467f0"
-  integrity sha512-AmGRoUzbmVHy8rZL6nA+CtiP4GZw/4DGTN+srqPcaWPq/hGKYKjhfw6yOUS/Ln7wukbTGfoy0pP9FUNwFAOt4g==
+"@acala-network/chopsticks-db@0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-db/-/chopsticks-db-0.11.0.tgz#6710f4285b46672c724ecc52a7d2f48028712367"
+  integrity sha512-egKySQ29Az4CCTwStZBgs6Lpg1c7IlE3e/dVMA2wIG65u7TqAdRxirjPLFRdayTVrvAgCPYbH3pQVpmUbh2yfg==
   dependencies:
-    "@acala-network/chopsticks-executor" "0.10.1"
-    "@polkadot/rpc-provider" "^10.11.2"
-    "@polkadot/types" "^10.11.2"
-    "@polkadot/types-codec" "^10.11.2"
-    "@polkadot/types-known" "^10.11.2"
-    "@polkadot/util" "^12.6.2"
-    "@polkadot/util-crypto" "^12.6.2"
-    comlink "^4.4.1"
-    eventemitter3 "^5.0.1"
-    lodash "^4.17.21"
-    lru-cache "^10.2.0"
-    pino "^8.19.0"
-    pino-pretty "^11.0.0"
-    rxjs "^7.8.1"
-    zod "^3.22.4"
-
-"@acala-network/chopsticks-db@0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-db/-/chopsticks-db-0.10.0.tgz#4088c255fe7409d8f098e2582bc68b628a58dd3f"
-  integrity sha512-wVqSjOQGMMdQVfsGhLqw7PzVYL8OIgtxZYRDT1fqwd844DeEV4RzhQvIoyzzmSpMR91RHr0qTg58zoBdv7UKbQ==
-  dependencies:
-    "@acala-network/chopsticks-core" "0.10.0"
+    "@acala-network/chopsticks-core" "0.11.0"
     "@polkadot/util" "^12.6.2"
     idb "^8.0.0"
     sqlite3 "^5.1.7"
     typeorm "^0.3.20"
 
-"@acala-network/chopsticks-db@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-db/-/chopsticks-db-0.10.1.tgz#30e630e23d54f97b0fe06812e242ce0ae95541ac"
-  integrity sha512-5zkQ0pZHEKjqYb2aQvrzPNzju0iQhe+C1QflW21m8pC0BzCXPRQGC3edyPn6Lmthq/8nLN3CJyb4LccY2ENhFQ==
-  dependencies:
-    "@acala-network/chopsticks-core" "0.10.1"
-    "@polkadot/util" "^12.6.2"
-    idb "^8.0.0"
-    sqlite3 "^5.1.7"
-    typeorm "^0.3.20"
-
-"@acala-network/chopsticks-executor@0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-executor/-/chopsticks-executor-0.10.0.tgz#2d5e0fd179d6fa2679aaf9fc31312fa4c58a77e8"
-  integrity sha512-hBjlVjdCZ+d8Oo50X9U+wHqf0jQ9AucFj2dX9rLV+AQrNDOAeWob+kSqMMRcEUembg3Fyv7zIPv8OGVFrOreiQ==
+"@acala-network/chopsticks-executor@0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-executor/-/chopsticks-executor-0.11.0.tgz#1904280cd3ed04eb6b9b1b105789dc0f8b559013"
+  integrity sha512-1rRf5NghiaAexM9RvJITB1P92wPwaQunLp9svggBacRA6EYlgEgjJ7Sp2lo1QXmr2kjTQQs2mmGsMeQksrbkcg==
   dependencies:
     "@polkadot/util" "^12.6.2"
     "@polkadot/wasm-util" "^7.3.2"
 
-"@acala-network/chopsticks-executor@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-executor/-/chopsticks-executor-0.10.1.tgz#017eba0618c7e379810c4f20e90eb583df3b15c2"
-  integrity sha512-NUFD2GaGWIpPtE3C7i5T1BJJwMLZgQZdHgGSREQV8KndzwiuWqkxDu33N/cmDkrFmZG84S6xVnf6qPHIsw5UNQ==
+"@acala-network/chopsticks-testing@0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-testing/-/chopsticks-testing-0.11.0.tgz#e43d1c0e9d6a8090ba96f32add3d96c659cb62c3"
+  integrity sha512-Z2zRutmn5ccHxnBxLQSldCcUBQfEgT5h6mZnQ+QVYbaO06SYpN1xpGjJw7Vj+ZLZW44Oi6Lc0whEgmN0ZLwgDA==
   dependencies:
-    "@polkadot/util" "^12.6.2"
-    "@polkadot/wasm-util" "^7.3.2"
-
-"@acala-network/chopsticks-testing@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-testing/-/chopsticks-testing-0.10.1.tgz#dc33561df5e76bc9580b4fc851a6df9f831fedb0"
-  integrity sha512-GaTZVckSZVLZJC7V8TmiDt3fWsSzWtg9az3/GBz1jB2wx7EJDKd9Siu2lVMyJW6jZlEGXijtuexzkOXtttAWCw==
-  dependencies:
-    "@acala-network/chopsticks-utils" "0.10.1"
+    "@acala-network/chopsticks-utils" "0.11.0"
     "@polkadot/api" "^10.11.2"
     "@polkadot/types" "^10.11.2"
 
-"@acala-network/chopsticks-utils@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-utils/-/chopsticks-utils-0.10.1.tgz#5839afc2c5f14b7db029116432f1b870370803d7"
-  integrity sha512-P7V5B5SbWqgplqdpExjsxbFW2S/+fA2hQ0Ow9o57SsM0qg3sH3YaVd2jBJ6kEHXGoFxUGqUIoiKm/+3cYUUImA==
+"@acala-network/chopsticks-utils@0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks-utils/-/chopsticks-utils-0.11.0.tgz#95eb7415972f3e1b8ba95faa6ed32d2ff045c368"
+  integrity sha512-fUA0/wJnPkyxPAT7W85Ufn5bQtPQpLBdPVIVHVRaWwF8E3gaFSm4E1aLnquv+PRT66yYf6aYPAXpnsDhBjwQIg==
   dependencies:
-    "@acala-network/chopsticks" "0.10.1"
+    "@acala-network/chopsticks" "0.11.0"
     "@polkadot/api" "^10.11.2"
     "@polkadot/types" "^10.11.2"
 
-"@acala-network/chopsticks@0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks/-/chopsticks-0.10.0.tgz#d4af5b220b8b14b79254ebd0622c2f500828c25b"
-  integrity sha512-mx5hIGOHll0tz1+jRA4jpC+GaUhLeTWULSFyf9DgbHHR0rfxtzhNgML8EOIrIA5Otg3v0/0WlBwFqvMRQCvFwA==
+"@acala-network/chopsticks@0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks/-/chopsticks-0.11.0.tgz#499192430c11379f129f1a25d17375a471fe75e1"
+  integrity sha512-D40P8mgZDGWa/QePiiSzT371v7cPln2jpmfiLJ1k8SmpU9wQndophDBxGccDWjU4N7JtCCZEE5NpoAqs+3UO/A==
   dependencies:
-    "@acala-network/chopsticks-core" "0.10.0"
-    "@acala-network/chopsticks-db" "0.10.0"
-    "@pnpm/npm-conf" "^2.2.2"
-    "@polkadot/api-augment" "^10.11.2"
-    "@polkadot/types" "^10.11.2"
-    "@polkadot/util" "^12.6.2"
-    "@polkadot/util-crypto" "^12.6.2"
-    axios "^1.6.8"
-    dotenv "^16.4.5"
-    global-agent "^3.0.0"
-    js-yaml "^4.1.0"
-    jsondiffpatch "^0.5.0"
-    lodash "^4.17.21"
-    ws "^8.16.0"
-    yargs "^17.7.2"
-    zod "^3.22.4"
-
-"@acala-network/chopsticks@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@acala-network/chopsticks/-/chopsticks-0.10.1.tgz#466a04328a580c077ecd8544a2d2939c5a5f2817"
-  integrity sha512-zSMK8G3wbrygKQJUjftotXBqlDHpTAZHNgZdyso8wGX+mKjEvtzVPt5ADX/h9pDXgvg5yehyJHTjQBL6QbwDdw==
-  dependencies:
-    "@acala-network/chopsticks-core" "0.10.1"
-    "@acala-network/chopsticks-db" "0.10.1"
+    "@acala-network/chopsticks-core" "0.11.0"
+    "@acala-network/chopsticks-db" "0.11.0"
     "@pnpm/npm-conf" "^2.2.2"
     "@polkadot/api-augment" "^10.11.2"
     "@polkadot/types" "^10.11.2"

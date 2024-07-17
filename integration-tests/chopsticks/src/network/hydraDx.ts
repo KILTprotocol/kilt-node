@@ -1,15 +1,22 @@
-import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
-import type { Config } from './types.js'
-import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../utils.js'
+import { SetupOption } from '@acala-network/chopsticks-testing'
+
+import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../helper/utils.js'
 
 /// Options used to create the HydraDx context
-export const options: SetupOption = {
-	endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
-	db: './db/hydradx.db.sqlite',
-	port: toNumber(process.env.HYDRADX_PORT) || 9001,
-}
-
-export const kiltTokenId = 28
+export const getSetupOptions = ({
+	blockNumber,
+	wasmOverride,
+}: {
+	blockNumber?: number
+	wasmOverride?: string
+} = {}) =>
+	({
+		endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
+		db: './db/hydradx.db.sqlite',
+		port: toNumber(process.env.HYDRADX_PORT) || 9001,
+		blockNumber,
+		wasmOverride,
+	}) as SetupOption
 
 /// Sets the [TechnicalCommittee] and [Council] governance to the given accounts
 export function setGovernance(addr: string[]) {
@@ -28,7 +35,7 @@ export function assignNativeTokensToAccounts(addr: string[], balance: bigint = i
 	}
 }
 
-/// Assigns KILT tokens to an accounts
+/// Assigns KILT tokens to accounts
 export function assignKiltTokensToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
 		Tokens: {
@@ -37,12 +44,13 @@ export function assignKiltTokensToAccounts(addr: string[], balance: bigint = ini
 	}
 }
 
+// Sibling Sovereign Account
+export const siblingSovereignAccount = '5Eg2fntQqFi3EvFWAf71G66Ecjjah26bmFzoANAeHFgj9Lia'
+
+export const kiltTokenId = 28
+
 /// HydraDX ParaId
 export const paraId = 2034
 
 /// Omnipool account
 export const omnipoolAccount = '7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1'
-
-export async function getContext(): Promise<Config> {
-	return setupContext(options)
-}
