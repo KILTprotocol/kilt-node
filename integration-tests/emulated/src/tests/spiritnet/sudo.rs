@@ -24,7 +24,7 @@ use runtime_common::{constants::KILT, AccountId, Balance};
 use xcm::{lts::prelude::*, opaque::*, DoubleEncoded, VersionedLocation};
 use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, RelayChain, TestExt, Weight};
 
-use crate::mock::network::chains::{AssetHub, MockNetwork, Rococo, Spiritnet};
+use crate::mock::network::{AssetHub, MockNetwork, Rococo, Spiritnet};
 
 fn get_sovereign_account_id_of_asset_hub() -> AccountId {
 	Spiritnet::sovereign_account_id_of(Spiritnet::sibling_location_of(AssetHub::para_id()))

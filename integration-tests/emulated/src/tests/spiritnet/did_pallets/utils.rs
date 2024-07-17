@@ -32,7 +32,7 @@ use xcm::{
 };
 use xcm_emulator::Parachain;
 
-use crate::mock::network::chains::{AssetHub, Spiritnet};
+use crate::mock::network::{AssetHub, Spiritnet};
 
 pub fn create_mock_ctype(ctype_hash: H256, creator: AccountId32) {
 	let ctype_entry = CtypeEntry { creator, created_at: 0 };

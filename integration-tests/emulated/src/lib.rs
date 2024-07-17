@@ -16,8 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#[cfg(all(not(feature = "runtime-benchmarks"), test))]
 mod mock;
-mod utils;
-
 #[cfg(all(not(feature = "runtime-benchmarks"), test))]
 mod tests;
+#[cfg(all(not(feature = "runtime-benchmarks"), test))]
+mod utils;

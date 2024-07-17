@@ -36,7 +36,7 @@ use xcm::{
 use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 
 use crate::mock::{
-	network::chains::{AssetHub, MockNetwork, Rococo, Spiritnet},
+	network::{AssetHub, MockNetwork, Rococo, Spiritnet},
 	para_chains::SpiritnetParachainParaPallet,
 };
 
