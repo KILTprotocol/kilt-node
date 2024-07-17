@@ -90,7 +90,7 @@ fn generate_genesis_state() -> serde_json::Value {
 	})
 }
 
-pub fn template_session_keys(aura_keys: AuraId, grandpa_keys: GrandpaId) -> SessionKeys {
+fn template_session_keys(aura_keys: AuraId, grandpa_keys: GrandpaId) -> SessionKeys {
 	SessionKeys {
 		aura: aura_keys,
 		grandpa: grandpa_keys,
