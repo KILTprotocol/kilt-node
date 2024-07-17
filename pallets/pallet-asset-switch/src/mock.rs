@@ -258,7 +258,7 @@ impl ExtBuilder {
 					switch_pair_info.remote_fee,
 					switch_pair_info.total_issuance,
 					switch_pair_info.circulating_supply,
-					0,
+					switch_pair_info.min_remote_balance,
 					switch_pair_info.pool_account,
 				);
 				SwitchPair::<MockRuntime>::mutate(|entry| entry.as_mut().unwrap().status = switch_pair_info.status);
