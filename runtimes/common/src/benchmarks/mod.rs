@@ -24,7 +24,7 @@ pub mod treasury;
 pub mod xcm;
 
 /// A dummy signature type used for benchmarking.
-/// Mainly used for benchmarking for the delegation pallet to mock the needed signature.
+/// Mainly used for the delegation pallet to mock the needed signature.
 #[derive(Clone, Copy, Default, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DummySignature;
 
