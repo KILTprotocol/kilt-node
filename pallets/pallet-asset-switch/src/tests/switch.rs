@@ -61,6 +61,7 @@ fn successful() {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
 			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
+				// Cannot switch ED.
 				99_999,
 				Box::new(ASSET_HUB_LOCATION.into())
 			));
@@ -326,12 +327,36 @@ fn fails_on_not_enough_user_local_balance() {
 		.with_balances(vec![(user.clone(), 100_000, 0, 1)])
 		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
-			pool_account,
+			pool_account: pool_account.clone(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
+			min_remote_balance: 0,
+		})
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Pallet::<MockRuntime>::switch(
+					RawOrigin::Signed(user.clone()).into(),
+					100_000,
+					Box::new(ASSET_HUB_LOCATION.into())
+				),
+				Error::<MockRuntime>::UserSwitchBalance
+			);
+		});
+	// Fails if user goes under their ED.
+	ExtBuilder::default()
+		.with_balances(vec![(user.clone(), 100_000, 0, 0)])
+		.with_switch_pair_info(NewSwitchPairInfo {
+			circulating_supply: 0,
+			pool_account,
+			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_fee: XCM_ASSET_FEE.into(),
+			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			status: SwitchPairStatus::Running,
+			total_issuance: 1_000_000,
 			min_remote_balance: 0,
 		})
 		.build()
