@@ -57,7 +57,7 @@ impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestination
 			.into();
 		cfg_if::cfg_if! {
 			if #[cfg(feature = "runtime-benchmarks")] {
-				// Clippy complaints
+				// Clippy complaints the variable is not used with this feature on, otherwise.
 				let _ = is_beneficiary_self;
 				Ok(())
 			} else {

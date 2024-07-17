@@ -500,7 +500,8 @@ pub mod pallet {
 				return Err(DispatchError::from(Error::<T, I>::Internal));
 			}
 
-			// 10. Send XCM out (only when not benchmarking, as delivery fees are anyway accounted for by the router)
+			// 10. Send XCM out (only when not benchmarking, as delivery fees are anyway
+			//     accounted for by the router)
 			cfg_if::cfg_if! {
 				if #[cfg(not(feature = "runtime-benchmarks"))] {
 					T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {

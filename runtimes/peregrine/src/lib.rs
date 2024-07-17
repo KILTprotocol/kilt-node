@@ -1174,12 +1174,10 @@ mod benches {
 	use frame_system::RawOrigin;
 	use pallet_asset_switch::BenchmarkInfo;
 	use runtime_common::AccountId;
-	use xcm::v3::AssetId;
-	use xcm::v3::Fungibility;
-	use xcm::v3::Junctions;
-	use xcm::v3::MultiAsset;
-	use xcm::v3::MultiLocation;
-	use xcm::VersionedMultiAsset;
+	use xcm::{
+		v3::{AssetId, Fungibility, Junctions, MultiAsset, MultiLocation},
+		VersionedMultiAsset,
+	};
 
 	use crate::Fungibles;
 
@@ -1220,6 +1218,8 @@ mod benches {
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 
+	// Required since the pallet `AssetTransactor` will try to deduct the XCM fee
+	// from the user's balance, and the asset must exist.
 	pub struct CreateFungibleForAssetSwitchPool1;
 
 	impl pallet_asset_switch::BenchmarkHelper for CreateFungibleForAssetSwitchPool1 {
