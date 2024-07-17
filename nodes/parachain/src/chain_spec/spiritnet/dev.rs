@@ -46,11 +46,11 @@ pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 	.with_id("kilt_spiritnet_dev")
 	.with_chain_type(ChainType::Development)
 	.with_properties(get_properties("KILT", 15, 38))
-	.with_genesis_config_patch(get_genesis_config())
+	.with_genesis_config_patch(generate_genesis_state())
 	.build()
 }
 
-fn get_genesis_config() -> serde_json::Value {
+fn generate_genesis_state() -> serde_json::Value {
 	let alice = (
 		get_account_id_from_secret::<sr25519::Public>("Alice"),
 		get_public_key_from_secret::<AuthorityId>("Alice"),

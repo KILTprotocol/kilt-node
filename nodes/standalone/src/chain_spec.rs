@@ -50,11 +50,11 @@ fn generate_dev_chain_spec() -> ChainSpec {
 		.with_id("standalone_node_development")
 		.with_chain_type(ChainType::Development)
 		.with_properties(properties)
-		.with_genesis_config(get_genesis_config())
+		.with_genesis_config(generate_genesis_state())
 		.build()
 }
 
-fn get_genesis_config() -> serde_json::Value {
+fn generate_genesis_state() -> serde_json::Value {
 	let endowed_accounts = vec![
 		// Dev Faucet account
 		get_account_id_from_secret::<ed25519::Public>(

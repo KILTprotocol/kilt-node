@@ -41,11 +41,11 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 	.with_id("kilt_peregrine_new")
 	.with_chain_type(ChainType::Live)
 	.with_properties(get_properties("PILT", 15, 38))
-	.with_genesis_config(get_genesis_config())
+	.with_genesis_config(generate_genesis_state())
 	.build()
 }
 
-fn get_genesis_config() -> serde_json::Value {
+fn generate_genesis_state() -> serde_json::Value {
 	serde_json::json!({
 		"parachainInfo": {
 			"parachainId": KILT_PARA_ID,
