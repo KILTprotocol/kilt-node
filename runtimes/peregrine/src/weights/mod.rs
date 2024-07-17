@@ -29,6 +29,7 @@ pub mod pallet_democracy;
 pub mod pallet_deposit_storage;
 pub mod pallet_did_lookup;
 pub mod pallet_dip_provider;
+pub mod pallet_dmp_queue;
 pub mod pallet_indices;
 pub mod pallet_inflation;
 pub mod pallet_membership;
