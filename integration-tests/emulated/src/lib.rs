@@ -19,6 +19,5 @@
 mod mock;
 mod utils;
 
-#[cfg(not(feature = "runtime-benchmarks"))]
-#[cfg(test)]
+#[cfg(all(not(feature = "runtime-benchmarks"), test))]
 mod tests;
