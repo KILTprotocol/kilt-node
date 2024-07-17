@@ -20,8 +20,7 @@ use xcm_emulator::decl_test_networks;
 
 use crate::mock::para_chains::{PeregrineParachain, SpiritnetParachain};
 
-#[cfg(not(feature = "runtime-benchmarks"))]
-#[cfg(test)]
+#[cfg(all(not(feature = "runtime-benchmarks"), test))]
 pub mod chains {
 
 	pub use super::*;
