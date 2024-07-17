@@ -1,13 +1,12 @@
 # Asset switch pallet
 
-The asset switch pallet introduces the possibility for the chain local currency to be switched 1:1 with a remote asset at a remote destination, according to the provided configuration, using XCM.
+The asset switch pallet allows for switching the chain local currency 1:1 with a remote asset at a remote destination, according to the provided configuration, and using XCM.
 
-This is possible via the creation of a *switch pair*, which contains information about the identifier of the remote asset (e.g., its `MultiLocation`), the remote location on which the asset lives (and with which XCM communication takes place), the circulating supply of the remote asset which can be switched back for the local currency, and additional information relevant for the XCM communication, which are explained more in depth later on.
+This is possible by creating a *switch pair*, which contains information about the remote asset's identifier (e.g., its MultiLocation`), the remote location where the asset lives (and with which XCM communication takes place), the circulating supply of the remote asset, which can be switched back for the local currency, and additional information relevant for the XCM communication, which is explained more in-depth later on.
 
-## In a gist
+## Summary
 
-The pallet lets users on the source chain lock `N` tokens of the chain's native currency into a switch pair specific account, to receive `N` remote assets on the configured remote location, which are transferred to them from the source chain's sovereign account at destination.
-Then, the chain, which i
+The pallet lets users on the local chain lock `N` tokens of the chain's native currency into a switch pair-specific account to receive `N` remote assets on the configured remote location, which are transferred to them from the source chain's sovereign account on the remote chain.
 
 ## Design choices
 
@@ -49,7 +48,7 @@ impl pallet_asset_switch::Config<SwitchPool2> for Runtime {
 }
 ```
 
-If a single instance is required, then simply use the default instance:
+If a single instance is required, then use the default instance:
 
 ```rust
 impl pallet_asset_switch::Config for Runtime {
@@ -62,13 +61,13 @@ impl pallet_asset_switch::Config for Runtime {
 As the pallet is generic over the runtime specifics, the `Config` trait requires the following configuration parameters passed to it:
 
 - `type AccountIdConverter: TryConvert<Self::AccountId, Junction>`: Because the `AccountId` type can be anything in the runtime, the converter is responsible for converting such a `AccountId` into a `Junction`, which is then used for some XCM processing.
-- `type AssetTransactor: TransactAsset`: This component is used when charging the extrinsic submitter with the XCM fees that the chain will pay at destination. For instance, if the transfer on the remote chain will cost 0.1 DOTs, the `AssetTransactor` might deduct 0.1 DOTs from the user's previously topped up balance on the source chain (more details below).
-- `type FeeOrigin: EnsureOrigin<Self::RuntimeOrigin>`: The origin that can update the XCM fee to be paid for the transfer on destination.
+- `type AssetTransactor: TransactAsset`: This component is used when charging the extrinsic submitter with the XCM fees that the chain will pay at the remote chain. For instance, if the transfer on the remote chain will cost 0.1 DOTs, the `AssetTransactor` might deduct 0.1 DOTs from the user's previously topped up balance on the source chain (more details below).
+- `type FeeOrigin: EnsureOrigin<Self::RuntimeOrigin>`: The origin that can update the XCM fee to be paid for the transfer on the remote chain.
 - `type LocalCurrency: MutateFungible<Self::AccountId>`: The chain's local currency.
 - `type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>`: The origin that can pause a switch pair, e.g., if a vulnerability is found.
 - `type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>`: The aggregate `Event` type.
 - `type SubmitterOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>`: The origin that can call the `switch` extrinsic and perform the switch.
-- `type SwitchHooks: SwitchHooks<Self, I>`: Any additional runtime-specific logic that can be injected both before and after local tokens are exchanged for the remote assets, and before and after the remote assets are being converted into local tokens.
+- `type SwitchHooks: SwitchHooks<Self, I>`: Any additional runtime-specific logic that can be injected both before and after local tokens are exchanged for the remote assets, and before and after the remote assets are converted into local tokens.
 - `type SwitchOrigin: EnsureOrigin<Self::RuntimeOrigin>`: The origin that can set, resume, and delete a switch pair.
 - `type XcmRouter: SendXcm`: The component responsible for routing XCM messages to the switch pair remote location to perform the remote asset transfer from the chain's sovereign account to the specified beneficiary.
 
@@ -101,14 +100,14 @@ The pallet generates the following events:
 7. `pub fn switch(origin: OriginFor<T>, local_asset_amount: LocalCurrencyBalanceOf<T, I>, beneficiary: Box<VersionedMultiLocation>) -> DispatchResult`: Allows the `SubmitterOrigin` to perform a switch of some local tokens for the corresponding amount of remote assets on the configured `reserve_location`. The switch will fail already on the source chain if any of the following preconditions is not met:
 	1. The submitter does not have enough balance to pay for the tx fees on the source chain or to cover the amount of local tokens requested. Hence, the user's local balance must be greater than or equal to the amount of tokens requested in the switch + the cost of executing the extrinsic on the source chain.
 	2. No switch pair is set or the switch pair is currently not allowing switches.
-	3. There are not enough locked remote assets on the `reserve_location` to cover the switch request. E.g., if the chain sovereign account on the `reserve_location` only controls `10` remote assets, users can only switch up to `10` local tokens. Once the limit is reached, there needs to be someone performing the reverse operation (remote -> local switch) to free up some remote tokens.
+	3. There are not enough locked remote assets on the `reserve_location` to cover the switch request. e.g., if the chain sovereign account on the `reserve_location` only controls `10` remote assets, users can only switch up to `10` local tokens. Once the limit is reached, someone needs to perform the reverse operation (remote -> local switch) to free up some remote tokens.
 	4. The switch pair `reserve_location` is not reachable from the source chain, because the configured `XcmRouter` returns an error (e.g., there is no XCM channel between the two chains).
 	5. The configured `SwitchHooks` returns an error in either the `pre-` or the `post-` switch checks.
 	6. The user does not have enough assets to pay for the required remote XCM fees as specified in the switch pair info and as returned by the configured `AssetTransactor`.
 
 ## XCM components
 
-Because the switch functionality relies on XCM, the pallet provides a few XCM components that are to be included in a runtime in order to enable the whole set of interactions between the source chain and the configured remote reserve location.
+Because the switch functionality relies on XCM, the pallet provides a few XCM components that should be included in a runtime to enable the whole set of interactions between the source chain and the configured remote reserve location.
 
 * `AccountId32ToAccountId32JunctionConverter` in [xcm::convert][xcm-convert]: provides an implementation for the pallet's `AccountIdConverter` config component, that converts local `AccountId32`s into a `AccountId32` XCM `Junction`. This works only for chains that use `AccountId32` as their overarching `AccountId` type.
 * `MatchesSwitchPairXcmFeeFungibleAsset` in [xcm::match][xcm-match]: provides an implementation of the `MatchesFungibles<MultiLocation, Fungibles::Balance>` that returns the input `MultiAsset` if its ID matches the XCM fee asset ID as configured in the switch pair, if present. If no switch pair is present or if the ID does not match, it returns a [XcmExecutorError::AssetNotHandled][XcmExecutorError::AssetNotHandled], which does not prevent other matchers after it to apply their matching logic. It can be used for the `AssetTransactor` property of the [XcmExecutor::Config][XcmExecutor::Config] and as the `AssetTransactor` component of this pallet in the runtime.
