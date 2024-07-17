@@ -16,12 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+pub mod treasury;
+pub mod xcm;
+
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
-
-pub mod treasury;
-pub mod xcm;
 
 /// A dummy signature type used for benchmarking.
 /// Mainly used for the delegation pallet to mock the needed signature.
