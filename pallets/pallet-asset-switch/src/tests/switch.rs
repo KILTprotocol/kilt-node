@@ -33,7 +33,7 @@ use crate::{
 		FREEZE_REASON, HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
 	switch::SwitchPairStatus,
-	tests::assert_total_supply_invariant,
+	tests::assert_supply_invariant,
 	xcm::convert::AccountId32ToAccountId32JunctionConverter,
 	Error, Event, Pallet, SwitchPair,
 };
@@ -54,6 +54,7 @@ fn successful() {
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
+			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -92,7 +93,7 @@ fn successful() {
 			)
 			.is_zero());
 			// Invariant is held
-			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
+			assert_supply_invariant(100_000u128, 1u128, 99_999u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
@@ -113,6 +114,7 @@ fn successful() {
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
+			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -151,7 +153,7 @@ fn successful() {
 			)
 			.is_zero());
 			// Invariant is held
-			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
+			assert_supply_invariant(100_000u128, 1u128, 99_999u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
@@ -173,6 +175,7 @@ fn successful() {
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
+			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -211,7 +214,7 @@ fn successful() {
 			)
 			.is_zero());
 			// Invariant is held
-			assert_total_supply_invariant(100_000u128, 1u128, &pool_account);
+			assert_supply_invariant(100_000u128, 1u128, 99_999u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
@@ -256,6 +259,7 @@ fn fails_on_pool_not_running() {
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Paused,
 			total_issuance: 100_000,
+			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -280,6 +284,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
+			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -303,6 +308,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
+			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -326,6 +332,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
+			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -354,6 +361,7 @@ fn fails_on_not_enough_remote_balance() {
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Running,
 			total_issuance: 50_000,
+			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -390,6 +398,7 @@ fn fails_on_not_enough_user_xcm_balance() {
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
 			status: SwitchPairStatus::Running,
 			total_issuance: 100_000,
+			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {

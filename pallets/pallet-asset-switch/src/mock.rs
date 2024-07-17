@@ -199,11 +199,14 @@ pub(crate) struct NewSwitchPairInfo {
 	pub(crate) remote_reserve_location: VersionedMultiLocation,
 	pub(crate) status: SwitchPairStatus,
 	pub(crate) total_issuance: u128,
+	pub(crate) min_remote_balance: u128,
 }
 
 impl From<NewSwitchPairInfo> for SwitchPairInfoOf<MockRuntime> {
 	fn from(new_switch_pair_info: NewSwitchPairInfo) -> Self {
-		let remote_asset_balance = new_switch_pair_info.total_issuance - new_switch_pair_info.circulating_supply;
+		let remote_asset_balance = new_switch_pair_info.total_issuance
+			- new_switch_pair_info.circulating_supply
+			- new_switch_pair_info.min_remote_balance;
 		Self {
 			remote_asset_balance,
 			pool_account: new_switch_pair_info.pool_account,
@@ -255,6 +258,7 @@ impl ExtBuilder {
 					switch_pair_info.remote_fee,
 					switch_pair_info.total_issuance,
 					switch_pair_info.circulating_supply,
+					0,
 					switch_pair_info.pool_account,
 				);
 				SwitchPair::<MockRuntime>::mutate(|entry| entry.as_mut().unwrap().status = switch_pair_info.status);

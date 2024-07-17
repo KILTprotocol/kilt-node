@@ -33,6 +33,7 @@ fn successful() {
 	ExtBuilder::default()
 		.with_switch_pair_info(NewSwitchPairInfo {
 			circulating_supply: 0,
+			min_remote_balance: 0,
 			pool_account: [0u8; 32].into(),
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
