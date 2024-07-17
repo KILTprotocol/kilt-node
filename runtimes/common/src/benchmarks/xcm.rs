@@ -37,6 +37,8 @@ parameter_types! {
 				};
 }
 
+/// Implementation of the `EnsureDelivery` for the benchmarks.
+/// Needed type for the [pallet_xcm::benchmarking::Config]
 pub type ParachainDeliveryHelper<ParachainSystem, XcmConfig> = ToParachainDeliveryHelper<
 	XcmConfig,
 	ExistentialDepositAsset,

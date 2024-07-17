@@ -16,19 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use core::marker::PhantomData;
 use pallet_treasury::ArgumentsFactory;
+use sp_std::marker::PhantomData;
 
 use crate::constants::KILT;
-pub struct BenchmarkHelper<T>(PhantomData<T>);
 
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
+/// Benchmark helper for the treasury pallet. Implements the `ArgumentsFactory` trait.
+/// Used to create accounts and assets for the treasury pallet benchmarks.
+pub struct BenchmarkHelper<T>(PhantomData<T>);
 
 impl<T> ArgumentsFactory<(), AccountIdOf<T>> for BenchmarkHelper<T>
 where
 	T: pallet_balances::Config,
 	<T as pallet_balances::Config>::Balance: From<u128>,
-	<T as frame_system::Config>::AccountId: From<sp_runtime::AccountId32>,
+	AccountIdOf<T>: From<sp_runtime::AccountId32>,
 {
 	fn create_asset_kind(_seed: u32) {}
 
