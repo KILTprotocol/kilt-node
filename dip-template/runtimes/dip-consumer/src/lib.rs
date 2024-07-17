@@ -43,7 +43,7 @@ use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
 	parameter_types,
-	traits::{ConstU32, ConstU64, ConstU8, Everything},
+	traits::{ConstU32, ConstU64, ConstU8, EnqueueWithOrigin, Everything},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
 		IdentityFee, Weight,
@@ -267,7 +267,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type XcmpMessageHandler = ();
 	type ConsensusHook = ConsensusHook;
 	type WeightInfo = ();
-	type DmpQueue = frame_support::traits::EnqueueWithOrigin<(), RelayOrigin>;
+	type DmpQueue = EnqueueWithOrigin<(), RelayOrigin>;
 }
 
 impl pallet_timestamp::Config for Runtime {

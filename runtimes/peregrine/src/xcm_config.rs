@@ -24,7 +24,7 @@ use crate::{
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
 use frame_support::{
 	parameter_types,
-	traits::{Contains, Everything, Nothing, TransformOrigin},
+	traits::{Contains, EnqueueWithOrigin, Everything, Nothing, TransformOrigin},
 };
 use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
@@ -222,11 +222,6 @@ pub type XcmRouter = (
 	XcmpQueue,
 );
 
-#[cfg(feature = "runtime-benchmarks")]
-parameter_types! {
-	pub ReachableDest: Option<Location> = Some(Parent.into());
-}
-
 impl pallet_xcm::Config for Runtime {
 	type MaxRemoteLockConsumers = ConstU32<0>;
 	type RemoteLockConsumerIdentifier = ();
@@ -296,6 +291,6 @@ parameter_types! {
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
+	type DmpSink = EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 	type WeightInfo = ();
 }
