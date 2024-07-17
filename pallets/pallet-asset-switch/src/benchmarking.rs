@@ -22,6 +22,10 @@ pub struct BenchmarkInfo {
 	pub remote_fee: VersionedMultiAsset,
 }
 
+/// Helper trait implementable by the runtime to set some additional state before the pallet benchmarks are run.
+///
+/// This is highly dependent on the runtime logic.
+/// If no special conditions are to be met, it can simply be a no-op and return `None`.
 pub trait BenchmarkHelper {
 	fn setup() -> Option<BenchmarkInfo>;
 }
@@ -62,6 +66,8 @@ mod benchmarks {
 		fun: Fungibility::Fungible(100_000),
 	};
 
+	/// Write a switch pair into storage using the benchmark constants and the `remote_fee` asset
+	/// as returned by the benchmark helper, or the default one otherwise.
 	fn configure_switch_pair<T, I>() -> BenchmarkInfo
 	where
 		T: Config<I>,
