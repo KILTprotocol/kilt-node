@@ -965,6 +965,7 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type SubmitterOrigin = EnsureSigned<AccountId>;
 	type SwitchHooks = asset_switch::RestrictswitchDestinationToSelf;
 	type SwitchOrigin = EnsureRoot<AccountId>;
+	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
 	type XcmRouter = XcmRouter;
 
 	#[cfg(feature = "runtime-benchmarks")]

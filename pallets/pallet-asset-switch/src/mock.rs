@@ -183,6 +183,7 @@ impl crate::Config for MockRuntime {
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();
 	type SwitchOrigin = EnsureRoot<Self::AccountId>;
+	type WeightInfo = ();
 	type XcmRouter = AlwaysSuccessfulXcmRouter;
 
 	#[cfg(feature = "runtime-benchmarks")]

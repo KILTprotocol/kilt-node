@@ -22,6 +22,8 @@
 pub mod traits;
 pub mod xcm;
 
+mod default_weights;
+pub use default_weights::WeightInfo;
 mod switch;
 pub use switch::{SwitchPairInfo, SwitchPairStatus};
 
@@ -50,7 +52,7 @@ pub mod pallet {
 	use crate::{
 		switch::{SwitchPairInfo, SwitchPairStatus},
 		traits::SwitchHooks,
-		LOG_TARGET,
+		WeightInfo, LOG_TARGET,
 	};
 
 	use frame_support::{
@@ -106,6 +108,7 @@ pub mod pallet {
 		/// The origin that can set a new switch pair, remove one, or resume
 		/// switches.
 		type SwitchOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		type WeightInfo: WeightInfo;
 		/// The XCM router to route XCM transfers to the configured reserve
 		/// location.
 		type XcmRouter: SendXcm;
@@ -196,7 +199,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::set_switch_pair())]
 		pub fn set_switch_pair(
 			origin: OriginFor<T>,
 			reserve_location: Box<VersionedMultiLocation>,
@@ -239,7 +242,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(1)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::force_set_switch_pair())]
 		pub fn force_set_switch_pair(
 			origin: OriginFor<T>,
 			reserve_location: Box<VersionedMultiLocation>,
@@ -269,7 +272,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(2)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::force_unset_switch_pair())]
 		pub fn force_unset_switch_pair(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
 
@@ -282,7 +285,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(3)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::pause_switch_pair())]
 		pub fn pause_switch_pair(origin: OriginFor<T>) -> DispatchResult {
 			T::PauseOrigin::ensure_origin(origin)?;
 
@@ -295,7 +298,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(4)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::resume_switch_pair())]
 		pub fn resume_switch_pair(origin: OriginFor<T>) -> DispatchResult {
 			T::SwitchOrigin::ensure_origin(origin)?;
 
@@ -308,7 +311,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(5)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::update_remote_fee())]
 		pub fn update_remote_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult {
 			T::FeeOrigin::ensure_origin(origin)?;
 
@@ -333,7 +336,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(6)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::switch())]
 		pub fn switch(
 			origin: OriginFor<T>,
 			local_asset_amount: LocalCurrencyBalanceOf<T, I>,
@@ -497,11 +500,18 @@ pub mod pallet {
 				return Err(DispatchError::from(Error::<T, I>::Internal));
 			}
 
-			// 10. Send XCM out
-			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
-				log::info!("Failed to deliver ticket with error {:?}", e);
-				DispatchError::from(Error::<T, I>::Xcm)
-			})?;
+			// 10. Send XCM out (only when not benchmarking, as delivery fees are anyway accounted for by the router)
+			cfg_if::cfg_if! {
+				if #[cfg(not(feature = "runtime-benchmarks"))] {
+					T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
+						log::info!("Failed to deliver ticket with error {:?}", e);
+						DispatchError::from(Error::<T, I>::Xcm)
+					})?;
+				} else {
+					log::trace!(target: LOG_TARGET, "Running benchmarks. Message will not be delivered to destination.");
+					drop(xcm_ticket);
+				}
+			}
 
 			// 11. Update remote asset balance
 			SwitchPair::<T, I>::try_mutate(|entry| {

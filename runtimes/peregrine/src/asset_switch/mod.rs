@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::ensure;
 use pallet_asset_switch::traits::SwitchHooks;
 use runtime_common::{AccountId, Balance};
 use xcm::{
@@ -50,17 +49,22 @@ impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestination
 			);
 			Error::Internal
 		})?;
-		// TODO: Use cfg_if! crate to let the benchmark go through
-		ensure!(
-			to_as_v3.interior
-				== Junction::AccountId32 {
-					network: None,
-					id: from.clone().into()
-				}
-				.into(),
-			Error::NotToSelf
-		);
-		Ok(())
+		let is_beneficiary_self = to_as_v3.interior
+			== Junction::AccountId32 {
+				network: None,
+				id: from.clone().into(),
+			}
+			.into();
+		cfg_if::cfg_if! {
+			if #[cfg(feature = "runtime-benchmarks")] {
+				// Clippy complaints
+				let _ = is_beneficiary_self;
+				Ok(())
+			} else {
+				frame_support::ensure!(is_beneficiary_self, Error::NotToSelf);
+				Ok(())
+			}
+		}
 	}
 
 	// We don't need to take any actions after the switch is executed

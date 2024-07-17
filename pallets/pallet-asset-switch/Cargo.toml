@@ -19,6 +19,7 @@ pallet-balances = { workspace = true, features = ["std"] }
 sp-keystore     = { workspace = true }
 
 [dependencies]
+cfg-if             = { workspace = true }
 frame-support      = { workspace = true }
 frame-system       = { workspace = true }
 log                = { workspace = true }

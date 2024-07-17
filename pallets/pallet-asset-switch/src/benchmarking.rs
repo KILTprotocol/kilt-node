@@ -194,8 +194,8 @@ mod benchmarks {
 			<T as Config<I>>::LocalCurrency::set_balance(&pool_account, minimum_balance);
 		}
 		// Set submitter's fungible balance to the XCM fee
+		let local_account_id_junction = <T as Config<I>>::AccountIdConverter::try_convert(account_id).unwrap();
 		{
-			let local_account_id_junction = <T as Config<I>>::AccountIdConverter::try_convert(account_id).unwrap();
 			<T as Config<I>>::AssetTransactor::deposit_asset(
 				&remote_fee.try_into().unwrap(),
 				&(local_account_id_junction.into()),
@@ -204,13 +204,7 @@ mod benchmarks {
 			.unwrap();
 		}
 
-		let beneficiary = Box::new(MultiLocation::from(
-			Junction::AccountId32 {
-				network: None,
-				id: account_id,
-			}
-			.into(),
-		));
+		let beneficiary = Box::new(MultiLocation::from(local_account_id_junction).into());
 		let amount = 1_000u32.into();
 
 		#[extrinsic_call]

@@ -7439,6 +7439,7 @@ dependencies = [
 name = "pallet-asset-switch"
 version = "1.14.0-dev"
 dependencies = [
+ "cfg-if",
  "env_logger 0.10.1",
  "frame-benchmarking",
  "frame-support",
@@ -9234,6 +9235,7 @@ name = "peregrine-runtime"
 version = "1.14.0-dev"
 dependencies = [
  "attestation",
+ "cfg-if",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
