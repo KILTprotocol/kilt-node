@@ -418,6 +418,7 @@ fn fails_on_not_enough_remote_balance() {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
+					// Tradeable are only 49_999 because of the remote ED.
 					50_000,
 					Box::new(ASSET_HUB_LOCATION.into())
 				),

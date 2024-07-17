@@ -482,7 +482,7 @@ pub mod pallet {
 				&submitter,
 				&switch_pair.pool_account,
 				local_asset_amount,
-				// We don't care if the account gets dusted, but it should not be killed.
+				// We don't care if the submitter's account gets dusted, but it should not be killed.
 				Preservation::Protect,
 			)?;
 			if transferred_amount != local_asset_amount {
@@ -575,6 +575,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			pool_account: pool_account.clone(),
 			// We don't consider the minimum balance as part of the remote asset balance
 			// as those are funds we will never be allowed to touch under normal circumstances.
+			// In case the remote governance updates this value, we can batch an `unset_switch_pair` with a new `set_switch_pair` with the new value and the available remote balance will be re-calculated accordingly.
 			// We can do a simple subtraction since all checks are performed in calling functions.
 			remote_asset_balance: total_issuance - circulating_supply - min_remote_balance,
 			remote_asset_id: remote_asset_id.clone(),

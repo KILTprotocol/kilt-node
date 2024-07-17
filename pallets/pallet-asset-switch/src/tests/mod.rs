@@ -36,6 +36,6 @@ fn assert_supply_invariant(
 ) {
 	// The pool must ALWAYS have enough local tokens to exchange for remote tokens
 	assert!(circulating_supply.into() <= Balances::usable_balance(pool_address) as u128);
-	// The amount of remote tokens controlled by the chain must always match the remote balance.
+	// The amount of calculated remote tokens controlled by the chain must always match the remote balance (including its ED).
 	assert_eq!(total_supply.into() - circulating_supply.into(), remote_balance.into());
 }

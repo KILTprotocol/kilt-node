@@ -326,7 +326,7 @@ fn fails_on_invalid_supply_values() {
 			Error::<MockRuntime>::InvalidInput
 		);
 	});
-	// Circulating supply + minimum balance > total issuance
+	// Circulating supply - total issuance < min remote balance
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::set_switch_pair(

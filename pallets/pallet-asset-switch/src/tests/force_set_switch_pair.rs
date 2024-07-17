@@ -54,7 +54,7 @@ fn successful() {
 			let switch_pair = SwitchPair::<MockRuntime>::get();
 			let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
 				pool_account: pool_account_address.clone(),
-				// Unit balance since we had to leave ED on this chain
+				// Unit balance since we had to leave ED on this chain and no min balance requirement (ED) is set for the remote asset.
 				remote_asset_balance: 1,
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 				remote_fee: XCM_ASSET_FEE.into(),
