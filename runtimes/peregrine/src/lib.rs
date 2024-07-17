@@ -33,7 +33,7 @@ use frame_support::{
 	traits::{
 		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		ConstU32, EitherOfDiverse, Everything, InstanceFilter, LinearStoragePrice, PrivilegeCmp,
+		ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter, LinearStoragePrice, PrivilegeCmp,
 	},
 	weights::{ConstantMultiplier, Weight},
 };
