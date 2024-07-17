@@ -23,7 +23,8 @@ use did::{
 	DidIdentifierOf, DidVerificationKeyRelationship, KeyIdOf,
 };
 use frame_support::{
-	construct_runtime, pallet_prelude::ValueQuery, parameter_types, storage_alias, traits::Everything, Twox64Concat,
+	construct_runtime, pallet_prelude::ValueQuery, parameter_types, storage_alias, traits::EnqueueWithOrigin,
+	traits::Everything, Twox64Concat,
 };
 use frame_system::{mocking::MockBlock, pallet_prelude::BlockNumberFor, EnsureSigned};
 use hex_literal::hex;
@@ -89,7 +90,7 @@ parameter_types! {
 
 impl cumulus_pallet_parachain_system::Config for TestRuntime {
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
-	type DmpQueue = frame_support::traits::EnqueueWithOrigin<(), RelayOrigin>;
+	type DmpQueue = EnqueueWithOrigin<(), RelayOrigin>;
 	type OnSystemEvent = ();
 	type OutboundXcmpMessageSource = ();
 	type ReservedDmpWeight = ();
