@@ -1127,17 +1127,8 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(
-		// FIX: Enable in next release 1.15.0
-		//frame_support::migrations::RemovePallet<DmpQueuePalletName, <Runtime as frame_system::Config>::DbWeight>,
-		cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
-	),
+	(cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,),
 >;
-
-// Enable in next release 1.15.0
-// parameter_types! {
-// 	pub const DmpQueuePalletName: &'static str = "DmpQueue";
-// }
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
@@ -1179,6 +1170,7 @@ mod benches {
 		[pallet_deposit_storage, DepositStorage]
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
+		[cumulus_pallet_dmp_queue, DmpQueue]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 }
