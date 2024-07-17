@@ -62,7 +62,13 @@ mod xcm_fee_asset {
 		}
 
 		fn buy_weight(&mut self, weight: Weight, payment: Assets, context: &XcmContext) -> Result<Assets, Error> {
-			log::info!(target: LOG_TARGET, "buy_weight {:?}, {:?}, {:?}", weight, payment, context);
+			log::info!(
+				target: LOG_TARGET,
+				"buy_weight {:?}, {:?}, {:?}",
+				weight,
+				payment,
+				context
+			);
 
 			// Prevent re-using the same trader more than once.
 			ensure!(self.consumed_xcm_hash.is_none(), Error::NotWithdrawable);
@@ -72,7 +78,12 @@ mod xcm_fee_asset {
 			let amount = WeightToFee::weight_to_fee(&weight);
 
 			let xcm_fee_asset_v3: MultiAsset = switch_pair.remote_fee.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}", switch_pair.remote_fee, e);
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}",
+					switch_pair.remote_fee,
+					e
+				);
 				Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
 			})?;
 
@@ -101,10 +112,20 @@ mod xcm_fee_asset {
 				return None;
 			};
 
-			let remote_asset_id_v3: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", switch_pair.remote_asset_id, e);
-				e
-			}).ok()?;
+			let remote_asset_id_v3: AssetId = switch_pair
+				.remote_asset_id
+				.clone()
+				.try_into()
+				.map_err(|e| {
+					log::error!(
+						target: LOG_TARGET,
+						"Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}",
+						switch_pair.remote_asset_id,
+						e
+					);
+					e
+				})
+				.ok()?;
 
 			let weight = weight.min(self.remaining_weight);
 			let amount = WeightToFee::weight_to_fee(&weight);
@@ -132,7 +153,15 @@ mod xcm_fee_asset {
 		I: 'static,
 	{
 		fn drop(&mut self) {
-			log::trace!(target: LOG_TARGET, "Drop with remaining {:?}", (self.consumed_xcm_hash, self.remaining_fungible_balance, self.remaining_weight));
+			log::trace!(
+				target: LOG_TARGET,
+				"Drop with remaining {:?}",
+				(
+					self.consumed_xcm_hash,
+					self.remaining_fungible_balance,
+					self.remaining_weight
+				)
+			);
 		}
 	}
 }
@@ -197,7 +226,13 @@ mod switch_pair_remote_asset {
 		}
 
 		fn buy_weight(&mut self, weight: Weight, payment: Assets, context: &XcmContext) -> Result<Assets, Error> {
-			log::info!(target: LOG_TARGET, "buy_weight {:?}, {:?}, {:?}", weight, payment, context);
+			log::info!(
+				target: LOG_TARGET,
+				"buy_weight {:?}, {:?}, {:?}",
+				weight,
+				payment,
+				context
+			);
 
 			// Prevent re-using the same trader more than once.
 			ensure!(self.consumed_xcm_hash.is_none(), Error::NotWithdrawable);
@@ -207,7 +242,12 @@ mod switch_pair_remote_asset {
 			let amount = WeightToFee::weight_to_fee(&weight);
 
 			let switch_pair_remote_asset_v3: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", switch_pair.remote_asset_id, e);
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}",
+					switch_pair.remote_asset_id,
+					e
+				);
 				Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
 			})?;
 
@@ -224,7 +264,12 @@ mod switch_pair_remote_asset {
 		}
 
 		fn refund_weight(&mut self, weight: Weight, context: &XcmContext) -> Option<MultiAsset> {
-			log::trace!(target: LOG_TARGET, "UsingComponents::refund_weight weight: {:?}, context: {:?}", weight, context);
+			log::trace!(
+				target: LOG_TARGET,
+				"UsingComponents::refund_weight weight: {:?}, context: {:?}",
+				weight,
+				context
+			);
 
 			// Ensure we refund in the same trader we took fees from.
 			if Some(context.message_id) != self.consumed_xcm_hash {
@@ -236,10 +281,20 @@ mod switch_pair_remote_asset {
 				return None;
 			};
 
-			let switch_pair_remote_asset_v3: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}", switch_pair.remote_asset_id, e);
-				Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
-			}).ok()?;
+			let switch_pair_remote_asset_v3: AssetId = switch_pair
+				.remote_asset_id
+				.clone()
+				.try_into()
+				.map_err(|e| {
+					log::error!(
+						target: LOG_TARGET,
+						"Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}",
+						switch_pair.remote_asset_id,
+						e
+					);
+					Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
+				})
+				.ok()?;
 
 			let weight = weight.min(self.remaining_weight);
 			let amount = WeightToFee::weight_to_fee(&weight);
@@ -251,7 +306,11 @@ mod switch_pair_remote_asset {
 			self.remaining_weight = self.remaining_weight.saturating_sub(weight);
 
 			if amount > 0 {
-				log::trace!(target: LOG_TARGET, "Refund amount {:?}", (switch_pair_remote_asset_v3, amount));
+				log::trace!(
+					target: LOG_TARGET,
+					"Refund amount {:?}",
+					(switch_pair_remote_asset_v3, amount)
+				);
 				Some((switch_pair_remote_asset_v3, amount).into())
 			} else {
 				log::trace!(target: LOG_TARGET, "No refund");
@@ -271,7 +330,16 @@ mod switch_pair_remote_asset {
 		FeeDestinationAccount: Get<T::AccountId>,
 	{
 		fn drop(&mut self) {
-			log::trace!(target: LOG_TARGET, "Drop with remaining {:?}", (self.consumed_xcm_hash, self.remaining_fungible_balance, self.remaining_weight, &self.switch_pair));
+			log::trace!(
+				target: LOG_TARGET,
+				"Drop with remaining {:?}",
+				(
+					self.consumed_xcm_hash,
+					self.remaining_fungible_balance,
+					self.remaining_weight,
+					&self.switch_pair
+				)
+			);
 
 			// Nothing to refund if this trader was not called or if the leftover balance is
 			// zero.
@@ -287,7 +355,7 @@ mod switch_pair_remote_asset {
 						&switch_pair.pool_account,
 						&FeeDestinationAccount::get(),
 						remaining_balance_as_local_currency,
-						Preservation::Expendable,
+						Preservation::Preserve,
 					).map_err(|e| {
 						log::error!(target: LOG_TARGET, "Failed to transfer unused balance {:?} from switch pair pool account {:?} to specified account {:?}", remaining_balance_as_local_currency, switch_pair.pool_account, FeeDestinationAccount::get());
 						e

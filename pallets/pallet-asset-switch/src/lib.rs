@@ -116,6 +116,7 @@ pub mod pallet {
 		/// A new switch pair is created.
 		SwitchPairCreated {
 			circulating_supply: u128,
+			min_remote_balance: u128,
 			pool_account: T::AccountId,
 			remote_asset_id: VersionedAssetId,
 			remote_asset_reserve_location: VersionedMultiLocation,
@@ -196,20 +197,24 @@ pub mod pallet {
 			remote_fee: Box<VersionedMultiAsset>,
 			total_issuance: u128,
 			circulating_supply: u128,
+			min_remote_asset_balance: u128,
 		) -> DispatchResult {
 			T::SwitchOrigin::ensure_origin(origin)?;
 
 			// 1. Verify switch pair has not already been set.
 			ensure!(!SwitchPair::<T, I>::exists(), Error::<T, I>::SwitchPairAlreadyExisting);
 
-			// 2. Verify that total issuance >= circulating supply.
-			ensure!(total_issuance >= circulating_supply, Error::<T, I>::InvalidInput);
+			// 2. Verify that total issuance >= circulating supply and that the amount of remote assets locked (total - circulating) is greater than the minimum amount required.
+			ensure!(
+				total_issuance >= circulating_supply.saturating_add(min_remote_asset_balance),
+				Error::<T, I>::InvalidInput
+			);
 
 			// 3. Verify the pool account has enough local assets to match the circulating
 			//    supply of eKILTs to cover for all potential remote -> local switches.
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
 			let pool_account_reducible_balance_as_u128: u128 =
-				T::LocalCurrency::reducible_balance(&pool_account, Preservation::Expendable, Fortitude::Polite).into();
+				T::LocalCurrency::reducible_balance(&pool_account, Preservation::Preserve, Fortitude::Polite).into();
 			ensure!(
 				pool_account_reducible_balance_as_u128 >= circulating_supply,
 				Error::<T, I>::PoolInitialLiquidityRequirement
@@ -221,6 +226,7 @@ pub mod pallet {
 				*remote_fee,
 				total_issuance,
 				circulating_supply,
+				min_remote_asset_balance,
 				pool_account,
 			);
 
@@ -239,10 +245,14 @@ pub mod pallet {
 			remote_fee: Box<VersionedMultiAsset>,
 			total_issuance: u128,
 			circulating_supply: u128,
+			min_remote_asset_balance: u128,
 		) -> DispatchResult {
 			ensure_root(origin)?;
 
-			ensure!(total_issuance >= circulating_supply, Error::<T, I>::InvalidInput);
+			ensure!(
+				total_issuance >= circulating_supply.saturating_add(min_remote_asset_balance),
+				Error::<T, I>::InvalidInput
+			);
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
 
 			Self::set_switch_pair_bypass_checks(
@@ -251,6 +261,7 @@ pub mod pallet {
 				*remote_fee,
 				total_issuance,
 				circulating_supply,
+				min_remote_asset_balance,
 				pool_account,
 			);
 
@@ -347,14 +358,20 @@ pub mod pallet {
 			//    having their balance go to zero.
 			T::LocalCurrency::can_withdraw(&submitter, local_asset_amount)
 				.into_result(true)
-				.map_err(|_| DispatchError::from(Error::<T, I>::UserSwitchBalance))?;
+				.map_err(|e| {
+					log::info!("Failed to withdraw balance from submitter with error {:?}", e);
+					DispatchError::from(Error::<T, I>::UserSwitchBalance)
+				})?;
 
-			// 4. Verify the local assets can be transferred to the switch pool account
+			// 4. Verify the local assets can be transferred to the switch pool account. This could fail if the pool's balance is `0` and the sent amount is less than ED.
 			T::LocalCurrency::can_deposit(&switch_pair.pool_account, local_asset_amount, Provenance::Extant)
 				.into_result()
-				.map_err(|_| DispatchError::from(Error::<T, I>::LocalPoolBalance))?;
+				.map_err(|e| {
+					log::info!("Failed to deposit amount into pool account with error {:?}", e);
+					DispatchError::from(Error::<T, I>::LocalPoolBalance)
+				})?;
 
-			// 5. Verify we have enough balance on the remote location to perform the
+			// 5. Verify we have enough balance (minus ED, already substracted from the stored balance info) on the remote location to perform the
 			//    transfer
 			let remote_asset_amount_as_u128 = local_asset_amount.into();
 			ensure!(
@@ -454,7 +471,8 @@ pub mod pallet {
 				&submitter,
 				&switch_pair.pool_account,
 				local_asset_amount,
-				Preservation::Preserve,
+				// We don't care if the account gets dusted, but it should not be killed.
+				Preservation::Protect,
 			)?;
 			if transferred_amount != local_asset_amount {
 				log::error!(
@@ -534,16 +552,19 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		remote_fee: VersionedMultiAsset,
 		total_issuance: u128,
 		circulating_supply: u128,
+		min_remote_balance: u128,
 		pool_account: T::AccountId,
 	) {
 		debug_assert!(
-			total_issuance >= circulating_supply,
-			"Provided total issuance smaller than circulating supply."
+			total_issuance >= circulating_supply.saturating_add(min_remote_balance),
+			"Provided total issuance smaller than circulating supply + minimum balance required."
 		);
 		let switch_pair_info = SwitchPairInfoOf::<T> {
 			pool_account: pool_account.clone(),
+			// We don't consider the minimum balance as part of the remote asset balance
+			// as those are funds we will never be allowed to touch under normal circumstances.
 			// We can do a simple subtraction since all checks are performed in calling functions.
-			remote_asset_balance: total_issuance - circulating_supply,
+			remote_asset_balance: total_issuance - circulating_supply - min_remote_balance,
 			remote_asset_id: remote_asset_id.clone(),
 			remote_fee: remote_fee.clone(),
 			remote_reserve_location: reserve_location.clone(),
@@ -554,6 +575,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 		Self::deposit_event(Event::<T, I>::SwitchPairCreated {
 			circulating_supply,
+			min_remote_balance,
 			pool_account,
 			remote_asset_reserve_location: reserve_location,
 			remote_asset_id,
