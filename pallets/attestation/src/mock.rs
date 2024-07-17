@@ -31,7 +31,7 @@ use sp_runtime::{traits::IdentifyAccount, DispatchError, MultiSigner};
 use sp_weights::Weight;
 
 use ctype::CtypeHashOf;
-use kilt_support::{mock::SubjectId, traits::StorageDepositCollector};
+use kilt_support::{mock::SubjectId, traits::StorageDepositCollector, Deposit};
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttestationDetailsOf,
@@ -82,7 +82,7 @@ where
 		authorization_id: None,
 		ctype_hash: ctype::mock::get_ctype_hash::<T>(true),
 		revoked: false,
-		deposit: kilt_support::Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: payer,
 			amount: deposit,
 		},
@@ -313,7 +313,7 @@ pub(crate) mod runtime {
 
 	parameter_types! {
 		pub const MaxDelegatedAttestations: u32 = 1000;
-		pub const Deposit: Balance = ATTESTATION_DEPOSIT;
+		pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
 	}
 
 	impl Config for Test {
@@ -323,7 +323,7 @@ pub(crate) mod runtime {
 		type WeightInfo = ();
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type Currency = Balances;
-		type Deposit = Deposit;
+		type Deposit = AttestationDeposit;
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;

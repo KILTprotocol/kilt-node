@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
@@ -33,7 +34,7 @@ pub struct AttestationDetails<CtypeHash, AttesterId, AuthorizationId, AccountId,
 	pub revoked: bool,
 	/// The deposit that was taken to incentivise fair use of the on chain
 	/// storage.
-	pub deposit: kilt_support::Deposit<AccountId, Balance>,
+	pub deposit: Deposit<AccountId, Balance>,
 }
 
 #[cfg(test)]
@@ -60,7 +61,7 @@ mod tests {
 		pub revoked: bool,
 		/// The deposit that was taken to incentivise fair use of the on chain
 		/// storage.
-		pub deposit: kilt_support::Deposit<AccountId, Balance>,
+		pub deposit: Deposit<AccountId, Balance>,
 	}
 
 	#[test]
@@ -70,7 +71,7 @@ mod tests {
 			attester: sr25519_did_from_public_key(&ALICE_SEED),
 			delegation_id: None,
 			revoked: true,
-			deposit: kilt_support::Deposit {
+			deposit: Deposit {
 				owner: ACCOUNT_00,
 				amount: ATTESTATION_DEPOSIT,
 			},
@@ -85,7 +86,7 @@ mod tests {
 				attester: sr25519_did_from_public_key(&ALICE_SEED),
 				authorization_id: None,
 				revoked: true,
-				deposit: kilt_support::Deposit {
+				deposit: Deposit {
 					owner: ACCOUNT_00,
 					amount: ATTESTATION_DEPOSIT,
 				},
