@@ -68,8 +68,6 @@ fn generate_genesis_state() -> serde_json::Value {
 		get_account_id_from_secret::<sr25519::Public>("Ferdie"),
 	];
 
-	let initial_authorities = vec![alice.clone(), bob.clone()];
-
 	let stakers = [alice.clone(), bob.clone()]
 		.into_iter()
 		.map(|(acc, _)| -> (AccountId, Option<AccountId>, u128) { (acc, None, (2 * MinCollatorStake::get())) })
@@ -81,7 +79,7 @@ fn generate_genesis_state() -> serde_json::Value {
 		.map(|acc| (acc, 1_000_000 * KILT))
 		.collect::<Vec<_>>();
 
-	let keys = initial_authorities
+	let keys = [alice.clone(), bob.clone()]
 		.into_iter()
 		.map(|(acc, aura)| (acc.clone(), acc, SessionKeys { aura }))
 		.collect::<Vec<_>>();
