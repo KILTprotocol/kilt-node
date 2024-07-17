@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use core::ops::Mul;
+
 use super::*;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::{
@@ -96,12 +98,7 @@ where
 	<T as Config>::Currency: Mutate<T::AccountId>,
 {
 	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
-		+ <T as Config>::BaseDeposit::get()
-		+ <T as Config>::BaseDeposit::get()
-		+ <T as Config>::BaseDeposit::get()
-		+ <T as Config>::BaseDeposit::get()
-		+ <T as Config>::BaseDeposit::get()
-		+ <T as Config>::BaseDeposit::get()
+		+ <T as Config>::BaseDeposit::get().mul(10u32.into())
 		+ <T as Config>::Fee::get();
 	<CurrencyOf<T> as Mutate<AccountIdOf<T>>>::set_balance(account, balance);
 }
