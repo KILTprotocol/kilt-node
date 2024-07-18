@@ -118,7 +118,6 @@ pub(crate) enum Subcommand {
 	PurgeChain(cumulus_client_cli::PurgeChainCmd),
 
 	/// Export the genesis state of the parachain.
-	#[command(alias = "export-genesis-state")]
 	ExportGenesisHead(cumulus_client_cli::ExportGenesisHeadCommand),
 
 	/// Export the genesis wasm of the parachain.
