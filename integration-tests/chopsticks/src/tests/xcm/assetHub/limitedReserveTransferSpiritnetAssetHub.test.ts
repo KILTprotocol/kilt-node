@@ -18,7 +18,9 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 	})
 
 	// Balance of the AH sovereign account before the transfer
-	const assetHubSovereignAccountBalance = await getFreeBalanceSpiritnet(AssetHubConfig.siblingSovereignAccount)
+	const assetHubSovereignAccountBalance = await getFreeBalanceSpiritnet(
+		AssetHubConfig.sovereignAccountOnSiblingChains
+	)
 
 	// check initial balance of Alice on Spiritnet
 	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect, initialBalanceKILT)
@@ -45,7 +47,7 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 	//	check balance. The sovereign account should hold one additional KILT.
 	await checkBalance(
 		getFreeBalanceSpiritnet,
-		AssetHubConfig.siblingSovereignAccount,
+		AssetHubConfig.sovereignAccountOnSiblingChains,
 		expect,
 		assetHubSovereignAccountBalance + KILT
 	)

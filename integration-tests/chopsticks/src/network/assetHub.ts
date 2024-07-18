@@ -57,7 +57,7 @@ export const KSMAssetLocation = {
 }
 
 // Sibling Sovereign Account
-export const siblingSovereignAccount = '4qXPdpimHh8TR24RSk994yVzxx4TLfvKj5i1qH5puvWmfAqy'
+export const sovereignAccountOnSiblingChains = '4qXPdpimHh8TR24RSk994yVzxx4TLfvKj5i1qH5puvWmfAqy'
 
 export async function getContext(): Promise<Config> {
 	const options = getSetupOptions({})
