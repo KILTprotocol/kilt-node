@@ -57,13 +57,21 @@ test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice
 	await createBlock(assetHubContext)
 
 	// MSG should still be send.
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender assetHub::xcmpQueue::[XcmpMessageSent]')
-	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender assetHub::polkadotXcm::[Sent,FeesPaid,Attempted]')
-	checkEvents(events, 'foreignAssets').toMatchSnapshot('sender assetHub::foreignAssets::[Transferred]')
+	await checkEvents(events, 'xcmpQueue').toMatchSnapshot(
+		`sender assetHub::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(KSMAsset)}`
+	)
+	await checkEvents(events, 'polkadotXcm').toMatchSnapshot(
+		`sender assetHub::polkadotXcm::[Sent,FeesPaid,Attempted] asset ${JSON.stringify(KSMAsset)} `
+	)
+	await checkEvents(events, 'foreignAssets').toMatchSnapshot(
+		`sender assetHub::foreignAssets::[Transferred] asset ${JSON.stringify(KSMAsset)}`
+	)
 
 	// ... But should fail on receiver side.
 	await createBlock(spiritnetContext)
 
 	// we expect to have the UntrustedReserveLocation error
-	await checkSystemEvents(spiritnetContext, 'xcmpQueue').toMatchSnapshot('receiver spiritnet::XcmpQueue::[Fail]')
+	await checkSystemEvents(spiritnetContext, 'xcmpQueue').toMatchSnapshot(
+		`receiver spiritnet::XcmpQueue::[Fail] asset ${JSON.stringify(KSMAsset)}`
+	)
 }, 20_000)
