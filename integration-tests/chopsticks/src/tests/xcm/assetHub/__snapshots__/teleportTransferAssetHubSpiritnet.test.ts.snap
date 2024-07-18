@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > Spiritnet xcmpQueue 1`] = `
+exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > receiver spiritnet::xcmpQueue::[Fail] asset {"V3":[{"id":{"Concrete":{"parents":2,"interior":{"X1":{"GlobalConsensus":"Kusama"}}}},"fun":{"Fungible":"10000000000"}}]} 1`] = `
 [
   {
     "data": {
@@ -18,7 +18,7 @@ exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > S
 ]
 `;
 
-exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > sender events Balances 1`] = `
+exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > sender assetHub::foreignAssets::[Burned] asset {"V3":[{"id":{"Concrete":{"parents":2,"interior":{"X1":{"GlobalConsensus":"Kusama"}}}},"fun":{"Fungible":"10000000000"}}]} 1`] = `
 [
   {
     "data": {
@@ -39,7 +39,7 @@ exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > s
 ]
 `;
 
-exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > sender events xcm pallet 1`] = `
+exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > sender assetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset {"V3":[{"id":{"Concrete":{"parents":2,"interior":{"X1":{"GlobalConsensus":"Kusama"}}}},"fun":{"Fungible":"10000000000"}}]} 1`] = `
 [
   {
     "data": {
@@ -180,7 +180,7 @@ exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > s
 ]
 `;
 
-exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > sender events xcm queue pallet 1`] = `
+exports[`Teleport Transfers from AH Account Alice -> Spiritnet Account Alice > sender assetHub::xcmpQueue::[XcmpMessageSent] asset {"V3":[{"id":{"Concrete":{"parents":2,"interior":{"X1":{"GlobalConsensus":"Kusama"}}}},"fun":{"Fungible":"10000000000"}}]} 1`] = `
 [
   {
     "data": {

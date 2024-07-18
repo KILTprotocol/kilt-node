@@ -28,7 +28,7 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 	const aliceAddress = hexAddress(keysAlice.address)
 	const assetHubDestination = { V3: getSiblingLocation(AssetHubConfig.paraId) }
 	const beneficiary = getAccountLocationV3(aliceAddress)
-	const kiltAsset = { V3: [getNativeAssetIdLocation(KILT)] }
+	const kiltAsset = { V3: [getNativeAssetIdLocation(KILT.toString())] }
 
 	const signedTx = spiritnetContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(assetHubDestination, beneficiary, kiltAsset, 0, 'Unlimited')
@@ -40,9 +40,15 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 	await createBlock(spiritnetContext)
 
 	// Check events sender
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('spiritnet::xcmpQueue::[XcmpMessageSent]')
-	checkEvents(events, 'polkadotXcm').toMatchSnapshot('spiritnet::polkadotXcm::[Attempted]')
-	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('spiritnet::balances::[Withdraw]')
+	await checkEvents(events, 'xcmpQueue').toMatchSnapshot(
+		`sender spiritnet::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(kiltAsset)}`
+	)
+	await checkEvents(events, 'polkadotXcm').toMatchSnapshot(
+		`sender spiritnet::polkadotXcm::[Attempted] asset ${JSON.stringify(kiltAsset)}`
+	)
+	await checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
+		`sender spiritnet::balances::[Withdraw] asset ${JSON.stringify(kiltAsset)}`
+	)
 
 	//	check balance. The sovereign account should hold one additional KILT.
 	await checkBalance(
@@ -56,6 +62,6 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 
 	// MSG processing will fail on AH.
 	await checkSystemEvents(assetHubContext, 'messageQueue').toMatchSnapshot(
-		'assetHub::messageQueue::[MessageProcessingFailed]'
+		`receiver assetHub::messageQueue::[Processed] asset ${JSON.stringify(kiltAsset)}`
 	)
 }, 20_000)
