@@ -57,13 +57,13 @@ test('Teleport Transfers from AH Account Alice -> Spiritnet Account Alice', asyn
 	await createBlock(assetHubContext)
 
 	// MSG should still be send.
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
-	checkEvents(events, 'foreignAssets').toMatchSnapshot('sender events Balances')
+	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender assetHub::xcmpQueue::[XcmpMessageSent]')
+	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender assetHub::polkadotXcm::[Attempted,FeesPaid,Sent]')
+	checkEvents(events, 'foreignAssets').toMatchSnapshot('sender assetHub::foreignAssets::[Burned]')
 
 	// ... But should fail on receiver side.
 	await createBlock(spiritnetContext)
 
 	// we expect to have the UntrustedTeleportLocation error
-	await checkSystemEvents(spiritnetContext, 'xcmpQueue').toMatchSnapshot('Spiritnet xcmpQueue')
+	await checkSystemEvents(spiritnetContext, 'xcmpQueue').toMatchSnapshot('receiver spiritnet::xcmpQueue::[Fail]')
 }, 20_000)

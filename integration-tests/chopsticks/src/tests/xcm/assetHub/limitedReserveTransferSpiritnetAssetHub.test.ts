@@ -14,7 +14,7 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 	// Assign alice some KILT tokens
 	await setStorage(spiritnetContext, {
 		...SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-		...SpiritnetConfig.setSafeXcmVersion3(),
+		...SpiritnetConfig.getSafeXcmVersion3(),
 	})
 
 	// Balance of the AH sovereign account before the transfer
@@ -38,9 +38,9 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 	await createBlock(spiritnetContext)
 
 	// Check events sender
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
-	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
+	checkEvents(events, 'xcmpQueue').toMatchSnapshot('spiritnet::xcmpQueue::[XcmpMessageSent]')
+	checkEvents(events, 'polkadotXcm').toMatchSnapshot('spiritnet::polkadotXcm::[Attempted]')
+	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('spiritnet::balances::[Withdraw]')
 
 	//	check balance. The sovereign account should hold one additional KILT.
 	await checkBalance(
@@ -53,5 +53,7 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 	await createBlock(assetHubContext)
 
 	// MSG processing will fail on AH.
-	await checkSystemEvents(assetHubContext, 'messageQueue').toMatchSnapshot('AH message queue')
+	await checkSystemEvents(assetHubContext, 'messageQueue').toMatchSnapshot(
+		'assetHub::messageQueue::[MessageProcessingFailed]'
+	)
 }, 20_000)
