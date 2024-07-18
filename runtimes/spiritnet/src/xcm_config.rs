@@ -251,6 +251,10 @@ impl cumulus_pallet_xcm::Config for Runtime {
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 }
 
+parameter_types! {
+	pub const MaxInboundSuspended: u32 = 1_000;
+}
+
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ChannelInfo = ParachainSystem;
@@ -258,9 +262,8 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type ControllerOrigin = EnsureRoot<AccountId>;
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
 	type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
-	// TODO: Most chains use `NoPriceForMessageDelivery`, merged in https://github.com/paritytech/polkadot-sdk/pull/1234.
 	type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
-	type MaxInboundSuspended = ();
+	type MaxInboundSuspended = MaxInboundSuspended;
 	type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
 }
 
