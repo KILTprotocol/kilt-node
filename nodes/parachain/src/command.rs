@@ -18,54 +18,16 @@
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
-use parity_scale_codec::Encode;
 use runtime_common::Block;
-use sc_cli::{ChainSpec, SubstrateCli};
+use sc_cli::SubstrateCli;
 use sc_executor::NativeExecutionDispatch;
-use sp_core::hexdisplay::HexDisplay;
-use sp_runtime::{
-	traits::{AccountIdConversion, Block as BlockT, Hash as HashT, Header as HeaderT, Zero},
-	StateVersion,
-};
+use sp_runtime::traits::AccountIdConversion;
 
 use crate::{
 	chain_spec::{self, ParachainRuntime},
 	cli::{Cli, RelayChainCli, Subcommand},
 	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
 };
-
-pub fn generate_genesis_block<Block: BlockT>(
-	chain_spec: &dyn ChainSpec,
-	genesis_state_version: StateVersion,
-) -> Result<Block, String> {
-	let storage = chain_spec.build_storage()?;
-
-	let child_roots = storage.children_default.iter().map(|(sk, child_content)| {
-		let state_root = <<<Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(
-			child_content.data.clone().into_iter().collect(),
-			genesis_state_version,
-		);
-		(sk.clone(), state_root.encode())
-	});
-	let state_root = <<<Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(
-		storage.top.clone().into_iter().chain(child_roots).collect(),
-		genesis_state_version,
-	);
-
-	let extrinsics_root =
-		<<<Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(Vec::new(), genesis_state_version);
-
-	Ok(Block::new(
-		<<Block as BlockT>::Header as HeaderT>::new(
-			Zero::zero(),
-			extrinsics_root,
-			state_root,
-			Default::default(),
-			Default::default(),
-		),
-		Default::default(),
-	))
-}
 
 // Returns the provided (`--chain`, <selected_runtime>) given only a reference
 // to the global `Cli` object.
@@ -310,18 +272,12 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 				let (_, runtime) = get_selected_chainspec(&cli.run.base.shared_params)?;
 
-				let state_version = runtime.native_version().state_version();
-				let block: Block =
-					generate_genesis_block(&*config.chain_spec, state_version).map_err(|e| format!("{:?}", e))?;
-				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
-
 				let tokio_handle = config.tokio_handle.clone();
 				let polkadot_config = SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
 					.map_err(|err| format!("Relay chain argument error: {}", err))?;
 
 				info!("Parachain id: {:?}", id);
 				info!("Parachain Account: {}", parachain_account);
-				info!("Parachain genesis state: {}", genesis_state);
 				info!(
 					"Is collating: {}",
 					if config.role.is_authority() { "yes" } else { "no" }

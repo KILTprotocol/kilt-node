@@ -21,7 +21,6 @@
 use std::str::FromStr;
 
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
-use sc_cli::RuntimeVersion;
 use serde::{Deserialize, Serialize};
 
 pub(crate) use utils::load_spec;
@@ -92,15 +91,6 @@ impl std::fmt::Display for SpiritnetRuntime {
 pub(crate) enum ParachainRuntime {
 	Peregrine(PeregrineRuntime),
 	Spiritnet(SpiritnetRuntime),
-}
-
-impl ParachainRuntime {
-	pub(crate) fn native_version(&self) -> &'static RuntimeVersion {
-		match self {
-			Self::Peregrine(_) => &peregrine_runtime::VERSION,
-			Self::Spiritnet(_) => &spiritnet_runtime::VERSION,
-		}
-	}
 }
 
 impl std::fmt::Display for ParachainRuntime {
