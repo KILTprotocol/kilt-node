@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use core::ops::Mul;
-
 use super::*;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::{
@@ -32,6 +30,7 @@ use sp_runtime::{
 	traits::{IdentifyAccount, Zero},
 	AccountId32, MultiSigner,
 };
+use sp_std::ops::Mul;
 use sp_std::{convert::TryInto, vec::Vec};
 
 use kilt_support::{signature::VerifySignature, Deposit};
