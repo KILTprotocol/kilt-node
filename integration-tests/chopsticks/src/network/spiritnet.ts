@@ -26,7 +26,7 @@ export function setGovernance(addr: string[]) {
 	}
 }
 
-export function getSafeXcmVersion3() {
+export function XcmPalletSafeVersion3StorageEntry() {
 	return {
 		polkadotXcm: {
 			safeXcmVersion: 3,

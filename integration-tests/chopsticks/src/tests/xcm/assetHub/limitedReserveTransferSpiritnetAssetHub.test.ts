@@ -14,7 +14,7 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 	// Assign alice some KILT tokens
 	await setStorage(spiritnetContext, {
 		...SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-		...SpiritnetConfig.getSafeXcmVersion3(),
+		...SpiritnetConfig.XcmPalletSafeVersion3StorageEntry(),
 	})
 
 	// Balance of the AH sovereign account before the transfer

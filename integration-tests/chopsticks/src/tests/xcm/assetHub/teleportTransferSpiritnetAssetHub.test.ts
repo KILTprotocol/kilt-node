@@ -11,7 +11,7 @@ test('Teleport assets from Spiritnet Account Alice -> AH Account Alice', async (
 	// Assign alice some KILT tokens
 	await setStorage(spiritnetContext, {
 		...SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-		...SpiritnetConfig.getSafeXcmVersion3(),
+		...SpiritnetConfig.XcmPalletSafeVersion3StorageEntry(),
 	})
 
 	// check initial balance of Alice on Spiritnet
