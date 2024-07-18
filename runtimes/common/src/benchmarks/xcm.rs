@@ -21,18 +21,18 @@ use frame_support::parameter_types;
 use polkadot_runtime_common::xcm_sender::{NoPriceForMessageDelivery, ToParachainDeliveryHelper};
 use xcm::v4::prelude::*;
 
-use crate::constants::KILT;
+use crate::constants::EXISTENTIAL_DEPOSIT;
 
 parameter_types! {
 	pub const RandomParaId: ParaId = ParaId::new(42424242);
 	pub ExistentialDepositAsset: Option<Asset> = Some((
 		Here,
-		KILT
+		EXISTENTIAL_DEPOSIT
 	).into());
 
 	pub ParachainLocation: Location = ParentThen(Parachain(RandomParaId::get().into()).into()).into();
 	pub NativeAsset: Asset = Asset {
-					fun: Fungible(KILT),
+					fun: Fungible(EXISTENTIAL_DEPOSIT),
 					id: AssetId(Here.into())
 				};
 }
