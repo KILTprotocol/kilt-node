@@ -204,8 +204,8 @@ impl From<NewSwitchPairInfo> for SwitchPairInfoOf<MockRuntime> {
 			- new_switch_pair_info.circulating_supply
 			- new_switch_pair_info.min_remote_balance;
 		Self {
-			remote_asset_balance,
-			pool_account: new_switch_pair_info.pool_account,
+			remote_asset_sovereign_balance: remote_asset_balance,
+			remote_asset_sovereign_total_balanceinfo.pool_account,
 			remote_asset_id: new_switch_pair_info.remote_asset_id,
 			remote_fee: new_switch_pair_info.remote_fee,
 			remote_reserve_location: new_switch_pair_info.remote_reserve_location,

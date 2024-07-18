@@ -367,8 +367,8 @@ mod switch_pair_remote_asset {
 							log::error!(target: LOG_TARGET, "Stored switch pair should not be None but it is.");
 							return;
 						};
-						entry.remote_asset_balance = entry
-							.remote_asset_balance
+						entry.remote_asset_sovereign_total_balance = entry
+							.remote_asset_sovereign_total_balance
 							.saturating_add(self.remaining_fungible_balance);
 					});
 				}

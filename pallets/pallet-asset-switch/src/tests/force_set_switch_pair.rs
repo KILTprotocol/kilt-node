@@ -54,7 +54,7 @@ fn successful() {
 			let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
 				pool_account: pool_account_address.clone(),
 				// Unit balance since we had to leave ED on this chain and no min balance requirement (ED) is set for the remote asset.
-				remote_asset_balance: 1,
+				remote_asset_sovereign_total_balance: 1,
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 				remote_fee: XCM_ASSET_FEE.into(),
 				remote_reserve_location: ASSET_HUB_LOCATION.into(),
@@ -64,7 +64,7 @@ fn successful() {
 			assert_supply_invariant(
 				u64::MAX,
 				u64::MAX - 1,
-				expected_switch_pair.remote_asset_balance,
+				expected_switch_pair.remote_asset_sovereign_total_balance,
 				&pool_account_address,
 			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
@@ -95,7 +95,7 @@ fn successful() {
 		let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account_address.clone(),
 			// Max balance since all circulating supply is controlled by us.
-			remote_asset_balance: u64::MAX as u128,
+			remote_asset_sovereign_total_balance: u64::MAX as u128,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 			remote_fee: XCM_ASSET_FEE.into(),
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
@@ -105,7 +105,7 @@ fn successful() {
 		assert_supply_invariant(
 			u64::MAX,
 			0u128,
-			expected_switch_pair.remote_asset_balance,
+			expected_switch_pair.remote_asset_sovereign_total_balance,
 			&pool_account_address,
 		);
 		assert!(System::events().into_iter().map(|e| e.event).any(|e| e
@@ -243,7 +243,7 @@ fn successful_overwrites_existing_pool() {
 			let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
 				pool_account: pool_account_address.clone(),
 				// Remote asset balance updates with the new value.
-				remote_asset_balance: 50_000,
+				remote_asset_sovereign_total_balance: 50_000,
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 				remote_fee: XCM_ASSET_FEE.into(),
 				remote_reserve_location: ASSET_HUB_LOCATION.into(),
@@ -322,7 +322,7 @@ fn successful_on_not_enough_funds_on_pool_balance() {
 			let switch_pair = SwitchPair::<MockRuntime>::get();
 			let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
 				pool_account: pool_account_address.clone(),
-				remote_asset_balance: 0,
+				remote_asset_sovereign_total_balance: 0,
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 				remote_fee: XCM_ASSET_FEE.into(),
 				remote_reserve_location: ASSET_HUB_LOCATION.into(),
@@ -358,7 +358,7 @@ fn successful_on_not_enough_funds_on_pool_balance() {
 			let switch_pair = SwitchPair::<MockRuntime>::get();
 			let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
 				pool_account: pool_account_address.clone(),
-				remote_asset_balance: 0,
+				remote_asset_sovereign_total_balance: 0,
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 				remote_fee: XCM_ASSET_FEE.into(),
 				remote_reserve_location: ASSET_HUB_LOCATION.into(),
@@ -394,7 +394,7 @@ fn successful_on_not_enough_funds_on_pool_balance() {
 			let switch_pair = SwitchPair::<MockRuntime>::get();
 			let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
 				pool_account: pool_account_address.clone(),
-				remote_asset_balance: 0,
+				remote_asset_sovereign_total_balance: 0,
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
 				remote_fee: XCM_ASSET_FEE.into(),
 				remote_reserve_location: ASSET_HUB_LOCATION.into(),

@@ -30,6 +30,9 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "try-runtime")]
+mod try_runtime;
+
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 use frame_support::traits::PalletInfoAccess;
 use parity_scale_codec::{Decode, Encode};
@@ -109,6 +112,14 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T, I = ()>(_);
+
+	#[pallet::hooks]
+	impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+			crate::try_runtime::try_state(n)
+		}
+	}
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -197,16 +208,18 @@ pub mod pallet {
 			remote_fee: Box<VersionedMultiAsset>,
 			total_issuance: u128,
 			circulating_supply: u128,
-			min_remote_asset_balance: u128,
+			remote_asset_ed: u128,
 		) -> DispatchResult {
 			T::SwitchOrigin::ensure_origin(origin)?;
 
 			// 1. Verify switch pair has not already been set.
 			ensure!(!SwitchPair::<T, I>::exists(), Error::<T, I>::SwitchPairAlreadyExisting);
 
-			// 2. Verify that total issuance >= circulating supply and that the amount of remote assets locked (total - circulating) is greater than the minimum amount required.
+			// 2. Verify that total issuance >= circulating supply and that the amount of
+			//    remote assets locked (total - circulating) is greater than the minimum
+			//    amount required.
 			ensure!(
-				total_issuance >= circulating_supply.saturating_add(min_remote_asset_balance),
+				total_issuance >= circulating_supply.saturating_add(remote_asset_ed),
 				Error::<T, I>::InvalidInput
 			);
 
@@ -226,7 +239,7 @@ pub mod pallet {
 				*remote_fee,
 				total_issuance,
 				circulating_supply,
-				min_remote_asset_balance,
+				remote_asset_ed,
 				pool_account,
 			);
 
@@ -363,7 +376,9 @@ pub mod pallet {
 					DispatchError::from(Error::<T, I>::UserSwitchBalance)
 				})?;
 
-			// 4. Verify the local assets can be transferred to the switch pool account. This could fail if the pool's balance is `0` and the sent amount is less than ED.
+			// 4. Verify the local assets can be transferred to the switch pool account.
+			//    This could fail if the pool's balance is `0` and the sent amount is less
+			//    than ED.
 			T::LocalCurrency::can_deposit(&switch_pair.pool_account, local_asset_amount, Provenance::Extant)
 				.into_result()
 				.map_err(|e| {
@@ -371,11 +386,11 @@ pub mod pallet {
 					DispatchError::from(Error::<T, I>::LocalPoolBalance)
 				})?;
 
-			// 5. Verify we have enough balance (minus ED, already substracted from the stored balance info) on the remote location to perform the
-			//    transfer
+			// 5. Verify we have enough balance (minus ED, already substracted from the
+			//    stored balance info) on the remote location to perform the transfer
 			let remote_asset_amount_as_u128 = local_asset_amount.into();
 			ensure!(
-				switch_pair.remote_asset_balance >= remote_asset_amount_as_u128,
+				switch_pair.remote_asset_sovereign_total_balance >= remote_asset_amount_as_u128,
 				Error::<T, I>::Liquidity
 			);
 
@@ -516,7 +531,8 @@ pub mod pallet {
 			// 11. Update remote asset balance
 			SwitchPair::<T, I>::try_mutate(|entry| {
 				let Some(SwitchPairInfoOf::<T> {
-					remote_asset_balance, ..
+					remote_asset_sovereign_total_balance: remote_asset_balance,
+					..
 				}) = entry.as_mut()
 				else {
 					log::error!(target: LOG_TARGET, "Failed to borrow stored switch pair info as mut.");
@@ -552,20 +568,21 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		remote_fee: VersionedMultiAsset,
 		total_issuance: u128,
 		circulating_supply: u128,
-		min_remote_balance: u128,
+		remote_asset_ed: u128,
 		pool_account: T::AccountId,
 	) {
 		debug_assert!(
-			total_issuance >= circulating_supply.saturating_add(min_remote_balance),
+			total_issuance >= circulating_supply.saturating_add(remote_asset_ed),
 			"Provided total issuance smaller than circulating supply + minimum balance required."
 		);
 		let switch_pair_info = SwitchPairInfoOf::<T> {
 			pool_account: pool_account.clone(),
 			// We don't consider the minimum balance as part of the remote asset balance
 			// as those are funds we will never be allowed to touch under normal circumstances.
-			// In case the remote governance updates this value, we can batch an `unset_switch_pair` with a new `set_switch_pair` with the new value and the available remote balance will be re-calculated accordingly.
+			// In case the remote governance updates this value, we can batch an `unset_switch_pair` with a new
+			// `set_switch_pair` with the new value and the available remote balance will be re-calculated accordingly.
 			// We can do a simple subtraction since all checks are performed in calling functions.
-			remote_asset_balance: total_issuance - circulating_supply - min_remote_balance,
+			remote_asset_sovereign_total_balance: total_issuance - circulating_supply - remote_asset_ed,
 			remote_asset_id: remote_asset_id.clone(),
 			remote_fee: remote_fee.clone(),
 			remote_reserve_location: reserve_location.clone(),
@@ -576,7 +593,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 		Self::deposit_event(Event::<T, I>::SwitchPairCreated {
 			circulating_supply,
-			min_remote_balance,
+			min_remote_balance: remote_asset_ed,
 			pool_account,
 			remote_asset_reserve_location: reserve_location,
 			remote_asset_id,

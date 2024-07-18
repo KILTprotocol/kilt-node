@@ -27,11 +27,16 @@ pub struct SwitchPairInfo<AccountId> {
 	/// The address that will hold the local tokens locked in return for the
 	/// remote asset.
 	pub pool_account: AccountId,
-	/// The balance of the remote (fungible) asset for the chain sovereign
-	/// account on the configured `remote_reserve_location`.
-	pub remote_asset_balance: u128,
+	/// The circulating supply, i.e., the total supply - required EDs for both
+	/// local and remote assets - supply controlled by the chain on the remote
+	/// reserve location.
+	pub remote_asset_circulating_supply: u128,
 	/// The ID of the remote asset to switch 1:1 with the local token.
 	pub remote_asset_id: VersionedAssetId,
+	/// The total supply of the remote asset. This is assumed to never change.
+	/// If it does, the current pool must be manually updated to reflect the
+	/// changes.
+	pub remote_asset_total_supply: u128,
 	/// The assets to take from the user's balance on this chain to pay for XCM
 	/// execution fees on the reserve location.
 	pub remote_fee: VersionedMultiAsset,
@@ -39,7 +44,18 @@ pub struct SwitchPairInfo<AccountId> {
 	pub remote_reserve_location: VersionedMultiLocation,
 	/// The status of the switch pair.
 	pub status: SwitchPairStatus,
+
+	/// The existential deposit (i.e., minimum balance to hold) of the remote
+	/// asset.
+	remote_asset_ed: u128,
+	/// The balance of the remote (fungible) asset for the chain sovereign
+	/// account on the configured `remote_reserve_location`. This includes the
+	/// ED for the remote asset, as specified by the `remote_asset_ed` property.
+	remote_asset_sovereign_total_balance: u128,
 }
+
+// TODO: Add a try_from with the input struct only containing few things, and
+// hide most of the properties, exposing them with functions to avoid confusion.
 
 /// All statues a switch pool can be in at any given time.
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone, Default)]
@@ -54,5 +70,13 @@ pub enum SwitchPairStatus {
 impl<AccountId> SwitchPairInfo<AccountId> {
 	pub(crate) fn can_switch(&self) -> bool {
 		matches!(self.status, SwitchPairStatus::Running)
+	}
+
+	/// Returns the balance that the chain effectively has available for swaps
+	/// on destination. This keeps into account the ED of the remote asset on
+	/// the remote reserve location.
+	pub(crate) fn reducible_remote_balance(&self) -> u128 {
+		self.remote_asset_sovereign_total_balance
+			.saturating_sub(self.remote_asset_ed)
 	}
 }

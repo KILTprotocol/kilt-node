@@ -99,19 +99,19 @@ where
 		})?;
 
 		// 6. Increase the balance of the remote asset
-		let new_remote_balance =
-			switch_pair
-				.remote_asset_balance
-				.checked_add(fungible_amount)
-				.ok_or(Error::FailedToTransactAsset(
-					"Failed to transfer assets from pool account",
-				))?;
+		let new_remote_balance = switch_pair
+			.remote_asset_sovereign_balance
+			.checked_add(fungible_amount)
+			.ok_or(Error::FailedToTransactAsset(
+				"Failed to transfer assets from pool account",
+			)remote_asset_sovereign_total_balance
 		SwitchPair::<T, I>::try_mutate(|entry| {
 			let SwitchPairInfoOf::<T> {
-				remote_asset_balance, ..
+				remote_asset_sovereign_balance: remote_asset_balance,
+				..
 			} = entry
 				.as_mut()
-				.ok_or(Error::FailedToTransactAsset("SwitchPair should not be None."))?;
+				remote_asset_sovereign_total_balanceAsset("SwitchPair should not be None."))?;
 			*remote_asset_balance = new_remote_balance;
 			Ok::<_, Error>(())
 		})?;
