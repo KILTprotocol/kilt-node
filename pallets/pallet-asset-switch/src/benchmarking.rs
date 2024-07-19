@@ -38,9 +38,9 @@ impl BenchmarkHelper for () {
 	}
 }
 
-#[frame_benchmarking::v2::instance_benchmarks(where LocalCurrencyBalanceOf<T, I>: Into<u128>)]
+#[instance_benchmarks(where LocalCurrencyBalanceOf<T, I>: Into<u128>)]
 mod benchmarks {
-
+	use frame_benchmarking::v2::instance_benchmarks;
 	use frame_support::traits::{
 		fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
 		EnsureOrigin,
