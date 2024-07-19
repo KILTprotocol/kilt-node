@@ -30,7 +30,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "try-runtime")]
+#[cfg(any(feature = "try-runtime", test))]
 mod try_runtime;
 
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};

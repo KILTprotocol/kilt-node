@@ -263,7 +263,6 @@ impl ExtBuilder {
 		let mut ext = self.build();
 		ext.execute_with(|| {
 			run();
-			#[cfg(feature = "try-runtime")]
 			crate::try_runtime::try_state::<MockRuntime, _>(System::block_number()).unwrap();
 		});
 	}
