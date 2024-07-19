@@ -47,7 +47,7 @@ pub use crate::pallet::*;
 
 const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 
-#[frame_support::pallet(dev_mode)]
+#[frame_support::pallet]
 pub mod pallet {
 	use crate::{
 		switch::{SwitchPairInfo, SwitchPairStatus},
