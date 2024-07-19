@@ -21,25 +21,23 @@ use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
 use crate::{
-	mock::{
-		ExtBuilder, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
-	},
-	Event, Pallet, SwitchPair,
+	mock::{ExtBuilder, MockRuntime, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
+	Event, NewSwitchPairInfoOf, Pallet, SwitchPair,
 };
 
 #[test]
 fn successful() {
 	// Deletes and generates an event if there is a pool
 	ExtBuilder::default()
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
-			min_remote_balance: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: [0u8; 32].into(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 1_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: Default::default(),
-			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {

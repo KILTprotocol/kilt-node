@@ -18,15 +18,16 @@
 
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
-use sp_runtime::DispatchError;
+use sp_runtime::{
+	traits::{One, Zero},
+	DispatchError,
+};
 
 use crate::{
-	mock::{
-		ExtBuilder, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
-	},
+	mock::{ExtBuilder, MockRuntime, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
 	switch::SwitchPairStatus,
 	tests::assert_supply_invariant,
-	Error, Event, Pallet, SwitchPair, SwitchPairInfoOf,
+	Error, Event, NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf,
 };
 
 #[test]
@@ -39,86 +40,96 @@ fn successful() {
 		.execute_with(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
-				Box::new(ASSET_HUB_LOCATION.into()),
-				Box::new(REMOTE_ERC20_ASSET_ID.into()),
-				Box::new(XCM_ASSET_FEE.into()),
 				u64::MAX as u128,
+				Box::new(REMOTE_ERC20_ASSET_ID.into()),
 				1_000,
+				Box::new(ASSET_HUB_LOCATION.into()),
 				0,
+				Box::new(XCM_ASSET_FEE.into()),
 			));
 
 			let switch_pair = SwitchPair::<MockRuntime>::get();
-			let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
-				pool_account: pool_account_address.clone(),
-				// Must match total supply - circulating supply
-				remote_asset_sovereign_total_balance: u64::MAX as u128 - 1_000,
-				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-				remote_fee: XCM_ASSET_FEE.into(),
-				remote_reserve_location: ASSET_HUB_LOCATION.into(),
-				status: SwitchPairStatus::Paused,
-			};
+			let expected_switch_pair =
+				SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(NewSwitchPairInfoOf::<MockRuntime> {
+					pool_account: pool_account_address.clone(),
+					remote_asset_circulating_supply: 1_000,
+					remote_asset_ed: 0,
+					remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+					remote_asset_total_supply: u64::MAX as u128,
+					remote_reserve_location: ASSET_HUB_LOCATION.into(),
+					remote_xcm_fee: XCM_ASSET_FEE.into(),
+					status: SwitchPairStatus::Paused,
+				});
 			assert_eq!(switch_pair, Some(expected_switch_pair.clone()));
+			assert_eq!(
+				switch_pair.unwrap().reducible_remote_balance(),
+				(u64::MAX - 1_000) as u128
+			);
 			assert_supply_invariant(
 				u64::MAX,
 				1_000u128,
-				expected_switch_pair.remote_asset_sovereign_total_balance,
+				expected_switch_pair.reducible_remote_balance(),
 				&pool_account_address,
 			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
-					circulating_supply: 1_000,
-					min_remote_balance: 0,
 					pool_account: pool_account_address.clone(),
+					remote_asset_circulating_supply: 1_000,
+					remote_asset_ed: 0,
+					remote_asset_total_supply: u64::MAX as u128,
 					remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-					remote_asset_reserve_location: ASSET_HUB_LOCATION.into(),
-					remote_xcm_fee: Box::new(XCM_ASSET_FEE.into()),
-					total_issuance: u64::MAX as u128,
+					remote_reserve_location: ASSET_HUB_LOCATION.into(),
+					remote_xcm_fee: Box::new(XCM_ASSET_FEE.into())
 				}
 				.into()));
 		});
-	// Case where all issuance is circulating supply requires the same balance (+ED) for
-	// the pool account
+	// Case where all issuance is circulating supply requires the same balance (+ED)
+	// for the pool account
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
-				Box::new(ASSET_HUB_LOCATION.into()),
-				Box::new(REMOTE_ERC20_ASSET_ID.into()),
-				Box::new(XCM_ASSET_FEE.into()),
 				u64::MAX as u128,
-				// Need to leave 1 on this chain for ED, so `MAX - 1` can at most be exchanged back.
+				Box::new(REMOTE_ERC20_ASSET_ID.into()),
+				// Need to leave 1 on this chain for ED, so `MAX - 1` can at most be exchanged back (and transferred
+				// out from the pool account).
 				(u64::MAX - 1) as u128,
+				Box::new(ASSET_HUB_LOCATION.into()),
 				0,
+				Box::new(XCM_ASSET_FEE.into()),
 			));
 
 			let switch_pair = SwitchPair::<MockRuntime>::get();
-			let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
-				pool_account: pool_account_address.clone(),
-				// Unit balance since we had to leave ED on this chain
-				remote_asset_sovereign_total_balance: 1,
-				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-				remote_fee: XCM_ASSET_FEE.into(),
-				remote_reserve_location: ASSET_HUB_LOCATION.into(),
-				status: SwitchPairStatus::Paused,
-			};
+			let expected_switch_pair =
+				SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(NewSwitchPairInfoOf::<MockRuntime> {
+					pool_account: pool_account_address.clone(),
+					remote_asset_circulating_supply: (u64::MAX - 1) as u128,
+					remote_asset_ed: 0,
+					remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+					remote_asset_total_supply: u64::MAX as u128,
+					remote_reserve_location: ASSET_HUB_LOCATION.into(),
+					remote_xcm_fee: XCM_ASSET_FEE.into(),
+					status: SwitchPairStatus::Paused,
+				});
 			assert_eq!(switch_pair, Some(expected_switch_pair.clone()));
+			assert!(switch_pair.unwrap().reducible_remote_balance().is_one());
 			assert_supply_invariant(
 				u64::MAX,
 				u64::MAX - 1,
-				expected_switch_pair.remote_asset_sovereign_total_balance,
+				expected_switch_pair.reducible_remote_balance(),
 				&pool_account_address,
 			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
-					circulating_supply: (u64::MAX - 1) as u128,
-					min_remote_balance: 0,
 					pool_account: pool_account_address.clone(),
+					remote_asset_circulating_supply: (u64::MAX - 1) as u128,
+					remote_asset_ed: 0,
+					remote_asset_total_supply: u64::MAX as u128,
 					remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-					remote_asset_reserve_location: ASSET_HUB_LOCATION.into(),
-					remote_xcm_fee: Box::new(XCM_ASSET_FEE.into()),
-					total_issuance: u64::MAX as u128,
+					remote_reserve_location: ASSET_HUB_LOCATION.into(),
+					remote_xcm_fee: Box::new(XCM_ASSET_FEE.into())
 				}
 				.into()));
 		});
@@ -126,130 +137,142 @@ fn successful() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 			RawOrigin::Root.into(),
-			Box::new(ASSET_HUB_LOCATION.into()),
-			Box::new(REMOTE_ERC20_ASSET_ID.into()),
-			Box::new(XCM_ASSET_FEE.into()),
 			u64::MAX as u128,
+			Box::new(REMOTE_ERC20_ASSET_ID.into()),
 			0,
+			Box::new(ASSET_HUB_LOCATION.into()),
 			0,
+			Box::new(XCM_ASSET_FEE.into()),
 		));
 
 		let switch_pair = SwitchPair::<MockRuntime>::get();
-		let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
-			pool_account: pool_account_address.clone(),
-			// Max balance since all circulating supply is controlled by us and we used `0` as the min balance on the remote chain.
-			remote_asset_sovereign_total_balance: u64::MAX as u128,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwitchPairStatus::Paused,
-		};
+		let expected_switch_pair =
+			SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(NewSwitchPairInfoOf::<MockRuntime> {
+				pool_account: pool_account_address.clone(),
+				remote_asset_circulating_supply: 0,
+				remote_asset_ed: 0,
+				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+				remote_asset_total_supply: u64::MAX as u128,
+				remote_reserve_location: ASSET_HUB_LOCATION.into(),
+				remote_xcm_fee: XCM_ASSET_FEE.into(),
+				status: SwitchPairStatus::Paused,
+			});
 		assert_eq!(switch_pair, Some(expected_switch_pair.clone()));
+		assert_eq!(switch_pair.unwrap().reducible_remote_balance(), u64::MAX as u128);
 		assert_supply_invariant(
 			u64::MAX,
 			0u128,
-			expected_switch_pair.remote_asset_sovereign_total_balance,
+			expected_switch_pair.reducible_remote_balance(),
 			&pool_account_address,
 		);
 		assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 			== Event::<MockRuntime>::SwitchPairCreated {
-				circulating_supply: 0,
-				min_remote_balance: 0,
 				pool_account: pool_account_address.clone(),
+				remote_asset_circulating_supply: 0,
+				remote_asset_ed: 0,
+				remote_asset_total_supply: u64::MAX as u128,
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-				remote_asset_reserve_location: ASSET_HUB_LOCATION.into(),
-				remote_xcm_fee: Box::new(XCM_ASSET_FEE.into()),
-				total_issuance: u64::MAX as u128,
+				remote_reserve_location: ASSET_HUB_LOCATION.into(),
+				remote_xcm_fee: Box::new(XCM_ASSET_FEE.into())
 			}
 			.into()));
 	});
-	// Case where all issuance is circulating supply and there's a min balance >= `0` on the remote chain requires the same balance (+ED) for
-	// the pool account, and the remote balance is calculated accordingly.
+	// Case where all issuance is circulating supply and there's a min balance >=
+	// `0` on the remote chain requires the same balance (+ED) for the pool account,
+	// and the remote balance is calculated accordingly.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
-				Box::new(ASSET_HUB_LOCATION.into()),
-				Box::new(REMOTE_ERC20_ASSET_ID.into()),
-				Box::new(XCM_ASSET_FEE.into()),
 				u64::MAX as u128,
-				// Need to leave 1 on this chain for ED, so `MAX - 1` can at most be exchanged back (and transferred out from the pool account).
+				Box::new(REMOTE_ERC20_ASSET_ID.into()),
+				// Need to leave 1 on this chain for ED, so `MAX - 1` can at most be exchanged back (and transferred
+				// out from the pool account).
 				(u64::MAX - 1) as u128,
+				Box::new(ASSET_HUB_LOCATION.into()),
 				// The `1` remaining is used to cover our ED for the remote asset on the remote location.
 				1,
+				Box::new(XCM_ASSET_FEE.into()),
 			));
 
 			let switch_pair = SwitchPair::<MockRuntime>::get();
-			let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
-				pool_account: pool_account_address.clone(),
-				// Zero balance since we everything but the required remote asset ED is circulating.
-				remote_asset_balance: 0,
-				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-				remote_fee: XCM_ASSET_FEE.into(),
-				remote_reserve_location: ASSET_HUB_LOCATION.into(),
-				status: SwitchPairStatus::Paused,
-			};
+			let expected_switch_pair =
+				SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(NewSwitchPairInfoOf::<MockRuntime> {
+					pool_account: pool_account_address.clone(),
+					remote_asset_circulating_supply: (u64::MAX - 1) as u128,
+					remote_asset_ed: 1,
+					remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+					remote_asset_total_supply: u64::MAX as u128,
+					remote_reserve_location: ASSET_HUB_LOCATION.into(),
+					remote_xcm_fee: XCM_ASSET_FEE.into(),
+					status: SwitchPairStatus::Paused,
+				});
 			assert_eq!(switch_pair, Some(expected_switch_pair.clone()));
+			assert!(switch_pair.unwrap().reducible_remote_balance().is_zero());
 			assert_supply_invariant(
 				u64::MAX,
 				u64::MAX - 1,
-				// We re-add the min balance requirement to check for invariants.
-				expected_switch_pair.remote_asset_balance + 1,
+				// We re-add the remote ED to check for invariants.
+				expected_switch_pair.reducible_remote_balance() + 1,
 				&pool_account_address,
 			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
-					circulating_supply: (u64::MAX - 1) as u128,
-					min_remote_balance: 1,
 					pool_account: pool_account_address.clone(),
+					remote_asset_circulating_supply: (u64::MAX - 1) as u128,
+					remote_asset_ed: 1,
+					remote_asset_total_supply: u64::MAX as u128,
 					remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-					remote_asset_reserve_location: ASSET_HUB_LOCATION.into(),
-					remote_xcm_fee: Box::new(XCM_ASSET_FEE.into()),
-					total_issuance: u64::MAX as u128,
+					remote_reserve_location: ASSET_HUB_LOCATION.into(),
+					remote_xcm_fee: Box::new(XCM_ASSET_FEE.into())
 				}
 				.into()));
 		});
-	// Case where all issuance is locked and controlled by our sovereign account, but there's a min balance >= `0` on the remote chain.
+	// Case where all issuance is locked and controlled by our sovereign account,
+	// but there's a min balance >= `0` on the remote chain.
 	ExtBuilder::default().build().execute_with(|| {
 		assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 			RawOrigin::Root.into(),
-			Box::new(ASSET_HUB_LOCATION.into()),
-			Box::new(REMOTE_ERC20_ASSET_ID.into()),
-			Box::new(XCM_ASSET_FEE.into()),
 			u64::MAX as u128,
+			Box::new(REMOTE_ERC20_ASSET_ID.into()),
 			0,
+			Box::new(ASSET_HUB_LOCATION.into()),
 			1,
+			Box::new(XCM_ASSET_FEE.into()),
 		));
 
 		let switch_pair = SwitchPair::<MockRuntime>::get();
-		let expected_switch_pair = SwitchPairInfoOf::<MockRuntime> {
-			pool_account: pool_account_address.clone(),
-			// We cannot go below `1` on the remote chain, so of all the locked assets we control, we can only exchange all but one.
-			remote_asset_balance: (u64::MAX - 1) as u128,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: SwitchPairStatus::Paused,
-		};
+		let expected_switch_pair =
+			SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(NewSwitchPairInfoOf::<MockRuntime> {
+				pool_account: pool_account_address.clone(),
+				remote_asset_circulating_supply: 0,
+				remote_asset_ed: 1,
+				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+				remote_asset_total_supply: u64::MAX as u128,
+				remote_reserve_location: ASSET_HUB_LOCATION.into(),
+				remote_xcm_fee: XCM_ASSET_FEE.into(),
+				status: SwitchPairStatus::Paused,
+			});
 		assert_eq!(switch_pair, Some(expected_switch_pair.clone()));
+		assert_eq!(switch_pair.unwrap().reducible_remote_balance(), (u64::MAX - 1) as u128);
 		assert_supply_invariant(
 			u64::MAX,
 			0u128,
 			// We re-add the min balance requirement to check for invariants.
-			expected_switch_pair.remote_asset_balance + 1,
+			expected_switch_pair.reducible_remote_balance() + 1,
 			&pool_account_address,
 		);
 		assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 			== Event::<MockRuntime>::SwitchPairCreated {
-				circulating_supply: 0,
-				min_remote_balance: 1,
 				pool_account: pool_account_address.clone(),
+				remote_asset_circulating_supply: 0,
+				remote_asset_ed: 1,
+				remote_asset_total_supply: u64::MAX as u128,
 				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-				remote_asset_reserve_location: ASSET_HUB_LOCATION.into(),
-				remote_xcm_fee: Box::new(XCM_ASSET_FEE.into()),
-				total_issuance: u64::MAX as u128,
+				remote_reserve_location: ASSET_HUB_LOCATION.into(),
+				remote_xcm_fee: Box::new(XCM_ASSET_FEE.into())
 			}
 			.into()));
 	});
@@ -261,12 +284,12 @@ fn fails_on_invalid_origin() {
 		assert_noop!(
 			Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::None.into(),
-				Box::new(ASSET_HUB_LOCATION.into()),
-				Box::new(REMOTE_ERC20_ASSET_ID.into()),
-				Box::new(XCM_ASSET_FEE.into()),
 				100_000,
+				Box::new(REMOTE_ERC20_ASSET_ID.into()),
 				1_000,
+				Box::new(ASSET_HUB_LOCATION.into()),
 				0,
+				Box::new(XCM_ASSET_FEE.into()),
 			),
 			DispatchError::BadOrigin
 		);
@@ -276,27 +299,27 @@ fn fails_on_invalid_origin() {
 #[test]
 fn fails_on_pool_existing() {
 	ExtBuilder::default()
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
-			min_remote_balance: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: [0u8; 32].into(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 1_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: Default::default(),
-			total_issuance: 1_000,
 		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::set_switch_pair(
 					RawOrigin::Root.into(),
-					Box::new(ASSET_HUB_LOCATION.into()),
-					Box::new(REMOTE_ERC20_ASSET_ID.into()),
-					Box::new(XCM_ASSET_FEE.into()),
 					100_000,
+					Box::new(REMOTE_ERC20_ASSET_ID.into()),
 					1_000,
+					Box::new(ASSET_HUB_LOCATION.into()),
 					0,
+					Box::new(XCM_ASSET_FEE.into()),
 				),
 				Error::<MockRuntime>::SwitchPairAlreadyExisting
 			);
@@ -310,30 +333,30 @@ fn fails_on_invalid_supply_values() {
 		assert_noop!(
 			Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
-				Box::new(ASSET_HUB_LOCATION.into()),
-				Box::new(REMOTE_ERC20_ASSET_ID.into()),
-				Box::new(XCM_ASSET_FEE.into()),
 				// Total supply less than locked supply
 				1_000,
+				Box::new(REMOTE_ERC20_ASSET_ID.into()),
 				1_001,
+				Box::new(ASSET_HUB_LOCATION.into()),
 				0,
+				Box::new(XCM_ASSET_FEE.into()),
 			),
 			Error::<MockRuntime>::InvalidInput
 		);
 	});
-	// Circulating supply - total issuance < min remote balance
+	// Circulating supply - total issuance < remote ED
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
-				Box::new(ASSET_HUB_LOCATION.into()),
-				Box::new(REMOTE_ERC20_ASSET_ID.into()),
-				Box::new(XCM_ASSET_FEE.into()),
 				// Total supply equal to locked supply...
 				1_000,
+				Box::new(REMOTE_ERC20_ASSET_ID.into()),
 				1_000,
+				Box::new(ASSET_HUB_LOCATION.into()),
 				// ... but with a required `1` unit to be left at all times
-				1
+				1,
+				Box::new(XCM_ASSET_FEE.into()),
 			),
 			Error::<MockRuntime>::InvalidInput
 		);
@@ -352,12 +375,12 @@ fn fails_on_not_enough_funds_on_pool_balance() {
 			assert_noop!(
 				Pallet::<MockRuntime>::set_switch_pair(
 					RawOrigin::Root.into(),
-					Box::new(ASSET_HUB_LOCATION.into()),
+					u64::MAX as u128,
 					Box::new(REMOTE_ERC20_ASSET_ID.into()),
-					Box::new(XCM_ASSET_FEE.into()),
 					u64::MAX as u128,
-					u64::MAX as u128,
+					Box::new(ASSET_HUB_LOCATION.into()),
 					0,
+					Box::new(XCM_ASSET_FEE.into()),
 				),
 				Error::<MockRuntime>::PoolInitialLiquidityRequirement
 			);
@@ -370,12 +393,12 @@ fn fails_on_not_enough_funds_on_pool_balance() {
 			assert_noop!(
 				Pallet::<MockRuntime>::set_switch_pair(
 					RawOrigin::Root.into(),
-					Box::new(ASSET_HUB_LOCATION.into()),
+					u64::MAX as u128,
 					Box::new(REMOTE_ERC20_ASSET_ID.into()),
-					Box::new(XCM_ASSET_FEE.into()),
 					u64::MAX as u128,
-					u64::MAX as u128,
+					Box::new(ASSET_HUB_LOCATION.into()),
 					0,
+					Box::new(XCM_ASSET_FEE.into()),
 				),
 				Error::<MockRuntime>::PoolInitialLiquidityRequirement
 			);
@@ -388,12 +411,12 @@ fn fails_on_not_enough_funds_on_pool_balance() {
 			assert_noop!(
 				Pallet::<MockRuntime>::set_switch_pair(
 					RawOrigin::Root.into(),
-					Box::new(ASSET_HUB_LOCATION.into()),
+					u64::MAX as u128,
 					Box::new(REMOTE_ERC20_ASSET_ID.into()),
-					Box::new(XCM_ASSET_FEE.into()),
 					u64::MAX as u128,
-					u64::MAX as u128,
+					Box::new(ASSET_HUB_LOCATION.into()),
 					0,
+					Box::new(XCM_ASSET_FEE.into()),
 				),
 				Error::<MockRuntime>::PoolInitialLiquidityRequirement
 			);

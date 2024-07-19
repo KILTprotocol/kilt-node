@@ -24,7 +24,7 @@ use sp_std::marker::PhantomData;
 use xcm::v3::{AssetId, Error, Fungibility, MultiAsset, MultiLocation, Result, XcmContext};
 use xcm_executor::traits::{ConvertLocation, TransactAsset};
 
-use crate::{traits::SwitchHooks, Config, Event, LocalCurrencyBalanceOf, Pallet, SwitchPair, SwitchPairInfoOf};
+use crate::{traits::SwitchHooks, Config, Event, LocalCurrencyBalanceOf, Pallet, SwitchPair};
 
 const LOG_TARGET: &str = "xcm::pallet-asset-switch::SwitchPairRemoteAssetTransactor";
 
@@ -61,7 +61,7 @@ where
 
 		// 3. Verify the switch pair is running.
 		ensure!(
-			switch_pair.can_switch(),
+			switch_pair.is_enabled(),
 			Error::FailedToTransactAsset("switch pair is not running.",)
 		);
 
@@ -99,20 +99,13 @@ where
 		})?;
 
 		// 6. Increase the balance of the remote asset
-		let new_remote_balance = switch_pair
-			.remote_asset_sovereign_balance
-			.checked_add(fungible_amount)
-			.ok_or(Error::FailedToTransactAsset(
-				"Failed to transfer assets from pool account",
-			)remote_asset_sovereign_total_balance
 		SwitchPair::<T, I>::try_mutate(|entry| {
-			let SwitchPairInfoOf::<T> {
-				remote_asset_sovereign_balance: remote_asset_balance,
-				..
-			} = entry
+			let switch_pair_info = entry
 				.as_mut()
-				remote_asset_sovereign_total_balanceAsset("SwitchPair should not be None."))?;
-			*remote_asset_balance = new_remote_balance;
+				.ok_or(Error::FailedToTransactAsset("SwitchPair should not be None."))?;
+			switch_pair_info
+				.increase_remote_balance_checked(fungible_amount)
+				.map_err(|_| Error::FailedToTransactAsset("Failed to transfer assets from pool account"))?;
 			Ok::<_, Error>(())
 		})?;
 

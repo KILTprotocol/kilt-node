@@ -29,13 +29,13 @@ use xcm::v3::{Fungibility, MultiAsset};
 
 use crate::{
 	mock::{
-		Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION,
-		FREEZE_REASON, HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
+		Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime, System, ASSET_HUB_LOCATION, FREEZE_REASON,
+		HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
 	switch::SwitchPairStatus,
 	tests::assert_supply_invariant,
 	xcm::convert::AccountId32ToAccountId32JunctionConverter,
-	Error, Event, Pallet, SwitchPair,
+	Error, Event, NewSwitchPairInfoOf, Pallet, SwitchPair,
 };
 
 #[test]
@@ -46,15 +46,15 @@ fn successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 100_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 100_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -77,7 +77,10 @@ fn successful() {
 			// Pool's currency balance is increased by switch amount
 			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
 			// Pool's remote balance is decreased by switch amount
-			assert!(SwitchPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
+			assert!(SwitchPair::<MockRuntime>::get()
+				.unwrap()
+				.reducible_remote_balance()
+				.is_one());
 			// User's fungible balance is reduced by XCM fee
 			assert!(MockFungibleAssetTransactor::get_balance_for(
 				&AccountId32ToAccountId32JunctionConverter::try_convert(user.clone())
@@ -107,15 +110,15 @@ fn successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 1, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 100_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 100_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -137,7 +140,10 @@ fn successful() {
 			// Pool's currency balance is increased by switch amount
 			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
 			// Pool's remote balance is decreased by switch amount
-			assert!(SwitchPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
+			assert!(SwitchPair::<MockRuntime>::get()
+				.unwrap()
+				.reducible_remote_balance()
+				.is_one());
 			// User's fungible balance is reduced by XCM fee
 			assert!(MockFungibleAssetTransactor::get_balance_for(
 				&AccountId32ToAccountId32JunctionConverter::try_convert(user.clone())
@@ -168,15 +174,15 @@ fn successful() {
 		// Free balance not allowed to go to zero.
 		.with_balances(vec![(user.clone(), 100_001, 0, 1)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 100_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 100_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -198,7 +204,10 @@ fn successful() {
 			// Pool's currency balance is increased by switch amount
 			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
 			// Pool's remote balance is decreased by switch amount
-			assert!(SwitchPair::<MockRuntime>::get().unwrap().remote_asset_balance.is_one());
+			assert!(SwitchPair::<MockRuntime>::get()
+				.unwrap()
+				.reducible_remote_balance()
+				.is_one());
 			// User's fungible balance is reduced by XCM fee
 			assert!(MockFungibleAssetTransactor::get_balance_for(
 				&AccountId32ToAccountId32JunctionConverter::try_convert(user.clone())
@@ -252,15 +261,15 @@ fn fails_on_pool_not_running() {
 	let user = AccountId32::from([0; 32]);
 	let pool_account = AccountId32::from([1; 32]);
 	ExtBuilder::default()
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account,
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 100_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Paused,
-			total_issuance: 100_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -277,15 +286,15 @@ fn fails_on_not_enough_user_local_balance() {
 	let pool_account = AccountId32::from([1; 32]);
 	// Fails if user has not enough balance.
 	ExtBuilder::default()
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 100_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 100_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -301,15 +310,15 @@ fn fails_on_not_enough_user_local_balance() {
 	// Fails if user has frozen balance.
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 1, 0)])
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 100_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 100_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -325,15 +334,15 @@ fn fails_on_not_enough_user_local_balance() {
 	// Fails if user has held balance.
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 1)])
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 100_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 100_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -349,15 +358,15 @@ fn fails_on_not_enough_user_local_balance() {
 	// Fails if user goes under their ED.
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 0)])
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account,
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 1_000_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 1_000_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -379,15 +388,15 @@ fn fails_on_not_enough_remote_balance() {
 	// Case where min remote balance is `0`
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 1)])
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 50_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 50_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {
@@ -403,15 +412,15 @@ fn fails_on_not_enough_remote_balance() {
 	// Case where min remote balance is `1`
 	ExtBuilder::default()
 		.with_balances(vec![(user.clone(), 100_000, 0, 1)])
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account,
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 1,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 50_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 50_000,
-			min_remote_balance: 1,
 		})
 		.build()
 		.execute_with(|| {
@@ -441,15 +450,15 @@ fn fails_on_not_enough_user_xcm_balance() {
 				..XCM_ASSET_FEE
 			},
 		)])
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account,
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 100_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 100_000,
-			min_remote_balance: 0,
 		})
 		.build()
 		.execute_with(|| {

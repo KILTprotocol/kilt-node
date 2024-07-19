@@ -28,7 +28,7 @@ const LOG_TARGET: &str = "xcm::pallet-asset-switch::MatchesSwitchPairXcmFeeFungi
 /// Type implementing [MatchesFungibles] and returns the provided
 /// fungible amount if the specified `MultiLocation` matches the asset used by
 /// the switch pallet to pay for XCM fees at the configured remote location
-/// (`switch_pair_info.remote_fee`).
+/// (`switch_pair_info.remote_xcm_fee`).
 pub struct MatchesSwitchPairXcmFeeFungibleAsset<T, I>(PhantomData<(T, I)>);
 
 impl<T, I, FungiblesBalance> MatchesFungibles<MultiLocation, FungiblesBalance>
@@ -41,12 +41,12 @@ where
 	fn matches_fungibles(a: &MultiAsset) -> Result<(MultiLocation, FungiblesBalance), XcmExecutorError> {
 		log::info!(target: LOG_TARGET, "matches_fungibles {:?}", a);
 		// 1. Retrieve switch pair from storage.
-		let SwitchPairInfoOf::<T> { remote_fee, .. } =
+		let SwitchPairInfoOf::<T> { remote_xcm_fee, .. } =
 			SwitchPair::<T, I>::get().ok_or(XcmExecutorError::AssetNotHandled)?;
 
 		// 2. Match stored asset ID with input asset ID.
-		let MultiAsset { id, .. } = remote_fee.clone().try_into().map_err(|e| {
-			log::error!(target: LOG_TARGET, "Failed to convert stored remote fee asset {:?} into v3 MultiLocation with error {:?}.", remote_fee, e);
+		let MultiAsset { id, .. } = remote_xcm_fee.clone().try_into().map_err(|e| {
+			log::error!(target: LOG_TARGET, "Failed to convert stored remote fee asset {:?} into v3 MultiLocation with error {:?}.", remote_xcm_fee, e);
 			XcmExecutorError::AssetNotHandled
 		})?;
 		ensure!(id == a.id, XcmExecutorError::AssetNotHandled);
