@@ -1176,7 +1176,7 @@ mod benches {
 	use runtime_common::AccountId;
 	use xcm::v3::{AssetId, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, ParentThen};
 
-	use crate::Fungibles;
+	use crate::{Fungibles, ParachainSystem};
 
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
@@ -1221,6 +1221,8 @@ mod benches {
 
 	impl pallet_asset_switch::BenchmarkHelper for CreateFungibleForAssetSwitchPool1 {
 		fn setup() -> Option<PartialBenchmarkInfo> {
+			const DESTINATION_PARA_ID: u32 = 1_000;
+
 			let asset_location: MultiLocation = Junctions::Here.into();
 			Fungibles::create(
 				RawOrigin::Root.into(),
@@ -1234,12 +1236,15 @@ mod benches {
 				id: [0; 32],
 			})
 			.into();
-			let destination = MultiLocation::from(ParentThen(Junctions::X1(Junction::Parachain(1_000)))).into();
+			let destination =
+				MultiLocation::from(ParentThen(Junctions::X1(Junction::Parachain(DESTINATION_PARA_ID)))).into();
 			let remote_fee = MultiAsset {
 				id: AssetId::Concrete(asset_location),
 				fun: Fungibility::Fungible(1_000),
 			}
 			.into();
+
+			ParachainSystem::open_outbound_hrmp_channel_for_benchmarks(DESTINATION_PARA_ID.into());
 
 			Some(PartialBenchmarkInfo {
 				beneficiary: Some(beneficiary),

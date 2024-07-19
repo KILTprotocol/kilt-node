@@ -118,11 +118,6 @@ Because the switch functionality relies on XCM, the pallet provides a few XCM co
 * `IsSwitchPairXcmFeeAsset` in [xcm::transfer][xcm-transfer]: provides an implementation of `ContainsPair<MultiAsset, MultiLocation>` that returns `true` if the given asset and sender match the stored switch pair XCM fee asset and reserve location respectively. It can be used for the `IsReserve` property of the [XcmExecutor::Config][XcmExecutor::Config].
 * `IsSwitchPairRemoteAsset` in [xcm::transfer][xcm-transfer]: provides an implementation of `ContainsPair<MultiAsset, MultiLocation>` that returns `true` if the given asset and sender match the stored switch pair remote asset and reserve location respectively. It can be used for the `IsReserve` property of the [XcmExecutor::Config][XcmExecutor::Config].
 
-## Benchmarks
-
-The benchmarking logic is not yet very generic, and it bakes in a small set of assumptions.
-If you find that your runtime fails to run the pallet benchmarks, make sure it respects the assumptions the benchmarking logic expects.
-
 [asset-switch-runtime-api]: ../../runtime-api/asset-switch/
 [xcm-convert]: ./src/xcm/convert.rs
 [xcm-match]: ./src/xcm/match.rs

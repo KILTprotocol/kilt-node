@@ -502,17 +502,10 @@ pub mod pallet {
 
 			// 10. Send XCM out (only when not benchmarking, as delivery fees are anyway
 			//     accounted for by the router)
-			cfg_if::cfg_if! {
-				if #[cfg(not(feature = "runtime-benchmarks"))] {
-					T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
-						log::info!("Failed to deliver ticket with error {:?}", e);
-						DispatchError::from(Error::<T, I>::Xcm)
-					})?;
-				} else {
-					log::trace!(target: LOG_TARGET, "Running benchmarks. Message will not be delivered to destination.");
-					drop(xcm_ticket);
-				}
-			}
+			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
+				log::info!("Failed to deliver ticket with error {:?}", e);
+				DispatchError::from(Error::<T, I>::Xcm)
+			})?;
 
 			// 11. Update remote asset balance
 			SwitchPair::<T, I>::try_mutate(|entry| {
