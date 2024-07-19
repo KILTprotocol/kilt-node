@@ -34,7 +34,11 @@ mod tests;
 mod try_runtime;
 
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
-use frame_support::traits::PalletInfoAccess;
+use frame_support::traits::{
+	fungible::Inspect,
+	tokens::{Fortitude, Preservation},
+	PalletInfoAccess,
+};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::TrailingZeroInput;
 use sp_std::boxed::Box;
@@ -55,7 +59,7 @@ pub mod pallet {
 		pallet_prelude::*,
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
-			tokens::{Fortitude, Preservation, Provenance},
+			tokens::{Preservation, Provenance},
 			EnsureOrigin,
 		},
 	};
@@ -115,10 +119,13 @@ pub mod pallet {
 	pub struct Pallet<T, I = ()>(_);
 
 	#[pallet::hooks]
-	impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I> {
+	impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I>
+	where
+		LocalCurrencyBalanceOf<T, I>: Into<u128>,
+	{
 		#[cfg(feature = "try-runtime")]
 		fn try_state(n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
-			crate::try_runtime::try_state(n)
+			crate::try_runtime::try_state::<T, I>(n)
 		}
 	}
 
@@ -226,13 +233,26 @@ pub mod pallet {
 
 			// 3. Verify the pool account has enough local assets to match the circulating
 			//    supply of eKILTs to cover for all potential remote -> local switches.
+			//    Handle the special case where circulating supply is `0`.
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
-			let pool_account_reducible_balance_as_u128: u128 =
-				T::LocalCurrency::reducible_balance(&pool_account, Preservation::Preserve, Fortitude::Polite).into();
-			ensure!(
-				pool_account_reducible_balance_as_u128 >= remote_asset_circulating_supply,
-				Error::<T, I>::PoolInitialLiquidityRequirement
-			);
+			let pool_account_reducible_balance_as_u128: u128 = Self::get_pool_usable_balance(&pool_account).into();
+			let pool_account_total_balance_as_u128: u128 = T::LocalCurrency::balance(&pool_account).into();
+			match (
+				pool_account_total_balance_as_u128,
+				pool_account_reducible_balance_as_u128,
+			) {
+				// If the pool account has `0` available tokens, fail regardless.
+				(0, _) => Err(Error::<T, I>::PoolInitialLiquidityRequirement),
+				// If the pool account has some tokens, ensure that the reducible balance is at least as large as the
+				// specified circulating supply.
+				(_, reducible_balance) => {
+					ensure!(
+						reducible_balance >= remote_asset_circulating_supply,
+						Error::<T, I>::PoolInitialLiquidityRequirement
+					);
+					Ok(())
+				}
+			}?;
 
 			Self::set_switch_pair_bypass_checks(
 				remote_asset_total_supply,
@@ -529,13 +549,13 @@ pub mod pallet {
 				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
 
-			// 11. Update remote asset balance
+			// 11. Update remote asset balance and circulating supply.
 			SwitchPair::<T, I>::try_mutate(|entry| {
 				let Some(switch_pair_info) = entry.as_mut() else {
 					log::error!(target: LOG_TARGET, "Failed to borrow stored switch pair info as mut.");
 					return Err(Error::<T, I>::Internal);
 				};
-				switch_pair_info.decrease_remote_balance_checked(remote_asset_amount_as_u128).map_err(|_| {
+				switch_pair_info.account_for_local_to_remote_switch_checked(remote_asset_amount_as_u128).map_err(|_| {
 					log::error!(target: LOG_TARGET, "Failed to subtract {:?} from stored remote balance {:?}.", remote_asset_amount_as_u128, switch_pair_info.reducible_remote_balance());
 					Error::<T, I>::Internal
 				})?;
@@ -554,6 +574,12 @@ pub mod pallet {
 
 			Ok(())
 		}
+	}
+}
+
+impl<T: Config<I>, I: 'static> Pallet<T, I> {
+	pub(crate) fn get_pool_usable_balance(pool_address: &T::AccountId) -> LocalCurrencyBalanceOf<T, I> {
+		T::LocalCurrency::reducible_balance(pool_address, Preservation::Preserve, Fortitude::Polite)
 	}
 }
 

@@ -33,7 +33,6 @@ use crate::{
 		HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
 	},
 	switch::SwitchPairStatus,
-	tests::assert_supply_invariant,
 	xcm::convert::AccountId32ToAccountId32JunctionConverter,
 	Error, Event, NewSwitchPairInfoOf, Pallet, SwitchPair,
 };
@@ -44,7 +43,7 @@ fn successful() {
 	let pool_account = AccountId32::from([1; 32]);
 	// It works with entire balance unfrozen and un-held.
 	ExtBuilder::default()
-		.with_balances(vec![(user.clone(), 100_000, 0, 0)])
+		.with_balances(vec![(user.clone(), 100_000, 0, 0), (pool_account.clone(), 1, 0, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
 		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
@@ -56,12 +55,11 @@ fn successful() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
 			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
-				// Cannot switch ED.
+				// Cannot switch ED (1 in the mock), so we need to exclude that.
 				99_999,
 				Box::new(ASSET_HUB_LOCATION.into())
 			));
@@ -74,8 +72,11 @@ fn successful() {
 			assert!(<Balances as InspectFreeze<AccountId32>>::balance_frozen(&FREEZE_REASON, &user).is_zero());
 			// User's held balance has remained unchanged.
 			assert!(<Balances as InspectHold<AccountId32>>::balance_on_hold(&HOLD_REASON, &user).is_zero());
-			// Pool's currency balance is increased by switch amount
-			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
+			// Pool's currency balance (previously only ED) is increased by switch amount
+			assert_eq!(
+				<Balances as Inspect<AccountId32>>::total_balance(&pool_account),
+				100_000
+			);
 			// Pool's remote balance is decreased by switch amount
 			assert!(SwitchPair::<MockRuntime>::get()
 				.unwrap()
@@ -96,8 +97,6 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
-			// Invariant is held
-			assert_supply_invariant(100_000u128, 1u128, 99_999u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
@@ -108,7 +107,7 @@ fn successful() {
 		});
 	// It works with balance partially frozen.
 	ExtBuilder::default()
-		.with_balances(vec![(user.clone(), 100_000, 1, 0)])
+		.with_balances(vec![(user.clone(), 100_000, 1, 0), (pool_account.clone(), 1, 0, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
 		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
@@ -120,8 +119,7 @@ fn successful() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
 			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
@@ -137,8 +135,11 @@ fn successful() {
 			assert!(<Balances as InspectFreeze<AccountId32>>::balance_frozen(&FREEZE_REASON, &user).is_one());
 			// User's held balance has remained unchanged.
 			assert!(<Balances as InspectHold<AccountId32>>::balance_on_hold(&HOLD_REASON, &user).is_zero());
-			// Pool's currency balance is increased by switch amount
-			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
+			// Pool's currency balance (previously only ED) is increased by switch amount
+			assert_eq!(
+				<Balances as Inspect<AccountId32>>::total_balance(&pool_account),
+				100_000
+			);
 			// Pool's remote balance is decreased by switch amount
 			assert!(SwitchPair::<MockRuntime>::get()
 				.unwrap()
@@ -159,8 +160,6 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
-			// Invariant is held
-			assert_supply_invariant(100_000u128, 1u128, 99_999u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
@@ -172,7 +171,7 @@ fn successful() {
 	// It works with balance partially held.
 	ExtBuilder::default()
 		// Free balance not allowed to go to zero.
-		.with_balances(vec![(user.clone(), 100_001, 0, 1)])
+		.with_balances(vec![(user.clone(), 100_001, 0, 1), (pool_account.clone(), 1, 0, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
 		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: pool_account.clone(),
@@ -184,8 +183,7 @@ fn successful() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
 			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
@@ -201,8 +199,11 @@ fn successful() {
 			assert!(<Balances as InspectFreeze<AccountId32>>::balance_frozen(&FREEZE_REASON, &user).is_zero());
 			// User's held balance has remained unchanged.
 			assert!(<Balances as InspectHold<AccountId32>>::balance_on_hold(&HOLD_REASON, &user).is_one());
-			// Pool's currency balance is increased by switch amount
-			assert_eq!(<Balances as Inspect<AccountId32>>::total_balance(&pool_account), 99_999);
+			// Pool's currency balance (previously only ED) is increased by switch amount
+			assert_eq!(
+				<Balances as Inspect<AccountId32>>::total_balance(&pool_account),
+				100_000
+			);
 			// Pool's remote balance is decreased by switch amount
 			assert!(SwitchPair::<MockRuntime>::get()
 				.unwrap()
@@ -223,8 +224,6 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
-			// Invariant is held
-			assert_supply_invariant(100_000u128, 1u128, 99_999u128, &pool_account);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
@@ -237,7 +236,7 @@ fn successful() {
 
 #[test]
 fn fails_on_invalid_origin() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().run(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::switch(RawOrigin::Root.into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
 			DispatchError::BadOrigin
@@ -248,7 +247,7 @@ fn fails_on_invalid_origin() {
 #[test]
 fn fails_on_non_existing_pool() {
 	let user = AccountId32::from([0; 32]);
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().run(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::switch(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
 			Error::<MockRuntime>::SwitchPairNotFound
@@ -271,8 +270,7 @@ fn fails_on_pool_not_running() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Paused,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
 				Error::<MockRuntime>::SwitchPairNotEnabled
@@ -296,8 +294,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -320,8 +317,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -344,8 +340,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -368,8 +363,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user).into(),
@@ -398,8 +392,7 @@ fn fails_on_not_enough_remote_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -422,8 +415,7 @@ fn fails_on_not_enough_remote_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -460,8 +452,7 @@ fn fails_on_not_enough_user_xcm_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),

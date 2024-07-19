@@ -40,7 +40,7 @@ use xcm::v3::{
 };
 use xcm_executor::{traits::TransactAsset, Assets};
 
-use crate::{xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, Pallet, SwitchPair};
+use crate::{xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, Pallet};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -223,10 +223,7 @@ impl ExtBuilder {
 					switch_pair_info.remote_xcm_fee,
 					switch_pair_info.pool_account,
 				);
-				SwitchPair::<MockRuntime>::mutate(|entry| {
-					let entry = entry.as_mut().unwrap();
-					entry.status = switch_pair_info.status;
-				});
+				Pallet::<MockRuntime>::set_switch_pair_status(switch_pair_info.status).unwrap();
 			}
 			for (account, free, frozen, held) in self.1 {
 				<Balances as Mutate<AccountId32>>::set_balance(&account, free);
@@ -255,9 +252,20 @@ impl ExtBuilder {
 					)
 				});
 			}
+
+			System::reset_events()
 		});
 
 		ext
+	}
+
+	pub(crate) fn run(self, run: impl FnOnce()) {
+		let mut ext = self.build();
+		ext.execute_with(|| {
+			run();
+			#[cfg(feature = "try-runtime")]
+			crate::try_runtime::try_state::<MockRuntime, _>(System::block_number()).unwrap();
+		});
 	}
 }
 

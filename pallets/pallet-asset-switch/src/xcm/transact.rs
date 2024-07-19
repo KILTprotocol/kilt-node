@@ -104,7 +104,7 @@ where
 				.as_mut()
 				.ok_or(Error::FailedToTransactAsset("SwitchPair should not be None."))?;
 			switch_pair_info
-				.increase_remote_balance_checked(fungible_amount)
+				.account_for_remote_to_local_switch_checked(fungible_amount)
 				.map_err(|_| Error::FailedToTransactAsset("Failed to transfer assets from pool account"))?;
 			Ok::<_, Error>(())
 		})?;

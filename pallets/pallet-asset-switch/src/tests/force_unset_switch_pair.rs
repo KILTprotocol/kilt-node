@@ -39,8 +39,7 @@ fn successful() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: Default::default(),
 		})
-		.build()
-		.execute_with(|| {
+		.run(|| {
 			assert_ok!(Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::Root.into()));
 			assert!(SwitchPair::<MockRuntime>::get().is_none());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
@@ -50,7 +49,7 @@ fn successful() {
 				.into()));
 		});
 	// Deletes and generates no event if there is no pool
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().run(|| {
 		assert_ok!(Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::Root.into()));
 		assert!(SwitchPair::<MockRuntime>::get().is_none());
 		assert!(System::events().into_iter().map(|e| e.event).all(|e| e
@@ -63,7 +62,7 @@ fn successful() {
 
 #[test]
 fn fails_on_invalid_origin() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().run(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::None.into()),
 			DispatchError::BadOrigin,
