@@ -105,6 +105,7 @@ fn successful() {
 					status: SwitchPairStatus::Paused,
 				});
 			assert_eq!(switch_pair, Some(expected_switch_pair));
+			// Unit balance since we had to leave ED on this chain
 			assert!(switch_pair.unwrap().reducible_remote_balance().is_one());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
@@ -145,6 +146,8 @@ fn successful() {
 					status: SwitchPairStatus::Paused,
 				});
 			assert_eq!(switch_pair, Some(expected_switch_pair));
+			// Max balance since all circulating supply is controlled by us and we used `0`
+			// as the remote asset ED.
 			assert_eq!(switch_pair.unwrap().reducible_remote_balance(), u64::MAX as u128);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
@@ -190,6 +193,8 @@ fn successful() {
 					status: SwitchPairStatus::Paused,
 				});
 			assert_eq!(switch_pair, Some(expected_switch_pair));
+			// Zero balance since we everything but the required remote asset ED is
+			// circulating.
 			assert!(switch_pair.unwrap().reducible_remote_balance().is_zero());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
@@ -206,7 +211,7 @@ fn successful() {
 	// Case where all issuance is locked and controlled by our sovereign account,
 	// but there's a min balance >= `0` on the remote chain.
 	ExtBuilder::default()
-		.with_balances(vec![(pool_account_address.clone(), 1_001, 0, 0)])
+		.with_balances(vec![(pool_account_address.clone(), 1, 0, 0)])
 		.run(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),

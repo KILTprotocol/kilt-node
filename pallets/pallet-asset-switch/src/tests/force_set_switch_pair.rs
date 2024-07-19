@@ -63,6 +63,8 @@ fn successful() {
 					status: SwitchPairStatus::Paused,
 				});
 			assert_eq!(switch_pair, Some(expected_switch_pair));
+			// Unit balance since we had to leave ED on this chain and no min balance
+			// requirement (ED) is set for the remote asset.
 			assert!(switch_pair.unwrap().reducible_remote_balance().is_one());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
@@ -103,6 +105,7 @@ fn successful() {
 					status: SwitchPairStatus::Paused,
 				});
 			assert_eq!(switch_pair, Some(expected_switch_pair));
+			// Max balance since all circulating supply is controlled by us.
 			assert_eq!(switch_pair.unwrap().reducible_remote_balance(), u64::MAX as u128);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
@@ -145,6 +148,8 @@ fn successful() {
 					status: SwitchPairStatus::Paused,
 				});
 			assert_eq!(switch_pair, Some(expected_switch_pair));
+			// Zero balance since we everything but the required remote asset ED is
+			// circulating.
 			assert!(switch_pair.unwrap().reducible_remote_balance().is_zero());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
@@ -186,6 +191,8 @@ fn successful() {
 					status: SwitchPairStatus::Paused,
 				});
 			assert_eq!(switch_pair, Some(expected_switch_pair));
+			// We cannot go below `1` on the remote chain, so of all the locked assets we
+			// control, we can only exchange all but one.
 			assert_eq!(switch_pair.unwrap().reducible_remote_balance(), (u64::MAX - 1) as u128);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {

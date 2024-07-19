@@ -21,6 +21,7 @@ use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 use xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 
+/// Input information used to generate a `SwitchPairInfo`.
 #[derive(Encode, Decode, TypeInfo, RuntimeDebug, Clone)]
 pub struct NewSwitchPairInfo<AccountId> {
 	/// The address that will hold the local tokens locked in return for the
@@ -139,20 +140,20 @@ impl<AccountId> SwitchPairInfo<AccountId> {
 
 // Modify impls
 impl<AccountId> SwitchPairInfo<AccountId> {
-	pub(crate) fn account_for_remote_to_local_switch_checked(&mut self, amount: u128) -> Result<(), ()> {
-		let new_amount = self
+	pub(crate) fn try_account_for_remote_to_local_switch(&mut self, amount: u128) -> Result<(), ()> {
+		let new_remote_asset_sovereign_total_balance = self
 			.remote_asset_sovereign_total_balance
 			.checked_add(amount)
 			.ok_or(())?;
 		let new_circulating_supply = self.remote_asset_circulating_supply.checked_sub(amount).ok_or(())?;
 
-		self.remote_asset_sovereign_total_balance = new_amount;
+		self.remote_asset_sovereign_total_balance = new_remote_asset_sovereign_total_balance;
 		self.remote_asset_circulating_supply = new_circulating_supply;
 
 		Ok(())
 	}
 
-	pub(crate) fn account_for_local_to_remote_switch_checked(&mut self, amount: u128) -> Result<(), ()> {
+	pub(crate) fn try_account_for_local_to_remote_switch(&mut self, amount: u128) -> Result<(), ()> {
 		let new_remote_asset_sovereign_total_balance = self
 			.remote_asset_sovereign_total_balance
 			.checked_sub(amount)

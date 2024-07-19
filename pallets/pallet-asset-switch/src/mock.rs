@@ -253,12 +253,14 @@ impl ExtBuilder {
 				});
 			}
 
+			// Some setup operations generate events which interfere with our assertions.
 			System::reset_events()
 		});
 
 		ext
 	}
 
+	// Run the specified closure and test the storage invariants afterwards.
 	pub(crate) fn run(self, run: impl FnOnce()) {
 		let mut ext = self.build();
 		ext.execute_with(|| {
