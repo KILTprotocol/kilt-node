@@ -69,21 +69,21 @@ mod benchmarks {
 		Call, Config, LocalCurrencyBalanceOf, Pallet, SwitchPairStatus,
 	};
 
-	const DEFAULT_RESERVE_LOCATION: MultiLocation = MultiLocation {
-		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
-	};
-	const DEFAULT_REMOTE_ASSET_ID: AssetId = AssetId::Concrete(DEFAULT_RESERVE_LOCATION);
-	const DEFAULT_REMOTE_FEE: MultiAsset = MultiAsset {
-		id: DEFAULT_REMOTE_ASSET_ID,
-		fun: Fungibility::Fungible(100_000),
-	};
-	const DEFAULT_BENEFICIARY_JUNCTION: Junctions = Junctions::X1(Junction::AccountId32 {
-		network: None,
-		id: [0; 32],
-	});
-
 	const fn default_info() -> BenchmarkInfo {
+		const DEFAULT_RESERVE_LOCATION: MultiLocation = MultiLocation {
+			parents: 1,
+			interior: Junctions::X1(Junction::Parachain(1_000)),
+		};
+		const DEFAULT_REMOTE_ASSET_ID: AssetId = AssetId::Concrete(DEFAULT_RESERVE_LOCATION);
+		const DEFAULT_REMOTE_FEE: MultiAsset = MultiAsset {
+			id: DEFAULT_REMOTE_ASSET_ID,
+			fun: Fungibility::Fungible(100_000),
+		};
+		const DEFAULT_BENEFICIARY_JUNCTION: Junctions = Junctions::X1(Junction::AccountId32 {
+			network: None,
+			id: [0; 32],
+		});
+
 		BenchmarkInfo {
 			beneficiary: VersionedInteriorMultiLocation::V3(DEFAULT_BENEFICIARY_JUNCTION),
 			destination: VersionedMultiLocation::V3(DEFAULT_RESERVE_LOCATION),
@@ -102,12 +102,10 @@ mod benchmarks {
 		};
 
 		BenchmarkInfo {
-			beneficiary: benchmark_info
-				.beneficiary
-				.unwrap_or(DEFAULT_BENEFICIARY_JUNCTION.into()),
-			destination: benchmark_info.destination.unwrap_or(DEFAULT_RESERVE_LOCATION.into()),
-			remote_asset_id: benchmark_info.remote_asset_id.unwrap_or(DEFAULT_REMOTE_ASSET_ID.into()),
-			remote_fee: benchmark_info.remote_fee.unwrap_or(DEFAULT_REMOTE_FEE.into()),
+			beneficiary: benchmark_info.beneficiary.unwrap_or(default.beneficiary.into()),
+			destination: benchmark_info.destination.unwrap_or(default.destination.into()),
+			remote_asset_id: benchmark_info.remote_asset_id.unwrap_or(default.remote_asset_id.into()),
+			remote_fee: benchmark_info.remote_fee.unwrap_or(default.remote_fee.into()),
 		}
 	}
 
@@ -252,11 +250,11 @@ mod benchmarks {
 			beneficiary,
 			destination,
 			remote_fee,
-			..
+			remote_asset_id,
 		} = configure_switch_pair::<T, I>();
 		Pallet::<T, I>::resume_switch_pair(<T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap()).unwrap();
 		let account_id = <T as Config<I>>::SubmitterOrigin::ensure_origin(origin.clone()).unwrap();
-		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&DEFAULT_REMOTE_ASSET_ID.into()).unwrap();
+		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&remote_asset_id).unwrap();
 		let minimum_balance = <T as Config<I>>::LocalCurrency::minimum_balance();
 		// Set submitter balance to ED + 1_000 and pool balance to ED
 		{

@@ -1174,10 +1174,7 @@ mod benches {
 	use frame_system::RawOrigin;
 	use pallet_asset_switch::PartialBenchmarkInfo;
 	use runtime_common::AccountId;
-	use xcm::{
-		v3::{AssetId, Fungibility, Junctions, MultiAsset, MultiLocation},
-		VersionedMultiAsset,
-	};
+	use xcm::v3::{AssetId, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, ParentThen};
 
 	use crate::Fungibles;
 
@@ -1232,11 +1229,23 @@ mod benches {
 				1u32.into(),
 			)
 			.unwrap();
+			let beneficiary = Junctions::X1(Junction::AccountId32 {
+				network: None,
+				id: [0; 32],
+			})
+			.into();
+			let destination = MultiLocation::from(ParentThen(Junctions::X1(Junction::Parachain(1_000)))).into();
+			let remote_fee = MultiAsset {
+				id: AssetId::Concrete(asset_location),
+				fun: Fungibility::Fungible(1_000),
+			}
+			.into();
+
 			Some(PartialBenchmarkInfo {
-				remote_fee: VersionedMultiAsset::V3(MultiAsset {
-					id: AssetId::Concrete(asset_location),
-					fun: Fungibility::Fungible(1_000),
-				}),
+				beneficiary: Some(beneficiary),
+				destination: Some(destination),
+				remote_asset_id: None,
+				remote_fee: Some(remote_fee),
 			})
 		}
 	}
