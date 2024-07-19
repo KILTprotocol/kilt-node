@@ -16,10 +16,21 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use xcm::VersionedMultiAsset;
+use frame_benchmarking::v2::instance_benchmarks;
+use xcm::{VersionedAssetId, VersionedInteriorMultiLocation, VersionedMultiAsset, VersionedMultiLocation};
 
-pub struct BenchmarkInfo {
-	pub remote_fee: VersionedMultiAsset,
+pub struct PartialBenchmarkInfo {
+	pub beneficiary: Option<VersionedInteriorMultiLocation>,
+	pub destination: Option<VersionedMultiLocation>,
+	pub remote_fee: Option<VersionedMultiAsset>,
+	pub remote_asset_id: Option<VersionedAssetId>,
+}
+
+struct BenchmarkInfo {
+	beneficiary: VersionedInteriorMultiLocation,
+	destination: VersionedMultiLocation,
+	remote_fee: VersionedMultiAsset,
+	remote_asset_id: VersionedAssetId,
 }
 
 /// Helper trait implementable by the runtime to set some additional state
@@ -29,18 +40,17 @@ pub struct BenchmarkInfo {
 /// If no special conditions are to be met, it can simply be a no-op and return
 /// `None`.
 pub trait BenchmarkHelper {
-	fn setup() -> Option<BenchmarkInfo>;
+	fn setup() -> Option<PartialBenchmarkInfo>;
 }
 
 impl BenchmarkHelper for () {
-	fn setup() -> Option<BenchmarkInfo> {
+	fn setup() -> Option<PartialBenchmarkInfo> {
 		None
 	}
 }
 
 #[instance_benchmarks(where LocalCurrencyBalanceOf<T, I>: Into<u128>)]
 mod benchmarks {
-	use frame_benchmarking::v2::instance_benchmarks;
 	use frame_support::traits::{
 		fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
 		EnsureOrigin,
@@ -48,23 +58,58 @@ mod benchmarks {
 	use frame_system::RawOrigin;
 	use sp_runtime::traits::{TryConvert, Zero};
 	use sp_std::{boxed::Box, vec};
-	use xcm::v3::{AssetId, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, XcmContext};
+	use xcm::{
+		v3::{AssetId, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, XcmContext},
+		VersionedAssetId, VersionedInteriorMultiLocation, VersionedMultiAsset, VersionedMultiLocation,
+	};
 	use xcm_executor::traits::TransactAsset;
 
 	use crate::{
-		benchmarking::{BenchmarkHelper, BenchmarkInfo},
+		benchmarking::{BenchmarkHelper, BenchmarkInfo, PartialBenchmarkInfo},
 		Call, Config, LocalCurrencyBalanceOf, Pallet, SwitchPairStatus,
 	};
 
-	const RESERVE_LOCATION: MultiLocation = MultiLocation {
+	const DEFAULT_RESERVE_LOCATION: MultiLocation = MultiLocation {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	const REMOTE_ASSET_ID: AssetId = AssetId::Concrete(RESERVE_LOCATION);
-	const REMOTE_FEE: MultiAsset = MultiAsset {
-		id: REMOTE_ASSET_ID,
+	const DEFAULT_REMOTE_ASSET_ID: AssetId = AssetId::Concrete(DEFAULT_RESERVE_LOCATION);
+	const DEFAULT_REMOTE_FEE: MultiAsset = MultiAsset {
+		id: DEFAULT_REMOTE_ASSET_ID,
 		fun: Fungibility::Fungible(100_000),
 	};
+	const DEFAULT_BENEFICIARY_JUNCTION: Junctions = Junctions::X1(Junction::AccountId32 {
+		network: None,
+		id: [0; 32],
+	});
+
+	const fn default_info() -> BenchmarkInfo {
+		BenchmarkInfo {
+			beneficiary: VersionedInteriorMultiLocation::V3(DEFAULT_BENEFICIARY_JUNCTION),
+			destination: VersionedMultiLocation::V3(DEFAULT_RESERVE_LOCATION),
+			remote_asset_id: VersionedAssetId::V3(DEFAULT_REMOTE_ASSET_ID),
+			remote_fee: VersionedMultiAsset::V3(DEFAULT_REMOTE_FEE),
+		}
+	}
+
+	// Return the default info if the helper trait returns `None` or fills any
+	// `None` field with a default value.
+	fn fill_with_defaults(benchmark_info: Option<PartialBenchmarkInfo>) -> BenchmarkInfo {
+		let default = default_info();
+
+		let Some(benchmark_info) = benchmark_info else {
+			return default;
+		};
+
+		BenchmarkInfo {
+			beneficiary: benchmark_info
+				.beneficiary
+				.unwrap_or(DEFAULT_BENEFICIARY_JUNCTION.into()),
+			destination: benchmark_info.destination.unwrap_or(DEFAULT_RESERVE_LOCATION.into()),
+			remote_asset_id: benchmark_info.remote_asset_id.unwrap_or(DEFAULT_REMOTE_ASSET_ID.into()),
+			remote_fee: benchmark_info.remote_fee.unwrap_or(DEFAULT_REMOTE_FEE.into()),
+		}
+	}
 
 	/// Write a switch pair into storage using the benchmark constants and the
 	/// `remote_fee` asset as returned by the benchmark helper, or the default
@@ -75,14 +120,18 @@ mod benchmarks {
 		I: 'static,
 		LocalCurrencyBalanceOf<T, I>: Into<u128>,
 	{
-		let remote_fee = <T as Config<I>>::BenchmarkHelper::setup()
-			.map(|info| info.remote_fee)
-			.unwrap_or(REMOTE_FEE.into());
+		let benchmark_info = <T as Config<I>>::BenchmarkHelper::setup();
+		let BenchmarkInfo {
+			beneficiary,
+			destination,
+			remote_asset_id,
+			remote_fee,
+		} = fill_with_defaults(benchmark_info);
 
 		Pallet::<T, I>::force_set_switch_pair(
 			T::RuntimeOrigin::from(RawOrigin::Root),
-			Box::new(RESERVE_LOCATION.into()),
-			Box::new(REMOTE_ASSET_ID.into()),
+			Box::new(destination.clone()),
+			Box::new(remote_asset_id.clone()),
 			Box::new(remote_fee.clone()),
 			u128::MAX,
 			u128::zero(),
@@ -90,20 +139,26 @@ mod benchmarks {
 		.unwrap();
 		assert!(Pallet::<T, I>::switch_pair().is_some());
 
-		BenchmarkInfo { remote_fee }
+		BenchmarkInfo {
+			beneficiary,
+			destination,
+			remote_asset_id,
+			remote_fee,
+		}
 	}
 
 	#[benchmark]
 	fn set_switch_pair() {
 		let origin = <T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap();
-		let remote_fee = <T as Config<I>>::BenchmarkHelper::setup()
-			.map(|info| info.remote_fee)
-			.unwrap_or(REMOTE_FEE.into());
-		let (remote_asset_id, remote_fee, reserve_location) = (
-			Box::new(REMOTE_ASSET_ID.into()),
-			Box::new(remote_fee),
-			Box::new(RESERVE_LOCATION.into()),
-		);
+		let (reserve_location, remote_asset_id, remote_fee) = {
+			let BenchmarkInfo {
+				destination,
+				remote_asset_id,
+				remote_fee,
+				..
+			} = fill_with_defaults(<T as Config<I>>::BenchmarkHelper::setup());
+			(Box::new(destination), Box::new(remote_asset_id), Box::new(remote_fee))
+		};
 
 		#[extrinsic_call]
 		Pallet::<T, I>::set_switch_pair(
@@ -121,12 +176,15 @@ mod benchmarks {
 	#[benchmark]
 	fn force_set_switch_pair() {
 		let origin: T::RuntimeOrigin = RawOrigin::Root.into();
-		let BenchmarkInfo { remote_fee } = configure_switch_pair::<T, I>();
-		let (remote_asset_id, remote_fee, reserve_location) = (
-			Box::new(REMOTE_ASSET_ID.into()),
-			Box::new(remote_fee),
-			Box::new(RESERVE_LOCATION.into()),
-		);
+		let (reserve_location, remote_asset_id, remote_fee) = {
+			let BenchmarkInfo {
+				destination,
+				remote_asset_id,
+				remote_fee,
+				..
+			} = fill_with_defaults(<T as Config<I>>::BenchmarkHelper::setup());
+			(Box::new(destination), Box::new(remote_asset_id), Box::new(remote_fee))
+		};
 
 		#[extrinsic_call]
 		Pallet::<T, I>::force_set_switch_pair(
@@ -177,7 +235,7 @@ mod benchmarks {
 	#[benchmark]
 	fn update_remote_fee() {
 		let origin = <T as Config<I>>::FeeOrigin::try_successful_origin().unwrap();
-		let BenchmarkInfo { remote_fee } = configure_switch_pair::<T, I>();
+		let BenchmarkInfo { remote_fee, .. } = configure_switch_pair::<T, I>();
 		let remote_fee = Box::new(remote_fee);
 		let remote_fee_2 = remote_fee.clone();
 
@@ -190,10 +248,15 @@ mod benchmarks {
 	#[benchmark]
 	fn switch() {
 		let origin = <T as Config<I>>::SubmitterOrigin::try_successful_origin().unwrap();
-		let BenchmarkInfo { remote_fee } = configure_switch_pair::<T, I>();
+		let BenchmarkInfo {
+			beneficiary,
+			destination,
+			remote_fee,
+			..
+		} = configure_switch_pair::<T, I>();
 		Pallet::<T, I>::resume_switch_pair(<T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap()).unwrap();
 		let account_id = <T as Config<I>>::SubmitterOrigin::ensure_origin(origin.clone()).unwrap();
-		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&REMOTE_ASSET_ID.into()).unwrap();
+		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&DEFAULT_REMOTE_ASSET_ID.into()).unwrap();
 		let minimum_balance = <T as Config<I>>::LocalCurrency::minimum_balance();
 		// Set submitter balance to ED + 1_000 and pool balance to ED
 		{
@@ -211,7 +274,14 @@ mod benchmarks {
 			.unwrap();
 		}
 
-		let beneficiary = Box::new(MultiLocation::from(local_account_id_junction).into());
+		// Push the beneficiary to the returned `destination` value.
+		let beneficiary = Box::new(
+			MultiLocation::try_from(destination)
+				.unwrap()
+				.appended_with(Junctions::try_from(beneficiary).unwrap())
+				.unwrap()
+				.into(),
+		);
 		let amount = 1_000u32.into();
 
 		#[extrinsic_call]

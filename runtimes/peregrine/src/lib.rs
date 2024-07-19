@@ -1172,7 +1172,7 @@ pub type Executive = frame_executive::Executive<
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	use frame_system::RawOrigin;
-	use pallet_asset_switch::BenchmarkInfo;
+	use pallet_asset_switch::PartialBenchmarkInfo;
 	use runtime_common::AccountId;
 	use xcm::{
 		v3::{AssetId, Fungibility, Junctions, MultiAsset, MultiLocation},
@@ -1223,7 +1223,7 @@ mod benches {
 	pub struct CreateFungibleForAssetSwitchPool1;
 
 	impl pallet_asset_switch::BenchmarkHelper for CreateFungibleForAssetSwitchPool1 {
-		fn setup() -> Option<BenchmarkInfo> {
+		fn setup() -> Option<PartialBenchmarkInfo> {
 			let asset_location: MultiLocation = Junctions::Here.into();
 			Fungibles::create(
 				RawOrigin::Root.into(),
@@ -1232,7 +1232,7 @@ mod benches {
 				1u32.into(),
 			)
 			.unwrap();
-			Some(BenchmarkInfo {
+			Some(PartialBenchmarkInfo {
 				remote_fee: VersionedMultiAsset::V3(MultiAsset {
 					id: AssetId::Concrete(asset_location),
 					fun: Fungibility::Fungible(1_000),

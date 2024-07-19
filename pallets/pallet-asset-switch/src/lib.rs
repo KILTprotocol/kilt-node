@@ -35,7 +35,7 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 #[cfg(feature = "runtime-benchmarks")]
-pub use benchmarking::{BenchmarkHelper, BenchmarkInfo};
+pub use benchmarking::{BenchmarkHelper, PartialBenchmarkInfo};
 
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 use frame_support::traits::PalletInfoAccess;
