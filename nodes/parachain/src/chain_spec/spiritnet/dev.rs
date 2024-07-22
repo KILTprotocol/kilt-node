@@ -68,49 +68,44 @@ fn generate_genesis_state() -> serde_json::Value {
 		get_account_id_from_secret::<sr25519::Public>("Ferdie"),
 	];
 
-	let stakers = [alice.clone(), bob.clone()]
-		.into_iter()
-		.map(|(acc, _)| -> (AccountId, Option<AccountId>, u128) { (acc, None, (2 * MinCollatorStake::get())) })
-		.collect::<Vec<_>>();
+	println!("Hello!");
 
-	let balances = endowed_accounts
-		.iter()
-		.cloned()
-		.map(|acc| (acc, 1_000_000 * KILT))
-		.collect::<Vec<_>>();
+	let genesis = spiritnet_runtime::RuntimeGenesisConfig {
+		balances: spiritnet_runtime::BalancesConfig {
+			balances: endowed_accounts.map(|acc| (acc, 10_000_000 * KILT)).to_vec(),
+		},
+		session: spiritnet_runtime::SessionConfig {
+			keys: [alice.clone(), bob.clone()]
+				.map(|(acc, key)| (acc.clone(), acc, SessionKeys { aura: key }))
+				.to_vec(),
+		},
+		parachain_info: spiritnet_runtime::ParachainInfoConfig {
+			parachain_id: KILT_PARA_ID.into(),
+			..Default::default()
+		},
+		parachain_staking: spiritnet_runtime::ParachainStakingConfig {
+			stakers: [alice.clone(), bob.clone()]
+				.map(|(acc, _)| -> (AccountId, Option<AccountId>, runtime_common::Balance) {
+					(acc, None, 2 * MinCollatorStake::get())
+				})
+				.to_vec(),
+			inflation_config: kilt_inflation_config(),
+			max_candidate_stake: MAX_COLLATOR_STAKE,
+		},
+		council: spiritnet_runtime::CouncilConfig {
+			members: [alice.clone(), bob.clone()].map(|(acc, _)| acc).to_vec(),
+			phantom: Default::default(),
+		},
+		technical_committee: spiritnet_runtime::TechnicalCommitteeConfig {
+			members: [alice, bob].map(|(acc, _)| acc).to_vec(),
+			phantom: Default::default(),
+		},
+		polkadot_xcm: spiritnet_runtime::PolkadotXcmConfig {
+			safe_xcm_version: Some(SAFE_XCM_VERSION),
+			..Default::default()
+		},
+		..Default::default()
+	};
 
-	let keys = [alice.clone(), bob.clone()]
-		.into_iter()
-		.map(|(acc, aura)| (acc.clone(), acc, SessionKeys { aura }))
-		.collect::<Vec<_>>();
-
-	let members = vec![alice.clone().0, bob.clone().0];
-
-	serde_json::json!(
-		{
-			"balances": {
-				"balances": balances,
-			},
-			"session": {
-				"keys": keys,
-			},
-			"parachainInfo": {
-				"parachainId": KILT_PARA_ID,
-			},
-			"parachainStaking": {
-				"stakers": stakers,
-				"inflationConfig": kilt_inflation_config(),
-				"maxCandidateStake": MAX_COLLATOR_STAKE,
-			},
-			"council": {
-				"members": members,
-			},
-			"technicalCommittee": {
-				"members": members,
-			},
-			"polkadotXcm": {
-				"safeXcmVersion": SAFE_XCM_VERSION,
-			},
-		}
-	)
+	serde_json::to_value(genesis).unwrap()
 }
