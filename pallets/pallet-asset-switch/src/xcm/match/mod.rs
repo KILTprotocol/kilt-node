@@ -23,6 +23,11 @@ use xcm_executor::traits::{Error as XcmExecutorError, MatchesFungibles};
 
 use crate::{Config, SwitchPair, SwitchPairInfoOf};
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 const LOG_TARGET: &str = "xcm::pallet-asset-switch::MatchesSwitchPairXcmFeeFungibleAsset";
 
 /// Type implementing [MatchesFungibles] and returns the provided
@@ -45,7 +50,7 @@ where
 			SwitchPair::<T, I>::get().ok_or(XcmExecutorError::AssetNotHandled)?;
 
 		// 2. Match stored asset ID with input asset ID.
-		let MultiAsset { id, .. } = remote_xcm_fee.clone().try_into().map_err(|e| {
+		let MultiAsset { id, fun } = remote_xcm_fee.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
 				"Failed to convert stored remote fee asset {:?} into v3 MultiLocation with error {:?}.",
@@ -55,14 +60,21 @@ where
 			XcmExecutorError::AssetNotHandled
 		})?;
 		ensure!(id == a.id, XcmExecutorError::AssetNotHandled);
+		// 3. Verify the stored asset is a fungible one.
+		let Fungibility::Fungible(_) = fun else {
+			log::error!(target: LOG_TARGET, "Stored remote fee asset {:?} is not a fungible one.", remote_xcm_fee);
+			return Err(XcmExecutorError::AssetNotHandled);
+		};
+
 		// After this ensure, we know we need to be transacting with this asset, so any
 		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
-		// 3. Force stored asset as a concrete and fungible one and return its amount.
+		// 4. Force stored asset as a concrete one.
 		let AssetId::Concrete(location) = id else {
 			log::error!(target: LOG_TARGET, "Configured XCM fee asset {:?} is supposed to be concrete but it is not.", id);
 			return Err(XcmExecutorError::AssetIdConversionFailed);
 		};
+		// 5. Force input asset as a fungible one and return its amount.
 		let Fungibility::Fungible(amount) = a.fun else {
 			log::info!(target: LOG_TARGET, "Input asset {:?} is supposed to be fungible but it is not.", a);
 			return Err(XcmExecutorError::AmountToBalanceConversionFailed);
