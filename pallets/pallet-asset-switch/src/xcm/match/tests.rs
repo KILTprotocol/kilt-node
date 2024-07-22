@@ -28,11 +28,8 @@ use crate::xcm::{
 	MatchesSwitchPairXcmFeeFungibleAsset,
 };
 
-// TODO: Not an easy way to test inconsistent XCM versions. Write those tests
-// when a new XCM version is added to the codebase.
-
 #[test]
-fn successful() {
+fn successful_with_stored_v3() {
 	let location = MultiLocation {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
@@ -56,7 +53,37 @@ fn successful() {
 }
 
 #[test]
-fn fails_on_switch_pair_not_set() {
+fn successful_with_stored_v2() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = {
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+		// Set XCM fee asset to an XCM v2.
+		new_switch_pair_info.remote_xcm_fee =
+			VersionedMultiAsset::V2(new_switch_pair_info.remote_xcm_fee.try_into().unwrap());
+		new_switch_pair_info
+	};
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let (asset_location, asset_amount): (MultiLocation, u128) =
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
+					id: AssetId::Concrete(location),
+					fun: Fungibility::Fungible(u128::MAX),
+				})
+				.unwrap();
+			// Asset location should match the one stored in the switch pair.
+			assert_eq!(asset_location, location);
+			// Asset amount should match the input one.
+			assert_eq!(asset_amount, u128::MAX);
+		});
+}
+
+#[test]
+fn skips_on_switch_pair_not_set() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_err!(
 			MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
@@ -72,7 +99,7 @@ fn fails_on_switch_pair_not_set() {
 }
 
 #[test]
-fn fails_on_different_asset() {
+fn skips_on_different_asset() {
 	let location = MultiLocation {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
@@ -90,6 +117,36 @@ fn fails_on_different_asset() {
 			assert_err!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: AssetId::Concrete(different_location),
+					fun: Fungibility::Fungible(u128::MAX),
+				}) as Result<(_, u128), _>,
+				Error::AssetNotHandled
+			);
+		});
+}
+
+#[test]
+fn skips_on_not_fungible_stored_asset() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	let non_fungible_asset_amount = Fungibility::NonFungible(AssetInstance::Index(1));
+	let new_switch_pair_info = {
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+		// Set XCM fee asset to one with an abstract ID.
+		new_switch_pair_info.remote_xcm_fee = VersionedMultiAsset::V3(MultiAsset {
+			id: AssetId::Concrete(location),
+			fun: non_fungible_asset_amount,
+		});
+		new_switch_pair_info
+	};
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build()
+		.execute_with(|| {
+			assert_err!(
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
+					id: AssetId::Concrete(location),
 					fun: Fungibility::Fungible(u128::MAX),
 				}) as Result<(_, u128), _>,
 				Error::AssetNotHandled
@@ -127,39 +184,8 @@ fn fails_on_not_concrete_stored_asset() {
 		});
 }
 
-// TODO: Resume from here
 #[test]
-fn fails_on_not_fungible_stored_asset() {
-	let location = MultiLocation {
-		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
-	};
-	let non_fungible_asset_amount = Fungibility::NonFungible(AssetInstance::Index(1));
-	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
-		// Set XCM fee asset to one with an abstract ID.
-		new_switch_pair_info.remote_xcm_fee = VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(location),
-			fun: non_fungible_asset_amount,
-		});
-		new_switch_pair_info
-	};
-	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
-			assert_err!(
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(location),
-					fun: Fungibility::Fungible(u128::MAX),
-				}) as Result<(_, u128), _>,
-				Error::AssetIdConversionFailed
-			);
-		});
-}
-
-#[test]
-fn fails_on_not_fungible_asset() {
+fn fails_on_not_fungible_input_asset() {
 	let location = MultiLocation {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),

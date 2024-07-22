@@ -62,7 +62,7 @@ where
 		ensure!(id == a.id, XcmExecutorError::AssetNotHandled);
 		// 3. Verify the stored asset is a fungible one.
 		let Fungibility::Fungible(_) = fun else {
-			log::error!(target: LOG_TARGET, "Stored remote fee asset {:?} is not a fungible one.", remote_xcm_fee);
+			log::info!(target: LOG_TARGET, "Stored remote fee asset {:?} is not a fungible one.", remote_xcm_fee);
 			return Err(XcmExecutorError::AssetNotHandled);
 		};
 
