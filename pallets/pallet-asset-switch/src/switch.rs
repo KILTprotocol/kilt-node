@@ -21,20 +21,33 @@ use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 use xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 
+/// Information related to a switch pair.
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
 pub struct SwitchPairInfo<AccountId> {
+	/// The address that will hold the local tokens locked in return for the
+	/// remote asset.
 	pub pool_account: AccountId,
+	/// The balance of the remote (fungible) asset for the chain sovereign
+	/// account on the configured `remote_reserve_location`.
 	pub remote_asset_balance: u128,
+	/// The ID of the remote asset to switch 1:1 with the local token.
 	pub remote_asset_id: VersionedAssetId,
+	/// The assets to take from the user's balance on this chain to pay for XCM
+	/// execution fees on the reserve location.
 	pub remote_fee: VersionedMultiAsset,
+	/// The remote location on which the remote asset lives.
 	pub remote_reserve_location: VersionedMultiLocation,
+	/// The status of the switch pair.
 	pub status: SwitchPairStatus,
 }
 
+/// All statues a switch pool can be in at any given time.
 #[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone, Default)]
 pub enum SwitchPairStatus {
+	/// Switches are not enabled.
 	#[default]
 	Paused,
+	/// Switches are enabled.
 	Running,
 }
 

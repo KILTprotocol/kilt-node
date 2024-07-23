@@ -26,7 +26,7 @@ mod xcm_fee_asset {
 
 	const LOG_TARGET: &str = "xcm::pallet-asset-switch::AllowXcmFeeAsset";
 
-	/// Type implementing `ContainsPair<MultiAsset, MultiLocation>` and returns
+	/// Type implementing [ContainsPair] and returns
 	/// `true` if the specified asset matches the switch pair remote XCM fee
 	/// asset, which must be reserve transferred to this chain in order to be
 	/// withdrawn from the user's balance to pay for XCM fees at destination.
@@ -80,10 +80,10 @@ mod switch_pair_remote_asset {
 
 	const LOG_TARGET: &str = "xcm::barriers::pallet-asset-switch::AllowSwitchPairRemoteAsset";
 
-	/// Type implementing `ContainsPair<MultiAsset, MultiLocation>` and returns
-	/// `true` if the specified asset matches the switch pair remote asset, which
-	/// must be reserve transferred to this chain to be traded back for the
-	/// local token.
+	/// Type implementing [ContainsPair] and returns
+	/// `true` if the specified asset matches the switch pair remote asset,
+	/// which must be reserve transferred to this chain to be traded back for
+	/// the local token.
 	pub struct IsSwitchPairRemoteAsset<T, I>(PhantomData<(T, I)>);
 
 	impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwitchPairRemoteAsset<T, I>
