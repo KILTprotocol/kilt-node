@@ -18,7 +18,7 @@
 
 //! KILT chain specification
 
-use peregrine_runtime::WASM_BINARY;
+use peregrine_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, WASM_BINARY};
 use sc_service::ChainType;
 
 use crate::chain_spec::{
@@ -46,12 +46,17 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 }
 
 fn generate_genesis_state() -> serde_json::Value {
-	serde_json::json!({
-		"parachainInfo": {
-			"parachainId": KILT_PARA_ID,
+	let genesis = RuntimeGenesisConfig {
+		parachain_info: ParachainInfoConfig {
+			parachain_id: KILT_PARA_ID.into(),
+			..Default::default()
 		},
-		"polkadot_xcm": {
-			"safeXcmVersion": SAFE_XCM_VERSION,
+		polkadot_xcm: PolkadotXcmConfig {
+			safe_xcm_version: Some(SAFE_XCM_VERSION),
+			..Default::default()
 		},
-	})
+		..Default::default()
+	};
+
+	serde_json::to_value(genesis).expect("Creating genesis state failed")
 }

@@ -19,7 +19,7 @@
 //! KILT chain specification
 
 use sc_service::ChainType;
-use spiritnet_runtime::WASM_BINARY;
+use spiritnet_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, WASM_BINARY};
 
 use crate::chain_spec::{
 	spiritnet::{ChainSpec, SAFE_XCM_VERSION},
@@ -46,12 +46,17 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 }
 
 fn generate_genesis_state() -> serde_json::Value {
-	serde_json::json!({
-		"parachainInfo": {
-			"parachainId": KILT_PARA_ID,
+	let genesis = RuntimeGenesisConfig {
+		parachain_info: ParachainInfoConfig {
+			parachain_id: KILT_PARA_ID.into(),
+			..Default::default()
 		},
-		"polkadotXcm": {
-			"safeXcmVersion": SAFE_XCM_VERSION,
+		polkadot_xcm: PolkadotXcmConfig {
+			safe_xcm_version: Some(SAFE_XCM_VERSION),
+			..Default::default()
 		},
-	})
+		..Default::default()
+	};
+
+	serde_json::to_value(genesis).expect("Creating genesis state failed")
 }

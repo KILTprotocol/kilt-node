@@ -18,10 +18,13 @@
 
 //! KILT chain specification
 
-use peregrine_runtime::{SessionKeys, WASM_BINARY};
+use peregrine_runtime::{
+	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
+	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, TechnicalCommitteeConfig, WASM_BINARY,
+};
 use runtime_common::{
 	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
-	AccountId, AuthorityId,
+	AccountId, AuthorityId, Balance,
 };
 use sc_service::ChainType;
 use sp_core::sr25519;
@@ -68,48 +71,43 @@ fn generate_genesis_state() -> serde_json::Value {
 		get_account_id_from_secret::<sr25519::Public>("Ferdie"),
 	];
 
-	let stakers = [alice.clone(), bob.clone()]
-		.into_iter()
-		.map(|(acc, _)| -> (AccountId, Option<AccountId>, u128) { (acc, None, 2 * MinCollatorStake::get()) })
-		.collect::<Vec<_>>();
+	let genesis = RuntimeGenesisConfig {
+		balances: BalancesConfig {
+			balances: endowed_accounts.map(|acc| (acc, 10_000_000 * KILT)).to_vec(),
+		},
+		session: SessionConfig {
+			keys: [alice.clone(), bob.clone()]
+				.map(|(acc, key)| (acc.clone(), acc, SessionKeys { aura: key }))
+				.to_vec(),
+		},
+		sudo: SudoConfig {
+			key: Some(alice.0.clone()),
+		},
+		parachain_info: ParachainInfoConfig {
+			parachain_id: KILT_PARA_ID.into(),
+			..Default::default()
+		},
+		parachain_staking: ParachainStakingConfig {
+			stakers: [alice.clone(), bob.clone()]
+				.map(|(acc, _)| -> (AccountId, Option<AccountId>, Balance) { (acc, None, 2 * MinCollatorStake::get()) })
+				.to_vec(),
+			inflation_config: kilt_inflation_config(),
+			max_candidate_stake: MAX_COLLATOR_STAKE,
+		},
+		council: CouncilConfig {
+			members: [alice.clone(), bob.clone()].map(|(acc, _)| acc).to_vec(),
+			phantom: Default::default(),
+		},
+		technical_committee: TechnicalCommitteeConfig {
+			members: [alice, bob].map(|(acc, _)| acc).to_vec(),
+			phantom: Default::default(),
+		},
+		polkadot_xcm: PolkadotXcmConfig {
+			safe_xcm_version: Some(SAFE_XCM_VERSION),
+			..Default::default()
+		},
+		..Default::default()
+	};
 
-	let balances = endowed_accounts
-		.iter()
-		.cloned()
-		.map(|acc| (acc, 1_000_000 * KILT))
-		.collect::<Vec<_>>();
-
-	let keys = [alice.clone(), bob.clone()]
-		.into_iter()
-		.map(|(acc, aura)| (acc.clone(), acc, SessionKeys { aura }))
-		.collect::<Vec<_>>();
-
-	let members = vec![alice.clone().0, bob.clone().0];
-
-	serde_json::json!({
-		"balances": {
-			"balances": balances,
-		},
-		"session": {
-			"keys": keys,
-		},
-		"sudo": { "key": Some(alice.0) },
-		"parachainInfo": {
-			"parachainId": KILT_PARA_ID,
-		},
-		"parachainStaking": {
-			"stakers": stakers,
-			"inflationConfig": kilt_inflation_config(),
-			"maxCandidateStake": MAX_COLLATOR_STAKE,
-		},
-		"council": {
-			"members": members,
-		},
-		"technicalCommittee": {
-			"members": members,
-		},
-		"polkadotXcm": {
-			"safeXcmVersion": Some(SAFE_XCM_VERSION),
-		}
-	})
+	serde_json::to_value(genesis).expect("Creating genesis state failed")
 }
