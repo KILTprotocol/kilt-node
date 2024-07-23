@@ -213,7 +213,7 @@ fn fails_on_not_concrete_stored_asset() {
 }
 
 #[test]
-fn fails_on_not_fungible_input_asset() {
+fn fails_on_non_fungible_input_asset() {
 	let location = MultiLocation {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
