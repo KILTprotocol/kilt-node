@@ -70,7 +70,7 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Accou
 	checkSystemEvents(hydradxContext, { section: 'currencies', method: 'Deposited' }).toMatchSnapshot(
 		'receiver events currencies'
 	)
-	checkSystemEvents(hydradxContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
+	checkSystemEvents(hydradxContext, 'messageQueue').toMatchSnapshot('receiver events xcmpQueue')
 
 	// check balance receiver
 	// check balance. Equal to `KILT` - tx fees

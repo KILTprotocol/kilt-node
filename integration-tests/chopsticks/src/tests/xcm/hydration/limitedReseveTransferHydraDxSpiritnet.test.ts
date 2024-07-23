@@ -52,7 +52,7 @@ test('Limited Reserve Transfers from HydraDx Account Alice -> Spiritnet Account 
 	await createBlock(hydradxContext)
 
 	// Check events sender
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
+	checkEvents(events, 'messageQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, { section: 'currencies', method: 'Withdrawn' }).toMatchSnapshot('sender events currencies')
 	checkEvents(events, 'xTokens').toMatchSnapshot('sender events currencies')
 
