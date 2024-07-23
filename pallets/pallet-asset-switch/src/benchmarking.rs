@@ -102,10 +102,10 @@ mod benchmarks {
 		};
 
 		BenchmarkInfo {
-			beneficiary: benchmark_info.beneficiary.unwrap_or(default.beneficiary.into()),
-			destination: benchmark_info.destination.unwrap_or(default.destination.into()),
-			remote_asset_id: benchmark_info.remote_asset_id.unwrap_or(default.remote_asset_id.into()),
-			remote_fee: benchmark_info.remote_fee.unwrap_or(default.remote_fee.into()),
+			beneficiary: benchmark_info.beneficiary.unwrap_or(default.beneficiary),
+			destination: benchmark_info.destination.unwrap_or(default.destination),
+			remote_asset_id: benchmark_info.remote_asset_id.unwrap_or(default.remote_asset_id),
+			remote_fee: benchmark_info.remote_fee.unwrap_or(default.remote_fee),
 		}
 	}
 
@@ -132,6 +132,7 @@ mod benchmarks {
 			Box::new(remote_asset_id.clone()),
 			Box::new(remote_fee.clone()),
 			u128::MAX,
+			u128::zero(),
 			u128::zero(),
 		)
 		.unwrap();
@@ -166,6 +167,7 @@ mod benchmarks {
 			remote_fee,
 			u128::MAX,
 			u128::zero(),
+			u128::zero(),
 		);
 
 		assert!(Pallet::<T, I>::switch_pair().is_some());
@@ -191,6 +193,7 @@ mod benchmarks {
 			remote_asset_id,
 			remote_fee,
 			u128::MAX,
+			u128::zero(),
 			u128::zero(),
 		);
 

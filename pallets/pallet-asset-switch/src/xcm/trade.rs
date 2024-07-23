@@ -355,7 +355,7 @@ mod switch_pair_remote_asset {
 						&switch_pair.pool_account,
 						&FeeDestinationAccount::get(),
 						remaining_balance_as_local_currency,
-						Preservation::Expendable,
+						Preservation::Preserve,
 					).map_err(|e| {
 						log::error!(target: LOG_TARGET, "Failed to transfer unused balance {:?} from switch pair pool account {:?} to specified account {:?}", remaining_balance_as_local_currency, switch_pair.pool_account, FeeDestinationAccount::get());
 						e
