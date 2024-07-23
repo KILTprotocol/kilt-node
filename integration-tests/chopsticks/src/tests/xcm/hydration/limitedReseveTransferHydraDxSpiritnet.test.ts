@@ -1,11 +1,11 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-import * as HydraDxConfig from '../../network/hydraDx.js'
-import * as SpiritnetConfig from '../../network/spiritnet.js'
-import { KILT, initialBalanceHDX, initialBalanceKILT, keysAlice } from '../../utils.js'
-import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../index.js'
-import { checkBalance, createBlock, hexAddress, setStorage, checkBalanceInRange } from '../utils.js'
+import * as HydraDxConfig from '../../../network/hydraDx.js'
+import * as SpiritnetConfig from '../../../network/spiritnet.js'
+import { KILT, initialBalanceHDX, initialBalanceKILT, keysAlice } from '../../../utils.js'
+import { getFreeBalanceHydraDxKilt, getFreeBalanceSpiritnet, hydradxContext, spiritnetContext } from '../../index.js'
+import { checkBalance, createBlock, hexAddress, setStorage, checkBalanceInRange } from '../../utils.js'
 
 const aliceLocation = {
 	V3: {
@@ -52,7 +52,7 @@ test('Limited Reserve Transfers from HydraDx Account Alice -> Spiritnet Account 
 	await createBlock(hydradxContext)
 
 	// Check events sender
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
+	checkEvents(events, 'messageQueue').toMatchSnapshot('sender events xcm queue pallet')
 	checkEvents(events, { section: 'currencies', method: 'Withdrawn' }).toMatchSnapshot('sender events currencies')
 	checkEvents(events, 'xTokens').toMatchSnapshot('sender events currencies')
 
