@@ -261,11 +261,11 @@ impl ExtBuilder {
 	}
 
 	// Run the specified closure and test the storage invariants afterwards.
-	pub(crate) fn run(self, run: impl FnOnce()) {
+	pub(crate) fn build_and_execute_with_sanity_tests(self, run: impl FnOnce()) {
 		let mut ext = self.build();
 		ext.execute_with(|| {
 			run();
-			crate::try_runtime::try_state::<MockRuntime, _>(System::block_number()).unwrap();
+			crate::try_state::do_try_state::<MockRuntime, _>(System::block_number()).unwrap();
 		});
 	}
 }

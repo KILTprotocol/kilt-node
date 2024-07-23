@@ -55,7 +55,7 @@ fn successful() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
 			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
@@ -119,7 +119,7 @@ fn successful() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
 			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
@@ -183,7 +183,7 @@ fn successful() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let total_currency_issuance_before = <Balances as Inspect<AccountId32>>::total_issuance();
 			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
@@ -236,7 +236,7 @@ fn successful() {
 
 #[test]
 fn fails_on_invalid_origin() {
-	ExtBuilder::default().run(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::switch(RawOrigin::Root.into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
 			DispatchError::BadOrigin
@@ -247,7 +247,7 @@ fn fails_on_invalid_origin() {
 #[test]
 fn fails_on_non_existing_pool() {
 	let user = AccountId32::from([0; 32]);
-	ExtBuilder::default().run(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::switch(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
 			Error::<MockRuntime>::SwitchPairNotFound
@@ -270,7 +270,7 @@ fn fails_on_pool_not_running() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Paused,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
 				Error::<MockRuntime>::SwitchPairNotEnabled
@@ -294,7 +294,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -317,7 +317,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -340,7 +340,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -363,7 +363,7 @@ fn fails_on_not_enough_user_local_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user).into(),
@@ -392,7 +392,7 @@ fn fails_on_not_enough_remote_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -415,7 +415,7 @@ fn fails_on_not_enough_remote_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
@@ -452,7 +452,7 @@ fn fails_on_not_enough_user_xcm_balance() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),

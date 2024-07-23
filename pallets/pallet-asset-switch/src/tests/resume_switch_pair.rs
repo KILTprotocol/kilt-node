@@ -40,7 +40,7 @@ fn successful() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Paused,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::Root.into()));
 			assert_eq!(
 				SwitchPair::<MockRuntime>::get().unwrap().status,
@@ -64,7 +64,7 @@ fn successful() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::Root.into()));
 			assert_eq!(
 				SwitchPair::<MockRuntime>::get().unwrap().status,
@@ -80,7 +80,7 @@ fn successful() {
 
 #[test]
 fn fails_on_non_existing_pair() {
-	ExtBuilder::default().run(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::Root.into()),
 			Error::<MockRuntime>::SwitchPairNotFound
@@ -90,7 +90,7 @@ fn fails_on_non_existing_pair() {
 
 #[test]
 fn fails_on_invalid_origin() {
-	ExtBuilder::default().run(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::None.into()),
 			DispatchError::BadOrigin

@@ -25,7 +25,7 @@ use crate::{Config, LocalCurrencyBalanceOf, Pallet, SwitchPair};
 
 const LOG_TARGET: &str = "try-state::pallet-asset-switch";
 
-pub(crate) fn try_state<T, I>(_n: BlockNumberFor<T>) -> Result<(), TryRuntimeError>
+pub(crate) fn do_try_state<T, I>(_n: BlockNumberFor<T>) -> Result<(), TryRuntimeError>
 where
 	T: Config<I>,
 	I: 'static,

@@ -37,7 +37,7 @@ fn successful() {
 	// for the pool account
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::force_set_switch_pair(
 				RawOrigin::Root.into(),
 				u64::MAX as u128,
@@ -81,7 +81,7 @@ fn successful() {
 	// Case where all issuance is locked and controlled by our sovereign account.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), 1, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::force_set_switch_pair(
 				RawOrigin::Root.into(),
 				u64::MAX as u128,
@@ -124,7 +124,7 @@ fn successful() {
 	// and the remote balance is calculated accordingly.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::force_set_switch_pair(
 				RawOrigin::Root.into(),
 				u64::MAX as u128,
@@ -167,7 +167,7 @@ fn successful() {
 	// but there's a min balance >= `0` on the remote chain.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), 1, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::force_set_switch_pair(
 				RawOrigin::Root.into(),
 				u64::MAX as u128,
@@ -267,7 +267,7 @@ fn successful_overwrites_existing_pool() {
 
 #[test]
 fn fails_on_invalid_origin() {
-	ExtBuilder::default().run(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::force_set_switch_pair(
 				RawOrigin::None.into(),
@@ -285,7 +285,7 @@ fn fails_on_invalid_origin() {
 
 #[test]
 fn fails_on_invalid_supply_values() {
-	ExtBuilder::default().run(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::force_set_switch_pair(
 				RawOrigin::None.into(),

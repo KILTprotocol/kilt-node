@@ -35,7 +35,7 @@ fn successful() {
 		Pallet::<MockRuntime>::pool_account_id_for_remote_asset(&REMOTE_ERC20_ASSET_ID.into()).unwrap();
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), 1_001, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
 				u64::MAX as u128,
@@ -79,7 +79,7 @@ fn successful() {
 	// for the pool account
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
 				u64::MAX as u128,
@@ -122,7 +122,7 @@ fn successful() {
 	// Case where all issuance is locked and controlled by our sovereign account.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), 1, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
 				u64::MAX as u128,
@@ -166,7 +166,7 @@ fn successful() {
 	// and the remote balance is calculated accordingly.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
 				u64::MAX as u128,
@@ -212,7 +212,7 @@ fn successful() {
 	// but there's a min balance >= `0` on the remote chain.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), 1, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
 				u64::MAX as u128,
@@ -253,7 +253,7 @@ fn successful() {
 
 #[test]
 fn fails_on_invalid_origin() {
-	ExtBuilder::default().run(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::None.into(),
@@ -282,7 +282,7 @@ fn fails_on_pool_existing() {
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: Default::default(),
 		})
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::set_switch_pair(
 					RawOrigin::Root.into(),
@@ -301,7 +301,7 @@ fn fails_on_pool_existing() {
 #[test]
 fn fails_on_invalid_supply_values() {
 	// Circulating supply > total issuance
-	ExtBuilder::default().run(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
@@ -317,7 +317,7 @@ fn fails_on_invalid_supply_values() {
 		);
 	});
 	// Circulating supply - total issuance < remote ED
-	ExtBuilder::default().run(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
@@ -342,7 +342,7 @@ fn fails_on_not_enough_funds_on_pool_balance() {
 	// Does not work if not enough free balance is available
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX - 1, 0, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::set_switch_pair(
 					RawOrigin::Root.into(),
@@ -359,7 +359,7 @@ fn fails_on_not_enough_funds_on_pool_balance() {
 	// Does not work if balance is frozen.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 1, 0)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::set_switch_pair(
 					RawOrigin::Root.into(),
@@ -376,7 +376,7 @@ fn fails_on_not_enough_funds_on_pool_balance() {
 	// Does not work if balance is held.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address, u64::MAX, 0, 1)])
-		.run(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<MockRuntime>::set_switch_pair(
 					RawOrigin::Root.into(),

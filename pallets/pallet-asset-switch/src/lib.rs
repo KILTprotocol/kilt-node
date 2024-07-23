@@ -31,7 +31,7 @@ mod mock;
 mod tests;
 
 #[cfg(any(feature = "try-runtime", test))]
-mod try_runtime;
+mod try_state;
 
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 use frame_support::traits::{
@@ -125,7 +125,7 @@ pub mod pallet {
 	{
 		#[cfg(feature = "try-runtime")]
 		fn try_state(n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
-			crate::try_runtime::try_state::<T, I>(n)
+			crate::try_state::do_try_state::<T, I>(n)
 		}
 	}
 
