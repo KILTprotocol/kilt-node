@@ -57,7 +57,11 @@ fn successful() {
 				status: SwitchPairStatus::Paused,
 			};
 			assert_eq!(switch_pair, Some(expected_switch_pair.clone()));
-			assert_total_supply_invariant(u64::MAX, expected_switch_pair.remote_asset_balance, &pool_account_address);
+			assert_total_supply_invariant(
+				u64::MAX,
+				expected_switch_pair.remote_asset_balance,
+				&pool_account_address,
+			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
 					circulating_supply: 1_000,
@@ -95,7 +99,11 @@ fn successful() {
 				status: SwitchPairStatus::Paused,
 			};
 			assert_eq!(switch_pair, Some(expected_switch_pair.clone()));
-			assert_total_supply_invariant(u64::MAX, expected_switch_pair.remote_asset_balance, &pool_account_address);
+			assert_total_supply_invariant(
+				u64::MAX,
+				expected_switch_pair.remote_asset_balance,
+				&pool_account_address,
+			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
 					circulating_supply: u64::MAX as u128,
@@ -129,7 +137,11 @@ fn successful() {
 			status: SwitchPairStatus::Paused,
 		};
 		assert_eq!(switch_pair, Some(expected_switch_pair.clone()));
-		assert_total_supply_invariant(u64::MAX, expected_switch_pair.remote_asset_balance, &pool_account_address);
+		assert_total_supply_invariant(
+			u64::MAX,
+			expected_switch_pair.remote_asset_balance,
+			&pool_account_address,
+		);
 		assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 			== Event::<MockRuntime>::SwitchPairCreated {
 				circulating_supply: 0,
