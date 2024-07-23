@@ -16,110 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+mod xcm_fee_asset;
 pub use xcm_fee_asset::IsSwitchPairXcmFeeAsset;
-mod xcm_fee_asset {
-	use frame_support::traits::ContainsPair;
-	use sp_std::marker::PhantomData;
-	use xcm::v3::{MultiAsset, MultiLocation};
 
-	use crate::{Config, SwitchPair};
-
-	const LOG_TARGET: &str = "xcm::pallet-asset-switch::AllowXcmFeeAsset";
-
-	/// Type implementing [ContainsPair] and returns
-	/// `true` if the specified asset matches the switch pair remote XCM fee
-	/// asset, which must be reserve transferred to this chain in order to be
-	/// withdrawn from the user's balance to pay for XCM fees at destination.
-	pub struct IsSwitchPairXcmFeeAsset<T, I>(PhantomData<(T, I)>);
-
-	impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwitchPairXcmFeeAsset<T, I>
-	where
-		T: Config<I>,
-		I: 'static,
-	{
-		fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
-			log::info!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
-			// 1. Verify a switch pair has been set.
-			let Some(switch_pair) = SwitchPair::<T, I>::get() else {
-				return false;
-			};
-
-			// 2. We only trust the configured remote location.
-			let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", switch_pair.remote_reserve_location, e);
-				e
-			 }) else { return false; };
-			if stored_remote_reserve_location_v3 != *b {
-				log::trace!(
-					target: LOG_TARGET,
-					"Remote origin {:?} does not match expected origin {:?}",
-					b,
-					stored_remote_reserve_location_v3
-				);
-				return false;
-			}
-
-			// 3. Verify the asset matches the configured XCM fee asset.
-			let Ok(stored_remote_asset_fee): Result<MultiAsset, _> = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into v3 with error {:?}.", switch_pair.remote_xcm_fee, e);
-				e
-			 }) else { return false; };
-
-			a.id == stored_remote_asset_fee.id
-		}
-	}
-}
-
+mod switch_pair_remote_asset;
 pub use switch_pair_remote_asset::IsSwitchPairRemoteAsset;
-mod switch_pair_remote_asset {
-	use frame_support::traits::ContainsPair;
-	use sp_std::marker::PhantomData;
-	use xcm::v3::{AssetId, MultiAsset, MultiLocation};
 
-	use crate::{Config, SwitchPair};
-
-	const LOG_TARGET: &str = "xcm::barriers::pallet-asset-switch::AllowSwitchPairRemoteAsset";
-
-	/// Type implementing [ContainsPair] and returns
-	/// `true` if the specified asset matches the switch pair remote asset,
-	/// which must be reserve transferred to this chain to be traded back for
-	/// the local token.
-	pub struct IsSwitchPairRemoteAsset<T, I>(PhantomData<(T, I)>);
-
-	impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwitchPairRemoteAsset<T, I>
-	where
-		T: Config<I>,
-		I: 'static,
-	{
-		fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
-			log::info!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
-			// 1. Verify a switch pair has been set.
-			let Some(switch_pair) = SwitchPair::<T, I>::get() else {
-				return false;
-			};
-
-			// 2. We only trust the configured remote location.
-			let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", switch_pair.remote_reserve_location, e);
-				e
-			 }) else { return false; };
-			if stored_remote_reserve_location_v3 != *b {
-				log::trace!(
-					target: LOG_TARGET,
-					"Remote origin {:?} does not match expected origin {:?}",
-					b,
-					stored_remote_reserve_location_v3
-				);
-				return false;
-			}
-
-			// 3. Verify the asset matches the remote asset to switch for local ones.
-			let Ok(stored_remote_asset_id): Result<AssetId, _> = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset ID {:?} into v3 with error {:?}.", switch_pair.remote_asset_id, e);
-				e
-			 }) else { return false; };
-
-			a.id == stored_remote_asset_id
-		}
-	}
-}
+#[cfg(test)]
+mod mock;
