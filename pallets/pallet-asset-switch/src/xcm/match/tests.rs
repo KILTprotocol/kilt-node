@@ -19,7 +19,7 @@
 use frame_support::assert_err;
 use xcm::{
 	v3::{AssetId, AssetInstance, Fungibility, Junction, Junctions, MultiAsset, MultiLocation},
-	VersionedMultiAsset,
+	IntoVersion, VersionedMultiAsset,
 };
 use xcm_executor::traits::{Error, MatchesFungibles};
 
@@ -27,6 +27,35 @@ use crate::xcm::{
 	r#match::mock::{get_switch_pair_info_for_remote_location, ExtBuilder, MockRuntime},
 	MatchesSwitchPairXcmFeeFungibleAsset,
 };
+
+#[test]
+fn successful_with_stored_latest() {
+	let location = xcm::latest::MultiLocation {
+		parents: 1,
+		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = {
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+		// Set XCM fee asset to the latest XCM version.
+		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_latest().unwrap();
+		new_switch_pair_info
+	};
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let (asset_location, asset_amount): (MultiLocation, u128) =
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
+					id: AssetId::Concrete(location),
+					fun: Fungibility::Fungible(u128::MAX),
+				})
+				.unwrap();
+			// Asset location should match the one stored in the switch pair.
+			assert_eq!(asset_location, location);
+			// Asset amount should match the input one.
+			assert_eq!(asset_amount, u128::MAX);
+		});
+}
 
 #[test]
 fn successful_with_stored_v3() {
