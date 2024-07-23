@@ -140,7 +140,7 @@ impl<AccountId> SwitchPairInfo<AccountId> {
 
 // Modify impls
 impl<AccountId> SwitchPairInfo<AccountId> {
-	pub(crate) fn try_account_for_remote_to_local_switch(&mut self, amount: u128) -> Result<(), ()> {
+	pub(crate) fn try_process_incoming_switch(&mut self, amount: u128) -> Result<(), ()> {
 		let new_remote_asset_sovereign_total_balance = self
 			.remote_asset_sovereign_total_balance
 			.checked_add(amount)
@@ -153,7 +153,7 @@ impl<AccountId> SwitchPairInfo<AccountId> {
 		Ok(())
 	}
 
-	pub(crate) fn try_account_for_local_to_remote_switch(&mut self, amount: u128) -> Result<(), ()> {
+	pub(crate) fn try_process_outgoing_switch(&mut self, amount: u128) -> Result<(), ()> {
 		let new_remote_asset_sovereign_total_balance = self
 			.remote_asset_sovereign_total_balance
 			.checked_sub(amount)

@@ -368,7 +368,7 @@ mod switch_pair_remote_asset {
 							return;
 						};
 						entry
-							.try_account_for_remote_to_local_switch(self.remaining_fungible_balance)
+							.try_process_incoming_switch(self.remaining_fungible_balance)
 							.unwrap_or_else(|_| {
 								log::error!(target: LOG_TARGET, "Failed to increase balance of remote sovereign account due to overflow.");
 							});
