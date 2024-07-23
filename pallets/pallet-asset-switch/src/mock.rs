@@ -102,7 +102,7 @@ type BalancesStorage<T: Config> = StorageMap<Pallet<T>, Twox64Concat, MultiLocat
 pub struct MockFungibleAssetTransactor;
 
 impl MockFungibleAssetTransactor {
-	pub(crate) fn get_balance_for(account: &MultiLocation) -> u128 {
+	pub(super) fn get_balance_for(account: &MultiLocation) -> u128 {
 		BalancesStorage::<MockRuntime>::get(account).unwrap_or_default()
 	}
 }
@@ -185,32 +185,32 @@ impl crate::Config for MockRuntime {
 }
 
 #[derive(Default)]
-pub(crate) struct ExtBuilder(
+pub(super) struct ExtBuilder(
 	Option<NewSwitchPairInfoOf<MockRuntime>>,
 	Vec<(AccountId32, u64, u64, u64)>,
 	Vec<(AccountId32, MultiAsset)>,
 );
 
-pub(crate) const FREEZE_REASON: [u8; 1] = *b"1";
-pub(crate) const HOLD_REASON: MockRuntimeHoldReason = MockRuntimeHoldReason {};
+pub(super) const FREEZE_REASON: [u8; 1] = *b"1";
+pub(super) const HOLD_REASON: MockRuntimeHoldReason = MockRuntimeHoldReason {};
 
 impl ExtBuilder {
-	pub(crate) fn with_switch_pair_info(mut self, switch_pair_info: NewSwitchPairInfoOf<MockRuntime>) -> Self {
+	pub(super) fn with_switch_pair_info(mut self, switch_pair_info: NewSwitchPairInfoOf<MockRuntime>) -> Self {
 		self.0 = Some(switch_pair_info);
 		self
 	}
 
-	pub(crate) fn with_balances(mut self, balances: Vec<(AccountId32, u64, u64, u64)>) -> Self {
+	pub(super) fn with_balances(mut self, balances: Vec<(AccountId32, u64, u64, u64)>) -> Self {
 		self.1 = balances;
 		self
 	}
 
-	pub(crate) fn with_fungibles(mut self, fungibles: Vec<(AccountId32, MultiAsset)>) -> Self {
+	pub(super) fn with_fungibles(mut self, fungibles: Vec<(AccountId32, MultiAsset)>) -> Self {
 		self.2 = fungibles;
 		self
 	}
 
-	pub(crate) fn build(self) -> sp_io::TestExternalities {
+	pub(super) fn build(self) -> sp_io::TestExternalities {
 		let _ = env_logger::try_init();
 		let mut ext = sp_io::TestExternalities::default();
 
@@ -282,7 +282,7 @@ impl ExtBuilder {
 	}
 }
 
-pub(crate) const XCM_ASSET_FEE: MultiAsset = MultiAsset {
+pub(super) const XCM_ASSET_FEE: MultiAsset = MultiAsset {
 	id: PARENT_NATIVE_CURRENCY,
 	fun: Fungibility::Fungible(1_000),
 };
@@ -292,12 +292,12 @@ const PARENT_LOCATION: MultiLocation = MultiLocation {
 	interior: Here,
 };
 
-pub(crate) const ASSET_HUB_LOCATION: MultiLocation = MultiLocation {
+pub(super) const ASSET_HUB_LOCATION: MultiLocation = MultiLocation {
 	parents: 1,
 	interior: X1(Parachain(1_000)),
 };
 
-pub(crate) const REMOTE_ERC20_ASSET_ID: AssetId = AssetId::Concrete(MultiLocation {
+pub(super) const REMOTE_ERC20_ASSET_ID: AssetId = AssetId::Concrete(MultiLocation {
 	parents: 2,
 	interior: X2(
 		GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),

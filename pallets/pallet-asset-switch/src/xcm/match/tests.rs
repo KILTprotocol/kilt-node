@@ -41,7 +41,7 @@ fn successful_with_stored_latest() {
 		new_switch_pair_info
 	};
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.build()
 		.execute_with(|| {
 			let (asset_location, asset_amount): (MultiLocation, u128) =
@@ -65,7 +65,7 @@ fn successful_with_stored_v3() {
 	};
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.build()
 		.execute_with(|| {
 			let (asset_location, asset_amount): (MultiLocation, u128) =
@@ -83,29 +83,28 @@ fn successful_with_stored_v3() {
 
 #[test]
 fn successful_with_stored_v2() {
-	let location = MultiLocation {
+	let location = xcm::v2::MultiLocation {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location.clone().try_into().unwrap());
 		// Set XCM fee asset to an XCM v2.
-		new_switch_pair_info.remote_xcm_fee =
-			VersionedMultiAsset::V2(new_switch_pair_info.remote_xcm_fee.try_into().unwrap());
+		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(2).unwrap();
 		new_switch_pair_info
 	};
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.build()
 		.execute_with(|| {
 			let (asset_location, asset_amount): (MultiLocation, u128) =
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(location),
+					id: AssetId::Concrete(location.clone().try_into().unwrap()),
 					fun: Fungibility::Fungible(u128::MAX),
 				})
 				.unwrap();
 			// Asset location should match the one stored in the switch pair.
-			assert_eq!(asset_location, location);
+			assert_eq!(asset_location, location.try_into().unwrap());
 			// Asset amount should match the input one.
 			assert_eq!(asset_amount, u128::MAX);
 		});

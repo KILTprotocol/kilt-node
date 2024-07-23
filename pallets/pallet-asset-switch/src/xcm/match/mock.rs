@@ -101,10 +101,10 @@ impl crate::Config for MockRuntime {
 pub(super) fn get_switch_pair_info_for_remote_location(location: &MultiLocation) -> NewSwitchPairInfoOf<MockRuntime> {
 	NewSwitchPairInfoOf::<MockRuntime> {
 		pool_account: AccountId32::from([1; 32]),
-		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(location.clone())),
-		remote_reserve_location: VersionedMultiLocation::V3(location.clone()),
+		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(*location)),
+		remote_reserve_location: VersionedMultiLocation::V3(*location),
 		remote_xcm_fee: VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(location.clone()),
+			id: AssetId::Concrete(*location),
 			fun: Fungibility::Fungible(1),
 		}),
 		remote_asset_circulating_supply: Default::default(),

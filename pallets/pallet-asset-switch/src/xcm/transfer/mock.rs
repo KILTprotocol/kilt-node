@@ -19,7 +19,7 @@
 use frame_support::{
 	construct_runtime,
 	traits::{
-		fungible::{Inspect as InspectFungible, Mutate as MutateFungible, Unbalanced as UnbalancedFungible},
+		fungible::{Dust, Inspect as InspectFungible, Mutate as MutateFungible, Unbalanced as UnbalancedFungible},
 		tokens::{DepositConsequence, Fortitude, Preservation, Provenance, WithdrawConsequence},
 		Everything,
 	},
@@ -29,7 +29,7 @@ use pallet_balances::AccountData;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
-	AccountId32,
+	AccountId32, DispatchError,
 };
 use xcm::{
 	v3::{AssetId, Fungibility, MultiAsset, MultiLocation},
@@ -73,7 +73,7 @@ impl frame_system::Config for MockRuntime {
 
 // Currency is not used in this XCM component tests, so we mock the entire
 // currency system.
-pub(crate) struct MockCurrency;
+pub struct MockCurrency;
 
 impl MutateFungible<AccountId32> for MockCurrency {}
 
@@ -84,15 +84,15 @@ impl InspectFungible<AccountId32> for MockCurrency {
 		Self::Balance::default()
 	}
 
-	fn balance(who: &AccountId32) -> Self::Balance {
+	fn balance(_who: &AccountId32) -> Self::Balance {
 		Self::Balance::default()
 	}
 
-	fn can_deposit(who: &AccountId32, amount: Self::Balance, provenance: Provenance) -> DepositConsequence {
+	fn can_deposit(_who: &AccountId32, _amount: Self::Balance, _provenance: Provenance) -> DepositConsequence {
 		DepositConsequence::Success
 	}
 
-	fn can_withdraw(who: &AccountId32, amount: Self::Balance) -> WithdrawConsequence<Self::Balance> {
+	fn can_withdraw(_who: &AccountId32, _amount: Self::Balance) -> WithdrawConsequence<Self::Balance> {
 		WithdrawConsequence::Success
 	}
 
@@ -100,11 +100,11 @@ impl InspectFungible<AccountId32> for MockCurrency {
 		Self::Balance::default()
 	}
 
-	fn reducible_balance(who: &AccountId32, preservation: Preservation, force: Fortitude) -> Self::Balance {
+	fn reducible_balance(_who: &AccountId32, _preservation: Preservation, _force: Fortitude) -> Self::Balance {
 		Self::Balance::default()
 	}
 
-	fn total_balance(who: &AccountId32) -> Self::Balance {
+	fn total_balance(_who: &AccountId32) -> Self::Balance {
 		Self::Balance::default()
 	}
 
@@ -114,16 +114,13 @@ impl InspectFungible<AccountId32> for MockCurrency {
 }
 
 impl UnbalancedFungible<AccountId32> for MockCurrency {
-	fn handle_dust(dust: frame_support::traits::fungible::Dust<AccountId32, Self>) {}
+	fn handle_dust(_dust: Dust<AccountId32, Self>) {}
 
-	fn write_balance(
-		who: &AccountId32,
-		amount: Self::Balance,
-	) -> Result<Option<Self::Balance>, sp_runtime::DispatchError> {
+	fn write_balance(_who: &AccountId32, _amount: Self::Balance) -> Result<Option<Self::Balance>, DispatchError> {
 		Ok(Some(Self::Balance::default()))
 	}
 
-	fn set_total_issuance(amount: Self::Balance) {}
+	fn set_total_issuance(_amount: Self::Balance) {}
 }
 
 impl crate::Config for MockRuntime {
@@ -137,15 +134,19 @@ impl crate::Config for MockRuntime {
 	type SwitchHooks = ();
 	type SwitchOrigin = EnsureRoot<Self::AccountId>;
 	type XcmRouter = ();
+	type WeightInfo = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 pub(super) fn get_switch_pair_info_for_remote_location(location: &MultiLocation) -> NewSwitchPairInfoOf<MockRuntime> {
 	NewSwitchPairInfoOf::<MockRuntime> {
 		pool_account: AccountId32::from([1; 32]),
-		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(location.clone())),
-		remote_reserve_location: VersionedMultiLocation::V3(location.clone()),
+		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(*location)),
+		remote_reserve_location: VersionedMultiLocation::V3(*location),
 		remote_xcm_fee: VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(location.clone()),
+			id: AssetId::Concrete(*location),
 			fun: Fungibility::Fungible(1),
 		}),
 		remote_asset_circulating_supply: Default::default(),
