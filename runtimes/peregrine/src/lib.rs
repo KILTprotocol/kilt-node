@@ -965,7 +965,11 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type SubmitterOrigin = EnsureSigned<AccountId>;
 	type SwitchHooks = asset_switch::RestrictswitchDestinationToSelf;
 	type SwitchOrigin = EnsureRoot<AccountId>;
+	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
 	type XcmRouter = XcmRouter;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = crate::benches::CreateFungibleForAssetSwitchPool1;
 }
 
 // No deposit is taken since creation is permissioned. Only the root origin can
@@ -1167,6 +1171,13 @@ pub type Executive = frame_executive::Executive<
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
+	use frame_system::RawOrigin;
+	use pallet_asset_switch::PartialBenchmarkInfo;
+	use runtime_common::AccountId;
+	use xcm::v3::{AssetId, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, ParentThen};
+
+	use crate::{Fungibles, ParachainSystem};
+
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_timestamp, Timestamp]
@@ -1199,8 +1210,50 @@ mod benches {
 		[pallet_migration, Migration]
 		[pallet_dip_provider, DipProvider]
 		[pallet_deposit_storage, DepositStorage]
+		[pallet_asset_switch, AssetSwitchPool1]
+		[pallet_assets, Fungibles]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
+
+	// Required since the pallet `AssetTransactor` will try to deduct the XCM fee
+	// from the user's balance, and the asset must exist.
+	pub struct CreateFungibleForAssetSwitchPool1;
+
+	impl pallet_asset_switch::BenchmarkHelper for CreateFungibleForAssetSwitchPool1 {
+		fn setup() -> Option<PartialBenchmarkInfo> {
+			const DESTINATION_PARA_ID: u32 = 1_000;
+
+			let asset_location: MultiLocation = Junctions::Here.into();
+			Fungibles::create(
+				RawOrigin::Root.into(),
+				asset_location,
+				AccountId::from([0; 32]).into(),
+				1u32.into(),
+			)
+			.unwrap();
+			let beneficiary = Junctions::X1(Junction::AccountId32 {
+				network: None,
+				id: [0; 32],
+			})
+			.into();
+			let destination =
+				MultiLocation::from(ParentThen(Junctions::X1(Junction::Parachain(DESTINATION_PARA_ID)))).into();
+			let remote_fee = MultiAsset {
+				id: AssetId::Concrete(asset_location),
+				fun: Fungibility::Fungible(1_000),
+			}
+			.into();
+
+			ParachainSystem::open_outbound_hrmp_channel_for_benchmarks(DESTINATION_PARA_ID.into());
+
+			Some(PartialBenchmarkInfo {
+				beneficiary: Some(beneficiary),
+				destination: Some(destination),
+				remote_asset_id: None,
+				remote_fee: Some(remote_fee),
+			})
+		}
+	}
 }
 
 impl_runtime_apis! {
