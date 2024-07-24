@@ -25,6 +25,8 @@ use xcm_executor::{traits::WeightTrader, Assets};
 use crate::{Config, SwitchPair, SwitchPairInfoOf};
 
 #[cfg(test)]
+mod mock;
+#[cfg(test)]
 mod tests;
 
 const LOG_TARGET: &str = "xcm::pallet-asset-switch::UsingComponentsForXcmFeeAsset";
@@ -40,7 +42,7 @@ const LOG_TARGET: &str = "xcm::pallet-asset-switch::UsingComponentsForXcmFeeAsse
 /// local currency asset. For cases where the XCM fee asset is considered of
 /// greater value than the local currency, this is typically fine. For the other
 /// cases, using this trader is not recommended.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct UsingComponentsForXcmFeeAsset<T, I, WeightToFee>
 where
 	T: Config<I>,

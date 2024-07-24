@@ -30,6 +30,8 @@ use xcm_executor::{traits::WeightTrader, Assets};
 use crate::{Config, LocalCurrencyBalanceOf, SwitchPair, SwitchPairInfoOf};
 
 #[cfg(test)]
+mod mock;
+#[cfg(test)]
 mod tests;
 
 const LOG_TARGET: &str = "xcm::pallet-asset-switch::UsingComponentsForSwitchPairRemoteAsset";
@@ -42,7 +44,7 @@ const LOG_TARGET: &str = "xcm::pallet-asset-switch::UsingComponentsForSwitchPair
 ///
 /// Any unused fee is transferred from the switch pair pool account to the
 /// specified account.
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct UsingComponentsForSwitchPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
 where
 	T: Config<I>,
@@ -54,6 +56,21 @@ where
 	consumed_xcm_hash: Option<XcmHash>,
 	switch_pair: Option<SwitchPairInfoOf<T>>,
 	_phantom: PhantomData<(WeightToFee, I, FeeDestinationAccount)>,
+}
+
+impl<T, I, WeightToFee, FeeDestinationAccount> PartialEq
+	for UsingComponentsForSwitchPairRemoteAsset<T, I, WeightToFee, FeeDestinationAccount>
+where
+	T: Config<I>,
+	I: 'static,
+	FeeDestinationAccount: Get<T::AccountId>,
+{
+	fn eq(&self, other: &Self) -> bool {
+		self.remaining_weight == other.remaining_weight
+			&& self.remaining_fungible_balance == other.remaining_fungible_balance
+			&& self.consumed_xcm_hash == other.consumed_xcm_hash
+			&& self.switch_pair == other.switch_pair
+	}
 }
 
 impl<T, I, WeightToFee, FeeDestinationAccount> WeightTrader
@@ -147,22 +164,22 @@ where
 			})
 			.ok()?;
 
-		let weight = weight.min(self.remaining_weight);
-		let amount = WeightToFee::weight_to_fee(&weight);
+		let weight_to_refund: Weight = weight.min(self.remaining_weight);
+		let amount_for_weight_to_refund = WeightToFee::weight_to_fee(&weight_to_refund);
+		// We can only refund up to the remaining balance of this weigher.
+		let amount_to_refund = amount_for_weight_to_refund.min(self.remaining_fungible_balance);
 
 		self.consumed_xcm_hash = None;
-		self.remaining_fungible_balance = self
-			.remaining_fungible_balance
-			.saturating_sub(self.remaining_fungible_balance);
-		self.remaining_weight = self.remaining_weight.saturating_sub(weight);
+		self.remaining_fungible_balance = self.remaining_fungible_balance.saturating_sub(amount_to_refund);
+		self.remaining_weight = self.remaining_weight.saturating_sub(weight_to_refund);
 
-		if amount > 0 {
+		if amount_to_refund > 0 {
 			log::trace!(
 				target: LOG_TARGET,
 				"Refund amount {:?}",
-				(switch_pair_remote_asset_v3, amount)
+				(switch_pair_remote_asset_v3, amount_to_refund)
 			);
-			Some((switch_pair_remote_asset_v3, amount).into())
+			Some((switch_pair_remote_asset_v3, amount_to_refund).into())
 		} else {
 			log::trace!(target: LOG_TARGET, "No refund");
 			None

@@ -23,4 +23,4 @@ mod switch_pair_remote_asset;
 pub use switch_pair_remote_asset::UsingComponentsForSwitchPairRemoteAsset;
 
 #[cfg(test)]
-mod mock;
+mod test_utils;

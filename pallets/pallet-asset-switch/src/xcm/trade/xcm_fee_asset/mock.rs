@@ -16,32 +16,35 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{construct_runtime, traits::Everything, weights::WeightToFee};
+use frame_support::{
+	construct_runtime,
+	traits::{
+		fungible::Dust,
+		tokens::{
+			fungible::{Inspect as InspectFungible, Mutate as MutateFungible, Unbalanced as UnbalancedFungible},
+			DepositConsequence, Fortitude, Preservation, Provenance, WithdrawConsequence,
+		},
+		Everything,
+	},
+};
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
-use pallet_balances::AccountData;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
-	AccountId32,
+	AccountId32, DispatchError,
 };
-use xcm::{
-	v3::{AssetId, Fungibility, MultiAsset, MultiLocation, Weight},
-	VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
-};
-use xcm_executor::traits::WeightTrader as WeightTraderT;
 
 use crate::{NewSwitchPairInfoOf, Pallet};
 
 construct_runtime!(
 	pub enum MockRuntime {
 		System: frame_system,
-		Balances: pallet_balances,
 		Assetswitch: crate
 	}
 );
 
 impl frame_system::Config for MockRuntime {
-	type AccountData = AccountData<u64>;
+	type AccountData = ();
 	type AccountId = AccountId32;
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<MockRuntime>;
@@ -66,27 +69,63 @@ impl frame_system::Config for MockRuntime {
 	type Version = ();
 }
 
-impl pallet_balances::Config for MockRuntime {
-	type AccountStore = System;
+// Currency is not used in this XCM component tests, so we mock the entire
+// currency system.
+pub struct MockCurrency;
+
+impl MutateFungible<AccountId32> for MockCurrency {}
+
+impl InspectFungible<AccountId32> for MockCurrency {
 	type Balance = u64;
-	type DustRemoval = ();
-	type ExistentialDeposit = ConstU64<1>;
-	type FreezeIdentifier = ();
-	type MaxFreezes = ConstU32<0>;
-	type MaxHolds = ConstU32<0>;
-	type MaxLocks = ConstU32<0>;
-	type MaxReserves = ConstU32<0>;
-	type ReserveIdentifier = ();
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = ();
-	type WeightInfo = ();
+
+	fn active_issuance() -> Self::Balance {
+		Self::Balance::default()
+	}
+
+	fn balance(_who: &AccountId32) -> Self::Balance {
+		Self::Balance::default()
+	}
+
+	fn can_deposit(_who: &AccountId32, _amount: Self::Balance, _provenance: Provenance) -> DepositConsequence {
+		DepositConsequence::Success
+	}
+
+	fn can_withdraw(_who: &AccountId32, _amount: Self::Balance) -> WithdrawConsequence<Self::Balance> {
+		WithdrawConsequence::Success
+	}
+
+	fn minimum_balance() -> Self::Balance {
+		Self::Balance::default()
+	}
+
+	fn reducible_balance(_who: &AccountId32, _preservation: Preservation, _force: Fortitude) -> Self::Balance {
+		Self::Balance::default()
+	}
+
+	fn total_balance(_who: &AccountId32) -> Self::Balance {
+		Self::Balance::default()
+	}
+
+	fn total_issuance() -> Self::Balance {
+		Self::Balance::default()
+	}
+}
+
+impl UnbalancedFungible<AccountId32> for MockCurrency {
+	fn handle_dust(_dust: Dust<AccountId32, Self>) {}
+
+	fn write_balance(_who: &AccountId32, _amount: Self::Balance) -> Result<Option<Self::Balance>, DispatchError> {
+		Ok(Some(Self::Balance::default()))
+	}
+
+	fn set_total_issuance(_amount: Self::Balance) {}
 }
 
 impl crate::Config for MockRuntime {
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
-	type LocalCurrency = Balances;
+	type LocalCurrency = MockCurrency;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
@@ -97,40 +136,6 @@ impl crate::Config for MockRuntime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = ();
-}
-
-pub(super) fn get_switch_pair_info_for_remote_location(location: &MultiLocation) -> NewSwitchPairInfoOf<MockRuntime> {
-	NewSwitchPairInfoOf::<MockRuntime> {
-		pool_account: AccountId32::from([1; 32]),
-		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(*location)),
-		remote_reserve_location: VersionedMultiLocation::V3(*location),
-		remote_xcm_fee: VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(*location),
-			fun: Fungibility::Fungible(1),
-		}),
-		remote_asset_circulating_supply: Default::default(),
-		remote_asset_ed: Default::default(),
-		remote_asset_total_supply: Default::default(),
-		status: Default::default(),
-	}
-}
-
-#[derive(Debug, Clone)]
-pub(super) struct SumTimeAndProofValues;
-
-impl WeightToFee for SumTimeAndProofValues {
-	type Balance = u128;
-
-	fn weight_to_fee(weight: &Weight) -> Self::Balance {
-		(weight.ref_time() + weight.proof_size()) as u128
-	}
-}
-
-pub(super) fn is_weigher_unchanged<Weigher>(weigher: &Weigher) -> bool
-where
-	Weigher: WeightTraderT + PartialEq,
-{
-	weigher == &Weigher::new()
 }
 
 #[derive(Default)]
