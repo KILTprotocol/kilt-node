@@ -15,3 +15,342 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+use sp_runtime::traits::Zero;
+use xcm::{
+	v3::{Fungibility, Junction, Junctions, MultiAsset, MultiLocation, Weight, XcmContext},
+	IntoVersion,
+};
+use xcm_executor::traits::WeightTrader;
+
+use crate::xcm::{
+	trade::{
+		switch_pair_remote_asset::mock::{ExtBuilder, MockRuntime, ToDestinationAccount},
+		test_utils::{get_switch_pair_info_for_remote_location, SumTimeAndProofValues},
+	},
+	UsingComponentsForSwitchPairRemoteAsset,
+};
+
+#[test]
+fn successful_on_stored_remote_asset_latest() {
+	let location = xcm::latest::MultiLocation {
+		parents: 1,
+		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = {
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		// Set XCM fee asset to the latest XCM version.
+		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_latest().unwrap();
+		new_switch_pair_info
+	};
+	// Results in an amount of `2` local currency tokens.
+	let weight_to_refund = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
+	// Case when remaining balance and weight are both higher than refund.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::MAX;
+				weigher.remaining_weight = Weight::MAX;
+				weigher.consumed_xcm_hash = Some([0u8; 32]);
+				weigher
+			};
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert_eq!(
+				amount_refunded,
+				Some(MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::Fungible(2)
+				})
+			);
+			assert_eq!(weigher.remaining_fungible_balance, u128::MAX - 2);
+			assert_eq!(weigher.remaining_weight, Weight::MAX - weight_to_refund);
+			assert!(weigher.consumed_xcm_hash.is_none());
+		});
+	// Case when remaining balance is 0 -> Nothing is refunded.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::zero();
+				weigher.remaining_weight = Weight::MAX;
+				weigher.consumed_xcm_hash = Some([0u8; 32]);
+				weigher
+			};
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert_eq!(amount_refunded, None);
+			assert!(weigher.remaining_fungible_balance.is_zero());
+			assert_eq!(weigher.remaining_weight, Weight::MAX - weight_to_refund);
+			assert!(weigher.consumed_xcm_hash.is_none());
+		});
+	// Case when remaining weight is 0 -> Nothing is refunded, remaining balance is
+	// not changed.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::MAX;
+				weigher.remaining_weight = Weight::zero();
+				weigher.consumed_xcm_hash = Some([0u8; 32]);
+				weigher
+			};
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert_eq!(amount_refunded, None);
+			assert_eq!(weigher.remaining_fungible_balance, u128::MAX);
+			assert!(weigher.remaining_weight.is_zero());
+			assert!(weigher.consumed_xcm_hash.is_none());
+		});
+	// Case when both remaining weight and remaining balance are 0 -> Nothing is
+	// refunded.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::zero();
+				weigher.remaining_weight = Weight::zero();
+				weigher.consumed_xcm_hash = Some([0u8; 32]);
+				weigher
+			};
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert_eq!(amount_refunded, None);
+			assert!(weigher.remaining_fungible_balance.is_zero());
+			assert!(weigher.remaining_weight.is_zero());
+			assert!(weigher.consumed_xcm_hash.is_none());
+		});
+}
+
+#[test]
+fn successful_on_stored_remote_asset_asset_v3() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = {
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		// Set XCM fee asset to the XCM version 3.
+		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
+		new_switch_pair_info
+	};
+	// Results in an amount of `2` local currency tokens.
+	let weight_to_refund = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
+	// Case when remaining balance and weight are both higher than refund.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::MAX;
+				weigher.remaining_weight = Weight::MAX;
+				weigher.consumed_xcm_hash = Some([0u8; 32]);
+				weigher
+			};
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert_eq!(
+				amount_refunded,
+				Some(MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::Fungible(2)
+				})
+			);
+			assert_eq!(weigher.remaining_fungible_balance, u128::MAX - 2);
+			assert_eq!(weigher.remaining_weight, Weight::MAX - weight_to_refund);
+			assert!(weigher.consumed_xcm_hash.is_none());
+		});
+	// Case when remaining balance is 0 -> Nothing is refunded.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::zero();
+				weigher.remaining_weight = Weight::MAX;
+				weigher.consumed_xcm_hash = Some([0u8; 32]);
+				weigher
+			};
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert_eq!(amount_refunded, None);
+			assert!(weigher.remaining_fungible_balance.is_zero());
+			assert_eq!(weigher.remaining_weight, Weight::MAX - weight_to_refund);
+			assert!(weigher.consumed_xcm_hash.is_none());
+		});
+	// Case when remaining weight is 0 -> Nothing is refunded, remaining balance is
+	// not changed.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::MAX;
+				weigher.remaining_weight = Weight::zero();
+				weigher.consumed_xcm_hash = Some([0u8; 32]);
+				weigher
+			};
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert_eq!(amount_refunded, None);
+			assert_eq!(weigher.remaining_fungible_balance, u128::MAX);
+			assert!(weigher.remaining_weight.is_zero());
+			assert!(weigher.consumed_xcm_hash.is_none());
+		});
+	// Case when both remaining weight and remaining balance are 0 -> Nothing is
+	// refunded.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::zero();
+				weigher.remaining_weight = Weight::zero();
+				weigher.consumed_xcm_hash = Some([0u8; 32]);
+				weigher
+			};
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert_eq!(amount_refunded, None);
+			assert!(weigher.remaining_fungible_balance.is_zero());
+			assert!(weigher.remaining_weight.is_zero());
+			assert!(weigher.consumed_xcm_hash.is_none());
+		});
+}
+
+#[test]
+fn skips_on_weight_not_previously_purchased() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = {
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		// Set XCM fee asset to the XCM version 3.
+		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
+		new_switch_pair_info
+	};
+	// Results in an amount of `2` local currency tokens.
+	let weight_to_refund = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
+	// Fails with XCM message hash `None`.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::MAX;
+				weigher.remaining_weight = Weight::MAX;
+				// Setting this to 'None' triggers the "not bought with me" condition.
+				weigher.consumed_xcm_hash = None;
+				weigher
+			};
+			let initial_weigher = weigher.clone();
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert!(amount_refunded.is_none());
+			assert_eq!(initial_weigher, weigher);
+		});
+	// Fails with XCM message hash `Some(something_else)`.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build()
+		.execute_with(|| {
+			let mut weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = u128::MAX;
+				weigher.remaining_weight = Weight::MAX;
+				// Setting this to a different value than expected also triggers the "not bought
+				// with me" condition.
+				weigher.consumed_xcm_hash = Some([100; 32]);
+				weigher
+			};
+			let initial_weigher = weigher.clone();
+			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
+			assert!(amount_refunded.is_none());
+			assert_eq!(initial_weigher, weigher);
+		});
+}
+
+#[test]
+fn skips_on_switch_pair_not_set() {
+	ExtBuilder::default().build().execute_with(|| {
+		let mut weigher = {
+			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+				MockRuntime,
+				_,
+				SumTimeAndProofValues,
+				ToDestinationAccount,
+			>::new();
+			weigher.remaining_fungible_balance = u128::MAX;
+			weigher.remaining_weight = Weight::MAX;
+			weigher.consumed_xcm_hash = Some([0u8; 32]);
+			weigher
+		};
+		let initial_weigher = weigher.clone();
+		let amount_refunded = weigher.refund_weight(Weight::from_parts(1, 1), &XcmContext::with_message_id([0u8; 32]));
+		assert!(amount_refunded.is_none());
+		assert_eq!(initial_weigher, weigher);
+	});
+}

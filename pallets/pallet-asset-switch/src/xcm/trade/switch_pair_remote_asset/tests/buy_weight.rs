@@ -51,6 +51,8 @@ fn successful_on_stored_remote_asset_latest() {
 	// Works with an input fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
+		// Give to pool amount same amount that is being purchased in the test case + ED.
+		.with_balances(vec![(new_switch_pair_info.pool_account.clone(), 3)])
 		.build()
 		.execute_with(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
@@ -96,6 +98,8 @@ fn successful_on_stored_remote_asset_latest() {
 	// Works with both an input fungible and non-fungible amount with same asset ID.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
+		// Give to pool amount same amount that is being purchased in the test case + ED.
+		.with_balances(vec![(new_switch_pair_info.pool_account.clone(), 3)])
 		.build()
 		.execute_with(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
@@ -145,6 +149,8 @@ fn successful_on_stored_remote_asset_v3() {
 	// Works with an input fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
+		// Give to pool amount same amount that is being purchased in the test case + ED.
+		.with_balances(vec![(new_switch_pair_info.pool_account.clone(), 3)])
 		.build()
 		.execute_with(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
@@ -190,6 +196,8 @@ fn successful_on_stored_remote_asset_v3() {
 	// Works with both an input fungible and non-fungible amount with same asset ID.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
+		// Give to pool amount same amount that is being purchased in the test case + ED.
+		.with_balances(vec![(new_switch_pair_info.pool_account.clone(), 3)])
 		.build()
 		.execute_with(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<

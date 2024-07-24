@@ -219,7 +219,7 @@ where
 				}) else { return; };
 
 				// No error should ever be thrown from inside this block.
-				let _ = <T::LocalCurrency as Mutate<T::AccountId>>::transfer(
+				let transfer_result = <T::LocalCurrency as Mutate<T::AccountId>>::transfer(
 					&switch_pair.pool_account,
 					&FeeDestinationAccount::get(),
 					remaining_balance_as_local_currency,
@@ -228,6 +228,11 @@ where
 					log::error!(target: LOG_TARGET, "Failed to transfer unused balance {:?} from switch pair pool account {:?} to specified account {:?}", remaining_balance_as_local_currency, switch_pair.pool_account, FeeDestinationAccount::get());
 					e
 				});
+
+				debug_assert!(
+					transfer_result.is_ok(),
+					"Transferring from pool account to fee destination failed."
+				);
 
 				// No error should ever be thrown from inside this block.
 				SwitchPair::<T, I>::mutate(|entry| {

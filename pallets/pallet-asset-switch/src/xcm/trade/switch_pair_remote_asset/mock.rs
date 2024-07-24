@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{construct_runtime, traits::Everything};
+use frame_support::{
+	construct_runtime,
+	traits::{fungible::Mutate as MutateFungible, Everything},
+};
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
 use pallet_balances::AccountData;
 use sp_core::{ConstU16, ConstU32, ConstU64, Get, H256};
@@ -105,11 +108,16 @@ impl Get<AccountId32> for ToDestinationAccount {
 }
 
 #[derive(Default)]
-pub(super) struct ExtBuilder(Option<NewSwitchPairInfoOf<MockRuntime>>);
+pub(super) struct ExtBuilder(Option<NewSwitchPairInfoOf<MockRuntime>>, Vec<(AccountId32, u64)>);
 
 impl ExtBuilder {
 	pub(super) fn with_switch_pair_info(mut self, switch_pair_info: NewSwitchPairInfoOf<MockRuntime>) -> Self {
 		self.0 = Some(switch_pair_info);
+		self
+	}
+
+	pub(super) fn with_balances(mut self, balances: Vec<(AccountId32, u64)>) -> Self {
+		self.1 = balances;
 		self
 	}
 
@@ -131,6 +139,9 @@ impl ExtBuilder {
 					switch_pair_info.pool_account,
 				);
 				Pallet::<MockRuntime>::set_switch_pair_status(switch_pair_info.status).unwrap();
+			}
+			for (account, balance) in self.1 {
+				<Balances as MutateFungible<AccountId32>>::set_balance(&account, balance);
 			}
 
 			System::reset_events()
