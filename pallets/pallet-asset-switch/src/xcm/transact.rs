@@ -74,7 +74,11 @@ where
 
 		// 4. Call into the pre-switch hook
 		T::SwitchHooks::pre_remote_to_local_switch(&beneficiary, fungible_amount).map_err(|e| {
-			log::error!(target: LOG_TARGET, "Hook pre-switch check failed with error code {:?}", e.into());
+			log::error!(
+				target: LOG_TARGET,
+				"Hook pre-switch check failed with error code {:?}",
+				e.into()
+			);
 			Error::FailedToTransactAsset("Failed to validate preconditions for remote-to-local switch.")
 		})?;
 

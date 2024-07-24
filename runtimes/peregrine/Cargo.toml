@@ -19,6 +19,7 @@ sp-io         = { workspace = true }
 
 [dependencies]
 # External dependencies
+cfg-if             = { workspace = true }
 log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info         = { workspace = true, features = ["derive"] }
@@ -132,6 +133,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "hex-literal",
   "kilt-support/runtime-benchmarks",
+  "pallet-asset-switch/runtime-benchmarks",
   "pallet-assets/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
@@ -257,6 +259,7 @@ try-runtime = [
   "frame-system/try-runtime",
   "frame-try-runtime",
   "kilt-support/try-runtime",
+  "pallet-asset-switch/try-runtime",
   "pallet-assets/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",

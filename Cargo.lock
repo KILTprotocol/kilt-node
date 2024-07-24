@@ -7440,6 +7440,7 @@ name = "pallet-asset-switch"
 version = "1.14.0-dev"
 dependencies = [
  "env_logger 0.10.1",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
@@ -7448,6 +7449,7 @@ dependencies = [
  "scale-info",
  "sp-core",
  "sp-io",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
  "staging-xcm",
@@ -9232,6 +9234,7 @@ name = "peregrine-runtime"
 version = "1.14.0-dev"
 dependencies = [
  "attestation",
+ "cfg-if",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
@@ -11629,6 +11632,7 @@ dependencies = [
  "kilt-dip-primitives",
  "kilt-support",
  "log",
+ "pallet-assets",
  "pallet-authorship",
  "pallet-balances",
  "pallet-deposit-storage",

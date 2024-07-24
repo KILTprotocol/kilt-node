@@ -22,6 +22,8 @@
 pub mod traits;
 pub mod xcm;
 
+mod default_weights;
+pub use default_weights::WeightInfo;
 mod switch;
 pub use switch::{SwitchPairInfo, SwitchPairStatus};
 
@@ -29,9 +31,13 @@ pub use switch::{SwitchPairInfo, SwitchPairStatus};
 mod mock;
 #[cfg(test)]
 mod tests;
-
 #[cfg(any(feature = "try-runtime", test))]
 mod try_state;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::{BenchmarkHelper, PartialBenchmarkInfo};
 
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
 use frame_support::traits::{
@@ -47,12 +53,12 @@ pub use crate::pallet::*;
 
 const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 
-#[frame_support::pallet(dev_mode)]
+#[frame_support::pallet]
 pub mod pallet {
 	use crate::{
 		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus},
 		traits::SwitchHooks,
-		LOG_TARGET,
+		WeightInfo, LOG_TARGET,
 	};
 
 	use frame_support::{
@@ -109,9 +115,13 @@ pub mod pallet {
 		/// The origin that can set a new switch pair, remove one, or resume
 		/// switches.
 		type SwitchOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		type WeightInfo: WeightInfo;
 		/// The XCM router to route XCM transfers to the configured reserve
 		/// location.
 		type XcmRouter: SendXcm;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper;
 	}
 
 	#[pallet::pallet]
@@ -208,7 +218,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::set_switch_pair())]
 		pub fn set_switch_pair(
 			origin: OriginFor<T>,
 			remote_asset_total_supply: u128,
@@ -265,7 +275,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(1)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::force_set_switch_pair())]
 		pub fn force_set_switch_pair(
 			origin: OriginFor<T>,
 			remote_asset_total_supply: u128,
@@ -300,7 +310,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(2)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::force_unset_switch_pair())]
 		pub fn force_unset_switch_pair(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
 
@@ -313,7 +323,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(3)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::pause_switch_pair())]
 		pub fn pause_switch_pair(origin: OriginFor<T>) -> DispatchResult {
 			T::PauseOrigin::ensure_origin(origin)?;
 
@@ -326,7 +336,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(4)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::resume_switch_pair())]
 		pub fn resume_switch_pair(origin: OriginFor<T>) -> DispatchResult {
 			T::SwitchOrigin::ensure_origin(origin)?;
 
@@ -339,7 +349,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(5)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::update_remote_xcm_fee())]
 		pub fn update_remote_xcm_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult {
 			T::FeeOrigin::ensure_origin(origin)?;
 
@@ -364,7 +374,7 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(6)]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::switch())]
 		pub fn switch(
 			origin: OriginFor<T>,
 			local_asset_amount: LocalCurrencyBalanceOf<T, I>,

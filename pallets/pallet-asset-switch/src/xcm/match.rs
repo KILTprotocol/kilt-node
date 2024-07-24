@@ -46,7 +46,12 @@ where
 
 		// 2. Match stored asset ID with input asset ID.
 		let MultiAsset { id, .. } = remote_xcm_fee.clone().try_into().map_err(|e| {
-			log::error!(target: LOG_TARGET, "Failed to convert stored remote fee asset {:?} into v3 MultiLocation with error {:?}.", remote_xcm_fee, e);
+			log::error!(
+				target: LOG_TARGET,
+				"Failed to convert stored remote fee asset {:?} into v3 MultiLocation with error {:?}.",
+				remote_xcm_fee,
+				e
+			);
 			XcmExecutorError::AssetNotHandled
 		})?;
 		ensure!(id == a.id, XcmExecutorError::AssetNotHandled);

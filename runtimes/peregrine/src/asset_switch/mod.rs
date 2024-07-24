@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::ensure;
 use pallet_asset_switch::traits::SwitchHooks;
 use runtime_common::{AccountId, Balance};
 use xcm::{
@@ -42,19 +41,30 @@ impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestination
 		_amount: Balance,
 	) -> Result<(), Self::Error> {
 		let to_as_v3: MultiLocation = to.clone().try_into().map_err(|e| {
-			log::error!(target: LOG_TARGET, "Failed to convert beneficiary Multilocation {:?} to v3 with error {:?}", to, e);
+			log::error!(
+				target: LOG_TARGET,
+				"Failed to convert beneficiary Multilocation {:?} to v3 with error {:?}",
+				to,
+				e
+			);
 			Error::Internal
 		})?;
-		ensure!(
-			to_as_v3.interior
-				== Junction::AccountId32 {
-					network: None,
-					id: from.clone().into()
-				}
-				.into(),
-			Error::NotToSelf
-		);
-		Ok(())
+		let is_beneficiary_self = to_as_v3.interior
+			== Junction::AccountId32 {
+				network: None,
+				id: from.clone().into(),
+			}
+			.into();
+		cfg_if::cfg_if! {
+			if #[cfg(feature = "runtime-benchmarks")] {
+				// Clippy complaints the variable is not used with this feature on, otherwise.
+				let _ = is_beneficiary_self;
+				Ok(())
+			} else {
+				frame_support::ensure!(is_beneficiary_self, Error::NotToSelf);
+				Ok(())
+			}
+		}
 	}
 
 	// We don't need to take any actions after the switch is executed
