@@ -17,5 +17,4 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 mod buy_weight;
-mod drop;
 mod refund_weight;

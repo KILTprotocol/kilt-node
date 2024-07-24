@@ -86,6 +86,44 @@ fn successful_on_stored_fungible_xcm_fee_asset_latest() {
 			);
 			assert!(is_weigher_unchanged(&weigher));
 		});
+	// Works with both an input fungible and non-fungible amount with same asset ID.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = UsingComponentsForXcmFeeAsset::<MockRuntime, _, SumTimeAndProofValues>::new();
+			let payment: Assets = vec![
+				MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::Fungible(2),
+				},
+				MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+				},
+			]
+			.into();
+
+			let unused_weight = weigher.buy_weight(weight_to_buy, payment, &xcm_context).unwrap();
+			// The non-fungible asset is left in the registry.
+			assert_eq!(
+				unused_weight,
+				vec![MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+				},]
+				.into()
+			);
+			assert_eq!(weigher.consumed_xcm_hash, Some(xcm_context.message_id));
+			assert_eq!(weigher.remaining_fungible_balance, 2);
+			assert_eq!(weigher.remaining_weight, weight_to_buy);
+		});
 }
 
 #[test]
@@ -136,6 +174,44 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3() {
 				Error::TooExpensive
 			);
 			assert!(is_weigher_unchanged(&weigher));
+		});
+	// Works with both an input fungible and non-fungible amount with same asset ID.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = UsingComponentsForXcmFeeAsset::<MockRuntime, _, SumTimeAndProofValues>::new();
+			let payment: Assets = vec![
+				MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::Fungible(2),
+				},
+				MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+				},
+			]
+			.into();
+
+			let unused_weight = weigher.buy_weight(weight_to_buy, payment, &xcm_context).unwrap();
+			// The non-fungible asset is left in the registry.
+			assert_eq!(
+				unused_weight,
+				vec![MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+				},]
+				.into()
+			);
+			assert_eq!(weigher.consumed_xcm_hash, Some(xcm_context.message_id));
+			assert_eq!(weigher.remaining_fungible_balance, 2);
+			assert_eq!(weigher.remaining_weight, weight_to_buy);
 		});
 }
 
@@ -192,6 +268,44 @@ fn successful_on_stored_fungible_xcm_fee_asset_v2() {
 				Error::TooExpensive
 			);
 			assert!(is_weigher_unchanged(&weigher));
+		});
+	// Works with both an input fungible and non-fungible amount with same asset ID.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = UsingComponentsForXcmFeeAsset::<MockRuntime, _, SumTimeAndProofValues>::new();
+			let payment: Assets = vec![
+				MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::Fungible(2),
+				},
+				MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+				},
+			]
+			.into();
+
+			let unused_weight = weigher.buy_weight(weight_to_buy, payment, &xcm_context).unwrap();
+			// The non-fungible asset is left in the registry.
+			assert_eq!(
+				unused_weight,
+				vec![MultiAsset {
+					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
+						.unwrap()
+						.id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+				},]
+				.into()
+			);
+			assert_eq!(weigher.consumed_xcm_hash, Some(xcm_context.message_id));
+			assert_eq!(weigher.remaining_fungible_balance, 2);
+			assert_eq!(weigher.remaining_weight, weight_to_buy);
 		});
 }
 
@@ -320,10 +434,10 @@ fn skips_on_stored_fungible_xcm_fee_asset_v3() {
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
 		// Set XCM fee asset to the XCM version 3.
-		let non_fungible_remote_xcm_fee_v3 = xcm::v3::MultiAsset::try_from(new_switch_pair_info.remote_xcm_fee)
-			.map(|asset| xcm::v3::MultiAsset {
+		let non_fungible_remote_xcm_fee_v3 = MultiAsset::try_from(new_switch_pair_info.remote_xcm_fee)
+			.map(|asset| MultiAsset {
 				id: asset.id,
-				fun: xcm::v3::Fungibility::NonFungible(xcm::v3::AssetInstance::Index(1)),
+				fun: Fungibility::NonFungible(AssetInstance::Index(1)),
 			})
 			.unwrap();
 		new_switch_pair_info.remote_xcm_fee = non_fungible_remote_xcm_fee_v3.into();
