@@ -70,7 +70,7 @@ impl pallet_balances::Config for MockRuntime {
 	type AccountStore = System;
 	type Balance = u64;
 	type DustRemoval = ();
-	type ExistentialDeposit = ConstU64<0>;
+	type ExistentialDeposit = ConstU64<1>;
 	type FreezeIdentifier = ();
 	type MaxFreezes = ConstU32<0>;
 	type MaxHolds = ConstU32<0>;
@@ -115,7 +115,7 @@ pub(super) fn get_switch_pair_info_for_remote_location(location: &MultiLocation)
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct SumTimeAndProofValues;
 
 impl WeightToFee for SumTimeAndProofValues {

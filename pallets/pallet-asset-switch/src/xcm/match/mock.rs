@@ -69,7 +69,7 @@ impl pallet_balances::Config for MockRuntime {
 	type AccountStore = System;
 	type Balance = u64;
 	type DustRemoval = ();
-	type ExistentialDeposit = ConstU64<0>;
+	type ExistentialDeposit = ConstU64<1>;
 	type FreezeIdentifier = ();
 	type MaxFreezes = ConstU32<0>;
 	type MaxHolds = ConstU32<0>;

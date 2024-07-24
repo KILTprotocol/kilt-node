@@ -19,10 +19,10 @@
 use frame_support::{ensure, weights::WeightToFee as WeightToFeeT};
 use sp_runtime::traits::Zero;
 use sp_std::marker::PhantomData;
-use xcm::v3::{AssetId, Error, MultiAsset, Weight, XcmContext, XcmHash};
+use xcm::v3::{AssetId, Error, Fungibility, MultiAsset, Weight, XcmContext, XcmHash};
 use xcm_executor::{traits::WeightTrader, Assets};
 
-use crate::{Config, SwitchPair};
+use crate::{Config, SwitchPair, SwitchPairInfoOf};
 
 #[cfg(test)]
 mod tests;
@@ -40,7 +40,7 @@ const LOG_TARGET: &str = "xcm::pallet-asset-switch::UsingComponentsForXcmFeeAsse
 /// local currency asset. For cases where the XCM fee asset is considered of
 /// greater value than the local currency, this is typically fine. For the other
 /// cases, using this trader is not recommended.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UsingComponentsForXcmFeeAsset<T, I, WeightToFee>
 where
 	T: Config<I>,
@@ -92,19 +92,23 @@ where
 		// Prevent re-using the same trader more than once.
 		ensure!(self.consumed_xcm_hash.is_none(), Error::NotWithdrawable);
 		// Asset not relevant if no switch pair is set.
-		let switch_pair = SwitchPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
+		let SwitchPairInfoOf::<T> { remote_xcm_fee, .. } = SwitchPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
 
 		let amount = WeightToFee::weight_to_fee(&weight);
 
-		let xcm_fee_asset_v3: MultiAsset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
+		let xcm_fee_asset_v3: MultiAsset = remote_xcm_fee.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
 				"Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}",
-				switch_pair.remote_xcm_fee,
+				remote_xcm_fee,
 				e
 			);
 			Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
 		})?;
+		// Asset not relevant if the stored XCM fee asset is not fungible.
+		let Fungibility::Fungible(_) = xcm_fee_asset_v3.fun else {
+			return Err(Error::AssetNotFound);
+		};
 
 		let required: MultiAsset = (xcm_fee_asset_v3.id, amount).into();
 		let unused = payment.checked_sub(required.clone()).map_err(|_| Error::TooExpensive)?;
