@@ -2,12 +2,11 @@ name: try-runtime
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-  workflow_dispatch:
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/develop' }}
 
 jobs:
   test-try-runtime:
@@ -16,7 +15,7 @@ jobs:
         runtime: [peregrine, spiritnet]
     runs-on: ubuntu-latest
     container:
-      image: paritytech/ci-unified:bullseye-1.77.0
+      image: paritytech/ci-unified:bullseye-1.70.0
 
     steps:
       - name: Checkout code
@@ -30,10 +29,10 @@ jobs:
             $HOME/.cargo/registry/index/
             $HOME/.cargo/registry/cache/
             $HOME/.cargo/git/db/
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            target/
+          key: cargo-try-runtime-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            cargo-try-runtime-${{ matrix.runtime }}-
 
       - name: script
         run: |

@@ -2,12 +2,11 @@ name: Integration tests
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-  workflow_dispatch:
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/develop' }}
 
 jobs:
   integration-tests:
@@ -21,28 +20,25 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ./integration-tests/chopsticks/node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/integration-tests/chopsticks/package-lock.json') }}
+          key: node-modules-${{ hashFiles('**/integration-tests/chopsticks/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-modules-
+            node-modules-
 
       - name: Set up Node.js environment
         run: |
-          cd ./integration-tests/chopsticks
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
           echo 'export NVM_DIR="$HOME/.nvm"' >> $HOME/.bashrc
           echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $HOME/.bashrc
           eval "$(cat $HOME/.bashrc | tail -n +10)"
           nvm install
           nvm use
-
-      - name: TypeScript dependencies
-        run: |
-          cd ./integration-tests/chopsticks
           yarn --immutable
-          yarn ts-check
+        working-directory: ./integration-tests/chopsticks
 
       - name: Lint & Test
         run: |
-          cd ./integration-tests/chopsticks
+          yarn ts-check
           yarn lint
           yarn test:CI
+        working-directory: ./integration-tests/chopsticks
+

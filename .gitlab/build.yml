@@ -4,6 +4,14 @@ build:
     name: kiltprotocol/kilt-ci:2.7.31
     entrypoint: [""]
   stage: build
+  cache:
+    key: cargo-build
+    paths:
+      - $HOME/.cargo/bin/
+      - $HOME/.cargo/registry/index/
+      - $HOME/.cargo/registry/cache/
+      - $HOME/.cargo/git/db/
+      - target/
   only:
     refs:
       - develop
@@ -27,11 +35,3 @@ build:
     - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build latest-${CI_COMMIT_BRANCH}; fi"
     - "if [[ ! -z ${CI_COMMIT_TAG} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_TAG}; fi"
     - "if [[ ! -z ${CI_COMMIT_TAG} && ! -z ${CI_COMMIT_TAG##*-rc*} && ! -z ${CI_COMMIT_TAG##*dev-*} ]]; then ./.maintain/push-image.sh build latest; fi"
-  cache:
-    key: cache-build
-    paths:
-      - target/
-      - $HOME/.cargo/bin/
-      - $HOME/.cargo/registry/index/
-      - $HOME/.cargo/registry/cache/
-      - $HOME/.cargo/git/db/

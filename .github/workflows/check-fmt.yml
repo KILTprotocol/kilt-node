@@ -2,18 +2,17 @@ name: check fmt
 
 on:
   pull_request:
-      types: [opened, synchronize, reopened]
-  workflow_dispatch:
+      types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/develop' }}
 
 jobs:
   check-fmt:
     runs-on: ubuntu-latest
     container:
-      image: paritytech/ci-unified:bullseye-1.77.0
+      image: paritytech/ci-unified:bullseye-1.73.0
     steps:
       - uses: actions/checkout@v4
       - name: Set up caching for Cargo
@@ -24,10 +23,10 @@ jobs:
             $HOME/.cargo/registry/index/
             $HOME/.cargo/registry/cache/
             $HOME/.cargo/git/db/
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            target/
+          key: cargo-fmt-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            cargo-fmt-
       - name: Run cargo fmt
         run: cargo fmt -- --check
       - name: Run taplo
