@@ -16,11 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-mod xcm_fee_asset;
-pub use xcm_fee_asset::UsingComponentsForXcmFeeAsset;
-
-mod switch_pair_remote_asset;
-pub use switch_pair_remote_asset::UsingComponentsForSwitchPairRemoteAsset;
-
-#[cfg(test)]
-mod mock;
+mod buy_weight;
+mod drop;
+mod refund_weight;
