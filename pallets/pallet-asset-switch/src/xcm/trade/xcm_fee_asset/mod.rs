@@ -19,7 +19,7 @@
 use frame_support::{ensure, weights::WeightToFee as WeightToFeeT};
 use sp_runtime::traits::Zero;
 use sp_std::marker::PhantomData;
-use xcm::v3::{AssetId, Error, Fungibility, MultiAsset, Weight, XcmContext, XcmHash};
+use xcm::v3::{Error, Fungibility, MultiAsset, Weight, XcmContext, XcmHash};
 use xcm_executor::{traits::WeightTrader, Assets};
 
 use crate::{Config, SwitchPair, SwitchPairInfoOf};
@@ -107,6 +107,7 @@ where
 		})?;
 		// Asset not relevant if the stored XCM fee asset is not fungible.
 		let Fungibility::Fungible(_) = xcm_fee_asset_v3.fun else {
+			log::info!(target: LOG_TARGET, "Stored XCM fee asset is not fungible.");
 			return Err(Error::AssetNotFound);
 		};
 
@@ -130,38 +131,43 @@ where
 			return None;
 		};
 
-		let Some(switch_pair) = SwitchPair::<T, I>::get() else {
+		let Some(SwitchPairInfoOf::<T> { remote_xcm_fee, .. }) = SwitchPair::<T, I>::get() else {
 			log::error!(target: LOG_TARGET, "Stored switch pair should not be None, but it is.");
 			return None;
 		};
 
-		let remote_asset_id_v3: AssetId = switch_pair
-			.remote_asset_id
+		let xcm_fee_asset_v3: MultiAsset = remote_xcm_fee
 			.clone()
 			.try_into()
 			.map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
 					"Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}",
-					switch_pair.remote_asset_id,
+					remote_xcm_fee,
 					e
 				);
 				e
 			})
 			.ok()?;
+		// Double check the store asset fungibility type, in case it changes between
+		// weight purchase and weight refund.
+		let Fungibility::Fungible(_) = xcm_fee_asset_v3.fun else {
+			log::info!(target: LOG_TARGET, "Stored XCM fee asset is not fungible.");
+			return None;
+		};
 
-		let weight = weight.min(self.remaining_weight);
-		let amount = WeightToFee::weight_to_fee(&weight);
+		let weight_to_refund: Weight = weight.min(self.remaining_weight);
+		let amount_for_weight_to_refund = WeightToFee::weight_to_fee(&weight_to_refund);
+		// We can only refund up to the remaining balance of this weigher.
+		let amount_to_refund = amount_for_weight_to_refund.min(self.remaining_fungible_balance);
 
 		self.consumed_xcm_hash = None;
-		self.remaining_fungible_balance = self
-			.remaining_fungible_balance
-			.saturating_sub(self.remaining_fungible_balance);
-		self.remaining_weight = self.remaining_weight.saturating_sub(weight);
+		self.remaining_fungible_balance = self.remaining_fungible_balance.saturating_sub(amount_to_refund);
+		self.remaining_weight = self.remaining_weight.saturating_sub(weight_to_refund);
 
-		if amount > 0 {
-			log::trace!(target: LOG_TARGET, "Refund amount {:?}", (remote_asset_id_v3, amount));
-			Some((remote_asset_id_v3, amount).into())
+		if amount_to_refund > 0 {
+			log::trace!(target: LOG_TARGET, "Refund amount {:?}", (xcm_fee_asset_v3.id, amount_to_refund));
+			Some((xcm_fee_asset_v3.id, amount_to_refund).into())
 		} else {
 			log::trace!(target: LOG_TARGET, "No refund");
 			None

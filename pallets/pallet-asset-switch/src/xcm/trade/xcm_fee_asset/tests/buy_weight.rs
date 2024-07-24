@@ -379,7 +379,7 @@ fn skips_on_stored_fungible_xcm_fee_asset_v2() {
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location.clone().try_into().unwrap());
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location.try_into().unwrap());
 		// Set XCM fee asset to the XCM version 2.
 		let non_fungible_remote_xcm_fee_v2: xcm::v2::MultiAsset =
 			xcm::v2::MultiAsset::try_from(new_switch_pair_info.remote_xcm_fee)
