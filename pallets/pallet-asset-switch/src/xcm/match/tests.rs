@@ -42,8 +42,7 @@ fn successful_with_stored_latest() {
 	};
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let (asset_location, asset_amount): (MultiLocation, u128) =
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: AssetId::Concrete(location),
@@ -66,8 +65,7 @@ fn successful_with_stored_v3() {
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let (asset_location, asset_amount): (MultiLocation, u128) =
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: AssetId::Concrete(location),
@@ -95,8 +93,7 @@ fn successful_with_stored_v2() {
 	};
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let (asset_location, asset_amount): (MultiLocation, u128) =
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: AssetId::Concrete(location.clone().try_into().unwrap()),
@@ -112,7 +109,7 @@ fn successful_with_stored_v2() {
 
 #[test]
 fn skips_on_switch_pair_not_set() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 				id: AssetId::Concrete(MultiLocation {
@@ -135,8 +132,7 @@ fn skips_on_different_asset() {
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let different_location = MultiLocation {
 				parents: 1,
 				// Different para ID.
@@ -170,8 +166,7 @@ fn skips_on_not_fungible_stored_asset() {
 	};
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: AssetId::Concrete(location),
@@ -200,8 +195,7 @@ fn fails_on_not_concrete_stored_asset() {
 	};
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: abstract_asset_id,
@@ -221,8 +215,7 @@ fn fails_on_non_fungible_input_asset() {
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: AssetId::Concrete(location),

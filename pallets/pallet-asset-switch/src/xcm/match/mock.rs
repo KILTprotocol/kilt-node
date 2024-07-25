@@ -16,12 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{construct_runtime, traits::Everything};
+use frame_support::{
+	construct_runtime,
+	traits::{fungible::Mutate as MutateFungible, Everything},
+};
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
 use pallet_balances::AccountData;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
 	AccountId32,
 };
 use xcm::{
@@ -29,7 +32,7 @@ use xcm::{
 	VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
 };
 
-use crate::{NewSwitchPairInfoOf, Pallet};
+use crate::{NewSwitchPairInfoOf, Pallet, SwitchPairInfoOf};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -131,6 +134,14 @@ impl ExtBuilder {
 			System::set_block_number(1);
 
 			if let Some(switch_pair_info) = self.0 {
+				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info);
+
+				// Set pool balance to ED + the reducible remote balance, to maintain invariants
+				// and make them verifiable.
+				<Balances as MutateFungible<AccountId32>>::set_balance(
+					&switch_pair_info.pool_account,
+					1u64 + u64::checked_from(switch_pair_info.reducible_remote_balance()).unwrap(),
+				);
 				Pallet::<MockRuntime>::set_switch_pair_bypass_checks(
 					switch_pair_info.remote_asset_total_supply,
 					switch_pair_info.remote_asset_id,
@@ -147,5 +158,13 @@ impl ExtBuilder {
 		});
 
 		ext
+	}
+
+	pub(super) fn build_and_execute_with_sanity_tests(self, run: impl FnOnce()) {
+		let mut ext = self.build();
+		ext.execute_with(|| {
+			run();
+			crate::try_state::do_try_state::<MockRuntime, _>(System::block_number()).unwrap();
+		});
 	}
 }

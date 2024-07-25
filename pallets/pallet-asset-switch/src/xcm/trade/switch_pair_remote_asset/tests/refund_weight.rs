@@ -25,8 +25,10 @@ use xcm_executor::traits::WeightTrader;
 
 use crate::xcm::{
 	trade::{
-		switch_pair_remote_asset::mock::{ExtBuilder, MockRuntime, ToDestinationAccount},
-		test_utils::{get_switch_pair_info_for_remote_location, SumTimeAndProofValues},
+		switch_pair_remote_asset::mock::{
+			get_switch_pair_info_for_remote_location, ExtBuilder, MockRuntime, ToDestinationAccount,
+		},
+		test_utils::SumTimeAndProofValues,
 	},
 	UsingComponentsForSwitchPairRemoteAsset,
 };
@@ -38,7 +40,7 @@ fn successful_on_stored_remote_asset_latest() {
 		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 0);
 		// Set XCM fee asset to the latest XCM version.
 		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_latest().unwrap();
 		new_switch_pair_info
@@ -49,8 +51,7 @@ fn successful_on_stored_remote_asset_latest() {
 	// Case when remaining balance and weight are both higher than refund.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -80,8 +81,7 @@ fn successful_on_stored_remote_asset_latest() {
 	// Case when remaining balance is 0 -> Nothing is refunded.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -104,8 +104,7 @@ fn successful_on_stored_remote_asset_latest() {
 	// not changed.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -128,8 +127,7 @@ fn successful_on_stored_remote_asset_latest() {
 	// refunded.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -157,7 +155,7 @@ fn successful_on_stored_remote_asset_asset_v3() {
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 0);
 		// Set XCM fee asset to the XCM version 3.
 		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
 		new_switch_pair_info
@@ -168,8 +166,7 @@ fn successful_on_stored_remote_asset_asset_v3() {
 	// Case when remaining balance and weight are both higher than refund.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -199,8 +196,7 @@ fn successful_on_stored_remote_asset_asset_v3() {
 	// Case when remaining balance is 0 -> Nothing is refunded.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -223,8 +219,7 @@ fn successful_on_stored_remote_asset_asset_v3() {
 	// not changed.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -247,8 +242,7 @@ fn successful_on_stored_remote_asset_asset_v3() {
 	// refunded.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -276,7 +270,7 @@ fn skips_on_weight_not_previously_purchased() {
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 0);
 		// Set XCM fee asset to the XCM version 3.
 		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
 		new_switch_pair_info
@@ -287,8 +281,7 @@ fn skips_on_weight_not_previously_purchased() {
 	// Fails with XCM message hash `None`.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -310,8 +303,7 @@ fn skips_on_weight_not_previously_purchased() {
 	// Fails with XCM message hash `Some(something_else)`.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,

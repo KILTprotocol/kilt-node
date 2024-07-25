@@ -42,7 +42,8 @@ fn successful_with_stored_remote_asset_id_latest() {
 		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+		// Pool account balance = ED (2) + 2
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
 		// Set remote asset to the latest XCM version.
 		new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_latest().unwrap();
 		new_switch_pair_info
@@ -53,10 +54,7 @@ fn successful_with_stored_remote_asset_id_latest() {
 	// Works if all balance is free
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		// Pool account balance = ED (2) + 2
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 0)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				fun: Fungibility::Fungible(2),
@@ -86,10 +84,9 @@ fn successful_with_stored_remote_asset_id_latest() {
 	// Works if some balance is frozen, since freezes count towards ED as well.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		// Pool account balance = ED (2) + 2, of which 2 is frozen -> 2 are usable
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 2)])
-		.build()
-		.execute_with(|| {
+		// We freeze 2 units for the pool account
+		.with_additional_balances(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 2)])
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				fun: Fungibility::Fungible(2),
@@ -125,7 +122,7 @@ fn successful_with_stored_remote_asset_id_v3() {
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
 		// Set remote asset to the XCM version 3.
 		new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_version(3).unwrap();
 		new_switch_pair_info
@@ -135,9 +132,7 @@ fn successful_with_stored_remote_asset_id_v3() {
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 0)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				fun: Fungibility::Fungible(2),
@@ -167,10 +162,9 @@ fn successful_with_stored_remote_asset_id_v3() {
 	// Works if some balance is frozen, since freezes count towards ED as well.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		// Pool account balance = ED (2) + 2, of which 2 is frozen -> 2 are usable
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 2)])
-		.build()
-		.execute_with(|| {
+		// We freeze 2 units for the pool account
+		.with_additional_balances(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 2)])
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				fun: Fungibility::Fungible(2),
@@ -203,7 +197,7 @@ fn successful_with_stored_remote_asset_id_v3() {
 fn skips_on_switch_pair_not_set() {
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		let asset_to_deposit = MultiAsset {
 			id: AssetId::Abstract([100; 32]),
 			fun: Fungibility::Fungible(2),
@@ -225,14 +219,12 @@ fn skips_on_different_input_asset_id() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_balances(vec![(new_switch_pair_info.pool_account, 4, 0, 0)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				// Different than what's stored.
 				id: AssetId::Abstract([100; 32]),
@@ -255,14 +247,12 @@ fn skips_on_non_fungible_input_asset() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 0)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				// Different than what's stored.
@@ -286,7 +276,7 @@ fn fails_on_switch_pair_not_enabled() {
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
 		new_switch_pair_info.status = SwitchPairStatus::Paused;
 		new_switch_pair_info
 	};
@@ -294,9 +284,7 @@ fn fails_on_switch_pair_not_enabled() {
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 0)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				fun: Fungibility::Fungible(2),
@@ -318,14 +306,12 @@ fn fails_on_failed_account_id_conversion() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 0)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				fun: Fungibility::Fungible(2),
@@ -347,15 +333,13 @@ fn fails_on_not_enough_funds_in_pool() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	// Fails if reducible balance less than requested amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 0)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				// Amount bigger than the reducible balance of the pool (which is `2`).
@@ -373,9 +357,8 @@ fn fails_on_not_enough_funds_in_pool() {
 	// Fails if balance - holds less than requested amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 1, 0)])
-		.build()
-		.execute_with(|| {
+		.with_additional_balances(vec![(new_switch_pair_info.clone().pool_account, 0, 1, 0)])
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				// Amount bigger than the reducible balance of the pool (which is `1`, 4 - 2 (ED) - 1 (hold)).
@@ -394,9 +377,8 @@ fn fails_on_not_enough_funds_in_pool() {
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		// Freezes do not reduce the reducible balance if they are less than ED.
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 3)])
-		.build()
-		.execute_with(|| {
+		.with_additional_balances(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 3)])
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				// Amount bigger than the reducible balance of the pool (which is `1`, 4 - 2 (ED) - 1 (freeze beyond
@@ -420,14 +402,12 @@ fn fails_on_amount_below_ed() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 0)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				// ED is 2, anything that would not result in the account having at least ED will fail.

@@ -27,8 +27,10 @@ use xcm_executor::traits::WeightTrader;
 
 use crate::xcm::{
 	trade::{
-		switch_pair_remote_asset::mock::{Balances, ExtBuilder, MockRuntime, ToDestinationAccount},
-		test_utils::{get_switch_pair_info_for_remote_location, SumTimeAndProofValues},
+		switch_pair_remote_asset::mock::{
+			get_switch_pair_info_for_remote_location, Balances, ExtBuilder, MockRuntime, ToDestinationAccount,
+		},
+		test_utils::SumTimeAndProofValues,
 	},
 	UsingComponentsForSwitchPairRemoteAsset,
 };
@@ -39,13 +41,11 @@ fn happy_path() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	// ED + 1
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 1);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		// ED + 1
-		.with_balances(vec![(new_switch_pair_info.pool_account.clone(), 2)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -65,7 +65,7 @@ fn happy_path() {
 
 #[test]
 fn no_switch_pair() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		let weigher = {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
@@ -86,11 +86,10 @@ fn zero_remaining_balance() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 0);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -113,11 +112,10 @@ fn fail_to_transfer_from_pool_account() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 0);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,

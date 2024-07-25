@@ -27,8 +27,10 @@ use xcm_executor::{traits::WeightTrader, Assets};
 
 use crate::xcm::{
 	trade::{
-		switch_pair_remote_asset::mock::{ExtBuilder, MockRuntime, ToDestinationAccount},
-		test_utils::{get_switch_pair_info_for_remote_location, is_weigher_unchanged, SumTimeAndProofValues},
+		switch_pair_remote_asset::mock::{
+			get_switch_pair_info_for_remote_location, ExtBuilder, MockRuntime, ToDestinationAccount,
+		},
+		test_utils::{is_weigher_unchanged, SumTimeAndProofValues},
 	},
 	UsingComponentsForSwitchPairRemoteAsset,
 };
@@ -40,7 +42,9 @@ fn successful_on_stored_remote_asset_latest() {
 		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		// Give to pool amount same amount that is being purchased in the test case +
+		// ED.
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
 		// Set remote asset to the latest XCM version.
 		new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_latest().unwrap();
 		new_switch_pair_info
@@ -51,10 +55,7 @@ fn successful_on_stored_remote_asset_latest() {
 	// Works with an input fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		// Give to pool amount same amount that is being purchased in the test case + ED.
-		.with_balances(vec![(new_switch_pair_info.pool_account.clone(), 3)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
 				_,
@@ -75,8 +76,7 @@ fn successful_on_stored_remote_asset_latest() {
 	// Fails with an input non-fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
 				_,
@@ -98,10 +98,7 @@ fn successful_on_stored_remote_asset_latest() {
 	// Works with both an input fungible and non-fungible amount with same asset ID.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		// Give to pool amount same amount that is being purchased in the test case + ED.
-		.with_balances(vec![(new_switch_pair_info.pool_account.clone(), 3)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
 				_,
@@ -142,17 +139,16 @@ fn successful_on_stored_remote_asset_v3() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	// Give to pool amount same amount that is being purchased in the test case +
+	// ED.
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 3);
 	// Results in a required amount of `2` local currency tokens.
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	// Works with an input fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		// Give to pool amount same amount that is being purchased in the test case + ED.
-		.with_balances(vec![(new_switch_pair_info.pool_account.clone(), 3)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
 				_,
@@ -173,8 +169,7 @@ fn successful_on_stored_remote_asset_v3() {
 	// Fails with an input non-fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
 				_,
@@ -196,10 +191,7 @@ fn successful_on_stored_remote_asset_v3() {
 	// Works with both an input fungible and non-fungible amount with same asset ID.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		// Give to pool amount same amount that is being purchased in the test case + ED.
-		.with_balances(vec![(new_switch_pair_info.pool_account.clone(), 3)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
 				_,
@@ -240,14 +232,13 @@ fn fails_on_rerun() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 0);
 	// Results in a required amount of `2` local currency tokens.
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 					MockRuntime,
@@ -276,7 +267,7 @@ fn fails_on_rerun() {
 fn skips_on_switch_pair_not_set() {
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 			MockRuntime,
 			_,
@@ -302,15 +293,14 @@ fn fails_on_too_expensive() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 0);
 	// Results in a required amount of `2` local currency tokens.
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	// Works with an input fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
 				_,
