@@ -17,35 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::weights::WeightToFee;
-use xcm::{
-	v3::{AssetId, Fungibility, MultiAsset, MultiLocation, Weight},
-	VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
-};
+use xcm::v3::Weight;
 use xcm_executor::traits::WeightTrader;
-
-use crate::{Config, NewSwitchPairInfoOf};
-
-pub(super) fn get_switch_pair_info_for_remote_location<Runtime>(
-	location: &MultiLocation,
-) -> NewSwitchPairInfoOf<Runtime>
-where
-	Runtime: Config,
-	Runtime::AccountId: From<[u8; 32]>,
-{
-	NewSwitchPairInfoOf::<Runtime> {
-		pool_account: Runtime::AccountId::from([1; 32]),
-		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(*location)),
-		remote_reserve_location: VersionedMultiLocation::V3(*location),
-		remote_xcm_fee: VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(*location),
-			fun: Fungibility::Fungible(1),
-		}),
-		remote_asset_circulating_supply: Default::default(),
-		remote_asset_ed: Default::default(),
-		remote_asset_total_supply: Default::default(),
-		status: Default::default(),
-	}
-}
 
 #[derive(Debug, Clone)]
 pub(super) struct SumTimeAndProofValues;

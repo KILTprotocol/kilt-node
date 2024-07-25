@@ -24,8 +24,9 @@ use xcm::{
 use xcm_executor::traits::WeightTrader;
 
 use crate::xcm::{
+	test_utils::get_switch_pair_info_for_remote_location,
 	trade::{
-		test_utils::{get_switch_pair_info_for_remote_location, SumTimeAndProofValues},
+		test_utils::SumTimeAndProofValues,
 		xcm_fee_asset::mock::{ExtBuilder, MockRuntime},
 	},
 	UsingComponentsForXcmFeeAsset,
