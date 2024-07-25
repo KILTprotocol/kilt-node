@@ -79,7 +79,7 @@ fn successful_with_stored_remote_asset_id_latest() {
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::RemoteToLocalSwitchExecuted {
 					amount: 2,
-					to: SUCCESSFUL_ACCOUNT_ID.into()
+					to: SUCCESSFUL_ACCOUNT_ID
 				}
 				.into()));
 		});
@@ -112,7 +112,7 @@ fn successful_with_stored_remote_asset_id_latest() {
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::RemoteToLocalSwitchExecuted {
 					amount: 2,
-					to: SUCCESSFUL_ACCOUNT_ID.into()
+					to: SUCCESSFUL_ACCOUNT_ID
 				}
 				.into()));
 		});
@@ -160,7 +160,7 @@ fn successful_with_stored_remote_asset_id_v3() {
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::RemoteToLocalSwitchExecuted {
 					amount: 2,
-					to: SUCCESSFUL_ACCOUNT_ID.into()
+					to: SUCCESSFUL_ACCOUNT_ID
 				}
 				.into()));
 		});
@@ -193,7 +193,7 @@ fn successful_with_stored_remote_asset_id_v3() {
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::RemoteToLocalSwitchExecuted {
 					amount: 2,
-					to: SUCCESSFUL_ACCOUNT_ID.into()
+					to: SUCCESSFUL_ACCOUNT_ID
 				}
 				.into()));
 		});
@@ -230,7 +230,7 @@ fn skips_on_different_input_asset_id() {
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_balances(vec![(new_switch_pair_info.clone().pool_account, 4, 0, 0)])
+		.with_balances(vec![(new_switch_pair_info.pool_account, 4, 0, 0)])
 		.build()
 		.execute_with(|| {
 			let asset_to_deposit = MultiAsset {

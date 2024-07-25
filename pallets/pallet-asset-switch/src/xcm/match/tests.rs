@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::assert_err;
+use frame_support::assert_noop;
 use xcm::{
 	v3::{AssetId, AssetInstance, Fungibility, Junction, Junctions, MultiAsset, MultiLocation},
 	IntoVersion, VersionedMultiAsset,
@@ -113,7 +113,7 @@ fn successful_with_stored_v2() {
 #[test]
 fn skips_on_switch_pair_not_set() {
 	ExtBuilder::default().build().execute_with(|| {
-		assert_err!(
+		assert_noop!(
 			MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 				id: AssetId::Concrete(MultiLocation {
 					parents: 1,
@@ -142,7 +142,7 @@ fn skips_on_different_asset() {
 				// Different para ID.
 				interior: Junctions::X1(Junction::Parachain(1_001)),
 			};
-			assert_err!(
+			assert_noop!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: AssetId::Concrete(different_location),
 					fun: Fungibility::Fungible(u128::MAX),
@@ -172,7 +172,7 @@ fn skips_on_not_fungible_stored_asset() {
 		.with_switch_pair_info(new_switch_pair_info)
 		.build()
 		.execute_with(|| {
-			assert_err!(
+			assert_noop!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: AssetId::Concrete(location),
 					fun: Fungibility::Fungible(u128::MAX),
@@ -202,7 +202,7 @@ fn fails_on_not_concrete_stored_asset() {
 		.with_switch_pair_info(new_switch_pair_info)
 		.build()
 		.execute_with(|| {
-			assert_err!(
+			assert_noop!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: abstract_asset_id,
 					fun: Fungibility::Fungible(u128::MAX),
@@ -223,7 +223,7 @@ fn fails_on_non_fungible_input_asset() {
 		.with_switch_pair_info(new_switch_pair_info)
 		.build()
 		.execute_with(|| {
-			assert_err!(
+			assert_noop!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
 					id: AssetId::Concrete(location),
 					fun: Fungibility::NonFungible(AssetInstance::Index(1)),

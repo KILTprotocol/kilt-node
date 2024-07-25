@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::assert_err;
+use frame_support::assert_noop;
 use xcm::{
 	v3::{
 		AssetId, AssetInstance, Error, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, Weight, XcmContext,
@@ -81,7 +81,7 @@ fn successful_on_stored_fungible_xcm_fee_asset_latest() {
 			}]
 			.into();
 
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::TooExpensive
 			);
@@ -170,7 +170,7 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3() {
 			}]
 			.into();
 
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::TooExpensive
 			);
@@ -265,7 +265,7 @@ fn successful_on_stored_fungible_xcm_fee_asset_v2() {
 			}]
 			.into();
 
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::TooExpensive
 			);
@@ -338,7 +338,7 @@ fn fails_on_rerun() {
 				fun: Fungibility::Fungible(2),
 			}]
 			.into();
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::NotWithdrawable
 			);
@@ -357,7 +357,7 @@ fn skips_on_switch_pair_not_set() {
 			fun: Fungibility::Fungible(1),
 		}]
 		.into();
-		assert_err!(
+		assert_noop!(
 			weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 			Error::AssetNotFound
 		);
@@ -399,7 +399,7 @@ fn skips_on_stored_non_fungible_xcm_fee_asset_latest() {
 				fun: Fungibility::Fungible(2),
 			}]
 			.into();
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::AssetNotFound
 			);
@@ -419,7 +419,7 @@ fn skips_on_stored_non_fungible_xcm_fee_asset_latest() {
 			}]
 			.into();
 
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::AssetNotFound
 			);
@@ -461,7 +461,7 @@ fn skips_on_stored_fungible_xcm_fee_asset_v3() {
 				fun: Fungibility::Fungible(2),
 			}]
 			.into();
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::AssetNotFound
 			);
@@ -480,7 +480,7 @@ fn skips_on_stored_fungible_xcm_fee_asset_v3() {
 				fun: Fungibility::Fungible(2),
 			}]
 			.into();
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::AssetNotFound
 			);
@@ -524,7 +524,7 @@ fn skips_on_stored_fungible_xcm_fee_asset_v2() {
 				fun: Fungibility::Fungible(2),
 			}]
 			.into();
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::AssetNotFound
 			);
@@ -543,7 +543,7 @@ fn skips_on_stored_fungible_xcm_fee_asset_v2() {
 				fun: Fungibility::Fungible(2),
 			}]
 			.into();
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::AssetNotFound
 			);
@@ -575,7 +575,7 @@ fn fails_on_too_expensive() {
 				fun: Fungibility::Fungible(1),
 			}]
 			.into();
-			assert_err!(
+			assert_noop!(
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::TooExpensive
 			);
