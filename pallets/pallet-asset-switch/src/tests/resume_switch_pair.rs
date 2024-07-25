@@ -21,29 +21,26 @@ use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
 use crate::{
-	mock::{
-		ExtBuilder, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
-	},
+	mock::{ExtBuilder, MockRuntime, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
 	switch::SwitchPairStatus,
-	Error, Event, Pallet, SwitchPair,
+	Error, Event, NewSwitchPairInfoOf, Pallet, SwitchPair,
 };
 
 #[test]
 fn successful() {
 	// Resuming a non-running switch pair generates an event.
 	ExtBuilder::default()
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
-			min_remote_balance: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: [0u8; 32].into(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 1_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Paused,
-			total_issuance: 1_000,
 		})
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::Root.into()));
 			assert_eq!(
 				SwitchPair::<MockRuntime>::get().unwrap().status,
@@ -57,18 +54,17 @@ fn successful() {
 		});
 	// Resuming a running switch pair generates no event.
 	ExtBuilder::default()
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
-			min_remote_balance: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: [0u8; 32].into(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 1_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
-			total_issuance: 1_000,
 		})
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::Root.into()));
 			assert_eq!(
 				SwitchPair::<MockRuntime>::get().unwrap().status,
@@ -84,7 +80,7 @@ fn successful() {
 
 #[test]
 fn fails_on_non_existing_pair() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::Root.into()),
 			Error::<MockRuntime>::SwitchPairNotFound
@@ -94,7 +90,7 @@ fn fails_on_non_existing_pair() {
 
 #[test]
 fn fails_on_invalid_origin() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::resume_switch_pair(RawOrigin::None.into()),
 			DispatchError::BadOrigin

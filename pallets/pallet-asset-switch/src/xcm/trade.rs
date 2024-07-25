@@ -77,11 +77,11 @@ mod xcm_fee_asset {
 
 			let amount = WeightToFee::weight_to_fee(&weight);
 
-			let xcm_fee_asset_v3: MultiAsset = switch_pair.remote_fee.clone().try_into().map_err(|e| {
+			let xcm_fee_asset_v3: MultiAsset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
 					"Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}",
-					switch_pair.remote_fee,
+					switch_pair.remote_xcm_fee,
 					e
 				);
 				Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
@@ -367,9 +367,11 @@ mod switch_pair_remote_asset {
 							log::error!(target: LOG_TARGET, "Stored switch pair should not be None but it is.");
 							return;
 						};
-						entry.remote_asset_balance = entry
-							.remote_asset_balance
-							.saturating_add(self.remaining_fungible_balance);
+						entry
+							.try_process_incoming_switch(self.remaining_fungible_balance)
+							.unwrap_or_else(|_| {
+								log::error!(target: LOG_TARGET, "Failed to increase balance of remote sovereign account due to overflow.");
+							});
 					});
 				}
 			}

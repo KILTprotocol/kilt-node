@@ -32,21 +32,15 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32,
 };
-use xcm::{
-	v3::{
-		AssetId, Error as XcmError, Fungibility,
-		Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
-		Junctions::{Here, X1, X2},
-		MultiAsset, MultiLocation, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
-	},
-	VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
+use xcm::v3::{
+	AssetId, Error as XcmError, Fungibility,
+	Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
+	Junctions::{Here, X1, X2},
+	MultiAsset, MultiLocation, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
 };
 use xcm_executor::{traits::TransactAsset, Assets};
 
-use crate::{
-	switch::SwitchPairStatus, xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, Pallet, SwitchPair,
-	SwitchPairInfoOf,
-};
+use crate::{xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, Pallet};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -190,37 +184,9 @@ impl crate::Config for MockRuntime {
 	type BenchmarkHelper = ();
 }
 
-#[derive(Clone)]
-pub(crate) struct NewSwitchPairInfo {
-	pub(crate) circulating_supply: u128,
-	pub(crate) pool_account: AccountId32,
-	pub(crate) remote_asset_id: VersionedAssetId,
-	pub(crate) remote_fee: VersionedMultiAsset,
-	pub(crate) remote_reserve_location: VersionedMultiLocation,
-	pub(crate) status: SwitchPairStatus,
-	pub(crate) total_issuance: u128,
-	pub(crate) min_remote_balance: u128,
-}
-
-impl From<NewSwitchPairInfo> for SwitchPairInfoOf<MockRuntime> {
-	fn from(new_switch_pair_info: NewSwitchPairInfo) -> Self {
-		let remote_asset_balance = new_switch_pair_info.total_issuance
-			- new_switch_pair_info.circulating_supply
-			- new_switch_pair_info.min_remote_balance;
-		Self {
-			remote_asset_balance,
-			pool_account: new_switch_pair_info.pool_account,
-			remote_asset_id: new_switch_pair_info.remote_asset_id,
-			remote_fee: new_switch_pair_info.remote_fee,
-			remote_reserve_location: new_switch_pair_info.remote_reserve_location,
-			status: new_switch_pair_info.status,
-		}
-	}
-}
-
 #[derive(Default)]
 pub(crate) struct ExtBuilder(
-	Option<NewSwitchPairInfo>,
+	Option<NewSwitchPairInfoOf<MockRuntime>>,
 	Vec<(AccountId32, u64, u64, u64)>,
 	Vec<(AccountId32, MultiAsset)>,
 );
@@ -229,7 +195,7 @@ pub(crate) const FREEZE_REASON: [u8; 1] = *b"1";
 pub(crate) const HOLD_REASON: MockRuntimeHoldReason = MockRuntimeHoldReason {};
 
 impl ExtBuilder {
-	pub(crate) fn with_switch_pair_info(mut self, switch_pair_info: NewSwitchPairInfo) -> Self {
+	pub(crate) fn with_switch_pair_info(mut self, switch_pair_info: NewSwitchPairInfoOf<MockRuntime>) -> Self {
 		self.0 = Some(switch_pair_info);
 		self
 	}
@@ -253,15 +219,15 @@ impl ExtBuilder {
 
 			if let Some(switch_pair_info) = self.0 {
 				Pallet::<MockRuntime>::set_switch_pair_bypass_checks(
-					switch_pair_info.remote_reserve_location,
+					switch_pair_info.remote_asset_total_supply,
 					switch_pair_info.remote_asset_id,
-					switch_pair_info.remote_fee,
-					switch_pair_info.total_issuance,
-					switch_pair_info.circulating_supply,
-					switch_pair_info.min_remote_balance,
+					switch_pair_info.remote_asset_circulating_supply,
+					switch_pair_info.remote_reserve_location,
+					switch_pair_info.remote_asset_ed,
+					switch_pair_info.remote_xcm_fee,
 					switch_pair_info.pool_account,
 				);
-				SwitchPair::<MockRuntime>::mutate(|entry| entry.as_mut().unwrap().status = switch_pair_info.status);
+				Pallet::<MockRuntime>::set_switch_pair_status(switch_pair_info.status).unwrap();
 			}
 			for (account, free, frozen, held) in self.1 {
 				<Balances as Mutate<AccountId32>>::set_balance(&account, free);
@@ -290,9 +256,21 @@ impl ExtBuilder {
 					)
 				});
 			}
+
+			// Some setup operations generate events which interfere with our assertions.
+			System::reset_events()
 		});
 
 		ext
+	}
+
+	// Run the specified closure and test the storage invariants afterwards.
+	pub(crate) fn build_and_execute_with_sanity_tests(self, run: impl FnOnce()) {
+		let mut ext = self.build();
+		ext.execute_with(|| {
+			run();
+			crate::try_state::do_try_state::<MockRuntime, _>(System::block_number()).unwrap();
+		});
 	}
 
 	#[cfg(all(feature = "runtime-benchmarks", test))]

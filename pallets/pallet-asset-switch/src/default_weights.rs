@@ -58,7 +58,7 @@ pub trait WeightInfo {
 	fn force_unset_switch_pair() -> Weight;
 	fn pause_switch_pair() -> Weight;
 	fn resume_switch_pair() -> Weight;
-	fn update_remote_fee() -> Weight;
+	fn update_remote_xcm_fee() -> Weight;
 	fn switch() -> Weight;
 }
 
@@ -123,7 +123,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 	/// Storage: `AssetSwitchPool1::SwitchPair` (r:1 w:1)
 	/// Proof: `AssetSwitchPool1::SwitchPair` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	fn update_remote_fee() -> Weight {
+	fn update_remote_xcm_fee() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `172`
 		//  Estimated: `1657`
@@ -217,7 +217,7 @@ impl WeightInfo for () {
 	}
 	/// Storage: `AssetSwitchPool1::SwitchPair` (r:1 w:1)
 	/// Proof: `AssetSwitchPool1::SwitchPair` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	fn update_remote_fee() -> Weight {
+	fn update_remote_xcm_fee() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `172`
 		//  Estimated: `1657`

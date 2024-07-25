@@ -21,28 +21,25 @@ use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
 use crate::{
-	mock::{
-		ExtBuilder, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
-	},
-	Event, Pallet, SwitchPair,
+	mock::{ExtBuilder, MockRuntime, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
+	Event, NewSwitchPairInfoOf, Pallet, SwitchPair,
 };
 
 #[test]
 fn successful() {
 	// Deletes and generates an event if there is a pool
 	ExtBuilder::default()
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
-			min_remote_balance: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: [0u8; 32].into(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 1_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: Default::default(),
-			total_issuance: 1_000,
 		})
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::Root.into()));
 			assert!(SwitchPair::<MockRuntime>::get().is_none());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
@@ -52,7 +49,7 @@ fn successful() {
 				.into()));
 		});
 	// Deletes and generates no event if there is no pool
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_ok!(Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::Root.into()));
 		assert!(SwitchPair::<MockRuntime>::get().is_none());
 		assert!(System::events().into_iter().map(|e| e.event).all(|e| e
@@ -65,7 +62,7 @@ fn successful() {
 
 #[test]
 fn fails_on_invalid_origin() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::None.into()),
 			DispatchError::BadOrigin,
