@@ -26,10 +26,9 @@ use xcm::{
 use xcm_executor::{traits::WeightTrader, Assets};
 
 use crate::xcm::{
+	test_utils::get_switch_pair_info_for_remote_location_with_pool_usable_balance,
 	trade::{
-		switch_pair_remote_asset::mock::{
-			get_switch_pair_info_for_remote_location, ExtBuilder, MockRuntime, ToDestinationAccount,
-		},
+		switch_pair_remote_asset::mock::{ExtBuilder, MockRuntime, ToDestinationAccount},
 		test_utils::{is_weigher_unchanged, SumTimeAndProofValues},
 	},
 	UsingComponentsForSwitchPairRemoteAsset,
@@ -44,7 +43,8 @@ fn successful_on_stored_remote_asset_latest() {
 	let new_switch_pair_info = {
 		// Give to pool amount same amount that is being purchased in the test case +
 		// ED.
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 2);
+		let mut new_switch_pair_info =
+			get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 2);
 		// Set remote asset to the latest XCM version.
 		new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_latest().unwrap();
 		new_switch_pair_info
@@ -141,7 +141,8 @@ fn successful_on_stored_remote_asset_v3() {
 	};
 	// Give to pool amount same amount that is being purchased in the test case +
 	// ED.
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 3);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 3);
 	// Results in a required amount of `2` local currency tokens.
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
@@ -232,7 +233,8 @@ fn fails_on_rerun() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 0);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 0);
 	// Results in a required amount of `2` local currency tokens.
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
@@ -293,7 +295,8 @@ fn fails_on_too_expensive() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location(&location, 0);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 0);
 	// Results in a required amount of `2` local currency tokens.
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);

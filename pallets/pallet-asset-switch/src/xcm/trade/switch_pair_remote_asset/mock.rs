@@ -18,18 +18,17 @@
 
 use frame_support::{
 	construct_runtime,
-	traits::{fungible::Mutate as MutateFungible, Everything},
+	traits::{
+		fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
+		Everything,
+	},
 };
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
 use pallet_balances::AccountData;
 use sp_core::{ConstU16, ConstU32, ConstU64, Get, H256};
 use sp_runtime::{
-	traits::{BlakeTwo256, CheckedConversion, IdentityLookup, Zero},
+	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
 	AccountId32,
-};
-use xcm::{
-	v3::{AssetId, Fungibility, MultiAsset, MultiLocation},
-	VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
 };
 
 use crate::{NewSwitchPairInfoOf, Pallet, SwitchPairInfoOf};
@@ -111,25 +110,6 @@ impl Get<AccountId32> for ToDestinationAccount {
 	}
 }
 
-pub(super) fn get_switch_pair_info_for_remote_location(
-	location: &MultiLocation,
-	pool_usable_balance: u64,
-) -> NewSwitchPairInfoOf<MockRuntime> {
-	NewSwitchPairInfoOf::<MockRuntime> {
-		pool_account: AccountId32::from([1; 32]),
-		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(*location)),
-		remote_reserve_location: VersionedMultiLocation::V3(*location),
-		remote_xcm_fee: VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(*location),
-			fun: Fungibility::Fungible(1),
-		}),
-		remote_asset_total_supply: (u64::MAX as u128) + pool_usable_balance as u128,
-		remote_asset_circulating_supply: pool_usable_balance as u128,
-		remote_asset_ed: u128::zero(),
-		status: Default::default(),
-	}
-}
-
 #[derive(Default)]
 pub(super) struct ExtBuilder(Option<NewSwitchPairInfoOf<MockRuntime>>);
 
@@ -151,10 +131,12 @@ impl ExtBuilder {
 
 				// Set pool balance to local ED + circulating supply, to maintain
 				// invariants and make them verifiable.
-				<Balances as MutateFungible<AccountId32>>::set_balance(
+				let local_ed = <Balances as InspectFungible<AccountId32>>::minimum_balance();
+				<Balances as MutateFungible<AccountId32>>::mint_into(
 					&switch_pair_info.pool_account,
-					1u64 + u64::checked_from(switch_pair_info.remote_asset_circulating_supply).unwrap(),
-				);
+					local_ed + u64::checked_from(switch_pair_info.remote_asset_circulating_supply).unwrap(),
+				)
+				.unwrap();
 				Pallet::<MockRuntime>::set_switch_pair_bypass_checks(
 					switch_pair_info.remote_asset_total_supply,
 					switch_pair_info.remote_asset_id,

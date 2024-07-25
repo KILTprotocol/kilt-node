@@ -31,10 +31,6 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32, DispatchError,
 };
-use xcm::{
-	v3::{AssetId, Fungibility, MultiAsset, MultiLocation},
-	VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
-};
 
 use crate::{NewSwitchPairInfoOf, Pallet};
 
@@ -138,22 +134,6 @@ impl crate::Config for MockRuntime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = ();
-}
-
-pub(super) fn get_switch_pair_info_for_remote_location(location: &MultiLocation) -> NewSwitchPairInfoOf<MockRuntime> {
-	NewSwitchPairInfoOf::<MockRuntime> {
-		pool_account: AccountId32::from([1; 32]),
-		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(*location)),
-		remote_reserve_location: VersionedMultiLocation::V3(*location),
-		remote_xcm_fee: VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(*location),
-			fun: Fungibility::Fungible(1),
-		}),
-		remote_asset_circulating_supply: Default::default(),
-		remote_asset_ed: Default::default(),
-		remote_asset_total_supply: Default::default(),
-		status: Default::default(),
-	}
 }
 
 #[derive(Default)]

@@ -30,16 +30,13 @@ use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
 use pallet_balances::AccountData;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
-	traits::{BlakeTwo256, CheckedConversion, IdentityLookup, Zero},
+	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
 	AccountId32,
 };
-use xcm::{
-	v3::{AssetId, Fungibility, MultiAsset, MultiLocation},
-	VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
-};
+use xcm::v3::MultiLocation;
 use xcm_executor::traits::ConvertLocation;
 
-use crate::{NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf, SwitchPairStatus};
+use crate::{NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -108,25 +105,6 @@ impl crate::Config for MockRuntime {
 	type BenchmarkHelper = ();
 }
 
-pub(super) fn get_switch_pair_info_for_remote_location(
-	location: &MultiLocation,
-	pool_usable_balance: u64,
-) -> NewSwitchPairInfoOf<MockRuntime> {
-	NewSwitchPairInfoOf::<MockRuntime> {
-		pool_account: AccountId32::from([1; 32]),
-		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(*location)),
-		remote_reserve_location: VersionedMultiLocation::V3(*location),
-		remote_xcm_fee: VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(*location),
-			fun: Fungibility::Fungible(1),
-		}),
-		remote_asset_total_supply: (u64::MAX as u128) + pool_usable_balance as u128,
-		remote_asset_circulating_supply: pool_usable_balance as u128,
-		remote_asset_ed: u128::zero(),
-		status: SwitchPairStatus::Running,
-	}
-}
-
 pub(super) const SUCCESSFUL_ACCOUNT_ID: AccountId32 = AccountId32::new([100; 32]);
 pub(super) struct SuccessfulAccountIdConverter;
 
@@ -168,15 +146,17 @@ impl ExtBuilder {
 		ext.execute_with(|| {
 			System::set_block_number(1);
 
+			let local_ed = <Balances as InspectFungible<AccountId32>>::minimum_balance();
 			if let Some(switch_pair_info) = &self.0 {
 				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info.clone());
 
 				// Set pool balance to local ED + circulating supply, to maintain
 				// invariants and make them verifiable.
-				<Balances as MutateFungible<AccountId32>>::set_balance(
+				<Balances as MutateFungible<AccountId32>>::mint_into(
 					&switch_pair_info.pool_account,
-					2u64 + u64::checked_from(switch_pair_info.remote_asset_circulating_supply).unwrap(),
-				);
+					local_ed + u64::checked_from(switch_pair_info.remote_asset_circulating_supply).unwrap(),
+				)
+				.unwrap();
 				Pallet::<MockRuntime>::set_switch_pair_bypass_checks(
 					switch_pair_info.remote_asset_total_supply,
 					switch_pair_info.remote_asset_id,
@@ -204,8 +184,7 @@ impl ExtBuilder {
 				{
 					// ED can be frozen, so we only need to considered only the ones that go BEYOND
 					// the ED.
-					let freezes_more_than_ed =
-						frozen.saturating_sub(<Balances as InspectFungible<AccountId32>>::minimum_balance());
+					let freezes_more_than_ed = frozen.saturating_sub(local_ed);
 					SwitchPair::<MockRuntime, _>::mutate(|switch_pair| {
 						if let Some(switch_pair) = switch_pair.as_mut() {
 							// Calculate all held tokens as not available in the pool, hence not available
