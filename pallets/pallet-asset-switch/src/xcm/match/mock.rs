@@ -136,11 +136,11 @@ impl ExtBuilder {
 			if let Some(switch_pair_info) = self.0 {
 				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info);
 
-				// Set pool balance to ED + the reducible remote balance, to maintain invariants
-				// and make them verifiable.
+				// Set pool balance to local ED + circulating supply, to maintain
+				// invariants and make them verifiable.
 				<Balances as MutateFungible<AccountId32>>::set_balance(
 					&switch_pair_info.pool_account,
-					1u64 + u64::checked_from(switch_pair_info.reducible_remote_balance()).unwrap(),
+					1u64 + u64::checked_from(switch_pair_info.remote_asset_circulating_supply).unwrap(),
 				);
 				Pallet::<MockRuntime>::set_switch_pair_bypass_checks(
 					switch_pair_info.remote_asset_total_supply,

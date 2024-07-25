@@ -171,8 +171,8 @@ impl ExtBuilder {
 			if let Some(switch_pair_info) = &self.0 {
 				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info.clone());
 
-				// Set pool balance to ED + the reducible remote balance, to maintain invariants
-				// and make them verifiable.
+				// Set pool balance to local ED + circulating supply, to maintain
+				// invariants and make them verifiable.
 				<Balances as MutateFungible<AccountId32>>::set_balance(
 					&switch_pair_info.pool_account,
 					2u64 + u64::checked_from(switch_pair_info.remote_asset_circulating_supply).unwrap(),
@@ -193,23 +193,29 @@ impl ExtBuilder {
 				<Balances as MutateHold<AccountId32>>::hold(b"test", &account, held).unwrap();
 				<Balances as MutateFreeze<AccountId32>>::set_freeze(b"test", &account, frozen).unwrap();
 
-				// If the specified account is the pool account, remove from the circulating
-				// supply the amount of tokens that have been marked as held or frozen, to
-				// maintain the invariant.
+				// If the specified account is the pool account, remove from the registered
+				// circulating supply the amount of tokens that have been marked as held or
+				// frozen, to maintain the invariant.
 				if Some(account)
 					== self
 						.0
 						.as_ref()
 						.map(|new_switch_info| new_switch_info.clone().pool_account)
 				{
+					// ED can be frozen, so we only need to considered only the ones that go BEYOND
+					// the ED.
+					let freezes_more_than_ed =
+						frozen.saturating_sub(<Balances as InspectFungible<AccountId32>>::minimum_balance());
 					SwitchPair::<MockRuntime, _>::mutate(|switch_pair| {
 						if let Some(switch_pair) = switch_pair.as_mut() {
+							// Calculate all held tokens as not available in the pool, hence not available
+							// as circulating supply at destination.
 							switch_pair.remote_asset_circulating_supply = switch_pair
 								.remote_asset_circulating_supply
 								.checked_sub(held as u128)
 								.unwrap();
-							let freezes_more_than_ed =
-								frozen.saturating_sub(<Balances as InspectFungible<AccountId32>>::minimum_balance());
+							// Calculate frozen tokens beyond the Ed as not available in the pool, hence not
+							// available as circulating supply at destination.
 							switch_pair.remote_asset_circulating_supply = switch_pair
 								.remote_asset_circulating_supply
 								.checked_sub(freezes_more_than_ed as u128)

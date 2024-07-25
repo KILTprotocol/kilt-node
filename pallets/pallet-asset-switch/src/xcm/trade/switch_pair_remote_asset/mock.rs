@@ -123,10 +123,8 @@ pub(super) fn get_switch_pair_info_for_remote_location(
 			id: AssetId::Concrete(*location),
 			fun: Fungibility::Fungible(1),
 		}),
-		// Pool balance = total supply - circulating supply - remote ED + local ED = pool_usable_balance - 0 - 0 + 1 =
-		// pool_usable_balance + 1
-		remote_asset_total_supply: pool_usable_balance as u128,
-		remote_asset_circulating_supply: u128::zero(),
+		remote_asset_total_supply: (u64::MAX as u128) + pool_usable_balance as u128,
+		remote_asset_circulating_supply: pool_usable_balance as u128,
 		remote_asset_ed: u128::zero(),
 		status: Default::default(),
 	}
@@ -151,11 +149,11 @@ impl ExtBuilder {
 			if let Some(switch_pair_info) = self.0 {
 				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info);
 
-				// Set pool balance to ED + the reducible remote balance, to maintain invariants
-				// and make them verifiable.
+				// Set pool balance to local ED + circulating supply, to maintain
+				// invariants and make them verifiable.
 				<Balances as MutateFungible<AccountId32>>::set_balance(
 					&switch_pair_info.pool_account,
-					1u64 + u64::checked_from(switch_pair_info.reducible_remote_balance()).unwrap(),
+					1u64 + u64::checked_from(switch_pair_info.remote_asset_circulating_supply).unwrap(),
 				);
 				Pallet::<MockRuntime>::set_switch_pair_bypass_checks(
 					switch_pair_info.remote_asset_total_supply,
