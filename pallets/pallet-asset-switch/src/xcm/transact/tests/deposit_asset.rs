@@ -85,7 +85,7 @@ fn successful_with_stored_remote_asset_id_latest() {
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		// We freeze 2 units for the pool account
-		.with_additional_balances(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 2)])
+		.with_additional_balance_entries(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 2)])
 		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
@@ -163,7 +163,7 @@ fn successful_with_stored_remote_asset_id_v3() {
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		// We freeze 2 units for the pool account
-		.with_additional_balances(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 2)])
+		.with_additional_balance_entries(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 2)])
 		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
@@ -223,7 +223,7 @@ fn skips_on_different_input_asset_id() {
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				// Different than what's stored.
@@ -357,7 +357,7 @@ fn fails_on_not_enough_funds_in_pool() {
 	// Fails if balance - holds less than requested amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
-		.with_additional_balances(vec![(new_switch_pair_info.clone().pool_account, 0, 1, 0)])
+		.with_additional_balance_entries(vec![(new_switch_pair_info.clone().pool_account, 0, 1, 0)])
 		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
@@ -377,7 +377,7 @@ fn fails_on_not_enough_funds_in_pool() {
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		// Freezes do not reduce the reducible balance if they are less than ED.
-		.with_additional_balances(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 3)])
+		.with_additional_balance_entries(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 3)])
 		.build_and_execute_with_sanity_tests(|| {
 			let asset_to_deposit = MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),

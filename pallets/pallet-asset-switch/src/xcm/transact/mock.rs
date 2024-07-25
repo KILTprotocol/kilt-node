@@ -19,7 +19,10 @@
 use frame_support::{
 	construct_runtime,
 	traits::{
-		fungible::{freeze::Mutate as MutateFreeze, hold::Mutate as MutateHold, Mutate as MutateFungible},
+		fungible::{
+			freeze::Mutate as MutateFreeze, hold::Mutate as MutateHold, Inspect as InspectFungible,
+			Mutate as MutateFungible,
+		},
 		Everything,
 	},
 };
@@ -36,7 +39,7 @@ use xcm::{
 };
 use xcm_executor::traits::ConvertLocation;
 
-use crate::{NewSwitchPairInfoOf, Pallet, SwitchPairInfoOf, SwitchPairStatus};
+use crate::{NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf, SwitchPairStatus};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -117,10 +120,8 @@ pub(super) fn get_switch_pair_info_for_remote_location(
 			id: AssetId::Concrete(*location),
 			fun: Fungibility::Fungible(1),
 		}),
-		// Pool balance = total supply - circulating supply - remote ED + local ED = pool_usable_balance - 0 - 0 + 1 =
-		// pool_usable_balance + 1
-		remote_asset_total_supply: 100_000 as u128 + pool_usable_balance as u128,
-		remote_asset_circulating_supply: 100_000,
+		remote_asset_total_supply: (u64::MAX as u128) + pool_usable_balance as u128,
+		remote_asset_circulating_supply: pool_usable_balance as u128,
 		remote_asset_ed: u128::zero(),
 		status: SwitchPairStatus::Running,
 	}
@@ -155,7 +156,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub(super) fn with_additional_balances(mut self, balances: Vec<(AccountId32, u64, u64, u64)>) -> Self {
+	pub(super) fn with_additional_balance_entries(mut self, balances: Vec<(AccountId32, u64, u64, u64)>) -> Self {
 		self.1 = balances;
 		self
 	}
@@ -167,14 +168,14 @@ impl ExtBuilder {
 		ext.execute_with(|| {
 			System::set_block_number(1);
 
-			if let Some(switch_pair_info) = self.0 {
-				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info);
+			if let Some(switch_pair_info) = &self.0 {
+				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info.clone());
 
 				// Set pool balance to ED + the reducible remote balance, to maintain invariants
 				// and make them verifiable.
 				<Balances as MutateFungible<AccountId32>>::set_balance(
 					&switch_pair_info.pool_account,
-					2u64 + u64::checked_from(switch_pair_info.reducible_remote_balance()).unwrap(),
+					2u64 + u64::checked_from(switch_pair_info.remote_asset_circulating_supply).unwrap(),
 				);
 				Pallet::<MockRuntime>::set_switch_pair_bypass_checks(
 					switch_pair_info.remote_asset_total_supply,
@@ -191,6 +192,31 @@ impl ExtBuilder {
 				<Balances as MutateFungible<AccountId32>>::mint_into(&account, free).unwrap();
 				<Balances as MutateHold<AccountId32>>::hold(b"test", &account, held).unwrap();
 				<Balances as MutateFreeze<AccountId32>>::set_freeze(b"test", &account, frozen).unwrap();
+
+				// If the specified account is the pool account, remove from the circulating
+				// supply the amount of tokens that have been marked as held or frozen, to
+				// maintain the invariant.
+				if Some(account)
+					== self
+						.0
+						.as_ref()
+						.map(|new_switch_info| new_switch_info.clone().pool_account)
+				{
+					SwitchPair::<MockRuntime, _>::mutate(|switch_pair| {
+						if let Some(switch_pair) = switch_pair.as_mut() {
+							switch_pair.remote_asset_circulating_supply = switch_pair
+								.remote_asset_circulating_supply
+								.checked_sub(held as u128)
+								.unwrap();
+							let freezes_more_than_ed =
+								frozen.saturating_sub(<Balances as InspectFungible<AccountId32>>::minimum_balance());
+							switch_pair.remote_asset_circulating_supply = switch_pair
+								.remote_asset_circulating_supply
+								.checked_sub(freezes_more_than_ed as u128)
+								.unwrap();
+						}
+					});
+				}
 			}
 
 			System::reset_events()
