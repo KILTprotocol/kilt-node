@@ -329,7 +329,7 @@ fn skips_on_weight_not_previously_purchased() {
 
 #[test]
 fn skips_on_switch_pair_not_set() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		let mut weigher = {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
