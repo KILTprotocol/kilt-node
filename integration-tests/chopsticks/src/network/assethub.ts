@@ -165,7 +165,7 @@ export const eKiltLocation = {
 }
 
 // Sibling Sovereign Account
-export const siblingSovereignAccount = '5Ec4AhPZk8STuex8Wsi9TwDtJQxKqzPJRCH7348Xtcs9vZLJ'
+export const siblingSovereignAccount = '5Eg2fntNprdN3FgH4sfEaaZhYtddZQSQUqvYJ1f2mLtinVhV'
 
 export async function getContext(): Promise<Config> {
 	const options = getSetupOptions({})

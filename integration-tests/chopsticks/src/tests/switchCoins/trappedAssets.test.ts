@@ -3,20 +3,32 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assethub.js'
+import * as RococoConfig from '../../network/rococo.js'
 import { KILT, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
-import { peregrineContext, assethubContext } from '../index.js'
+import { peregrineContext, assethubContext, rococoContext } from '../index.js'
 import { createBlock, setStorage, hexAddress } from '../utils.js'
-import { getSiblingLocation } from '../../network/utils.js'
+import { getChildLocation, getSiblingLocation } from '../../network/utils.js'
 
 test('Trapped assets', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	await setStorage(peregrineContext, {
-		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
+		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [
+			keysAlice.address,
+			AssetHubConfig.siblingSovereignAccount,
+		]),
 		...PeregrineConfig.setSwitchPair(),
 		...PeregrineConfig.setSafeXcmVersion3(),
-		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+		...PeregrineConfig.assignNativeTokensToAccounts(
+			[keysAlice.address, AssetHubConfig.siblingSovereignAccount],
+			initialBalanceKILT
+		),
 		...PeregrineConfig.setSudoKey(keysAlice.address),
+	})
+
+	await setStorage(rococoContext, {
+		...RococoConfig.setSudoKey(keysAlice.address),
+		...RococoConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceROC),
 	})
 
 	await setStorage(assethubContext, {
@@ -108,14 +120,20 @@ test('Trapped assets', async ({ expect }) => {
 
 	// Alice can reclaim the funds
 	const reclaimMsg = [
+		{ WithdrawAsset: [{ id: { Concrete: { parents: 0, interior: 'Here' } }, fun: { Fungible: KILT } }] },
+		{
+			BuyExecution: {
+				weightLimit: 'Unlimited',
+				fees: { id: { Concrete: { parents: 0, interior: 'Here' }, fun: { Fungible: KILT } } },
+			},
+		},
 		{
 			ClaimAsset: {
-				ticket: getSiblingLocation(AssetHubConfig.paraId),
+				ticket: { parents: 0, interior: { X1: { GeneralIndex: 3 } } },
 				assets: [
 					{
 						id: { Concrete: AssetHubConfig.eKiltLocation },
-						// Difficult to say how much funds remain after paying the fees. Let's just say 49 PILTs
-						fun: { Fungible: KILT * BigInt(49) },
+						fun: { Fungible: 7161 },
 					},
 				],
 			},
@@ -137,15 +155,35 @@ test('Trapped assets', async ({ expect }) => {
 		},
 	]
 
-	const innerTx = peregrineContext.api.tx.polkadotXcm.execute({ V3: reclaimMsg }, { refTime: 100, proofSize: 6557 })
+	const peregrineDestination = getSiblingLocation(PeregrineConfig.paraId)
 
-	const reclaimTx = peregrineContext.api.tx.sudo
-		.sudoUncheckedWeight(innerTx, { refTime: '1000000000000', proofSize: 6557 })
-		.signAsync(keysAlice)
+	const transactExtrinsic = assethubContext.api.tx.polkadotXcm.send({ V3: peregrineDestination }, { V3: reclaimMsg })
 
-	const reclaimEvents = await sendTransaction(reclaimTx)
+	const assetHubDestination = getChildLocation(AssetHubConfig.paraId)
+
+	const transactMessage = [
+		{ UnpaidExecution: { weightLimit: 'Unlimited' } },
+		{
+			Transact: {
+				originKind: 'SuperUser',
+				requireWeightAtMost: { refTime: '1000000000', proofSize: '65527' },
+				call: {
+					encoded: transactExtrinsic.method.toHex(),
+				},
+			},
+		},
+	]
+
+	const relayTx = rococoContext.api.tx.xcmPallet.send({ V3: assetHubDestination }, { V3: transactMessage })
+	const reclaimTx = rococoContext.api.tx.sudo.sudo(relayTx).signAsync(keysAlice)
+
+	// TODO: check events
+	const relayEvents = await sendTransaction(reclaimTx)
+	await createBlock(rococoContext)
+
+	await createBlock(assethubContext)
 
 	await createBlock(peregrineContext)
 
 	await peregrineContext.pause()
-}, 20_00000)
+}, 20_000)
