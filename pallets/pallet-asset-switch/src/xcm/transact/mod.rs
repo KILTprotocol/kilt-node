@@ -26,12 +26,17 @@ use xcm_executor::traits::{ConvertLocation, TransactAsset};
 
 use crate::{traits::SwitchHooks, Config, Event, LocalCurrencyBalanceOf, Pallet, SwitchPair};
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 const LOG_TARGET: &str = "xcm::pallet-asset-switch::SwitchPairRemoteAssetTransactor";
 
 /// Type implementing [TransactAsset] that moves from the switch pair pool
 /// account, if present, as many local tokens as remote assets received into
-/// the specified `MultiLocation` if the incoming asset matches the remote asset
-/// as specified in the switch pair.
+/// the specified `MultiLocation` if the incoming asset ID matches the remote
+/// asset ID as specified in the switch pair and if they are both fungible.
 pub struct SwitchPairRemoteAssetTransactor<AccountIdConverter, T, I>(PhantomData<(AccountIdConverter, T, I)>);
 
 impl<AccountIdConverter, T, I> TransactAsset for SwitchPairRemoteAssetTransactor<AccountIdConverter, T, I>
@@ -56,10 +61,14 @@ where
 			Error::AssetNotFound
 		})?;
 		ensure!(stored_asset_id_v3 == what.id, Error::AssetNotFound);
+		// 3. Verify the asset being deposited is fungible.
+		let Fungibility::Fungible(fungible_amount) = what.fun else {
+			return Err(Error::AssetNotFound);
+		};
 		// After this ensure, we know we need to be transacting with this asset, so any
 		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
-		// 3. Verify the switch pair is running.
+		// 4. Verify the switch pair is running.
 		ensure!(
 			switch_pair.is_enabled(),
 			Error::FailedToTransactAsset("switch pair is not running.",)
@@ -68,11 +77,7 @@ where
 		let beneficiary = AccountIdConverter::convert_location(who).ok_or(Error::FailedToTransactAsset(
 			"Failed to convert beneficiary to valid account.",
 		))?;
-		let Fungibility::Fungible(fungible_amount) = what.fun else {
-			return Err(Error::FailedToTransactAsset("Deposited token expected to be fungible."));
-		};
-
-		// 4. Call into the pre-switch hook
+		// 5. Call into the pre-switch hook
 		T::SwitchHooks::pre_remote_to_local_switch(&beneficiary, fungible_amount).map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
@@ -82,7 +87,7 @@ where
 			Error::FailedToTransactAsset("Failed to validate preconditions for remote-to-local switch.")
 		})?;
 
-		// 5. Perform the local transfer
+		// 6. Perform the local transfer
 		let fungible_amount_as_currency_balance: LocalCurrencyBalanceOf<T, I> =
 			fungible_amount.try_into().map_err(|_| {
 				Error::FailedToTransactAsset("Failed to convert fungible amount to balance of local currency.")
@@ -99,7 +104,7 @@ where
 				"Failed to transfer assets from pool account with error {:?}",
 				e
 			);
-			Error::FailedToTransactAsset("Failed to transfer assets from pool account")
+			Error::FailedToTransactAsset("Failed to transfer assets from pool account to specified account.")
 		})?;
 
 		// 6. Increase the balance of the remote asset
@@ -110,7 +115,7 @@ where
 			switch_pair_info
 				.try_process_incoming_switch(fungible_amount)
 				.map_err(|_| {
-					Error::FailedToTransactAsset("Failed to transfer assets from pool account to specified account.")
+					Error::FailedToTransactAsset("Failed to apply the transfer outcome to the storage components.")
 				})?;
 			Ok::<_, Error>(())
 		})?;
