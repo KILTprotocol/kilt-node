@@ -247,7 +247,9 @@ mod tests {
 	impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
 		fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 			// Must resolve into existing but better to be safe.
-			let _ = <pallet_balances::Pallet<Test>>::resolve(&TREASURY_ACC, amount);
+			let result = <pallet_balances::Pallet<Test>>::resolve(&TREASURY_ACC, amount);
+
+			debug_assert!(result.is_ok(), "The whole credit cannot be countered");
 		}
 	}
 
