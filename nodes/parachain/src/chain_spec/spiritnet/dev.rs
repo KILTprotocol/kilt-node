@@ -23,6 +23,7 @@ use runtime_common::{
 	AccountId, AuthorityId, Balance,
 };
 use sc_service::ChainType;
+use serde_json::to_value;
 use sp_core::sr25519;
 use spiritnet_runtime::{
 	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
@@ -37,6 +38,7 @@ use crate::chain_spec::{
 
 pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
+	let genesis_state = to_value(generate_genesis_state()).expect("Creating genesis state failed");
 
 	ChainSpec::builder(
 		wasm_binary,
@@ -49,11 +51,11 @@ pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 	.with_id("kilt_spiritnet_dev")
 	.with_chain_type(ChainType::Development)
 	.with_properties(get_properties("KILT", 15, 38))
-	.with_genesis_config_patch(generate_genesis_state())
+	.with_genesis_config(genesis_state)
 	.build()
 }
 
-fn generate_genesis_state() -> serde_json::Value {
+fn generate_genesis_state() -> RuntimeGenesisConfig {
 	let alice = (
 		get_account_id_from_secret::<sr25519::Public>("Alice"),
 		get_public_key_from_secret::<AuthorityId>("Alice"),
@@ -71,7 +73,7 @@ fn generate_genesis_state() -> serde_json::Value {
 		get_account_id_from_secret::<sr25519::Public>("Ferdie"),
 	];
 
-	let genesis = RuntimeGenesisConfig {
+	RuntimeGenesisConfig {
 		balances: BalancesConfig {
 			balances: endowed_accounts.map(|acc| (acc, 10_000_000 * KILT)).to_vec(),
 		},
@@ -104,7 +106,5 @@ fn generate_genesis_state() -> serde_json::Value {
 			..Default::default()
 		},
 		..Default::default()
-	};
-
-	serde_json::to_value(genesis).expect("Creating genesis state failed")
+	}
 }

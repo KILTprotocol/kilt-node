@@ -18,10 +18,13 @@
 
 //! KILT chain specification
 
-use kestrel_runtime::{opaque::SessionKeys, RuntimeGenesisConfig, WASM_BINARY};
+use kestrel_runtime::{
+	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
+};
 use runtime_common::{AccountId, AccountPublic};
 
 use sc_service::{self, ChainType, Properties};
+use serde_json::to_value;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{ed25519, sr25519, Pair, Public};
@@ -44,17 +47,18 @@ fn generate_dev_chain_spec() -> ChainSpec {
 		("tokenDecimals".into(), 15.into()),
 		("tokenSymbol".into(), "DILT".into()),
 	]);
+	let genesis_state = to_value(generate_genesis_state()).expect("Creating genesis state failed");
 
 	ChainSpec::builder(wasm_binary, None)
 		.with_name("Standalone Node (Dev)")
 		.with_id("standalone_node_development")
 		.with_chain_type(ChainType::Development)
 		.with_properties(properties)
-		.with_genesis_config(generate_genesis_state())
+		.with_genesis_config(genesis_state)
 		.build()
 }
 
-fn generate_genesis_state() -> serde_json::Value {
+fn generate_genesis_state() -> RuntimeGenesisConfig {
 	let endowed_accounts = vec![
 		// Dev Faucet account
 		get_account_id_from_secret::<ed25519::Public>(
@@ -65,29 +69,29 @@ fn generate_genesis_state() -> serde_json::Value {
 		get_account_id_from_secret::<sr25519::Public>("//Alice"),
 		get_account_id_from_secret::<sr25519::Public>("//Bob"),
 	];
-
 	let initial_authorities = vec![get_authority_keys_from_secret("//Alice")];
 	let root_key = get_account_id_from_secret::<ed25519::Public>("//Alice");
 
-	serde_json::json!({
-		"balances": {
-			"balances": endowed_accounts.iter().cloned().map(|k| (k, 1u64 << 60)).collect::<Vec<_>>(),
+	RuntimeGenesisConfig {
+		system: SystemConfig { ..Default::default() },
+		balances: BalancesConfig {
+			balances: endowed_accounts.into_iter().map(|a| (a, 1u128 << 90)).collect(),
 		},
-		"session": {
-			"keys": initial_authorities
+		session: SessionConfig {
+			keys: initial_authorities
 				.into_iter()
 				.map(|(acc, aura, grandpa)| {
 					(
-						acc.clone(),                 // account id
-						acc,                         // validator id
+						acc.clone(),                          // account id
+						acc,                                  // validator id
 						template_session_keys(aura, grandpa), // session keys
 					)
 				})
-			.collect::<Vec<_>>(),
+				.collect::<Vec<_>>(),
 		},
-
-		"sudo": { "key": Some(root_key) }
-	})
+		sudo: SudoConfig { key: Some(root_key) },
+		..Default::default()
+	}
 }
 
 fn template_session_keys(aura_keys: AuraId, grandpa_keys: GrandpaId) -> SessionKeys {

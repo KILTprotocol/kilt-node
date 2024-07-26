@@ -18,11 +18,13 @@
 
 use cumulus_primitives_core::ParaId;
 use dip_provider_runtime_template::{
-	AccountId, AuraId, RuntimeGenesisConfig, SessionKeys, Signature, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
+	AccountId, AuraId, BalancesConfig, CollatorSelectionConfig, ParachainInfoConfig, RuntimeGenesisConfig,
+	SessionConfig, SessionKeys, Signature, SudoConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
 };
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::{ChainType, GenericChainSpec};
 use serde::{Deserialize, Serialize};
+use serde_json::to_value;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
@@ -69,26 +71,32 @@ fn testnet_genesis(
 	invulnerables: Vec<(AccountId, AuraId)>,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
-) -> serde_json::Value {
-	serde_json::json!({
-		"parachainInfo": {
-			"parachainId": id,
+) -> RuntimeGenesisConfig {
+	RuntimeGenesisConfig {
+		parachain_info: ParachainInfoConfig {
+			parachain_id: id,
+			..Default::default()
 		},
-		"sudo": {
-			"key": Some(endowed_accounts.first().unwrap().clone()),
+		sudo: SudoConfig {
+			key: Some(endowed_accounts.first().unwrap().clone()),
 		},
-		"balances": {
-			"balances": endowed_accounts.iter().cloned().map(|k| (k, EXISTENTIAL_DEPOSIT * 1_000_000)).collect::<Vec<_>>(),
+		balances: BalancesConfig {
+			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
 		},
-		"collatorSelection": {
-			"invulnerables": invulnerables.iter().cloned().map(|(acc, _)| acc).collect::<Vec<_>>(),
-			"candidacyBond": EXISTENTIAL_DEPOSIT * 16,
+		transaction_payment: Default::default(),
+		collator_selection: CollatorSelectionConfig {
+			invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
+			candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
+			..Default::default()
 		},
-		"session": {
-			"keys": invulnerables.into_iter().map(|(acc, aura)| (acc.clone(), acc, template_session_keys(aura))).collect::<Vec<_>>(),
+		session: SessionConfig {
+			keys: invulnerables
+				.into_iter()
+				.map(|(acc, aura)| (acc.clone(), acc, template_session_keys(aura)))
+				.collect(),
 		},
-
-	})
+		..Default::default()
+	}
 }
 
 pub fn development_config() -> ChainSpec {
@@ -98,19 +106,7 @@ pub fn development_config() -> ChainSpec {
 	properties.insert("tokenDecimals".into(), 12.into());
 	properties.insert("ss58Format".into(), SS58_PREFIX.into());
 
-	ChainSpec::builder(
-		wasm_binary,
-		Extensions {
-			relay_chain: "rococo-local".into(),
-			para_id: PARA_ID,
-		},
-	)
-	.with_name("DIP provider dev")
-	.with_id("dip-provider-dev")
-	.with_chain_type(ChainType::Development)
-	.with_protocol_id("dip-consumer-dev")
-	.with_properties(properties)
-	.with_genesis_config(testnet_genesis(
+	let genesis_state = testnet_genesis(
 		vec![(
 			get_account_id_from_seed::<sr25519::Public>("Alice"),
 			get_collator_keys_from_seed("Alice"),
@@ -124,6 +120,20 @@ pub fn development_config() -> ChainSpec {
 			get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
 		],
 		PARA_ID.into(),
-	))
+	);
+
+	ChainSpec::builder(
+		wasm_binary,
+		Extensions {
+			relay_chain: "rococo-local".into(),
+			para_id: PARA_ID,
+		},
+	)
+	.with_name("DIP provider dev")
+	.with_id("dip-provider-dev")
+	.with_chain_type(ChainType::Development)
+	.with_protocol_id("dip-consumer-dev")
+	.with_properties(properties)
+	.with_genesis_config(to_value(genesis_state).unwrap())
 	.build()
 }
