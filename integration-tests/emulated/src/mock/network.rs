@@ -14,28 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use asset_hub_rococo_emulated_chain::AssetHubRococo as AssetHubParachain;
+use rococo_emulated_chain::Rococo as RococoChain;
 use xcm_emulator::decl_test_networks;
 
-use crate::mock::{
-	para_chains::{AssetHubPolkadot, AssetHubRococo, Peregrine, Spiritnet},
-	relay_chains::{Polkadot, Rococo},
-};
+use crate::mock::para_chains::{PeregrineParachain, SpiritnetParachain};
+
+pub type Rococo = RococoChain<MockNetwork>;
+pub type Spiritnet = SpiritnetParachain<MockNetwork>;
+pub type Peregrine = PeregrineParachain<MockNetwork>;
+pub type AssetHub = AssetHubParachain<MockNetwork>;
 
 decl_test_networks! {
-	pub struct MockNetworkPolkadot {
-		relay_chain = Polkadot,
+	pub struct MockNetwork {
+		relay_chain = RococoChain,
 		parachains = vec![
-			AssetHubPolkadot,
-			Spiritnet,
+			AssetHubParachain,
+			SpiritnetParachain,
+			PeregrineParachain,
 		],
 		bridge = ()
 	},
-	pub struct MockNetworkRococo {
-		relay_chain = Rococo,
-		parachains = vec![
-			AssetHubRococo,
-			Peregrine,
-		],
-		bridge = ()
-	}
 }

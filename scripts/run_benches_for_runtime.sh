@@ -37,9 +37,12 @@ pallets=(
 	public-credentials
 	pallet-deposit-storage
 	pallet-dip-provider
+	pallet-message-queue
+	cumulus-pallet-parachain-system
+	cumulus-pallet-dmp-queue
 )
 
-// Add Peregrine-only pallets here!
+# Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
   pallets+=()
 fi

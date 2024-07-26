@@ -48,6 +48,8 @@ use sp_std::marker::PhantomData;
 /// Weights for `pallet_vesting`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
+
+	fn force_remove_vesting_schedule(_: u32, _: u32) -> cumulus_primitives_core::Weight { todo!() }
 	// Storage: Vesting Vesting (r:1 w:1)
 	// Proof: Vesting Vesting (max_values: None, max_size: Some(1169), added: 3644, mode: MaxEncodedLen)
 	// Storage: Balances Locks (r:1 w:1)

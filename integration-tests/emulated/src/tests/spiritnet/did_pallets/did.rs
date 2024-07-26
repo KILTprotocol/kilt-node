@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use asset_hub_rococo_emulated_chain::AssetHubRococoParaPallet;
 use did::did_details::DidVerificationKey;
 use frame_support::{
 	assert_ok,
@@ -23,14 +24,13 @@ use frame_support::{
 };
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
+use xcm::{lts::prelude::OriginKind, DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
 	mock::{
-		network::MockNetworkPolkadot,
-		para_chains::{AssetHubPolkadot, AssetHubPolkadotPallet, Spiritnet, SpiritnetPallet},
-		relay_chains::Polkadot,
+		network::{AssetHub, MockNetwork, Rococo, Spiritnet},
+		para_chains::SpiritnetParachainParaPallet,
 	},
 	tests::spiritnet::did_pallets::utils::{
 		construct_basic_transact_xcm_message, get_asset_hub_sovereign_account, get_sibling_destination_spiritnet,
@@ -51,9 +51,9 @@ fn get_xcm_message_create_did(origin_kind: OriginKind, withdraw_balance: Balance
 
 #[test]
 fn test_did_creation_from_asset_hub_successful() {
-	MockNetworkPolkadot::reset();
+	MockNetwork::reset();
 
-	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 10;
 	let withdraw_balance = init_balance / 2;
@@ -67,16 +67,16 @@ fn test_did_creation_from_asset_hub_successful() {
 		<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
 
-	AssetHubPolkadot::execute_with(|| {
-		assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
+	AssetHub::execute_with(|| {
+		assert_ok!(<AssetHub as AssetHubRococoParaPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination.clone()),
 			Box::new(xcm_create_did_msg.clone())
 		));
 
-		type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 		assert_expected_events!(
-			AssetHubPolkadot,
+			AssetHub,
 			vec![
 				RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 			]
@@ -88,7 +88,7 @@ fn test_did_creation_from_asset_hub_successful() {
 		assert_expected_events!(
 			Spiritnet,
 			vec![
-				SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
+				SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
 				SpiritnetRuntimeEvent::Did(did::Event::DidCreated(account, did_identifier)) => {
 					account: account == &asset_hub_sovereign_account,
 					did_identifier:  did_identifier == &asset_hub_sovereign_account,
@@ -96,10 +96,11 @@ fn test_did_creation_from_asset_hub_successful() {
 			]
 		);
 
-		let balance_on_hold = <<Spiritnet as SpiritnetPallet>::Balances as Inspect<AccountId>>::balance_on_hold(
-			&spiritnet_runtime::RuntimeHoldReason::from(did::HoldReason::Deposit),
-			&asset_hub_sovereign_account,
-		);
+		let balance_on_hold =
+			<<Spiritnet as SpiritnetParachainParaPallet>::Balances as Inspect<AccountId>>::balance_on_hold(
+				&spiritnet_runtime::RuntimeHoldReason::from(did::HoldReason::Deposit),
+				&asset_hub_sovereign_account,
+			);
 
 		assert_eq!(
 			balance_on_hold,
@@ -107,14 +108,14 @@ fn test_did_creation_from_asset_hub_successful() {
 		);
 	});
 
-	Polkadot::execute_with(|| {
-		assert_eq!(Polkadot::events().len(), 0);
+	Rococo::execute_with(|| {
+		assert_eq!(Rococo::events().len(), 0);
 	});
 }
 
 #[test]
 fn test_did_creation_from_asset_hub_unsuccessful() {
-	let sudo_origin = <AssetHubPolkadot as Chain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
 
 	let init_balance = KILT * 100;
 	let withdraw_balance = init_balance / 2;
@@ -125,7 +126,7 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 	let origin_kind_list = vec![OriginKind::Xcm, OriginKind::Superuser, OriginKind::Native];
 
 	for origin in origin_kind_list {
-		MockNetworkPolkadot::reset();
+		MockNetwork::reset();
 
 		Spiritnet::execute_with(|| {
 			<spiritnet_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
@@ -133,16 +134,16 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 
 		let xcm_create_did_msg = get_xcm_message_create_did(origin, withdraw_balance);
 
-		AssetHubPolkadot::execute_with(|| {
-			assert_ok!(<AssetHubPolkadot as AssetHubPolkadotPallet>::PolkadotXcm::send(
+		AssetHub::execute_with(|| {
+			assert_ok!(<AssetHub as AssetHubRococoParaPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
 				Box::new(xcm_create_did_msg)
 			));
 
-			type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 			assert_expected_events!(
-				AssetHubPolkadot,
+				AssetHub,
 				vec![
 					RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 				]
@@ -162,8 +163,8 @@ fn test_did_creation_from_asset_hub_unsuccessful() {
 			assert!(!is_create_event_present);
 		});
 
-		Polkadot::execute_with(|| {
-			assert_eq!(Polkadot::events().len(), 0);
+		Rococo::execute_with(|| {
+			assert_eq!(Rococo::events().len(), 0);
 		});
 	}
 }

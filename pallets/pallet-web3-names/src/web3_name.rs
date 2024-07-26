@@ -99,7 +99,7 @@ impl<T: Config> Eq for AsciiWeb3Name<T> {
 // to implement PartialOrd.
 impl<T: Config> PartialOrd for AsciiWeb3Name<T> {
 	fn partial_cmp(&self, other: &Self) -> Option<sp_std::cmp::Ordering> {
-		self.0.as_slice().partial_cmp(other.as_slice())
+		Some(self.0.as_slice().cmp(other.0.as_slice()))
 	}
 }
 
