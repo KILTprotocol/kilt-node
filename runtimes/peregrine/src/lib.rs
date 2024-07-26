@@ -1166,6 +1166,8 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
+	// Unfortunately, this migration fails the idempotency tests, and the `VersionedMigration` struct is still marked
+	// as experimental as of now.
 	pallet_assets::migration::v1::MigrateToV1<Runtime>,
 >;
 
