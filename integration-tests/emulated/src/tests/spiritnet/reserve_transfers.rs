@@ -16,11 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use asset_hub_rococo_emulated_chain::genesis::ED;
-
 use emulated_integration_tests_common::accounts::ALICE;
-use frame_support::{assert_err, assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
-use runtime_common::AccountId;
+use frame_support::{assert_noop, assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
+use runtime_common::{constants::KILT, AccountId};
 use sp_core::sr25519;
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;
@@ -44,13 +42,13 @@ use crate::{
 fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_relay() {
 	MockNetwork::reset();
 
-	let balance_to_transfer = 100_000_000_000_000 * ED;
+	let balance_to_transfer = KILT;
 
 	let alice_account = get_account_id_from_seed::<sr25519::Public>(ALICE);
 
 	// Submit XCM msg
 	Spiritnet::execute_with(|| {
-		assert_err!(
+		assert_noop!(
 			SpiritnetXcm::limited_reserve_transfer_assets(
 				RawOrigin::Signed(alice_account.clone()).into(),
 				Box::new(Parent.into()),
@@ -90,7 +88,7 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 	let asset_hub_sovereign_account =
 		Spiritnet::sovereign_account_id_of(Spiritnet::sibling_location_of(AssetHub::para_id()));
 
-	let balance_to_transfer = 100_000_000_000_000 * ED;
+	let balance_to_transfer = KILT;
 
 	Spiritnet::execute_with(|| {
 		// the sovereign_account of AssetHub should have no coins.
