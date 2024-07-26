@@ -43,7 +43,7 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 	.with_id("kilt_spiritnet_new")
 	.with_chain_type(ChainType::Live)
 	.with_properties(get_properties("KILT", 15, 38))
-	.with_genesis_config_patch(genesis_state)
+	.with_genesis_config(genesis_state)
 	.build()
 }
 
