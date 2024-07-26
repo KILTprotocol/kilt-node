@@ -49,14 +49,12 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `pallet_vesting`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
-	/// Storage: `Vesting::Vesting` (r:1 w:1)
-	/// Proof: `Vesting::Vesting` (`max_values`: None, `max_size`: Some(1169), added: 3644, mode: `MaxEncodedLen`)
-	/// Storage: `Balances::Locks` (r:1 w:1)
-	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
-	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(949), added: 3424, mode: `MaxEncodedLen`)
-	/// The range of component `l` is `[0, 49]`.
-	/// The range of component `s` is `[1, 28]`.
+
+	fn force_remove_vesting_schedule(_: u32, _: u32) -> cumulus_primitives_core::Weight { todo!() }
+	// Storage: Vesting Vesting (r:1 w:1)
+	// Proof: Vesting Vesting (max_values: None, max_size: Some(1169), added: 3644, mode: MaxEncodedLen)
+	// Storage: Balances Locks (r:1 w:1)
+	// Proof: Balances Locks (max_values: None, max_size: Some(1299), added: 3774, mode: MaxEncodedLen)
 	fn vest_locked(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `879 + l * (25 ±0) + s * (40 ±0)`

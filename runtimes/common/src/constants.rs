@@ -441,6 +441,7 @@ pub mod treasury {
 	parameter_types! {
 		pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
 		pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
+		pub const PayoutPeriod: BlockNumber = DAYS * 30;
 	}
 }
 
@@ -491,6 +492,7 @@ pub mod tips {
 		pub const TipCountdown: BlockNumber = DAYS;
 		pub const TipFindersFee: Percent = Percent::from_percent(0);
 		pub const TipReportDepositBase: Balance = deposit(1, 1);
+		pub const MaxTipAmount: Balance = 100_000 * KILT;
 	}
 }
 

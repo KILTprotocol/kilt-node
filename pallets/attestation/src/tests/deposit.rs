@@ -99,7 +99,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 			);
 			assert_noop!(
 				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, attester).into(), claim_hash),
-				TokenError::CannotCreateHold
+				TokenError::FundsUnavailable
 			);
 		});
 }

@@ -15,9 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+#![allow(unused_doc_comments)]
 
 pub mod attestation;
 pub mod ctype;
+pub mod cumulus_pallet_parachain_system;
 pub mod delegation;
 pub mod did;
 pub mod frame_system;
@@ -27,9 +29,11 @@ pub mod pallet_democracy;
 pub mod pallet_deposit_storage;
 pub mod pallet_did_lookup;
 pub mod pallet_dip_provider;
+pub mod pallet_dmp_queue;
 pub mod pallet_indices;
 pub mod pallet_inflation;
 pub mod pallet_membership;
+pub mod pallet_message_queue;
 pub mod pallet_migration;
 pub mod pallet_multisig;
 pub mod pallet_preimage;

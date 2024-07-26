@@ -44,7 +44,7 @@ The DIP pallet is available in the KILT node release 1.12.0 and later.
 
 Pass runtime configuration to the pallet's `Config` trait.
 
-```rust
+```rust,ignore
 impl pallet_dip_provider::Config for Runtime {
     // Config
 }
