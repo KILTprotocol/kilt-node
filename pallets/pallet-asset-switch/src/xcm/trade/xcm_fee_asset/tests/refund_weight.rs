@@ -27,7 +27,7 @@ use crate::{
 	xcm::{
 		test_utils::get_switch_pair_info_for_remote_location,
 		trade::{
-			test_utils::SumTimeAndProofValues,
+			test_utils::{is_weigher_unchanged, SumTimeAndProofValues},
 			xcm_fee_asset::mock::{ExtBuilder, MockRuntime},
 		},
 		UsingComponentsForXcmFeeAsset,
@@ -407,6 +407,26 @@ fn skips_on_switch_pair_not_set() {
 		assert!(amount_refunded.is_none());
 		assert_eq!(initial_weigher, weigher);
 	});
+}
+
+#[test]
+fn skips_on_switch_pair_not_enabled() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Paused);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build()
+		.execute_with(|| {
+			let mut weigher = UsingComponentsForXcmFeeAsset::<MockRuntime, _, SumTimeAndProofValues>::new();
+			assert!(weigher
+				.refund_weight(Weight::from_parts(1, 1), &XcmContext::with_message_id([0u8; 32]))
+				.is_none());
+			assert!(is_weigher_unchanged(&weigher));
+		});
 }
 
 #[test]

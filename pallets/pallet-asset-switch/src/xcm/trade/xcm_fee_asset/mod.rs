@@ -22,7 +22,7 @@ use sp_std::marker::PhantomData;
 use xcm::v3::{Error, Fungibility, MultiAsset, Weight, XcmContext, XcmHash};
 use xcm_executor::{traits::WeightTrader, Assets};
 
-use crate::{Config, SwitchPair, SwitchPairInfoOf};
+use crate::{Config, SwitchPair};
 
 #[cfg(test)]
 mod mock;
@@ -93,16 +93,17 @@ where
 
 		// Prevent re-using the same trader more than once.
 		ensure!(self.consumed_xcm_hash.is_none(), Error::NotWithdrawable);
-		// Asset not relevant if no switch pair is set.
-		let SwitchPairInfoOf::<T> { remote_xcm_fee, .. } = SwitchPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
+		// Asset not relevant if no switch pair is set, or not enabled.
+		let switch_pair = SwitchPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
+		ensure!(switch_pair.is_enabled(), Error::AssetNotFound);
 
 		let amount = WeightToFee::weight_to_fee(&weight);
 
-		let xcm_fee_asset_v3: MultiAsset = remote_xcm_fee.clone().try_into().map_err(|e| {
+		let xcm_fee_asset_v3: MultiAsset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
 				"Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}",
-				remote_xcm_fee,
+				switch_pair.remote_xcm_fee,
 				e
 			);
 			Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
@@ -133,19 +134,23 @@ where
 			return None;
 		};
 
-		let Some(SwitchPairInfoOf::<T> { remote_xcm_fee, .. }) = SwitchPair::<T, I>::get() else {
+		let Some(switch_pair) = SwitchPair::<T, I>::get() else {
 			log::error!(target: LOG_TARGET, "Stored switch pair should not be None, but it is.");
 			return None;
 		};
+		if !switch_pair.is_enabled() {
+			return None;
+		}
 
-		let xcm_fee_asset_v3: MultiAsset = remote_xcm_fee
+		let xcm_fee_asset_v3: MultiAsset = switch_pair
+			.remote_xcm_fee
 			.clone()
 			.try_into()
 			.map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
 					"Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}",
-					remote_xcm_fee,
+					switch_pair.remote_xcm_fee,
 					e
 				);
 				e
