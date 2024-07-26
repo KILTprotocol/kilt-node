@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::assert_noop;
+use frame_support::{assert_noop, assert_storage_noop};
 use xcm::{
 	v3::{
 		AssetId, AssetInstance, Error, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, Weight, XcmContext,
@@ -30,7 +30,7 @@ use crate::{
 		test_utils::get_switch_pair_info_for_remote_location_with_pool_usable_balance,
 		trade::{
 			switch_pair_remote_asset::mock::{ExtBuilder, MockRuntime, ToDestinationAccount},
-			test_utils::{is_weigher_unchanged, SumTimeAndProofValues},
+			test_utils::SumTimeAndProofValues,
 		},
 		UsingComponentsForSwitchPairRemoteAsset,
 	},
@@ -38,7 +38,7 @@ use crate::{
 };
 
 #[test]
-fn successful_on_stored_remote_asset_latest() {
+fn successful_on_stored_remote_asset_latest_with_input_fungible() {
 	let location = xcm::latest::MultiLocation {
 		parents: 1,
 		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
@@ -57,7 +57,6 @@ fn successful_on_stored_remote_asset_latest() {
 	// Results in a required amount of `2` local currency tokens.
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
-	// Works with an input fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {
@@ -78,7 +77,28 @@ fn successful_on_stored_remote_asset_latest() {
 			assert_eq!(weigher.remaining_fungible_balance, 2);
 			assert_eq!(weigher.remaining_weight, weight_to_buy);
 		});
-	// Fails with an input non-fungible amount.
+}
+
+#[test]
+fn successful_on_stored_remote_asset_latest_with_input_non_fungible() {
+	let location = xcm::latest::MultiLocation {
+		parents: 1,
+		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info =
+		{
+			// Give to pool amount same amount that is being purchased in the test case +
+			// ED.
+			let mut new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<
+				MockRuntime,
+			>(&location, 2, SwitchPairStatus::Running);
+			// Set remote asset to the latest XCM version.
+			new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_latest().unwrap();
+			new_switch_pair_info
+		};
+	// Results in a required amount of `2` local currency tokens.
+	let weight_to_buy = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {
@@ -98,9 +118,30 @@ fn successful_on_stored_remote_asset_latest() {
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::TooExpensive
 			);
-			assert!(is_weigher_unchanged(&weigher));
+			assert_storage_noop!(drop(weigher));
 		});
-	// Works with both an input fungible and non-fungible amount with same asset ID.
+}
+
+#[test]
+fn successful_on_stored_remote_asset_latest_with_input_fungible_and_non_fungible() {
+	let location = xcm::latest::MultiLocation {
+		parents: 1,
+		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info =
+		{
+			// Give to pool amount same amount that is being purchased in the test case +
+			// ED.
+			let mut new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<
+				MockRuntime,
+			>(&location, 2, SwitchPairStatus::Running);
+			// Set remote asset to the latest XCM version.
+			new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_latest().unwrap();
+			new_switch_pair_info
+		};
+	// Results in a required amount of `2` local currency tokens.
+	let weight_to_buy = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {
@@ -139,7 +180,7 @@ fn successful_on_stored_remote_asset_latest() {
 }
 
 #[test]
-fn successful_on_stored_remote_asset_v3() {
+fn successful_on_stored_remote_asset_v3_with_input_fungible() {
 	let location = MultiLocation {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
@@ -154,7 +195,6 @@ fn successful_on_stored_remote_asset_v3() {
 	// Results in a required amount of `2` local currency tokens.
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
-	// Works with an input fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {
@@ -175,7 +215,24 @@ fn successful_on_stored_remote_asset_v3() {
 			assert_eq!(weigher.remaining_fungible_balance, 2);
 			assert_eq!(weigher.remaining_weight, weight_to_buy);
 		});
-	// Fails with an input non-fungible amount.
+}
+
+#[test]
+fn successful_on_stored_remote_asset_v3_with_input_non_fungible() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	// Give to pool amount same amount that is being purchased in the test case +
+	// ED.
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		3,
+		SwitchPairStatus::Running,
+	);
+	// Results in a required amount of `2` local currency tokens.
+	let weight_to_buy = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {
@@ -195,9 +252,26 @@ fn successful_on_stored_remote_asset_v3() {
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::TooExpensive
 			);
-			assert!(is_weigher_unchanged(&weigher));
+			assert_storage_noop!(drop(weigher));
 		});
-	// Works with both an input fungible and non-fungible amount with same asset ID.
+}
+
+#[test]
+fn successful_on_stored_remote_asset_v3_with_input_fungible_and_non_fungible() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	// Give to pool amount same amount that is being purchased in the test case +
+	// ED.
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		3,
+		SwitchPairStatus::Running,
+	);
+	// Results in a required amount of `2` local currency tokens.
+	let weight_to_buy = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {
@@ -296,7 +370,7 @@ fn skips_on_switch_pair_not_set() {
 			weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 			Error::AssetNotFound
 		);
-		assert!(is_weigher_unchanged(&weigher));
+		assert_storage_noop!(drop(weigher));
 	});
 }
 
@@ -308,13 +382,13 @@ fn skips_on_switch_pair_not_enabled() {
 	};
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
 		&location,
-		0,
+		1,
 		SwitchPairStatus::Paused,
 	);
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info)
+		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
 				MockRuntime,
@@ -323,7 +397,7 @@ fn skips_on_switch_pair_not_enabled() {
 				ToDestinationAccount,
 			>::new();
 			let payment: Assets = vec![MultiAsset {
-				id: AssetId::Abstract([0; 32]),
+				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				fun: Fungibility::Fungible(1),
 			}]
 			.into();
@@ -331,7 +405,7 @@ fn skips_on_switch_pair_not_enabled() {
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::AssetNotFound
 			);
-			assert!(is_weigher_unchanged(&weigher));
+			assert_storage_noop!(drop(weigher));
 		});
 }
 
@@ -349,7 +423,6 @@ fn fails_on_too_expensive() {
 	// Results in a required amount of `2` local currency tokens.
 	let weight_to_buy = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
-	// Works with an input fungible amount.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {
@@ -369,6 +442,6 @@ fn fails_on_too_expensive() {
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::TooExpensive
 			);
-			assert!(is_weigher_unchanged(&weigher));
+			assert_storage_noop!(drop(weigher));
 		});
 }
