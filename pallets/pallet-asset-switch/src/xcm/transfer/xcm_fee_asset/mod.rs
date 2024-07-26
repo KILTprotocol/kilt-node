@@ -42,10 +42,13 @@ where
 {
 	fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
 		log::info!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
-		// 1. Verify a switch pair has been set.
+		// 1. Verify a switch pair has been set and is enabled.
 		let Some(switch_pair) = SwitchPair::<T, I>::get() else {
 			return false;
 		};
+		if !switch_pair.is_enabled() {
+			return false;
+		}
 
 		// 2. We only trust the EXACT configured remote location (no parent is allowed).
 		let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {

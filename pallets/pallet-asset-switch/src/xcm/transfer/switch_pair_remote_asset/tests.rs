@@ -245,7 +245,7 @@ fn false_on_switch_pair_not_set() {
 					parents: 1,
 					interior: Junctions::X1(Junction::Parachain(1_000))
 				}),
-				fun: Fungibility::NonFungible(AssetInstance::Index(1))
+				fun: Fungibility::Fungible(1)
 			},
 			&MultiLocation {
 				parents: 1,
@@ -253,6 +253,34 @@ fn false_on_switch_pair_not_set() {
 			}
 		));
 	});
+}
+
+#[test]
+fn false_on_switch_pair_not_enabled() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Paused);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build()
+		.execute_with(|| {
+			assert!(!IsSwitchPairRemoteAsset::<MockRuntime, _>::contains(
+				&MultiAsset {
+					id: AssetId::Concrete(MultiLocation {
+						parents: 1,
+						interior: Junctions::X1(Junction::Parachain(1_000))
+					}),
+					fun: Fungibility::Fungible(1)
+				},
+				&MultiLocation {
+					parents: 1,
+					interior: Junctions::X1(Junction::Parachain(1_000))
+				}
+			));
+		});
 }
 
 #[test]
