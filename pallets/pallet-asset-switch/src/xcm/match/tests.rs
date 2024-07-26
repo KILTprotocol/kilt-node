@@ -145,10 +145,7 @@ fn skips_on_switch_pair_not_enabled() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(MultiLocation {
-						parents: 1,
-						interior: Junctions::X1(Junction::Parachain(1_000)),
-					}),
+					id: AssetId::Concrete(location.clone().try_into().unwrap()),
 					fun: Fungibility::Fungible(u128::MAX),
 				}) as Result<(_, u128), _>,
 				Error::AssetNotHandled
@@ -183,7 +180,7 @@ fn skips_on_different_asset() {
 }
 
 #[test]
-fn skips_on_not_fungible_stored_asset() {
+fn skips_on_non_fungible_stored_asset() {
 	let location = MultiLocation {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
@@ -192,7 +189,7 @@ fn skips_on_not_fungible_stored_asset() {
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
 			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
-		// Set XCM fee asset to one with an abstract ID.
+		// Set XCM fee asset to one with a non-fungible amount.
 		new_switch_pair_info.remote_xcm_fee = VersionedMultiAsset::V3(MultiAsset {
 			id: AssetId::Concrete(location),
 			fun: non_fungible_asset_amount,
