@@ -336,7 +336,6 @@ fn fails_on_rerun() {
 				weigher.consumed_xcm_hash = Some([0; 32]);
 				weigher
 			};
-			let weigher_before = weigher.clone();
 			let payment: Assets = vec![MultiAsset {
 				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
 				fun: Fungibility::Fungible(2),
@@ -346,7 +345,7 @@ fn fails_on_rerun() {
 				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
 				Error::NotWithdrawable
 			);
-			assert_eq!(weigher_before, weigher);
+			assert_storage_noop!(drop(weigher));
 		});
 }
 

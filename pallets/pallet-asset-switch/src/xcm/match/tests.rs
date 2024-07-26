@@ -145,7 +145,7 @@ fn skips_on_switch_pair_not_enabled() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(location.clone().try_into().unwrap()),
+					id: AssetId::Concrete(location),
 					fun: Fungibility::Fungible(u128::MAX),
 				}) as Result<(_, u128), _>,
 				Error::AssetNotHandled

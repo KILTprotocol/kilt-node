@@ -104,7 +104,7 @@ fn successful_on_stored_remote_asset_latest_with_zero_remaining_balance() {
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	// No balance is refunded, weight is.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
@@ -146,7 +146,7 @@ fn successful_on_stored_remote_asset_latest_with_zero_remaining_weight() {
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	// Nothing is refunded, remaining balance is not changed.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
@@ -279,7 +279,7 @@ fn successful_on_stored_remote_asset_v3_with_zero_remaining_balance() {
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	// No balance is refunded, weight is.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
@@ -321,7 +321,7 @@ fn successful_on_stored_remote_asset_v3_with_zero_remaining_weight() {
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	// Nothing is refunded, remaining balance is not changed.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
@@ -401,7 +401,7 @@ fn skips_on_weight_not_previously_purchased() {
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
 	// Fails with XCM message hash `None`.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
 			let mut weigher = {
 				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
