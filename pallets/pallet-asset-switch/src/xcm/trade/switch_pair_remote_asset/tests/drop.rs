@@ -87,6 +87,37 @@ fn no_switch_pair() {
 }
 
 #[test]
+fn switch_pair_not_enabled() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		1,
+		SwitchPairStatus::Paused,
+	);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build_and_execute_with_sanity_tests(|| {
+			let weigher = {
+				let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+					MockRuntime,
+					_,
+					SumTimeAndProofValues,
+					ToDestinationAccount,
+				>::new();
+				weigher.remaining_fungible_balance = 1;
+				weigher
+			};
+			assert!(<Balances as InspectFungible<AccountId32>>::balance(&ToDestinationAccount::get()).is_zero());
+			drop(weigher);
+			assert!(<Balances as InspectFungible<AccountId32>>::balance(&ToDestinationAccount::get()).is_one());
+			assert!(<Balances as InspectFungible<AccountId32>>::balance(&new_switch_pair_info.pool_account).is_one());
+		});
+}
+
+#[test]
 fn zero_remaining_balance() {
 	let location = MultiLocation {
 		parents: 1,

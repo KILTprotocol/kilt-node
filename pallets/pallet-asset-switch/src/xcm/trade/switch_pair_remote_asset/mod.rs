@@ -104,8 +104,9 @@ where
 
 		// Prevent re-using the same trader more than once.
 		ensure!(self.consumed_xcm_hash.is_none(), Error::NotWithdrawable);
-		// Asset not relevant if no switch pair is set.
+		// Asset not relevant if no switch pair is set or if not enabled.
 		let switch_pair = self.switch_pair.as_ref().ok_or(Error::AssetNotFound)?;
+		ensure!(switch_pair.is_enabled(), Error::AssetNotFound);
 
 		let amount = WeightToFee::weight_to_fee(&weight);
 
@@ -148,6 +149,9 @@ where
 			log::error!(target: LOG_TARGET, "Stored switch pair should not be None, but it is.");
 			return None;
 		};
+		if !switch_pair.is_enabled() {
+			return None;
+		}
 
 		let switch_pair_remote_asset_v3: AssetId = switch_pair
 			.remote_asset_id
@@ -212,6 +216,8 @@ where
 		// Nothing to refund if this trader was not called or if the leftover balance is
 		// zero.
 		if let Some(switch_pair) = &self.switch_pair {
+			// We don't care if the pool is enabled, since we're sending all non-refunded
+			// weight to the configured destination account (e.g., treasury).
 			if self.remaining_fungible_balance > Zero::zero() {
 				let Ok(remaining_balance_as_local_currency) = LocalCurrencyBalanceOf::<T, I>::try_from(self.remaining_fungible_balance).map_err(|e| {
 					log::error!(target: LOG_TARGET, "Failed to convert remaining balance {:?} to local currency balance", self.remaining_fungible_balance);

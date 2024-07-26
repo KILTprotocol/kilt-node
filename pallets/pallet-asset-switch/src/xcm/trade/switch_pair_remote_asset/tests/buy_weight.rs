@@ -301,6 +301,41 @@ fn skips_on_switch_pair_not_set() {
 }
 
 #[test]
+fn skips_on_switch_pair_not_enabled() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		0,
+		SwitchPairStatus::Paused,
+	);
+	let weight_to_buy = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build_and_execute_with_sanity_tests(|| {
+			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+				MockRuntime,
+				_,
+				SumTimeAndProofValues,
+				ToDestinationAccount,
+			>::new();
+			let payment: Assets = vec![MultiAsset {
+				id: AssetId::Abstract([0; 32]),
+				fun: Fungibility::Fungible(1),
+			}]
+			.into();
+			assert_noop!(
+				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
+				Error::AssetNotFound
+			);
+			assert!(is_weigher_unchanged(&weigher));
+		});
+}
+
+#[test]
 fn fails_on_too_expensive() {
 	let location = MultiLocation {
 		parents: 1,

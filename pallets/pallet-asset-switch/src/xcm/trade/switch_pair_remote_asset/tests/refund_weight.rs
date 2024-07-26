@@ -28,7 +28,7 @@ use crate::{
 		test_utils::get_switch_pair_info_for_remote_location_with_pool_usable_balance,
 		trade::{
 			switch_pair_remote_asset::mock::{ExtBuilder, MockRuntime, ToDestinationAccount},
-			test_utils::SumTimeAndProofValues,
+			test_utils::{is_weigher_unchanged, SumTimeAndProofValues},
 		},
 		UsingComponentsForSwitchPairRemoteAsset,
 	},
@@ -356,4 +356,31 @@ fn skips_on_switch_pair_not_set() {
 		assert!(amount_refunded.is_none());
 		assert_eq!(initial_weigher, weigher);
 	});
+}
+
+#[test]
+fn skips_on_switch_pair_not_enabled() {
+	let location = MultiLocation {
+		parents: 1,
+		interior: Junctions::X1(Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		0,
+		SwitchPairStatus::Paused,
+	);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build_and_execute_with_sanity_tests(|| {
+			let mut weigher = UsingComponentsForSwitchPairRemoteAsset::<
+				MockRuntime,
+				_,
+				SumTimeAndProofValues,
+				ToDestinationAccount,
+			>::new();
+			assert!(weigher
+				.refund_weight(Weight::from_parts(1, 1), &XcmContext::with_message_id([0u8; 32]))
+				.is_none());
+			assert!(is_weigher_unchanged(&weigher));
+		});
 }
