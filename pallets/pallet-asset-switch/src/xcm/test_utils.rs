@@ -27,6 +27,7 @@ use crate::{Config, NewSwitchPairInfoOf, SwitchPairStatus};
 pub(super) fn get_switch_pair_info_for_remote_location_with_pool_usable_balance<Runtime>(
 	location: &MultiLocation,
 	pool_usable_balance: u64,
+	status: SwitchPairStatus,
 ) -> NewSwitchPairInfoOf<Runtime>
 where
 	Runtime: Config,
@@ -43,18 +44,17 @@ where
 		remote_asset_total_supply: (u64::MAX as u128) + pool_usable_balance as u128,
 		remote_asset_circulating_supply: pool_usable_balance as u128,
 		remote_asset_ed: u128::zero(),
-		status: SwitchPairStatus::Running,
+		status,
 	}
 }
 
 pub(super) fn get_switch_pair_info_for_remote_location<Runtime>(
 	location: &MultiLocation,
+	status: SwitchPairStatus,
 ) -> NewSwitchPairInfoOf<Runtime>
 where
 	Runtime: Config,
 	Runtime::AccountId: From<[u8; 32]>,
 {
-	let mut switch_pair = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<Runtime>(location, 0);
-	switch_pair.status = SwitchPairStatus::Paused;
-	switch_pair
+	get_switch_pair_info_for_remote_location_with_pool_usable_balance::<Runtime>(location, 0, status)
 }

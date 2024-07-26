@@ -23,13 +23,16 @@ use xcm::{
 };
 use xcm_executor::traits::WeightTrader;
 
-use crate::xcm::{
-	test_utils::get_switch_pair_info_for_remote_location,
-	trade::{
-		test_utils::SumTimeAndProofValues,
-		xcm_fee_asset::mock::{ExtBuilder, MockRuntime},
+use crate::{
+	xcm::{
+		test_utils::get_switch_pair_info_for_remote_location,
+		trade::{
+			test_utils::SumTimeAndProofValues,
+			xcm_fee_asset::mock::{ExtBuilder, MockRuntime},
+		},
+		UsingComponentsForXcmFeeAsset,
 	},
-	UsingComponentsForXcmFeeAsset,
+	SwitchPairStatus,
 };
 
 #[test]
@@ -39,7 +42,8 @@ fn successful_on_stored_fungible_xcm_fee_asset_latest() {
 		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		let mut new_switch_pair_info =
+			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 		// Set XCM fee asset to the latest XCM version.
 		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_latest().unwrap();
 		new_switch_pair_info
@@ -138,7 +142,8 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3() {
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		let mut new_switch_pair_info =
+			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 		// Set XCM fee asset to the XCM version 3.
 		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
 		new_switch_pair_info
@@ -237,8 +242,10 @@ fn successful_on_stored_fungible_xcm_fee_asset_v2() {
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location::<MockRuntime>(&location.try_into().unwrap());
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
+			&location.try_into().unwrap(),
+			SwitchPairStatus::Running,
+		);
 		// Set XCM fee asset to the XCM version 2.
 		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(2).unwrap();
 		new_switch_pair_info
@@ -337,7 +344,8 @@ fn skips_on_weight_not_previously_purchased() {
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		let mut new_switch_pair_info =
+			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 		// Set XCM fee asset to the XCM version 3.
 		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
 		new_switch_pair_info
@@ -408,7 +416,8 @@ fn skips_on_stored_non_fungible_xcm_fee_asset() {
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		let mut new_switch_pair_info =
+			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 		// Set XCM fee asset to the XCM version 3.
 		let non_fungible_remote_xcm_fee_v3 = MultiAsset::try_from(new_switch_pair_info.remote_xcm_fee)
 			.map(|asset| MultiAsset {

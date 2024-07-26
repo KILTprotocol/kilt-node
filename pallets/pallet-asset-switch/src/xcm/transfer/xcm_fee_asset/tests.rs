@@ -22,10 +22,13 @@ use xcm::{
 	IntoVersion,
 };
 
-use crate::xcm::{
-	test_utils::get_switch_pair_info_for_remote_location,
-	transfer::mock::{ExtBuilder, MockRuntime},
-	IsSwitchPairXcmFeeAsset,
+use crate::{
+	xcm::{
+		test_utils::get_switch_pair_info_for_remote_location,
+		transfer::mock::{ExtBuilder, MockRuntime},
+		IsSwitchPairXcmFeeAsset,
+	},
+	SwitchPairStatus,
 };
 
 #[test]
@@ -35,7 +38,8 @@ fn true_with_stored_xcm_fee_asset_latest() {
 		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+		let mut new_switch_pair_info =
+			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 		// Set XCM fee asset to the latest XCM version.
 		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_latest().unwrap();
 		new_switch_pair_info
@@ -78,7 +82,8 @@ fn true_with_stored_xcm_fee_asset_v3() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	// Works with remote fungible asset.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
@@ -117,7 +122,8 @@ fn true_with_stored_remote_location_latest() {
 		parents: 1,
 		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	// Works with remote fungible asset.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
@@ -156,7 +162,8 @@ fn true_with_stored_remote_location_v3() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	// Works with remote fungible asset.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
@@ -196,8 +203,10 @@ fn true_with_stored_remote_location_v2() {
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location::<MockRuntime>(&location.try_into().unwrap());
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
+			&location.try_into().unwrap(),
+			SwitchPairStatus::Running,
+		);
 		// Set remote location to the XCM v2.
 		new_switch_pair_info.remote_reserve_location =
 			new_switch_pair_info.remote_reserve_location.into_version(2).unwrap();
@@ -272,7 +281,8 @@ fn false_on_different_remote_location() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	// Fails with remote fungible asset.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
@@ -318,7 +328,8 @@ fn false_on_nested_remote_location() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build()
@@ -351,7 +362,8 @@ fn false_on_parent_remote_location() {
 			},
 		),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build()
@@ -372,7 +384,8 @@ fn false_on_different_xcm_fee_asset_id() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build()
@@ -393,7 +406,8 @@ fn false_on_nested_xcm_fee_asset_id() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build()
@@ -430,7 +444,8 @@ fn false_on_parent_xcm_fee_asset_id() {
 			},
 		),
 	};
-	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(&location);
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build()

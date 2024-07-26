@@ -25,13 +25,16 @@ use sp_runtime::{
 use xcm::v3::{Junction, Junctions, MultiLocation};
 use xcm_executor::traits::WeightTrader;
 
-use crate::xcm::{
-	test_utils::get_switch_pair_info_for_remote_location_with_pool_usable_balance,
-	trade::{
-		switch_pair_remote_asset::mock::{Balances, ExtBuilder, MockRuntime, ToDestinationAccount},
-		test_utils::SumTimeAndProofValues,
+use crate::{
+	xcm::{
+		test_utils::get_switch_pair_info_for_remote_location_with_pool_usable_balance,
+		trade::{
+			switch_pair_remote_asset::mock::{Balances, ExtBuilder, MockRuntime, ToDestinationAccount},
+			test_utils::SumTimeAndProofValues,
+		},
+		UsingComponentsForSwitchPairRemoteAsset,
 	},
-	UsingComponentsForSwitchPairRemoteAsset,
+	SwitchPairStatus,
 };
 
 #[test]
@@ -41,8 +44,11 @@ fn happy_path() {
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
 	// ED + 1
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 1);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		1,
+		SwitchPairStatus::Running,
+	);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {
@@ -86,8 +92,11 @@ fn zero_remaining_balance() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 0);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		0,
+		SwitchPairStatus::Running,
+	);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
@@ -113,8 +122,11 @@ fn fail_to_transfer_from_pool_account() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 0);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		0,
+		SwitchPairStatus::Running,
+	);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build_and_execute_with_sanity_tests(|| {

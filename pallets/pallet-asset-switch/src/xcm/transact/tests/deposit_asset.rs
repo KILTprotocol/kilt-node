@@ -42,14 +42,16 @@ fn successful_with_stored_remote_asset_id_latest() {
 		parents: 1,
 		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = {
-		// Pool account balance = ED (2) + 2
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 2);
-		// Set remote asset to the latest XCM version.
-		new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_latest().unwrap();
-		new_switch_pair_info
-	};
+	let new_switch_pair_info =
+		{
+			// Pool account balance = ED (2) + 2
+			let mut new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<
+				MockRuntime,
+			>(&location, 2, SwitchPairStatus::Running);
+			// Set remote asset to the latest XCM version.
+			new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_latest().unwrap();
+			new_switch_pair_info
+		};
 	// Ignored by the mock converter logic
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
@@ -123,13 +125,15 @@ fn successful_with_stored_remote_asset_id_v3() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = {
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 2);
-		// Set remote asset to the XCM version 3.
-		new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_version(3).unwrap();
-		new_switch_pair_info
-	};
+	let new_switch_pair_info =
+		{
+			let mut new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<
+				MockRuntime,
+			>(&location, 2, SwitchPairStatus::Running);
+			// Set remote asset to the XCM version 3.
+			new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_version(3).unwrap();
+			new_switch_pair_info
+		};
 	// Ignored by the mock converter logic
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
@@ -222,8 +226,11 @@ fn skips_on_different_input_asset_id() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 2);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		2,
+		SwitchPairStatus::Running,
+	);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
@@ -251,8 +258,11 @@ fn skips_on_non_fungible_input_asset() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 2);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		2,
+		SwitchPairStatus::Running,
+	);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
@@ -280,12 +290,11 @@ fn fails_on_switch_pair_not_enabled() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = {
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 2);
-		new_switch_pair_info.status = SwitchPairStatus::Paused;
-		new_switch_pair_info
-	};
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		2,
+		SwitchPairStatus::Paused,
+	);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
@@ -312,8 +321,11 @@ fn fails_on_failed_account_id_conversion() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 2);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		2,
+		SwitchPairStatus::Running,
+	);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()
@@ -340,8 +352,11 @@ fn fails_on_not_enough_funds_in_pool() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 2);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		2,
+		SwitchPairStatus::Running,
+	);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	// Fails if reducible balance less than requested amount.
@@ -410,8 +425,11 @@ fn fails_on_amount_below_ed() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 2);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
+		&location,
+		2,
+		SwitchPairStatus::Running,
+	);
 	let who = MultiLocation::here();
 	let xcm_context = XcmContext::with_message_id([100; 32]);
 	ExtBuilder::default()

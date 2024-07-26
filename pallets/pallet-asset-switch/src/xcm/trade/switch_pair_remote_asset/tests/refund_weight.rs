@@ -23,13 +23,16 @@ use xcm::{
 };
 use xcm_executor::traits::WeightTrader;
 
-use crate::xcm::{
-	test_utils::get_switch_pair_info_for_remote_location_with_pool_usable_balance,
-	trade::{
-		switch_pair_remote_asset::mock::{ExtBuilder, MockRuntime, ToDestinationAccount},
-		test_utils::SumTimeAndProofValues,
+use crate::{
+	xcm::{
+		test_utils::get_switch_pair_info_for_remote_location_with_pool_usable_balance,
+		trade::{
+			switch_pair_remote_asset::mock::{ExtBuilder, MockRuntime, ToDestinationAccount},
+			test_utils::SumTimeAndProofValues,
+		},
+		UsingComponentsForSwitchPairRemoteAsset,
 	},
-	UsingComponentsForSwitchPairRemoteAsset,
+	SwitchPairStatus,
 };
 
 #[test]
@@ -38,13 +41,15 @@ fn successful_on_stored_remote_asset_latest() {
 		parents: 1,
 		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = {
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 0);
-		// Set XCM fee asset to the latest XCM version.
-		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_latest().unwrap();
-		new_switch_pair_info
-	};
+	let new_switch_pair_info =
+		{
+			let mut new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<
+				MockRuntime,
+			>(&location, 0, SwitchPairStatus::Running);
+			// Set XCM fee asset to the latest XCM version.
+			new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_latest().unwrap();
+			new_switch_pair_info
+		};
 	// Results in an amount of `2` local currency tokens.
 	let weight_to_refund = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
@@ -154,13 +159,15 @@ fn successful_on_stored_remote_asset_asset_v3() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = {
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 0);
-		// Set XCM fee asset to the XCM version 3.
-		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
-		new_switch_pair_info
-	};
+	let new_switch_pair_info =
+		{
+			let mut new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<
+				MockRuntime,
+			>(&location, 0, SwitchPairStatus::Running);
+			// Set XCM fee asset to the XCM version 3.
+			new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
+			new_switch_pair_info
+		};
 	// Results in an amount of `2` local currency tokens.
 	let weight_to_refund = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
@@ -270,13 +277,15 @@ fn skips_on_weight_not_previously_purchased() {
 		parents: 1,
 		interior: Junctions::X1(Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info = {
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(&location, 0);
-		// Set XCM fee asset to the XCM version 3.
-		new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
-		new_switch_pair_info
-	};
+	let new_switch_pair_info =
+		{
+			let mut new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<
+				MockRuntime,
+			>(&location, 0, SwitchPairStatus::Running);
+			// Set XCM fee asset to the XCM version 3.
+			new_switch_pair_info.remote_xcm_fee = new_switch_pair_info.remote_xcm_fee.into_version(3).unwrap();
+			new_switch_pair_info
+		};
 	// Results in an amount of `2` local currency tokens.
 	let weight_to_refund = Weight::from_parts(1, 1);
 	let xcm_context = XcmContext::with_message_id([0u8; 32]);
