@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::assert_storage_noop;
 use sp_runtime::traits::Zero;
 use xcm::{
 	v3::{AssetInstance, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, Weight, XcmContext},
@@ -27,7 +28,7 @@ use crate::{
 	xcm::{
 		test_utils::get_switch_pair_info_for_remote_location,
 		trade::{
-			test_utils::{is_weigher_unchanged, SumTimeAndProofValues},
+			test_utils::SumTimeAndProofValues,
 			xcm_fee_asset::mock::{ExtBuilder, MockRuntime},
 		},
 		UsingComponentsForXcmFeeAsset,
@@ -528,7 +529,7 @@ fn skips_on_switch_pair_not_enabled() {
 			assert!(weigher
 				.refund_weight(Weight::from_parts(1, 1), &XcmContext::with_message_id([0u8; 32]))
 				.is_none());
-			assert!(is_weigher_unchanged(&weigher));
+			assert_storage_noop!(drop(weigher));
 		});
 }
 

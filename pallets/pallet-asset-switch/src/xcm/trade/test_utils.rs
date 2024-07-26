@@ -18,7 +18,6 @@
 
 use frame_support::weights::WeightToFee;
 use xcm::v3::Weight;
-use xcm_executor::traits::WeightTrader;
 
 #[derive(Debug, Clone)]
 pub(super) struct SumTimeAndProofValues;
@@ -29,11 +28,4 @@ impl WeightToFee for SumTimeAndProofValues {
 	fn weight_to_fee(weight: &Weight) -> Self::Balance {
 		(weight.ref_time() + weight.proof_size()) as u128
 	}
-}
-
-pub(super) fn is_weigher_unchanged<Weigher>(weigher: &Weigher) -> bool
-where
-	Weigher: WeightTrader + PartialEq,
-{
-	weigher == &Weigher::new()
 }
