@@ -16,20 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub mod convert;
-pub use convert::AccountId32ToAccountId32JunctionConverter;
+use frame_support::weights::WeightToFee;
+use xcm::v3::Weight;
 
-pub mod r#match;
-pub use r#match::MatchesSwitchPairXcmFeeFungibleAsset;
+#[derive(Debug, Clone)]
+pub(super) struct SumTimeAndProofValues;
 
-pub mod transfer;
-pub use transfer::{IsSwitchPairRemoteAsset, IsSwitchPairXcmFeeAsset};
+impl WeightToFee for SumTimeAndProofValues {
+	type Balance = u128;
 
-pub mod trade;
-pub use trade::{UsingComponentsForSwitchPairRemoteAsset, UsingComponentsForXcmFeeAsset};
-
-pub mod transact;
-pub use transact::SwitchPairRemoteAssetTransactor;
-
-#[cfg(test)]
-mod test_utils;
+	fn weight_to_fee(weight: &Weight) -> Self::Balance {
+		(weight.ref_time() + weight.proof_size()) as u128
+	}
+}

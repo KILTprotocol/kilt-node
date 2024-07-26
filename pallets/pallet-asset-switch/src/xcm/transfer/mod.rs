@@ -16,20 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub mod convert;
-pub use convert::AccountId32ToAccountId32JunctionConverter;
+mod xcm_fee_asset;
+pub use xcm_fee_asset::IsSwitchPairXcmFeeAsset;
 
-pub mod r#match;
-pub use r#match::MatchesSwitchPairXcmFeeFungibleAsset;
-
-pub mod transfer;
-pub use transfer::{IsSwitchPairRemoteAsset, IsSwitchPairXcmFeeAsset};
-
-pub mod trade;
-pub use trade::{UsingComponentsForSwitchPairRemoteAsset, UsingComponentsForXcmFeeAsset};
-
-pub mod transact;
-pub use transact::SwitchPairRemoteAssetTransactor;
+mod switch_pair_remote_asset;
+pub use switch_pair_remote_asset::IsSwitchPairRemoteAsset;
 
 #[cfg(test)]
-mod test_utils;
+mod mock;
