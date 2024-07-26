@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::traits::fungible::Mutate;
 use pallet_treasury::ArgumentsFactory;
 use sp_std::marker::PhantomData;
 
@@ -39,11 +40,7 @@ where
 		let who = AccountIdOf::<T>::from(seed.into());
 
 		// endow account with some funds. If creation is failing, we panic.
-		<pallet_balances::Pallet<T> as frame_support::traits::fungible::Mutate<AccountIdOf<T>>>::mint_into(
-			&who,
-			KILT.into(),
-		)
-		.unwrap();
+		<pallet_balances::Pallet<T> as Mutate<AccountIdOf<T>>>::mint_into(&who, KILT.into()).unwrap();
 
 		who
 	}
