@@ -38,16 +38,12 @@ where
 	fn create_beneficiary(seed: [u8; 32]) -> AccountIdOf<T> {
 		let who = AccountIdOf::<T>::from(seed.into());
 
-		// endow account with some funds
-		let result = <pallet_balances::Pallet<T> as frame_support::traits::fungible::Mutate<AccountIdOf<T>>>::mint_into(
+		// endow account with some funds. If creation is failing, we panic.
+		<pallet_balances::Pallet<T> as frame_support::traits::fungible::Mutate<AccountIdOf<T>>>::mint_into(
 			&who,
 			KILT.into(),
-		);
-
-		debug_assert!(
-			result.is_ok(),
-			"Could not create account for benchmarking treasury pallet"
-		);
+		)
+		.unwrap();
 
 		who
 	}
