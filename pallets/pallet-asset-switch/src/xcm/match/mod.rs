@@ -18,7 +18,7 @@
 
 use frame_support::ensure;
 use sp_std::marker::PhantomData;
-use xcm::v4::{Asset, AssetId, Fungibility, Location};
+use xcm::latest::{Asset, AssetId, Fungibility, Location};
 use xcm_executor::traits::{Error as XcmExecutorError, MatchesFungibles};
 
 use crate::{Config, SwitchPair};

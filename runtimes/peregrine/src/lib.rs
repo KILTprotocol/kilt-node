@@ -1209,6 +1209,7 @@ pub type Executive = frame_executive::Executive<
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
+	use frame_support::parameter_types;
 	use frame_system::RawOrigin;
 	use pallet_asset_switch::PartialBenchmarkInfo;
 	use runtime_common::AccountId;
@@ -1216,7 +1217,7 @@ mod benches {
 
 	use crate::{Fungibles, ParachainSystem};
 
-	frame_support::parameter_types! {
+	parameter_types! {
 		pub const MaxBalance: crate::Balance = crate::Balance::max_value();
 	}
 

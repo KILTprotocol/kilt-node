@@ -522,8 +522,8 @@ pub mod pallet {
 
 			// 9. Take XCM fee from submitter.
 			let withdrawn_fees =
-				T::AssetTransactor::withdraw_asset(&remote_asset_fee_v4, &submitter_as_multilocation.clone(), None)
-					.map_err(|e| {
+				T::AssetTransactor::withdraw_asset(&remote_asset_fee_v4, &submitter_as_multilocation, None).map_err(
+					|e| {
 						log::info!(
 							target: LOG_TARGET,
 							"Failed to withdraw asset {:?} from location {:?} with error {:?}",
@@ -532,7 +532,8 @@ pub mod pallet {
 							e
 						);
 						DispatchError::from(Error::<T, I>::UserXcmBalance)
-					})?;
+					},
+				)?;
 			if withdrawn_fees != vec![remote_asset_fee_v4.clone()].into() {
 				log::error!(
 					target: LOG_TARGET,
