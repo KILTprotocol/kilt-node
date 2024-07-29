@@ -19,8 +19,8 @@
 use pallet_asset_switch::traits::SwitchHooks;
 use runtime_common::{AccountId, Balance};
 use xcm::{
-	v3::{Junction, MultiLocation},
-	VersionedMultiLocation,
+	v4::{Junction, Location},
+	VersionedLocation,
 };
 
 use crate::{KiltToEKiltSwitchPallet, Runtime};
@@ -37,10 +37,10 @@ impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestination
 
 	fn pre_local_to_remote_switch(
 		from: &AccountId,
-		to: &VersionedMultiLocation,
+		to: &VersionedLocation,
 		_amount: Balance,
 	) -> Result<(), Self::Error> {
-		let to_as_v3: MultiLocation = to.clone().try_into().map_err(|e| {
+		let to_as_v3: Location = to.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
 				"Failed to convert beneficiary Multilocation {:?} to v3 with error {:?}",
@@ -70,7 +70,7 @@ impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestination
 	// We don't need to take any actions after the switch is executed
 	fn post_local_to_remote_switch(
 		_from: &AccountId,
-		_to: &VersionedMultiLocation,
+		_to: &VersionedLocation,
 		_amount: Balance,
 	) -> Result<(), Self::Error> {
 		Ok(())

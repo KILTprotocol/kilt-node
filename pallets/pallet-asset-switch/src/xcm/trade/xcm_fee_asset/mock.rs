@@ -46,6 +46,7 @@ construct_runtime!(
 impl frame_system::Config for MockRuntime {
 	type AccountData = ();
 	type AccountId = AccountId32;
+	type RuntimeTask = ();
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<MockRuntime>;
 	type BlockHashCount = ConstU64<0>;

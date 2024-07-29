@@ -24,8 +24,8 @@ use frame_support::{
 use sp_core::Get;
 use sp_runtime::traits::Zero;
 use sp_std::marker::PhantomData;
-use xcm::v3::{AssetId, Error, MultiAsset, Weight, XcmContext, XcmHash};
-use xcm_executor::{traits::WeightTrader, Assets};
+use xcm::latest::{Asset, AssetId, Error, Weight, XcmContext, XcmHash};
+use xcm_executor::{traits::WeightTrader, AssetsInHolding};
 
 use crate::{Config, LocalCurrencyBalanceOf, SwitchPair, SwitchPairInfoOf};
 
@@ -93,7 +93,12 @@ where
 		}
 	}
 
-	fn buy_weight(&mut self, weight: Weight, payment: Assets, context: &XcmContext) -> Result<Assets, Error> {
+	fn buy_weight(
+		&mut self,
+		weight: Weight,
+		payment: AssetsInHolding,
+		context: &XcmContext,
+	) -> Result<AssetsInHolding, Error> {
 		log::info!(
 			target: LOG_TARGET,
 			"buy_weight {:?}, {:?}, {:?}",
@@ -120,7 +125,7 @@ where
 			Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
 		})?;
 
-		let required: MultiAsset = (switch_pair_remote_asset_v3, amount).into();
+		let required: Asset = (switch_pair_remote_asset_v3, amount).into();
 		let unused = payment.checked_sub(required.clone()).map_err(|_| Error::TooExpensive)?;
 
 		// Set link to XCM message ID only if this is the trader used.
@@ -132,7 +137,7 @@ where
 		Ok(unused)
 	}
 
-	fn refund_weight(&mut self, weight: Weight, context: &XcmContext) -> Option<MultiAsset> {
+	fn refund_weight(&mut self, weight: Weight, context: &XcmContext) -> Option<Asset> {
 		log::trace!(
 			target: LOG_TARGET,
 			"UsingComponents::refund_weight weight: {:?}, context: {:?}",
@@ -181,7 +186,7 @@ where
 			log::trace!(
 				target: LOG_TARGET,
 				"Refund amount {:?}",
-				(switch_pair_remote_asset_v3, amount_to_refund)
+				(switch_pair_remote_asset_v3.clone(), amount_to_refund)
 			);
 			Some((switch_pair_remote_asset_v3, amount_to_refund).into())
 		} else {

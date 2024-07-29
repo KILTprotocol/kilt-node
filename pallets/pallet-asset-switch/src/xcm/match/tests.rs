@@ -18,7 +18,7 @@
 
 use frame_support::assert_noop;
 use xcm::{
-	v3::{AssetId, AssetInstance, Fungibility, Junction, Junctions, MultiAsset, MultiLocation},
+	v4::{Asset, AssetId, AssetInstance, Fungibility, Junction, Junctions, Location},
 	IntoVersion, VersionedAsset,
 };
 use xcm_executor::traits::{Error, MatchesFungibles};
@@ -48,9 +48,9 @@ fn successful_with_stored_latest() {
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
-			let (asset_location, asset_amount): (MultiLocation, u128) =
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(location),
+			let (asset_location, asset_amount): (Location, u128) =
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+					id: AssetId(location.clone()),
 					fun: Fungibility::Fungible(u128::MAX),
 				})
 				.unwrap();
@@ -63,18 +63,18 @@ fn successful_with_stored_latest() {
 
 #[test]
 fn successful_with_stored_v3() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
-			let (asset_location, asset_amount): (MultiLocation, u128) =
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(location),
+			let (asset_location, asset_amount): (Location, u128) =
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+					id: AssetId(location.clone()),
 					fun: Fungibility::Fungible(u128::MAX),
 				})
 				.unwrap();
@@ -91,9 +91,10 @@ fn successful_with_stored_v2() {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
 	};
+	let location_v3: xcm::v3::MultiLocation = location.try_into().unwrap();
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
-			&location.clone().try_into().unwrap(),
+			&location_v3.clone().try_into().unwrap(),
 			SwitchPairStatus::Running,
 		);
 		// Set XCM fee asset to an XCM v2.
@@ -103,14 +104,14 @@ fn successful_with_stored_v2() {
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
-			let (asset_location, asset_amount): (MultiLocation, u128) =
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(location.clone().try_into().unwrap()),
+			let (asset_location, asset_amount): (Location, u128) =
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+					id: AssetId(location_v3.clone().try_into().unwrap()),
 					fun: Fungibility::Fungible(u128::MAX),
 				})
 				.unwrap();
 			// Asset location should match the one stored in the switch pair.
-			assert_eq!(asset_location, location.try_into().unwrap());
+			assert_eq!(asset_location, location_v3.try_into().unwrap());
 			// Asset amount should match the input one.
 			assert_eq!(asset_amount, u128::MAX);
 		});
@@ -120,10 +121,10 @@ fn successful_with_stored_v2() {
 fn skips_on_switch_pair_not_set() {
 	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
-			MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-				id: AssetId::Concrete(MultiLocation {
+			MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+				id: AssetId(Location {
 					parents: 1,
-					interior: Junctions::X1(Junction::Parachain(1_000)),
+					interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 				}),
 				fun: Fungibility::Fungible(u128::MAX),
 			}) as Result<(_, u128), _>,
@@ -134,9 +135,9 @@ fn skips_on_switch_pair_not_set() {
 
 #[test]
 fn skips_on_switch_pair_not_enabled() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Paused);
@@ -144,8 +145,8 @@ fn skips_on_switch_pair_not_enabled() {
 		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(location),
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+					id: AssetId(location),
 					fun: Fungibility::Fungible(u128::MAX),
 				}) as Result<(_, u128), _>,
 				Error::AssetNotHandled
@@ -155,23 +156,23 @@ fn skips_on_switch_pair_not_enabled() {
 
 #[test]
 fn skips_on_different_asset() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
-			let different_location = MultiLocation {
+			let different_location = Location {
 				parents: 1,
 				// Different para ID.
-				interior: Junctions::X1(Junction::Parachain(1_001)),
+				interior: Junctions::X1([Junction::Parachain(1_001)].into()),
 			};
 			assert_noop!(
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(different_location),
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+					id: AssetId(different_location),
 					fun: Fungibility::Fungible(u128::MAX),
 				}) as Result<(_, u128), _>,
 				Error::AssetNotHandled
@@ -181,17 +182,17 @@ fn skips_on_different_asset() {
 
 #[test]
 fn skips_on_non_fungible_stored_asset() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let non_fungible_asset_amount = Fungibility::NonFungible(AssetInstance::Index(1));
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
 			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 		// Set XCM fee asset to one with a non-fungible amount.
-		new_switch_pair_info.remote_xcm_fee = VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(location),
+		new_switch_pair_info.remote_xcm_fee = VersionedAsset::V4(Asset {
+			id: AssetId(location.clone()),
 			fun: non_fungible_asset_amount,
 		});
 		new_switch_pair_info
@@ -200,8 +201,8 @@ fn skips_on_non_fungible_stored_asset() {
 		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(location),
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+					id: AssetId(location),
 					fun: Fungibility::Fungible(u128::MAX),
 				}) as Result<(_, u128), _>,
 				Error::AssetNotHandled
@@ -210,40 +211,10 @@ fn skips_on_non_fungible_stored_asset() {
 }
 
 #[test]
-fn fails_on_not_concrete_stored_asset() {
-	let location = MultiLocation {
-		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
-	};
-	let abstract_asset_id = AssetId::Abstract([1; 32]);
-	let new_switch_pair_info = {
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
-		// Set XCM fee asset to one with an abstract ID.
-		new_switch_pair_info.remote_xcm_fee = VersionedMultiAsset::V3(MultiAsset {
-			id: abstract_asset_id,
-			fun: Fungibility::Fungible(10_000),
-		});
-		new_switch_pair_info
-	};
-	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info)
-		.build_and_execute_with_sanity_tests(|| {
-			assert_noop!(
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: abstract_asset_id,
-					fun: Fungibility::Fungible(u128::MAX),
-				}) as Result<(_, u128), _>,
-				Error::AssetIdConversionFailed
-			);
-		});
-}
-
-#[test]
 fn fails_on_non_fungible_input_asset() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
@@ -251,8 +222,8 @@ fn fails_on_non_fungible_input_asset() {
 		.with_switch_pair_info(new_switch_pair_info)
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&MultiAsset {
-					id: AssetId::Concrete(location),
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+					id: AssetId(location),
 					fun: Fungibility::NonFungible(AssetInstance::Index(1)),
 				}) as Result<(_, u128), _>,
 				Error::AmountToBalanceConversionFailed

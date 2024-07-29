@@ -19,7 +19,7 @@
 use frame_support::assert_storage_noop;
 use sp_runtime::traits::Zero;
 use xcm::{
-	v3::{AssetInstance, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, Weight, XcmContext},
+	latest::{Asset, AssetInstance, Fungibility, Junction, Junctions, Location, Weight, XcmContext},
 	IntoVersion,
 };
 use xcm_executor::traits::WeightTrader;
@@ -38,9 +38,9 @@ use crate::{
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_latest_with_remaining_balance_and_weight() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -66,10 +66,8 @@ fn successful_on_stored_fungible_xcm_fee_asset_latest_with_remaining_balance_and
 			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
 			assert_eq!(
 				amount_refunded,
-				Some(MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				Some(Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(2)
 				})
 			);
@@ -81,9 +79,9 @@ fn successful_on_stored_fungible_xcm_fee_asset_latest_with_remaining_balance_and
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_latest_with_zero_remaining_balance() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -117,9 +115,9 @@ fn successful_on_stored_fungible_xcm_fee_asset_latest_with_zero_remaining_balanc
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_latest_with_zero_remaining_weight() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -153,9 +151,9 @@ fn successful_on_stored_fungible_xcm_fee_asset_latest_with_zero_remaining_weight
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_latest_with_zero_remaining_balance_and_weight() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -189,9 +187,9 @@ fn successful_on_stored_fungible_xcm_fee_asset_latest_with_zero_remaining_balanc
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_v3_with_remaining_balance_and_weight() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -218,10 +216,8 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3_with_remaining_balance_and_wei
 			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
 			assert_eq!(
 				amount_refunded,
-				Some(MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				Some(Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(2)
 				})
 			);
@@ -233,9 +229,9 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3_with_remaining_balance_and_wei
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_v3_with_zero_remaining_balance() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -269,9 +265,9 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3_with_zero_remaining_balance() 
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_v3_with_zero_remaining_weight() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -305,9 +301,9 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3_with_zero_remaining_weight() {
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_v3_with_zero_remaining_balance_and_weight() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -346,8 +342,9 @@ fn successful_on_stored_fungible_xcm_fee_asset_v2() {
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
+		let location_v3: xcm::v3::MultiLocation = location.try_into().unwrap();
 		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
-			&location.try_into().unwrap(),
+			&location_v3.try_into().unwrap(),
 			SwitchPairStatus::Running,
 		);
 		// Set XCM fee asset to the XCM version 2.
@@ -372,10 +369,8 @@ fn successful_on_stored_fungible_xcm_fee_asset_v2() {
 			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
 			assert_eq!(
 				amount_refunded,
-				Some(MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				Some(Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(2)
 				})
 			);
@@ -443,9 +438,9 @@ fn successful_on_stored_fungible_xcm_fee_asset_v2() {
 
 #[test]
 fn skips_on_weight_not_previously_purchased() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -515,9 +510,9 @@ fn skips_on_switch_pair_not_set() {
 
 #[test]
 fn skips_on_switch_pair_not_enabled() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Paused);
@@ -535,16 +530,16 @@ fn skips_on_switch_pair_not_enabled() {
 
 #[test]
 fn skips_on_stored_non_fungible_xcm_fee_asset() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
 			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
 		// Set XCM fee asset to the XCM version 3.
-		let non_fungible_remote_xcm_fee_v3 = MultiAsset::try_from(new_switch_pair_info.remote_xcm_fee)
-			.map(|asset| MultiAsset {
+		let non_fungible_remote_xcm_fee_v3 = Asset::try_from(new_switch_pair_info.remote_xcm_fee)
+			.map(|asset| Asset {
 				id: asset.id,
 				fun: Fungibility::NonFungible(AssetInstance::Index(1)),
 			})

@@ -19,7 +19,7 @@
 use crate::{
 	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet, MessageQueue,
 	ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury,
-	WeightToFee, WeightToFee, XcmpQueue,
+	WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
@@ -40,9 +40,9 @@ use sp_std::prelude::ToOwned;
 use xcm::v4::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
-	EnsureXcmOrigin, FixedWeightBounds, FrameTransactionalProcessor, FungiblesAdapter, NativeAsset, RelayChainAsNative,
-	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-	TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
+	EnsureXcmOrigin, FixedWeightBounds, FrameTransactionalProcessor, FungiblesAdapter, NativeAsset, NoChecking,
+	RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32,
+	SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -228,7 +228,7 @@ impl xcm_executor::Config for XcmConfig {
 			TreasuryAccountId,
 		>,
 		// Can pay with the fungible that matches the "Here" location.
-		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>,
+		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, SendDustAndFeesToTreasury<Runtime>>,
 	);
 	type ResponseHandler = PolkadotXcm;
 	// What happens with assets that are left in the register after the XCM message

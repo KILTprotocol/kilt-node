@@ -33,9 +33,9 @@ use frame_support::{
 	traits::{
 		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter, LinearStoragePrice, PrivilegeCmp,
+		AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter,
+		LinearStoragePrice, PrivilegeCmp,
 	},
-	traits::{AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
@@ -51,7 +51,7 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
-use xcm::{v3::MultiLocation, VersionedAssetId};
+use xcm::{v4::Location, VersionedAssetId};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use delegation::DelegationAc;
@@ -1011,8 +1011,8 @@ impl pallet_assets::Config for Runtime {
 	type ApprovalDeposit = ConstU128<0>;
 	type AssetAccountDeposit = ConstU128<0>;
 	type AssetDeposit = ConstU128<0>;
-	type AssetId = MultiLocation;
-	type AssetIdParameter = MultiLocation;
+	type AssetId = Location;
+	type AssetIdParameter = Location;
 	type Balance = u128;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
@@ -1212,7 +1212,7 @@ mod benches {
 	use frame_system::RawOrigin;
 	use pallet_asset_switch::PartialBenchmarkInfo;
 	use runtime_common::AccountId;
-	use xcm::v3::{AssetId, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, ParentThen};
+	use xcm::v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location, ParentThen};
 
 	use crate::{Fungibles, ParachainSystem};
 
@@ -1268,7 +1268,7 @@ mod benches {
 		fn setup() -> Option<PartialBenchmarkInfo> {
 			const DESTINATION_PARA_ID: u32 = 1_000;
 
-			let asset_location: MultiLocation = Junctions::Here.into();
+			let asset_location: Location = Junctions::Here.into();
 			Fungibles::create(
 				RawOrigin::Root.into(),
 				asset_location,
@@ -1282,7 +1282,7 @@ mod benches {
 			})
 			.into();
 			let destination =
-				MultiLocation::from(ParentThen(Junctions::X1(Junction::Parachain(DESTINATION_PARA_ID)))).into();
+				Location::from(ParentThen(Junctions::X1(Junction::Parachain(DESTINATION_PARA_ID)))).into();
 			let remote_xcm_fee = MultiAsset {
 				id: AssetId::Concrete(asset_location),
 				fun: Fungibility::Fungible(1_000),

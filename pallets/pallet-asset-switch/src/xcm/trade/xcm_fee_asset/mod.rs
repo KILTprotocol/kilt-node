@@ -19,8 +19,8 @@
 use frame_support::{ensure, weights::WeightToFee as WeightToFeeT};
 use sp_runtime::traits::Zero;
 use sp_std::marker::PhantomData;
-use xcm::v3::{Error, Fungibility, MultiAsset, Weight, XcmContext, XcmHash};
-use xcm_executor::{traits::WeightTrader, Assets};
+use xcm::latest::{Asset, Error, Fungibility, Weight, XcmContext, XcmHash};
+use xcm_executor::{traits::WeightTrader, AssetsInHolding};
 
 use crate::{Config, SwitchPair};
 
@@ -82,7 +82,12 @@ where
 		}
 	}
 
-	fn buy_weight(&mut self, weight: Weight, payment: Assets, context: &XcmContext) -> Result<Assets, Error> {
+	fn buy_weight(
+		&mut self,
+		weight: Weight,
+		payment: AssetsInHolding,
+		context: &XcmContext,
+	) -> Result<AssetsInHolding, Error> {
 		log::info!(
 			target: LOG_TARGET,
 			"buy_weight {:?}, {:?}, {:?}",
@@ -99,7 +104,7 @@ where
 
 		let amount = WeightToFee::weight_to_fee(&weight);
 
-		let xcm_fee_asset_v3: MultiAsset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
+		let xcm_fee_asset_v3: Asset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
 				"Failed to convert stored asset ID {:?} into v3 MultiAsset with error {:?}",
@@ -114,7 +119,7 @@ where
 			return Err(Error::AssetNotFound);
 		};
 
-		let required: MultiAsset = (xcm_fee_asset_v3.id, amount).into();
+		let required: Asset = (xcm_fee_asset_v3.id, amount).into();
 		let unused = payment.checked_sub(required.clone()).map_err(|_| Error::TooExpensive)?;
 
 		// Set link to XCM message ID only if this is the trader used.
@@ -126,7 +131,7 @@ where
 		Ok(unused)
 	}
 
-	fn refund_weight(&mut self, weight: Weight, context: &XcmContext) -> Option<MultiAsset> {
+	fn refund_weight(&mut self, weight: Weight, context: &XcmContext) -> Option<Asset> {
 		log::info!(target: LOG_TARGET, "refund_weight weight: {:?} {:?}", weight, context);
 
 		// Ensure we refund in the same trader we took fees from.
@@ -142,7 +147,7 @@ where
 			return None;
 		}
 
-		let xcm_fee_asset_v3: MultiAsset = switch_pair
+		let xcm_fee_asset_v3: Asset = switch_pair
 			.remote_xcm_fee
 			.clone()
 			.try_into()
@@ -173,7 +178,7 @@ where
 		self.remaining_weight = self.remaining_weight.saturating_sub(weight_to_refund);
 
 		if amount_to_refund > 0 {
-			log::trace!(target: LOG_TARGET, "Refund amount {:?}", (xcm_fee_asset_v3.id, amount_to_refund));
+			log::trace!(target: LOG_TARGET, "Refund amount {:?}", (xcm_fee_asset_v3.clone().id, amount_to_refund));
 			Some((xcm_fee_asset_v3.id, amount_to_refund).into())
 		} else {
 			log::trace!(target: LOG_TARGET, "No refund");

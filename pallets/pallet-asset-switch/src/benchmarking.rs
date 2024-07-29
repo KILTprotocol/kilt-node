@@ -69,17 +69,17 @@ mod benchmarks {
 		Call, Config, LocalCurrencyBalanceOf, Pallet, SwitchPairStatus,
 	};
 
-	const fn default_info() -> BenchmarkInfo {
-		const DEFAULT_RESERVE_LOCATION: Location = Location {
+	fn default_info() -> BenchmarkInfo {
+		let default_reserve_location: Location = Location {
 			parents: 1,
 			interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 		};
-		const DEFAULT_REMOTE_ASSET_ID: AssetId = AssetId(DEFAULT_RESERVE_LOCATION);
-		const DEFAULT_REMOTE_XCM_FEE: Asset = Asset {
-			id: DEFAULT_REMOTE_ASSET_ID,
+		let default_remote_asset_id: AssetId = AssetId(default_reserve_location.clone());
+		let default_remote_xcm_fee: Asset = Asset {
+			id: default_remote_asset_id.clone(),
 			fun: Fungibility::Fungible(100_000),
 		};
-		const DEFAULT_BENEFICIARY_JUNCTION: Junctions = Junctions::X1(
+		let default_beneficiary: Junctions = Junctions::X1(
 			[Junction::AccountId32 {
 				network: None,
 				id: [0; 32],
@@ -88,10 +88,10 @@ mod benchmarks {
 		);
 
 		BenchmarkInfo {
-			beneficiary: VersionedInteriorLocation::V4(DEFAULT_BENEFICIARY_JUNCTION),
-			destination: VersionedLocation::V4(DEFAULT_RESERVE_LOCATION),
-			remote_asset_id: VersionedAssetId::V4(DEFAULT_REMOTE_ASSET_ID),
-			remote_xcm_fee: VersionedAsset::V4(DEFAULT_REMOTE_XCM_FEE),
+			beneficiary: VersionedInteriorLocation::V4(default_beneficiary),
+			destination: VersionedLocation::V4(default_reserve_location),
+			remote_asset_id: VersionedAssetId::V4(default_remote_asset_id),
+			remote_xcm_fee: VersionedAsset::V4(default_remote_xcm_fee),
 		}
 	}
 

@@ -471,7 +471,7 @@ pub mod pallet {
 				RefundSurplus,
 				DepositAsset {
 					assets: AssetFilter::Wild(WildAsset::All),
-					beneficiary: submitter_as_multilocation,
+					beneficiary: submitter_as_multilocation.clone(),
 				},
 			]
 			.into();
@@ -488,15 +488,16 @@ pub mod pallet {
 				SetAppendix(appendix),
 			]
 			.into();
-			let xcm_ticket = validate_send::<T::XcmRouter>(destination_v4, remote_xcm.clone()).map_err(|e| {
-				log::info!(
-					"Failed to call validate_send for destination {:?} and remote XCM {:?} with error {:?}",
-					destination_v4,
-					remote_xcm,
-					e
-				);
-				DispatchError::from(Error::<T, I>::Xcm)
-			})?;
+			let xcm_ticket =
+				validate_send::<T::XcmRouter>(destination_v4.clone(), remote_xcm.clone()).map_err(|e| {
+					log::info!(
+						"Failed to call validate_send for destination {:?} and remote XCM {:?} with error {:?}",
+						destination_v4,
+						remote_xcm,
+						e
+					);
+					DispatchError::from(Error::<T, I>::Xcm)
+				})?;
 
 			// 7. Call into hook pre-switch checks
 			T::SwitchHooks::pre_local_to_remote_switch(&submitter, &beneficiary, local_asset_amount)
@@ -521,8 +522,8 @@ pub mod pallet {
 
 			// 9. Take XCM fee from submitter.
 			let withdrawn_fees =
-				T::AssetTransactor::withdraw_asset(&remote_asset_fee_v4, &submitter_as_multilocation, None).map_err(
-					|e| {
+				T::AssetTransactor::withdraw_asset(&remote_asset_fee_v4, &submitter_as_multilocation.clone(), None)
+					.map_err(|e| {
 						log::info!(
 							target: LOG_TARGET,
 							"Failed to withdraw asset {:?} from location {:?} with error {:?}",
@@ -531,8 +532,7 @@ pub mod pallet {
 							e
 						);
 						DispatchError::from(Error::<T, I>::UserXcmBalance)
-					},
-				)?;
+					})?;
 			if withdrawn_fees != vec![remote_asset_fee_v4.clone()].into() {
 				log::error!(
 					target: LOG_TARGET,

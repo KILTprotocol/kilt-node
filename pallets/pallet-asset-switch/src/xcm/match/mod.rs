@@ -18,7 +18,7 @@
 
 use frame_support::ensure;
 use sp_std::marker::PhantomData;
-use xcm::v4::{Asset, AssetId, Fungibility, Location};
+use xcm::latest::{Asset, AssetId, Fungibility, Location};
 use xcm_executor::traits::{Error as XcmExecutorError, MatchesFungibles};
 
 use crate::{Config, SwitchPair};
@@ -71,17 +71,14 @@ where
 		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
 		// 5. Force stored asset as a concrete one.
-		let AssetId(location) = id else {
-			log::error!(target: LOG_TARGET, "Configured XCM fee asset {:?} is supposed to be concrete but it is not.", id);
-			return Err(XcmExecutorError::AssetIdConversionFailed);
-		};
+		let AssetId(location) = id;
 		// 6. Force input asset as a fungible one and return its amount.
 		let Fungibility::Fungible(amount) = a.fun else {
 			log::info!(target: LOG_TARGET, "Input asset {:?} is supposed to be fungible but it is not.", a);
 			return Err(XcmExecutorError::AmountToBalanceConversionFailed);
 		};
 
-		log::trace!(target: LOG_TARGET, "matched {:?}", (location, amount));
+		log::trace!(target: LOG_TARGET, "matched {:?}", (location.clone(), amount));
 		Ok((location, amount.into()))
 	}
 }

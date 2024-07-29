@@ -18,7 +18,7 @@
 
 use sp_runtime::traits::Zero;
 use xcm::{
-	v3::{Fungibility, Junction, Junctions, MultiAsset, MultiLocation, Weight, XcmContext},
+	latest::{Asset, Fungibility, Junction, Junctions, Location, Weight, XcmContext},
 	IntoVersion,
 };
 use xcm_executor::traits::WeightTrader;
@@ -37,9 +37,9 @@ use crate::{
 
 #[test]
 fn successful_on_stored_remote_asset_latest_with_remaining_balance_and_weight() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		{
@@ -71,10 +71,8 @@ fn successful_on_stored_remote_asset_latest_with_remaining_balance_and_weight() 
 			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
 			assert_eq!(
 				amount_refunded,
-				Some(MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				Some(Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(2)
 				})
 			);
@@ -86,9 +84,9 @@ fn successful_on_stored_remote_asset_latest_with_remaining_balance_and_weight() 
 
 #[test]
 fn successful_on_stored_remote_asset_latest_with_zero_remaining_balance() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		{
@@ -128,9 +126,9 @@ fn successful_on_stored_remote_asset_latest_with_zero_remaining_balance() {
 
 #[test]
 fn successful_on_stored_remote_asset_latest_with_zero_remaining_weight() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		{
@@ -170,9 +168,9 @@ fn successful_on_stored_remote_asset_latest_with_zero_remaining_weight() {
 
 #[test]
 fn successful_on_stored_remote_asset_latest_with_zero_remaining_balance_and_weight() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		{
@@ -212,9 +210,9 @@ fn successful_on_stored_remote_asset_latest_with_zero_remaining_balance_and_weig
 
 #[test]
 fn successful_on_stored_remote_asset_v3_with_remaining_balance_and_weight() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		{
@@ -246,10 +244,8 @@ fn successful_on_stored_remote_asset_v3_with_remaining_balance_and_weight() {
 			let amount_refunded = weigher.refund_weight(weight_to_refund, &xcm_context);
 			assert_eq!(
 				amount_refunded,
-				Some(MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				Some(Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(2)
 				})
 			);
@@ -261,9 +257,9 @@ fn successful_on_stored_remote_asset_v3_with_remaining_balance_and_weight() {
 
 #[test]
 fn successful_on_stored_remote_asset_v3_with_zero_remaining_balance() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		{
@@ -303,9 +299,9 @@ fn successful_on_stored_remote_asset_v3_with_zero_remaining_balance() {
 
 #[test]
 fn successful_on_stored_remote_asset_v3_with_zero_remaining_weight() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		{
@@ -345,9 +341,9 @@ fn successful_on_stored_remote_asset_v3_with_zero_remaining_weight() {
 
 #[test]
 fn successful_on_stored_remote_asset_v3_with_zero_remaining_balance_and_weight() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		{
@@ -387,9 +383,9 @@ fn successful_on_stored_remote_asset_v3_with_zero_remaining_balance_and_weight()
 
 #[test]
 fn skips_on_weight_not_previously_purchased() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
 		&location,
@@ -425,9 +421,9 @@ fn skips_on_weight_not_previously_purchased() {
 
 #[test]
 fn skips_on_weight_not_previously_purchased_different_hash() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
 		&location,
@@ -486,9 +482,9 @@ fn skips_on_switch_pair_not_set() {
 
 #[test]
 fn skips_on_switch_pair_not_enabled() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
 		&location,

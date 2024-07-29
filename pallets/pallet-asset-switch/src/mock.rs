@@ -32,6 +32,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32,
 };
+use sp_std::sync::Arc;
 use xcm::v4::{
 	Asset, AssetId, Error as XcmError, Fungibility,
 	Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
@@ -298,19 +299,23 @@ const PARENT_LOCATION: Location = Location {
 	interior: Here,
 };
 
-pub(super) const ASSET_HUB_LOCATION: Location = Location {
-	parents: 1,
-	interior: X1([Parachain(1_000)].into()),
-};
+pub(super) fn get_asset_hub_location() -> Location {
+	Location {
+		parents: 1,
+		interior: X1(Arc::new([Parachain(1_000)])),
+	}
+}
 
-pub(super) const REMOTE_ERC20_ASSET_ID: AssetId = AssetId(Location {
-	parents: 2,
-	interior: X2([
-		GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
-		AccountKey20 {
-			network: None,
-			key: *b"!!test_eth_address!!",
-		},
-	]
-	.into()),
-});
+pub(super) fn get_remote_erc20_asset_id() -> AssetId {
+	AssetId(Location {
+		parents: 2,
+		interior: X2([
+			GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+			AccountKey20 {
+				network: None,
+				key: *b"!!test_eth_address!!",
+			},
+		]
+		.into()),
+	})
+}
