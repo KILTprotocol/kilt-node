@@ -62,6 +62,7 @@ impl frame_system::Config for MockRuntime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = ();
 	type SS58Prefix = ConstU16<0>;
 	type SystemWeightInfo = ();
 	type Version = ();
@@ -74,11 +75,11 @@ impl pallet_balances::Config for MockRuntime {
 	type ExistentialDeposit = ConstU64<1>;
 	type FreezeIdentifier = ();
 	type MaxFreezes = ConstU32<0>;
-	type MaxHolds = ConstU32<0>;
 	type MaxLocks = ConstU32<0>;
 	type MaxReserves = ConstU32<0>;
 	type ReserveIdentifier = ();
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeFreezeReason = ();
 	type RuntimeHoldReason = ();
 	type WeightInfo = ();
 }

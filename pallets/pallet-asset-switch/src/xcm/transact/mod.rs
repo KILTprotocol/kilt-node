@@ -21,7 +21,7 @@ use frame_support::{
 	traits::{fungible::Mutate, tokens::Preservation},
 };
 use sp_std::marker::PhantomData;
-use xcm::v3::{AssetId, Error, Fungibility, MultiAsset, MultiLocation, Result, XcmContext};
+use xcm::latest::{Asset, AssetId, Error, Fungibility, Location, Result, XcmContext};
 use xcm_executor::traits::{ConvertLocation, TransactAsset};
 
 use crate::{traits::SwitchHooks, Config, Event, LocalCurrencyBalanceOf, Pallet, SwitchPair};
@@ -45,7 +45,7 @@ where
 	T: Config<I>,
 	I: 'static,
 {
-	fn deposit_asset(what: &MultiAsset, who: &MultiLocation, context: &XcmContext) -> Result {
+	fn deposit_asset(what: &Asset, who: &Location, context: Option<&XcmContext>) -> Result {
 		log::info!(target: LOG_TARGET, "deposit_asset {:?} {:?} {:?}", what, who, context);
 		// 1. Verify the switch pair exists.
 		let switch_pair = SwitchPair::<T, I>::get().ok_or(Error::AssetNotFound)?;

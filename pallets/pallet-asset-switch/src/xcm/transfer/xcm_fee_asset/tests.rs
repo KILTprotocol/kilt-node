@@ -18,7 +18,7 @@
 
 use frame_support::traits::ContainsPair;
 use xcm::{
-	v3::{AssetId, AssetInstance, Fungibility, Junction, Junctions, MultiAsset, MultiLocation},
+	v4::{Asset, AssetId, AssetInstance, Fungibility, Junction, Junctions, Location},
 	IntoVersion,
 };
 
@@ -33,9 +33,9 @@ use crate::{
 
 #[test]
 fn true_with_stored_xcm_fee_asset_latest() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
@@ -50,10 +50,8 @@ fn true_with_stored_xcm_fee_asset_latest() {
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(1)
 				},
 				new_switch_pair_info.clone().remote_reserve_location.try_as().unwrap()
@@ -65,10 +63,8 @@ fn true_with_stored_xcm_fee_asset_latest() {
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::NonFungible(AssetInstance::Index(1))
 				},
 				new_switch_pair_info.remote_reserve_location.try_as().unwrap()
@@ -78,9 +74,9 @@ fn true_with_stored_xcm_fee_asset_latest() {
 
 #[test]
 fn true_with_stored_xcm_fee_asset_v3() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
@@ -90,10 +86,8 @@ fn true_with_stored_xcm_fee_asset_v3() {
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(1)
 				},
 				new_switch_pair_info.clone().remote_reserve_location.try_as().unwrap()
@@ -105,10 +99,8 @@ fn true_with_stored_xcm_fee_asset_v3() {
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::NonFungible(AssetInstance::Index(1))
 				},
 				new_switch_pair_info.remote_reserve_location.try_as().unwrap()
@@ -118,9 +110,9 @@ fn true_with_stored_xcm_fee_asset_v3() {
 
 #[test]
 fn true_with_stored_remote_location_latest() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
@@ -130,10 +122,8 @@ fn true_with_stored_remote_location_latest() {
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(1)
 				},
 				new_switch_pair_info.clone().remote_reserve_location.try_as().unwrap()
@@ -145,10 +135,44 @@ fn true_with_stored_remote_location_latest() {
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1))
+				},
+				new_switch_pair_info.remote_reserve_location.try_as().unwrap()
+			));
+		});
+}
+
+#[test]
+fn true_with_stored_remote_location_v4() {
+	let location = Location {
+		parents: 1,
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
+	};
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
+	// Works with remote fungible asset.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+					fun: Fungibility::Fungible(1)
+				},
+				new_switch_pair_info.clone().remote_reserve_location.try_as().unwrap()
+			));
+		});
+	// Works with remote non-fungible asset.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::NonFungible(AssetInstance::Index(1))
 				},
 				new_switch_pair_info.remote_reserve_location.try_as().unwrap()
@@ -158,22 +182,22 @@ fn true_with_stored_remote_location_latest() {
 
 #[test]
 fn true_with_stored_remote_location_v3() {
-	let location = MultiLocation {
+	let location = xcm::v3::MultiLocation {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: xcm::v3::Junctions::X1(xcm::v3::Junction::Parachain(1_000)),
 	};
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
+		&location.try_into().unwrap(),
+		SwitchPairStatus::Running,
+	);
 	// Works with remote fungible asset.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(1)
 				},
 				new_switch_pair_info.clone().remote_reserve_location.try_as().unwrap()
@@ -185,10 +209,8 @@ fn true_with_stored_remote_location_v3() {
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::NonFungible(AssetInstance::Index(1))
 				},
 				new_switch_pair_info.remote_reserve_location.try_as().unwrap()
@@ -203,8 +225,9 @@ fn true_with_stored_remote_location_v2() {
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
 	};
 	let new_switch_pair_info = {
+		let location_v3: xcm::v3::MultiLocation = location.try_into().unwrap();
 		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
-			&location.try_into().unwrap(),
+			&location_v3.try_into().unwrap(),
 			SwitchPairStatus::Running,
 		);
 		// Set remote location to the XCM v2.
@@ -218,10 +241,8 @@ fn true_with_stored_remote_location_v2() {
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(1)
 				},
 				&new_switch_pair_info
@@ -239,10 +260,8 @@ fn true_with_stored_remote_location_v2() {
 		.build()
 		.execute_with(|| {
 			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::NonFungible(AssetInstance::Index(1))
 				},
 				&new_switch_pair_info
@@ -260,16 +279,16 @@ fn true_with_stored_remote_location_v2() {
 fn false_on_switch_pair_not_set() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-			&MultiAsset {
-				id: AssetId::Concrete(MultiLocation {
+			&Asset {
+				id: AssetId(Location {
 					parents: 1,
-					interior: Junctions::X1(Junction::Parachain(1_000))
+					interior: Junctions::X1([Junction::Parachain(1_000)].into())
 				}),
 				fun: Fungibility::NonFungible(AssetInstance::Index(1))
 			},
-			&MultiLocation {
+			&Location {
 				parents: 1,
-				interior: Junctions::X1(Junction::Parachain(1_000))
+				interior: Junctions::X1([Junction::Parachain(1_000)].into())
 			}
 		));
 	});
@@ -277,9 +296,9 @@ fn false_on_switch_pair_not_set() {
 
 #[test]
 fn false_on_switch_pair_not_enabled() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Paused);
@@ -288,16 +307,16 @@ fn false_on_switch_pair_not_enabled() {
 		.build()
 		.execute_with(|| {
 			assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: AssetId::Concrete(MultiLocation {
+				&Asset {
+					id: AssetId(Location {
 						parents: 1,
-						interior: Junctions::X1(Junction::Parachain(1_000))
+						interior: Junctions::X1([Junction::Parachain(1_000)].into())
 					}),
 					fun: Fungibility::Fungible(1)
 				},
-				&MultiLocation {
+				&Location {
 					parents: 1,
-					interior: Junctions::X1(Junction::Parachain(1_000))
+					interior: Junctions::X1([Junction::Parachain(1_000)].into())
 				}
 			));
 		});
@@ -305,9 +324,9 @@ fn false_on_switch_pair_not_enabled() {
 
 #[test]
 fn false_on_different_remote_location() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
@@ -317,15 +336,13 @@ fn false_on_different_remote_location() {
 		.build()
 		.execute_with(|| {
 			assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(1)
 				},
-				&MultiLocation {
+				&Location {
 					parents: 1,
-					interior: Junctions::X2(Junction::Parachain(1_000), Junction::PalletInstance(1))
+					interior: Junctions::X2([Junction::Parachain(1_000), Junction::PalletInstance(1)].into())
 				},
 			));
 		});
@@ -335,16 +352,14 @@ fn false_on_different_remote_location() {
 		.build()
 		.execute_with(|| {
 			assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: MultiAsset::try_from(new_switch_pair_info.clone().remote_xcm_fee)
-						.unwrap()
-						.id,
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::NonFungible(AssetInstance::Index(1))
 				},
 				// Use a different location that does not match the stored one.
-				&MultiLocation {
+				&Location {
 					parents: 1,
-					interior: Junctions::X2(Junction::Parachain(1_000), Junction::PalletInstance(1))
+					interior: Junctions::X2([Junction::Parachain(1_000), Junction::PalletInstance(1)].into())
 				},
 			));
 		});
@@ -352,9 +367,9 @@ fn false_on_different_remote_location() {
 
 #[test]
 fn false_on_nested_remote_location() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
@@ -364,14 +379,17 @@ fn false_on_nested_remote_location() {
 		.execute_with(|| {
 			assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
 				new_switch_pair_info.clone().remote_xcm_fee.try_as().unwrap(),
-				&MultiLocation {
+				&Location {
 					parents: 1,
 					interior: Junctions::X2(
-						Junction::Parachain(1_000),
-						Junction::AccountId32 {
-							network: None,
-							id: [0; 32]
-						}
+						[
+							Junction::Parachain(1_000),
+							Junction::AccountId32 {
+								network: None,
+								id: [0; 32]
+							}
+						]
+						.into()
 					)
 				}
 			));
@@ -380,14 +398,17 @@ fn false_on_nested_remote_location() {
 
 #[test]
 fn false_on_parent_remote_location() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
 		interior: Junctions::X2(
-			Junction::Parachain(1_000),
-			Junction::AccountId32 {
-				network: None,
-				id: [0; 32],
-			},
+			[
+				Junction::Parachain(1_000),
+				Junction::AccountId32 {
+					network: None,
+					id: [0; 32],
+				},
+			]
+			.into(),
 		),
 	};
 	let new_switch_pair_info =
@@ -398,9 +419,9 @@ fn false_on_parent_remote_location() {
 		.execute_with(|| {
 			assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
 				new_switch_pair_info.clone().remote_xcm_fee.try_as().unwrap(),
-				&MultiLocation {
+				&Location {
 					parents: 1,
-					interior: Junctions::X1(Junction::Parachain(1_000),)
+					interior: Junctions::X1([Junction::Parachain(1_000)].into())
 				}
 			));
 		});
@@ -408,9 +429,9 @@ fn false_on_parent_remote_location() {
 
 #[test]
 fn false_on_different_xcm_fee_asset_id() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
@@ -419,8 +440,8 @@ fn false_on_different_xcm_fee_asset_id() {
 		.build()
 		.execute_with(|| {
 			assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
-					id: AssetId::Abstract([0; 32]),
+				&Asset {
+					id: AssetId(Location::parent()),
 					fun: Fungibility::Fungible(1)
 				},
 				new_switch_pair_info.remote_reserve_location.try_as().unwrap()
@@ -430,9 +451,9 @@ fn false_on_different_xcm_fee_asset_id() {
 
 #[test]
 fn false_on_nested_xcm_fee_asset_id() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
@@ -441,16 +462,19 @@ fn false_on_nested_xcm_fee_asset_id() {
 		.build()
 		.execute_with(|| {
 			assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
+				&Asset {
 					// Nested location inside configured remote location
-					id: AssetId::Concrete(MultiLocation {
+					id: AssetId(Location {
 						parents: 1,
 						interior: Junctions::X2(
-							Junction::Parachain(1_000),
-							Junction::AccountId32 {
-								network: None,
-								id: [0; 32]
-							}
+							[
+								Junction::Parachain(1_000),
+								Junction::AccountId32 {
+									network: None,
+									id: [0; 32]
+								}
+							]
+							.into()
 						),
 					}),
 					fun: Fungibility::Fungible(1)
@@ -462,14 +486,17 @@ fn false_on_nested_xcm_fee_asset_id() {
 
 #[test]
 fn false_on_parent_xcm_fee_asset_id() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
 		interior: Junctions::X2(
-			Junction::Parachain(1_000),
-			Junction::AccountId32 {
-				network: None,
-				id: [0; 32],
-			},
+			[
+				Junction::Parachain(1_000),
+				Junction::AccountId32 {
+					network: None,
+					id: [0; 32],
+				},
+			]
+			.into(),
 		),
 	};
 	let new_switch_pair_info =
@@ -479,11 +506,11 @@ fn false_on_parent_xcm_fee_asset_id() {
 		.build()
 		.execute_with(|| {
 			assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
-				&MultiAsset {
+				&Asset {
 					// Parent location of configured remote location.
-					id: AssetId::Concrete(MultiLocation {
+					id: AssetId(Location {
 						parents: 1,
-						interior: Junctions::X1(Junction::Parachain(1_000),),
+						interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 					}),
 					fun: Fungibility::Fungible(1)
 				},

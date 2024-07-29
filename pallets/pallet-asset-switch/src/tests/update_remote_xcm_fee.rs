@@ -19,17 +19,17 @@
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
-use xcm::v3::{Fungibility, MultiAsset};
+use xcm::v4::{Asset, Fungibility};
 
 use crate::{
-	mock::{ExtBuilder, MockRuntime, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
+	mock::{get_asset_hub_location, get_remote_erc20_asset_id, ExtBuilder, MockRuntime, System, XCM_ASSET_FEE},
 	Error, Event, NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairStatus,
 };
 
 #[test]
 fn successful() {
 	// Setting the fee to a new value generates an event.
-	let new_fee = MultiAsset {
+	let new_fee = Asset {
 		fun: Fungibility::Fungible(1),
 		..XCM_ASSET_FEE
 	};
@@ -38,9 +38,9 @@ fn successful() {
 			pool_account: [0u8; 32].into(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 1_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: Default::default(),
 		})
@@ -66,9 +66,9 @@ fn successful() {
 			pool_account: [0u8; 32].into(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 1_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Paused,
 		})

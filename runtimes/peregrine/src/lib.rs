@@ -33,7 +33,8 @@ use frame_support::{
 	traits::{
 		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter, LinearStoragePrice, PrivilegeCmp,
+		AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter,
+		LinearStoragePrice, PrivilegeCmp,
 	},
 	weights::{ConstantMultiplier, Weight},
 };
@@ -50,7 +51,7 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
-use xcm::{v3::MultiLocation, VersionedAssetId};
+use xcm::{v4::Location, VersionedAssetId};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use delegation::DelegationAc;
@@ -1010,8 +1011,8 @@ impl pallet_assets::Config for Runtime {
 	type ApprovalDeposit = ConstU128<0>;
 	type AssetAccountDeposit = ConstU128<0>;
 	type AssetDeposit = ConstU128<0>;
-	type AssetId = MultiLocation;
-	type AssetIdParameter = MultiLocation;
+	type AssetId = Location;
+	type AssetIdParameter = Location;
 	type Balance = u128;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
