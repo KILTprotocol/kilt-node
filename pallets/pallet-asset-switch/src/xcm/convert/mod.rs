@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use sp_runtime::{traits::TryConvert, AccountId32};
-use xcm::v3::Junction::{self, AccountId32 as AccountId32Junction};
+use xcm::v4::Junction::{self, AccountId32 as AccountId32Junction};
 
 const LOG_TARGET: &str = "xcm::pallet-asset-switch::AccountId32ToAccountId32JunctionConverter";
 

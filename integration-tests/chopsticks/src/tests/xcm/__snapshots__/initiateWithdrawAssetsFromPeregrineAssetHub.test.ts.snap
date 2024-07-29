@@ -1,0 +1,5 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Initiate withdraw assets Peregrine Account Alice -> AH Account Bob > sender events xcm pallet 1`] = `[]`;
+
+exports[`Initiate withdraw assets Peregrine Account Alice -> AH Account Bob > sender events xcm queue pallet 1`] = `[]`;

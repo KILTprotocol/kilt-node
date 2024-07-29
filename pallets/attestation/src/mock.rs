@@ -237,6 +237,7 @@ pub(crate) mod runtime {
 	}
 
 	impl frame_system::Config for Test {
+		type RuntimeTask = ();
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Hash = Hash;
@@ -273,9 +274,9 @@ pub(crate) mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
+		type RuntimeFreezeReason = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
-		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = RuntimeEvent;
@@ -312,7 +313,7 @@ pub(crate) mod runtime {
 
 	parameter_types! {
 		pub const MaxDelegatedAttestations: u32 = 1000;
-		pub const Deposit: Balance = ATTESTATION_DEPOSIT;
+		pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
 	}
 
 	impl Config for Test {
@@ -322,7 +323,7 @@ pub(crate) mod runtime {
 		type WeightInfo = ();
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type Currency = Balances;
-		type Deposit = Deposit;
+		type Deposit = AttestationDeposit;
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;

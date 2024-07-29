@@ -30,6 +30,7 @@ use sp_runtime::{
 	traits::{IdentifyAccount, Zero},
 	AccountId32, MultiSigner,
 };
+use sp_std::ops::Mul;
 use sp_std::{convert::TryInto, vec::Vec};
 
 use kilt_support::{signature::VerifySignature, Deposit};
@@ -95,10 +96,10 @@ fn make_free_for_did<T: Config>(account: &AccountIdOf<T>)
 where
 	<T as Config>::Currency: Mutate<T::AccountId>,
 {
+	// Just give the account some balance to pay for the DID deposit and tx fees.
+	// The exact amount is not important for the benchmark.
 	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
-		+ <T as Config>::BaseDeposit::get()
-		+ <T as Config>::BaseDeposit::get()
-		+ <T as Config>::BaseDeposit::get()
+		+ <T as Config>::BaseDeposit::get().mul(10u32.into())
 		+ <T as Config>::Fee::get();
 	<CurrencyOf<T> as Mutate<AccountIdOf<T>>>::set_balance(account, balance);
 }

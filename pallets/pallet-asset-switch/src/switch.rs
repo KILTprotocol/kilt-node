@@ -19,7 +19,7 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
-use xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
+use xcm::{VersionedAsset, VersionedAssetId, VersionedLocation};
 
 /// Input information used to generate a `SwitchPairInfo`.
 #[derive(Encode, Decode, TypeInfo, RuntimeDebug, Clone)]
@@ -41,10 +41,10 @@ pub struct NewSwitchPairInfo<AccountId> {
 	/// changes.
 	pub remote_asset_total_supply: u128,
 	/// The remote location on which the remote asset lives.
-	pub remote_reserve_location: VersionedMultiLocation,
+	pub remote_reserve_location: VersionedLocation,
 	/// The assets to take from the user's balance on this chain to pay for XCM
 	/// execution fees on the reserve location.
-	pub remote_xcm_fee: VersionedMultiAsset,
+	pub remote_xcm_fee: VersionedAsset,
 	/// The status of the switch pair.
 	pub status: SwitchPairStatus,
 }
@@ -69,10 +69,10 @@ pub struct SwitchPairInfo<AccountId> {
 	/// changes.
 	pub remote_asset_total_supply: u128,
 	/// The remote location on which the remote asset lives.
-	pub remote_reserve_location: VersionedMultiLocation,
+	pub remote_reserve_location: VersionedLocation,
 	/// The assets to take from the user's balance on this chain to pay for XCM
 	/// execution fees on the reserve location.
-	pub remote_xcm_fee: VersionedMultiAsset,
+	pub remote_xcm_fee: VersionedAsset,
 	/// The status of the switch pair.
 	pub status: SwitchPairStatus,
 

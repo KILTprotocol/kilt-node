@@ -19,7 +19,7 @@
 use frame_support::assert_noop;
 use xcm::{
 	v3::{AssetId, AssetInstance, Fungibility, Junction, Junctions, MultiAsset, MultiLocation},
-	IntoVersion, VersionedMultiAsset,
+	IntoVersion, VersionedAsset,
 };
 use xcm_executor::traits::{Error, MatchesFungibles};
 
@@ -34,9 +34,9 @@ use crate::{
 
 #[test]
 fn successful_with_stored_latest() {
-	let location = xcm::latest::MultiLocation {
+	let location = xcm::latest::Location {
 		parents: 1,
-		interior: xcm::latest::Junctions::X1(xcm::latest::Junction::Parachain(1_000)),
+		interior: xcm::latest::Junctions::X1([xcm::latest::Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =

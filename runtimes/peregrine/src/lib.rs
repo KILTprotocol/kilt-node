@@ -27,7 +27,14 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
-	construct_runtime, parameter_types,
+	construct_runtime,
+	genesis_builder_helper::{build_config, create_default_config},
+	parameter_types,
+	traits::{
+		fungible::HoldConsideration,
+		tokens::{PayFromAccount, UnityAssetBalanceConversion},
+		ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter, LinearStoragePrice, PrivilegeCmp,
+	},
 	traits::{AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
@@ -62,9 +69,11 @@ use runtime_common::{
 	},
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
-	fees::{ToAuthor, WeightToFee},
-	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
+	fees::{ToAuthorCredit, WeightToFee},
+	pallet_id,
+	xcm_config::RelayOrigin,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
+	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
@@ -143,6 +152,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = RuntimeTask;
 	/// Maximum number of block number to block hash mappings to keep (oldest
 	/// pruned first).
 	type BlockHashCount = BlockHashCount;
@@ -159,6 +169,7 @@ impl frame_system::Config for Runtime {
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
 	type SS58Prefix = SS58Prefix;
+
 	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
@@ -180,7 +191,6 @@ parameter_types! {
 	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
-	pub const MaxHolds: u32 = 50;
 	pub const MaxFreezes: u32 = 50;
 }
 
@@ -213,9 +223,9 @@ impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	type FreezeIdentifier = RuntimeFreezeReason;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
-	type MaxHolds = MaxHolds;
 
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
@@ -230,8 +240,10 @@ impl pallet_balances::Config for Runtime {
 
 impl pallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type OnChargeTransaction =
-		pallet_transaction_payment::CurrencyAdapter<Balances, FeeSplit<Runtime, Treasury, ToAuthor<Runtime>>>;
+	type OnChargeTransaction = pallet_transaction_payment::FungibleAdapter<
+		Balances,
+		FeeSplit<Runtime, SendDustAndFeesToTreasury<Runtime>, ToAuthorCredit<Runtime>>,
+	>;
 	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = WeightToFee<Runtime>;
 	type LengthToFee = ConstantMultiplier<Balance, constants::fee::TransactionByteFee>;
@@ -254,12 +266,13 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type OnSystemEvent = ();
 	type SelfParaId = parachain_info::Pallet<Runtime>;
 	type OutboundXcmpMessageSource = XcmpQueue;
-	type DmpMessageHandler = DmpQueue;
+	type DmpQueue = EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
 	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
 	type ConsensusHook = ConsensusHook;
+	type WeightInfo = weights::cumulus_pallet_parachain_system::WeightInfo<Runtime>;
 }
 
 type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
@@ -314,6 +327,7 @@ impl pallet_vesting::Config for Runtime {
 	type MinVestedTransfer = constants::MinVestedTransfer;
 	type WeightInfo = weights::pallet_vesting::WeightInfo<Runtime>;
 	type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
+	type BlockNumberProvider = System;
 	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
 }
 
@@ -321,6 +335,7 @@ parameter_types! {
 	pub const MaxClaims: u32 = 50;
 	pub const UsableBalance: Balance = KILT;
 	pub const AutoUnlockBound: u32 = 100;
+	pub const PreImageHoldReason: RuntimeHoldReason = RuntimeHoldReason::Preimage(pallet_preimage::HoldReason::Preimage);
 }
 
 impl pallet_preimage::Config for Runtime {
@@ -328,8 +343,12 @@ impl pallet_preimage::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type ManagerOrigin = EnsureRoot<AccountId>;
-	type BaseDeposit = constants::preimage::PreimageBaseDeposit;
-	type ByteDeposit = constants::ByteDeposit;
+	type Consideration = HoldConsideration<
+		AccountId,
+		Balances,
+		PreImageHoldReason,
+		LinearStoragePrice<constants::preimage::PreimageBaseDeposit, constants::ByteDeposit, Balance>,
+	>;
 }
 
 parameter_types! {
@@ -444,6 +463,7 @@ parameter_types! {
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
 	pub MaxProposalWeight: Weight = Perbill::from_percent(50) * BlockWeights::get().max_block;
+	pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
 type ApproveOrigin = EitherOfDiverse<
@@ -467,12 +487,24 @@ impl pallet_treasury::Config for Runtime {
 	type ProposalBondMinimum = ProposalBondMinimum;
 	type ProposalBondMaximum = ();
 	type SpendPeriod = SpendPeriod;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type SpendOrigin = frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, benches::MaxBalance>;
 	type Burn = Burn;
 	type BurnDestination = ();
 	type SpendFunds = ();
 	type WeightInfo = weights::pallet_treasury::WeightInfo<Runtime>;
 	type MaxApprovals = MaxApprovals;
+	type AssetKind = ();
+	type BalanceConverter = UnityAssetBalanceConversion;
+	type Beneficiary = AccountId;
+	type BeneficiaryLookup = AccountIdLookup<Self::Beneficiary, ()>;
+	type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
+	type PayoutPeriod = runtime_common::constants::treasury::PayoutPeriod;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = runtime_common::benchmarks::treasury::BenchmarkHelper<Runtime>;
 }
 
 type CouncilCollective = pallet_collective::Instance1;
@@ -540,6 +572,7 @@ impl pallet_tips::Config for Runtime {
 	type TipReportDepositBase = constants::tips::TipReportDepositBase;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pallet_tips::WeightInfo<Runtime>;
+	type MaxTipAmount = constants::tips::MaxTipAmount;
 }
 
 impl attestation::Config for Runtime {
@@ -1078,8 +1111,10 @@ construct_runtime! {
 		PolkadotXcm: pallet_xcm = 83,
 		// Does nothing cool, just provides an origin.
 		CumulusXcm: cumulus_pallet_xcm exclude_parts { Call } = 84,
-		// Queue and pass DMP messages on to be executed.
+		// delete after lazy runtime Migration
 		DmpQueue: cumulus_pallet_dmp_queue = 85,
+		// Queue and pass DMP messages on to be executed.
+		MessageQueue: pallet_message_queue = 86,
 	}
 }
 
@@ -1166,7 +1201,10 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(),
+	(
+		cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
+		pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
+	),
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -1177,6 +1215,10 @@ mod benches {
 	use xcm::v3::{AssetId, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, ParentThen};
 
 	use crate::{Fungibles, ParachainSystem};
+
+	frame_support::parameter_types! {
+		pub const MaxBalance: crate::Balance = crate::Balance::max_value();
+	}
 
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
@@ -1206,12 +1248,15 @@ mod benches {
 		[pallet_did_lookup, DidLookup]
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
-		[pallet_xcm, PolkadotXcm]
+		[pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pallet_migration, Migration]
 		[pallet_dip_provider, DipProvider]
 		[pallet_deposit_storage, DepositStorage]
 		[pallet_asset_switch, AssetSwitchPool1]
 		[pallet_assets, Fungibles]
+		[pallet_message_queue, MessageQueue]
+		[cumulus_pallet_parachain_system, ParachainSystem]
+		[cumulus_pallet_dmp_queue, DmpQueue]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 
@@ -1565,6 +1610,7 @@ impl_runtime_apis! {
 			use frame_system_benchmarking::Pallet as SystemBench;
 			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 			use frame_benchmarking::baseline::Pallet as Baseline;
+			use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
@@ -1576,13 +1622,47 @@ impl_runtime_apis! {
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-			use frame_benchmarking::{Benchmarking, BenchmarkBatch};
+			use frame_benchmarking::{Benchmarking, BenchmarkBatch, BenchmarkError};
 			use frame_system_benchmarking::Pallet as SystemBench;
 			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 			use frame_benchmarking::baseline::Pallet as Baseline;
 			use frame_support::traits::TrackedStorageKey;
+			use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+			use runtime_common::benchmarks::xcm as xcm_benchmarking;
+			use xcm::lts::prelude::*;
 
-			impl frame_system_benchmarking::Config for Runtime {}
+			impl pallet_xcm::benchmarking::Config for Runtime {
+				type DeliveryHelper = xcm_benchmarking::ParachainDeliveryHelper<ParachainSystem, xcm_config::XcmConfig>;
+
+				fn reachable_dest() -> Option<Location> {
+					ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(xcm_benchmarking::RandomParaId::get());
+					Some(xcm_benchmarking::ParachainLocation::get())
+				}
+
+				fn reserve_transferable_asset_and_dest() -> Option<(Asset, Location)> {
+					ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(xcm_benchmarking::RandomParaId::get());
+					Some((
+						xcm_benchmarking::NativeAsset::get(),
+						xcm_benchmarking::ParachainLocation::get(),
+					))
+				}
+
+				fn get_asset() -> Asset {
+					xcm_benchmarking::NativeAsset::get()
+				}
+			}
+
+			impl frame_system_benchmarking::Config for Runtime {
+				   fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+					   ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
+					   Ok(())
+				   }
+
+				fn verify_set_code() {
+					System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
+				}
+			}
+
 			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 			impl frame_benchmarking::baseline::Config for Runtime {}
 
@@ -1634,6 +1714,19 @@ impl_runtime_apis! {
 			Executive::try_execute_block(block, state_root_check, sig_check, select).expect("try_execute_block failed")
 		}
 	}
+
+	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+
+		fn create_default_config() -> Vec<u8> {
+			create_default_config::<RuntimeGenesisConfig>()
+		}
+
+		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_config::<RuntimeGenesisConfig>(config)
+		}
+
+	}
+
 }
 cumulus_pallet_parachain_system::register_validate_block! {
 	Runtime = Runtime,

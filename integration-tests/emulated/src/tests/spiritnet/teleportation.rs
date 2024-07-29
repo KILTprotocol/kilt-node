@@ -16,32 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use emulated_integration_tests_common::accounts::{ALICE, BOB};
 use frame_support::{assert_noop, dispatch::RawOrigin};
-use integration_tests_common::constants::{
-	accounts::{ALICE, BOB},
-	asset_hub_polkadot,
-	polkadot::ED,
-};
+use rococo_emulated_chain::genesis::ED;
 use sp_core::sr25519;
 use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;
-use xcm::v3::{
-	prelude::{Here, Junction, Junctions, ParentThen, X1},
-	WeightLimit,
-};
-use xcm_emulator::{Chain, Network, TestExt};
+use xcm::lts::prelude::{Here, Junction, Junctions, ParentThen, WeightLimit};
+use xcm_emulator::{Chain, Network, Parachain, TestExt};
 
 use crate::{
-	mock::{
-		network::MockNetworkPolkadot,
-		para_chains::{AssetHubPolkadot, Spiritnet},
-		relay_chains::Polkadot,
-	},
+	mock::network::{AssetHub, MockNetwork, Rococo, Spiritnet},
 	utils::get_account_id_from_seed,
 };
 
 #[test]
 fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
-	MockNetworkPolkadot::reset();
+	MockNetwork::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
 	let bob_account_id = get_account_id_from_seed::<sr25519::Public>(BOB);
@@ -51,12 +41,15 @@ fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 		assert_noop!(
 			SpiritnetXcm::limited_teleport_assets(
 				RawOrigin::Signed(alice_account_id.clone()).into(),
-				Box::new(ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into()),
+				Box::new(ParentThen(Junctions::X1([Junction::Parachain(AssetHub::para_id().into())].into())).into()),
 				Box::new(
-					X1(Junction::AccountId32 {
-						network: None,
-						id: bob_account_id.into()
-					})
+					Junctions::X1(
+						[Junction::AccountId32 {
+							network: None,
+							id: bob_account_id.into()
+						}]
+						.into()
+					)
 					.into()
 				),
 				Box::new((Here, 1000 * ED).into()),
@@ -67,11 +60,11 @@ fn test_teleport_asset_from_regular_spiritnet_account_to_asset_hub() {
 		);
 	});
 	// No event on the relaychain Message is for AssetHub
-	Polkadot::execute_with(|| {
-		assert_eq!(Polkadot::events().len(), 0);
+	Rococo::execute_with(|| {
+		assert_eq!(Rococo::events().len(), 0);
 	});
 	// AssetHub should not receive any message, since the message is filtered out.
-	AssetHubPolkadot::execute_with(|| {
-		assert_eq!(AssetHubPolkadot::events().len(), 0);
+	AssetHub::execute_with(|| {
+		assert_eq!(AssetHub::events().len(), 0);
 	});
 }
