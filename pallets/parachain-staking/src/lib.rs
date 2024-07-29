@@ -229,7 +229,9 @@ pub mod pallet {
 			+ From<<Self as pallet_balances::Config>::Balance>
 			+ From<BlockNumberFor<Self>>
 			+ TypeInfo
-			+ MaxEncodedLen;
+			+ MaxEncodedLen
+			+ Send
+			+ Sync;
 
 		/// Minimum number of blocks validation rounds can last.
 		#[pallet::constant]
@@ -2450,7 +2452,10 @@ pub mod pallet {
 			let unclaimed_blocks = count_authored.saturating_sub(count_rewarded);
 
 			Rewards::<T>::mutate(acc, |reward| {
-				*reward = reward.saturating_add(Self::calc_block_rewards_collator(stake, unclaimed_blocks.into()));
+				*reward = reward.saturating_add(Self::calc_block_rewards_collator(
+					stake,
+					unclaimed_blocks.saturated_into(),
+				));
 			});
 		}
 
@@ -2470,7 +2475,10 @@ pub mod pallet {
 			let unclaimed_blocks = count_authored.saturating_sub(count_rewarded);
 
 			Rewards::<T>::mutate(acc, |reward| {
-				*reward = reward.saturating_add(Self::calc_block_rewards_delegator(stake, unclaimed_blocks.into()))
+				*reward = reward.saturating_add(Self::calc_block_rewards_delegator(
+					stake,
+					unclaimed_blocks.saturated_into(),
+				))
 			});
 		}
 	}

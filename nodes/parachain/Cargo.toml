@@ -58,6 +58,7 @@ sp-keystore                   = { workspace = true, features = ["std"] }
 sp-offchain                   = { workspace = true, features = ["std"] }
 sp-runtime                    = { workspace = true, features = ["std"] }
 sp-session                    = { workspace = true, features = ["std"] }
+sp-state-machine              = { workspace = true, features = ["std"] }
 sp-timestamp                  = { workspace = true, features = ["std"] }
 sp-transaction-pool           = { workspace = true, features = ["std"] }
 substrate-prometheus-endpoint = { workspace = true }

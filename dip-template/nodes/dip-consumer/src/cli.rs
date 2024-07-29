@@ -18,7 +18,7 @@
 
 use std::path::PathBuf;
 
-use cumulus_client_cli::{ExportGenesisStateCommand, ExportGenesisWasmCommand, PurgeChainCmd};
+use cumulus_client_cli::{ExportGenesisHeadCommand, ExportGenesisWasmCommand, PurgeChainCmd};
 use polkadot_cli::RunCmd;
 use sc_cli::{BuildSpecCmd, CheckBlockCmd, ExportBlocksCmd, ExportStateCmd, ImportBlocksCmd, RevertCmd};
 use sc_service::Configuration;
@@ -42,7 +42,7 @@ pub enum Subcommand {
 
 	PurgeChain(PurgeChainCmd),
 
-	ExportGenesisState(ExportGenesisStateCommand),
+	ExportGenesisState(ExportGenesisHeadCommand),
 
 	ExportGenesisWasm(ExportGenesisWasmCommand),
 	#[command(subcommand)]
