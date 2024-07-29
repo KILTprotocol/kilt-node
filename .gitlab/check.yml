@@ -8,7 +8,7 @@
 
 cargo-clippy:
   extends: .check_skip_rust
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   variables:
     RUSTDOCFLAGS: '-D warnings'
   stage: check

@@ -16,25 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
-use frame_support::{assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
-use integration_tests_common::constants::{accounts::ALICE, asset_hub_polkadot, polkadot::ED};
-use runtime_common::AccountId;
+use emulated_integration_tests_common::accounts::ALICE;
+use frame_support::{assert_noop, assert_ok, dispatch::RawOrigin, traits::fungible::Inspect};
+use runtime_common::{constants::KILT, AccountId};
 use sp_core::sr25519;
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;
-use xcm::v3::{
-	prelude::{Here, Junction, Junctions, Parent, ParentThen, X1},
+use xcm::lts::{
+	prelude::{Here, Junction, Junctions, Parent, ParentThen},
 	WeightLimit,
 };
-
 use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, TestExt};
 
 use crate::{
 	mock::{
-		network::MockNetworkPolkadot,
-		para_chains::{AssetHubPolkadot, Spiritnet, SpiritnetPallet},
-		relay_chains::Polkadot,
+		network::{AssetHub, MockNetwork, Rococo, Spiritnet},
+		para_chains::SpiritnetParachainParaPallet,
 	},
 	utils::get_account_id_from_seed,
 };
@@ -43,72 +40,77 @@ use crate::{
 /// allow transfers to the relaychain since the funds might be lost.
 #[test]
 fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_relay() {
-	MockNetworkPolkadot::reset();
+	MockNetwork::reset();
+
+	let balance_to_transfer = KILT;
 
 	let alice_account = get_account_id_from_seed::<sr25519::Public>(ALICE);
 
 	// Submit XCM msg
 	Spiritnet::execute_with(|| {
-		assert_ok!(SpiritnetXcm::limited_reserve_transfer_assets(
-			RawOrigin::Signed(alice_account.clone()).into(),
-			Box::new(Parent.into()),
-			Box::new(
-				X1(Junction::AccountId32 {
-					network: None,
-					id: alice_account.into()
-				})
-				.into()
+		assert_noop!(
+			SpiritnetXcm::limited_reserve_transfer_assets(
+				RawOrigin::Signed(alice_account.clone()).into(),
+				Box::new(Parent.into()),
+				Box::new(
+					Junctions::X1(
+						[Junction::AccountId32 {
+							network: None,
+							id: alice_account.into()
+						}]
+						.into()
+					)
+					.into()
+				),
+				Box::new((Here, balance_to_transfer).into()),
+				0,
+				WeightLimit::Unlimited,
 			),
-			Box::new((Here, 1_000_000).into()),
-			0,
-			WeightLimit::Unlimited,
-		));
-
-		type RuntimeEvent = <Spiritnet as Chain>::RuntimeEvent;
-
-		// The msg should be blocked by the barrier
-		assert_expected_events!(
-			Spiritnet,
-			vec![
-				RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
-				outcome: xcm::latest::Outcome::Error(xcm::latest::Error::Barrier)
-			}) => {},
-			]
+			sp_runtime::DispatchError::Module(sp_runtime::ModuleError {
+				index: 83,
+				error: [24, 0, 0, 0,],
+				message: Some("LocalExecutionIncomplete")
+			})
 		);
 	});
 
 	// No message should reach the relaychain.
-	Polkadot::execute_with(|| {
-		assert_eq!(Polkadot::events().len(), 0);
+	Rococo::execute_with(|| {
+		assert_eq!(Rococo::events().len(), 0);
 	})
 }
 
 #[test]
 fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
-	MockNetworkPolkadot::reset();
+	MockNetwork::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
 	let asset_hub_sovereign_account =
-		Spiritnet::sovereign_account_id_of(Spiritnet::sibling_location_of(AssetHubPolkadot::para_id()));
+		Spiritnet::sovereign_account_id_of(Spiritnet::sibling_location_of(AssetHub::para_id()));
 
-	let balance_to_transfer = 1000 * ED;
+	let balance_to_transfer = KILT;
 
 	Spiritnet::execute_with(|| {
 		// the sovereign_account of AssetHub should have no coins.
 		let balance_before_transfer =
-			<<Spiritnet as SpiritnetPallet>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
+			<<Spiritnet as SpiritnetParachainParaPallet>::Balances as Inspect<AccountId>>::balance(
+				&asset_hub_sovereign_account,
+			);
 
 		assert!(balance_before_transfer.is_zero());
 
 		// submit xcm message
 		assert_ok!(SpiritnetXcm::limited_reserve_transfer_assets(
 			RawOrigin::Signed(alice_account_id.clone()).into(),
-			Box::new(ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into()),
+			Box::new(ParentThen(Junctions::X1([Junction::Parachain(AssetHub::para_id().into())].into())).into()),
 			Box::new(
-				X1(Junction::AccountId32 {
-					network: None,
-					id: asset_hub_sovereign_account.clone().into()
-				})
+				Junctions::X1(
+					[Junction::AccountId32 {
+						network: None,
+						id: asset_hub_sovereign_account.clone().into()
+					}]
+					.into()
+				)
 				.into()
 			),
 			Box::new((Here, balance_to_transfer).into()),
@@ -121,31 +123,36 @@ fn test_reserve_asset_transfer_from_regular_spiritnet_account_to_asset_hub() {
 		// we expect to have the [Complete] event.
 		assert_expected_events!(
 			Spiritnet,
-			vec![RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
-				outcome: xcm::latest::Outcome::Complete(_)
-			}) => {},
+			vec![
+				RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
+					outcome: xcm::latest::Outcome::Complete { .. }
+				}) => {},
 			]
 		);
 
 		// we also expect that the sovereignAccount of AssetHub has some coins now
 		let balance_after_transfer =
-			<<Spiritnet as SpiritnetPallet>::Balances as Inspect<AccountId>>::balance(&asset_hub_sovereign_account);
+			<<Spiritnet as SpiritnetParachainParaPallet>::Balances as Inspect<AccountId>>::balance(
+				&asset_hub_sovereign_account,
+			);
 
 		assert_eq!(balance_after_transfer, balance_to_transfer);
 	});
 
 	// No event on the relaychain. Message is for AssetHub.
-	Polkadot::execute_with(|| {
-		assert_eq!(Polkadot::events().len(), 0);
+	Rococo::execute_with(|| {
+		assert_eq!(Rococo::events().len(), 0);
 	});
 
 	// Fails on AssetHub since spiritnet is not a trusted registrar
-	AssetHubPolkadot::execute_with(|| {
-		type RuntimeEvent = <AssetHubPolkadot as Chain>::RuntimeEvent;
+	AssetHub::execute_with(|| {
+		type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
-			AssetHubPolkadot,
-			vec![RuntimeEvent::XcmpQueue(XcmpQueueEvent::Fail { .. }) => {},]
+			AssetHub,
+			vec![
+				RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
+			]
 		);
 	});
 }

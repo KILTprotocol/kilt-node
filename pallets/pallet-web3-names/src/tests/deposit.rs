@@ -61,7 +61,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into()),
-				TokenError::CannotCreateHold
+				TokenError::FundsUnavailable
 			);
 		})
 }

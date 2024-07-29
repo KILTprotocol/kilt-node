@@ -15,7 +15,7 @@ jobs:
         runtime: [peregrine, spiritnet]
     runs-on: ubuntu-latest
     container:
-      image: paritytech/ci-unified:bullseye-1.70.0
+      image: paritytech/ci-unified:bullseye-1.74.0
 
     steps:
       - name: Checkout code

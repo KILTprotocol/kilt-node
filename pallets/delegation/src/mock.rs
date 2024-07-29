@@ -24,7 +24,6 @@ use frame_support::{
 		Get,
 	},
 };
-use kilt_support::Deposit;
 use sp_core::H256;
 
 use crate::{
@@ -134,7 +133,7 @@ pub fn generate_base_delegation_node<T: Config>(
 		children: BoundedBTreeSet::new(),
 		hierarchy_root_id: hierarchy_id,
 		parent,
-		deposit: Deposit {
+		deposit: kilt_support::Deposit {
 			owner: deposit_owner,
 			amount: <T as Config>::Deposit::get(),
 		},
@@ -222,6 +221,7 @@ pub(crate) mod runtime {
 	}
 
 	impl frame_system::Config for Test {
+		type RuntimeTask = ();
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Block = Block;
@@ -254,15 +254,14 @@ pub(crate) mod runtime {
 		pub const ExistentialDeposit: Balance = 1;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
-		pub const MaxHolds: u32 = 50;
 		pub const MaxFreezes: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type RuntimeFreezeReason = RuntimeFreezeReason;
 		type FreezeIdentifier = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
-		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();

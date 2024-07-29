@@ -1,7 +1,7 @@
 test:
   extends: .check_skip_rust
   timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   cache:
     key: cargo-test
@@ -16,7 +16,7 @@ test:
 
 test-rustdoc:
   extends: .check_skip_rust
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   variables:
     SKIP_WASM_BUILD: 1
   stage: check
@@ -34,7 +34,7 @@ test-rustdoc:
 test-features:
   extends: .check_skip_rust
   timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   cache:
     key: cargo-test-features

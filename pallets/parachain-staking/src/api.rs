@@ -22,7 +22,7 @@ use crate::{
 };
 use frame_support::traits::fungible::Inspect;
 use sp_runtime::{
-	traits::{Saturating, Zero},
+	traits::{SaturatedConversion, Saturating, Zero},
 	Perquintill,
 };
 
@@ -45,7 +45,10 @@ impl<T: Config> Pallet<T> {
 			let count_unclaimed = BlocksAuthored::<T>::get(&delegator_state.owner).saturating_sub(count_rewarded);
 			let stake = delegator_state.amount;
 			// rewards += stake * reward_count * delegator_reward_rate
-			rewards.saturating_add(Self::calc_block_rewards_delegator(stake, count_unclaimed.into()))
+			rewards.saturating_add(Self::calc_block_rewards_delegator(
+				stake,
+				count_unclaimed.saturated_into(),
+			))
 		} else if Self::is_active_candidate(acc).is_some() {
 			// #blocks for unclaimed staking rewards equals
 			// #blocks_authored_by_collator - #blocks_claimed_by_collator
@@ -54,7 +57,10 @@ impl<T: Config> Pallet<T> {
 				.map(|state| state.stake)
 				.unwrap_or_else(BalanceOf::<T>::zero);
 			// rewards += stake * self_count * collator_reward_rate
-			rewards.saturating_add(Self::calc_block_rewards_collator(stake, count_unclaimed.into()))
+			rewards.saturating_add(Self::calc_block_rewards_collator(
+				stake,
+				count_unclaimed.saturated_into(),
+			))
 		} else {
 			rewards
 		}

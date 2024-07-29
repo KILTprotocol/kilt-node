@@ -20,13 +20,14 @@
 
 use peregrine_runtime::{
 	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
-	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, SystemConfig, TechnicalCommitteeConfig, WASM_BINARY,
+	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, TechnicalCommitteeConfig, WASM_BINARY,
 };
 use runtime_common::{
 	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance,
 };
 use sc_service::ChainType;
+use serde_json::to_value;
 use sp_core::sr25519;
 
 use crate::chain_spec::{
@@ -36,25 +37,25 @@ use crate::chain_spec::{
 };
 
 pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
-	ChainSpec::from_genesis(
-		"KILT Peregrine Develop",
-		"kilt_peregrine_dev",
-		ChainType::Development,
-		generate_genesis_state,
-		vec![],
-		None,
-		None,
-		None,
-		Some(get_properties("PILT", 15, 38)),
+	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
+	let genesis_config = to_value(generate_genesis_state()).expect("Creating genesis state failed");
+
+	ChainSpec::builder(
+		wasm_binary,
 		Extensions {
 			relay_chain: relaychain_name.into(),
 			para_id: KILT_PARA_ID,
 		},
 	)
+	.with_name("KILT Peregrine Develop")
+	.with_id("kilt_peregrine_dev")
+	.with_chain_type(ChainType::Development)
+	.with_properties(get_properties("PILT", 15, 38))
+	.with_genesis_config(genesis_config)
+	.build()
 }
 
 fn generate_genesis_state() -> RuntimeGenesisConfig {
-	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
 	let alice = (
 		get_account_id_from_secret::<sr25519::Public>("Alice"),
 		get_public_key_from_secret::<AuthorityId>("Alice"),
@@ -73,10 +74,6 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 	];
 
 	RuntimeGenesisConfig {
-		system: SystemConfig {
-			code: wasm_binary.to_vec(),
-			..Default::default()
-		},
 		balances: BalancesConfig {
 			balances: endowed_accounts.map(|acc| (acc, 10_000_000 * KILT)).to_vec(),
 		},
