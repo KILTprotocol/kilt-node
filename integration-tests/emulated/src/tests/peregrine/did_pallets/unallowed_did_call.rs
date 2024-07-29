@@ -16,18 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use asset_hub_rococo_emulated_chain::AssetHubRococoParaPallet;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
+use xcm::{lts::prelude::OriginKind, DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
-	mock::{
-		network::MockNetworkRococo,
-		para_chains::{AssetHubRococo, AssetHubRococoPallet, Peregrine},
-		relay_chains::Rococo,
-	},
+	mock::network::{AssetHub, MockNetwork, Peregrine, Rococo},
 	tests::peregrine::did_pallets::utils::{
 		construct_basic_transact_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
 		get_sibling_destination_peregrine,
@@ -76,14 +73,14 @@ fn test_not_allowed_did_call() {
 		OriginKind::SovereignAccount,
 	];
 
-	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
 	let init_balance = KILT * 100;
 
 	let destination = get_sibling_destination_peregrine();
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	for origin_kind in origin_kind_list {
-		MockNetworkRococo::reset();
+		MockNetwork::reset();
 
 		Peregrine::execute_with(|| {
 			create_mock_did_from_account(asset_hub_sovereign_account.clone());
@@ -92,16 +89,16 @@ fn test_not_allowed_did_call() {
 
 		let xcm_invalid_did_msg = get_xcm_message_system_remark(origin_kind, KILT);
 
-		AssetHubRococo::execute_with(|| {
-			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
+		AssetHub::execute_with(|| {
+			assert_ok!(<AssetHub as AssetHubRococoParaPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
 				Box::new(xcm_invalid_did_msg.clone())
 			));
 
-			type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 			assert_expected_events!(
-				AssetHubRococo,
+				AssetHub,
 				vec![
 					RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 				]
@@ -111,14 +108,10 @@ fn test_not_allowed_did_call() {
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
-			// All calls should have [NoPermission] error
 			assert_expected_events!(
 				Peregrine,
 				vec![
-					PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-						error: xcm::v3::Error::NoPermission,
-						..
-					}) => {},
+					PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});
@@ -138,14 +131,14 @@ fn test_recursion_did_call() {
 		OriginKind::SovereignAccount,
 	];
 
-	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
 	let init_balance = KILT * 100;
 
 	let destination = get_sibling_destination_peregrine();
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	for origin_kind in origin_kind_list {
-		MockNetworkRococo::reset();
+		MockNetwork::reset();
 
 		Peregrine::execute_with(|| {
 			create_mock_did_from_account(asset_hub_sovereign_account.clone());
@@ -154,16 +147,16 @@ fn test_recursion_did_call() {
 
 		let xcm_invalid_did_msg = get_xcm_message_recursion(origin_kind, KILT);
 
-		AssetHubRococo::execute_with(|| {
-			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
+		AssetHub::execute_with(|| {
+			assert_ok!(<AssetHub as AssetHubRococoParaPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
 				Box::new(xcm_invalid_did_msg.clone())
 			));
 
-			type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 			assert_expected_events!(
-				AssetHubRococo,
+				AssetHub,
 				vec![
 					RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 				]
@@ -177,10 +170,7 @@ fn test_recursion_did_call() {
 			assert_expected_events!(
 				Peregrine,
 				vec![
-					PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-						error: xcm::v3::Error::NoPermission,
-						..
-					}) => {},
+					PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});

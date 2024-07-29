@@ -109,7 +109,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 			assert_noop!(
 				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
-				TokenError::CannotCreateHold
+				TokenError::FundsUnavailable
 			);
 		});
 }

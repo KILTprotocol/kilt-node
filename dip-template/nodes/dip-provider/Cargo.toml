@@ -15,11 +15,12 @@ version       = { workspace = true }
 substrate-build-script-utils = { workspace = true }
 
 [dependencies]
-clap      = { workspace = true, features = ["derive", "std"] }
-futures   = { workspace = true }
-jsonrpsee = { workspace = true, features = ["server"] }
-log       = { workspace = true, features = ["std"] }
-serde     = { workspace = true, features = ["derive", "std"] }
+clap       = { workspace = true, features = ["derive", "std"] }
+futures    = { workspace = true }
+jsonrpsee  = { workspace = true, features = ["server"] }
+log        = { workspace = true, features = ["std"] }
+serde      = { workspace = true, features = ["derive", "std"] }
+serde_json = { workspace = true }
 
 # Internal dependencies
 dip-provider-runtime-template = { workspace = true, features = ["std"] }
