@@ -155,6 +155,115 @@ fn successful_on_stored_fungible_xcm_fee_asset_latest_with_input_fungible_and_no
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_v3_with_input_fungible() {
+	let location = xcm::v3::MultiLocation {
+		parents: 1,
+		interior: xcm::v3::Junctions::X1(xcm::v3::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
+		&location.try_into().unwrap(),
+		SwitchPairStatus::Running,
+	);
+	// Results in a required amount of `2` local currency tokens.
+	let weight_to_buy = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = UsingComponentsForXcmFeeAsset::<MockRuntime, _, SumTimeAndProofValues>::new();
+			let payment: AssetsInHolding = vec![Asset {
+				id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+				fun: Fungibility::Fungible(2),
+			}]
+			.into();
+			let unused_weight = weigher.buy_weight(weight_to_buy, payment, &xcm_context).unwrap();
+			assert!(unused_weight.is_empty());
+			assert_eq!(weigher.consumed_xcm_hash, Some(xcm_context.message_id));
+			assert_eq!(weigher.remaining_fungible_balance, 2);
+			assert_eq!(weigher.remaining_weight, weight_to_buy);
+		});
+}
+
+#[test]
+fn fails_on_stored_fungible_xcm_fee_asset_v3_with_input_non_fungible() {
+	let location = xcm::v3::MultiLocation {
+		parents: 1,
+		interior: xcm::v3::Junctions::X1(xcm::v3::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
+		&location.try_into().unwrap(),
+		SwitchPairStatus::Running,
+	);
+	// Results in a required amount of `2` local currency tokens.
+	let weight_to_buy = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = UsingComponentsForXcmFeeAsset::<MockRuntime, _, SumTimeAndProofValues>::new();
+			let payment: AssetsInHolding = vec![Asset {
+				id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+				fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+			}]
+			.into();
+
+			assert_noop!(
+				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
+				Error::TooExpensive
+			);
+			assert_storage_noop!(drop(weigher));
+		});
+}
+
+#[test]
+fn successful_on_stored_fungible_xcm_fee_asset_v3_with_input_fungible_and_non_fungible() {
+	let location = xcm::v3::MultiLocation {
+		parents: 1,
+		interior: xcm::v3::Junctions::X1(xcm::v3::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
+		&location.try_into().unwrap(),
+		SwitchPairStatus::Running,
+	);
+	// Results in a required amount of `2` local currency tokens.
+	let weight_to_buy = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = UsingComponentsForXcmFeeAsset::<MockRuntime, _, SumTimeAndProofValues>::new();
+			let payment: AssetsInHolding = vec![
+				Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+					fun: Fungibility::Fungible(2),
+				},
+				Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+				},
+			]
+			.into();
+
+			let unused_weight = weigher.buy_weight(weight_to_buy, payment, &xcm_context).unwrap();
+			// The non-fungible asset is left in the registry.
+			assert_eq!(
+				unused_weight,
+				vec![Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+				},]
+				.into()
+			);
+			assert_eq!(weigher.consumed_xcm_hash, Some(xcm_context.message_id));
+			assert_eq!(weigher.remaining_fungible_balance, 2);
+			assert_eq!(weigher.remaining_weight, weight_to_buy);
+		});
+}
+
+#[test]
+fn successful_on_stored_fungible_xcm_fee_asset_v4_with_input_fungible() {
 	let location = Location {
 		parents: 1,
 		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
@@ -183,7 +292,7 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3_with_input_fungible() {
 }
 
 #[test]
-fn fails_on_stored_fungible_xcm_fee_asset_v3_with_input_non_fungible() {
+fn fails_on_stored_fungible_xcm_fee_asset_v4_with_input_non_fungible() {
 	let location = Location {
 		parents: 1,
 		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
@@ -213,7 +322,7 @@ fn fails_on_stored_fungible_xcm_fee_asset_v3_with_input_non_fungible() {
 }
 
 #[test]
-fn successful_on_stored_fungible_xcm_fee_asset_v3_with_input_fungible_and_non_fungible() {
+fn successful_on_stored_fungible_xcm_fee_asset_v4_with_input_fungible_and_non_fungible() {
 	let location = Location {
 		parents: 1,
 		interior: Junctions::X1([Junction::Parachain(1_000)].into()),

@@ -62,7 +62,7 @@ fn successful_with_stored_latest() {
 }
 
 #[test]
-fn successful_with_stored_v3() {
+fn successful_with_stored_v4() {
 	let location = Location {
 		parents: 1,
 		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
@@ -80,6 +80,34 @@ fn successful_with_stored_v3() {
 				.unwrap();
 			// Asset location should match the one stored in the switch pair.
 			assert_eq!(asset_location, location);
+			// Asset amount should match the input one.
+			assert_eq!(asset_amount, u128::MAX);
+		});
+}
+
+#[test]
+fn successful_with_stored_v3() {
+	let location = xcm::v3::MultiLocation {
+		parents: 1,
+		interior: xcm::v3::Junctions::X1(xcm::v3::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
+		&location.try_into().unwrap(),
+		SwitchPairStatus::Running,
+	);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build_and_execute_with_sanity_tests(|| {
+			let location_v4: Location = location.try_into().unwrap();
+
+			let (asset_location, asset_amount): (Location, u128) =
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+					id: AssetId(location_v4.clone()),
+					fun: Fungibility::Fungible(u128::MAX),
+				})
+				.unwrap();
+			// Asset location should match the one stored in the switch pair.
+			assert_eq!(asset_location, location_v4);
 			// Asset amount should match the input one.
 			assert_eq!(asset_amount, u128::MAX);
 		});

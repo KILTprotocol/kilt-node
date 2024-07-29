@@ -145,13 +145,51 @@ fn true_with_stored_remote_location_latest() {
 }
 
 #[test]
-fn true_with_stored_remote_location_v3() {
+fn true_with_stored_remote_location_v4() {
 	let location = Location {
 		parents: 1,
 		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
+	// Works with remote fungible asset.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+					fun: Fungibility::Fungible(1)
+				},
+				new_switch_pair_info.clone().remote_reserve_location.try_as().unwrap()
+			));
+		});
+	// Works with remote non-fungible asset.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
+				&Asset {
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+					fun: Fungibility::NonFungible(AssetInstance::Index(1))
+				},
+				new_switch_pair_info.remote_reserve_location.try_as().unwrap()
+			));
+		});
+}
+
+#[test]
+fn true_with_stored_remote_location_v3() {
+	let location = xcm::v3::MultiLocation {
+		parents: 1,
+		interior: xcm::v3::Junctions::X1(xcm::v3::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
+		&location.try_into().unwrap(),
+		SwitchPairStatus::Running,
+	);
 	// Works with remote fungible asset.
 	ExtBuilder::default()
 		.with_switch_pair_info(new_switch_pair_info.clone())
