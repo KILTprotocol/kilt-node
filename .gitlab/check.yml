@@ -15,11 +15,19 @@ cargo-clippy:
   cache:
     key: cargo-clippy
     paths:
-    - target/
-    - $HOME/.cargo/bin/
-    - $HOME/.cargo/registry/index/
-    - $HOME/.cargo/registry/cache/
-    - $HOME/.cargo/git/db/
+    - ${CARGO_CACHE_PATH}
   script:
-    -  SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --workspace --quiet
-    -  SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --workspace --quiet
+    -  SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --quiet
+
+cargo-clippy-all-features:
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.74.0
+  variables:
+    RUSTDOCFLAGS: '-D warnings'
+  stage: check
+  cache:
+    key: cargo-clippy-all-features
+    paths:
+      - ${CARGO_CACHE_PATH}
+  script:
+    -  SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --quiet

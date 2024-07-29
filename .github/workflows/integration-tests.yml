@@ -16,14 +16,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Cache Node.js modules
-        uses: actions/cache@v4
-        with:
-          path: ./integration-tests/chopsticks/node_modules
-          key: node-modules-${{ hashFiles('**/integration-tests/chopsticks/package-lock.json') }}
-          restore-keys: |
-            node-modules-
-
       - name: Set up Node.js environment
         run: |
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash

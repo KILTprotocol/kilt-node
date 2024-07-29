@@ -5,6 +5,9 @@ include:
   - local: '.gitlab/test.yml'
   - local: '.gitlab/build.yml'
 
+variables:
+  CARGO_CACHE_PATH: $CARGO_CACHE_PATH
+
 workflow:
   auto_cancel:
     on_new_commit: interruptible

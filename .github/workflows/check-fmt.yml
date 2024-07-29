@@ -6,27 +6,15 @@ on:
 
 concurrency:
   group: ${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   check-fmt:
     runs-on: ubuntu-latest
     container:
-      image: paritytech/ci-unified:bullseye-1.73.0
+      image: paritytech/ci-unified:bullseye-1.74.0
     steps:
       - uses: actions/checkout@v4
-      - name: Set up caching for Cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            $HOME/.cargo/bin
-            $HOME/.cargo/registry/index/
-            $HOME/.cargo/registry/cache/
-            $HOME/.cargo/git/db/
-            target/
-          key: cargo-fmt-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            cargo-fmt-
       - name: Run cargo fmt
         run: cargo fmt -- --check
       - name: Run taplo

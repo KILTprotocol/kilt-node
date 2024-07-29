@@ -6,13 +6,9 @@ test:
   cache:
     key: cargo-test
     paths:
-      - target/
-      - $HOME/.cargo/bin/
-      - $HOME/.cargo/registry/index/
-      - $HOME/.cargo/registry/cache/
-      - $HOME/.cargo/git/db/
+      - ${CARGO_CACHE_PATH}
   script:
-    - time cargo test --all --all-targets --locked
+    - cargo test --all-targets --locked
 
 test-rustdoc:
   extends: .check_skip_rust
@@ -23,13 +19,9 @@ test-rustdoc:
   cache:
     key: cargo-test-rustdoc
     paths:
-      - target/
-      - $HOME/.cargo/bin/
-      - $HOME/.cargo/registry/index/
-      - $HOME/.cargo/registry/cache/
-      - $HOME/.cargo/git/db/
+      - ${CARGO_CACHE_PATH}
   script:
-    - time cargo doc --all-features --no-deps --locked
+    - cargo doc --all-features --no-deps --locked
 
 test-features:
   extends: .check_skip_rust
@@ -39,10 +31,6 @@ test-features:
   cache:
     key: cargo-test-features
     paths:
-      - target/
-      - $HOME/.cargo/bin/
-      - $HOME/.cargo/registry/index/
-      - $HOME/.cargo/registry/cache/
-      - $HOME/.cargo/git/db/
+      - ${CARGO_CACHE_PATH}
   script:
-    - time cargo test --all --all-features --all-targets --locked
+    - cargo test --all-features --all-targets --locked

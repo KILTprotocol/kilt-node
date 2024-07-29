@@ -24,12 +24,7 @@ jobs:
       - name: Set up caching for Cargo
         uses: actions/cache@v4
         with:
-          path: |
-            $HOME/.cargo/bin
-            $HOME/.cargo/registry/index/
-            $HOME/.cargo/registry/cache/
-            $HOME/.cargo/git/db/
-            target/
+          path: ${{ secrets.CARGO_CACHE_PATH }}
           key: cargo-try-runtime-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             cargo-try-runtime-${{ matrix.runtime }}-

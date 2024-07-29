@@ -4,14 +4,6 @@ build:
     name: kiltprotocol/kilt-ci:2.7.31
     entrypoint: [""]
   stage: build
-  cache:
-    key: cargo-build
-    paths:
-      - $HOME/.cargo/bin/
-      - $HOME/.cargo/registry/index/
-      - $HOME/.cargo/registry/cache/
-      - $HOME/.cargo/git/db/
-      - target/
   only:
     refs:
       - develop
