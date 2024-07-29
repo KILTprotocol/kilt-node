@@ -244,8 +244,14 @@ async fn start_node_impl(
 
 	if let Some(hwbench) = hwbench {
 		print_hwbench(&hwbench);
-		if !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) && validator {
-			log::warn!("⚠️  The hardware does not meet the minimal requirements for role 'Authority'.");
+		match SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
+			Err(err) if validator => {
+				log::warn!(
+					"⚠️  The hardware does not meet the minimal requirements {} for role 'Authority'.",
+					err
+				);
+			}
+			_ => {}
 		}
 
 		if let Some(ref mut telemetry) = telemetry {
@@ -395,6 +401,7 @@ fn start_consensus(
 		proposer,
 		collator_service,
 		authoring_duration: Duration::from_millis(500),
+		reinitialize: false,
 	};
 
 	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _, _>(params);

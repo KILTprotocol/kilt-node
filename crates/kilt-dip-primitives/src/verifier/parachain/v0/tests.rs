@@ -64,13 +64,10 @@ fn verify_proof_for_call_against_details_relay_proof_too_many_leaves() {
 		let leaves_count = proof.provider_head_proof.proof.len();
 		// Extend the relaychain proof to include MAX + 1 leaves, causing the proof
 		// verification to fail
-		proof.provider_head_proof.proof.extend(
-			vec![
-				vec![0u8; MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE as usize];
-				MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT as usize - leaves_count + 1
-			]
-			.into_iter(),
-		);
+		proof.provider_head_proof.proof.extend(vec![
+			vec![0u8; MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE as usize];
+			MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT as usize - leaves_count + 1
+		]);
 		proof
 	};
 
@@ -97,7 +94,10 @@ fn verify_proof_for_call_against_details_relay_proof_leaf_too_large() {
 		let last_leave_size = last_leave.len();
 		// Extend the last leaf of the relaychain proof to include MAX + 1 bytes,
 		// causing the proof verification to fail
-		last_leave.extend(vec![0u8; MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE as usize - last_leave_size + 1].into_iter());
+		last_leave.extend(vec![
+			0u8;
+			MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE as usize - last_leave_size + 1
+		]);
 		proof
 	};
 
@@ -171,13 +171,10 @@ fn verify_proof_for_call_against_details_parachain_proof_too_many_leaves() {
 		let leaves_count = proof.dip_commitment_proof.0.len();
 		// Extend the DIP commitment proof to include MAX + 1 leaves, causing the proof
 		// verification to fail
-		proof.dip_commitment_proof.0.extend(
-			vec![
-				vec![0u8; MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE as usize];
-				MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT as usize - leaves_count + 1
-			]
-			.into_iter(),
-		);
+		proof.dip_commitment_proof.0.extend(vec![
+			vec![0u8; MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE as usize];
+			MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT as usize - leaves_count + 1
+		]);
 		proof
 	};
 
@@ -207,7 +204,10 @@ fn verify_proof_for_call_against_details_parachain_proof_leaf_too_large() {
 		let last_leave_size = last_leave.len();
 		// Extend the last leaf of the parachain proof to include MAX + 1 bytes,
 		// causing the proof verification to fail
-		last_leave.extend(vec![0u8; MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE as usize - last_leave_size + 1].into_iter());
+		last_leave.extend(vec![
+			0u8;
+			MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE as usize - last_leave_size + 1
+		]);
 		proof
 	};
 
@@ -265,13 +265,10 @@ fn verify_proof_for_call_against_details_dip_proof_too_many_leaves() {
 		let leaves_count = proof.dip_proof.blinded.len();
 		// Extend the DIP proof to include MAX + 1 leaves, causing the proof
 		// verification to fail
-		proof.dip_proof.blinded.extend(
-			vec![
-				vec![0u8; MAX_DID_MERKLE_PROOF_LEAVE_SIZE as usize];
-				MAX_DID_MERKLE_PROOF_LEAVE_COUNT as usize - leaves_count + 1
-			]
-			.into_iter(),
-		);
+		proof.dip_proof.blinded.extend(vec![
+			vec![0u8; MAX_DID_MERKLE_PROOF_LEAVE_SIZE as usize];
+			MAX_DID_MERKLE_PROOF_LEAVE_COUNT as usize - leaves_count + 1
+		]);
 		proof
 	};
 
@@ -301,7 +298,10 @@ fn verify_proof_for_call_against_details_dip_proof_leaf_too_large() {
 		let last_leave_size = last_leave.len();
 		// Extend the last leaf of the parachain proof to include MAX + 1 bytes,
 		// causing the proof verification to fail
-		last_leave.extend(vec![0u8; MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE as usize - last_leave_size + 1].into_iter());
+		last_leave.extend(vec![
+			0u8;
+			MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE as usize - last_leave_size + 1
+		]);
 		proof
 	};
 
@@ -330,13 +330,10 @@ fn verify_proof_for_call_against_details_dip_proof_too_many_revealed_keys() {
 		let leaves_count = proof.dip_proof.revealed.len();
 		// Extend the DIP proof to include MAX + 1 revealed leaves, causing the proof
 		// verification to fail
-		proof.dip_proof.revealed.extend(
-			vec![
-				RevealedAccountId(AccountId32::new([100; 32]).into()).into();
-				MAX_DID_MERKLE_LEAVES_REVEALED as usize - leaves_count + 1
-			]
-			.into_iter(),
-		);
+		proof.dip_proof.revealed.extend(vec![
+			RevealedAccountId(AccountId32::new([100; 32]).into()).into();
+			MAX_DID_MERKLE_LEAVES_REVEALED as usize - leaves_count + 1
+		]);
 		proof
 	};
 

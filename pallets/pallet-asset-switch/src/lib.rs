@@ -39,7 +39,7 @@ mod benchmarking;
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarking::{BenchmarkHelper, PartialBenchmarkInfo};
 
-use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
+use ::xcm::{VersionedAsset, VersionedAssetId, VersionedLocation};
 use frame_support::traits::{
 	fungible::Inspect,
 	tokens::{Fortitude, Preservation},
@@ -78,7 +78,7 @@ pub mod pallet {
 			Instruction::{BuyExecution, DepositAsset, RefundSurplus, SetAppendix, TransferAsset, WithdrawAsset},
 			Junction, MultiAsset, MultiAssetFilter, MultiLocation, SendXcm, WeightLimit, WildMultiAsset, Xcm,
 		},
-		VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
+		VersionedAsset, VersionedAssetId, VersionedLocation,
 	};
 	use xcm_executor::traits::TransactAsset;
 
@@ -148,8 +148,8 @@ pub mod pallet {
 			remote_asset_ed: u128,
 			pool_account: T::AccountId,
 			remote_asset_id: VersionedAssetId,
-			remote_reserve_location: VersionedMultiLocation,
-			remote_xcm_fee: Box<VersionedMultiAsset>,
+			remote_reserve_location: VersionedLocation,
+			remote_xcm_fee: Box<VersionedAsset>,
 			remote_asset_total_supply: u128,
 		},
 		/// A switch pair is removed.
@@ -159,14 +159,11 @@ pub mod pallet {
 		/// A switch pair has suspended switches.
 		SwitchPairPaused { remote_asset_id: VersionedAssetId },
 		/// The XCM fee for the switch has been updated.
-		SwitchPairFeeUpdated {
-			old: VersionedMultiAsset,
-			new: VersionedMultiAsset,
-		},
+		SwitchPairFeeUpdated { old: VersionedAsset, new: VersionedAsset },
 		/// A switch of local -> remote asset has taken place.
 		LocalToRemoteSwitchExecuted {
 			from: T::AccountId,
-			to: VersionedMultiLocation,
+			to: VersionedLocation,
 			amount: LocalCurrencyBalanceOf<T, I>,
 		},
 		/// A switch of remote -> local asset has taken place.
@@ -224,9 +221,9 @@ pub mod pallet {
 			remote_asset_total_supply: u128,
 			remote_asset_id: Box<VersionedAssetId>,
 			remote_asset_circulating_supply: u128,
-			remote_reserve_location: Box<VersionedMultiLocation>,
+			remote_reserve_location: Box<VersionedLocation>,
 			remote_asset_ed: u128,
-			remote_xcm_fee: Box<VersionedMultiAsset>,
+			remote_xcm_fee: Box<VersionedAsset>,
 		) -> DispatchResult {
 			T::SwitchOrigin::ensure_origin(origin)?;
 
@@ -281,9 +278,9 @@ pub mod pallet {
 			remote_asset_total_supply: u128,
 			remote_asset_id: Box<VersionedAssetId>,
 			remote_asset_circulating_supply: u128,
-			remote_reserve_location: Box<VersionedMultiLocation>,
+			remote_reserve_location: Box<VersionedLocation>,
 			remote_asset_ed: u128,
-			remote_xcm_fee: Box<VersionedMultiAsset>,
+			remote_xcm_fee: Box<VersionedAsset>,
 		) -> DispatchResult {
 			ensure_root(origin)?;
 
@@ -350,7 +347,7 @@ pub mod pallet {
 		/// See the crate's README for more.
 		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config<I>>::WeightInfo::update_remote_xcm_fee())]
-		pub fn update_remote_xcm_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult {
+		pub fn update_remote_xcm_fee(origin: OriginFor<T>, new: Box<VersionedAsset>) -> DispatchResult {
 			T::FeeOrigin::ensure_origin(origin)?;
 
 			SwitchPair::<T, I>::try_mutate(|entry| {
@@ -378,7 +375,7 @@ pub mod pallet {
 		pub fn switch(
 			origin: OriginFor<T>,
 			local_asset_amount: LocalCurrencyBalanceOf<T, I>,
-			beneficiary: Box<VersionedMultiLocation>,
+			beneficiary: Box<VersionedLocation>,
 		) -> DispatchResult {
 			let submitter = T::SubmitterOrigin::ensure_origin(origin)?;
 
@@ -523,9 +520,19 @@ pub mod pallet {
 				return Err(Error::<T, I>::Internal.into());
 			}
 
+			let remote_asset_fee_latest = remote_asset_fee_v3
+				.clone()
+				.try_into()
+				.map_err(|_| DispatchError::from(Error::<T, I>::Xcm))?;
+
+			let submiter_as_latest = submitter_as_multilocation
+				.clone()
+				.try_into()
+				.map_err(|_| DispatchError::from(Error::<T, I>::Xcm))?;
+
 			// 9. Take XCM fee from submitter.
 			let withdrawn_fees =
-				T::AssetTransactor::withdraw_asset(&remote_asset_fee_v3, &submitter_as_multilocation, None).map_err(
+				T::AssetTransactor::withdraw_asset(&remote_asset_fee_latest, &submiter_as_latest, None).map_err(
 					|e| {
 						log::info!(
 							target: LOG_TARGET,
@@ -537,7 +544,7 @@ pub mod pallet {
 						DispatchError::from(Error::<T, I>::UserXcmBalance)
 					},
 				)?;
-			if withdrawn_fees != vec![remote_asset_fee_v3.clone()].into() {
+			if withdrawn_fees != vec![remote_asset_fee_latest].into() {
 				log::error!(
 					target: LOG_TARGET,
 					"Withdrawn fees {:?} does not match expected fee {:?}.",
@@ -592,9 +599,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		remote_asset_total_supply: u128,
 		remote_asset_id: VersionedAssetId,
 		remote_asset_circulating_supply: u128,
-		remote_reserve_location: VersionedMultiLocation,
+		remote_reserve_location: VersionedLocation,
 		remote_asset_ed: u128,
-		remote_xcm_fee: VersionedMultiAsset,
+		remote_xcm_fee: VersionedAsset,
 		pool_account: T::AccountId,
 	) {
 		debug_assert!(

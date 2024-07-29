@@ -112,6 +112,7 @@ pub mod runtime {
 	}
 
 	impl frame_system::Config for Test {
+		type RuntimeTask = ();
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Nonce = u64;
@@ -162,14 +163,13 @@ pub mod runtime {
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
 		pub const MaxFreezes: u32 = 50;
-		pub const MaxHolds: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type RuntimeFreezeReason = ();
 		type FreezeIdentifier = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
-		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();

@@ -18,8 +18,9 @@
 
 //! KILT chain specification
 
-use peregrine_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SystemConfig, WASM_BINARY};
+use peregrine_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, WASM_BINARY};
 use sc_service::ChainType;
+use serde_json::to_value;
 
 use crate::chain_spec::{
 	peregrine::{ChainSpec, SAFE_XCM_VERSION},
@@ -28,31 +29,26 @@ use crate::chain_spec::{
 };
 
 pub(crate) fn generate_chain_spec() -> ChainSpec {
-	ChainSpec::from_genesis(
-		"KILT Peregrine New (change title)",
-		"kilt_peregrine_new",
-		ChainType::Live,
-		generate_genesis_state,
-		vec![],
-		None,
-		None,
-		None,
-		Some(get_properties("PILT", 15, 38)),
+	let wasm_binary = WASM_BINARY.expect("WASM binary not available");
+	let genesis_config = to_value(generate_genesis_state()).expect("Creating genesis state failed");
+
+	ChainSpec::builder(
+		wasm_binary,
 		Extensions {
 			relay_chain: "relay".into(),
 			para_id: KILT_PARA_ID,
 		},
 	)
+	.with_name("KILT Peregrine New (change title)")
+	.with_id("kilt_peregrine_new")
+	.with_chain_type(ChainType::Live)
+	.with_properties(get_properties("PILT", 15, 38))
+	.with_genesis_config(genesis_config)
+	.build()
 }
 
 fn generate_genesis_state() -> RuntimeGenesisConfig {
-	let wasm_binary = WASM_BINARY.expect("WASM binary not available");
-
 	RuntimeGenesisConfig {
-		system: SystemConfig {
-			code: wasm_binary.to_vec(),
-			..Default::default()
-		},
 		parachain_info: ParachainInfoConfig {
 			parachain_id: KILT_PARA_ID.into(),
 			..Default::default()

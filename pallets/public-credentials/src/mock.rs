@@ -148,10 +148,6 @@ where
 		_credential_id: &CredentialIdOf<T>,
 		authorization_id: &T::AuthorizationId,
 	) -> Result<Weight, DispatchError> {
-		#[cfg(test)]
-		println!("{:#?}", who);
-		#[cfg(test)]
-		println!("{:#?}", authorization_id);
 		if authorization_id == who {
 			Ok(Weight::zero())
 		} else {
@@ -282,6 +278,7 @@ pub(crate) mod runtime {
 	}
 
 	impl frame_system::Config for Test {
+		type RuntimeTask = ();
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Block = Block;
@@ -309,10 +306,10 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
+		type RuntimeFreezeReason = RuntimeFreezeReason;
 		type FreezeIdentifier = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = ConstU32<10>;
-		type MaxHolds = ConstU32<10>;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();
