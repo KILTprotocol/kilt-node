@@ -178,7 +178,12 @@ where
 		self.remaining_weight = self.remaining_weight.saturating_sub(weight_to_refund);
 
 		if amount_to_refund > 0 {
-			log::trace!(target: LOG_TARGET, "Refund amount {:?}", (xcm_fee_asset_v3.clone().id, amount_to_refund));
+			log::trace!(
+				target: LOG_TARGET,
+				"Refund amount {:?}",
+				(xcm_fee_asset_v3.id, amount_to_refund)
+			);
+
 			Some((xcm_fee_asset_v3.id, amount_to_refund).into())
 		} else {
 			log::trace!(target: LOG_TARGET, "No refund");

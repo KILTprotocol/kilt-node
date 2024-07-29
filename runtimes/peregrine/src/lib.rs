@@ -1204,6 +1204,7 @@ pub type Executive = frame_executive::Executive<
 	(
 		cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
 		pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
+		runtime_common::migrations::BumpStorageVersion<Runtime>,
 	),
 >;
 

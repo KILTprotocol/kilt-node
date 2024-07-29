@@ -556,10 +556,16 @@ pub mod pallet {
 					log::error!(target: LOG_TARGET, "Failed to borrow stored switch pair info as mut.");
 					return Err(Error::<T, I>::Internal);
 				};
-				switch_pair_info.try_process_outgoing_switch(remote_asset_amount_as_u128).map_err(|_| {
-					log::error!(target: LOG_TARGET, "Failed to account for local to remote switch of {:?} tokens.", remote_asset_amount_as_u128);
-					Error::<T, I>::Internal
-				})?;
+				switch_pair_info
+					.try_process_outgoing_switch(remote_asset_amount_as_u128)
+					.map_err(|_| {
+						log::error!(
+							target: LOG_TARGET,
+							"Failed to account for local to remote switch of {:?} tokens.",
+							remote_asset_amount_as_u128
+						);
+						Error::<T, I>::Internal
+					})?;
 				Ok(())
 			})?;
 

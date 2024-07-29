@@ -49,8 +49,8 @@ where
 	/// the asset is actually deposited by the asset transactor.
 	fn pre_remote_to_local_switch(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
 
-	/// Same as [pre_remote_to_local_switch], but called after the transactor
-	/// has deposited the incoming remote asset.
+	/// Same as [Self::pre_remote_to_local_switch], but called after the
+	/// transactor has deposited the incoming remote asset.
 	fn post_remote_to_local_switch(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
 }
 
