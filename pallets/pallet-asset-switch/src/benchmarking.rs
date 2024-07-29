@@ -22,14 +22,14 @@ use xcm::{VersionedAssetId, VersionedInteriorMultiLocation, VersionedMultiAsset,
 pub struct PartialBenchmarkInfo {
 	pub beneficiary: Option<VersionedInteriorMultiLocation>,
 	pub destination: Option<VersionedMultiLocation>,
-	pub remote_fee: Option<VersionedMultiAsset>,
+	pub remote_xcm_fee: Option<VersionedMultiAsset>,
 	pub remote_asset_id: Option<VersionedAssetId>,
 }
 
 struct BenchmarkInfo {
 	beneficiary: VersionedInteriorMultiLocation,
 	destination: VersionedMultiLocation,
-	remote_fee: VersionedMultiAsset,
+	remote_xcm_fee: VersionedMultiAsset,
 	remote_asset_id: VersionedAssetId,
 }
 
@@ -75,7 +75,7 @@ mod benchmarks {
 			interior: Junctions::X1(Junction::Parachain(1_000)),
 		};
 		const DEFAULT_REMOTE_ASSET_ID: AssetId = AssetId::Concrete(DEFAULT_RESERVE_LOCATION);
-		const DEFAULT_REMOTE_FEE: MultiAsset = MultiAsset {
+		const DEFAULT_REMOTE_XCM_FEE: MultiAsset = MultiAsset {
 			id: DEFAULT_REMOTE_ASSET_ID,
 			fun: Fungibility::Fungible(100_000),
 		};
@@ -88,7 +88,7 @@ mod benchmarks {
 			beneficiary: VersionedInteriorMultiLocation::V3(DEFAULT_BENEFICIARY_JUNCTION),
 			destination: VersionedMultiLocation::V3(DEFAULT_RESERVE_LOCATION),
 			remote_asset_id: VersionedAssetId::V3(DEFAULT_REMOTE_ASSET_ID),
-			remote_fee: VersionedMultiAsset::V3(DEFAULT_REMOTE_FEE),
+			remote_xcm_fee: VersionedMultiAsset::V3(DEFAULT_REMOTE_XCM_FEE),
 		}
 	}
 
@@ -102,16 +102,16 @@ mod benchmarks {
 		};
 
 		BenchmarkInfo {
-			beneficiary: benchmark_info.beneficiary.unwrap_or(default.beneficiary.into()),
-			destination: benchmark_info.destination.unwrap_or(default.destination.into()),
-			remote_asset_id: benchmark_info.remote_asset_id.unwrap_or(default.remote_asset_id.into()),
-			remote_fee: benchmark_info.remote_fee.unwrap_or(default.remote_fee.into()),
+			beneficiary: benchmark_info.beneficiary.unwrap_or(default.beneficiary),
+			destination: benchmark_info.destination.unwrap_or(default.destination),
+			remote_asset_id: benchmark_info.remote_asset_id.unwrap_or(default.remote_asset_id),
+			remote_xcm_fee: benchmark_info.remote_xcm_fee.unwrap_or(default.remote_xcm_fee),
 		}
 	}
 
 	/// Write a switch pair into storage using the benchmark constants and the
-	/// `remote_fee` asset as returned by the benchmark helper, or the default
-	/// one otherwise.
+	/// `remote_xcm_fee` asset as returned by the benchmark helper, or the
+	/// default one otherwise.
 	fn configure_switch_pair<T, I>() -> BenchmarkInfo
 	where
 		T: Config<I>,
@@ -123,16 +123,17 @@ mod benchmarks {
 			beneficiary,
 			destination,
 			remote_asset_id,
-			remote_fee,
+			remote_xcm_fee,
 		} = fill_with_defaults(benchmark_info);
 
 		Pallet::<T, I>::force_set_switch_pair(
 			T::RuntimeOrigin::from(RawOrigin::Root),
-			Box::new(destination.clone()),
-			Box::new(remote_asset_id.clone()),
-			Box::new(remote_fee.clone()),
 			u128::MAX,
+			Box::new(remote_asset_id.clone()),
 			u128::zero(),
+			Box::new(destination.clone()),
+			u128::zero(),
+			Box::new(remote_xcm_fee.clone()),
 		)
 		.unwrap();
 		assert!(Pallet::<T, I>::switch_pair().is_some());
@@ -141,31 +142,39 @@ mod benchmarks {
 			beneficiary,
 			destination,
 			remote_asset_id,
-			remote_fee,
+			remote_xcm_fee,
 		}
 	}
 
 	#[benchmark]
 	fn set_switch_pair() {
 		let origin = <T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap();
-		let (reserve_location, remote_asset_id, remote_fee) = {
+		let (reserve_location, remote_asset_id, remote_xcm_fee) = {
 			let BenchmarkInfo {
 				destination,
 				remote_asset_id,
-				remote_fee,
+				remote_xcm_fee,
 				..
 			} = fill_with_defaults(<T as Config<I>>::BenchmarkHelper::setup());
-			(Box::new(destination), Box::new(remote_asset_id), Box::new(remote_fee))
+			(
+				Box::new(destination),
+				Box::new(remote_asset_id),
+				Box::new(remote_xcm_fee),
+			)
 		};
+		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&remote_asset_id).unwrap();
+		let local_currency_ed = <T as Config<I>>::LocalCurrency::minimum_balance();
+		<T as Config<I>>::LocalCurrency::set_balance(&pool_account, local_currency_ed);
 
 		#[extrinsic_call]
 		Pallet::<T, I>::set_switch_pair(
 			origin as T::RuntimeOrigin,
-			reserve_location,
-			remote_asset_id,
-			remote_fee,
 			u128::MAX,
+			remote_asset_id,
 			u128::zero(),
+			reserve_location,
+			u128::zero(),
+			remote_xcm_fee,
 		);
 
 		assert!(Pallet::<T, I>::switch_pair().is_some());
@@ -174,24 +183,29 @@ mod benchmarks {
 	#[benchmark]
 	fn force_set_switch_pair() {
 		let origin: T::RuntimeOrigin = RawOrigin::Root.into();
-		let (reserve_location, remote_asset_id, remote_fee) = {
+		let (reserve_location, remote_asset_id, remote_xcm_fee) = {
 			let BenchmarkInfo {
 				destination,
 				remote_asset_id,
-				remote_fee,
+				remote_xcm_fee,
 				..
 			} = fill_with_defaults(<T as Config<I>>::BenchmarkHelper::setup());
-			(Box::new(destination), Box::new(remote_asset_id), Box::new(remote_fee))
+			(
+				Box::new(destination),
+				Box::new(remote_asset_id),
+				Box::new(remote_xcm_fee),
+			)
 		};
 
 		#[extrinsic_call]
 		Pallet::<T, I>::force_set_switch_pair(
 			origin as T::RuntimeOrigin,
-			reserve_location,
-			remote_asset_id,
-			remote_fee,
 			u128::MAX,
+			remote_asset_id,
 			u128::zero(),
+			reserve_location,
+			u128::zero(),
+			remote_xcm_fee,
 		);
 
 		assert!(Pallet::<T, I>::switch_pair().is_some());
@@ -231,16 +245,16 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn update_remote_fee() {
+	fn update_remote_xcm_fee() {
 		let origin = <T as Config<I>>::FeeOrigin::try_successful_origin().unwrap();
-		let BenchmarkInfo { remote_fee, .. } = configure_switch_pair::<T, I>();
-		let remote_fee = Box::new(remote_fee);
-		let remote_fee_2 = remote_fee.clone();
+		let BenchmarkInfo { remote_xcm_fee, .. } = configure_switch_pair::<T, I>();
+		let remote_xcm_fee = Box::new(remote_xcm_fee);
+		let remote_xcm_fee_2 = remote_xcm_fee.clone();
 
 		#[extrinsic_call]
-		Pallet::<T, I>::update_remote_fee(origin as T::RuntimeOrigin, remote_fee);
+		Pallet::<T, I>::update_remote_xcm_fee(origin as T::RuntimeOrigin, remote_xcm_fee);
 
-		assert_eq!(Pallet::<T, I>::switch_pair().unwrap().remote_fee, *remote_fee_2);
+		assert_eq!(Pallet::<T, I>::switch_pair().unwrap().remote_xcm_fee, *remote_xcm_fee_2);
 	}
 
 	#[benchmark]
@@ -249,7 +263,7 @@ mod benchmarks {
 		let BenchmarkInfo {
 			beneficiary,
 			destination,
-			remote_fee,
+			remote_xcm_fee,
 			remote_asset_id,
 		} = configure_switch_pair::<T, I>();
 		Pallet::<T, I>::resume_switch_pair(<T as Config<I>>::SwitchOrigin::try_successful_origin().unwrap()).unwrap();
@@ -265,7 +279,7 @@ mod benchmarks {
 		let local_account_id_junction = <T as Config<I>>::AccountIdConverter::try_convert(account_id).unwrap();
 		{
 			<T as Config<I>>::AssetTransactor::deposit_asset(
-				&remote_fee.try_into().unwrap(),
+				&remote_xcm_fee.try_into().unwrap(),
 				&(local_account_id_junction.into()),
 				&XcmContext::with_message_id(Default::default()),
 			)

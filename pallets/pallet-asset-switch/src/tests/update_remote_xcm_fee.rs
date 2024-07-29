@@ -22,10 +22,8 @@ use sp_runtime::DispatchError;
 use xcm::v3::{Fungibility, MultiAsset};
 
 use crate::{
-	mock::{
-		ExtBuilder, MockRuntime, NewSwitchPairInfo, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
-	},
-	Error, Event, Pallet, SwitchPair,
+	mock::{ExtBuilder, MockRuntime, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
+	Error, Event, NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairStatus,
 };
 
 #[test]
@@ -36,23 +34,23 @@ fn successful() {
 		..XCM_ASSET_FEE
 	};
 	ExtBuilder::default()
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: [0u8; 32].into(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 1_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: Default::default(),
-			total_issuance: 1_000,
 		})
-		.build()
-		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::update_remote_fee(
+		.build_and_execute_with_sanity_tests(|| {
+			assert_ok!(Pallet::<MockRuntime>::update_remote_xcm_fee(
 				RawOrigin::Root.into(),
 				Box::new(new_fee.clone().into())
 			));
 			assert_eq!(
-				SwitchPair::<MockRuntime>::get().unwrap().remote_fee,
+				SwitchPair::<MockRuntime>::get().unwrap().remote_xcm_fee,
 				new_fee.clone().into()
 			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
@@ -64,23 +62,23 @@ fn successful() {
 		});
 	// Setting the fee to the same value does not generate an event.
 	ExtBuilder::default()
-		.with_switch_pair_info(NewSwitchPairInfo {
-			circulating_supply: 0,
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
 			pool_account: [0u8; 32].into(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
 			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
-			remote_fee: XCM_ASSET_FEE.into(),
+			remote_asset_total_supply: 1_000,
 			remote_reserve_location: ASSET_HUB_LOCATION.into(),
-			status: Default::default(),
-			total_issuance: 1_000,
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
+			status: SwitchPairStatus::Paused,
 		})
-		.build()
-		.execute_with(|| {
-			assert_ok!(Pallet::<MockRuntime>::update_remote_fee(
+		.build_and_execute_with_sanity_tests(|| {
+			assert_ok!(Pallet::<MockRuntime>::update_remote_xcm_fee(
 				RawOrigin::Root.into(),
 				Box::new(XCM_ASSET_FEE.into())
 			));
 			assert_eq!(
-				SwitchPair::<MockRuntime>::get().unwrap().remote_fee,
+				SwitchPair::<MockRuntime>::get().unwrap().remote_xcm_fee,
 				XCM_ASSET_FEE.into()
 			);
 			assert!(System::events().into_iter().map(|e| e.event).all(|e| e
@@ -94,9 +92,9 @@ fn successful() {
 
 #[test]
 fn fails_on_invalid_origin() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::update_remote_fee(RawOrigin::None.into(), Box::new(XCM_ASSET_FEE.into()),),
+			Pallet::<MockRuntime>::update_remote_xcm_fee(RawOrigin::None.into(), Box::new(XCM_ASSET_FEE.into()),),
 			DispatchError::BadOrigin
 		);
 	});
@@ -104,9 +102,9 @@ fn fails_on_invalid_origin() {
 
 #[test]
 fn fails_on_non_existing_switch_pair() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::update_remote_fee(RawOrigin::Root.into(), Box::new(XCM_ASSET_FEE.into()),),
+			Pallet::<MockRuntime>::update_remote_xcm_fee(RawOrigin::Root.into(), Box::new(XCM_ASSET_FEE.into()),),
 			Error::<MockRuntime>::SwitchPairNotFound
 		);
 	});

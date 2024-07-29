@@ -31,6 +31,8 @@ pub use switch::{SwitchPairInfo, SwitchPairStatus};
 mod mock;
 #[cfg(test)]
 mod tests;
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
@@ -38,7 +40,11 @@ mod benchmarking;
 pub use benchmarking::{BenchmarkHelper, PartialBenchmarkInfo};
 
 use ::xcm::{VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation};
-use frame_support::traits::PalletInfoAccess;
+use frame_support::traits::{
+	fungible::Inspect,
+	tokens::{Fortitude, Preservation},
+	PalletInfoAccess,
+};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::TrailingZeroInput;
 use sp_std::boxed::Box;
@@ -50,7 +56,7 @@ const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::{
-		switch::{SwitchPairInfo, SwitchPairStatus},
+		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus},
 		traits::SwitchHooks,
 		WeightInfo, LOG_TARGET,
 	};
@@ -59,12 +65,12 @@ pub mod pallet {
 		pallet_prelude::*,
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
-			tokens::{Fortitude, Preservation, Provenance},
+			tokens::{Preservation, Provenance},
 			EnsureOrigin,
 		},
 	};
 	use frame_system::{ensure_root, pallet_prelude::*};
-	use sp_runtime::traits::TryConvert;
+	use sp_runtime::traits::{TryConvert, Zero};
 	use sp_std::{boxed::Box, vec};
 	use xcm::{
 		v3::{
@@ -79,6 +85,7 @@ pub mod pallet {
 	pub type LocalCurrencyBalanceOf<T, I> =
 		<<T as Config<I>>::LocalCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 	pub type SwitchPairInfoOf<T> = SwitchPairInfo<<T as frame_system::Config>::AccountId>;
+	pub type NewSwitchPairInfoOf<T> = NewSwitchPairInfo<<T as frame_system::Config>::AccountId>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -121,17 +128,29 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T, I = ()>(_);
 
+	#[pallet::hooks]
+	impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I>
+	where
+		LocalCurrencyBalanceOf<T, I>: Into<u128>,
+	{
+		#[cfg(feature = "try-runtime")]
+		fn try_state(n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+			crate::try_state::do_try_state::<T, I>(n)
+		}
+	}
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config<I>, I: 'static = ()> {
 		/// A new switch pair is created.
 		SwitchPairCreated {
-			circulating_supply: u128,
+			remote_asset_circulating_supply: u128,
+			remote_asset_ed: u128,
 			pool_account: T::AccountId,
 			remote_asset_id: VersionedAssetId,
-			remote_asset_reserve_location: VersionedMultiLocation,
+			remote_reserve_location: VersionedMultiLocation,
 			remote_xcm_fee: Box<VersionedMultiAsset>,
-			total_issuance: u128,
+			remote_asset_total_supply: u128,
 		},
 		/// A switch pair is removed.
 		SwitchPairRemoved { remote_asset_id: VersionedAssetId },
@@ -202,36 +221,50 @@ pub mod pallet {
 		#[pallet::weight(<T as Config<I>>::WeightInfo::set_switch_pair())]
 		pub fn set_switch_pair(
 			origin: OriginFor<T>,
-			reserve_location: Box<VersionedMultiLocation>,
+			remote_asset_total_supply: u128,
 			remote_asset_id: Box<VersionedAssetId>,
-			remote_fee: Box<VersionedMultiAsset>,
-			total_issuance: u128,
-			circulating_supply: u128,
+			remote_asset_circulating_supply: u128,
+			remote_reserve_location: Box<VersionedMultiLocation>,
+			remote_asset_ed: u128,
+			remote_xcm_fee: Box<VersionedMultiAsset>,
 		) -> DispatchResult {
 			T::SwitchOrigin::ensure_origin(origin)?;
 
 			// 1. Verify switch pair has not already been set.
 			ensure!(!SwitchPair::<T, I>::exists(), Error::<T, I>::SwitchPairAlreadyExisting);
 
-			// 2. Verify that total issuance >= circulating supply.
-			ensure!(total_issuance >= circulating_supply, Error::<T, I>::InvalidInput);
+			// 2. Verify that total issuance >= circulating supply and that the amount of
+			//    remote assets locked (total - circulating) is greater than the minimum
+			//    amount required at destination (remote ED).
+			ensure!(
+				remote_asset_total_supply >= remote_asset_circulating_supply.saturating_add(remote_asset_ed),
+				Error::<T, I>::InvalidInput
+			);
 
 			// 3. Verify the pool account has enough local assets to match the circulating
 			//    supply of eKILTs to cover for all potential remote -> local switches.
+			//    Handle the special case where circulating supply is `0`.
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
-			let pool_account_reducible_balance_as_u128: u128 =
-				T::LocalCurrency::reducible_balance(&pool_account, Preservation::Expendable, Fortitude::Polite).into();
-			ensure!(
-				pool_account_reducible_balance_as_u128 >= circulating_supply,
-				Error::<T, I>::PoolInitialLiquidityRequirement
-			);
+			let pool_account_reducible_balance_as_u128: u128 = Self::get_pool_reducible_balance(&pool_account).into();
+			let pool_account_total_balance_as_u128: u128 = T::LocalCurrency::balance(&pool_account).into();
+			if pool_account_total_balance_as_u128.is_zero()
+				|| pool_account_reducible_balance_as_u128 < remote_asset_circulating_supply
+			{
+				// If the pool account has `0` available tokens, or if it has some tokens, but
+				// not enough to cover the specified circulating supply, fail.
+				Err(Error::<T, I>::PoolInitialLiquidityRequirement)
+			} else {
+				// Otherwise, we can accept the current parameters.
+				Ok(())
+			}?;
 
 			Self::set_switch_pair_bypass_checks(
-				*reserve_location,
+				remote_asset_total_supply,
 				*remote_asset_id,
-				*remote_fee,
-				total_issuance,
-				circulating_supply,
+				remote_asset_circulating_supply,
+				*remote_reserve_location,
+				remote_asset_ed,
+				*remote_xcm_fee,
 				pool_account,
 			);
 
@@ -245,23 +278,28 @@ pub mod pallet {
 		#[pallet::weight(<T as Config<I>>::WeightInfo::force_set_switch_pair())]
 		pub fn force_set_switch_pair(
 			origin: OriginFor<T>,
-			reserve_location: Box<VersionedMultiLocation>,
+			remote_asset_total_supply: u128,
 			remote_asset_id: Box<VersionedAssetId>,
-			remote_fee: Box<VersionedMultiAsset>,
-			total_issuance: u128,
-			circulating_supply: u128,
+			remote_asset_circulating_supply: u128,
+			remote_reserve_location: Box<VersionedMultiLocation>,
+			remote_asset_ed: u128,
+			remote_xcm_fee: Box<VersionedMultiAsset>,
 		) -> DispatchResult {
 			ensure_root(origin)?;
 
-			ensure!(total_issuance >= circulating_supply, Error::<T, I>::InvalidInput);
+			ensure!(
+				remote_asset_total_supply >= remote_asset_circulating_supply.saturating_add(remote_asset_ed),
+				Error::<T, I>::InvalidInput
+			);
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
 
 			Self::set_switch_pair_bypass_checks(
-				*reserve_location,
+				remote_asset_total_supply,
 				*remote_asset_id,
-				*remote_fee,
-				total_issuance,
-				circulating_supply,
+				remote_asset_circulating_supply,
+				*remote_reserve_location,
+				remote_asset_ed,
+				*remote_xcm_fee,
 				pool_account,
 			);
 
@@ -311,18 +349,18 @@ pub mod pallet {
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(5)]
-		#[pallet::weight(<T as Config<I>>::WeightInfo::update_remote_fee())]
-		pub fn update_remote_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult {
+		#[pallet::weight(<T as Config<I>>::WeightInfo::update_remote_xcm_fee())]
+		pub fn update_remote_xcm_fee(origin: OriginFor<T>, new: Box<VersionedMultiAsset>) -> DispatchResult {
 			T::FeeOrigin::ensure_origin(origin)?;
 
 			SwitchPair::<T, I>::try_mutate(|entry| {
-				let SwitchPairInfoOf::<T> { remote_fee, .. } =
+				let SwitchPairInfoOf::<T> { remote_xcm_fee, .. } =
 					entry.as_mut().ok_or(Error::<T, I>::SwitchPairNotFound)?;
-				let old_remote_fee = remote_fee.clone();
-				*remote_fee = *new.clone();
-				if old_remote_fee != *new {
+				let old_remote_xcm_fee = remote_xcm_fee.clone();
+				*remote_xcm_fee = *new.clone();
+				if old_remote_xcm_fee != *new {
 					Self::deposit_event(Event::<T, I>::SwitchPairFeeUpdated {
-						old: old_remote_fee,
+						old: old_remote_xcm_fee,
 						new: *new,
 					});
 				};
@@ -350,7 +388,7 @@ pub mod pallet {
 
 			// 2. Check if switches are enabled.
 			ensure!(
-				switch_pair.can_switch(),
+				switch_pair.is_enabled(),
 				DispatchError::from(Error::<T, I>::SwitchPairNotEnabled)
 			);
 
@@ -358,18 +396,26 @@ pub mod pallet {
 			//    having their balance go to zero.
 			T::LocalCurrency::can_withdraw(&submitter, local_asset_amount)
 				.into_result(true)
-				.map_err(|_| DispatchError::from(Error::<T, I>::UserSwitchBalance))?;
+				.map_err(|e| {
+					log::info!("Failed to withdraw balance from submitter with error {:?}", e);
+					DispatchError::from(Error::<T, I>::UserSwitchBalance)
+				})?;
 
-			// 4. Verify the local assets can be transferred to the switch pool account
+			// 4. Verify the local assets can be transferred to the switch pool account.
+			//    This could fail if the pool's balance is `0` and the sent amount is less
+			//    than ED.
 			T::LocalCurrency::can_deposit(&switch_pair.pool_account, local_asset_amount, Provenance::Extant)
 				.into_result()
-				.map_err(|_| DispatchError::from(Error::<T, I>::LocalPoolBalance))?;
+				.map_err(|e| {
+					log::info!("Failed to deposit amount into pool account with error {:?}", e);
+					DispatchError::from(Error::<T, I>::LocalPoolBalance)
+				})?;
 
-			// 5. Verify we have enough balance on the remote location to perform the
-			//    transfer
+			// 5. Verify we have enough balance (minus ED, already substracted from the
+			//    stored balance info) on the remote location to perform the transfer.
 			let remote_asset_amount_as_u128 = local_asset_amount.into();
 			ensure!(
-				switch_pair.remote_asset_balance >= remote_asset_amount_as_u128,
+				switch_pair.reducible_remote_balance() >= remote_asset_amount_as_u128,
 				Error::<T, I>::Liquidity
 			);
 
@@ -382,11 +428,11 @@ pub mod pallet {
 				);
 				DispatchError::from(Error::<T, I>::Internal)
 			})?;
-			let remote_asset_fee_v3: MultiAsset = switch_pair.remote_fee.clone().try_into().map_err(|e| {
+			let remote_asset_fee_v3: MultiAsset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
 					"Failed to convert remote XCM asset fee {:?} into v3 `MultiAssset` with error {:?}",
-					switch_pair.remote_fee,
+					switch_pair.remote_xcm_fee,
 					e
 				);
 				DispatchError::from(Error::<T, I>::Xcm)
@@ -465,7 +511,8 @@ pub mod pallet {
 				&submitter,
 				&switch_pair.pool_account,
 				local_asset_amount,
-				Preservation::Preserve,
+				// We don't care if the submitter's account gets dusted, but it should not be killed.
+				Preservation::Protect,
 			)?;
 			if transferred_amount != local_asset_amount {
 				log::error!(
@@ -500,27 +547,22 @@ pub mod pallet {
 				return Err(DispatchError::from(Error::<T, I>::Internal));
 			}
 
-			// 10. Send XCM out (only when not benchmarking, as delivery fees are anyway
-			//     accounted for by the router)
+			// 10. Send XCM out
 			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
 				log::info!("Failed to deliver ticket with error {:?}", e);
 				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
 
-			// 11. Update remote asset balance
+			// 11. Update remote asset balance and circulating supply.
 			SwitchPair::<T, I>::try_mutate(|entry| {
-				let Some(SwitchPairInfoOf::<T> {
-					remote_asset_balance, ..
-				}) = entry.as_mut()
-				else {
+				let Some(switch_pair_info) = entry.as_mut() else {
 					log::error!(target: LOG_TARGET, "Failed to borrow stored switch pair info as mut.");
 					return Err(Error::<T, I>::Internal);
 				};
-				let Some(new_balance) = remote_asset_balance.checked_sub(remote_asset_amount_as_u128) else {
-					log::error!(target: LOG_TARGET, "Failed to subtract {:?} from stored remote balance {:?}.", transferred_amount, remote_asset_balance);
-					return Err(Error::<T, I>::Internal);
-				};
-				*remote_asset_balance = new_balance;
+				switch_pair_info.try_process_outgoing_switch(remote_asset_amount_as_u128).map_err(|_| {
+					log::error!(target: LOG_TARGET, "Failed to account for local to remote switch of {:?} tokens.", remote_asset_amount_as_u128);
+					Error::<T, I>::Internal
+				})?;
 				Ok(())
 			})?;
 
@@ -540,37 +582,47 @@ pub mod pallet {
 }
 
 impl<T: Config<I>, I: 'static> Pallet<T, I> {
+	pub(crate) fn get_pool_reducible_balance(pool_address: &T::AccountId) -> LocalCurrencyBalanceOf<T, I> {
+		T::LocalCurrency::reducible_balance(pool_address, Preservation::Preserve, Fortitude::Polite)
+	}
+}
+
+impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	fn set_switch_pair_bypass_checks(
-		reserve_location: VersionedMultiLocation,
+		remote_asset_total_supply: u128,
 		remote_asset_id: VersionedAssetId,
-		remote_fee: VersionedMultiAsset,
-		total_issuance: u128,
-		circulating_supply: u128,
+		remote_asset_circulating_supply: u128,
+		remote_reserve_location: VersionedMultiLocation,
+		remote_asset_ed: u128,
+		remote_xcm_fee: VersionedMultiAsset,
 		pool_account: T::AccountId,
 	) {
 		debug_assert!(
-			total_issuance >= circulating_supply,
-			"Provided total issuance smaller than circulating supply."
+			remote_asset_total_supply >= remote_asset_circulating_supply.saturating_add(remote_asset_ed),
+			"Provided total issuance smaller than circulating supply + remote asset ED."
 		);
-		let switch_pair_info = SwitchPairInfoOf::<T> {
+
+		let switch_pair_info = SwitchPairInfoOf::<T>::from_input_unchecked(NewSwitchPairInfoOf::<T> {
 			pool_account: pool_account.clone(),
-			// We can do a simple subtraction since all checks are performed in calling functions.
-			remote_asset_balance: total_issuance - circulating_supply,
+			remote_asset_circulating_supply,
+			remote_asset_ed,
 			remote_asset_id: remote_asset_id.clone(),
-			remote_fee: remote_fee.clone(),
-			remote_reserve_location: reserve_location.clone(),
-			status: SwitchPairStatus::Paused,
-		};
+			remote_asset_total_supply,
+			remote_xcm_fee: remote_xcm_fee.clone(),
+			remote_reserve_location: remote_reserve_location.clone(),
+			status: Default::default(),
+		});
 
 		SwitchPair::<T, I>::set(Some(switch_pair_info));
 
 		Self::deposit_event(Event::<T, I>::SwitchPairCreated {
-			circulating_supply,
+			remote_asset_circulating_supply,
+			remote_asset_ed,
 			pool_account,
-			remote_asset_reserve_location: reserve_location,
+			remote_reserve_location,
 			remote_asset_id,
-			remote_xcm_fee: Box::new(remote_fee),
-			total_issuance,
+			remote_xcm_fee: Box::new(remote_xcm_fee),
+			remote_asset_total_supply,
 		});
 	}
 

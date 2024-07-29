@@ -259,6 +259,7 @@ try-runtime = [
   "frame-system/try-runtime",
   "frame-try-runtime",
   "kilt-support/try-runtime",
+  "pallet-asset-switch/try-runtime",
   "pallet-assets/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",

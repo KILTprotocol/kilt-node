@@ -60,8 +60,8 @@ mod xcm_fee_asset {
 			}
 
 			// 3. Verify the asset matches the configured XCM fee asset.
-			let Ok(stored_remote_asset_fee): Result<MultiAsset, _> = switch_pair.remote_fee.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into v3 with error {:?}.", switch_pair.remote_fee, e);
+			let Ok(stored_remote_asset_fee): Result<MultiAsset, _> = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into v3 with error {:?}.", switch_pair.remote_xcm_fee, e);
 				e
 			 }) else { return false; };
 

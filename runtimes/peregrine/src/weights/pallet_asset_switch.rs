@@ -116,7 +116,7 @@ impl<T: frame_system::Config> pallet_asset_switch::WeightInfo for WeightInfo<T> 
 	}
 	/// Storage: `AssetSwitchPool1::SwitchPair` (r:1 w:1)
 	/// Proof: `AssetSwitchPool1::SwitchPair` (`max_values`: Some(1), `max_size`: Some(1891), added: 2386, mode: `MaxEncodedLen`)
-	fn update_remote_fee() -> Weight {
+	fn update_remote_xcm_fee() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `172`
 		//  Estimated: `3376`
@@ -209,7 +209,7 @@ mod tests {
 		);
 	}
 	#[test]
-	fn test_update_remote_fee() {
+	fn update_remote_xcm_fee() {
 		assert!(
 			<crate::Runtime as frame_system::Config>::BlockWeights::get()
 				.per_class

@@ -1238,7 +1238,7 @@ mod benches {
 			.into();
 			let destination =
 				MultiLocation::from(ParentThen(Junctions::X1(Junction::Parachain(DESTINATION_PARA_ID)))).into();
-			let remote_fee = MultiAsset {
+			let remote_xcm_fee = MultiAsset {
 				id: AssetId::Concrete(asset_location),
 				fun: Fungibility::Fungible(1_000),
 			}
@@ -1250,7 +1250,7 @@ mod benches {
 				beneficiary: Some(beneficiary),
 				destination: Some(destination),
 				remote_asset_id: None,
-				remote_fee: Some(remote_fee),
+				remote_xcm_fee: Some(remote_xcm_fee),
 			})
 		}
 	}
