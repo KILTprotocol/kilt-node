@@ -54,7 +54,7 @@ where
 		let Asset { id, fun } = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
-				"Failed to convert stored remote fee asset {:?} into v3 MultiLocation with error {:?}.",
+				"Failed to convert stored remote fee asset {:?} into latest Location with error {:?}.",
 				switch_pair.remote_xcm_fee,
 				e
 			);
