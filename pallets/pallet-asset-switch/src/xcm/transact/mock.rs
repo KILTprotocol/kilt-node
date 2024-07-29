@@ -35,7 +35,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
 	AccountId32,
 };
-use xcm::latest::Location;
+use xcm::v4::Location;
 use xcm_executor::traits::ConvertLocation;
 
 use crate::{NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf};

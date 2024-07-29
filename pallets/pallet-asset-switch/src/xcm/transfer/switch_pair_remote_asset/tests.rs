@@ -18,7 +18,7 @@
 
 use frame_support::traits::ContainsPair;
 use xcm::{
-	latest::{Asset, AssetId, AssetInstance, Fungibility, Junction, Junctions, Location},
+	v4::{Asset, AssetId, AssetInstance, Fungibility, Junction, Junctions, Location},
 	IntoVersion,
 };
 

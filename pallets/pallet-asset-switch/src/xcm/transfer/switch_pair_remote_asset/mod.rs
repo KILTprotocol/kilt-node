@@ -18,7 +18,7 @@
 
 use frame_support::traits::ContainsPair;
 use sp_std::marker::PhantomData;
-use xcm::latest::{Asset, AssetId, Location};
+use xcm::v4::{Asset, AssetId, Location};
 
 use crate::{Config, SwitchPair};
 
