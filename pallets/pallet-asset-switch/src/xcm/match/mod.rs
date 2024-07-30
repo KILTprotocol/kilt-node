@@ -71,7 +71,7 @@ where
 		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
 		let AssetId(location) = id;
-		// 6. Force input asset as a fungible one and return its amount.
+		// 5. Force input asset as a fungible one and return its amount.
 		let Fungibility::Fungible(amount) = a.fun else {
 			log::info!(target: LOG_TARGET, "Input asset {:?} is supposed to be fungible but it is not.", a);
 			return Err(XcmExecutorError::AmountToBalanceConversionFailed);

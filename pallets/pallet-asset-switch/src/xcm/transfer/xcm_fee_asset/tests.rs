@@ -18,7 +18,6 @@
 
 use frame_support::traits::ContainsPair;
 use xcm::{
-	v2::MultiLocation,
 	v4::{Asset, AssetId, AssetInstance, Fungibility, Junction, Junctions, Location},
 	IntoVersion,
 };
@@ -265,7 +264,6 @@ fn true_with_stored_remote_location_v3() {
 		parents: 1,
 		interior: xcm::v3::Junctions::X1(xcm::v3::Junction::Parachain(1_000)),
 	};
-
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
 		&location.try_into().unwrap(),
 		SwitchPairStatus::Running,
