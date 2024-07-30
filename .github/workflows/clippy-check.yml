@@ -1,0 +1,25 @@
+
+name: Clippy check
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  clippy_check:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:20.10.8-dind
+    container:
+      image: paritytech/ci-unified:bullseye-1.77.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Clippy
+        run: cargo clippy --all-features --all-targets --locked -- -D warnings && cargo doc --all-features --no-deps --locked
