@@ -1,4 +1,4 @@
-name: check fmt
+name: Check fmt
 
 on:
   pull_request:

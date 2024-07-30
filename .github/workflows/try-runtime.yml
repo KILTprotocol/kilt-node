@@ -1,4 +1,4 @@
-name: try-runtime
+name: Try-runtime
 
 on:
   pull_request:
@@ -20,6 +20,7 @@ jobs:
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
 
+    if: ${{ !contains(github.event.head_commit.message, '[ci-skip-rust]') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,7 +33,7 @@ jobs:
           restore-keys: |
             cargo-try-runtime-${{ matrix.runtime }}-
 
-      - name: script
+      - name: Run try-runtime
         run: |
           echo "Running ${{ matrix.runtime }} runtime migration check"
 

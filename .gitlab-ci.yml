@@ -7,6 +7,7 @@ include:
 
 variables:
   CARGO_CACHE_PATH: $CARGO_CACHE_PATH
+  CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
 
 workflow:
   auto_cancel:

@@ -4,6 +4,10 @@ build:
     name: kiltprotocol/kilt-ci:2.7.31
     entrypoint: [""]
   stage: build
+  cache:
+    key: cargo-build
+    paths:
+      - ${CARGO_CACHE_PATH}
   only:
     refs:
       - develop

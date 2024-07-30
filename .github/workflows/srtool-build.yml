@@ -1,4 +1,4 @@
-name: srtool build
+name: Srtool build
 
 on:
   release:
