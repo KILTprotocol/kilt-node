@@ -120,7 +120,7 @@ fn successful_with_stored_remote_asset_id_latest() {
 }
 
 #[test]
-fn successful_with_stored_remote_asset_id_v3() {
+fn successful_with_stored_remote_asset_id_v4() {
 	let location = Location {
 		parents: 1,
 		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
@@ -130,6 +130,87 @@ fn successful_with_stored_remote_asset_id_v3() {
 			let mut new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<
 				MockRuntime,
 			>(&location, 2, SwitchPairStatus::Running);
+			// Set remote asset to the XCM version 3.
+			new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_version(3).unwrap();
+			new_switch_pair_info
+		};
+	// Ignored by the mock converter logic
+	let who = Location::here();
+
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build_and_execute_with_sanity_tests(|| {
+			let asset_to_deposit = Asset {
+				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
+				fun: Fungibility::Fungible(2),
+			};
+			assert_ok!(SwitchPairRemoteAssetTransactor::<
+				SuccessfulAccountIdConverter,
+				MockRuntime,
+				_,
+			>::deposit_asset(&asset_to_deposit, &who, None));
+			// Reduced by 2.
+			assert_eq!(
+				<Balances as InspectFungible<AccountId32>>::balance(&new_switch_pair_info.pool_account),
+				2
+			);
+			// Destination account created and increased by 2.
+			assert_eq!(
+				<Balances as InspectFungible<AccountId32>>::balance(&new_switch_pair_info.pool_account),
+				2
+			);
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::RemoteToLocalSwitchExecuted {
+					amount: 2,
+					to: SUCCESSFUL_ACCOUNT_ID
+				}
+				.into()));
+		});
+	// Works if some balance is frozen, since freezes count towards ED as well.
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		// We freeze 2 units for the pool account
+		.with_additional_balance_entries(vec![(new_switch_pair_info.clone().pool_account, 0, 0, 2)])
+		.build_and_execute_with_sanity_tests(|| {
+			let asset_to_deposit = Asset {
+				id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
+				fun: Fungibility::Fungible(2),
+			};
+			assert_ok!(SwitchPairRemoteAssetTransactor::<
+				SuccessfulAccountIdConverter,
+				MockRuntime,
+				_,
+			>::deposit_asset(&asset_to_deposit, &who, None));
+			// Reduced by 2.
+			assert_eq!(
+				<Balances as InspectFungible<AccountId32>>::balance(&new_switch_pair_info.pool_account),
+				2
+			);
+			// Destination account created and increased by 2.
+			assert_eq!(
+				<Balances as InspectFungible<AccountId32>>::balance(&new_switch_pair_info.pool_account),
+				2
+			);
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::RemoteToLocalSwitchExecuted {
+					amount: 2,
+					to: SUCCESSFUL_ACCOUNT_ID
+				}
+				.into()));
+		});
+}
+
+#[test]
+fn successful_with_stored_remote_asset_id_v3() {
+	let location = xcm::v3::MultiLocation {
+		parents: 1,
+		interior: xcm::v3::Junctions::X1(xcm::v3::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info =
+		{
+			let mut new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<
+				MockRuntime,
+			>(&location.try_into().unwrap(), 2, SwitchPairStatus::Running);
 			// Set remote asset to the XCM version 3.
 			new_switch_pair_info.remote_asset_id = new_switch_pair_info.remote_asset_id.into_version(3).unwrap();
 			new_switch_pair_info
