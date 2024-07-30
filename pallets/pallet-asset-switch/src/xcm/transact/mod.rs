@@ -21,7 +21,7 @@ use frame_support::{
 	traits::{fungible::Mutate, tokens::Preservation},
 };
 use sp_std::marker::PhantomData;
-use xcm::latest::{Asset, AssetId, Error, Fungibility, Location, Result, XcmContext};
+use xcm::v4::{Asset, AssetId, Error, Fungibility, Location, Result, XcmContext};
 use xcm_executor::traits::{ConvertLocation, TransactAsset};
 
 use crate::{traits::SwitchHooks, Config, Event, LocalCurrencyBalanceOf, Pallet, SwitchPair};
@@ -51,7 +51,7 @@ where
 		let switch_pair = SwitchPair::<T, I>::get().ok_or(Error::AssetNotFound)?;
 
 		// 2. Verify the asset matches the other side of the switch pair.
-		let xcm_fee_asset_latest: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
+		let xcm_fee_asset_v4: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
 				"Failed to convert stored asset ID {:?} into required version with error {:?}.",
@@ -60,7 +60,7 @@ where
 			);
 			Error::AssetNotFound
 		})?;
-		ensure!(xcm_fee_asset_latest == what.id, Error::AssetNotFound);
+		ensure!(xcm_fee_asset_v4 == what.id, Error::AssetNotFound);
 		// 3. Verify the asset being deposited is fungible.
 		let Fungibility::Fungible(fungible_amount) = what.fun else {
 			return Err(Error::AssetNotFound);

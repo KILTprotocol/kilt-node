@@ -18,7 +18,7 @@
 
 use frame_support::ensure;
 use sp_std::marker::PhantomData;
-use xcm::latest::{Asset, AssetId, Fungibility, Location};
+use xcm::v4::{Asset, AssetId, Fungibility, Location};
 use xcm_executor::traits::{Error as XcmExecutorError, MatchesFungibles};
 
 use crate::{Config, SwitchPair};
@@ -54,7 +54,7 @@ where
 		let Asset { id, fun } = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
-				"Failed to convert stored remote fee asset {:?} into latest Location with error {:?}.",
+				"Failed to convert stored remote fee asset {:?} into v4 Location with error {:?}.",
 				switch_pair.remote_xcm_fee,
 				e
 			);
@@ -70,7 +70,6 @@ where
 		// After this ensure, we know we need to be transacting with this asset, so any
 		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
-		// 5. Force stored asset as a concrete one.
 		let AssetId(location) = id;
 		// 6. Force input asset as a fungible one and return its amount.
 		let Fungibility::Fungible(amount) = a.fun else {

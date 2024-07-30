@@ -24,7 +24,7 @@ use frame_support::{
 use sp_core::Get;
 use sp_runtime::traits::Zero;
 use sp_std::marker::PhantomData;
-use xcm::latest::{Asset, AssetId, Error, Weight, XcmContext, XcmHash};
+use xcm::v4::{Asset, AssetId, Error, Weight, XcmContext, XcmHash};
 use xcm_executor::{traits::WeightTrader, AssetsInHolding};
 
 use crate::{Config, LocalCurrencyBalanceOf, SwitchPair, SwitchPairInfoOf};
@@ -115,17 +115,17 @@ where
 
 		let amount = WeightToFee::weight_to_fee(&weight);
 
-		let switch_pair_remote_asset_latest: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
+		let switch_pair_remote_asset_v4: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
-				"Failed to convert stored asset ID {:?} into latest AssetId with error {:?}",
+				"Failed to convert stored asset ID {:?} into v4 AssetId with error {:?}",
 				switch_pair.remote_asset_id,
 				e
 			);
 			Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
 		})?;
 
-		let required: Asset = (switch_pair_remote_asset_latest, amount).into();
+		let required: Asset = (switch_pair_remote_asset_v4, amount).into();
 		let unused = payment.checked_sub(required.clone()).map_err(|_| Error::TooExpensive)?;
 
 		// Set link to XCM message ID only if this is the trader used.
@@ -158,14 +158,14 @@ where
 			return None;
 		}
 
-		let switch_pair_remote_asset_latest: AssetId = switch_pair
+		let switch_pair_remote_asset_v4: AssetId = switch_pair
 			.remote_asset_id
 			.clone()
 			.try_into()
 			.map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
-					"Failed to convert stored asset ID {:?} into latest AssetId with error {:?}",
+					"Failed to convert stored asset ID {:?} into v4 AssetId with error {:?}",
 					switch_pair.remote_asset_id,
 					e
 				);
@@ -186,9 +186,9 @@ where
 			log::trace!(
 				target: LOG_TARGET,
 				"Refund amount {:?}",
-				(switch_pair_remote_asset_latest.clone(), amount_to_refund)
+				(switch_pair_remote_asset_v4.clone(), amount_to_refund)
 			);
-			Some((switch_pair_remote_asset_latest, amount_to_refund).into())
+			Some((switch_pair_remote_asset_v4, amount_to_refund).into())
 		} else {
 			log::trace!(target: LOG_TARGET, "No refund");
 			None

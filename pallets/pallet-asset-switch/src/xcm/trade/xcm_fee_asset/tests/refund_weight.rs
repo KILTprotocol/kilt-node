@@ -19,7 +19,7 @@
 use frame_support::assert_storage_noop;
 use sp_runtime::traits::Zero;
 use xcm::{
-	latest::{Asset, AssetInstance, Fungibility, Junction, Junctions, Location, Weight, XcmContext},
+	v4::{Asset, AssetInstance, Fungibility, Junction, Junctions, Location, Weight, XcmContext},
 	IntoVersion,
 };
 use xcm_executor::traits::WeightTrader;

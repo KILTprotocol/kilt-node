@@ -18,7 +18,7 @@
 
 use sp_runtime::traits::Zero;
 use xcm::{
-	latest::{Asset, AssetId, Fungibility, Location},
+	v4::{Asset, AssetId, Fungibility, Location},
 	VersionedAsset, VersionedAssetId, VersionedLocation,
 };
 

@@ -18,7 +18,7 @@
 
 use frame_support::{assert_noop, assert_storage_noop};
 use xcm::{
-	latest::{Asset, AssetId, AssetInstance, Error, Fungibility, Junction, Junctions, Location, Weight, XcmContext},
+	v4::{Asset, AssetId, AssetInstance, Error, Fungibility, Junction, Junctions, Location, Weight, XcmContext},
 	IntoVersion,
 };
 use xcm_executor::{traits::WeightTrader, AssetsInHolding};

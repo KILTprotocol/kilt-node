@@ -18,7 +18,7 @@
 
 use sp_runtime::traits::Zero;
 use xcm::{
-	latest::{Asset, Fungibility, Junction, Junctions, Location, Weight, XcmContext},
+	v4::{Asset, Fungibility, Junction, Junctions, Location, Weight, XcmContext},
 	IntoVersion,
 };
 use xcm_executor::traits::WeightTrader;
