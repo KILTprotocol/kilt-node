@@ -35,7 +35,7 @@ clippy:
 
 rustdoc:
   stage: build
-  image: rust
+  image: paritytech/ci-unified:bullseye-1.70.0
   script:
     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
   artifacts:
@@ -53,8 +53,6 @@ pages:
   artifacts:
     paths:
       - public
-  # only:
-  #   - develop
 
 fmt:
   interruptible: true
