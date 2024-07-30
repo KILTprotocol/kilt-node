@@ -149,6 +149,7 @@ build-wasm-peregrine:
     - export PARACHAIN_PALLET_ID=0x50
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
+    - rustup component add rust-src 
     - /srtool/build build
     - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
     - subwasm get -o peregrine-live.wasm wss://peregrine.kilt.io
