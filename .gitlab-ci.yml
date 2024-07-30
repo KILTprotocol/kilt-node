@@ -23,7 +23,7 @@ stages:
   - test
   - build
 
-clippy-and-docs:
+clippy:
   extends: .check_skip_rust
   interruptible: true
   timeout: 2 hours
@@ -31,7 +31,30 @@ clippy-and-docs:
   stage: test
   script:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
+
+rustdoc:
+  stage: build
+  image: rust
+  script:
     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
+  artifacts:
+    paths:
+      - target/doc
+
+pages:
+  stage: publish
+  image: alpine
+  dependencies:
+    - build:amd64
+    - rustdoc
+  script:
+    - mkdir -p public
+    - mv target/doc public/doc
+  artifacts:
+    paths:
+      - public
+  only:
+    - develop
 
 fmt:
   interruptible: true
