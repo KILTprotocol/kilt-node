@@ -18,7 +18,9 @@
 
 use frame_support::traits::ContainsPair;
 use xcm::{
-	v2::MultiLocation, v4::{Asset, AssetId, AssetInstance, Fungibility, Junction, Junctions, Location}, IntoVersion
+	v2::MultiLocation,
+	v4::{Asset, AssetId, AssetInstance, Fungibility, Junction, Junctions, Location},
+	IntoVersion,
 };
 
 use crate::{
@@ -151,8 +153,8 @@ fn true_with_stored_xcm_fee_asset_v2() {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
 	};
-	let location_v3: xcm::v3:MultiLocation = location.try_into().unwrap();
-	
+	let location_v3: xcm::v3::MultiLocation = location.try_into().unwrap();
+
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
 		&location_v3.try_into().unwrap(),
 		SwitchPairStatus::Running,
