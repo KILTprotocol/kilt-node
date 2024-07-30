@@ -8,6 +8,9 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0
+
 jobs:
   test-try-runtime:
     strategy:
@@ -34,7 +37,7 @@ jobs:
           echo "Running ${{ matrix.runtime }} runtime migration check"
 
           echo "---------- Downloading try-runtime CLI ----------"
-          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/v0.7.0/try-runtime-x86_64-unknown-linux-musl -o try-runtime
+          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${{ env.TRY_RUNTIME_CLI_VERSION_TAG }}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
           chmod +x ./try-runtime
           echo "Using try-runtime-cli version:"
           ./try-runtime --version
