@@ -284,7 +284,7 @@ mod benchmarks {
 			<T as Config<I>>::AssetTransactor::deposit_asset(
 				&remote_xcm_fee.try_into().unwrap(),
 				&(local_account_id_junction.into()),
-				Some(&XcmContext::with_message_id(Default::default())),
+				None,
 			)
 			.unwrap();
 		}
