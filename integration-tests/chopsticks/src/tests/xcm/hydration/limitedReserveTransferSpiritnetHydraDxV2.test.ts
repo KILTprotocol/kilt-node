@@ -1,12 +1,12 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-import * as SpiritnetConfig from '../../network/spiritnet.js'
-import * as HydraDxConfig from '../../network/hydraDx.js'
-import { KILT, initialBalanceKILT, keysAlice } from '../../utils.js'
-import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../index.js'
-import { getAccountLocationV2, getNativeAssetIdLocation, getSiblingLocation } from '../../network/utils.js'
-import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../utils.js'
+import * as SpiritnetConfig from '../../../network/spiritnet.js'
+import * as HydraDxConfig from '../../../network/hydraDx.js'
+import { KILT, initialBalanceKILT, keysAlice } from '../../../utils.js'
+import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../../index.js'
+import { getAccountLocationV2, getNativeAssetIdLocation, getSiblingLocation } from '../../../network/utils.js'
+import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../../utils.js'
 
 const KILT_ASSET_V2 = { V2: [getNativeAssetIdLocation(KILT)] }
 
@@ -70,7 +70,7 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Accou
 	checkSystemEvents(hydradxContext, { section: 'currencies', method: 'Deposited' }).toMatchSnapshot(
 		'receiver events currencies'
 	)
-	checkSystemEvents(hydradxContext, 'messageQueue').toMatchSnapshot('receiver events messageQueue')
+	checkSystemEvents(hydradxContext, 'messageQueue').toMatchSnapshot('receiver events xcmpQueue')
 
 	// check balance receiver
 	// check balance. Equal to `KILT` - tx fees

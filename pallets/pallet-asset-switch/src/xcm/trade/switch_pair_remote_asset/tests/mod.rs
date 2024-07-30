@@ -15,15 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-use parity_scale_codec::{Decode, Encode};
-use scale_info::TypeInfo;
-use sp_std::vec::Vec;
 
-#[derive(Clone, Copy, Default, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub struct DummySignature;
-
-impl<A> From<(A, Vec<u8>)> for DummySignature {
-	fn from(_: (A, Vec<u8>)) -> Self {
-		DummySignature
-	}
-}
+mod buy_weight;
+mod drop;
+mod refund_weight;

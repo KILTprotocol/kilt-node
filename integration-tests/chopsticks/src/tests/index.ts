@@ -31,9 +31,10 @@ beforeEach(async () => {
 	// Setup Polkadot network
 	await connectVertical(polkadotContext.chain, spiritnetContext.chain)
 	await connectVertical(polkadotContext.chain, hydradxContext.chain)
-	await connectParachains([spiritnetContext.chain, hydradxContext.chain])
+	await connectVertical(polkadotContext.chain, assethubContext.chain)
+	await connectParachains([spiritnetContext.chain, hydradxContext.chain, assethubContext.chain])
 
-	// setup Rococo Network
+	// Setup Rococo network
 	await connectVertical(rococoContext.chain, assethubContext.chain)
 	await connectVertical(rococoContext.chain, peregrineContext.chain)
 	await connectVertical(rococoContext.chain, basiliskContext.chain)

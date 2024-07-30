@@ -16,38 +16,29 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use asset_hub_rococo_emulated_chain::AssetHubRococoParaPallet;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
+use rococo_emulated_chain::RococoRelayPallet;
 use runtime_common::{constants::KILT, AccountId, Balance};
-use xcm::{
-	v3::prelude::{
-		Here,
-		Instruction::{BuyExecution, Transact, UnpaidExecution, WithdrawAsset},
-		Junction, Junctions, OriginKind, ParentThen, WeightLimit, Xcm,
-	},
-	DoubleEncoded, VersionedMultiLocation, VersionedXcm,
-};
+use xcm::{lts::prelude::*, opaque::*, DoubleEncoded, VersionedLocation};
 use xcm_emulator::{assert_expected_events, Chain, Network, Parachain, RelayChain, TestExt, Weight};
 
-use crate::mock::{
-	network::MockNetworkRococo,
-	para_chains::{peregrine, AssetHubRococo, AssetHubRococoPallet, Peregrine},
-	relay_chains::{Rococo, RococoPallet},
-};
+use crate::mock::network::{AssetHub, MockNetwork, Peregrine, Rococo};
 
 fn get_sovereign_account_id_of_asset_hub() -> AccountId {
-	Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHubRococo::para_id()))
+	Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHub::para_id()))
 }
 
-fn get_parachain_destination_from_parachain() -> VersionedMultiLocation {
-	ParentThen(Junctions::X1(Junction::Parachain(peregrine::PARA_ID))).into()
+fn get_parachain_destination_from_parachain() -> VersionedLocation {
+	ParentThen(Junctions::X1([Junction::Parachain(Peregrine::para_id().into())].into())).into()
 }
 
-fn get_parachain_destination_from_relay_chain() -> VersionedMultiLocation {
-	Rococo::child_location_of(peregrine::PARA_ID.into()).into_versioned()
+fn get_parachain_destination_from_relay_chain() -> VersionedLocation {
+	Rococo::child_location_of(Peregrine::para_id()).into_versioned()
 }
 
-fn get_unpaid_xcm_message(origin_kind: OriginKind) -> VersionedXcm<()> {
+fn get_unpaid_xcm_message(origin_kind: OriginKind) -> VersionedXcm {
 	let code = vec![];
 	let call: DoubleEncoded<()> = <Peregrine as Chain>::RuntimeCall::System(frame_system::Call::set_code { code })
 		.encode()
@@ -68,7 +59,7 @@ fn get_unpaid_xcm_message(origin_kind: OriginKind) -> VersionedXcm<()> {
 	]))
 }
 
-fn get_paid_xcm_message(init_balance: Balance, origin_kind: OriginKind) -> VersionedXcm<()> {
+fn get_paid_xcm_message(init_balance: Balance, origin_kind: OriginKind) -> VersionedXcm {
 	let code = vec![];
 
 	let call: DoubleEncoded<()> = <Peregrine as Chain>::RuntimeCall::System(frame_system::Call::set_code { code })
@@ -105,13 +96,13 @@ fn test_sudo_call_from_relay_chain_to_peregrine() {
 	];
 
 	for origin_kind in origin_kind_list {
-		MockNetworkRococo::reset();
+		MockNetwork::reset();
 
 		let xcm = get_unpaid_xcm_message(origin_kind);
 
 		//Send XCM message from relay chain
 		Rococo::execute_with(|| {
-			assert_ok!(<Rococo as RococoPallet>::XcmPallet::send(
+			assert_ok!(<Rococo as RococoRelayPallet>::XcmPallet::send(
 				sudo_origin.clone(),
 				Box::new(parachain_destination.clone()),
 				Box::new(xcm)
@@ -133,17 +124,14 @@ fn test_sudo_call_from_relay_chain_to_peregrine() {
 			assert_expected_events!(
 				Peregrine,
 				vec![
-					PeregrineRuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-						outcome: xcm::v3::Outcome::Incomplete(_, xcm::v3::Error::NoPermission),
-						..
-					}) => {},
+					PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});
 
 		// No event on the AssetHub message is meant for peregrine
-		AssetHubRococo::execute_with(|| {
-			assert_eq!(AssetHubRococo::events().len(), 0);
+		AssetHub::execute_with(|| {
+			assert_eq!(AssetHub::events().len(), 0);
 		});
 	}
 }
@@ -152,8 +140,7 @@ fn test_sudo_call_from_relay_chain_to_peregrine() {
 fn test_sudo_call_from_asset_hub_to_peregrine() {
 	let asset_hub_sovereign_account = get_sovereign_account_id_of_asset_hub();
 
-	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
-
+	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
 	let parachain_destination = get_parachain_destination_from_parachain();
 	let init_balance = KILT * 10;
 
@@ -165,7 +152,7 @@ fn test_sudo_call_from_asset_hub_to_peregrine() {
 	];
 
 	for origin_kind in origin_kind_list {
-		MockNetworkRococo::reset();
+		MockNetwork::reset();
 
 		let xcm = get_paid_xcm_message(init_balance, origin_kind);
 
@@ -175,39 +162,35 @@ fn test_sudo_call_from_asset_hub_to_peregrine() {
 		});
 
 		//Send XCM message from AssetHub
-		AssetHubRococo::execute_with(|| {
-			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
+		AssetHub::execute_with(|| {
+			assert_ok!(<AssetHub as AssetHubRococoParaPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(parachain_destination.clone()),
 				Box::new(xcm)
 			));
 
-			type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
-				AssetHubRococo,
+				AssetHub,
 				vec![
 					RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 				]
 			);
 		});
 
-		// We expect to get the [NoPermission] error
 		Peregrine::execute_with(|| {
 			type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 			assert_expected_events!(
 				Peregrine,
 				vec![
-					PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {
-						error: xcm::v3::Error::NoPermission,
-						..
-					}) => {},
+					PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 				]
 			);
 		});
 
-		// No event on the relaychain. Message is for AssetHub
+		// No events on the relaychain. Message was for AssetHub
 		Rococo::execute_with(|| {
 			assert_eq!(Rococo::events().len(), 0);
 		});

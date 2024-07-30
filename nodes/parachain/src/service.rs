@@ -128,7 +128,7 @@ where
 		+ sp_api::ApiExt<Block>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_block_builder::BlockBuilder<Block>,
-	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
+	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 	Executor: NativeExecutionDispatch + 'static,
 	BIQ: FnOnce(
 		Arc<TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
@@ -230,7 +230,7 @@ where
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
-	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
+	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
 			Arc<TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
@@ -402,7 +402,7 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>,
-	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
+	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 {
 	let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
@@ -450,7 +450,7 @@ where
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
-	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
+	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 {
 	start_node_impl::<API, RE, _, _>(
 		parachain_config,
@@ -538,6 +538,7 @@ where
 		proposer,
 		collator_service,
 		authoring_duration: Duration::from_millis(AUTHORING_DURATION),
+		reinitialize: false,
 	};
 
 	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _, _>(params);

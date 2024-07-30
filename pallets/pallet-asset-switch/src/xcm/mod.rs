@@ -30,3 +30,6 @@ pub use trade::{UsingComponentsForSwitchPairRemoteAsset, UsingComponentsForXcmFe
 
 pub mod transact;
 pub use transact::SwitchPairRemoteAssetTransactor;
+
+#[cfg(test)]
+mod test_utils;

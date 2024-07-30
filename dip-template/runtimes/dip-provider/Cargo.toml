@@ -91,6 +91,7 @@ runtime-benchmarks = [
 std = [
   "cumulus-pallet-aura-ext/std",
   "cumulus-pallet-parachain-system/std",
+  "cumulus-primitives-aura/std",
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
   "did/std",

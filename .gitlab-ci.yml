@@ -27,7 +27,7 @@ clippy-and-docs:
   extends: .check_skip_rust
   interruptible: true
   timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   script:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
@@ -36,7 +36,7 @@ clippy-and-docs:
 fmt:
   interruptible: true
   extends: .check_skip_rust
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   script:
     - cargo fmt -- --check
@@ -47,7 +47,7 @@ test:
   interruptible: true
   extends: .check_skip_rust
   timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   script:
     - cargo test --all --all-targets --locked
@@ -56,7 +56,7 @@ test-features:
   extends: .check_skip_rust
   interruptible: true
   timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   script:
     - cargo test --all --all-features --all-targets --locked
@@ -65,7 +65,7 @@ integration-tests:
   extends: .check_skip_integration_tests
   interruptible: true
   timeout: 30 minutes
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   variables:
     CI: "true"
@@ -92,10 +92,10 @@ test-try-runtime:
       - RUNTIME: "spiritnet"
         ENDPOINT: "wss://spiritnet.kilt.io:443"
   timeout: 2 hours
-  image: paritytech/ci-unified:bullseye-1.70.0
+  image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   variables:
-    TRY_RUNTIME_CLI_VERSION_TAG: v0.6.1
+    TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0
   script:
     - curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${TRY_RUNTIME_CLI_VERSION_TAG}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
     - chmod +x ./try-runtime
@@ -138,7 +138,7 @@ build:
 build-wasm-peregrine:
   interruptible: true
   image:
-    name: paritytech/srtool:1.70.0
+    name: paritytech/srtool:1.74.0
     entrypoint: [""]
   stage: build
   only:
@@ -167,7 +167,7 @@ build-wasm-peregrine:
 build-wasm-spiritnet:
   interruptible: true
   image:
-    name: paritytech/srtool:1.70.0
+    name: paritytech/srtool:1.74.0
     entrypoint: [""]
   stage: build
   only:
@@ -200,7 +200,7 @@ build-wasm-try-runtime:
       - RUNTIME: "peregrine"
       - RUNTIME: "spiritnet"
   image:
-    name: paritytech/ci-unified:bullseye-1.70.0
+    name: paritytech/ci-unified:bullseye-1.74.0
     entrypoint: [""]
   stage: build
   only:

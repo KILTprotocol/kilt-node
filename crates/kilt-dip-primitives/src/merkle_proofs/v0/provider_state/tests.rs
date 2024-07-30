@@ -239,6 +239,7 @@ mod dip_did_proof_with_verified_relay_state_root {
 	);
 
 	impl frame_system::Config for TestProviderRuntime {
+		type RuntimeTask = ();
 		type AccountData = ();
 		type AccountId = AccountId32;
 		type BaseCallFilter = Everything;

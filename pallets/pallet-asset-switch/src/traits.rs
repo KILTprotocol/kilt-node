@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use xcm::VersionedMultiLocation;
+use xcm::VersionedLocation;
 
 use crate::{Config, LocalCurrencyBalanceOf};
 
@@ -32,7 +32,7 @@ where
 	/// Called before anything related to a switch happens.
 	fn pre_local_to_remote_switch(
 		from: &T::AccountId,
-		to: &VersionedMultiLocation,
+		to: &VersionedLocation,
 		amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error>;
 
@@ -40,7 +40,7 @@ where
 	/// been sent to the reserve location.
 	fn post_local_to_remote_switch(
 		from: &T::AccountId,
-		to: &VersionedMultiLocation,
+		to: &VersionedLocation,
 		amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error>;
 
@@ -49,8 +49,8 @@ where
 	/// the asset is actually deposited by the asset transactor.
 	fn pre_remote_to_local_switch(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
 
-	/// Same as [pre_remote_to_local_switch], but called after the transactor
-	/// has deposited the incoming remote asset.
+	/// Same as [Self::pre_remote_to_local_switch], but called after the
+	/// transactor has deposited the incoming remote asset.
 	fn post_remote_to_local_switch(to: &T::AccountId, amount: u128) -> Result<(), Self::Error>;
 }
 
@@ -63,7 +63,7 @@ where
 
 	fn pre_local_to_remote_switch(
 		_from: &T::AccountId,
-		_to: &VersionedMultiLocation,
+		_to: &VersionedLocation,
 		_amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error> {
 		Ok(())
@@ -71,7 +71,7 @@ where
 
 	fn post_local_to_remote_switch(
 		_from: &T::AccountId,
-		_to: &VersionedMultiLocation,
+		_to: &VersionedLocation,
 		_amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error> {
 		Ok(())

@@ -61,16 +61,17 @@ impl frame_system::Config for TestRuntime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = ();
 	type SS58Prefix = ();
 	type SystemWeightInfo = ();
 	type Version = ();
 }
 
 impl pallet_balances::Config for TestRuntime {
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = ConstU32<10>;
-	type MaxHolds = ConstU32<10>;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;

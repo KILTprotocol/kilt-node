@@ -16,21 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_runtime::{traits::TryConvert, AccountId32};
-use xcm::v3::Junction::{self, AccountId32 as AccountId32Junction};
+mod xcm_fee_asset;
+pub use xcm_fee_asset::IsSwitchPairXcmFeeAsset;
 
-const LOG_TARGET: &str = "xcm::pallet-asset-switch::AccountId32ToAccountId32JunctionConverter";
+mod switch_pair_remote_asset;
+pub use switch_pair_remote_asset::IsSwitchPairRemoteAsset;
 
-/// Type implementing `TryConvert<AccountId32, Junction>` and returns a
-/// `Junction` from an `AccountId32`.
-pub struct AccountId32ToAccountId32JunctionConverter;
-
-impl TryConvert<AccountId32, Junction> for AccountId32ToAccountId32JunctionConverter {
-	fn try_convert(account: AccountId32) -> Result<Junction, AccountId32> {
-		log::info!(target: LOG_TARGET, "try_convert {:?}", account);
-		Ok(AccountId32Junction {
-			network: None,
-			id: account.into(),
-		})
-	}
-}
+#[cfg(test)]
+mod mock;
