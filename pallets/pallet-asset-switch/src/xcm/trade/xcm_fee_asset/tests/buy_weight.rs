@@ -654,7 +654,7 @@ fn skips_on_stored_non_fungible_xcm_fee_asset_latest_with_non_fungible_input() {
 }
 
 #[test]
-fn skips_on_stored_fungible_xcm_fee_asset_v3_with_fungible_input() {
+fn skips_on_stored_non_fungible_xcm_fee_asset_v4_with_non_fungible_input() {
 	let location = Location {
 		parents: 1,
 		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
@@ -662,6 +662,48 @@ fn skips_on_stored_fungible_xcm_fee_asset_v3_with_fungible_input() {
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info =
 			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
+		// Set XCM fee asset to the XCM version 3.
+		let non_fungible_remote_xcm_fee_v4 = Asset::try_from(new_switch_pair_info.remote_xcm_fee)
+			.map(|asset| Asset {
+				id: asset.id,
+				fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+			})
+			.unwrap();
+		new_switch_pair_info.remote_xcm_fee = non_fungible_remote_xcm_fee_v4.into();
+		new_switch_pair_info
+	};
+	// Results in a required amount of `2` local currency tokens.
+	let weight_to_buy = Weight::from_parts(1, 1);
+	let xcm_context = XcmContext::with_message_id([0u8; 32]);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info.clone())
+		.build()
+		.execute_with(|| {
+			let mut weigher = UsingComponentsForXcmFeeAsset::<MockRuntime, _, SumTimeAndProofValues>::new();
+			let payment: AssetsInHolding = vec![Asset {
+				id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
+				fun: Fungibility::NonFungible(AssetInstance::Index(1)),
+			}]
+			.into();
+			assert_noop!(
+				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
+				Error::AssetNotFound
+			);
+			assert_storage_noop!(drop(weigher));
+		});
+}
+
+#[test]
+fn skips_on_stored_non_fungible_xcm_fee_asset_v3_with_fungible_input() {
+	let location = xcm::v3::MultiLocation {
+		parents: 1,
+		interior: xcm::v3::Junctions::X1(xcm::v3::Junction::Parachain(1_000)),
+	};
+	let new_switch_pair_info = {
+		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
+			&location.try_into().unwrap(),
+			SwitchPairStatus::Running,
+		);
 		// Set XCM fee asset to the XCM version 3.
 		let non_fungible_remote_xcm_fee_v3 = Asset::try_from(new_switch_pair_info.remote_xcm_fee)
 			.map(|asset| Asset {
@@ -694,47 +736,7 @@ fn skips_on_stored_fungible_xcm_fee_asset_v3_with_fungible_input() {
 }
 
 #[test]
-fn skips_on_stored_fungible_xcm_fee_asset_v3_with_non_fungible_input() {
-	let location = Location {
-		parents: 1,
-		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
-	};
-	let new_switch_pair_info = {
-		let mut new_switch_pair_info =
-			get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Running);
-		// Set XCM fee asset to the XCM version 3.
-		let non_fungible_remote_xcm_fee_v3 = Asset::try_from(new_switch_pair_info.remote_xcm_fee)
-			.map(|asset| Asset {
-				id: asset.id,
-				fun: Fungibility::NonFungible(AssetInstance::Index(1)),
-			})
-			.unwrap();
-		new_switch_pair_info.remote_xcm_fee = non_fungible_remote_xcm_fee_v3.into();
-		new_switch_pair_info
-	};
-	// Results in a required amount of `2` local currency tokens.
-	let weight_to_buy = Weight::from_parts(1, 1);
-	let xcm_context = XcmContext::with_message_id([0u8; 32]);
-	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
-		.build()
-		.execute_with(|| {
-			let mut weigher = UsingComponentsForXcmFeeAsset::<MockRuntime, _, SumTimeAndProofValues>::new();
-			let payment: AssetsInHolding = vec![Asset {
-				id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
-				fun: Fungibility::NonFungible(AssetInstance::Index(1)),
-			}]
-			.into();
-			assert_noop!(
-				weigher.buy_weight(weight_to_buy, payment, &xcm_context),
-				Error::AssetNotFound
-			);
-			assert_storage_noop!(drop(weigher));
-		});
-}
-
-#[test]
-fn skips_on_stored_fungible_xcm_fee_asset_v2_with_fungible_input() {
+fn skips_on_stored_non_fungible_xcm_fee_asset_v2_with_fungible_input() {
 	let location = xcm::v2::MultiLocation {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
@@ -778,7 +780,7 @@ fn skips_on_stored_fungible_xcm_fee_asset_v2_with_fungible_input() {
 }
 
 #[test]
-fn asd() {
+fn skips_on_stored_non_fungible_xcm_fee_asset_v2_with_non_fungible_input() {
 	let location = xcm::v2::MultiLocation {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
