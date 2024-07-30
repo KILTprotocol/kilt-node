@@ -428,7 +428,7 @@ pub mod pallet {
 			let remote_asset_fee_v4: Asset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
-					"Failed to convert remote XCM asset fee {:?} into v4 `MultiAssset` with error {:?}",
+					"Failed to convert remote XCM asset fee {:?} into v4 `Asset` with error {:?}",
 					switch_pair.remote_xcm_fee,
 					e
 				);
@@ -437,7 +437,7 @@ pub mod pallet {
 			let destination_v4: Location = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
-					"Failed to convert remote reserve location {:?} into v4 `MultiLocation` with error {:?}",
+					"Failed to convert remote reserve location {:?} into v4 `Location` with error {:?}",
 					switch_pair.remote_reserve_location,
 					e
 				);
@@ -446,7 +446,7 @@ pub mod pallet {
 			let beneficiary_v4: Location = (*beneficiary.clone()).try_into().map_err(|e| {
 				log::info!(
 					target: LOG_TARGET,
-					"Failed to convert beneficiary {:?} into v4 `MultiLocation` with error {:?}",
+					"Failed to convert beneficiary {:?} into v4 `Location` with error {:?}",
 					beneficiary,
 					e
 				);
