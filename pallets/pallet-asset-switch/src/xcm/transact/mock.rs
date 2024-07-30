@@ -33,7 +33,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
 	AccountId32,
 };
-use xcm::v3::MultiLocation;
+use xcm::v4::Location;
 use xcm_executor::traits::ConvertLocation;
 
 use crate::{NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf};
@@ -52,6 +52,7 @@ impl frame_system::Config for MockRuntime {
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<MockRuntime>;
 	type BlockHashCount = ConstU64<0>;
+	type RuntimeTask = ();
 	type BlockLength = ();
 	type BlockWeights = ();
 	type DbWeight = ();
@@ -79,12 +80,12 @@ impl pallet_balances::Config for MockRuntime {
 	type ExistentialDeposit = ConstU64<2>;
 	type FreezeIdentifier = [u8; 4];
 	type MaxFreezes = ConstU32<1>;
-	type MaxHolds = ConstU32<1>;
 	type MaxLocks = ConstU32<0>;
 	type MaxReserves = ConstU32<0>;
 	type ReserveIdentifier = ();
 	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = [u8; 4];
+	type RuntimeHoldReason = ();
+	type RuntimeFreezeReason = ();
 	type WeightInfo = ();
 }
 
@@ -109,7 +110,7 @@ pub(super) const SUCCESSFUL_ACCOUNT_ID: AccountId32 = AccountId32::new([100; 32]
 pub(super) struct SuccessfulAccountIdConverter;
 
 impl ConvertLocation<AccountId32> for SuccessfulAccountIdConverter {
-	fn convert_location(_location: &MultiLocation) -> Option<AccountId32> {
+	fn convert_location(_location: &Location) -> Option<AccountId32> {
 		Some(SUCCESSFUL_ACCOUNT_ID)
 	}
 }
@@ -117,7 +118,7 @@ impl ConvertLocation<AccountId32> for SuccessfulAccountIdConverter {
 pub(super) struct FailingAccountIdConverter;
 
 impl ConvertLocation<AccountId32> for FailingAccountIdConverter {
-	fn convert_location(_location: &MultiLocation) -> Option<AccountId32> {
+	fn convert_location(_location: &Location) -> Option<AccountId32> {
 		None
 	}
 }
@@ -170,7 +171,7 @@ impl ExtBuilder {
 			}
 			for (account, free, held, frozen) in self.1 {
 				<Balances as MutateFungible<AccountId32>>::mint_into(&account, free).unwrap();
-				<Balances as MutateHold<AccountId32>>::hold(b"test", &account, held).unwrap();
+				<Balances as MutateHold<AccountId32>>::hold(&(), &account, held).unwrap();
 				<Balances as MutateFreeze<AccountId32>>::set_freeze(b"test", &account, frozen).unwrap();
 
 				// If the specified account is the pool account, remove from the registered

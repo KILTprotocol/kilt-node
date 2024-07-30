@@ -18,7 +18,7 @@
 
 use frame_support::traits::ContainsPair;
 use sp_std::marker::PhantomData;
-use xcm::v3::{MultiAsset, MultiLocation};
+use xcm::v4::{Asset, Location};
 
 use crate::{Config, SwitchPair};
 
@@ -35,12 +35,12 @@ const LOG_TARGET: &str = "xcm::pallet-asset-switch::AllowXcmFeeAsset";
 /// the other XCM components, such as the asset transactor(s).
 pub struct IsSwitchPairXcmFeeAsset<T, I>(PhantomData<(T, I)>);
 
-impl<T, I> ContainsPair<MultiAsset, MultiLocation> for IsSwitchPairXcmFeeAsset<T, I>
+impl<T, I> ContainsPair<Asset, Location> for IsSwitchPairXcmFeeAsset<T, I>
 where
 	T: Config<I>,
 	I: 'static,
 {
-	fn contains(a: &MultiAsset, b: &MultiLocation) -> bool {
+	fn contains(a: &Asset, b: &Location) -> bool {
 		log::info!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
 		// 1. Verify a switch pair has been set and is enabled.
 		let Some(switch_pair) = SwitchPair::<T, I>::get() else {
@@ -51,23 +51,23 @@ where
 		}
 
 		// 2. We only trust the EXACT configured remote location (no parent is allowed).
-		let Ok(stored_remote_reserve_location_v3): Result<MultiLocation, _> = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v3 with error {:?}.", switch_pair.remote_reserve_location, e);
+		let Ok(stored_remote_reserve_location_v4): Result<Location, _> = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v4 xcm version with error {:?}.", switch_pair.remote_reserve_location, e);
 				e
 			 }) else { return false; };
-		if stored_remote_reserve_location_v3 != *b {
+		if stored_remote_reserve_location_v4 != *b {
 			log::trace!(
 				target: LOG_TARGET,
 				"Remote origin {:?} does not match expected origin {:?}",
 				b,
-				stored_remote_reserve_location_v3
+				stored_remote_reserve_location_v4
 			);
 			return false;
 		}
 
 		// 3. Verify the asset ID matches the configured XCM fee asset ID.
-		let Ok(stored_remote_asset_fee): Result<MultiAsset, _> = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
-				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into v3 with error {:?}.", switch_pair.remote_xcm_fee, e);
+		let Ok(stored_remote_asset_fee): Result<Asset, _> = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
+				log::error!(target: LOG_TARGET, "Failed to convert stored remote asset fee {:?} into v4 xcm version with error {:?}.", switch_pair.remote_xcm_fee, e);
 				e
 			 }) else { return false; };
 

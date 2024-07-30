@@ -18,7 +18,7 @@
 
 use frame_support::ensure;
 use sp_std::marker::PhantomData;
-use xcm::v3::{AssetId, Fungibility, MultiAsset, MultiLocation};
+use xcm::v4::{Asset, AssetId, Fungibility, Location};
 use xcm_executor::traits::{Error as XcmExecutorError, MatchesFungibles};
 
 use crate::{Config, SwitchPair};
@@ -36,14 +36,13 @@ const LOG_TARGET: &str = "xcm::pallet-asset-switch::MatchesSwitchPairXcmFeeFungi
 /// (`switch_pair_info.remote_xcm_fee`).
 pub struct MatchesSwitchPairXcmFeeFungibleAsset<T, I>(PhantomData<(T, I)>);
 
-impl<T, I, FungiblesBalance> MatchesFungibles<MultiLocation, FungiblesBalance>
-	for MatchesSwitchPairXcmFeeFungibleAsset<T, I>
+impl<T, I, FungiblesBalance> MatchesFungibles<Location, FungiblesBalance> for MatchesSwitchPairXcmFeeFungibleAsset<T, I>
 where
 	T: Config<I>,
 	I: 'static,
 	FungiblesBalance: From<u128>,
 {
-	fn matches_fungibles(a: &MultiAsset) -> Result<(MultiLocation, FungiblesBalance), XcmExecutorError> {
+	fn matches_fungibles(a: &Asset) -> Result<(Location, FungiblesBalance), XcmExecutorError> {
 		log::info!(target: LOG_TARGET, "matches_fungibles {:?}", a);
 		// 1. Retrieve switch pair from storage.
 		let switch_pair = SwitchPair::<T, I>::get().ok_or(XcmExecutorError::AssetNotHandled)?;
@@ -52,10 +51,10 @@ where
 		ensure!(switch_pair.is_enabled(), XcmExecutorError::AssetNotHandled);
 
 		// 3. Match stored asset ID with input asset ID.
-		let MultiAsset { id, fun } = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
+		let Asset { id, fun } = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
-				"Failed to convert stored remote fee asset {:?} into v3 MultiLocation with error {:?}.",
+				"Failed to convert stored remote fee asset {:?} into v4 Location with error {:?}.",
 				switch_pair.remote_xcm_fee,
 				e
 			);
@@ -71,18 +70,14 @@ where
 		// After this ensure, we know we need to be transacting with this asset, so any
 		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
-		// 5. Force stored asset as a concrete one.
-		let AssetId::Concrete(location) = id else {
-			log::error!(target: LOG_TARGET, "Configured XCM fee asset {:?} is supposed to be concrete but it is not.", id);
-			return Err(XcmExecutorError::AssetIdConversionFailed);
-		};
-		// 6. Force input asset as a fungible one and return its amount.
+		let AssetId(location) = id;
+		// 5. Force input asset as a fungible one and return its amount.
 		let Fungibility::Fungible(amount) = a.fun else {
 			log::info!(target: LOG_TARGET, "Input asset {:?} is supposed to be fungible but it is not.", a);
 			return Err(XcmExecutorError::AmountToBalanceConversionFailed);
 		};
 
-		log::trace!(target: LOG_TARGET, "matched {:?}", (location, amount));
+		log::trace!(target: LOG_TARGET, "matched {:?}", (location.clone(), amount));
 		Ok((location, amount.into()))
 	}
 }

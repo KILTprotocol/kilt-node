@@ -18,14 +18,14 @@
 
 use sp_runtime::traits::Zero;
 use xcm::{
-	v3::{AssetId, Fungibility, MultiAsset, MultiLocation},
-	VersionedAssetId, VersionedMultiAsset, VersionedMultiLocation,
+	v4::{Asset, AssetId, Fungibility, Location},
+	VersionedAsset, VersionedAssetId, VersionedLocation,
 };
 
 use crate::{Config, NewSwitchPairInfoOf, SwitchPairStatus};
 
 pub(super) fn get_switch_pair_info_for_remote_location_with_pool_usable_balance<Runtime>(
-	location: &MultiLocation,
+	location: &Location,
 	pool_usable_balance: u64,
 	status: SwitchPairStatus,
 ) -> NewSwitchPairInfoOf<Runtime>
@@ -35,10 +35,10 @@ where
 {
 	NewSwitchPairInfoOf::<Runtime> {
 		pool_account: Runtime::AccountId::from([1; 32]),
-		remote_asset_id: VersionedAssetId::V3(AssetId::Concrete(*location)),
-		remote_reserve_location: VersionedMultiLocation::V3(*location),
-		remote_xcm_fee: VersionedMultiAsset::V3(MultiAsset {
-			id: AssetId::Concrete(*location),
+		remote_asset_id: VersionedAssetId::V4(AssetId(location.clone())),
+		remote_reserve_location: VersionedLocation::V4(location.clone()),
+		remote_xcm_fee: VersionedAsset::V4(Asset {
+			id: AssetId(location.clone()),
 			fun: Fungibility::Fungible(1),
 		}),
 		remote_asset_total_supply: (u64::MAX as u128) + pool_usable_balance as u128,
@@ -49,7 +49,7 @@ where
 }
 
 pub(super) fn get_switch_pair_info_for_remote_location<Runtime>(
-	location: &MultiLocation,
+	location: &Location,
 	status: SwitchPairStatus,
 ) -> NewSwitchPairInfoOf<Runtime>
 where

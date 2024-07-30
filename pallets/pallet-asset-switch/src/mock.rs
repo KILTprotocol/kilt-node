@@ -20,7 +20,7 @@ use frame_support::{
 	construct_runtime, storage_alias,
 	traits::{
 		fungible::{Mutate, MutateFreeze, MutateHold},
-		Everything,
+		Everything, VariantCount,
 	},
 	Twox64Concat,
 };
@@ -32,13 +32,14 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32,
 };
-use xcm::v3::{
-	AssetId, Error as XcmError, Fungibility,
+use sp_std::sync::Arc;
+use xcm::v4::{
+	Asset, AssetId, Error as XcmError, Fungibility,
 	Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
 	Junctions::{Here, X1, X2},
-	MultiAsset, MultiLocation, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
+	Location, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
 };
-use xcm_executor::{traits::TransactAsset, Assets};
+use xcm_executor::{traits::TransactAsset, AssetsInHolding};
 
 use crate::{xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, Pallet};
 
@@ -70,6 +71,7 @@ impl frame_system::Config for MockRuntime {
 	type PalletInfo = PalletInfo;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeTask = ();
 	type RuntimeOrigin = RuntimeOrigin;
 	type SS58Prefix = ConstU16<1>;
 	type SystemWeightInfo = ();
@@ -79,6 +81,10 @@ impl frame_system::Config for MockRuntime {
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, MaxEncodedLen, Encode, Decode, Debug, TypeInfo, Default)]
 pub struct MockRuntimeHoldReason;
 
+impl VariantCount for MockRuntimeHoldReason {
+	const VARIANT_COUNT: u32 = 1;
+}
+
 impl pallet_balances::Config for MockRuntime {
 	type AccountStore = System;
 	type Balance = u64;
@@ -86,34 +92,34 @@ impl pallet_balances::Config for MockRuntime {
 	type ExistentialDeposit = ConstU64<1>;
 	type FreezeIdentifier = [u8; 1];
 	type MaxFreezes = ConstU32<10>;
-	type MaxHolds = ConstU32<10>;
 	type MaxLocks = ConstU32<10>;
 	type MaxReserves = ConstU32<10>;
 	type ReserveIdentifier = [u8; 1];
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = MockRuntimeHoldReason;
+	type RuntimeFreezeReason = ();
 	type WeightInfo = ();
 }
 
 // Used to temporarily store balances used in the mock.
 #[storage_alias]
-type BalancesStorage<T: Config> = StorageMap<Pallet<T>, Twox64Concat, MultiLocation, u128>;
+type BalancesStorage<T: Config> = StorageMap<Pallet<T>, Twox64Concat, Location, u128>;
 
 pub struct MockFungibleAssetTransactor;
 
 impl MockFungibleAssetTransactor {
-	pub(super) fn get_balance_for(account: &MultiLocation) -> u128 {
+	pub(super) fn get_balance_for(account: &Location) -> u128 {
 		BalancesStorage::<MockRuntime>::get(account).unwrap_or_default()
 	}
 }
 
 impl TransactAsset for MockFungibleAssetTransactor {
 	fn withdraw_asset(
-		what: &MultiAsset,
-		who: &MultiLocation,
+		what: &Asset,
+		who: &Location,
 		_maybe_context: Option<&XcmContext>,
-	) -> Result<Assets, XcmError> {
-		let MultiAsset {
+	) -> Result<AssetsInHolding, XcmError> {
+		let Asset {
 			fun: Fungibility::Fungible(amount),
 			..
 		} = *what
@@ -133,8 +139,8 @@ impl TransactAsset for MockFungibleAssetTransactor {
 		Ok(vec![what.clone()].into())
 	}
 
-	fn deposit_asset(what: &MultiAsset, who: &MultiLocation, _context: &XcmContext) -> Result<(), XcmError> {
-		let MultiAsset {
+	fn deposit_asset(what: &Asset, who: &Location, _context: Option<&XcmContext>) -> Result<(), XcmError> {
+		let Asset {
 			fun: Fungibility::Fungible(amount),
 			..
 		} = *what
@@ -158,7 +164,7 @@ pub struct AlwaysSuccessfulXcmRouter;
 impl SendXcm for AlwaysSuccessfulXcmRouter {
 	type Ticket = ();
 
-	fn validate(_destination: &mut Option<MultiLocation>, _message: &mut Option<Xcm<()>>) -> SendResult<Self::Ticket> {
+	fn validate(_destination: &mut Option<Location>, _message: &mut Option<Xcm<()>>) -> SendResult<Self::Ticket> {
 		Ok(((), vec![].into()))
 	}
 
@@ -188,7 +194,7 @@ impl crate::Config for MockRuntime {
 pub(super) struct ExtBuilder(
 	Option<NewSwitchPairInfoOf<MockRuntime>>,
 	Vec<(AccountId32, u64, u64, u64)>,
-	Vec<(AccountId32, MultiAsset)>,
+	Vec<(AccountId32, Asset)>,
 );
 
 pub(super) const FREEZE_REASON: [u8; 1] = *b"1";
@@ -205,7 +211,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub(super) fn with_fungibles(mut self, fungibles: Vec<(AccountId32, MultiAsset)>) -> Self {
+	pub(super) fn with_fungibles(mut self, fungibles: Vec<(AccountId32, Asset)>) -> Self {
 		self.2 = fungibles;
 		self
 	}
@@ -240,14 +246,15 @@ impl ExtBuilder {
 			for (account, asset) in self.2 {
 				MockFungibleAssetTransactor::deposit_asset(
 					&asset,
-					&MultiLocation {
+					&Location {
 						parents: 0,
-						interior: X1(AccountId32Junction {
+						interior: X1([AccountId32Junction {
 							network: None,
 							id: account.clone().into(),
-						}),
+						}]
+						.into()),
 					},
-					&XcmContext::with_message_id([0; 32]),
+					Some(&XcmContext::with_message_id([0; 32])),
 				)
 				.unwrap_or_else(|_| {
 					panic!(
@@ -282,28 +289,33 @@ impl ExtBuilder {
 	}
 }
 
-pub(super) const XCM_ASSET_FEE: MultiAsset = MultiAsset {
+pub(super) const XCM_ASSET_FEE: Asset = Asset {
 	id: PARENT_NATIVE_CURRENCY,
 	fun: Fungibility::Fungible(1_000),
 };
-const PARENT_NATIVE_CURRENCY: AssetId = AssetId::Concrete(PARENT_LOCATION);
-const PARENT_LOCATION: MultiLocation = MultiLocation {
+const PARENT_NATIVE_CURRENCY: AssetId = AssetId(PARENT_LOCATION);
+const PARENT_LOCATION: Location = Location {
 	parents: 1,
 	interior: Here,
 };
 
-pub(super) const ASSET_HUB_LOCATION: MultiLocation = MultiLocation {
-	parents: 1,
-	interior: X1(Parachain(1_000)),
-};
+pub(super) fn get_asset_hub_location() -> Location {
+	Location {
+		parents: 1,
+		interior: X1(Arc::new([Parachain(1_000)])),
+	}
+}
 
-pub(super) const REMOTE_ERC20_ASSET_ID: AssetId = AssetId::Concrete(MultiLocation {
-	parents: 2,
-	interior: X2(
-		GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
-		AccountKey20 {
-			network: None,
-			key: *b"!!test_eth_address!!",
-		},
-	),
-});
+pub(super) fn get_remote_erc20_asset_id() -> AssetId {
+	AssetId(Location {
+		parents: 2,
+		interior: X2([
+			GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+			AccountKey20 {
+				network: None,
+				key: *b"!!test_eth_address!!",
+			},
+		]
+		.into()),
+	})
+}

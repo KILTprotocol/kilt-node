@@ -24,8 +24,8 @@ use frame_support::{
 use sp_core::Get;
 use sp_runtime::traits::Zero;
 use sp_std::marker::PhantomData;
-use xcm::v3::{AssetId, Error, MultiAsset, Weight, XcmContext, XcmHash};
-use xcm_executor::{traits::WeightTrader, Assets};
+use xcm::v4::{Asset, AssetId, Error, Weight, XcmContext, XcmHash};
+use xcm_executor::{traits::WeightTrader, AssetsInHolding};
 
 use crate::{Config, LocalCurrencyBalanceOf, SwitchPair, SwitchPairInfoOf};
 
@@ -93,7 +93,12 @@ where
 		}
 	}
 
-	fn buy_weight(&mut self, weight: Weight, payment: Assets, context: &XcmContext) -> Result<Assets, Error> {
+	fn buy_weight(
+		&mut self,
+		weight: Weight,
+		payment: AssetsInHolding,
+		context: &XcmContext,
+	) -> Result<AssetsInHolding, Error> {
 		log::info!(
 			target: LOG_TARGET,
 			"buy_weight {:?}, {:?}, {:?}",
@@ -110,17 +115,17 @@ where
 
 		let amount = WeightToFee::weight_to_fee(&weight);
 
-		let switch_pair_remote_asset_v3: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
+		let switch_pair_remote_asset_v4: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
-				"Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}",
+				"Failed to convert stored asset ID {:?} into v4 AssetId with error {:?}",
 				switch_pair.remote_asset_id,
 				e
 			);
 			Error::FailedToTransactAsset("Failed to convert switch pair asset ID into required version.")
 		})?;
 
-		let required: MultiAsset = (switch_pair_remote_asset_v3, amount).into();
+		let required: Asset = (switch_pair_remote_asset_v4, amount).into();
 		let unused = payment.checked_sub(required.clone()).map_err(|_| Error::TooExpensive)?;
 
 		// Set link to XCM message ID only if this is the trader used.
@@ -132,7 +137,7 @@ where
 		Ok(unused)
 	}
 
-	fn refund_weight(&mut self, weight: Weight, context: &XcmContext) -> Option<MultiAsset> {
+	fn refund_weight(&mut self, weight: Weight, context: &XcmContext) -> Option<Asset> {
 		log::trace!(
 			target: LOG_TARGET,
 			"UsingComponents::refund_weight weight: {:?}, context: {:?}",
@@ -153,14 +158,14 @@ where
 			return None;
 		}
 
-		let switch_pair_remote_asset_v3: AssetId = switch_pair
+		let switch_pair_remote_asset_v4: AssetId = switch_pair
 			.remote_asset_id
 			.clone()
 			.try_into()
 			.map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
-					"Failed to convert stored asset ID {:?} into v3 AssetId with error {:?}",
+					"Failed to convert stored asset ID {:?} into v4 AssetId with error {:?}",
 					switch_pair.remote_asset_id,
 					e
 				);
@@ -181,9 +186,9 @@ where
 			log::trace!(
 				target: LOG_TARGET,
 				"Refund amount {:?}",
-				(switch_pair_remote_asset_v3, amount_to_refund)
+				(switch_pair_remote_asset_v4.clone(), amount_to_refund)
 			);
-			Some((switch_pair_remote_asset_v3, amount_to_refund).into())
+			Some((switch_pair_remote_asset_v4, amount_to_refund).into())
 		} else {
 			log::trace!(target: LOG_TARGET, "No refund");
 			None

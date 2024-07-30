@@ -17,19 +17,19 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_benchmarking::v2::instance_benchmarks;
-use xcm::{VersionedAssetId, VersionedInteriorMultiLocation, VersionedMultiAsset, VersionedMultiLocation};
+use xcm::{VersionedAsset, VersionedAssetId, VersionedInteriorLocation, VersionedLocation};
 
 pub struct PartialBenchmarkInfo {
-	pub beneficiary: Option<VersionedInteriorMultiLocation>,
-	pub destination: Option<VersionedMultiLocation>,
-	pub remote_xcm_fee: Option<VersionedMultiAsset>,
+	pub beneficiary: Option<VersionedInteriorLocation>,
+	pub destination: Option<VersionedLocation>,
+	pub remote_xcm_fee: Option<VersionedAsset>,
 	pub remote_asset_id: Option<VersionedAssetId>,
 }
 
 struct BenchmarkInfo {
-	beneficiary: VersionedInteriorMultiLocation,
-	destination: VersionedMultiLocation,
-	remote_xcm_fee: VersionedMultiAsset,
+	beneficiary: VersionedInteriorLocation,
+	destination: VersionedLocation,
+	remote_xcm_fee: VersionedAsset,
 	remote_asset_id: VersionedAssetId,
 }
 
@@ -57,10 +57,10 @@ mod benchmarks {
 	};
 	use frame_system::RawOrigin;
 	use sp_runtime::traits::{TryConvert, Zero};
-	use sp_std::{boxed::Box, vec};
+	use sp_std::boxed::Box;
 	use xcm::{
-		v3::{AssetId, Fungibility, Junction, Junctions, MultiAsset, MultiLocation, XcmContext},
-		VersionedAssetId, VersionedInteriorMultiLocation, VersionedMultiAsset, VersionedMultiLocation,
+		v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location, XcmContext},
+		VersionedAsset, VersionedAssetId, VersionedInteriorLocation, VersionedLocation,
 	};
 	use xcm_executor::traits::TransactAsset;
 
@@ -69,26 +69,29 @@ mod benchmarks {
 		Call, Config, LocalCurrencyBalanceOf, Pallet, SwitchPairStatus,
 	};
 
-	const fn default_info() -> BenchmarkInfo {
-		const DEFAULT_RESERVE_LOCATION: MultiLocation = MultiLocation {
+	fn default_info() -> BenchmarkInfo {
+		let default_reserve_location: Location = Location {
 			parents: 1,
-			interior: Junctions::X1(Junction::Parachain(1_000)),
+			interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 		};
-		const DEFAULT_REMOTE_ASSET_ID: AssetId = AssetId::Concrete(DEFAULT_RESERVE_LOCATION);
-		const DEFAULT_REMOTE_XCM_FEE: MultiAsset = MultiAsset {
-			id: DEFAULT_REMOTE_ASSET_ID,
+		let default_remote_asset_id: AssetId = AssetId(default_reserve_location.clone());
+		let default_remote_xcm_fee: Asset = Asset {
+			id: default_remote_asset_id.clone(),
 			fun: Fungibility::Fungible(100_000),
 		};
-		const DEFAULT_BENEFICIARY_JUNCTION: Junctions = Junctions::X1(Junction::AccountId32 {
-			network: None,
-			id: [0; 32],
-		});
+		let default_beneficiary: Junctions = Junctions::X1(
+			[Junction::AccountId32 {
+				network: None,
+				id: [0; 32],
+			}]
+			.into(),
+		);
 
 		BenchmarkInfo {
-			beneficiary: VersionedInteriorMultiLocation::V3(DEFAULT_BENEFICIARY_JUNCTION),
-			destination: VersionedMultiLocation::V3(DEFAULT_RESERVE_LOCATION),
-			remote_asset_id: VersionedAssetId::V3(DEFAULT_REMOTE_ASSET_ID),
-			remote_xcm_fee: VersionedMultiAsset::V3(DEFAULT_REMOTE_XCM_FEE),
+			beneficiary: VersionedInteriorLocation::V4(default_beneficiary),
+			destination: VersionedLocation::V4(default_reserve_location),
+			remote_asset_id: VersionedAssetId::V4(default_remote_asset_id),
+			remote_xcm_fee: VersionedAsset::V4(default_remote_xcm_fee),
 		}
 	}
 
@@ -281,14 +284,14 @@ mod benchmarks {
 			<T as Config<I>>::AssetTransactor::deposit_asset(
 				&remote_xcm_fee.try_into().unwrap(),
 				&(local_account_id_junction.into()),
-				&XcmContext::with_message_id(Default::default()),
+				None,
 			)
 			.unwrap();
 		}
 
 		// Push the beneficiary to the returned `destination` value.
 		let beneficiary = Box::new(
-			MultiLocation::try_from(destination)
+			Location::try_from(destination)
 				.unwrap()
 				.appended_with(Junctions::try_from(beneficiary).unwrap())
 				.unwrap()

@@ -21,7 +21,7 @@ use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
 use crate::{
-	mock::{ExtBuilder, MockRuntime, System, ASSET_HUB_LOCATION, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE},
+	mock::{get_asset_hub_location, get_remote_erc20_asset_id, ExtBuilder, MockRuntime, System, XCM_ASSET_FEE},
 	Event, NewSwitchPairInfoOf, Pallet, SwitchPair,
 };
 
@@ -33,9 +33,9 @@ fn successful() {
 			pool_account: [0u8; 32].into(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 1_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: Default::default(),
 		})
@@ -44,7 +44,7 @@ fn successful() {
 			assert!(SwitchPair::<MockRuntime>::get().is_none());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairRemoved {
-					remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+					remote_asset_id: get_remote_erc20_asset_id().into(),
 				}
 				.into()));
 		});
@@ -54,7 +54,7 @@ fn successful() {
 		assert!(SwitchPair::<MockRuntime>::get().is_none());
 		assert!(System::events().into_iter().map(|e| e.event).all(|e| e
 			!= Event::<MockRuntime>::SwitchPairRemoved {
-				remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+				remote_asset_id: get_remote_erc20_asset_id().into(),
 			}
 			.into()));
 	});

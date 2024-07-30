@@ -22,7 +22,7 @@ use sp_runtime::{
 	traits::{One, Zero},
 	AccountId32,
 };
-use xcm::v3::{Junction, Junctions, MultiLocation};
+use xcm::v4::{Junction, Junctions, Location};
 use xcm_executor::traits::WeightTrader;
 
 use crate::{
@@ -39,9 +39,9 @@ use crate::{
 
 #[test]
 fn happy_path() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	// ED + 1
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
@@ -88,9 +88,9 @@ fn no_switch_pair() {
 
 #[test]
 fn switch_pair_not_enabled() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
 		&location,
@@ -119,9 +119,9 @@ fn switch_pair_not_enabled() {
 
 #[test]
 fn zero_remaining_balance() {
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
 		&location,
@@ -149,9 +149,9 @@ fn zero_remaining_balance() {
 #[should_panic(expected = "Transferring from pool account to fee destination failed.")]
 fn fail_to_transfer_from_pool_account() {
 	// Same setup as the happy path, minus the balance set for the pool.
-	let location = MultiLocation {
+	let location = Location {
 		parents: 1,
-		interior: Junctions::X1(Junction::Parachain(1_000)),
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 	};
 	let new_switch_pair_info = get_switch_pair_info_for_remote_location_with_pool_usable_balance::<MockRuntime>(
 		&location,

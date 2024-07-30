@@ -25,12 +25,12 @@ use sp_runtime::{
 	traits::{One, TryConvert, Zero},
 	AccountId32, DispatchError,
 };
-use xcm::v3::{Fungibility, MultiAsset};
+use xcm::v4::{Asset, Fungibility};
 
 use crate::{
 	mock::{
-		Balances, ExtBuilder, MockFungibleAssetTransactor, MockRuntime, System, ASSET_HUB_LOCATION, FREEZE_REASON,
-		HOLD_REASON, REMOTE_ERC20_ASSET_ID, XCM_ASSET_FEE,
+		get_asset_hub_location, get_remote_erc20_asset_id, Balances, ExtBuilder, MockFungibleAssetTransactor,
+		MockRuntime, System, FREEZE_REASON, HOLD_REASON, XCM_ASSET_FEE,
 	},
 	switch::SwitchPairStatus,
 	xcm::convert::AccountId32ToAccountId32JunctionConverter,
@@ -49,9 +49,9 @@ fn successful() {
 			pool_account: pool_account.clone(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 100_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -61,7 +61,7 @@ fn successful() {
 				RawOrigin::Signed(user.clone()).into(),
 				// Cannot switch ED (1 in the mock), so we need to exclude that.
 				99_999,
-				Box::new(ASSET_HUB_LOCATION.into())
+				Box::new(get_asset_hub_location().into())
 			));
 			let total_currency_issuance_after = <Balances as Inspect<AccountId32>>::total_issuance();
 			// Total issuance of currency has not changed
@@ -101,7 +101,7 @@ fn successful() {
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
 					from: user.clone(),
-					to: ASSET_HUB_LOCATION.into()
+					to: get_asset_hub_location().into()
 				}
 				.into()));
 		});
@@ -113,9 +113,9 @@ fn successful() {
 			pool_account: pool_account.clone(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 100_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -124,7 +124,7 @@ fn successful() {
 			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
 				99_999,
-				Box::new(ASSET_HUB_LOCATION.into())
+				Box::new(get_asset_hub_location().into())
 			));
 			let total_currency_issuance_after = <Balances as Inspect<AccountId32>>::total_issuance();
 			// Total issuance of currency has not changed
@@ -164,7 +164,7 @@ fn successful() {
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
 					from: user.clone(),
-					to: ASSET_HUB_LOCATION.into()
+					to: get_asset_hub_location().into()
 				}
 				.into()));
 		});
@@ -177,9 +177,9 @@ fn successful() {
 			pool_account: pool_account.clone(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 100_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -188,7 +188,7 @@ fn successful() {
 			assert_ok!(Pallet::<MockRuntime>::switch(
 				RawOrigin::Signed(user.clone()).into(),
 				99_999,
-				Box::new(ASSET_HUB_LOCATION.into())
+				Box::new(get_asset_hub_location().into())
 			));
 			let total_currency_issuance_after = <Balances as Inspect<AccountId32>>::total_issuance();
 			// Total issuance of currency has not changed
@@ -228,7 +228,7 @@ fn successful() {
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
 					from: user.clone(),
-					to: ASSET_HUB_LOCATION.into()
+					to: get_asset_hub_location().into()
 				}
 				.into()));
 		});
@@ -238,7 +238,7 @@ fn successful() {
 fn fails_on_invalid_origin() {
 	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::switch(RawOrigin::Root.into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
+			Pallet::<MockRuntime>::switch(RawOrigin::Root.into(), 1, Box::new(get_asset_hub_location().into())),
 			DispatchError::BadOrigin
 		);
 	});
@@ -249,7 +249,11 @@ fn fails_on_non_existing_pool() {
 	let user = AccountId32::from([0; 32]);
 	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
-			Pallet::<MockRuntime>::switch(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
+			Pallet::<MockRuntime>::switch(
+				RawOrigin::Signed(user).into(),
+				1,
+				Box::new(get_asset_hub_location().into())
+			),
 			Error::<MockRuntime>::SwitchPairNotFound
 		);
 	});
@@ -264,15 +268,19 @@ fn fails_on_pool_not_running() {
 			pool_account,
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 100_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Paused,
 		})
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
-				Pallet::<MockRuntime>::switch(RawOrigin::Signed(user).into(), 1, Box::new(ASSET_HUB_LOCATION.into())),
+				Pallet::<MockRuntime>::switch(
+					RawOrigin::Signed(user).into(),
+					1,
+					Box::new(get_asset_hub_location().into())
+				),
 				Error::<MockRuntime>::SwitchPairNotEnabled
 			);
 		});
@@ -288,9 +296,9 @@ fn fails_on_not_enough_user_local_balance() {
 			pool_account: pool_account.clone(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 100_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -299,7 +307,7 @@ fn fails_on_not_enough_user_local_balance() {
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
 					100_000,
-					Box::new(ASSET_HUB_LOCATION.into())
+					Box::new(get_asset_hub_location().into())
 				),
 				Error::<MockRuntime>::UserSwitchBalance
 			);
@@ -311,9 +319,9 @@ fn fails_on_not_enough_user_local_balance() {
 			pool_account: pool_account.clone(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 100_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -322,7 +330,7 @@ fn fails_on_not_enough_user_local_balance() {
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
 					100_000,
-					Box::new(ASSET_HUB_LOCATION.into())
+					Box::new(get_asset_hub_location().into())
 				),
 				Error::<MockRuntime>::UserSwitchBalance
 			);
@@ -334,9 +342,9 @@ fn fails_on_not_enough_user_local_balance() {
 			pool_account: pool_account.clone(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 100_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -345,7 +353,7 @@ fn fails_on_not_enough_user_local_balance() {
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
 					100_000,
-					Box::new(ASSET_HUB_LOCATION.into())
+					Box::new(get_asset_hub_location().into())
 				),
 				Error::<MockRuntime>::UserSwitchBalance
 			);
@@ -357,9 +365,9 @@ fn fails_on_not_enough_user_local_balance() {
 			pool_account,
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 1_000_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -368,7 +376,7 @@ fn fails_on_not_enough_user_local_balance() {
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user).into(),
 					100_000,
-					Box::new(ASSET_HUB_LOCATION.into())
+					Box::new(get_asset_hub_location().into())
 				),
 				Error::<MockRuntime>::UserSwitchBalance
 			);
@@ -386,9 +394,9 @@ fn fails_on_not_enough_remote_balance() {
 			pool_account: pool_account.clone(),
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 50_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -397,7 +405,7 @@ fn fails_on_not_enough_remote_balance() {
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
 					50_001,
-					Box::new(ASSET_HUB_LOCATION.into())
+					Box::new(get_asset_hub_location().into())
 				),
 				Error::<MockRuntime>::Liquidity
 			);
@@ -409,9 +417,9 @@ fn fails_on_not_enough_remote_balance() {
 			pool_account,
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 1,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 50_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -421,7 +429,7 @@ fn fails_on_not_enough_remote_balance() {
 					RawOrigin::Signed(user.clone()).into(),
 					// Tradeable are only 49_999 because of the remote ED.
 					50_000,
-					Box::new(ASSET_HUB_LOCATION.into())
+					Box::new(get_asset_hub_location().into())
 				),
 				Error::<MockRuntime>::Liquidity
 			);
@@ -436,7 +444,7 @@ fn fails_on_not_enough_user_xcm_balance() {
 		.with_balances(vec![(user.clone(), 100_000, 0, 1)])
 		.with_fungibles(vec![(
 			user.clone(),
-			MultiAsset {
+			Asset {
 				// 1 unit less than required
 				fun: Fungibility::Fungible(999),
 				..XCM_ASSET_FEE
@@ -446,9 +454,9 @@ fn fails_on_not_enough_user_xcm_balance() {
 			pool_account,
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
-			remote_asset_id: REMOTE_ERC20_ASSET_ID.into(),
+			remote_asset_id: get_remote_erc20_asset_id().into(),
 			remote_asset_total_supply: 100_000,
-			remote_reserve_location: ASSET_HUB_LOCATION.into(),
+			remote_reserve_location: get_asset_hub_location().into(),
 			remote_xcm_fee: XCM_ASSET_FEE.into(),
 			status: SwitchPairStatus::Running,
 		})
@@ -457,7 +465,7 @@ fn fails_on_not_enough_user_xcm_balance() {
 				Pallet::<MockRuntime>::switch(
 					RawOrigin::Signed(user.clone()).into(),
 					50_001,
-					Box::new(ASSET_HUB_LOCATION.into())
+					Box::new(get_asset_hub_location().into())
 				),
 				Error::<MockRuntime>::UserXcmBalance
 			);
