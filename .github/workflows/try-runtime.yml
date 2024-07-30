@@ -5,8 +5,8 @@ on:
     types: [opened, synchronize, reopened, edited]
 
 concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0

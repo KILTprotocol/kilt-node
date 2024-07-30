@@ -1,22 +1,23 @@
-name: check fmt
 
+name: Clippy check all features
 on:
   pull_request:
-      types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  RUSTFLAGS: "-Dwarnings"
+
 jobs:
-  check-fmt:
+  clippy_check:
     runs-on: ubuntu-latest
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
     if: ${{ !contains(github.event.head_commit.message, '[ci-skip-rust]') }}
     steps:
       - uses: actions/checkout@v4
-      - name: Run cargo fmt
-        run: cargo fmt -- --check
-      - name: Run taplo
-        run: taplo fmt --check
+      - name: Run Clippy
+        run: cargo doc --all-features --no-deps --locked

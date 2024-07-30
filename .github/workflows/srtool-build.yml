@@ -5,8 +5,8 @@ on:
     types: [published]
 
 concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   SUBWASM_VERSION: v0.20.0
