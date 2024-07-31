@@ -2,6 +2,7 @@ import { SetupOption, setupContext } from '@acala-network/chopsticks-testing'
 
 import type { Config } from './types.js'
 import { ROC, initialBalanceKILT, initialBalanceROC, toNumber } from '../utils.js'
+import { AssetSwitchSupplyParameters } from '../types.js'
 
 /// Options used to create the Peregrine context
 const options = {
@@ -68,7 +69,7 @@ export function setSudoKey(sudoKey: string) {
 }
 
 export function setSwitchPair(
-	remoteAssetBalance: bigint = initialRemoteAssetBalance,
+	parameters: AssetSwitchSupplyParameters,
 	poolAccountId: string = initialPoolAccountId,
 	status: 'Running' | 'Paused' = 'Running'
 ) {
@@ -76,7 +77,9 @@ export function setSwitchPair(
 		assetSwitchPool1: {
 			SwitchPair: {
 				poolAccountId,
-				remoteAssetBalance,
+				remoteAssetSovereignTotalBalance: parameters.sovereignSupply,
+				remoteAssetCirculatingSupply: parameters.circulatingSupply,
+				remoteAssetTotalSupply: parameters.totalSupply,
 				remoteAssetId: {
 					V3: {
 						Concrete: {
@@ -95,8 +98,7 @@ export function setSwitchPair(
 						},
 					},
 				},
-
-				remoteFee: {
+				remoteXcmFee: {
 					V3: {
 						id: {
 							concrete: {
@@ -116,8 +118,11 @@ export function setSwitchPair(
 				status,
 			},
 		},
+		// the pool account needs at least as much fund to cover the circulating supply. Give him exactly that amount + ED.
 		System: {
-			Account: [[[poolAccountId], { providers: 1, data: { free: remoteAssetBalance } }]],
+			Account: [
+				[[poolAccountId], { providers: 1, data: { free: parameters.circulatingSupply + existentialDeposit } }],
+			],
 		},
 	}
 }
@@ -134,9 +139,10 @@ export const remoteFee = ROC / BigInt(10)
 
 /// Sibling sovereign account for other chains
 export const siblingSovereignAccount = '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'
+// ED on Peregrine
+export const existentialDeposit = BigInt('10000000000000')
 
 export const initialPoolAccountId = '4nv4phaKc4EcwENdRERuMF79ZSSB5xvnAk3zNySSbVbXhSwS'
-export const initialRemoteAssetBalance = BigInt('100000000000000000000')
 
 export async function getContext(): Promise<Config> {
 	return setupContext(options)

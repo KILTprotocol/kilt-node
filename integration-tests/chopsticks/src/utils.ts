@@ -1,5 +1,7 @@
 import { Keyring } from '@polkadot/keyring'
 
+import { AssetSwitchSupplyParameters } from './types.js'
+
 const keyring = new Keyring({ type: 'ed25519', ss58Format: 38 })
 
 export const keysAlice = keyring.addFromUri('//alice', undefined, 'ed25519')
@@ -12,6 +14,15 @@ export function toNumber(value: string | undefined): number | undefined {
 	}
 
 	return Number(value)
+}
+
+export function getAssetSwitchParameters(
+	totalSupply: bigint = BigInt('100000000000000000000'),
+	ratioCirculating: bigint = BigInt(10)
+): AssetSwitchSupplyParameters {
+	const circulatingSupply = (totalSupply * ratioCirculating) / BigInt(100)
+	const sovereignSupply = totalSupply - circulatingSupply
+	return { circulatingSupply, sovereignSupply, totalSupply }
 }
 
 export const KILT = BigInt(1e15)

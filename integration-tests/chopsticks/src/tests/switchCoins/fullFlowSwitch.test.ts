@@ -2,7 +2,15 @@ import { test } from 'vitest'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assetHub.js'
-import { KILT, ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
+import {
+	KILT,
+	ROC,
+	getAssetSwitchParameters,
+	initialBalanceKILT,
+	initialBalanceROC,
+	keysAlice,
+	keysCharlie,
+} from '../../utils.js'
 import {
 	peregrineContext,
 	getFreeBalancePeregrine,
@@ -25,15 +33,15 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 test('Full e2e tests', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
-	await peregrineContext.pause()
-
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
+	const switchParameters = getAssetSwitchParameters()
+
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -46,20 +54,23 @@ test('Full e2e tests', async ({ expect }) => {
 	// 1. send ROCs 2 Peregrine
 
 	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const beneficiary1 = getAccountLocationV3(hexAddress(keysAlice.address))
-	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC)] }
+	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
+	const rocAsset = { V3: [getRelayNativeAssetIdLocation((ROC * BigInt(2)).toString())] }
 
 	const signedTx1 = assethubContext.api.tx.polkadotXcm
-		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
+		.limitedReserveTransferAssets(peregrineDestination, beneficiary, rocAsset, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
 	const events1 = await sendTransaction(signedTx1)
-
 	await createBlock(assethubContext)
 
-	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
-	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
+	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot(
+		`sender AssetHub::xcmpQueue::[XcmpMessageSent]'  ${JSON.stringify(rocAsset)}`
+	)
+	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot('sender AssetHub::polkadotXcm::[FeesPaid,Attempted,Sent]')
+	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
+		'sender Assethub::balances::[Withdraw]'
+	)
 
 	await createBlock(peregrineContext)
 
@@ -71,7 +82,6 @@ test('Full e2e tests', async ({ expect }) => {
 	// 2. switch KILTs
 
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
 
 	const signedTx2 = peregrineContext.api.tx.assetSwitchPool1
 		.switch(balanceToTransfer.toString(), beneficiary)
@@ -80,7 +90,9 @@ test('Full e2e tests', async ({ expect }) => {
 	const events2 = await sendTransaction(signedTx2)
 
 	await createBlock(peregrineContext)
-	await checkEvents(events2, 'assetSwitchPool1').toMatchSnapshot('Switch events assetSwitchPool pallet')
+	await checkEvents(events2, 'assetSwitchPool1').toMatchSnapshot(
+		'receiver Peregrine::assetSwitchPool1::[LocalToRemoteSwitchExecuted]'
+	)
 
 	await createBlock(assethubContext)
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, balanceToTransfer)
@@ -136,7 +148,7 @@ test('Full e2e tests', async ({ expect }) => {
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, KILT * BigInt(25))
 
 	await checkEvents(events3, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		'Sending eKILTs back'
+		'sender AssetHub::foreignAssets::[Transferred]'
 	)
 
 	await createBlock(peregrineContext)
@@ -147,4 +159,16 @@ test('Full e2e tests', async ({ expect }) => {
 	])
 
 	// 4. send ROCs back TODO: implement
+
+	const assetHubDestination = { V3: getSiblingLocation(AssetHubConfig.paraId) }
+
+	const assets = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
+
+	const signedTx4 = peregrineContext.api.tx.polkadotXcm
+		.transferAssets(assetHubDestination, beneficiary, assets, 0, 'Unlimited')
+		.signAsync(keysAlice)
+
+	const events4 = await sendTransaction(signedTx4)
+
+	await peregrineContext.pause()
 }, 20_00000)
