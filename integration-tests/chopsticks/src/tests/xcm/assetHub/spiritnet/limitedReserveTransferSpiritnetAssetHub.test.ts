@@ -1,12 +1,12 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-import * as SpiritnetConfig from '../../../network/spiritnet.js'
-import * as AssetHubConfig from '../../../network/assetHub.js'
-import { KILT, initialBalanceKILT, keysAlice } from '../../../utils.js'
-import { spiritnetContext, assetHubContext, getFreeBalanceSpiritnet } from '../../index.js'
-import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocation } from '../../../network/utils.js'
-import { checkBalance, createBlock, hexAddress, setStorage } from '../../utils.js'
+import * as SpiritnetConfig from '../../../../network/spiritnet.js'
+import * as AssetHubConfig from '../../../../network/assetHub.js'
+import { KILT, initialBalanceKILT, keysAlice } from '../../../../utils.js'
+import { spiritnetContext, assethubContext, getFreeBalanceSpiritnet } from '../../../index.js'
+import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocation } from '../../../../network/utils.js'
+import { checkBalance, createBlock, hexAddress, setStorage } from '../../../utils.js'
 
 test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
@@ -58,10 +58,10 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 		assetHubSovereignAccountBalance + KILT
 	)
 
-	await createBlock(assetHubContext)
+	await createBlock(assethubContext)
 
 	// MSG processing will fail on AH.
-	await checkSystemEvents(assetHubContext, 'messageQueue').toMatchSnapshot(
+	await checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot(
 		`receiver assetHub::messageQueue::[Processed] asset ${JSON.stringify(kiltAsset)}`
 	)
 }, 20_000)

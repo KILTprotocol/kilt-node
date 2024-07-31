@@ -1,7 +1,7 @@
 import { test } from 'vitest'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
-import * as AssetHubConfig from '../../network/assethub.js'
+import * as AssetHubConfig from '../../network/assetHub.js'
 import { KILT, ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
 import { peregrineContext, getFreeRocPeregrine, getFreeEkiltAssetHub, assethubContext } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'

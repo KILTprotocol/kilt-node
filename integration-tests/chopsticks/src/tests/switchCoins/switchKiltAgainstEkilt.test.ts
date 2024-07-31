@@ -2,7 +2,7 @@ import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
-import * as AssetHubConfig from '../../network/assethub.js'
+import * as AssetHubConfig from '../../network/assetHub.js'
 import { initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
 import {
 	peregrineContext,

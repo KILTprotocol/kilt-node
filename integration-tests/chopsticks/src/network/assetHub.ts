@@ -1,7 +1,7 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 
 import type { Config } from './types.js'
-import { initialBalanceDOT, toNumber } from '../utils.js'
+import { initialBalanceDOT, initialBalanceKILT, toNumber } from '../utils.js'
 
 /// Options used to create the Spiritnet context
 export const getSetupOptions = ({
@@ -19,6 +19,90 @@ export const getSetupOptions = ({
 		blockNumber,
 	}) as SetupOption
 
+/// AssetHub has no own coin. Teleported dots are used as the native token.
+export function assignDotTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
+	return {
+		System: {
+			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance.toString() } }]),
+		},
+	}
+}
+
+export function createForeignAsset(
+	manager: string,
+	addr: string[],
+	balance: bigint = initialBalanceKILT * BigInt(1000000000000)
+) {
+	return {
+		foreignAssets: {
+			asset: [
+				[
+					[
+						{
+							parents: 2,
+							interior: {
+								X2: [
+									{ GlobalConsensus: { Ethereum: { chainId: 11155111 } } },
+									{
+										AccountKey20: {
+											network: null,
+											key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+										},
+									},
+								],
+							},
+						},
+					],
+					{
+						// owner is set to relay chain sovereign account. Check out if this is correct.
+						owner: '5Dt6dpkWPwLaH4BBCKJwjiWrFVAGyYk3tLUabvyn4v7KtESG',
+						issuer: manager,
+						admin: manager,
+						freezer: manager,
+						supply: BigInt(addr.length) * balance,
+						deposit: 100000000000,
+						minBalance: 100,
+						isSufficient: false,
+						accounts: addr.length,
+						sufficients: 0,
+						approvals: 0,
+						status: 'Live',
+					},
+				],
+			],
+
+			account: addr.map((addr) => [
+				[
+					{
+						parents: 2,
+						interior: {
+							X2: [
+								{
+									GlobalConsensus: { Ethereum: { chainId: 11155111 } },
+								},
+								{
+									AccountKey20: {
+										network: null,
+										key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+									},
+								},
+							],
+						},
+					},
+					addr,
+				],
+				{
+					balance: balance,
+					status: 'Liquid',
+					reason: 'Consumer',
+					extra: null,
+				},
+			]),
+		},
+	}
+}
+
+/// Assigns KSM to an account
 export function assignKSMtoAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
 	return {
 		foreignAssets: {
@@ -35,11 +119,40 @@ export function assignKSMtoAccounts(addr: string[], balance: bigint = initialBal
 	}
 }
 
-/// AssetHub has no own coin. Teleported dots are used as the native token.
-export function assignDotTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
+/// Assigns the foreign asset to the accounts.
+/// Does not check if supply is matching the sum of the account balances.
+export function assignForeignAssetToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
 	return {
-		System: {
-			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance.toString() } }]),
+		foreignAssets: {
+			account: [
+				addr.map(
+					(addr) => [
+						{
+							parents: 2,
+							interior: {
+								X2: [
+									{
+										GlobalConsensus: { Ethereum: { chainId: 11155111 } },
+									},
+									{
+										AccountKey20: {
+											network: null,
+											key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+										},
+									},
+								],
+							},
+						},
+						addr,
+					],
+					{
+						balance: balance,
+						status: 'Liquid',
+						reason: 'Consumer',
+						extra: null,
+					}
+				),
+			],
 		},
 	}
 }
@@ -58,6 +171,26 @@ export const KSMAssetLocation = {
 
 // Sibling Sovereign Account
 export const sovereignAccountOnSiblingChains = '4qXPdpimHh8TR24RSk994yVzxx4TLfvKj5i1qH5puvWmfAqy'
+
+/// Native token in AssetHub
+export const native = { parents: 1, interior: 'Here' }
+
+export const eKiltLocation = {
+	parents: 2,
+	interior: {
+		X2: [
+			{
+				GlobalConsensus: { Ethereum: { chainId: 11155111 } },
+			},
+			{
+				AccountKey20: {
+					network: null,
+					key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+				},
+			},
+		],
+	},
+}
 
 export async function getContext(): Promise<Config> {
 	const options = getSetupOptions({})

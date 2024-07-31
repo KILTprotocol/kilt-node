@@ -1270,7 +1270,7 @@ mod benches {
 		fn setup() -> Option<PartialBenchmarkInfo> {
 			const DESTINATION_PARA_ID: u32 = 1_000;
 
-			let asset_location: MultiLocation = Junctions::Here.into();
+			let asset_location: Location = Junctions::Here.into();
 			Fungibles::create(
 				RawOrigin::Root.into(),
 				asset_location,
@@ -1278,15 +1278,18 @@ mod benches {
 				1u32.into(),
 			)
 			.unwrap();
-			let beneficiary = Junctions::X1(Junction::AccountId32 {
-				network: None,
-				id: [0; 32],
-			})
+			let beneficiary = Junctions::X1(
+				[Junction::AccountId32 {
+					network: None,
+					id: [0; 32],
+				}]
+				.into(),
+			)
 			.into();
 			let destination =
-				MultiLocation::from(ParentThen(Junctions::X1(Junction::Parachain(DESTINATION_PARA_ID)))).into();
+				Location::from(ParentThen(Junctions::X1(Junction::Parachain(DESTINATION_PARA_ID)))).into();
 			let remote_xcm_fee = MultiAsset {
-				id: AssetId::Concrete(asset_location),
+				id: AssetId(asset_location),
 				fun: Fungibility::Fungible(1_000),
 			}
 			.into();

@@ -67,9 +67,6 @@ test('User gets dusted with ROCs', async ({ expect }) => {
 	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, initialBalanceROC)
 }, 20_000)
 
-// Is failing: Todo: Fix XCM config
-
-// Is failing: Todo: Fix XCM config
 test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
@@ -141,5 +138,5 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 		method: 'ExecutedDownward',
 	}).toMatchSnapshot('receiver events dmpQueue')
 
-	//await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
+	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
 }, 20_000)

@@ -75,7 +75,6 @@ export function setSwitchPair(
 	return {
 		assetSwitchPool1: {
 			SwitchPair: {
-				// Todo: replace with the actual address
 				poolAccountId,
 				remoteAssetBalance,
 				remoteAssetId: {
@@ -85,7 +84,6 @@ export function setSwitchPair(
 							interior: {
 								X2: [
 									{ GlobalConsensus: { Ethereum: { chainId: 11155111 } } },
-									// Todo: replace with the actual address
 									{
 										AccountKey20: {
 											network: null,

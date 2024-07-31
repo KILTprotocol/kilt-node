@@ -1,18 +1,18 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-import * as SpiritnetConfig from '../../../network/spiritnet.js'
-import * as AssetHubConfig from '../../../network/assetHub.js'
-import { DOT, keysAlice } from '../../../utils.js'
-import { spiritnetContext, assetHubContext } from '../../index.js'
-import { getSiblingLocation } from '../../../network/utils.js'
-import { createBlock, hexAddress, setStorage } from '../../utils.js'
+import * as SpiritnetConfig from '../../../../network/spiritnet.js'
+import * as AssetHubConfig from '../../../../network/assetHub.js'
+import { DOT, keysAlice } from '../../../../utils.js'
+import { spiritnetContext, assethubContext } from '../../../index.js'
+import { getSiblingLocation } from '../../../../network/utils.js'
+import { createBlock, hexAddress, setStorage } from '../../../utils.js'
 
 test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KSM
-	await setStorage(assetHubContext, {
+	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts([keysAlice.address]),
 		...AssetHubConfig.assignKSMtoAccounts([keysAlice.address]),
 	})
@@ -41,7 +41,7 @@ test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice
 	}
 
 	// Otherwise the it is tried to route the msg over KSM.
-	const signedTx = assetHubContext.api.tx.polkadotXcm
+	const signedTx = assethubContext.api.tx.polkadotXcm
 		.transferAssetsUsingTypeAndThen(
 			spiritnetDestination,
 			KSMAsset,
@@ -54,7 +54,7 @@ test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice
 		.signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)
-	await createBlock(assetHubContext)
+	await createBlock(assethubContext)
 
 	// MSG should still be send.
 	await checkEvents(events, 'xcmpQueue').toMatchSnapshot(

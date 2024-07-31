@@ -5,7 +5,7 @@ import { setTimeout } from 'timers/promises'
 import * as SpiritnetConfig from '../network/spiritnet.js'
 import * as PolkadotConfig from '../network/polkadot.js'
 import * as HydraDxConfig from '../network/hydraDx.js'
-import * as AssetHubConfig from '../network/assethub.js'
+import * as AssetHubConfig from '../network/assetHub.js'
 import * as RococoConfig from '../network/rococo.js'
 import * as BasiliskConfig from '../network/basilisk.js'
 import * as PeregrineConfig from '../network/peregrine.js'
@@ -87,7 +87,7 @@ export async function getFreeBalancePeregrine(account: string): Promise<bigint> 
 
 export async function getFreeRocPeregrine(account: string): Promise<bigint> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const accountInfo: any = await peregrineContext.api.query.fungibles.account(AssetHubConfig.ROC, account)
+	const accountInfo: any = await peregrineContext.api.query.fungibles.account(AssetHubConfig.native, account)
 	if (accountInfo.isNone) {
 		return BigInt(0)
 	}

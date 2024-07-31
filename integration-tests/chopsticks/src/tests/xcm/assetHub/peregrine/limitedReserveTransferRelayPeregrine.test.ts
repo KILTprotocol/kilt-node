@@ -1,12 +1,12 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-import * as PeregrineConfig from '../../network/peregrine.js'
-import * as RococoConfig from '../../network/rococo.js'
-import { initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
-import { peregrineContext, getFreeBalancePeregrine, getFreeRocPeregrine, rococoContext } from '../index.js'
-import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
-import { getAccountLocationV3, getChildLocation, getNativeAssetIdLocation } from '../../network/utils.js'
+import * as PeregrineConfig from '../../../../network/peregrine.js'
+import * as RococoConfig from '../../../../network/rococo.js'
+import { initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../../../utils.js'
+import { peregrineContext, getFreeBalancePeregrine, getFreeRocPeregrine, rococoContext } from '../../../index.js'
+import { checkBalance, createBlock, setStorage, hexAddress } from '../../../utils.js'
+import { getAccountLocationV3, getChildLocation, getNativeAssetIdLocation } from '../../../../network/utils.js'
 
 // TODO: fix this test case. We only want to allow the transfer of DOTs from AH
 test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
@@ -54,5 +54,5 @@ test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 		method: 'ExecutedDownward',
 	}).toMatchSnapshot('receiver events dmpQueue pallet')
 
-	//	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
+	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
 }, 20_000)

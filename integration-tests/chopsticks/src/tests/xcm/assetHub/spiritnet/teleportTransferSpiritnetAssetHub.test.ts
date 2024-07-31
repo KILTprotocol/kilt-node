@@ -1,11 +1,11 @@
 import { test } from 'vitest'
 
-import * as SpiritnetConfig from '../../../network/spiritnet.js'
-import * as AssetHubConfig from '../../../network/assetHub.js'
-import { KILT, initialBalanceKILT, keysAlice } from '../../../utils.js'
-import { spiritnetContext, getFreeBalanceSpiritnet } from '../../index.js'
-import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocation } from '../../../network/utils.js'
-import { checkBalance, createBlock, hexAddress, setStorage } from '../../utils.js'
+import * as SpiritnetConfig from '../../../../network/spiritnet.js'
+import * as AssetHubConfig from '../../../../network/assetHub.js'
+import { KILT, initialBalanceKILT, keysAlice } from '../../../../utils.js'
+import { spiritnetContext, getFreeBalanceSpiritnet } from '../../../index.js'
+import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocation } from '../../../../network/utils.js'
+import { checkBalance, createBlock, hexAddress, setStorage } from '../../../utils.js'
 
 test('Teleport assets from Spiritnet Account Alice -> AH Account Alice', async ({ expect }) => {
 	// Assign alice some KILT tokens

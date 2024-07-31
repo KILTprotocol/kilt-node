@@ -2,7 +2,7 @@ import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
-import * as AssetHubConfig from '../../network/assethub.js'
+import * as AssetHubConfig from '../../network/assetHub.js'
 import * as RococoConfig from '../../network/rococo.js'
 import { KILT, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
 import { peregrineContext, assethubContext, rococoContext } from '../index.js'
@@ -15,12 +15,12 @@ test('Trapped assets', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [
 			keysAlice.address,
-			AssetHubConfig.siblingSovereignAccount,
+			AssetHubConfig.sovereignAccountOnSiblingChains,
 		]),
 		...PeregrineConfig.setSwitchPair(),
 		...PeregrineConfig.setSafeXcmVersion3(),
 		...PeregrineConfig.assignNativeTokensToAccounts(
-			[keysAlice.address, AssetHubConfig.siblingSovereignAccount],
+			[keysAlice.address, AssetHubConfig.sovereignAccountOnSiblingChains],
 			initialBalanceKILT
 		),
 		...PeregrineConfig.setSudoKey(keysAlice.address),

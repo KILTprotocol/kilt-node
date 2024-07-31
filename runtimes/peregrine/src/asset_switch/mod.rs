@@ -43,7 +43,7 @@ impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestination
 		let to_as: Location = to.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
-				"Failed to convert beneficiary Multilocation {:?} to v3 with error {:?}",
+				"Failed to convert beneficiary Location {:?} to v4 with error {:?}",
 				to,
 				e
 			);

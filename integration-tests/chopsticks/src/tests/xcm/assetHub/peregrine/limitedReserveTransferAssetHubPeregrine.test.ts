@@ -1,12 +1,12 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-import * as PeregrineConfig from '../../network/peregrine.js'
-import * as AssetHubConfig from '../../network/assethub.js'
-import { ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../utils.js'
-import { peregrineContext, assethubContext, getFreeRocPeregrine, getFreeRocAssetHub } from '../index.js'
-import { getAccountLocationV3, getRelayNativeAssetIdLocation, getSiblingLocation } from '../../network/utils.js'
-import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../utils.js'
+import * as PeregrineConfig from '../../../../network/peregrine.js'
+import * as AssetHubConfig from '../../../../network/assetHub.js'
+import { ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../../../utils.js'
+import { peregrineContext, assethubContext, getFreeRocPeregrine, getFreeRocAssetHub } from '../../../index.js'
+import { getAccountLocationV3, getRelayNativeAssetIdLocation, getSiblingLocation } from '../../../../network/utils.js'
+import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../../../utils.js'
 
 const ROC_ASSET_V3 = { V3: [getRelayNativeAssetIdLocation(ROC)] }
 

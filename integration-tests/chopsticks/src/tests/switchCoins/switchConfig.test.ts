@@ -1,7 +1,7 @@
 import { test } from 'vitest'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
-import * as AssetHubConfig from '../../network/assethub.js'
+import * as AssetHubConfig from '../../network/assetHub.js'
 import * as RococoConfig from '../../network/rococo.js'
 import { initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../utils.js'
 import {
@@ -262,7 +262,7 @@ test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 
 //FIX ME: This test is failing
 test('Pool accounts funds goes to zero', async ({ expect }) => {
-	const { checkEvents } = withExpect(expect)
+	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Setup switch Pair.
 	await setStorage(peregrineContext, {
@@ -350,9 +350,9 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 	// TODO FIX me
 	// It is expected that the FailedToTransactAsset error is been thrown.
 
-	// checkSystemEvents(peregrineContext, { section: 'xcmpQueue', method: 'Fail' }).toMatchSnapshot(
-	// 	'receiver events xcm queue pallet'
-	// )
+	await checkSystemEvents(peregrineContext, { section: 'xcmpQueue', method: 'Fail' }).toMatchSnapshot(
+		'receiver events xcm queue pallet'
+	)
 }, 20_000)
 
 test('Send eKILT while switch Pair does not exist', async ({ expect }) => {

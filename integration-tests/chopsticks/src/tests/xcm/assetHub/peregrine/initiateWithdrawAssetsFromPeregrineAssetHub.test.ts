@@ -1,12 +1,12 @@
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-import * as PeregrineConfig from '../../network/peregrine.js'
-import * as AssetHubConfig from '../../network/assethub.js'
-import { ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../utils.js'
-import { peregrineContext, assethubContext, getFreeRocPeregrine, getFreeRocAssetHub } from '../index.js'
-import { getSiblingLocation } from '../../network/utils.js'
-import { checkBalance, createBlock, hexAddress, setStorage } from '../utils.js'
+import * as PeregrineConfig from '../../../../network/peregrine.js'
+import * as AssetHubConfig from '../../../../network/assetHub.js'
+import { ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../../../utils.js'
+import { peregrineContext, assethubContext, getFreeRocPeregrine, getFreeRocAssetHub } from '../../../index.js'
+import { getSiblingLocation } from '../../../../network/utils.js'
+import { checkBalance, createBlock, hexAddress, setStorage } from '../../../utils.js'
 
 function getXcmMessage(amount: string | number, beneficiary: string) {
 	return {

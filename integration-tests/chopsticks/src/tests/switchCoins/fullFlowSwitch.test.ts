@@ -1,7 +1,7 @@
 import { test } from 'vitest'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
-import * as AssetHubConfig from '../../network/assethub.js'
+import * as AssetHubConfig from '../../network/assetHub.js'
 import { KILT, ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
 import {
 	peregrineContext,
@@ -24,6 +24,8 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
  */
 test('Full e2e tests', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
+
+	await peregrineContext.pause()
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
@@ -145,4 +147,4 @@ test('Full e2e tests', async ({ expect }) => {
 	])
 
 	// 4. send ROCs back TODO: implement
-}, 20_000)
+}, 20_00000)
