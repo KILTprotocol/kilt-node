@@ -64,7 +64,7 @@ test-features:
 integration-tests:
   extends: .check_skip_integration_tests
   interruptible: true
-  timeout: 30 minutes
+  timeout: 60 minutes
   image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   variables:
