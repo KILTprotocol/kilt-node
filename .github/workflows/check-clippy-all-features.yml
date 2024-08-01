@@ -12,15 +12,12 @@ env:
 jobs:
   clippy_check:
     runs-on: ubuntu-latest
-    container:
-      image: paritytech/ci-unified:bullseye-1.74.0
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
           remove-android: 'true'
           remove-dotnet: 'true'
-        container: false
       - uses: actions/checkout@v4
       - name: Run Clippy
         run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --quiet
