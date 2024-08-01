@@ -1,0 +1,155 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::balances::[Minted,Burned] 1`] = `
+[
+  {
+    "data": {
+      "amount": 50000000000000,
+      "who": "5Ec4AhNugFBakYoh6kD3mgCkUDhy4vVm5o78KDtG42yrXKwS",
+    },
+    "method": "Burned",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 50000000000000)",
+      "who": "5Ec4AhNtskxrg56TpEJ8zweU5h4JVUmGgxDqnoE1grqycu6q",
+    },
+    "method": "Minted",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 130000000)",
+      "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+    },
+    "method": "Minted",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 21000000)",
+    },
+    "method": "Issued",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 21000000)",
+      "who": "5EF1JnrXWWDQrQCHhL77Hxy3WwxVzDv8JBwj6oDeZTd3FgLc",
+    },
+    "method": "Deposit",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::messageQueue::[Processed] 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Ump": {
+          "Para": "(rounded 2100)",
+        },
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": 7200,
+        "refTime": "(rounded 630000000)",
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::messageQueue::[ProcessingFailed] 1`] = `
+[
+  {
+    "data": {
+      "error": "Unsupported",
+      "id": "(hash)",
+      "origin": "Parent",
+    },
+    "method": "ProcessingFailed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Send DOTs from basilisk 2 Peregrine > sender basilisk::parachainSystem::[UpwardMessageSent] 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "UpwardMessageSent",
+    "section": "parachainSystem",
+  },
+]
+`;
+
+exports[`Send DOTs from basilisk 2 Peregrine > sender basilisk::tokens::[Withdraw] DOTs 1`] = `
+[
+  {
+    "data": {
+      "amount": 50000000000000,
+      "currencyId": 5,
+      "who": "bXmKs2MD6WHcgPEjjDNfgAU7nTzxz3zm9DF6xHajqETdpYBP3",
+    },
+    "method": "Withdrawn",
+    "section": "tokens",
+  },
+]
+`;
+
+exports[`Send DOTs from basilisk 2 Peregrine > sender basilisk::xTokens::[TransferredAssets] DOTs 1`] = `
+[
+  {
+    "data": {
+      "assets": [
+        {
+          "fun": {
+            "Fungible": 50000000000000,
+          },
+          "id": {
+            "interior": "Here",
+            "parents": 1,
+          },
+        },
+      ],
+      "dest": {
+        "interior": {
+          "X2": [
+            {
+              "Parachain": "(rounded 2100)",
+            },
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": null,
+              },
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "fee": {
+        "fun": {
+          "Fungible": 50000000000000,
+        },
+        "id": {
+          "interior": "Here",
+          "parents": 1,
+        },
+      },
+      "sender": "bXmKs2MD6WHcgPEjjDNfgAU7nTzxz3zm9DF6xHajqETdpYBP3",
+    },
+    "method": "TransferredAssets",
+    "section": "xTokens",
+  },
+]
+`;

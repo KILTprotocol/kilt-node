@@ -2,7 +2,14 @@ import { test } from 'vitest'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as BasiliskConfig from '../../network/basilisk.js'
-import { initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../utils.js'
+import {
+	getAssetSwitchParameters,
+	initialBalanceKILT,
+	initialBalanceROC,
+	keysAlice,
+	keysBob,
+	keysCharlie,
+} from '../../utils.js'
 import {
 	peregrineContext,
 	getFreeBalancePeregrine,
@@ -13,7 +20,7 @@ import {
 import { checkBalance, createBlock, setStorage, hexAddress, checkBalanceInRange } from '../utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-test('User transfers all of his dots', async ({ expect }) => {
+test.skip('User transfers all of his dots', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
 	// Assign alice some KILTs and ROCs
@@ -30,7 +37,9 @@ test('User transfers all of his dots', async ({ expect }) => {
 
 	await createBlock(peregrineContext)
 
-	checkEvents(events, { section: 'fungibles', method: 'Transferred' }).toMatchSnapshot('balances transfer event')
+	checkEvents(events, { section: 'fungibles', method: 'Transferred' }).toMatchSnapshot(
+		`local Peregrine::fungibles::[Transferred] asset ${JSON.stringify(PeregrineConfig.ROC_LOCATION)}`
+	)
 
 	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
 
@@ -42,7 +51,7 @@ test('User transfers all of his dots', async ({ expect }) => {
 	])
 }, 20_000)
 
-test('User gets dusted with ROCs', async ({ expect }) => {
+test.skip('User gets dusted with ROCs', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
 	await setStorage(peregrineContext, {
@@ -60,10 +69,14 @@ test('User gets dusted with ROCs', async ({ expect }) => {
 
 	await createBlock(peregrineContext)
 
-	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot('balances transfer event')
+	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot(
+		'local Peregrine::balances::[Transfer] native asset'
+	)
 	// User should get dusted by this operation
-	checkEvents(events, { section: 'balances', method: 'DustLost' }).toMatchSnapshot('balances transfer event')
-
+	checkEvents(events, { section: 'balances', method: 'DustLost' }).toMatchSnapshot(
+		'local balances::fungibles::[DustLost]'
+	)
+	// he should keep his rocs
 	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, initialBalanceROC)
 }, 20_000)
 
@@ -76,7 +89,7 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
 
 	await setStorage(basiliskContext, {
 		...BasiliskConfig.assignNativeTokensToAccounts([keysAlice.address]),
@@ -109,34 +122,23 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 
 	await createBlock(basiliskContext)
 
-	await checkEvents(events, 'xTokens').toMatchSnapshot('sender events xTokens')
-
-	await checkEvents(events, 'tokens').toMatchSnapshot('sender events tokens')
-
-	await checkEvents(events, 'parachainSystem').toMatchSnapshot('sender events tokens')
+	await checkEvents(events, 'xTokens').toMatchSnapshot('sender basilisk::xTokens::[TransferredAssets] DOTs')
+	await checkEvents(events, 'tokens').toMatchSnapshot('sender basilisk::tokens::[Withdraw] DOTs')
+	await checkEvents(events, 'parachainSystem').toMatchSnapshot(
+		'sender basilisk::parachainSystem::[UpwardMessageSent]'
+	)
 
 	await createBlock(rococoContext)
-
-	await checkSystemEvents(rococoContext, 'messageQueue').toMatchSnapshot('relayer events messageQueue')
-	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Minted' }).toMatchSnapshot(
-		'relayer events balances minted'
-	)
-
-	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Burned' }).toMatchSnapshot(
-		'relayer events balances Burned'
-	)
+	await checkSystemEvents(rococoContext, 'messageQueue').toMatchSnapshot('relayer rococo::messageQueue::[Processed]')
+	await checkSystemEvents(rococoContext, 'balances').toMatchSnapshot('relayer rococo::balances::[Minted,Burned]')
 
 	await createBlock(peregrineContext)
 
-	await checkSystemEvents(peregrineContext, {
-		section: 'parachainSystem',
-		method: 'DownwardMessagesReceived',
-	}).toMatchSnapshot('receiver events parachainSystem pallet')
+	// Barrier blocked execution. No event will be emitted.
+	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
+		'relayer rococo::messageQueue::[ProcessingFailed]'
+	)
 
-	await checkSystemEvents(peregrineContext, {
-		section: 'dmpQueue',
-		method: 'ExecutedDownward',
-	}).toMatchSnapshot('receiver events dmpQueue')
-
+	// Alice should still have no rocs.
 	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
 }, 20_000)

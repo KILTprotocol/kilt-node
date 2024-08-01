@@ -3,7 +3,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assetHub.js'
-import { initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
+import { getAssetSwitchParameters, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
 import {
 	peregrineContext,
 	getFreeBalancePeregrine,
@@ -20,7 +20,7 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSwitchPair(),
+		...PeregrineConfig.setSwitchPair(getAssetSwitchParameters()),
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
 
@@ -57,7 +57,7 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 		V3: [
 			{
 				id: { Concrete: AssetHubConfig.eKiltLocation },
-				fun: { Fungible: balanceToTransfer },
+				fun: { Fungible: balanceToTransfer.toString() },
 			},
 		],
 	}
@@ -96,10 +96,14 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 
 	await createBlock(assethubContext)
 
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('assetHubs events xcm queue pallet')
-	checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot('PolkadotXcm assethub')
+	checkEvents(events, 'xcmpQueue').toMatchSnapshot(
+		`sender AssetHubs::xcmpQueue::[XcmpMessageSent] ${JSON.stringify(funds)}`
+	)
+	checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot(
+		`sender AssetHub::polkadotXcm::[Attempted] ${JSON.stringify(funds)}`
+	)
 	checkEvents(events, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		'sender events foreignAssets'
+		`sender AssetHub::foreignAssets::[Transferred] ${JSON.stringify(funds)}`
 	)
 
 	// check balance. Alice should have >= 50 PILTs
@@ -112,10 +116,12 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 
 	await createBlock(peregrineContext)
 
-	checkSystemEvents(peregrineContext, 'xcmpQueue').toMatchSnapshot('peregrine message queue')
-	checkSystemEvents(peregrineContext, 'assetSwitchPool1').toMatchSnapshot('peregrine asset switch pallet')
+	checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot('receiver Peregrine::messageQueue::[Processed]')
+	checkSystemEvents(peregrineContext, 'assetSwitchPool1').toMatchSnapshot(
+		'receiver Peregrine::assetSwitchPool1::[RemoteToLocalSwitchExecuted]'
+	)
 	checkSystemEvents(peregrineContext, { section: 'balances', method: 'Transfer' }).toMatchSnapshot(
-		'peregrine balances pallet'
+		'receiver Peregrine::balances::[Transfer]'
 	)
 
 	// alice should have some coins now

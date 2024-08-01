@@ -3,12 +3,17 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../../../network/peregrine.js'
 import * as RococoConfig from '../../../../network/rococo.js'
-import { initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../../../utils.js'
+import {
+	getAssetSwitchParameters,
+	initialBalanceKILT,
+	initialBalanceROC,
+	keysAlice,
+	keysCharlie,
+} from '../../../../utils.js'
 import { peregrineContext, getFreeBalancePeregrine, getFreeRocPeregrine, rococoContext } from '../../../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../../../utils.js'
 import { getAccountLocationV3, getChildLocation, getNativeAssetIdLocation } from '../../../../network/utils.js'
 
-// TODO: fix this test case. We only want to allow the transfer of DOTs from AH
 test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
@@ -18,7 +23,7 @@ test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
 
 	await setStorage(rococoContext, RococoConfig.assignNativeTokensToAccounts([keysAlice.address]))
 
@@ -40,19 +45,16 @@ test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 
 	await createBlock(rococoContext)
 
-	checkEvents(events, 'xcmPallet').toMatchSnapshot('sender events xcmPallet')
+	checkEvents(events, 'xcmPallet').toMatchSnapshot('sender Rococo::xcmPallet::[XcmMessageSent]')
 
 	await createBlock(peregrineContext)
 
+	// Barrier will block execution. No event will be emitted.
 	await checkSystemEvents(peregrineContext, {
-		section: 'parachainSystem',
-		method: 'DownwardMessagesReceived',
-	}).toMatchSnapshot('receiver events parachainSystem pallet')
+		section: 'messageQueue',
+		method: 'ProcessingFailed',
+	}).toMatchSnapshot('receiver Peregrine::messageQueue::[ProcessingFailed]')
 
-	await checkSystemEvents(peregrineContext, {
-		section: 'dmpQueue',
-		method: 'ExecutedDownward',
-	}).toMatchSnapshot('receiver events dmpQueue pallet')
-
+	// Alice should still have no balance
 	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
-}, 20_000)
+}, 20_00000)

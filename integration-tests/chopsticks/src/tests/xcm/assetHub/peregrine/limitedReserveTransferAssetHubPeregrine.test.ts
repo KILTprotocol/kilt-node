@@ -3,7 +3,15 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../../../network/peregrine.js'
 import * as AssetHubConfig from '../../../../network/assetHub.js'
-import { ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../../../utils.js'
+import {
+	ROC,
+	getAssetSwitchParameters,
+	initialBalanceKILT,
+	initialBalanceROC,
+	keysAlice,
+	keysBob,
+	keysCharlie,
+} from '../../../../utils.js'
 import { peregrineContext, assethubContext, getFreeRocPeregrine, getFreeRocAssetHub } from '../../../index.js'
 import { getAccountLocationV3, getRelayNativeAssetIdLocation, getSiblingLocation } from '../../../../network/utils.js'
 import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../../../utils.js'
@@ -19,7 +27,7 @@ test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Acco
 		...PeregrineConfig.assignNativeTokensToAccounts([keysBob.address], initialBalanceKILT),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
 
 	// Give Alice some Rocs
 	await setStorage(assethubContext, AssetHubConfig.assignDotTokensToAccounts([keysAlice.address], initialBalanceROC))
@@ -46,9 +54,11 @@ test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Acco
 	await createBlock(assethubContext)
 
 	// Check events sender
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
-	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
+	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender AssetHub::xcmpQueue::[XcmMessageSent]')
+	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender AssetHub::polkadotXcm::[FeesPaid,Attempted,Sent]')
+	checkEvents(events, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
+		'sender AssetHub::balances::[Withdraw]'
+	)
 
 	// check balance. The sovereign account should hold one additional ROC.
 	await checkBalance(
@@ -70,9 +80,9 @@ test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Acco
 
 	// Check events receiver
 	checkSystemEvents(peregrineContext, { section: 'fungibles', method: 'Issued' }).toMatchSnapshot(
-		'receiver events currencies'
+		'receiver Peregrine::fungibles::[Issued]'
 	)
-	checkSystemEvents(peregrineContext, 'xcmpQueue').toMatchSnapshot('receiver events xcmpQueue')
+	checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot('receiver Peregrine::messageQueue::[Processed]')
 
 	// check balance receiver
 	// check balance. Equal to `KILT` - tx fees

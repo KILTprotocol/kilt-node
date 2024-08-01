@@ -2,7 +2,15 @@ import { test } from 'vitest'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assetHub.js'
-import { KILT, ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
+import {
+	KILT,
+	ROC,
+	getAssetSwitchParameters,
+	initialBalanceKILT,
+	initialBalanceROC,
+	keysAlice,
+	keysCharlie,
+} from '../../utils.js'
 import { peregrineContext, getFreeRocPeregrine, getFreeEkiltAssetHub, assethubContext } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getAccountLocationV3, getRelayNativeAssetIdLocation, getSiblingLocation } from '../../network/utils.js'
@@ -25,11 +33,7 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 
 	await setStorage(
 		peregrineContext,
-		PeregrineConfig.setSwitchPair(
-			PeregrineConfig.initialRemoteAssetBalance,
-			PeregrineConfig.initialPoolAccountId,
-			'Paused'
-		)
+		PeregrineConfig.setSwitchPair(getAssetSwitchParameters(), PeregrineConfig.initialPoolAccountId, 'Paused')
 	)
 
 	await setStorage(assethubContext, {
@@ -42,7 +46,7 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 
 	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
 	const beneficiary1 = getAccountLocationV3(hexAddress(keysAlice.address))
-	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC)] }
+	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
 
 	const signedTx1 = assethubContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
@@ -53,9 +57,15 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 	await createBlock(assethubContext)
 
 	// We expect the tx will pass
-	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
-	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
+	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot(
+		`sender AssetHub::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(rocAsset)}`
+	)
+	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot(
+		`sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset ${JSON.stringify(rocAsset)}`
+	)
+	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
+		`sender AssetHub::balances::[Withdraw] asset ${JSON.stringify(rocAsset)}`
+	)
 
 	// ... And Alice should receive her funds
 	await createBlock(peregrineContext)
@@ -78,7 +88,7 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -91,7 +101,7 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	// 1. send ROCs 2 Peregrine
 	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
 	const beneficiary1 = getAccountLocationV3(hexAddress(keysAlice.address))
-	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC)] }
+	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
 
 	const signedTx1 = assethubContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
@@ -102,9 +112,15 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	await createBlock(assethubContext)
 
 	// Should still pass
-	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
-	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
+	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot(
+		`sender AssetHub::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(rocAsset)}`
+	)
+	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot(
+		`sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset ${JSON.stringify(rocAsset)}`
+	)
+	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
+		`sender AssetHub::balances::[Withdraw] asset ${JSON.stringify(rocAsset)}`
+	)
 
 	await createBlock(peregrineContext)
 	const aliceRocBalance = await getFreeRocPeregrine(keysAlice.address)
@@ -157,7 +173,7 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -171,7 +187,7 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 
 	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
 	const beneficiary1 = getAccountLocationV3(hexAddress(keysAlice.address))
-	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC)] }
+	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
 
 	const signedTx1 = assethubContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
@@ -181,9 +197,15 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 
 	await createBlock(assethubContext)
 
-	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
-	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot('sender events Balances')
+	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot(
+		`sender AssetHub::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(rocAsset)}`
+	)
+	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot(
+		`sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset ${JSON.stringify(rocAsset)}`
+	)
+	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
+		`sender AssetHub::balances::[Withdraw] asset ${JSON.stringify(rocAsset)}`
+	)
 
 	await createBlock(peregrineContext)
 
@@ -204,9 +226,12 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 
 	await createBlock(peregrineContext)
 
-	await checkEvents(events2, 'assetSwitchPool1').toMatchSnapshot('Switch events assetSwitchPool pallet')
+	await checkEvents(events2, 'assetSwitchPool1').toMatchSnapshot(
+		'sender Peregrine::assetSwitchPool1::[LocalToRemoteSwitchExecuted]'
+	)
 	await createBlock(assethubContext)
 
+	// only check here, if alice received the funds
 	const balanceAliceEkilt = await getFreeEkiltAssetHub(keysAlice.address)
 	expect(balanceAliceEkilt).toBe(balanceToTransfer)
 
@@ -217,16 +242,13 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	await createBlock(peregrineContext)
 
 	// 4. send eKILTs back
-
 	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-
 	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
-
 	const funds = {
 		V3: [
 			{
 				id: { Concrete: AssetHubConfig.eKiltLocation },
-				fun: { Fungible: balanceToTransfer / BigInt(2) },
+				fun: { Fungible: (balanceToTransfer / BigInt(2)).toString() },
 			},
 		],
 	}
@@ -270,16 +292,15 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	// Tx should not fail on AH.
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, KILT * BigInt(25))
 	await checkEvents(events3, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		'Sending eKILTs back'
+		`sender AssetHub::foreignAssets::[Transferred] asset ${JSON.stringify(funds)}`
 	)
 
 	await createBlock(peregrineContext)
 
 	// ... but MSG execution should fail on Peregrine
-	await checkSystemEvents(peregrineContext, { section: 'xcmpQueue', method: 'Fail' }).toMatchSnapshot(
-		'xcmpQueue Sending eKILTs back while switch is paused'
-	)
-	await checkSystemEvents(peregrineContext, { section: 'polkadotXcm', method: 'AssetsTrapped' }).toMatchSnapshot(
-		'PolkadotXCM Sending eKILTs back while switch is paused'
+	await checkSystemEvents(peregrineContext, { section: 'messageQueue', method: 'Processed' }).toMatchSnapshot(
+		'receiver Peregrine::messageQueue::[Processed]'
 	)
 }, 20_000)
+
+// TODO: test case for sending dots back while paused

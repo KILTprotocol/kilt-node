@@ -4,7 +4,14 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assetHub.js'
 import * as RococoConfig from '../../network/rococo.js'
-import { KILT, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
+import {
+	KILT,
+	getAssetSwitchParameters,
+	initialBalanceKILT,
+	initialBalanceROC,
+	keysAlice,
+	keysCharlie,
+} from '../../utils.js'
 import { peregrineContext, assethubContext, rococoContext } from '../index.js'
 import { createBlock, setStorage, hexAddress } from '../utils.js'
 import { getChildLocation, getSiblingLocation } from '../../network/utils.js'
@@ -17,7 +24,7 @@ test('Trapped assets', async ({ expect }) => {
 			keysAlice.address,
 			AssetHubConfig.sovereignAccountOnSiblingChains,
 		]),
-		...PeregrineConfig.setSwitchPair(),
+		...PeregrineConfig.setSwitchPair(getAssetSwitchParameters()),
 		...PeregrineConfig.setSafeXcmVersion3(),
 		...PeregrineConfig.assignNativeTokensToAccounts(
 			[keysAlice.address, AssetHubConfig.sovereignAccountOnSiblingChains],
@@ -179,11 +186,11 @@ test('Trapped assets', async ({ expect }) => {
 
 	// TODO: check events
 	const relayEvents = await sendTransaction(reclaimTx)
+
+	console.log(relayEvents)
 	await createBlock(rococoContext)
 
 	await createBlock(assethubContext)
 
 	await createBlock(peregrineContext)
-
-	await peregrineContext.pause()
 }, 20_000)

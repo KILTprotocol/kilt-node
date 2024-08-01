@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { test } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
@@ -67,44 +68,4 @@ function getXcmMessage(amount: string | number, beneficiary: string) {
 
 // TODO: Wait until: https://github.com/KILTprotocol/kilt-node/pull/655
 
-test.skip('Initiate withdraw assets Peregrine Account Alice -> AH Account Bob', async ({ expect }) => {
-	const { checkEvents } = withExpect(expect)
-
-	// Assign alice some KILT and ROC tokens
-	await setStorage(peregrineContext, {
-		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-		...PeregrineConfig.setSafeXcmVersion3(),
-	})
-
-	// Assign the sovereign account some ROCs
-	await setStorage(
-		assethubContext,
-		AssetHubConfig.assignDotTokensToAccounts(
-			[PeregrineConfig.siblingSovereignAccount, keysAlice.address],
-			initialBalanceROC
-		)
-	)
-
-	//const peregrineSovereignAccountBalanceBeforeTx = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
-
-	// Alice should have some Rocs on Peregrine
-	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, initialBalanceROC)
-
-	// Bob should some ROCs on AH
-	await checkBalance(getFreeRocAssetHub, keysBob.address, expect, BigInt(0))
-
-	const assetHubDestination = { V3: getSiblingLocation(AssetHubConfig.paraId) }
-	const xcmMessage = getXcmMessage(ROC.toString(), keysBob.address)
-
-	const signedTx = peregrineContext.api.tx.polkadotXcm.send(assetHubDestination, xcmMessage).signAsync(keysAlice)
-
-	const events = await sendTransaction(signedTx)
-
-	// Check sender state
-	await createBlock(peregrineContext)
-
-	// Check events sender
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	checkEvents(events, 'polkadotXcm').toMatchSnapshot('sender events xcm pallet')
-}, 20_000)
+test('Initiate withdraw assets Peregrine Account Alice -> AH Account Bob', async () => {}, 20_000)

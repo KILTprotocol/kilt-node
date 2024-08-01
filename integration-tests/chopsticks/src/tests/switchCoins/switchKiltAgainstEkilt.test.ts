@@ -3,7 +3,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assetHub.js'
-import { initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
+import { getAssetSwitchParameters, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
 import {
 	peregrineContext,
 	getFreeBalancePeregrine,
@@ -26,7 +26,7 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 		...PeregrineConfig.setSafeXcmVersion3(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair())
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
@@ -60,9 +60,13 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 
 	await createBlock(peregrineContext)
 
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender events xcm queue pallet')
-	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot('Switch events assetSwitchPool1 pallet')
-	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot('sender events Balances')
+	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender Peregrine::xcmpQueue::[XcmpMessageSent]')
+	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot(
+		'sender Peregrine::assetSwitchPool1::[LocalToRemoteSwitchExecuted]'
+	)
+	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot(
+		'sender Peregrine::balances::[Transfer]'
+	)
 
 	// check balance. Alice should have less then 50 PILTs
 	const freeBalanceAlice = await getFreeBalancePeregrine(keysAlice.address)
@@ -77,14 +81,10 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	expect(balancePoolAccountAfterTx).eq(initialBalancePoolAccount + balanceToTransfer)
 
 	await createBlock(assethubContext)
-	// Strange behavior here... After creating one block another block with a transfer tx is created. The new block is messing up with the checks. We reset the head here
 
-	const blockNumber = (await assethubContext.api.query.system.number()).toNumber()
-	await assethubContext.dev.setHead(blockNumber - 1)
-
-	checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot('receiver events messageQueue')
+	checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot('receiver AssetHub::messageQueue::[Processed]')
 	checkSystemEvents(assethubContext, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		'receiver events Balances'
+		'receiver AssetHub::foreignAssets::[Transferred]'
 	)
 
 	// alice should have the exact transferred amount of eKILT. Fees are paid by sovereign account

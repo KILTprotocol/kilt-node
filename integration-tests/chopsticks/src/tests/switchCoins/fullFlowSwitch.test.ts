@@ -160,15 +160,14 @@ test('Full e2e tests', async ({ expect }) => {
 
 	// 4. send ROCs back TODO: implement
 
-	const assetHubDestination = { V3: getSiblingLocation(AssetHubConfig.paraId) }
+	// const assetHubDestination = { V3: getSiblingLocation(AssetHubConfig.paraId) }
 
-	const assets = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
+	// const assets = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
 
-	const signedTx4 = peregrineContext.api.tx.polkadotXcm
-		.transferAssets(assetHubDestination, beneficiary, assets, 0, 'Unlimited')
-		.signAsync(keysAlice)
+	// const signedTx4 = peregrineContext.api.tx.polkadotXcm
+	// 	.transferAssets(assetHubDestination, beneficiary, assets, 0, 'Unlimited')
+	// 	.signAsync(keysAlice)
 
-	const events4 = await sendTransaction(signedTx4)
-
-	await peregrineContext.pause()
-}, 20_00000)
+	// const events4 = await sendTransaction(signedTx4)
+	// console.log(events4)
+}, 20_000)

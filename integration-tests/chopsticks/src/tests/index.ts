@@ -107,7 +107,7 @@ export async function getRemoteLockedSupply(): Promise<bigint> {
 		return BigInt(0)
 	}
 
-	return switchPairInfo.unwrap().remoteAssetBalance.toBigInt()
+	return switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
 }
 
 export async function getFreeEkiltAssetHub(account: string): Promise<bigint> {

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Send eKILT while switch Pair does not exist > PolkadotXcm assethub 1`] = `
+exports[`Trapped assets > PolkadotXcm assethub 1`] = `
 [
   {
     "data": {
@@ -19,7 +19,7 @@ exports[`Send eKILT while switch Pair does not exist > PolkadotXcm assethub 1`] 
 ]
 `;
 
-exports[`Send eKILT while switch Pair does not exist > assetHubs events xcm queue pallet 1`] = `
+exports[`Trapped assets > assetHubs events xcm queue pallet 1`] = `
 [
   {
     "data": {
@@ -31,13 +31,15 @@ exports[`Send eKILT while switch Pair does not exist > assetHubs events xcm queu
 ]
 `;
 
-exports[`Send eKILT while switch Pair does not exist > receiver events xcm queue pallet 1`] = `[]`;
+exports[`Trapped assets > peregrine asset switch pallet 1`] = `[]`;
 
-exports[`Send eKILT while switch Pair does not exist > sender events foreignAssets 1`] = `
+exports[`Trapped assets > peregrine message queue 1`] = `[]`;
+
+exports[`Trapped assets > sender events foreignAssets 1`] = `
 [
   {
     "data": {
-      "amount": 100000000000000000,
+      "amount": 50000000000000000,
       "assetId": {
         "interior": {
           "X2": [
