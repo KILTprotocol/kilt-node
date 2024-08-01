@@ -9,11 +9,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check_skip_flags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.GITHUB_SHA }}
+      - name: Get Head Commit Message
+        id: head-commit-message
+        run: echo "HEAD_COMMIT_MESSAGE=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
+
   check-fmt:
     runs-on: ubuntu-latest
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
-    if: ${{ !contains(github.event.head_commit.message, 'ci-skip-rust') }}
+    if: ${{ !contains(needs.check_skip_flags.outputs.head-commit-message, 'ci-skip-rust') }}
     steps:
       - uses: actions/checkout@v4
       - name: Run cargo fmt
