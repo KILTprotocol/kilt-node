@@ -20,6 +20,7 @@ jobs:
         with:
           remove-android: 'true'
           remove-dotnet: 'true'
+        container: false
       - uses: actions/checkout@v4
       - name: Run Clippy
         run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --quiet
