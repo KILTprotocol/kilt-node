@@ -81,7 +81,7 @@ integration-tests:
     - yarn lint
     - yarn test:CI
 
-# TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time.
+# TODO: The try-runtime-cli executable could be built as part of the Docker image directly, saving some time. 
 test-try-runtime:
   extends: .check_skip_rust
   interruptible: true
