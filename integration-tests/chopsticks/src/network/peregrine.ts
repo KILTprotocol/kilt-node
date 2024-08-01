@@ -22,10 +22,10 @@ export function assignNativeTokensToAccounts(addr: string[], balance: bigint = i
 	}
 }
 
-export function setSafeXcmVersion3() {
+export function setSafeXcmVersion4() {
 	return {
 		polkadotXcm: {
-			safeXcmVersion: 3,
+			safeXcmVersion: 4,
 		},
 	}
 }
@@ -81,38 +81,34 @@ export function setSwitchPair(
 				remoteAssetCirculatingSupply: parameters.circulatingSupply,
 				remoteAssetTotalSupply: parameters.totalSupply,
 				remoteAssetId: {
-					V3: {
-						Concrete: {
-							parents: 2,
-							interior: {
-								X2: [
-									{ GlobalConsensus: { Ethereum: { chainId: 11155111 } } },
-									{
-										AccountKey20: {
-											network: null,
-											key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
-										},
+					V4: {
+						parents: 2,
+						interior: {
+							X2: [
+								{ GlobalConsensus: { Ethereum: { chainId: 11155111 } } },
+								{
+									AccountKey20: {
+										network: null,
+										key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
 									},
-								],
-							},
+								},
+							],
 						},
 					},
 				},
 				remoteXcmFee: {
-					V3: {
+					V4: {
 						id: {
-							concrete: {
-								parents: 1,
-								interior: 'Here',
-							},
+							parents: 1,
+							interior: 'Here',
 						},
 						fun: { Fungible: remoteFee },
 					},
 				},
 				remoteReserveLocation: {
-					V3: {
+					V4: {
 						parents: 1,
-						interior: { X1: { Parachain: { id: 1000 } } },
+						interior: { X1: [{ Parachain: { id: 1000 } }] },
 					},
 				},
 				status,

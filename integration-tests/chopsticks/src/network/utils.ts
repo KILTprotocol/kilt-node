@@ -1,8 +1,17 @@
-export function getSiblingLocation(paraId: number) {
+export function getSiblingLocationV3(paraId: number) {
 	return {
 		parents: 1,
 		interior: {
 			X1: { Parachain: paraId },
+		},
+	}
+}
+
+export function getSiblingLocationV4(paraId: number) {
+	return {
+		parents: 1,
+		interior: {
+			X1: [{ Parachain: paraId }],
 		},
 	}
 }
@@ -54,6 +63,23 @@ export function getAccountLocationV3(addr: string) {
 	}
 }
 
+export function getAccountLocationV4(addr: string) {
+	return {
+		V4: {
+			parents: 0,
+			interior: {
+				X1: [
+					{
+						AccountId32: {
+							id: addr,
+						},
+					},
+				],
+			},
+		},
+	}
+}
+
 export function getNativeAssetIdLocation(amount: bigint | string) {
 	return {
 		id: { Concrete: { parents: 0, interior: 'Here' } },
@@ -61,9 +87,16 @@ export function getNativeAssetIdLocation(amount: bigint | string) {
 	}
 }
 
-export function getRelayNativeAssetIdLocation(amount: bigint | string) {
+export function getRelayNativeAssetIdLocationV3(amount: bigint | string) {
 	return {
 		id: { Concrete: { parents: 1, interior: 'Here' } },
+		fun: { Fungible: amount },
+	}
+}
+
+export function getRelayNativeAssetIdLocationV4(amount: bigint | string) {
+	return {
+		id: { parents: 1, interior: 'Here' },
 		fun: { Fungible: amount },
 	}
 }

@@ -61,14 +61,16 @@ exports[`Switch PILTs against ePILTS on AssetHub > sender Peregrine::assetSwitch
       "amount": 50000000000000000,
       "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
       "to": {
-        "V3": {
+        "V4": {
           "interior": {
-            "X1": {
-              "AccountId32": {
-                "id": "(hash)",
-                "network": null,
+            "X1": [
+              {
+                "AccountId32": {
+                  "id": "(hash)",
+                  "network": null,
+                },
               },
-            },
+            ],
           },
           "parents": 0,
         },

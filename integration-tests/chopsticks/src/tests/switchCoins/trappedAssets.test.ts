@@ -14,7 +14,7 @@ import {
 } from '../../utils.js'
 import { peregrineContext, assethubContext, rococoContext } from '../index.js'
 import { createBlock, setStorage, hexAddress } from '../utils.js'
-import { getChildLocation, getSiblingLocation } from '../../network/utils.js'
+import { getChildLocation, getSiblingLocationV4 } from '../../network/utils.js'
 
 test('Trapped assets', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
@@ -25,7 +25,7 @@ test('Trapped assets', async ({ expect }) => {
 			AssetHubConfig.sovereignAccountOnSiblingChains,
 		]),
 		...PeregrineConfig.setSwitchPair(getAssetSwitchParameters()),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 		...PeregrineConfig.assignNativeTokensToAccounts(
 			[keysAlice.address, AssetHubConfig.sovereignAccountOnSiblingChains],
 			initialBalanceKILT
@@ -59,12 +59,12 @@ test('Trapped assets', async ({ expect }) => {
 		.signAndSend(keysAlice)
 	await createBlock(peregrineContext)
 
-	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
+	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
 
-	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
+	const remoteFeeId = { V4: { Concrete: AssetHubConfig.eKiltLocation } }
 
 	const funds = {
-		V3: [
+		V4: [
 			{
 				id: { Concrete: AssetHubConfig.eKiltLocation },
 				fun: { Fungible: balanceToTransfer },
@@ -73,18 +73,20 @@ test('Trapped assets', async ({ expect }) => {
 	}
 
 	const xcmMessage = {
-		V3: [
+		V4: [
 			{
 				DepositAsset: {
 					assets: { Wild: 'All' },
 					beneficiary: {
 						parents: 0,
 						interior: {
-							X1: {
-								AccountId32: {
-									id: hexAddress(keysAlice.address),
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(keysAlice.address),
+									},
 								},
-							},
+							],
 						},
 					},
 				},
@@ -136,7 +138,7 @@ test('Trapped assets', async ({ expect }) => {
 		},
 		{
 			ClaimAsset: {
-				ticket: { parents: 0, interior: { X1: { GeneralIndex: 3 } } },
+				ticket: { parents: 0, interior: { X1: [{ GeneralIndex: 3 }] } },
 				assets: [
 					{
 						id: { Concrete: AssetHubConfig.eKiltLocation },
@@ -151,20 +153,22 @@ test('Trapped assets', async ({ expect }) => {
 				beneficiary: {
 					parents: 0,
 					interior: {
-						X1: {
-							AccountId32: {
-								id: hexAddress(keysAlice.address),
+						X1: [
+							{
+								AccountId32: {
+									id: hexAddress(keysAlice.address),
+								},
 							},
-						},
+						],
 					},
 				},
 			},
 		},
 	]
 
-	const peregrineDestination = getSiblingLocation(PeregrineConfig.paraId)
+	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
 
-	const transactExtrinsic = assethubContext.api.tx.polkadotXcm.send({ V3: peregrineDestination }, { V3: reclaimMsg })
+	const transactExtrinsic = assethubContext.api.tx.polkadotXcm.send({ V4: peregrineDestination }, { V4: reclaimMsg })
 
 	const assetHubDestination = getChildLocation(AssetHubConfig.paraId)
 
@@ -181,7 +185,7 @@ test('Trapped assets', async ({ expect }) => {
 		},
 	]
 
-	const relayTx = rococoContext.api.tx.xcmPallet.send({ V3: assetHubDestination }, { V3: transactMessage })
+	const relayTx = rococoContext.api.tx.xcmPallet.send({ V4: assetHubDestination }, { V4: transactMessage })
 	const reclaimTx = rococoContext.api.tx.sudo.sudo(relayTx).signAsync(keysAlice)
 
 	// TODO: check events

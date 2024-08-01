@@ -13,7 +13,7 @@ import {
 } from '../../utils.js'
 import { peregrineContext, getFreeRocPeregrine, getFreeEkiltAssetHub, assethubContext } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
-import { getAccountLocationV3, getRelayNativeAssetIdLocation, getSiblingLocation } from '../../network/utils.js'
+import { getAccountLocationV4, getRelayNativeAssetIdLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 /**
@@ -28,7 +28,7 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(
@@ -44,9 +44,9 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 		...AssetHubConfig.createForeignAsset(keysCharlie.address, [PeregrineConfig.siblingSovereignAccount]),
 	})
 
-	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const beneficiary1 = getAccountLocationV3(hexAddress(keysAlice.address))
-	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
+	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const beneficiary1 = getAccountLocationV4(hexAddress(keysAlice.address))
+	const rocAsset = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 
 	const signedTx1 = assethubContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
@@ -84,7 +84,7 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
@@ -99,9 +99,9 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	})
 
 	// 1. send ROCs 2 Peregrine
-	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const beneficiary1 = getAccountLocationV3(hexAddress(keysAlice.address))
-	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
+	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const beneficiary1 = getAccountLocationV4(hexAddress(keysAlice.address))
+	const rocAsset = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 
 	const signedTx1 = assethubContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
@@ -135,7 +135,7 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	// 3. switch KILTs
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
 
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 
 	let section: string = ''
 	let errorName: string = ''
@@ -169,7 +169,7 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
@@ -185,9 +185,9 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 
 	// 1. send ROCs 2 Peregrine
 
-	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const beneficiary1 = getAccountLocationV3(hexAddress(keysAlice.address))
-	const rocAsset = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
+	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const beneficiary1 = getAccountLocationV4(hexAddress(keysAlice.address))
+	const rocAsset = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 
 	const signedTx1 = assethubContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
@@ -216,7 +216,7 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	// 2. switch KILTs
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
 
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 
 	const signedTx2 = peregrineContext.api.tx.assetSwitchPool1
 		.switch(balanceToTransfer.toString(), beneficiary)
@@ -242,30 +242,32 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	await createBlock(peregrineContext)
 
 	// 4. send eKILTs back
-	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
+	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 	const funds = {
-		V3: [
+		V4: [
 			{
-				id: { Concrete: AssetHubConfig.eKiltLocation },
+				id: AssetHubConfig.eKiltLocation,
 				fun: { Fungible: (balanceToTransfer / BigInt(2)).toString() },
 			},
 		],
 	}
 
 	const xcmMessage = {
-		V3: [
+		V4: [
 			{
 				DepositAsset: {
 					assets: { Wild: 'All' },
 					beneficiary: {
 						parents: 0,
 						interior: {
-							X1: {
-								AccountId32: {
-									id: hexAddress(keysAlice.address),
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(keysAlice.address),
+									},
 								},
-							},
+							],
 						},
 					},
 				},

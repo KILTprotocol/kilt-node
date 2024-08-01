@@ -19,7 +19,7 @@ import {
 	assethubContext,
 } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress, checkBalanceInRange } from '../utils.js'
-import { getAccountLocationV3, getRelayNativeAssetIdLocation, getSiblingLocation } from '../../network/utils.js'
+import { getAccountLocationV4, getRelayNativeAssetIdLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 /**
@@ -36,7 +36,7 @@ test('Full e2e tests', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	const switchParameters = getAssetSwitchParameters()
@@ -53,9 +53,9 @@ test('Full e2e tests', async ({ expect }) => {
 
 	// 1. send ROCs 2 Peregrine
 
-	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
-	const rocAsset = { V3: [getRelayNativeAssetIdLocation((ROC * BigInt(2)).toString())] }
+	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
+	const rocAsset = { V4: [getRelayNativeAssetIdLocationV4((ROC * BigInt(2)).toString())] }
 
 	const signedTx1 = assethubContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary, rocAsset, 0, 'Unlimited')
@@ -98,30 +98,32 @@ test('Full e2e tests', async ({ expect }) => {
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, balanceToTransfer)
 
 	// 3. send eKILTs back
-	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
+	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 	const funds = {
-		V3: [
+		V4: [
 			{
-				id: { Concrete: AssetHubConfig.eKiltLocation },
+				id: AssetHubConfig.eKiltLocation,
 				fun: { Fungible: balanceToTransfer / BigInt(2) },
 			},
 		],
 	}
 
 	const xcmMessage = {
-		V3: [
+		V4: [
 			{
 				DepositAsset: {
 					assets: { Wild: 'All' },
 					beneficiary: {
 						parents: 0,
 						interior: {
-							X1: {
-								AccountId32: {
-									id: hexAddress(keysAlice.address),
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(keysAlice.address),
+									},
 								},
-							},
+							],
 						},
 					},
 				},
@@ -160,9 +162,9 @@ test('Full e2e tests', async ({ expect }) => {
 
 	// 4. send ROCs back TODO: implement
 
-	// const assetHubDestination = { V3: getSiblingLocation(AssetHubConfig.paraId) }
+	// const assetHubDestination = { V4: getSiblingLocation(AssetHubConfig.paraId) }
 
-	// const assets = { V3: [getRelayNativeAssetIdLocation(ROC.toString())] }
+	// const assets = { V4: [getRelayNativeAssetIdLocation(ROC.toString())] }
 
 	// const signedTx4 = peregrineContext.api.tx.polkadotXcm
 	// 	.transferAssets(assetHubDestination, beneficiary, assets, 0, 'Unlimited')

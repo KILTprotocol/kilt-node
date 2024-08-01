@@ -86,7 +86,7 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
@@ -99,7 +99,7 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 	const balanceToTransfer = initialBalanceROC / BigInt(2)
 
 	const beneficiary = {
-		V3: {
+		V4: {
 			parents: 1,
 			interior: {
 				X2: [

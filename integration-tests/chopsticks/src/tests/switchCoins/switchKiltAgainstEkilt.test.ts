@@ -14,7 +14,7 @@ import {
 	getRemoteLockedSupply,
 } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
-import { getAccountLocationV3 } from '../../network/utils.js'
+import { getAccountLocationV4 } from '../../network/utils.js'
 
 test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
@@ -23,7 +23,7 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
@@ -52,7 +52,7 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	// 50 PILTS
 	const balanceToTransfer = BigInt('50000000000000000')
 
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 
 	const signedTx = peregrineContext.api.tx.assetSwitchPool1.switch(balanceToTransfer.toString(), beneficiary)
 
@@ -60,11 +60,11 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 
 	await createBlock(peregrineContext)
 
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender Peregrine::xcmpQueue::[XcmpMessageSent]')
-	checkEvents(events, 'assetSwitchPool1').toMatchSnapshot(
+	await checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender Peregrine::xcmpQueue::[XcmpMessageSent]')
+	await checkEvents(events, 'assetSwitchPool1').toMatchSnapshot(
 		'sender Peregrine::assetSwitchPool1::[LocalToRemoteSwitchExecuted]'
 	)
-	checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot(
+	await checkEvents(events, { section: 'balances', method: 'Transfer' }).toMatchSnapshot(
 		'sender Peregrine::balances::[Transfer]'
 	)
 
@@ -82,8 +82,10 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 
 	await createBlock(assethubContext)
 
-	checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot('receiver AssetHub::messageQueue::[Processed]')
-	checkSystemEvents(assethubContext, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
+	await checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot(
+		'receiver AssetHub::messageQueue::[Processed]'
+	)
+	await checkSystemEvents(assethubContext, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'receiver AssetHub::foreignAssets::[Transferred]'
 	)
 
@@ -102,4 +104,4 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	// remote locked supply should have decreased by the amount of the transferred PILTs
 	const remoteLockedSupply = await getRemoteLockedSupply()
 	expect(remoteLockedSupply).eq(initialRemoteLockedSupply - balanceToTransfer)
-}, 20_000)
+}, 20_0000)

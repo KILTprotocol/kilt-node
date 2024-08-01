@@ -6,7 +6,7 @@ import * as PeregrineConfig from '../../../../network/peregrine.js'
 import * as AssetHubConfig from '../../../../network/assetHub.js'
 import { ROC, initialBalanceKILT, initialBalanceROC, keysAlice, keysBob, keysCharlie } from '../../../../utils.js'
 import { peregrineContext, assethubContext, getFreeRocPeregrine, getFreeRocAssetHub } from '../../../index.js'
-import { getSiblingLocation } from '../../../../network/utils.js'
+import { getSiblingLocationV4 } from '../../../../network/utils.js'
 import { checkBalance, createBlock, hexAddress, setStorage } from '../../../utils.js'
 
 function getXcmMessage(amount: string | number, beneficiary: string) {

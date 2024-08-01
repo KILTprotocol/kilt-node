@@ -56,7 +56,7 @@ exports[`Switch ePILTs against PILTS on Peregrine > receiver Peregrine::messageQ
 ]
 `;
 
-exports[`Switch ePILTs against PILTS on Peregrine > sender AssetHub::foreignAssets::[Transferred] {"V3":[{"id":{"Concrete":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}}},"fun":{"Fungible":"50000000000000000"}}]} 1`] = `
+exports[`Switch ePILTs against PILTS on Peregrine > sender AssetHub::foreignAssets::[Transferred] {"V4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"50000000000000000"}}]} 1`] = `
 [
   {
     "data": {
@@ -90,7 +90,7 @@ exports[`Switch ePILTs against PILTS on Peregrine > sender AssetHub::foreignAsse
 ]
 `;
 
-exports[`Switch ePILTs against PILTS on Peregrine > sender AssetHub::polkadotXcm::[Attempted] {"V3":[{"id":{"Concrete":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}}},"fun":{"Fungible":"50000000000000000"}}]} 1`] = `
+exports[`Switch ePILTs against PILTS on Peregrine > sender AssetHub::polkadotXcm::[Attempted] {"V4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"50000000000000000"}}]} 1`] = `
 [
   {
     "data": {
@@ -109,7 +109,7 @@ exports[`Switch ePILTs against PILTS on Peregrine > sender AssetHub::polkadotXcm
 ]
 `;
 
-exports[`Switch ePILTs against PILTS on Peregrine > sender AssetHubs::xcmpQueue::[XcmpMessageSent] {"V3":[{"id":{"Concrete":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}}},"fun":{"Fungible":"50000000000000000"}}]} 1`] = `
+exports[`Switch ePILTs against PILTS on Peregrine > sender AssetHubs::xcmpQueue::[XcmpMessageSent] {"V4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"50000000000000000"}}]} 1`] = `
 [
   {
     "data": {

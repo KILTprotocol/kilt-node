@@ -13,7 +13,7 @@ import {
 	getRemoteLockedSupply,
 } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
-import { getSiblingLocation } from '../../network/utils.js'
+import { getSiblingLocationV4 } from '../../network/utils.js'
 
 test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
@@ -21,7 +21,7 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
 		...PeregrineConfig.setSwitchPair(getAssetSwitchParameters()),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(assethubContext, {
@@ -49,32 +49,34 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	// 50 PILTS
 	const balanceToTransfer = BigInt('50000000000000000')
 
-	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
+	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
 
-	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
+	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 
 	const funds = {
-		V3: [
+		V4: [
 			{
-				id: { Concrete: AssetHubConfig.eKiltLocation },
+				id: AssetHubConfig.eKiltLocation,
 				fun: { Fungible: balanceToTransfer.toString() },
 			},
 		],
 	}
 
 	const xcmMessage = {
-		V3: [
+		V4: [
 			{
 				DepositAsset: {
 					assets: { Wild: 'All' },
 					beneficiary: {
 						parents: 0,
 						interior: {
-							X1: {
-								AccountId32: {
-									id: hexAddress(keysAlice.address),
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(keysAlice.address),
+									},
 								},
-							},
+							],
 						},
 					},
 				},

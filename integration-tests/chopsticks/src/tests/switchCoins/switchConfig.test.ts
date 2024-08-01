@@ -21,14 +21,14 @@ import {
 	rococoContext,
 } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
-import { getAccountLocationV3, getChildLocation, getSiblingLocation } from '../../network/utils.js'
+import { getAccountLocationV4, getChildLocation, getSiblingLocationV4 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 test('Switch KILTs against EKILTs not same user', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
@@ -42,7 +42,7 @@ test('Switch KILTs against EKILTs not same user', async ({ expect }) => {
 	})
 
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
-	const beneficiary = getAccountLocationV3(hexAddress(keysBob.address))
+	const beneficiary = getAccountLocationV4(hexAddress(keysBob.address))
 
 	let section: string = ''
 	let errorName: string = ''
@@ -67,7 +67,7 @@ test('Switch KILTs against EKILTs user has not enough balance', async ({ expect 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
@@ -81,7 +81,7 @@ test('Switch KILTs against EKILTs user has not enough balance', async ({ expect 
 	})
 
 	const balanceToTransfer = initialBalanceKILT * BigInt(2)
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 
 	let section: string = ''
 	let errorName: string = ''
@@ -106,7 +106,7 @@ test('Switch KILTs against EKILTs not enough pool account balance', async ({ exp
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT * BigInt(1000)),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters(KILT * BigInt(1000))))
@@ -122,7 +122,7 @@ test('Switch KILTs against EKILTs not enough pool account balance', async ({ exp
 	// try to send 10_000 KILTs. The pool account should have less
 	const balanceToTransfer = KILT * BigInt(10000)
 
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 
 	let section: string = ''
 	let errorName: string = ''
@@ -147,7 +147,7 @@ test('Switch KILTs against EKILTs user has no DOTs', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
@@ -162,7 +162,7 @@ test('Switch KILTs against EKILTs user has no DOTs', async ({ expect }) => {
 
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
 
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 
 	let section: string = ''
 	let errorName: string = ''
@@ -187,7 +187,7 @@ test('Switch KILTs against EKILTs no SwitchPair', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address]),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(assethubContext, {
@@ -200,7 +200,7 @@ test('Switch KILTs against EKILTs no SwitchPair', async ({ expect }) => {
 
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
 
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 
 	let section: string = ''
 	let errorName: string = ''
@@ -227,7 +227,7 @@ test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address]),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
@@ -239,7 +239,7 @@ test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
 
-	const beneficiary = getAccountLocationV3(hexAddress(keysAlice.address))
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 
 	const signedTx = peregrineContext.api.tx.assetSwitchPool1
 		.switch(balanceToTransfer.toString(), beneficiary)
@@ -279,7 +279,7 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 	// assign the pool account only 100 KILTs. The pool account gets 10% of the provided total supply.
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.setSwitchPair(getAssetSwitchParameters(KILT * BigInt(1000))),
-		...PeregrineConfig.setSafeXcmVersion3(),
+		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	// create foreign asset on assethub and assign Alice more eKILTs then existing
@@ -307,32 +307,34 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 	// try to dry out the pool account
 	const balanceToTransfer = KILT * BigInt(100) + PeregrineConfig.existentialDeposit
 
-	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
+	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
 
-	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
+	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 
 	const funds = {
-		V3: [
+		V4: [
 			{
-				id: { Concrete: AssetHubConfig.eKiltLocation },
+				id: AssetHubConfig.eKiltLocation,
 				fun: { Fungible: balanceToTransfer },
 			},
 		],
 	}
 
 	const xcmMessage = {
-		V3: [
+		V4: [
 			{
 				DepositAsset: {
 					assets: { Wild: 'All' },
 					beneficiary: {
 						parents: 0,
 						interior: {
-							X1: {
-								AccountId32: {
-									id: hexAddress(keysAlice.address),
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(keysAlice.address),
+									},
 								},
-							},
+							],
 						},
 					},
 				},
@@ -390,31 +392,33 @@ test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 	})
 
 	const balanceToTransfer = initialBalanceKILT
-	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
+	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 
 	const funds = {
-		V3: [
+		V4: [
 			{
-				id: { Concrete: AssetHubConfig.eKiltLocation },
+				id: AssetHubConfig.eKiltLocation,
 				fun: { Fungible: balanceToTransfer },
 			},
 		],
 	}
 
 	const xcmMessage = {
-		V3: [
+		V4: [
 			{
 				DepositAsset: {
 					assets: { Wild: 'All' },
 					beneficiary: {
 						parents: 0,
 						interior: {
-							X1: {
-								AccountId32: {
-									id: hexAddress(keysAlice.address),
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(keysAlice.address),
+									},
 								},
-							},
+							],
 						},
 					},
 				},
@@ -463,30 +467,32 @@ test('User has no eKILT', async ({ expect }) => {
 	})
 
 	const balanceToTransfer = initialBalanceKILT * BigInt(2)
-	const dest = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const remoteFeeId = { V3: { Concrete: AssetHubConfig.eKiltLocation } }
+	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 	const funds = {
-		V3: [
+		V4: [
 			{
-				id: { Concrete: AssetHubConfig.eKiltLocation },
+				id: AssetHubConfig.eKiltLocation,
 				fun: { Fungible: balanceToTransfer },
 			},
 		],
 	}
 
 	const xcmMessage = {
-		V3: [
+		V4: [
 			{
 				DepositAsset: {
 					assets: { Wild: 'All' },
 					beneficiary: {
 						parents: 0,
 						interior: {
-							X1: {
-								AccountId32: {
-									id: hexAddress(keysAlice.address),
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(keysAlice.address),
+									},
 								},
-							},
+							],
 						},
 					},
 				},
@@ -532,14 +538,14 @@ test('Send eKILT from other reserve location', async ({ expect }) => {
 
 	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
 
-	const dest = { V3: getChildLocation(PeregrineConfig.paraId) }
+	const dest = { V4: getChildLocation(PeregrineConfig.paraId) }
 
 	const xcmMessage = {
-		V3: [
+		V4: [
 			{
 				ReserveAssetDeposited: [
 					{
-						id: { Concrete: AssetHubConfig.eKiltLocation },
+						id: AssetHubConfig.eKiltLocation,
 						fun: { Fungible: initialBalanceKILT },
 					},
 				],
@@ -548,7 +554,7 @@ test('Send eKILT from other reserve location', async ({ expect }) => {
 			{
 				BuyExecution: {
 					fees: {
-						id: { Concrete: AssetHubConfig.eKiltLocation },
+						id: AssetHubConfig.eKiltLocation,
 						fun: { Fungible: initialBalanceKILT },
 					},
 					weightLimit: 'Unlimited',
@@ -560,11 +566,13 @@ test('Send eKILT from other reserve location', async ({ expect }) => {
 					beneficiary: {
 						parents: 0,
 						interior: {
-							X1: {
-								AccountId32: {
-									id: hexAddress(keysAlice.address),
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(keysAlice.address),
+									},
 								},
-							},
+							],
 						},
 					},
 				},

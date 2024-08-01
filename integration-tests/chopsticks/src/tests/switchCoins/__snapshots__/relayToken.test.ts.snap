@@ -36,7 +36,7 @@ exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::balances::[Minted
   {
     "data": {
       "amount": "(rounded 21000000)",
-      "who": "5EF1JnrXWWDQrQCHhL77Hxy3WwxVzDv8JBwj6oDeZTd3FgLc",
+      "who": "5G1PWv6mpKSRixU1xtfDqk4MN6QiAqcMVRsyoBGJNf7nGUoa",
     },
     "method": "Deposit",
     "section": "balances",

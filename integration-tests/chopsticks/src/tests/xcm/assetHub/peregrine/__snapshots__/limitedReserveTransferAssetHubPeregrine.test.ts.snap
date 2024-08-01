@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > receiver Peregrine::fungibles::[Issued] 1`] = `
+exports[`Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Account Bob > receiver Peregrine::fungibles::[Issued] 1`] = `
 [
   {
     "data": {
@@ -17,7 +17,7 @@ exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine A
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > receiver Peregrine::messageQueue::[Processed] 1`] = `
+exports[`Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Account Bob > receiver Peregrine::messageQueue::[Processed] 1`] = `
 [
   {
     "data": {
@@ -37,7 +37,7 @@ exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine A
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > sender AssetHub::balances::[Withdraw] 1`] = `
+exports[`Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Account Bob > sender AssetHub::balances::[Withdraw] 1`] = `
 [
   {
     "data": {
@@ -50,7 +50,7 @@ exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine A
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > sender AssetHub::polkadotXcm::[FeesPaid,Attempted,Sent] 1`] = `
+exports[`Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Account Bob > sender AssetHub::polkadotXcm::[FeesPaid,Attempted,Sent] 1`] = `
 [
   {
     "data": {
@@ -181,7 +181,7 @@ exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine A
 ]
 `;
 
-exports[`Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob > sender AssetHub::xcmpQueue::[XcmMessageSent] 1`] = `
+exports[`Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Account Bob > sender AssetHub::xcmpQueue::[XcmMessageSent] 1`] = `
 [
   {
     "data": {

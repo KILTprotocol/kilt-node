@@ -13,12 +13,16 @@ import {
 	keysCharlie,
 } from '../../../../utils.js'
 import { peregrineContext, assethubContext, getFreeRocPeregrine, getFreeRocAssetHub } from '../../../index.js'
-import { getAccountLocationV3, getRelayNativeAssetIdLocation, getSiblingLocation } from '../../../../network/utils.js'
+import {
+	getAccountLocationV4,
+	getRelayNativeAssetIdLocationV4,
+	getSiblingLocationV4,
+} from '../../../../network/utils.js'
 import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../../../utils.js'
 
-const ROC_ASSET_V3 = { V3: [getRelayNativeAssetIdLocation(ROC)] }
+const ROC_ASSET_V4 = { V4: [getRelayNativeAssetIdLocationV4(ROC)] }
 
-test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Account Bob', async ({ expect }) => {
+test('Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Account Bob', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	// Assign alice some KILT tokens to create the account
@@ -41,11 +45,11 @@ test('Limited Reserve V3 Transfers from AssetHub Account Alice -> Peregrine Acco
 	await checkBalance(getFreeRocAssetHub, keysAlice.address, expect, initialBalanceROC)
 
 	const bobAddress = hexAddress(keysBob.address)
-	const peregrineDestination = { V3: getSiblingLocation(PeregrineConfig.paraId) }
-	const beneficiary = getAccountLocationV3(bobAddress)
+	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const beneficiary = getAccountLocationV4(bobAddress)
 
 	const signedTx = assethubContext.api.tx.polkadotXcm
-		.limitedReserveTransferAssets(peregrineDestination, beneficiary, ROC_ASSET_V3, 0, 'Unlimited')
+		.limitedReserveTransferAssets(peregrineDestination, beneficiary, ROC_ASSET_V4, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)
