@@ -5,7 +5,7 @@ import * as SpiritnetConfig from '../../../network/spiritnet.js'
 import * as HydraDxConfig from '../../../network/hydraDx.js'
 import { KILT, initialBalanceKILT, keysAlice } from '../../../utils.js'
 import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../../index.js'
-import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocation } from '../../../network/utils.js'
+import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocationV3 } from '../../../network/utils.js'
 import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../../utils.js'
 
 const KILT_ASSET_V3 = { V3: [getNativeAssetIdLocation(KILT)] }
@@ -30,7 +30,7 @@ test('Limited Reserve V3 Transfers from Spiritnet Account Alice -> HydraDx Accou
 	await checkBalance(getFreeBalanceHydraDxKilt, keysAlice.address, expect, BigInt(0))
 
 	const aliceAddress = hexAddress(keysAlice.address)
-	const hydraDxDestination = { V3: getSiblingLocation(HydraDxConfig.paraId) }
+	const hydraDxDestination = { V3: getSiblingLocationV3(HydraDxConfig.paraId) }
 	const beneficiary = getAccountLocationV3(aliceAddress)
 
 	const signedTx = spiritnetContext.api.tx.polkadotXcm

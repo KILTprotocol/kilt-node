@@ -5,7 +5,7 @@ import * as SpiritnetConfig from '../../../../network/spiritnet.js'
 import * as AssetHubConfig from '../../../../network/assetHub.js'
 import { DOT, keysAlice } from '../../../../utils.js'
 import { spiritnetContext, assethubContext } from '../../../index.js'
-import { getSiblingLocation } from '../../../../network/utils.js'
+import { getSiblingLocationV3 } from '../../../../network/utils.js'
 import { createBlock, hexAddress, setStorage } from '../../../utils.js'
 
 test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice', async ({ expect }) => {
@@ -17,7 +17,7 @@ test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice
 		...AssetHubConfig.assignKSMtoAccounts([keysAlice.address]),
 	})
 
-	const spiritnetDestination = { V3: getSiblingLocation(SpiritnetConfig.paraId) }
+	const spiritnetDestination = { V3: getSiblingLocationV3(SpiritnetConfig.paraId) }
 	const KSMAsset = { V3: [{ id: { Concrete: AssetHubConfig.KSMAssetLocation }, fun: { Fungible: DOT.toString() } }] }
 	const remoteFeeId = { V3: { Concrete: AssetHubConfig.KSMAssetLocation } }
 	const xcmMessage = {

@@ -5,7 +5,7 @@ import * as SpiritnetConfig from '../../../../network/spiritnet.js'
 import * as AssetHubConfig from '../../../../network/assetHub.js'
 import { KILT, initialBalanceKILT, keysAlice } from '../../../../utils.js'
 import { spiritnetContext, assethubContext, getFreeBalanceSpiritnet } from '../../../index.js'
-import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocation } from '../../../../network/utils.js'
+import { getAccountLocationV3, getNativeAssetIdLocation, getSiblingLocationV3 } from '../../../../network/utils.js'
 import { checkBalance, createBlock, hexAddress, setStorage } from '../../../utils.js'
 
 test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice', async ({ expect }) => {
@@ -26,7 +26,7 @@ test('Limited Reserve Transfers from Spiritnet Account Alice -> AH Account Alice
 	await checkBalance(getFreeBalanceSpiritnet, keysAlice.address, expect, initialBalanceKILT)
 
 	const aliceAddress = hexAddress(keysAlice.address)
-	const assetHubDestination = { V3: getSiblingLocation(AssetHubConfig.paraId) }
+	const assetHubDestination = { V3: getSiblingLocationV3(AssetHubConfig.paraId) }
 	const beneficiary = getAccountLocationV3(aliceAddress)
 	const kiltAsset = { V3: [getNativeAssetIdLocation(KILT.toString())] }
 
