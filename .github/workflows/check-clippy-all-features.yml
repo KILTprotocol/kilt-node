@@ -1,7 +1,6 @@
 name: Clippy check --all-features
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
+  push:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -15,12 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
-    if: ${{ !contains(github.event.head_commit.message, '[ci-skip-rust]') }}
     steps:
-      - name: Remove unnecessary files
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo docker rmi $(docker image ls -aq) >/dev/null 2>&1 || true
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          remove-android: 'true'
+          remove-dotnet: 'true'
       - uses: actions/checkout@v4
       - name: Run Clippy
         run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --quiet
