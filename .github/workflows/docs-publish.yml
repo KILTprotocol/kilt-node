@@ -1,0 +1,26 @@
+name: Build and Deploy API docs
+
+on:
+    push:
+#   release:
+#     types: [published]
+#   workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    container:
+        image: paritytech/ci-unified:bullseye-1.74.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install and Build
+        run: RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
+
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages # The branch the action should deploy to.
+          folder: docs/api # The folder the action should deploy to.
