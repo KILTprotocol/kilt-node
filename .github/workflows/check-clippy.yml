@@ -1,0 +1,25 @@
+name: Clippy check
+on:
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  clippy_check:
+    runs-on: ubuntu-24.04
+    if: ${{ !contains(github.event.head_commit.message, '[ci-skip-rust]') }}
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          remove-android: 'true'
+          remove-dotnet: 'true'
+          temp-reserve-mb: 'true'
+      - uses: actions/checkout@v4
+      - name: Run Clippy
+        run: SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --quiet

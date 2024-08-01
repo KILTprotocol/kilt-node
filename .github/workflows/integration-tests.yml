@@ -1,0 +1,35 @@
+name: Integration tests
+
+on:
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, 'ci-skip-integration-tests') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js environment
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          echo 'export NVM_DIR="$HOME/.nvm"' >> $HOME/.bashrc
+          echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $HOME/.bashrc
+          eval "$(cat $HOME/.bashrc | tail -n +10)"
+          nvm install
+          nvm use
+          yarn --immutable
+        working-directory: ./integration-tests/chopsticks
+
+      - name: Lint & Test
+        run: |
+          yarn ts-check
+          yarn lint
+          yarn test:CI
+        working-directory: ./integration-tests/chopsticks
+
