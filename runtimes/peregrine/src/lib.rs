@@ -1270,28 +1270,33 @@ mod benches {
 		fn setup() -> Option<PartialBenchmarkInfo> {
 			const DESTINATION_PARA_ID: u32 = 1_000;
 
-			let asset_location: MultiLocation = Junctions::Here.into();
+			let asset_location: Location = Junctions::Here.into();
 			Fungibles::create(
 				RawOrigin::Root.into(),
-				asset_location,
+				asset_location.clone(),
 				AccountId::from([0; 32]).into(),
 				1u32.into(),
 			)
 			.unwrap();
-			let beneficiary = Junctions::X1(Junction::AccountId32 {
-				network: None,
-				id: [0; 32],
-			})
+			let beneficiary = Junctions::X1(
+				[Junction::AccountId32 {
+					network: None,
+					id: [0; 32],
+				}]
+				.into(),
+			)
 			.into();
-			let destination =
-				MultiLocation::from(ParentThen(Junctions::X1(Junction::Parachain(DESTINATION_PARA_ID)))).into();
-			let remote_xcm_fee = MultiAsset {
-				id: AssetId::Concrete(asset_location),
+			let destination = Location::from(ParentThen(Junctions::X1(
+				[Junction::Parachain(DESTINATION_PARA_ID)].into(),
+			)))
+			.into();
+			let remote_xcm_fee = Asset {
+				id: AssetId(asset_location),
 				fun: Fungibility::Fungible(1_000),
 			}
 			.into();
 
-			ParachainSystem::open_outbound_hrmp_channel_for_benchmarks(DESTINATION_PARA_ID.into());
+			ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(DESTINATION_PARA_ID.into());
 
 			Some(PartialBenchmarkInfo {
 				beneficiary: Some(beneficiary),
