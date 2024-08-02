@@ -1654,6 +1654,34 @@ impl_runtime_apis! {
 					))
 				}
 
+				fn set_up_complex_asset_transfer() -> Option<(Assets, u32, Location, Box<dyn FnOnce()>)> {
+					let (transferable_asset, dest) = Self::reserve_transferable_asset_and_dest().unwrap();
+
+					let fee_amount = ExistentialDeposit::get();
+					let fee_asset: Asset = (Location::here(), fee_amount).into();
+
+					// Make account free to pay the fee
+					let who = frame_benchmarking::whitelisted_caller();
+					let balance = fee_amount + ExistentialDeposit::get() * 1000;
+					let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
+						&who, balance,
+					);
+
+					// verify initial balance
+					assert_eq!(Balances::free_balance(&who), balance);
+
+
+					let assets: Assets = vec![fee_asset.clone(), transferable_asset.clone()].into();
+					let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
+
+					let verify = Box::new( move || {
+						let Fungibility::Fungible(transferable_amount) = transferable_asset.fun else { return; };
+						assert_eq!(Balances::free_balance(&who), balance - fee_amount - transferable_amount);
+					});
+
+					Some((assets,fee_index , dest, verify))
+				}
+
 				fn get_asset() -> Asset {
 					xcm_benchmarking::NativeAsset::get()
 				}
