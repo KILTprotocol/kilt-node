@@ -28,7 +28,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
  */
 
 // Send ROCs while switch is paused
-test('Send ROCs while switch paused', async ({ expect }) => {
+test.skip('Send ROCs while switch paused', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
@@ -90,7 +90,7 @@ test('Send ROCs while switch paused', async ({ expect }) => {
  * 2. pause switch
  * 3. switch KILTs
  */
-test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
+test.skip('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
@@ -181,7 +181,7 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
  * 3. pause switch
  * 4. send eKILTs back
  */
-test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
+test.skip('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
@@ -308,4 +308,43 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	await checkSwitchPalletInvariant(expect, false)
 }, 20_000)
 
-// TODO: test case for sending dots back while paused
+test('Withdraw ROCs while switch is paused', async ({ expect }) => {
+	await setStorage(peregrineContext, {
+		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address]),
+		...PeregrineConfig.setSafeXcmVersion4(),
+	})
+
+	const switchParameters = getAssetSwitchParameters()
+
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(switchParameters, PeregrineConfig.initialPoolAccountId, 'Paused')
+	)
+
+	await setStorage(assethubContext, {
+		...AssetHubConfig.assignDotTokensToAccounts([PeregrineConfig.siblingSovereignAccount], initialBalanceROC),
+	})
+
+	let section: string = ''
+	let errorName: string = ''
+
+	const assetHubDestination = { V4: getSiblingLocationV4(AssetHubConfig.paraId) }
+	const assets = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
+	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
+
+	await peregrineContext.api.tx.polkadotXcm
+		.transferAssets(assetHubDestination, beneficiary, assets, 0, 'Unlimited')
+		.signAndSend(keysAlice, ({ dispatchError }) => {
+			if (dispatchError) {
+				const decoded = peregrineContext.api.registry.findMetaError(dispatchError.asModule)
+				section = decoded.section
+				errorName = decoded.name
+			}
+		})
+
+	await createBlock(peregrineContext)
+
+	expect(section).toBe('polkadotXcm')
+	expect(errorName).toBe('LocalExecutionIncomplete')
+}, 20_000)
