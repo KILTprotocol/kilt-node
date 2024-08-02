@@ -130,7 +130,7 @@ export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint
 	return accountInfo.free.toBigInt()
 }
 
-export async function checkSwitchPalletInvariant(expect: ExpectStatic, strict: boolean = true) {
+export async function checkSwitchPalletInvariant(expect: ExpectStatic, soft: boolean = true) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
 	if (switchPairInfo.isNone) {
@@ -145,11 +145,11 @@ export async function checkSwitchPalletInvariant(expect: ExpectStatic, strict: b
 
 	const lockedBalanceFromTotalAndCirculating = remoteAssetTotalSupply - remoteAssetCirculatingSupply
 
-	if (strict) {
-		expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
-		expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance)
-	} else {
+	if (soft) {
 		expect(remoteAssetSovereignTotalBalance).toBeGreaterThanOrEqual(lockedBalanceFromTotalAndCirculating)
 		expect(sovereignEKiltSupply).toBeGreaterThanOrEqual(remoteAssetSovereignTotalBalance)
+	} else {
+		expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
+		expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance)
 	}
 }

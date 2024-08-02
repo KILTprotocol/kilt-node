@@ -190,4 +190,4 @@ test.skip('Trapped assets', async ({ expect }) => {
 	)
 
 	await createBlock(peregrineContext)
-}, 20_00000)
+}, 20_000)

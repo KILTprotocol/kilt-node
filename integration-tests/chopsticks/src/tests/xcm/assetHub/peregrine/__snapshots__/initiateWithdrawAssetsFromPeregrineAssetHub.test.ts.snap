@@ -1,0 +1,210 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Initiate withdraw assets Peregrine Account Alice -> AH Account Alice > receiver AssetHub::balances::Burned 1`] = `
+[
+  {
+    "data": {
+      "amount": 1000000000000,
+      "who": "13cKp88mpGREFCq8KsJEFjpSBnjFuCNWq6bmD3js7fu4f66e",
+    },
+    "method": "Burned",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Initiate withdraw assets Peregrine Account Alice -> AH Account Alice > receiver AssetHub::balances::Endowed 1`] = `
+[
+  {
+    "data": {
+      "account": "15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8",
+      "freeBalance": "(rounded 1000000000000)",
+    },
+    "method": "Endowed",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Initiate withdraw assets Peregrine Account Alice -> AH Account Alice > receiver AssetHub::balances::Minted 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 1000000000000)",
+      "who": "15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8",
+    },
+    "method": "Minted",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Initiate withdraw assets Peregrine Account Alice -> AH Account Alice > receiver AssetHub::messageQueue::Processed 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": "(rounded 2100)",
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": "(rounded 7200)",
+        "refTime": "(rounded 320000000)",
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Initiate withdraw assets Peregrine Account Alice -> AH Account Alice > sender Peregrine::fungibles::[Burned] 1`] = `
+[
+  {
+    "data": {
+      "assetId": {
+        "interior": "Here",
+        "parents": 1,
+      },
+      "balance": 1000000000000,
+      "owner": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Burned",
+    "section": "fungibles",
+  },
+]
+`;
+
+exports[`Initiate withdraw assets Peregrine Account Alice -> AH Account Alice > sender Peregrine::polkadotXcm::[FeesPaid,Attempted,Sent] 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "used": {
+            "proofSize": 0,
+            "refTime": 400000000,
+          },
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "fees": [],
+      "paying": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": null,
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "FeesPaid",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": 1000,
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "message": [
+        {
+          "WithdrawAsset": [
+            {
+              "fun": {
+                "Fungible": 1000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 1000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": {
+                "AllCounted": 1,
+              },
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": null,
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Initiate withdraw assets Peregrine Account Alice -> AH Account Alice > sender Peregrine::xcmpQueue::[XcmMessageSent] 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;

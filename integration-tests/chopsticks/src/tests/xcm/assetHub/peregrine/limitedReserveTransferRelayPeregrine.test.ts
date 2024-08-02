@@ -12,7 +12,7 @@ import {
 } from '../../../../utils.js'
 import { peregrineContext, getFreeBalancePeregrine, getFreeRocPeregrine, rococoContext } from '../../../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../../../utils.js'
-import { getAccountLocationV3, getChildLocation, getNativeAssetIdLocation } from '../../../../network/utils.js'
+import { getAccountLocationV3, getChildLocation, getNativeAssetIdLocationV3 } from '../../../../network/utils.js'
 
 test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
@@ -35,7 +35,7 @@ test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 	const aliceAddress = hexAddress(keysAlice.address)
 	const hydraDxDestination = { V3: getChildLocation(PeregrineConfig.paraId) }
 	const beneficiary = getAccountLocationV3(aliceAddress)
-	const assetToTransfer = { V3: [getNativeAssetIdLocation(balanceToTransfer)] }
+	const assetToTransfer = { V3: [getNativeAssetIdLocationV3(balanceToTransfer)] }
 
 	const signedTx = rococoContext.api.tx.xcmPallet
 		.limitedReserveTransferAssets(hydraDxDestination, beneficiary, assetToTransfer, 0, 'Unlimited')

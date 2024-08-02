@@ -1,5 +1,31 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Full e2e tests > receiver AssetHub::balances::Burned 1`] = `
+[
+  {
+    "data": {
+      "amount": 1000000000000,
+      "who": "13cKp88mpGREFCq8KsJEFjpSBnjFuCNWq6bmD3js7fu4f66e",
+    },
+    "method": "Burned",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Full e2e tests > receiver AssetHub::balances::Minted 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 1000000000000)",
+      "who": "15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8",
+    },
+    "method": "Minted",
+    "section": "balances",
+  },
+]
+`;
+
 exports[`Full e2e tests > receiver Peregrine::assetSwitchPool1::[LocalToRemoteSwitchExecuted] 1`] = `
 [
   {
@@ -214,6 +240,23 @@ exports[`Full e2e tests > sender Assethub::balances::[Withdraw] 1`] = `
     },
     "method": "Withdraw",
     "section": "balances",
+  },
+]
+`;
+
+exports[`Full e2e tests > sender Peregrine::fungibles::[Burned] 1`] = `
+[
+  {
+    "data": {
+      "assetId": {
+        "interior": "Here",
+        "parents": 1,
+      },
+      "balance": 1000000000000,
+      "owner": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Burned",
+    "section": "fungibles",
   },
 ]
 `;

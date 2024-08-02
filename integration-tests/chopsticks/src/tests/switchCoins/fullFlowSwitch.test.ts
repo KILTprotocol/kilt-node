@@ -31,7 +31,7 @@ import { getAccountLocationV4, getRelayNativeAssetIdLocationV4, getSiblingLocati
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 /**
- * Full e2e flow between Peregrine and AssetHub
+ * Full e2e flow between Peregrine and AssetHub. More checks are provided in individual test cases.
  *
  * 1. Send ROCs from AssetHub to Peregrine
  * 2. Switch KILTs on Peregrine
@@ -39,7 +39,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
  * 4. Send ROCs back to AssetHub (Currently not implemented)
  */
 test('Full e2e tests', async ({ expect }) => {
-	const { checkEvents } = withExpect(expect)
+	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
@@ -136,7 +136,6 @@ test('Full e2e tests', async ({ expect }) => {
 	await createBlock(assethubContext)
 
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, KILT * BigInt(25))
-
 	await checkEvents(events3, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'sender AssetHub::foreignAssets::[Transferred]'
 	)
@@ -148,18 +147,31 @@ test('Full e2e tests', async ({ expect }) => {
 		BigInt(75) * KILT,
 	])
 
-	// 4. send ROCs back TODO: implement
+	// 4. send ROCs back
 
-	// const assetHubDestination = { V4: getSiblingLocation(AssetHubConfig.paraId) }
+	const assetHubDestination = { V4: getSiblingLocationV4(AssetHubConfig.paraId) }
 
-	// const assets = { V4: [getRelayNativeAssetIdLocation(ROC.toString())] }
+	const assets = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 
-	// const signedTx4 = peregrineContext.api.tx.polkadotXcm
-	// 	.transferAssets(assetHubDestination, beneficiary, assets, 0, 'Unlimited')
-	// 	.signAsync(keysAlice)
+	const signedTx4 = peregrineContext.api.tx.polkadotXcm
+		.transferAssets(assetHubDestination, beneficiary, assets, 0, 'Unlimited')
+		.signAsync(keysAlice)
 
-	// const events4 = await sendTransaction(signedTx4)
-	// console.log(events4)
+	const events4 = await sendTransaction(signedTx4)
+	await createBlock(peregrineContext)
+
+	// The xcm message should be send to AH and the funds should be burned from user.
+	await checkEvents(events4, 'fungibles').toMatchSnapshot('sender Peregrine::fungibles::[Burned]')
+
+	// The funds should be burned from Sovereign account and minted to user.
+	await createBlock(assethubContext)
+	await checkSystemEvents(assethubContext, { section: 'balances', method: 'Burned' }).toMatchSnapshot(
+		'receiver AssetHub::balances::Burned'
+	)
+
+	await checkSystemEvents(assethubContext, { section: 'balances', method: 'Minted' }).toMatchSnapshot(
+		'receiver AssetHub::balances::Minted'
+	)
 
 	await checkSwitchPalletInvariant(expect)
 }, 20_000)
