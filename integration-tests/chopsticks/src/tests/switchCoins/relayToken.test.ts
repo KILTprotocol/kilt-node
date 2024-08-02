@@ -2,6 +2,7 @@ import { test } from 'vitest'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as BasiliskConfig from '../../network/basilisk.js'
+import * as AssetHubConfig from '../../network/assetHub.js'
 import {
 	getAssetSwitchParameters,
 	initialBalanceKILT,
@@ -16,11 +17,13 @@ import {
 	getFreeRocPeregrine,
 	basiliskContext,
 	rococoContext,
+	assethubContext,
+	checkSwitchPalletInvariant,
 } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress, checkBalanceInRange } from '../utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-test.skip('User transfers all of his dots', async ({ expect }) => {
+test('User transfers all of his dots', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
 	// Assign alice some KILTs and ROCs
@@ -51,7 +54,7 @@ test.skip('User transfers all of his dots', async ({ expect }) => {
 	])
 }, 20_000)
 
-test.skip('User gets dusted with ROCs', async ({ expect }) => {
+test('User gets dusted with ROCs', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
 	await setStorage(peregrineContext, {
@@ -83,13 +86,22 @@ test.skip('User gets dusted with ROCs', async ({ expect }) => {
 test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
+	const switchParameters = getAssetSwitchParameters()
+
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
 		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
+
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.createForeignAsset(keysCharlie.address, [
+			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
+		])
+	)
 
 	await setStorage(basiliskContext, {
 		...BasiliskConfig.assignNativeTokensToAccounts([keysAlice.address]),
@@ -141,4 +153,6 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 
 	// Alice should still have no rocs.
 	await checkBalance(getFreeRocPeregrine, keysAlice.address, expect, BigInt(0))
+
+	await checkSwitchPalletInvariant(expect)
 }, 20_000)

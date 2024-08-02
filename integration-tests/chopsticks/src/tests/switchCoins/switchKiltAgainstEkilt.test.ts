@@ -12,12 +12,15 @@ import {
 	assethubContext,
 	getFreeRocAssetHub,
 	getRemoteLockedSupply,
+	checkSwitchPalletInvariant,
 } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getAccountLocationV4 } from '../../network/utils.js'
 
 test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
+
+	const switchParameters = getAssetSwitchParameters()
 
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
@@ -26,14 +29,16 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
 			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [PeregrineConfig.siblingSovereignAccount]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
+			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
+		]),
 	})
 
 	// check initial balance of Alice on Spiritnet
@@ -55,6 +60,7 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 
 	const signedTx = peregrineContext.api.tx.assetSwitchPool1.switch(balanceToTransfer.toString(), beneficiary)
+	const fees = (await signedTx.paymentInfo(keysAlice)).partialFee.toBigInt()
 
 	const events = await sendTransaction(signedTx.signAsync(keysAlice))
 
@@ -68,9 +74,9 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 		'sender Peregrine::balances::[Transfer]'
 	)
 
-	// check balance. Alice should have less then 50 PILTs
+	// check balance. Alice had 50 PILts
 	const freeBalanceAlice = await getFreeBalancePeregrine(keysAlice.address)
-	expect(freeBalanceAlice).toBeLessThanOrEqual(balanceToTransfer)
+	expect(freeBalanceAlice).toBe(initialBalanceKILT - balanceToTransfer - fees)
 
 	// check balance Alice. Some fees should have been paid with her rocs:
 	const freeRocBalanceAlice = await getFreeRocPeregrine(keysAlice.address)
@@ -97,11 +103,14 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const freeBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
 	expect(initialBalanceSovereignAccount - balanceToTransfer).eq(freeBalanceSovereignAccount)
 
-	// sovereign account should have paid the fees
+	// sovereign account should have paid the fees. Calculating the fees is not simple in context of XCM.
+	// We just check that the balance has decreased
 	const freeRocsSovereignAccount = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
 	expect(freeRocsSovereignAccount).toBeLessThan(initialBalanceRocSovereignAccount)
 
 	// remote locked supply should have decreased by the amount of the transferred PILTs
 	const remoteLockedSupply = await getRemoteLockedSupply()
 	expect(remoteLockedSupply).eq(initialRemoteLockedSupply - balanceToTransfer)
+
+	await checkSwitchPalletInvariant(expect)
 }, 20_0000)

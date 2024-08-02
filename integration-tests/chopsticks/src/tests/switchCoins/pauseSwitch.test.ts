@@ -11,8 +11,14 @@ import {
 	keysAlice,
 	keysCharlie,
 } from '../../utils.js'
-import { peregrineContext, getFreeRocPeregrine, getFreeEkiltAssetHub, assethubContext } from '../index.js'
-import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
+import {
+	peregrineContext,
+	getFreeRocPeregrine,
+	getFreeEkiltAssetHub,
+	assethubContext,
+	checkSwitchPalletInvariant,
+} from '../index.js'
+import { checkBalance, createBlock, setStorage, hexAddress, getXcmMessageV4ToSendEkilt } from '../utils.js'
 import { getAccountLocationV4, getRelayNativeAssetIdLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
@@ -25,6 +31,8 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 test('Send ROCs while switch paused', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
+	const switchParameters = getAssetSwitchParameters()
+
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
@@ -33,7 +41,7 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 
 	await setStorage(
 		peregrineContext,
-		PeregrineConfig.setSwitchPair(getAssetSwitchParameters(), PeregrineConfig.initialPoolAccountId, 'Paused')
+		PeregrineConfig.setSwitchPair(switchParameters, PeregrineConfig.initialPoolAccountId, 'Paused')
 	)
 
 	await setStorage(assethubContext, {
@@ -41,7 +49,9 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [PeregrineConfig.siblingSovereignAccount]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
+			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
+		]),
 	})
 
 	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
@@ -71,6 +81,8 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 	await createBlock(peregrineContext)
 	const aliceRocBalance = await getFreeRocPeregrine(keysAlice.address)
 	expect(aliceRocBalance).toBeGreaterThan(BigInt(0))
+
+	checkSwitchPalletInvariant(expect)
 }, 20_000)
 
 /**
@@ -81,6 +93,8 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
+	const switchParameters = getAssetSwitchParameters()
+
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
@@ -88,14 +102,16 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
 			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [PeregrineConfig.siblingSovereignAccount]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
+			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
+		]),
 	})
 
 	// 1. send ROCs 2 Peregrine
@@ -155,6 +171,8 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 
 	expect(section).toBe('assetSwitchPool1')
 	expect(errorName).toBe('SwitchPairNotEnabled')
+
+	await checkSwitchPalletInvariant(expect)
 }, 20_000)
 
 /**
@@ -166,6 +184,8 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
+	const switchParameters = getAssetSwitchParameters()
+
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
@@ -173,14 +193,16 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
 			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [PeregrineConfig.siblingSovereignAccount]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
+			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
+		]),
 	})
 
 	// 1. send ROCs 2 Peregrine
@@ -253,28 +275,6 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 		],
 	}
 
-	const xcmMessage = {
-		V4: [
-			{
-				DepositAsset: {
-					assets: { Wild: 'All' },
-					beneficiary: {
-						parents: 0,
-						interior: {
-							X1: [
-								{
-									AccountId32: {
-										id: hexAddress(keysAlice.address),
-									},
-								},
-							],
-						},
-					},
-				},
-			},
-		],
-	}
-
 	const signedTx3 = assethubContext.api.tx.polkadotXcm
 		.transferAssetsUsingTypeAndThen(
 			dest,
@@ -282,7 +282,7 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 			'LocalReserve',
 			remoteFeeId,
 			'LocalReserve',
-			xcmMessage,
+			getXcmMessageV4ToSendEkilt(keysAlice.address),
 			'Unlimited'
 		)
 		.signAsync(keysAlice)
@@ -303,6 +303,9 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	await checkSystemEvents(peregrineContext, { section: 'messageQueue', method: 'Processed' }).toMatchSnapshot(
 		'receiver Peregrine::messageQueue::[Processed]'
 	)
+
+	// The msg will not be processed. Therefore, some assets are not moved. We can not do strict checks here.
+	await checkSwitchPalletInvariant(expect, false)
 }, 20_000)
 
 // TODO: test case for sending dots back while paused

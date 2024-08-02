@@ -29,11 +29,8 @@ export function assignDotTokensToAccounts(addr: string[], balance: bigint = init
 	}
 }
 
-export function createForeignAsset(
-	manager: string,
-	addr: string[],
-	balance: bigint = initialBalanceKILT * BigInt(1000000000000)
-) {
+export function createForeignAsset(manager: string, accountInfo: [string, bigint][]) {
+	const supply = accountInfo.map(([, balance]) => balance).reduce((acc, balance) => acc + balance, BigInt(0))
 	return {
 		foreignAssets: {
 			asset: [
@@ -60,11 +57,11 @@ export function createForeignAsset(
 						issuer: manager,
 						admin: manager,
 						freezer: manager,
-						supply: BigInt(addr.length) * balance,
+						supply,
 						deposit: 100000000000,
 						minBalance: 100,
 						isSufficient: false,
-						accounts: addr.length,
+						accounts: accountInfo.length,
 						sufficients: 0,
 						approvals: 0,
 						status: 'Live',
@@ -72,7 +69,7 @@ export function createForeignAsset(
 				],
 			],
 
-			account: addr.map((addr) => [
+			account: accountInfo.map((account) => [
 				[
 					{
 						parents: 2,
@@ -90,10 +87,10 @@ export function createForeignAsset(
 							],
 						},
 					},
-					addr,
+					account[0],
 				],
 				{
-					balance: balance,
+					balance: account[1],
 					status: 'Liquid',
 					reason: 'Consumer',
 					extra: null,

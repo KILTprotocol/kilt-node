@@ -17,8 +17,16 @@ import {
 	getFreeRocPeregrine,
 	getFreeEkiltAssetHub,
 	assethubContext,
+	checkSwitchPalletInvariant,
 } from '../index.js'
-import { checkBalance, createBlock, setStorage, hexAddress, checkBalanceInRange } from '../utils.js'
+import {
+	checkBalance,
+	createBlock,
+	setStorage,
+	hexAddress,
+	checkBalanceInRange,
+	getXcmMessageV4ToSendEkilt,
+} from '../utils.js'
 import { getAccountLocationV4, getRelayNativeAssetIdLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
@@ -48,7 +56,9 @@ test('Full e2e tests', async ({ expect }) => {
 			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [PeregrineConfig.siblingSovereignAccount]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
+			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
+		]),
 	})
 
 	// 1. send ROCs 2 Peregrine
@@ -109,28 +119,6 @@ test('Full e2e tests', async ({ expect }) => {
 		],
 	}
 
-	const xcmMessage = {
-		V4: [
-			{
-				DepositAsset: {
-					assets: { Wild: 'All' },
-					beneficiary: {
-						parents: 0,
-						interior: {
-							X1: [
-								{
-									AccountId32: {
-										id: hexAddress(keysAlice.address),
-									},
-								},
-							],
-						},
-					},
-				},
-			},
-		],
-	}
-
 	const signedTx3 = assethubContext.api.tx.polkadotXcm
 		.transferAssetsUsingTypeAndThen(
 			dest,
@@ -138,7 +126,7 @@ test('Full e2e tests', async ({ expect }) => {
 			'LocalReserve',
 			remoteFeeId,
 			'LocalReserve',
-			xcmMessage,
+			getXcmMessageV4ToSendEkilt(keysAlice.address),
 			'Unlimited'
 		)
 		.signAsync(keysAlice)
@@ -172,4 +160,6 @@ test('Full e2e tests', async ({ expect }) => {
 
 	// const events4 = await sendTransaction(signedTx4)
 	// console.log(events4)
+
+	await checkSwitchPalletInvariant(expect)
 }, 20_000)

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Send ROCs while switch paused > sender AssetHub::balances::[Withdraw] asset {"V4":[{"id":{"Concrete":{"parents":1,"interior":"Here"}},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
+exports[`Send ROCs while switch paused > sender AssetHub::balances::[Withdraw] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
 [
   {
     "data": {
@@ -13,11 +13,150 @@ exports[`Send ROCs while switch paused > sender AssetHub::balances::[Withdraw] a
 ]
 `;
 
-exports[`Send ROCs while switch paused > sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset {"V4":[{"id":{"Concrete":{"parents":1,"interior":"Here"}},"fun":{"Fungible":"1000000000000"}}]} 1`] = `[]`;
+exports[`Send ROCs while switch paused > sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "used": {
+            "proofSize": "(rounded 6200)",
+            "refTime": "(rounded 290000000)",
+          },
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "fees": [
+        {
+          "fun": {
+            "Fungible": "(rounded 310000000)",
+          },
+          "id": {
+            "interior": "Here",
+            "parents": 1,
+          },
+        },
+      ],
+      "paying": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "FeesPaid",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": "(rounded 2100)",
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "message": [
+        {
+          "ReserveAssetDeposited": [
+            {
+              "fun": {
+                "Fungible": 1000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 1000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": {
+                "AllCounted": 1,
+              },
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "polkadotXcm",
+  },
+]
+`;
 
-exports[`Send ROCs while switch paused > sender AssetHub::xcmpQueue::[XcmpMessageSent] asset {"V4":[{"id":{"Concrete":{"parents":1,"interior":"Here"}},"fun":{"Fungible":"1000000000000"}}]} 1`] = `[]`;
+exports[`Send ROCs while switch paused > sender AssetHub::xcmpQueue::[XcmpMessageSent] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
 
-exports[`Switch PILTs against ePILTs while paused > sender AssetHub::balances::[Withdraw] asset {"V4":[{"id":{"Concrete":{"parents":1,"interior":"Here"}},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
+exports[`Switch PILTs against ePILTs while paused > sender AssetHub::balances::[Withdraw] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
 [
   {
     "data": {
@@ -30,11 +169,185 @@ exports[`Switch PILTs against ePILTs while paused > sender AssetHub::balances::[
 ]
 `;
 
-exports[`Switch PILTs against ePILTs while paused > sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset {"V4":[{"id":{"Concrete":{"parents":1,"interior":"Here"}},"fun":{"Fungible":"1000000000000"}}]} 1`] = `[]`;
+exports[`Switch PILTs against ePILTs while paused > sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "used": {
+            "proofSize": "(rounded 6200)",
+            "refTime": "(rounded 290000000)",
+          },
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "fees": [
+        {
+          "fun": {
+            "Fungible": "(rounded 310000000)",
+          },
+          "id": {
+            "interior": "Here",
+            "parents": 1,
+          },
+        },
+      ],
+      "paying": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "FeesPaid",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": "(rounded 2100)",
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "message": [
+        {
+          "ReserveAssetDeposited": [
+            {
+              "fun": {
+                "Fungible": 1000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 1000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": {
+                "AllCounted": 1,
+              },
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "polkadotXcm",
+  },
+]
+`;
 
-exports[`Switch PILTs against ePILTs while paused > sender AssetHub::xcmpQueue::[XcmpMessageSent] asset {"V4":[{"id":{"Concrete":{"parents":1,"interior":"Here"}},"fun":{"Fungible":"1000000000000"}}]} 1`] = `[]`;
+exports[`Switch PILTs against ePILTs while paused > sender AssetHub::xcmpQueue::[XcmpMessageSent] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
 
-exports[`Switch ePILTs against PILTs while paused > sender AssetHub::balances::[Withdraw] asset {"V4":[{"id":{"Concrete":{"parents":1,"interior":"Here"}},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
+exports[`Switch ePILTs against PILTs while paused > receiver Peregrine::messageQueue::[Processed] 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": 1000,
+      },
+      "success": false,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 200000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": 1000,
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Switch ePILTs against PILTs while paused > sender AssetHub::balances::[Withdraw] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
 [
   {
     "data": {
@@ -47,6 +360,207 @@ exports[`Switch ePILTs against PILTs while paused > sender AssetHub::balances::[
 ]
 `;
 
-exports[`Switch ePILTs against PILTs while paused > sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset {"V4":[{"id":{"Concrete":{"parents":1,"interior":"Here"}},"fun":{"Fungible":"1000000000000"}}]} 1`] = `[]`;
+exports[`Switch ePILTs against PILTs while paused > sender AssetHub::foreignAssets::[Transferred] asset {"V4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"25000000000000000"}}]} 1`] = `
+[
+  {
+    "data": {
+      "amount": 25000000000000000,
+      "assetId": {
+        "interior": {
+          "X2": [
+            {
+              "GlobalConsensus": {
+                "Ethereum": {
+                  "chainId": "(rounded 11000000)",
+                },
+              },
+            },
+            {
+              "AccountKey20": {
+                "key": "0x06012c8cf97bead5deae237070f9587f8e7a266d",
+                "network": null,
+              },
+            },
+          ],
+        },
+        "parents": 2,
+      },
+      "from": "15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8",
+      "to": "13cKp88mpGREFCq8KsJEFjpSBnjFuCNWq6bmD3js7fu4f66e",
+    },
+    "method": "Transferred",
+    "section": "foreignAssets",
+  },
+]
+`;
 
-exports[`Switch ePILTs against PILTs while paused > sender AssetHub::xcmpQueue::[XcmpMessageSent] asset {"V4":[{"id":{"Concrete":{"parents":1,"interior":"Here"}},"fun":{"Fungible":"1000000000000"}}]} 1`] = `[]`;
+exports[`Switch ePILTs against PILTs while paused > sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "used": {
+            "proofSize": "(rounded 6200)",
+            "refTime": "(rounded 290000000)",
+          },
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "fees": [
+        {
+          "fun": {
+            "Fungible": "(rounded 310000000)",
+          },
+          "id": {
+            "interior": "Here",
+            "parents": 1,
+          },
+        },
+      ],
+      "paying": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "FeesPaid",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": "(rounded 2100)",
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "message": [
+        {
+          "ReserveAssetDeposited": [
+            {
+              "fun": {
+                "Fungible": 1000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 1000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": {
+                "AllCounted": 1,
+              },
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Switch ePILTs against PILTs while paused > sender AssetHub::xcmpQueue::[XcmpMessageSent] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Switch ePILTs against PILTs while paused > sender Peregrine::assetSwitchPool1::[LocalToRemoteSwitchExecuted] 1`] = `
+[
+  {
+    "data": {
+      "amount": 50000000000000000,
+      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+      "to": {
+        "V4": {
+          "interior": {
+            "X1": [
+              {
+                "AccountId32": {
+                  "id": "(hash)",
+                  "network": null,
+                },
+              },
+            ],
+          },
+          "parents": 0,
+        },
+      },
+    },
+    "method": "LocalToRemoteSwitchExecuted",
+    "section": "assetSwitchPool1",
+  },
+]
+`;

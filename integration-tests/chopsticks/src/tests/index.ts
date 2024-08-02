@@ -1,4 +1,4 @@
-import { beforeEach, afterEach } from 'vitest'
+import { beforeEach, afterEach, ExpectStatic } from 'vitest'
 import { connectParachains, connectVertical } from '@acala-network/chopsticks'
 import { setTimeout } from 'timers/promises'
 
@@ -57,6 +57,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
 	// fixes api runtime disconnect warning
+
 	try {
 		await Promise.all([
 			spiritnetContext.teardown(),
@@ -127,4 +128,28 @@ export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const accountInfo: any = await hydradxContext.api.query.tokens.accounts(account, HydraDxConfig.kiltTokenId)
 	return accountInfo.free.toBigInt()
+}
+
+export async function checkSwitchPalletInvariant(expect: ExpectStatic, strict: boolean = true) {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
+	if (switchPairInfo.isNone) {
+		return
+	}
+
+	const sovereignEKiltSupply = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
+
+	const remoteAssetSovereignTotalBalance = switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
+	const remoteAssetCirculatingSupply = switchPairInfo.unwrap().remoteAssetCirculatingSupply.toBigInt()
+	const remoteAssetTotalSupply = switchPairInfo.unwrap().remoteAssetTotalSupply.toBigInt()
+
+	const lockedBalanceFromTotalAndCirculating = remoteAssetTotalSupply - remoteAssetCirculatingSupply
+
+	if (strict) {
+		expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
+		expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance)
+	} else {
+		expect(remoteAssetSovereignTotalBalance).toBeGreaterThanOrEqual(lockedBalanceFromTotalAndCirculating)
+		expect(sovereignEKiltSupply).toBeGreaterThanOrEqual(remoteAssetSovereignTotalBalance)
+	}
 }

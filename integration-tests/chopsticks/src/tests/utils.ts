@@ -45,3 +45,27 @@ export async function checkBalanceInRange(
 export function hexAddress(addr: string) {
 	return u8aToHex(decodeAddress(addr))
 }
+
+export function getXcmMessageV4ToSendEkilt(address: string) {
+	return {
+		V4: [
+			{
+				DepositAsset: {
+					assets: { Wild: 'All' },
+					beneficiary: {
+						parents: 0,
+						interior: {
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(address),
+									},
+								},
+							],
+						},
+					},
+				},
+			},
+		],
+	}
+}

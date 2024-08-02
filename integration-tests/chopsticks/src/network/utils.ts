@@ -80,7 +80,7 @@ export function getAccountLocationV4(addr: string) {
 	}
 }
 
-export function getNativeAssetIdLocation(amount: bigint | string) {
+export function getNativeAssetIdLocationV3(amount: bigint | string) {
 	return {
 		id: { Concrete: { parents: 0, interior: 'Here' } },
 		fun: { Fungible: amount },

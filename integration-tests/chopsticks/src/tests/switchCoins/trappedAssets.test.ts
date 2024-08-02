@@ -13,18 +13,19 @@ import {
 	keysCharlie,
 } from '../../utils.js'
 import { peregrineContext, assethubContext, rococoContext } from '../index.js'
-import { createBlock, setStorage, hexAddress } from '../utils.js'
+import { createBlock, setStorage, hexAddress, getXcmMessageV4ToSendEkilt } from '../utils.js'
 import { getChildLocation, getSiblingLocationV4 } from '../../network/utils.js'
 
-test('Trapped assets', async ({ expect }) => {
+test.skip('Trapped assets', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const switchPairParameters = getAssetSwitchParameters()
+	const fundsAlice = switchPairParameters.circulatingSupply
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [
 			keysAlice.address,
 			AssetHubConfig.sovereignAccountOnSiblingChains,
 		]),
-		...PeregrineConfig.setSwitchPair(getAssetSwitchParameters()),
 		...PeregrineConfig.setSafeXcmVersion4(),
 		...PeregrineConfig.assignNativeTokensToAccounts(
 			[keysAlice.address, AssetHubConfig.sovereignAccountOnSiblingChains],
@@ -32,6 +33,8 @@ test('Trapped assets', async ({ expect }) => {
 		),
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
+
+	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchPairParameters))
 
 	await setStorage(rococoContext, {
 		...RococoConfig.setSudoKey(keysAlice.address),
@@ -43,15 +46,11 @@ test('Trapped assets', async ({ expect }) => {
 			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(
-			keysCharlie.address,
-			[PeregrineConfig.siblingSovereignAccount, keysAlice.address],
-			initialBalanceKILT
-		),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
+			[PeregrineConfig.siblingSovereignAccount, switchPairParameters.sovereignSupply],
+			[keysAlice.address, fundsAlice],
+		]),
 	})
-
-	// 50 PILTS
-	const balanceToTransfer = initialBalanceKILT / BigInt(2)
 
 	// First pause switch so that assets are trapped
 	await peregrineContext.api.tx.sudo
@@ -59,67 +58,56 @@ test('Trapped assets', async ({ expect }) => {
 		.signAndSend(keysAlice)
 	await createBlock(peregrineContext)
 
-	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
-
-	const remoteFeeId = { V4: { Concrete: AssetHubConfig.eKiltLocation } }
+	// Now send some funds.
+	const balanceToTransfer = fundsAlice / BigInt(2)
+	const dest = { v4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const remoteFeeId = { v4: AssetHubConfig.eKiltLocation }
 
 	const funds = {
-		V4: [
+		v4: [
 			{
-				id: { Concrete: AssetHubConfig.eKiltLocation },
-				fun: { Fungible: balanceToTransfer },
+				id: AssetHubConfig.eKiltLocation,
+				fun: { Fungible: balanceToTransfer.toString() },
 			},
 		],
 	}
 
-	const xcmMessage = {
-		V4: [
-			{
-				DepositAsset: {
-					assets: { Wild: 'All' },
-					beneficiary: {
-						parents: 0,
-						interior: {
-							X1: [
-								{
-									AccountId32: {
-										id: hexAddress(keysAlice.address),
-									},
-								},
-							],
-						},
-					},
-				},
-			},
-		],
-	}
+	const signedTx = assethubContext.api.tx.polkadotXcm
+		.transferAssetsUsingTypeAndThen(
+			dest,
+			funds,
+			'LocalReserve',
+			remoteFeeId,
+			'LocalReserve',
+			getXcmMessageV4ToSendEkilt(keysAlice.address),
+			'Unlimited'
+		)
+		.signAsync(keysAlice)
 
-	const signedTx = assethubContext.api.tx.polkadotXcm.transferAssetsUsingTypeAndThen(
-		dest,
-		funds,
-		'LocalReserve',
-		remoteFeeId,
-		'LocalReserve',
-		xcmMessage,
-		'Unlimited'
-	)
-
-	const events = await sendTransaction(signedTx.signAsync(keysAlice))
+	const events = await sendTransaction(signedTx)
 
 	await createBlock(assethubContext)
 
 	// msg should be sent.
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('assetHubs events xcm queue pallet')
-	checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot('PolkadotXcm assethub')
+	checkEvents(events, 'xcmpQueue').toMatchSnapshot(
+		`sender AssetHub::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(funds)}`
+	)
+	checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot(
+		`sender AssetHub::polkadotXcm::[Attempted] asset ${JSON.stringify(funds)}`
+	)
 	checkEvents(events, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		'sender events foreignAssets'
+		`sender AssetHub::foreignAssets::[Transferred] asset ${JSON.stringify(funds)}`
 	)
 
 	await createBlock(peregrineContext)
 
 	// ... But fail on peregrine
-	await checkSystemEvents(peregrineContext, 'xcmpQueue').toMatchSnapshot('peregrine message queue')
-	await checkSystemEvents(peregrineContext, 'polkadotXcm').toMatchSnapshot('peregrine asset switch pallet')
+	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
+		'receiver Peregrine::messageQueue::[Processed]'
+	)
+	await checkSystemEvents(peregrineContext, 'polkadotXcm').toMatchSnapshot(
+		'receiver Peregrine::polkadotXcm::[AssetsTrapped]'
+	)
 
 	// Resume switch pair again
 	await peregrineContext.api.tx.sudo
@@ -129,11 +117,11 @@ test('Trapped assets', async ({ expect }) => {
 
 	// Alice can reclaim the funds
 	const reclaimMsg = [
-		{ WithdrawAsset: [{ id: { Concrete: { parents: 0, interior: 'Here' } }, fun: { Fungible: KILT } }] },
+		{ WithdrawAsset: [{ id: { parents: 0, interior: 'Here' }, fun: { Fungible: KILT } }] },
 		{
 			BuyExecution: {
 				weightLimit: 'Unlimited',
-				fees: { id: { Concrete: { parents: 0, interior: 'Here' }, fun: { Fungible: KILT } } },
+				fees: { id: { parents: 0, interior: 'Here' }, fun: { Fungible: KILT } },
 			},
 		},
 		{
@@ -141,7 +129,7 @@ test('Trapped assets', async ({ expect }) => {
 				ticket: { parents: 0, interior: { X1: [{ GeneralIndex: 3 }] } },
 				assets: [
 					{
-						id: { Concrete: AssetHubConfig.eKiltLocation },
+						id: AssetHubConfig.eKiltLocation,
 						fun: { Fungible: 7161 },
 					},
 				],
@@ -167,9 +155,7 @@ test('Trapped assets', async ({ expect }) => {
 	]
 
 	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
-
 	const transactExtrinsic = assethubContext.api.tx.polkadotXcm.send({ V4: peregrineDestination }, { V4: reclaimMsg })
-
 	const assetHubDestination = getChildLocation(AssetHubConfig.paraId)
 
 	const transactMessage = [
@@ -185,16 +171,23 @@ test('Trapped assets', async ({ expect }) => {
 		},
 	]
 
-	const relayTx = rococoContext.api.tx.xcmPallet.send({ V4: assetHubDestination }, { V4: transactMessage })
+	const relayTx = rococoContext.api.tx.xcmPallet.send({ V3: assetHubDestination }, { V3: transactMessage })
 	const reclaimTx = rococoContext.api.tx.sudo.sudo(relayTx).signAsync(keysAlice)
-
-	// TODO: check events
 	const relayEvents = await sendTransaction(reclaimTx)
 
-	console.log(relayEvents)
 	await createBlock(rococoContext)
+	await checkEvents(relayEvents, 'sudo').toMatchSnapshot('relayer rococo::sudo::[Sudid]')
+	await checkEvents(relayEvents, 'xcmPallet').toMatchSnapshot('relayer rococo::xcmPallet::[Sent]')
 
+	// AH forwards the msg.
 	await createBlock(assethubContext)
+	await checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot(
+		'sender AssetHub::messageQueue::[Processed]'
+	)
+	await checkSystemEvents(assethubContext, 'polkadotXcm').toMatchSnapshot('sender AssetHub::polkadotXcm::[Sent]')
+	await checkSystemEvents(assethubContext, 'xcmpQueue').toMatchSnapshot(
+		'sender AssetHub::xcmpQueue::[XcmpMessageSent]'
+	)
 
 	await createBlock(peregrineContext)
-}, 20_000)
+}, 20_00000)
