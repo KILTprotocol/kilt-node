@@ -59,7 +59,7 @@ mod benchmarks {
 	use sp_runtime::traits::{TryConvert, Zero};
 	use sp_std::boxed::Box;
 	use xcm::{
-		v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location, XcmContext},
+		v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location},
 		VersionedAsset, VersionedAssetId, VersionedInteriorLocation, VersionedLocation,
 	};
 	use xcm_executor::traits::TransactAsset;

@@ -24,11 +24,11 @@ use sp_std::marker::PhantomData;
 pub struct NoopBenchmarkHelper;
 
 #[cfg(feature = "runtime-benchmarks")]
-impl pallet_assets::BenchmarkHelper<xcm::v3::MultiLocation> for NoopBenchmarkHelper {
-	fn create_asset_id_parameter(_id: u32) -> xcm::v3::MultiLocation {
-		xcm::v3::MultiLocation {
+impl pallet_assets::BenchmarkHelper<xcm::v4::Location> for NoopBenchmarkHelper {
+	fn create_asset_id_parameter(_id: u32) -> xcm::v4::Location {
+		xcm::v4::Location {
 			parents: 0,
-			interior: xcm::v3::Junctions::Here,
+			interior: xcm::v4::Junctions::Here,
 		}
 	}
 }
