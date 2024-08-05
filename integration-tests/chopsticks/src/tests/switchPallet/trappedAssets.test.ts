@@ -188,4 +188,4 @@ test('Trapped assets', async ({ expect }) => {
 	await checkSystemEvents(peregrineContext, 'assetSwitchPool1').toMatchSnapshot(
 		'receiver Peregrine::assetSwitchPool1::[RemoteToLocalSwitchExecuted]'
 	)
-}, 20_00000)
+}, 20_000)
