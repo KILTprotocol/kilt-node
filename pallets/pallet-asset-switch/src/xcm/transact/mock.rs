@@ -178,7 +178,6 @@ impl ExtBuilder {
 				);
 				Pallet::<MockRuntime>::set_switch_pair_status(switch_pair_info.status).unwrap();
 			}
-			println!("self.1: {:?} ICH BIN HIER DU WIXA", self.1);
 			for (account, free, held, frozen) in self.1 {
 				<Balances as MutateFungible<AccountId32>>::mint_into(&account, free).unwrap();
 				<Balances as MutateHold<AccountId32>>::hold(&MockRuntimeHoldReason {}, &account, held).unwrap();
