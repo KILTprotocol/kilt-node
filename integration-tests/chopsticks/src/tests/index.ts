@@ -130,7 +130,7 @@ export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint
 	return accountInfo.free.toBigInt()
 }
 
-export async function checkSwitchPalletInvariant(expect: ExpectStatic, soft: boolean = true) {
+export async function checkSwitchPalletInvariant(expect: ExpectStatic, soft: boolean = false) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
 	if (switchPairInfo.isNone) {

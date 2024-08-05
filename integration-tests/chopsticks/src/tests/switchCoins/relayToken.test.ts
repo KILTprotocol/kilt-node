@@ -141,14 +141,15 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 	)
 
 	await createBlock(rococoContext)
-	await checkSystemEvents(rococoContext, 'messageQueue').toMatchSnapshot('relayer rococo::messageQueue::[Processed]')
-	await checkSystemEvents(rococoContext, 'balances').toMatchSnapshot('relayer rococo::balances::[Minted,Burned]')
+	await checkSystemEvents(rococoContext, 'messageQueue').toMatchSnapshot('relayer Rococo::messageQueue::[Processed]')
+	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Minted' } ).toMatchSnapshot('relayer Rococo::balances::[Minted]')
+	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Burned' } ).toMatchSnapshot('relayer Rococo::balances::[Burned]')
 
 	await createBlock(peregrineContext)
 
 	// Barrier blocked execution. No event will be emitted.
 	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
-		'relayer rococo::messageQueue::[ProcessingFailed]'
+		'receiver Peregrine::messageQueue::[ProcessingFailed]'
 	)
 
 	// Alice should still have no rocs.

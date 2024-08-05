@@ -305,7 +305,7 @@ test.skip('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	)
 
 	// The msg will not be processed. Therefore, some assets are not moved. We can not do strict checks here.
-	await checkSwitchPalletInvariant(expect, false)
+	await checkSwitchPalletInvariant(expect, true)
 }, 20_000)
 
 test('Withdraw ROCs while switch is paused', async ({ expect }) => {

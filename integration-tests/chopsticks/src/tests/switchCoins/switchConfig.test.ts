@@ -292,7 +292,7 @@ test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 
 	// We can only check the soft invariant. On the source chain, the sovereign supply is decreased,
 	// while it stays constant on the destination chain.
-	await checkSwitchPalletInvariant(expect, false)
+	await checkSwitchPalletInvariant(expect, true)
 }, 20_000)
 
 test('Pool accounts funds goes to zero', async ({ expect }) => {
@@ -312,22 +312,23 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 			initialBalanceROC
 		),
 		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[keysAlice.address, switchParameters.circulatingSupply],
+			// we kinda break the invariant here. This should never be the case.
+			[keysAlice.address, switchParameters.circulatingSupply + BigInt(2) * KILT] ,
 			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
 		]),
 	})
 
 	// Check initial state. The pool account should have 100 KILTs + ED.
-	checkBalance(
+	await checkBalance(
 		getFreeBalancePeregrine,
 		PeregrineConfig.initialPoolAccountId,
 		expect,
 		KILT * BigInt(100) + PeregrineConfig.existentialDeposit
 	)
-	checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, initialBalanceKILT * BigInt(1000))
+	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, switchParameters.circulatingSupply + BigInt(2) * KILT)	
 
-	// try to dry out the pool account
-	const balanceToTransfer = KILT * BigInt(100) + PeregrineConfig.existentialDeposit
+	// try to dry out the pool account. By sending the whole circulating supply + 1 KILT, the pool account should get dusted.
+	const balanceToTransfer = switchParameters.circulatingSupply + KILT
 
 	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
 
@@ -358,11 +359,11 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 
 	await createBlock(assethubContext)
 
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender AssetHub::xcmpQueue::[XcmpMessageSent]')
-	checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot(
+	await checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender AssetHub::xcmpQueue::[XcmpMessageSent]')
+	await checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot(
 		'sender AssetHub::polkadotXcm::[Attempted]'
 	)
-	checkEvents(events, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
+	await checkEvents(events, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'sender AssetHub::foreignAssets::[Transferred]'
 	)
 
@@ -375,21 +376,20 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 		'receiver Peregrine::polkadotXcm::[AssetsTrapped]'
 	)
 
-	await checkSwitchPalletInvariant(expect)
+	await checkSwitchPalletInvariant(expect, true)
 }, 20_000)
 
 test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters(initialBalanceKILT * BigInt(1000))
-	const aliceFunds = switchParameters.circulatingSupply
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts(
 			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [[keysAlice.address, aliceFunds]]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [[keysAlice.address, switchParameters.circulatingSupply]]),
 	})
 
 	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
@@ -399,7 +399,7 @@ test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 		V4: [
 			{
 				id: AssetHubConfig.eKiltLocation,
-				fun: { Fungible: aliceFunds },
+				fun: { Fungible: KILT },
 			},
 		],
 	}
@@ -561,5 +561,5 @@ test('Send eKILT from other reserve location', async ({ expect }) => {
 		'receiver Peregrine::messageQueue::[Processed]'
 	)
 
-	await checkSwitchPalletInvariant(expect, false)
+	await checkSwitchPalletInvariant(expect)
 }, 20_000)

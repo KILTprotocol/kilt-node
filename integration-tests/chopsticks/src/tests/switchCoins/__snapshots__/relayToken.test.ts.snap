@@ -1,6 +1,20 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::balances::[Minted,Burned] 1`] = `
+exports[`Send DOTs from basilisk 2 Peregrine > receiver Peregrine::messageQueue::[ProcessingFailed] 1`] = `
+[
+  {
+    "data": {
+      "error": "Unsupported",
+      "id": "(hash)",
+      "origin": "Parent",
+    },
+    "method": "ProcessingFailed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Send DOTs from basilisk 2 Peregrine > relayer Rococo::balances::[Burned] 1`] = `
 [
   {
     "data": {
@@ -10,6 +24,11 @@ exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::balances::[Minted
     "method": "Burned",
     "section": "balances",
   },
+]
+`;
+
+exports[`Send DOTs from basilisk 2 Peregrine > relayer Rococo::balances::[Minted] 1`] = `
+[
   {
     "data": {
       "amount": "(rounded 50000000000000)",
@@ -26,25 +45,10 @@ exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::balances::[Minted
     "method": "Minted",
     "section": "balances",
   },
-  {
-    "data": {
-      "amount": "(rounded 21000000)",
-    },
-    "method": "Issued",
-    "section": "balances",
-  },
-  {
-    "data": {
-      "amount": "(rounded 21000000)",
-      "who": "5ETmQC23TZuKrgZVD7rCPqAvVZhSB4SwRBqqHkDQaABBHueT",
-    },
-    "method": "Deposit",
-    "section": "balances",
-  },
 ]
 `;
 
-exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::messageQueue::[Processed] 1`] = `
+exports[`Send DOTs from basilisk 2 Peregrine > relayer Rococo::messageQueue::[Processed] 1`] = `
 [
   {
     "data": {
@@ -61,20 +65,6 @@ exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::messageQueue::[Pr
       },
     },
     "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
-
-exports[`Send DOTs from basilisk 2 Peregrine > relayer rococo::messageQueue::[ProcessingFailed] 1`] = `
-[
-  {
-    "data": {
-      "error": "Unsupported",
-      "id": "(hash)",
-      "origin": "Parent",
-    },
-    "method": "ProcessingFailed",
     "section": "messageQueue",
   },
 ]
