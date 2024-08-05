@@ -50,7 +50,7 @@ impl pallet_asset_switch::Config<SwitchPool2> for Runtime {
 
 If a single instance is required, then use the default instance:
 
-```rust
+```rust,ignore
 impl pallet_asset_switch::Config for Runtime {
     // Config
 }
