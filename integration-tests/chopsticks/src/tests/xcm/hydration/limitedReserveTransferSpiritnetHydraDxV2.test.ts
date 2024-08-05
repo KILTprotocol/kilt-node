@@ -5,10 +5,11 @@ import * as SpiritnetConfig from '../../../network/spiritnet.js'
 import * as HydraDxConfig from '../../../network/hydraDx.js'
 import { KILT, initialBalanceKILT, keysAlice } from '../../../utils.js'
 import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../../index.js'
-import { getAccountLocationV2, getNativeAssetIdLocation, getSiblingLocationV3 } from '../../../network/utils.js'
+import { getAccountLocationV2, getNativeAssetIdLocationV3, getSiblingLocationV3 } from '../../../network/utils.js'
 import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../../utils.js'
 
-const KILT_ASSET_V2 = { V2: [getNativeAssetIdLocation(KILT)] }
+// native asset location is the same for V2 and V3
+const KILT_ASSET_V2 = { V2: [getNativeAssetIdLocationV3(KILT)] }
 
 test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
