@@ -1270,28 +1270,33 @@ mod benches {
 		fn setup() -> Option<PartialBenchmarkInfo> {
 			const DESTINATION_PARA_ID: u32 = 1_000;
 
-			let asset_location: MultiLocation = Junctions::Here.into();
+			let asset_location: Location = Junctions::Here.into();
 			Fungibles::create(
 				RawOrigin::Root.into(),
-				asset_location,
+				asset_location.clone(),
 				AccountId::from([0; 32]).into(),
 				1u32.into(),
 			)
 			.unwrap();
-			let beneficiary = Junctions::X1(Junction::AccountId32 {
-				network: None,
-				id: [0; 32],
-			})
+			let beneficiary = Junctions::X1(
+				[Junction::AccountId32 {
+					network: None,
+					id: [0; 32],
+				}]
+				.into(),
+			)
 			.into();
-			let destination =
-				MultiLocation::from(ParentThen(Junctions::X1(Junction::Parachain(DESTINATION_PARA_ID)))).into();
-			let remote_xcm_fee = MultiAsset {
-				id: AssetId::Concrete(asset_location),
+			let destination = Location::from(ParentThen(Junctions::X1(
+				[Junction::Parachain(DESTINATION_PARA_ID)].into(),
+			)))
+			.into();
+			let remote_xcm_fee = Asset {
+				id: AssetId(asset_location),
 				fun: Fungibility::Fungible(1_000),
 			}
 			.into();
 
-			ParachainSystem::open_outbound_hrmp_channel_for_benchmarks(DESTINATION_PARA_ID.into());
+			ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(DESTINATION_PARA_ID.into());
 
 			Some(PartialBenchmarkInfo {
 				beneficiary: Some(beneficiary),
@@ -1647,6 +1652,34 @@ impl_runtime_apis! {
 						xcm_benchmarking::NativeAsset::get(),
 						xcm_benchmarking::ParachainLocation::get(),
 					))
+				}
+
+				fn set_up_complex_asset_transfer() -> Option<(Assets, u32, Location, Box<dyn FnOnce()>)> {
+					let (transferable_asset, dest) = Self::reserve_transferable_asset_and_dest().unwrap();
+
+					let fee_amount = ExistentialDeposit::get();
+					let fee_asset: Asset = (Location::here(), fee_amount).into();
+
+					// Make account free to pay the fee
+					let who = frame_benchmarking::whitelisted_caller();
+					let balance = fee_amount + ExistentialDeposit::get() * 1000;
+					let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
+						&who, balance,
+					);
+
+					// verify initial balance
+					assert_eq!(Balances::free_balance(&who), balance);
+
+
+					let assets: Assets = vec![fee_asset.clone(), transferable_asset.clone()].into();
+					let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
+
+					let verify = Box::new( move || {
+						let Fungibility::Fungible(transferable_amount) = transferable_asset.fun else { return; };
+						assert_eq!(Balances::free_balance(&who), balance - fee_amount - transferable_amount);
+					});
+
+					Some((assets,fee_index , dest, verify))
 				}
 
 				fn get_asset() -> Asset {
