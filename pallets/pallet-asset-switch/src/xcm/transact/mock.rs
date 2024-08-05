@@ -18,16 +18,18 @@
 
 use frame_support::{
 	construct_runtime,
+	pallet_prelude::TypeInfo,
 	traits::{
 		fungible::{
 			freeze::Mutate as MutateFreeze, hold::Mutate as MutateHold, Inspect as InspectFungible,
 			Mutate as MutateFungible,
 		},
-		Everything,
+		Everything, VariantCount,
 	},
 };
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
 use pallet_balances::AccountData;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
@@ -73,6 +75,13 @@ impl frame_system::Config for MockRuntime {
 	type Version = ();
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, MaxEncodedLen, Encode, Decode, Debug, TypeInfo, Default)]
+pub struct MockRuntimeHoldReason;
+
+impl VariantCount for MockRuntimeHoldReason {
+	const VARIANT_COUNT: u32 = 1;
+}
+
 impl pallet_balances::Config for MockRuntime {
 	type AccountStore = System;
 	type Balance = u64;
@@ -84,7 +93,7 @@ impl pallet_balances::Config for MockRuntime {
 	type MaxReserves = ConstU32<0>;
 	type ReserveIdentifier = ();
 	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = ();
+	type RuntimeHoldReason = MockRuntimeHoldReason;
 	type RuntimeFreezeReason = ();
 	type WeightInfo = ();
 }
@@ -169,9 +178,10 @@ impl ExtBuilder {
 				);
 				Pallet::<MockRuntime>::set_switch_pair_status(switch_pair_info.status).unwrap();
 			}
+			println!("self.1: {:?} ICH BIN HIER DU WIXA", self.1);
 			for (account, free, held, frozen) in self.1 {
 				<Balances as MutateFungible<AccountId32>>::mint_into(&account, free).unwrap();
-				<Balances as MutateHold<AccountId32>>::hold(&(), &account, held).unwrap();
+				<Balances as MutateHold<AccountId32>>::hold(&MockRuntimeHoldReason {}, &account, held).unwrap();
 				<Balances as MutateFreeze<AccountId32>>::set_freeze(b"test", &account, frozen).unwrap();
 
 				// If the specified account is the pool account, remove from the registered
