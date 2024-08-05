@@ -23,7 +23,7 @@ test('Teleport assets from Spiritnet Account Alice -> AH Account Alice', async (
 	const kiltAsset = { V3: [getNativeAssetIdLocationV3(KILT)] }
 
 	// Teleportation should exhaust resources. This is intended until isTeleport is enabled in the XCM config.
-	expect(async () => {
+	await expect(async () => {
 		await spiritnetContext.api.tx.polkadotXcm
 			.teleportAssets(assetHubDestination, beneficiary, kiltAsset, 0)
 			.signAndSend(keysAlice)
