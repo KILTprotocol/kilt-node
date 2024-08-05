@@ -142,8 +142,12 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 
 	await createBlock(rococoContext)
 	await checkSystemEvents(rococoContext, 'messageQueue').toMatchSnapshot('relayer Rococo::messageQueue::[Processed]')
-	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Minted' } ).toMatchSnapshot('relayer Rococo::balances::[Minted]')
-	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Burned' } ).toMatchSnapshot('relayer Rococo::balances::[Burned]')
+	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Minted' }).toMatchSnapshot(
+		'relayer Rococo::balances::[Minted]'
+	)
+	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Burned' }).toMatchSnapshot(
+		'relayer Rococo::balances::[Burned]'
+	)
 
 	await createBlock(peregrineContext)
 

@@ -313,7 +313,7 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 		),
 		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
 			// we kinda break the invariant here. This should never be the case.
-			[keysAlice.address, switchParameters.circulatingSupply + BigInt(2) * KILT] ,
+			[keysAlice.address, switchParameters.circulatingSupply + BigInt(2) * KILT],
 			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
 		]),
 	})
@@ -325,7 +325,12 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 		expect,
 		KILT * BigInt(100) + PeregrineConfig.existentialDeposit
 	)
-	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, switchParameters.circulatingSupply + BigInt(2) * KILT)	
+	await checkBalance(
+		getFreeEkiltAssetHub,
+		keysAlice.address,
+		expect,
+		switchParameters.circulatingSupply + BigInt(2) * KILT
+	)
 
 	// try to dry out the pool account. By sending the whole circulating supply + 1 KILT, the pool account should get dusted.
 	const balanceToTransfer = switchParameters.circulatingSupply + KILT
@@ -389,7 +394,9 @@ test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [[keysAlice.address, switchParameters.circulatingSupply]]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
+			[keysAlice.address, switchParameters.circulatingSupply],
+		]),
 	})
 
 	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
