@@ -17,7 +17,6 @@ export const getSetupOptions = ({
 		port: toNumber(process.env.ASSETHUB_PORT) || 9003,
 		wasmOverride,
 		blockNumber,
-		runtimeLogLevel: 5,
 	}) as SetupOption
 
 /// AssetHub has no own coin. Teleported dots are used as the native token.

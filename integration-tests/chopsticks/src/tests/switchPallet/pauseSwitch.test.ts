@@ -28,7 +28,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
  */
 
 // Send ROCs while switch is paused
-test.skip('Send ROCs while switch paused', async ({ expect }) => {
+test('Send ROCs while switch paused', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
@@ -90,7 +90,7 @@ test.skip('Send ROCs while switch paused', async ({ expect }) => {
  * 2. pause switch
  * 3. switch KILTs
  */
-test.skip('Switch PILTs against ePILTs while paused', async ({ expect }) => {
+test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
@@ -181,7 +181,7 @@ test.skip('Switch PILTs against ePILTs while paused', async ({ expect }) => {
  * 3. pause switch
  * 4. send eKILTs back
  */
-test.skip('Switch ePILTs against PILTs while paused', async ({ expect }) => {
+test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()

@@ -10,7 +10,6 @@ const options = {
 	db: './db/peregrine.db.sqlite',
 	port: toNumber(process.env.PEREGRINE_PORT) || 9004,
 	wasmOverride: process.env.PEREGRINE_WASM_OVERRIDE || undefined,
-	runtimeLogLevel: 5,
 } as SetupOption
 
 /// Assigns the native tokens to an accounts
