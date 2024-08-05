@@ -136,18 +136,20 @@ build:
 build-wasm-peregrine:
   interruptible: true
   image:
-    name: paritytech/ci-unified:bullseye-1.74.0
+    name: paritytech/srtool:1.74.0
     entrypoint: [""]
   stage: build
   only:
     - ag_fix_ci_build
     - master
     - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+  variables:
+    PACKAGE: peregrine-runtime
+    RUNTIME_DIR: runtimes/peregrine
+    PARACHAIN_PALLET_ID: 0x50
+    AUTHORIZE_UPGRADE_PREFIX: 0x02
+    WASM_BUILD_STD: 0
   script:
-    - export PACKAGE=peregrine-runtime
-    - export RUNTIME_DIR=runtimes/peregrine
-    - export PARACHAIN_PALLET_ID=0x50
-    - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
@@ -172,11 +174,13 @@ build-wasm-spiritnet:
     - develop
     - master
     - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+  variables:
+    PACKAGE: spiritnet-runtime
+    RUNTIME_DIR: runtimes/spiritnet
+    PARACHAIN_PALLET_ID: 0x50
+    AUTHORIZE_UPGRADE_PREFIX: 0x02
+    WASM_BUILD_STD: 0
   script:
-    - export PACKAGE=spiritnet-runtime
-    - export RUNTIME_DIR=runtimes/spiritnet
-    - export PARACHAIN_PALLET_ID=0x50
-    - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
