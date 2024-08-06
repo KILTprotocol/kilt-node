@@ -42,13 +42,11 @@ where
 {
 	fn contains(a: &Asset, b: &Location) -> bool {
 		log::info!(target: LOG_TARGET, "contains {:?}, {:?}", a, b);
-		// 1. Verify a switch pair has been set and is enabled.
+		// 1. Verify a switch pair has been set. We don't care if it's enabled at this
+		//    stage, as we still want the assets to move inside this system.
 		let Some(switch_pair) = SwitchPair::<T, I>::get() else {
 			return false;
 		};
-		if !switch_pair.is_enabled() {
-			return false;
-		}
 
 		// 2. We only trust the EXACT configured remote location (no parent is allowed).
 		let Ok(stored_remote_reserve_location_v4): Result<Location, _> = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
