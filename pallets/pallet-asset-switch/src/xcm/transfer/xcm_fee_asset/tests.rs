@@ -373,7 +373,7 @@ fn false_on_switch_pair_not_set() {
 }
 
 #[test]
-fn false_on_switch_pair_not_enabled() {
+fn true_on_switch_pair_not_enabled() {
 	let location = Location {
 		parents: 1,
 		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
@@ -381,21 +381,15 @@ fn false_on_switch_pair_not_enabled() {
 	let new_switch_pair_info =
 		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Paused);
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info)
+		.with_switch_pair_info(new_switch_pair_info.clone())
 		.build()
 		.execute_with(|| {
-			assert!(!IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
+			assert!(IsSwitchPairXcmFeeAsset::<MockRuntime, _>::contains(
 				&Asset {
-					id: AssetId(Location {
-						parents: 1,
-						interior: Junctions::X1([Junction::Parachain(1_000)].into())
-					}),
+					id: Asset::try_from(new_switch_pair_info.clone().remote_xcm_fee).unwrap().id,
 					fun: Fungibility::Fungible(1)
 				},
-				&Location {
-					parents: 1,
-					interior: Junctions::X1([Junction::Parachain(1_000)].into())
-				}
+				new_switch_pair_info.clone().remote_reserve_location.try_as().unwrap()
 			));
 		});
 }
