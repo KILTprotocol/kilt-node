@@ -1,13 +1,8 @@
-name: Build and Deploy API docs
+name: Build and Deploy Chain docs
 
 on:
-    push:
-      branches:
-        - chrisward/docs-autogen
-
-#   release:
-#     types: [published]
-#   workflow_dispatch:
+    release:
+      types: [published]
 
 jobs:
   build-and-deploy:
@@ -20,14 +15,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up caching for Cargo
+        uses: actions/cache@v4
+        with:
+          path: ${{ secrets.CARGO_CACHE_PATH }}
+          key: chain-docs-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            chain-docs-${{ matrix.runtime }}-
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build and Deploy in Container
         run: |
-          docker run --rm \
+          docker run --rm --user $(id -u):$(id -g) \
             -v "${GITHUB_WORKSPACE}:/workspace" \
-            -v "${HOME}/.cargo:/cargo" \
+            -v "${HOME}/.cargo:/root/.cargo" \
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked"
