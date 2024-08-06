@@ -122,7 +122,7 @@ fn successful_with_stored_v2() {
 	let location_v3: xcm::v3::MultiLocation = location.try_into().unwrap();
 	let new_switch_pair_info = {
 		let mut new_switch_pair_info = get_switch_pair_info_for_remote_location::<MockRuntime>(
-			&location_v3.clone().try_into().unwrap(),
+			&location_v3.try_into().unwrap(),
 			SwitchPairStatus::Running,
 		);
 		// Set XCM fee asset to an XCM v2.
@@ -134,7 +134,7 @@ fn successful_with_stored_v2() {
 		.build_and_execute_with_sanity_tests(|| {
 			let (asset_location, asset_amount): (Location, u128) =
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
-					id: AssetId(location_v3.clone().try_into().unwrap()),
+					id: AssetId(location_v3.try_into().unwrap()),
 					fun: Fungibility::Fungible(u128::MAX),
 				})
 				.unwrap();
