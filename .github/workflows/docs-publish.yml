@@ -3,6 +3,9 @@ name: Build and Deploy Chain docs
 on:
     release:
       types: [published]
+    push:
+      branches:
+        - chrisward/docs-autogen   #TODO Remove
 
 jobs:
   build-and-deploy:
