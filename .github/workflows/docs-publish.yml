@@ -12,19 +12,25 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    container:
-        image: paritytech/ci-unified:bullseye-1.74.0
     steps:
-      - name: Free Disk Space (Ubuntu)
+      - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: true
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install and Build
-        run: RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
+      - name: Build and Deploy in Container
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo:/cargo" \
+            -w /workspace \
+            paritytech/ci-unified:bullseye-1.74.0 \
+            bash -c "RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked"
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
