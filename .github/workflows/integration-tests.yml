@@ -22,7 +22,8 @@ jobs:
 
   integration-tests:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head-commit-message, 'ci-skip-integration-tests') }}
+    needs: check_skip_flags
+    if: ${{ !contains(needs.check_skip_flags.outputs.head-commit-message, 'ci-skip-integration-tests') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

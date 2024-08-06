@@ -6,28 +6,28 @@
         exit 0
       fi
 
-#cargo-clippy:
-#  extends: .check_skip_rust
-#  image: paritytech/ci-unified:bullseye-1.74.0
-#  variables:
-#    RUSTDOCFLAGS: '-D warnings'
-#  stage: check
-#  cache:
-#    key: cargo-clippy
-#    paths:
-#    - ${CARGO_CACHE_PATH}
-#  script:
-#    -  SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --quiet
-#
-#cargo-clippy-all-features:
-#  extends: .check_skip_rust
-#  image: paritytech/ci-unified:bullseye-1.74.0
-#  variables:
-#    RUSTDOCFLAGS: '-D warnings'
-#  stage: check
-#  cache:
-#    key: cargo-clippy-all-features
-#    paths:
-#      - ${CARGO_CACHE_PATH}
-#  script:
-#    -  SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --quiet
+cargo-clippy:
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.74.0
+  variables:
+    RUSTDOCFLAGS: '-D warnings'
+  stage: check
+  cache:
+    key: cargo-clippy
+    paths:
+    - ${CARGO_CACHE_PATH}
+  script:
+    -  SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --quiet
+
+cargo-clippy-all-features:
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.74.0
+  variables:
+    RUSTDOCFLAGS: '-D warnings'
+  stage: check
+  cache:
+    key: cargo-clippy-all-features
+    paths:
+      - ${CARGO_CACHE_PATH}
+  script:
+    -  SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --quiet
