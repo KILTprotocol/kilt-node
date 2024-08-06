@@ -12,16 +12,18 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    container:
+        image: paritytech/ci-unified:bullseye-1.74.0
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
-          tool-cache: false
+          tool-cache: true
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install and Build
-        run: RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked  --document-private-items
+        run: RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
 
 
       - name: Deploy
