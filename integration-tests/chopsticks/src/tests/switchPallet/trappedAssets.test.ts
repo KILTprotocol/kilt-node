@@ -12,14 +12,18 @@ import {
 	keysAlice,
 	keysCharlie,
 } from '../../utils.js'
-import { peregrineContext, assethubContext, rococoContext } from '../index.js'
-import { createBlock, setStorage, hexAddress } from '../utils.js'
+import { peregrineContext, assethubContext, rococoContext, checkSwitchPalletInvariant } from '../index.js'
+import { createBlock, setStorage, hexAddress, getXcmMessageV4ToSendEkilt } from '../utils.js'
 import { getChildLocation, getSiblingLocationV4 } from '../../network/utils.js'
 
+/**
+ * 1. send eKILTs to peregrine while switch is paused
+ * 2. enable switch pair again
+ * 3. reclaim the assets
+ */
 test('Trapped assets', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 	const switchPairParameters = getAssetSwitchParameters()
-	const fundsAlice = switchPairParameters.circulatingSupply
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [
@@ -34,7 +38,11 @@ test('Trapped assets', async ({ expect }) => {
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchPairParameters))
+	// pause switch pair
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(switchPairParameters, PeregrineConfig.initialPoolAccountId, 'Paused')
+	)
 
 	await setStorage(rococoContext, {
 		...RococoConfig.setSudoKey(keysAlice.address),
@@ -48,12 +56,11 @@ test('Trapped assets', async ({ expect }) => {
 		),
 		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
 			[PeregrineConfig.siblingSovereignAccount, switchPairParameters.sovereignSupply],
-			[keysAlice.address, fundsAlice],
+			[keysAlice.address, switchPairParameters.circulatingSupply],
 		]),
 	})
 
-	// Now send some funds.
-	const balanceToTransfer = fundsAlice / BigInt(2)
+	// 1. send the coin and force a trap
 	const dest = { v4: getSiblingLocationV4(PeregrineConfig.paraId) }
 	const remoteFeeId = { v4: AssetHubConfig.eKiltLocation }
 
@@ -61,21 +68,21 @@ test('Trapped assets', async ({ expect }) => {
 		v4: [
 			{
 				id: AssetHubConfig.eKiltLocation,
-				fun: { Fungible: balanceToTransfer.toString() },
-			},
-		],
-	}
-
-	const msg = {
-		V4: [
-			{
-				Trap: 0,
+				fun: { Fungible: KILT.toString() },
 			},
 		],
 	}
 
 	const signedTx = assethubContext.api.tx.polkadotXcm
-		.transferAssetsUsingTypeAndThen(dest, funds, 'LocalReserve', remoteFeeId, 'LocalReserve', msg, 'Unlimited')
+		.transferAssetsUsingTypeAndThen(
+			dest,
+			funds,
+			'LocalReserve',
+			remoteFeeId,
+			'LocalReserve',
+			getXcmMessageV4ToSendEkilt(keysAlice.address),
+			'Unlimited'
+		)
 		.signAsync(keysAlice)
 
 	const events = await sendTransaction(signedTx)
@@ -102,7 +109,12 @@ test('Trapped assets', async ({ expect }) => {
 		'receiver Peregrine::polkadotXcm::[AssetsTrapped]'
 	)
 
-	// Alice can reclaim the funds
+	// 2. enable switch pair again
+	await peregrineContext.api.tx.sudo
+		.sudo(peregrineContext.api.tx.assetSwitchPool1.resumeSwitchPair())
+		.signAndSend(keysAlice)
+
+	//3. reclaim msg
 	const reclaimMsg = [
 		{ WithdrawAsset: [{ id: { parents: 0, interior: 'Here' }, fun: { Fungible: KILT } }] },
 		{
@@ -118,7 +130,7 @@ test('Trapped assets', async ({ expect }) => {
 				assets: [
 					{
 						id: AssetHubConfig.eKiltLocation,
-						fun: { Fungible: '4999999999999972254' },
+						fun: { Fungible: KILT.toString() },
 					},
 				],
 			},
@@ -188,4 +200,6 @@ test('Trapped assets', async ({ expect }) => {
 	await checkSystemEvents(peregrineContext, 'assetSwitchPool1').toMatchSnapshot(
 		'receiver Peregrine::assetSwitchPool1::[RemoteToLocalSwitchExecuted]'
 	)
+
+	await checkSwitchPalletInvariant(expect)
 }, 20_000)

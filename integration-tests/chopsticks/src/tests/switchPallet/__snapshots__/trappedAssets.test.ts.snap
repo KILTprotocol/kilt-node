@@ -4,7 +4,7 @@ exports[`Trapped assets > receiver Peregrine::assetSwitchPool1::[RemoteToLocalSw
 [
   {
     "data": {
-      "amount": "(rounded 5000000000000000000)",
+      "amount": 1000000000000000,
       "to": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
     },
     "method": "RemoteToLocalSwitchExecuted",
@@ -24,7 +24,7 @@ exports[`Trapped assets > receiver Peregrine::messageQueue::[Processed] 1`] = `
       "success": false,
       "weightUsed": {
         "proofSize": 0,
-        "refTime": 800000000,
+        "refTime": 600000000,
       },
     },
     "method": "Processed",
@@ -94,7 +94,7 @@ exports[`Trapped assets > receiver Peregrine::polkadotXcm::[AssetsClaimed] 1`] =
         "V4": [
           {
             "fun": {
-              "Fungible": "(rounded 5000000000000000000)",
+              "Fungible": 1000000000000000,
             },
             "id": {
               "interior": {
@@ -145,7 +145,7 @@ exports[`Trapped assets > receiver Peregrine::polkadotXcm::[AssetsTrapped] 1`] =
         "V4": [
           {
             "fun": {
-              "Fungible": "(rounded 5000000000000000000)",
+              "Fungible": 1000000000000000,
             },
             "id": {
               "interior": {
@@ -246,11 +246,11 @@ exports[`Trapped assets > relayer rococo::xcmPallet::[Sent] 1`] = `
 ]
 `;
 
-exports[`Trapped assets > sender AssetHub::foreignAssets::[Transferred] asset {"v4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"5000000000000000000"}}]} 1`] = `
+exports[`Trapped assets > sender AssetHub::foreignAssets::[Transferred] asset {"v4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"1000000000000000"}}]} 1`] = `
 [
   {
     "data": {
-      "amount": 5000000000000000000,
+      "amount": 1000000000000000,
       "assetId": {
         "interior": {
           "X2": [
@@ -298,7 +298,7 @@ exports[`Trapped assets > sender AssetHub::messageQueue::[Processed] 1`] = `
 ]
 `;
 
-exports[`Trapped assets > sender AssetHub::polkadotXcm::[Attempted] asset {"v4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"5000000000000000000"}}]} 1`] = `
+exports[`Trapped assets > sender AssetHub::polkadotXcm::[Attempted] asset {"v4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"1000000000000000"}}]} 1`] = `
 [
   {
     "data": {
@@ -364,7 +364,7 @@ exports[`Trapped assets > sender AssetHub::polkadotXcm::[Sent] 1`] = `
             "assets": [
               {
                 "fun": {
-                  "Fungible": "(rounded 5000000000000000000)",
+                  "Fungible": 1000000000000000,
                 },
                 "id": {
                   "interior": {
@@ -445,7 +445,7 @@ exports[`Trapped assets > sender AssetHub::xcmpQueue::[XcmpMessageSent] 1`] = `
 ]
 `;
 
-exports[`Trapped assets > sender AssetHub::xcmpQueue::[XcmpMessageSent] asset {"v4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"5000000000000000000"}}]} 1`] = `
+exports[`Trapped assets > sender AssetHub::xcmpQueue::[XcmpMessageSent] asset {"v4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"1000000000000000"}}]} 1`] = `
 [
   {
     "data": {

@@ -29,13 +29,12 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 // Send ROCs while switch is paused
 test('Send ROCs while switch paused', async ({ expect }) => {
-	const { checkEvents } = withExpect(expect)
+	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
 		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
@@ -77,13 +76,22 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 		`sender AssetHub::balances::[Withdraw] asset ${JSON.stringify(rocAsset)}`
 	)
 
-	// ... And Alice should receive her funds
+	// ... But it should fail on Peregrine
 	await createBlock(peregrineContext)
 	const aliceRocBalance = await getFreeRocPeregrine(keysAlice.address)
-	expect(aliceRocBalance).toBeGreaterThan(BigInt(0))
 
-	checkSwitchPalletInvariant(expect)
-}, 20_000)
+	await checkSystemEvents(peregrineContext, { section: 'messageQueue', method: 'Processed' }).toMatchSnapshot(
+		'receiver Peregrine::messageQueue::[Processed]'
+	)
+
+	await checkSystemEvents(peregrineContext, { section: 'polkadotXcm', method: 'AssetsTrapped' }).toMatchSnapshot(
+		'receiver Peregrine::polkadotXcm::[AssetsTrapped]'
+	)
+
+	expect(aliceRocBalance).toBe(BigInt(0))
+
+	await checkSwitchPalletInvariant(expect)
+}, 30_000)
 
 /**
  * 1. Send Rocs
@@ -173,7 +181,7 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	expect(errorName).toBe('SwitchPairNotEnabled')
 
 	await checkSwitchPalletInvariant(expect)
-}, 20_000)
+}, 30_000)
 
 /**
  * 1. Send Rocs
@@ -303,10 +311,13 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	await checkSystemEvents(peregrineContext, { section: 'messageQueue', method: 'Processed' }).toMatchSnapshot(
 		'receiver Peregrine::messageQueue::[Processed]'
 	)
+	await checkSystemEvents(peregrineContext, { section: 'polkadotXcm', method: 'AssetsTrapped' }).toMatchSnapshot(
+		'receiver Peregrine::polkadotXcm::[AssetsTrapped]'
+	)
 
 	// The msg will not be processed. Therefore, some assets are not moved. We can not do strict checks here.
 	await checkSwitchPalletInvariant(expect, true)
-}, 20_000)
+}, 30_000)
 
 test('Withdraw ROCs while switch is paused', async ({ expect }) => {
 	await setStorage(peregrineContext, {
@@ -324,6 +335,9 @@ test('Withdraw ROCs while switch is paused', async ({ expect }) => {
 
 	await setStorage(assethubContext, {
 		...AssetHubConfig.assignDotTokensToAccounts([PeregrineConfig.siblingSovereignAccount], initialBalanceROC),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
+			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
+		]),
 	})
 
 	let section: string = ''
@@ -347,4 +361,6 @@ test('Withdraw ROCs while switch is paused', async ({ expect }) => {
 
 	expect(section).toBe('polkadotXcm')
 	expect(errorName).toBe('LocalExecutionIncomplete')
-}, 20_000)
+
+	await checkSwitchPalletInvariant(expect)
+}, 30_000)

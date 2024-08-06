@@ -1,5 +1,60 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Send ROCs while switch paused > receiver Peregrine::messageQueue::[Processed] 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": 1000,
+      },
+      "success": false,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 600000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Send ROCs while switch paused > receiver Peregrine::polkadotXcm::[AssetsTrapped] 1`] = `
+[
+  {
+    "data": {
+      "assets": {
+        "V4": [
+          {
+            "fun": {
+              "Fungible": 1000000000000,
+            },
+            "id": {
+              "interior": "Here",
+              "parents": 1,
+            },
+          },
+        ],
+      },
+      "hash_": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": 1000,
+            },
+          ],
+        },
+        "parents": 1,
+      },
+    },
+    "method": "AssetsTrapped",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
 exports[`Send ROCs while switch paused > sender AssetHub::balances::[Withdraw] asset {"V4":[{"id":{"parents":1,"interior":"Here"},"fun":{"Fungible":"1000000000000"}}]} 1`] = `
 [
   {
@@ -323,7 +378,7 @@ exports[`Switch ePILTs against PILTs while paused > receiver Peregrine::messageQ
       "success": false,
       "weightUsed": {
         "proofSize": 0,
-        "refTime": 200000000,
+        "refTime": 600000000,
       },
     },
     "method": "Processed",
@@ -343,6 +398,57 @@ exports[`Switch ePILTs against PILTs while paused > receiver Peregrine::messageQ
     },
     "method": "Processed",
     "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Switch ePILTs against PILTs while paused > receiver Peregrine::polkadotXcm::[AssetsTrapped] 1`] = `
+[
+  {
+    "data": {
+      "assets": {
+        "V4": [
+          {
+            "fun": {
+              "Fungible": 25000000000000000,
+            },
+            "id": {
+              "interior": {
+                "X2": [
+                  {
+                    "GlobalConsensus": {
+                      "Ethereum": {
+                        "chainId": "(rounded 11000000)",
+                      },
+                    },
+                  },
+                  {
+                    "AccountKey20": {
+                      "key": "0x06012c8cf97bead5deae237070f9587f8e7a266d",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 2,
+            },
+          },
+        ],
+      },
+      "hash_": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": 1000,
+            },
+          ],
+        },
+        "parents": 1,
+      },
+    },
+    "method": "AssetsTrapped",
+    "section": "polkadotXcm",
   },
 ]
 `;
