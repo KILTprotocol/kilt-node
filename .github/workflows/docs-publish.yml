@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install and Build
-        run: RUSTDOCFLAGS='-D warnings' cargo doc --features try-runtime --no-deps --locked  --document-private-items
+        run: RUSTDOCFLAGS='-D warnings' cargo doc --features "kilt-asset-dids" --no-deps --locked  --document-private-items
 
 
       - name: Deploy
