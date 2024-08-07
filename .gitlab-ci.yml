@@ -3,7 +3,7 @@ default:
 include:
   - local: '.gitlab/check.yml'
   - local: '.gitlab/test.yml'
-  - local: '.gitlab/build.yml'
+  - local: '.gitlab/build_docker_img.yml'
 
 variables:
   CARGO_CACHE_PATH: $CARGO_CACHE_PATH

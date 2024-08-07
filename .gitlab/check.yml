@@ -31,3 +31,16 @@ cargo-clippy-all-features:
       - ${CARGO_CACHE_PATH}
   script:
     -  SKIP_WASM_BUILD=1 cargo clippy --all-targets --all-features --locked --quiet
+
+check-rustdoc:
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.74.0
+  variables:
+    SKIP_WASM_BUILD: 1
+  stage: check
+  cache:
+    key: cargo-check-rustdoc
+    paths:
+      - ${CARGO_CACHE_PATH}
+  script:
+    - cargo doc --all-features --no-deps --locked
