@@ -33,7 +33,7 @@ jobs:
         run: |
           docker run --rm --user $(id -u):$(id -g) \
             -v "${GITHUB_WORKSPACE}:/workspace" \
-            -v "${HOME}/.cargo:/root/.cargo" \
+            -v "${HOME}/.cargo:/${HOME}/.cargo" \
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked"
