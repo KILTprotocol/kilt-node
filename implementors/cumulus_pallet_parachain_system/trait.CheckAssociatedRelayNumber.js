@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"pallet_configuration":[["impl&lt;T: <a class=\"trait\" href=\"pallet_configuration/pallet/trait.Config.html\" title=\"trait pallet_configuration::pallet::Config\">Config</a>&gt; CheckAssociatedRelayNumber for <a class=\"struct\" href=\"pallet_configuration/pallet/struct.Pallet.html\" title=\"struct pallet_configuration::pallet::Pallet\">Pallet</a>&lt;T&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

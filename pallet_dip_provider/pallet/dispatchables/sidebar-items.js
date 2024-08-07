@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["commit_identity","delete_identity_commitment"]};

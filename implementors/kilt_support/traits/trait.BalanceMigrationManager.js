@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"kilt_support":[],
+"pallet_migration":[["impl&lt;T: <a class=\"trait\" href=\"pallet_migration/pallet/trait.Config.html\" title=\"trait pallet_migration::pallet::Config\">Config</a>&gt; BalanceMigrationManager&lt;&lt;T as Config&gt;::AccountId, &lt;&lt;T as <a class=\"trait\" href=\"pallet_migration/pallet/trait.Config.html\" title=\"trait pallet_migration::pallet::Config\">Config</a>&gt;::<a class=\"associatedtype\" href=\"pallet_migration/pallet/trait.Config.html#associatedtype.Currency\" title=\"type pallet_migration::pallet::Config::Currency\">Currency</a> as Currency&lt;&lt;T as Config&gt;::AccountId&gt;&gt;::Balance&gt; for <a class=\"struct\" href=\"pallet_migration/pallet/struct.Pallet.html\" title=\"struct pallet_migration::pallet::Pallet\">Pallet</a>&lt;T&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

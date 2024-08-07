@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_DEPOSIT_PALLET_KEY_LENGTH"]};

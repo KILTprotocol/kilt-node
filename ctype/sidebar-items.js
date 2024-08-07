@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["benchmarking","ctype_entry","default_weights","mock","pallet"]};

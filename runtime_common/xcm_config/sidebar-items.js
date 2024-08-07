@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["DenyReserveTransferToRelayChain","DenyThenTry","HeapSize","HereLocation","MaxAssetsIntoHolding","MaxInstructions","MaxStale","ParentLocation","ParentOrSiblings","RelayLocation","RelayOrigin","ServiceWeight","UnitWeightCost"],"type":["LocalAssetTransactor","LocationToAccountId"]};

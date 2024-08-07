@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"did":[["impl&lt;T: <a class=\"trait\" href=\"did/pallet/trait.Config.html\" title=\"trait did::pallet::Config\">Config</a>&gt; WrapperTypeEncode for <a class=\"struct\" href=\"did/did_details/struct.DidAuthorizedCallOperationWithVerificationRelationship.html\" title=\"struct did::did_details::DidAuthorizedCallOperationWithVerificationRelationship\">DidAuthorizedCallOperationWithVerificationRelationship</a>&lt;T&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

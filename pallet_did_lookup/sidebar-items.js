@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["account","associate_account_request","default_weights","linkable_account","migrations","pallet"]};

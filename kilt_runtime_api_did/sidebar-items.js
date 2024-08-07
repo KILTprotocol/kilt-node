@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["DidDetails","DidLinkedInfo","ServiceEndpoint"],"trait":["Did"],"type":["RawDidLinkedInfo"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["ban","change_deposit_owner","claim","reclaim_deposit","release_by_owner","unban","update_deposit"]};

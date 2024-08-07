@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["benchmarking","default_weights","delegation_hierarchy","migrations","mock","pallet"],"struct":["DelegationAc"]};

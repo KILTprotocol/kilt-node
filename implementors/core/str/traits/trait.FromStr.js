@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"kilt_parachain":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.74.0/core/str/traits/trait.FromStr.html\" title=\"trait core::str::traits::FromStr\">FromStr</a> for <a class=\"enum\" href=\"kilt_parachain/chain_spec/enum.ParachainRuntime.html\" title=\"enum kilt_parachain::chain_spec::ParachainRuntime\">ParachainRuntime</a>"]],
+"pallet_did_lookup":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.74.0/core/str/traits/trait.FromStr.html\" title=\"trait core::str::traits::FromStr\">FromStr</a> for <a class=\"struct\" href=\"pallet_did_lookup/account/struct.AccountId20.html\" title=\"struct pallet_did_lookup::account::AccountId20\">AccountId20</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

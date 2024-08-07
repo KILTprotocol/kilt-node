@@ -1,0 +1,101 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Parachain Staking"><title>parachain_staking - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="parachain_staking" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../parachain_staking/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a></nav><nav class="sidebar"><a class="logo-container" href="../parachain_staking/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 class="location"><a href="#">Crate parachain_staking</a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 1.14.0-dev</li><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#reexports">Re-exports</a></li><li><a href="#modules">Modules</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">parachain_staking</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/parachain_staking/lib.rs.html#19-2603">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="parachain-staking"><a href="#parachain-staking">Parachain Staking</a></h2>
+<p>A simple staking pallet providing means of selecting a set of collators to
+become block authors based on their total backed stake. The main difference
+between this pallet and <code>frame/pallet-staking</code> is that this pallet uses
+direct delegation. Delegators choose exactly who they delegate and with what
+stake. This is different from <code>frame/pallet-staking</code> where you approval vote
+and then run Phragmen. Moreover, this pallet rewards a collator and their
+delegators immediately when authoring a block. Rewards are calculated
+separately between collators and delegators.</p>
+<p>To join the set of candidates, an account must call <code>join_candidates</code> with
+<code>MinCollatorCandidateStake</code> &lt;= stake &lt;= <code>MaxCollatorCandidateStake</code>.</p>
+<p>To leave the set of candidates, the collator calls <code>leave_candidates</code>. If
+the call succeeds, the collator is removed from the pool of candidates so
+they cannot be selected for future collator sets, but they are not unstaking
+until executing the exit request by calling the extrinsic
+<code>execute_leave_candidates</code> at least <code>ExitQueueDelay</code> rounds later. After
+doing so, the collator candidate as well as their delegators are unstaked.
+Both parties then have to wait another <code>StakeDuration</code> more blocks to be
+able to unlock their stake.</p>
+<p>Candidates which requested to leave can still be in the set of authors for
+the next round due to the design of the session pallet which at the start of
+session s(i) chooses a set for the next session s(i+1). Thus, candidates
+have to keep collating at least until the end of the next session (= round).
+We extend this by delaying their execute by at least <code>ExitQueueDelay</code> many
+sessions.</p>
+<p>To join the set of delegators, an account must call <code>join_delegators</code> with
+stake &gt;= <code>MinDelegatorStake</code>. There are also runtime methods for delegating
+additional collators and revoking delegations.</p>
+<ul>
+<li><a href="pallet/trait.Config.html" title="trait parachain_staking::pallet::Config"><code>Config</code></a></li>
+<li><a href="pallet/enum.Call.html" title="enum parachain_staking::pallet::Call"><code>Call</code></a></li>
+<li><a href="pallet/struct.Pallet.html" title="struct parachain_staking::pallet::Pallet"><code>Pallet</code></a></li>
+</ul>
+<h3 id="overview"><a href="#overview">Overview</a></h3>
+<p>The KILT parachain staking pallet provides functions for:</p>
+<ul>
+<li>Joining the set of collator candidates of which the best
+<code>MaxSelectedCandidates</code> are chosen to become active collators for the next
+session. That makes the set of active collators the set of block authors
+by handing it over to the session and the authority pallet.</li>
+<li>Delegating to a collator candidate by staking for them.</li>
+<li>Increasing and reducing your stake as a collator or delegator.</li>
+<li>Revoking your delegation entirely.</li>
+<li>Requesting to leave the set of collator candidates.</li>
+<li>Withdrawing your unstaked balance after waiting for a certain number of
+blocks.</li>
+</ul>
+<h4 id="terminology"><a href="#terminology">Terminology</a></h4>
+<ul>
+<li>
+<p><strong>Candidate:</strong> A user which freezes up tokens to be included into the set
+of authorities which author blocks and receive rewards for doing so.</p>
+</li>
+<li>
+<p><strong>Collator:</strong> A candidate that was chosen to collate this round.</p>
+</li>
+<li>
+<p><strong>Delegator:</strong> A user which freezes up tokens for collators they trust.
+When their collator authors a block, the corresponding delegators also
+receive rewards.</p>
+</li>
+<li>
+<p><strong>Total Stake:</strong> A collator’s own stake + the sum of delegated stake to
+this collator.</p>
+</li>
+<li>
+<p><strong>Total collator stake:</strong> The sum of tokens locked for staking from all
+collator candidates.</p>
+</li>
+<li>
+<p><strong>Total delegator stake:</strong> The sum of tokens locked for staking from all
+delegators.</p>
+</li>
+<li>
+<p><strong>To Stake:</strong> Lock tokens for staking.</p>
+</li>
+<li>
+<p><strong>To Unstake:</strong> Unlock tokens from staking.</p>
+</li>
+<li>
+<p><strong>Round (= Session):</strong> A fixed number of blocks in which the set of
+collators does not change. We set the length of a session to the length of
+a staking round, thus both words are interchangeable in the context of
+this pallet.</p>
+</li>
+<li>
+<p><strong>Freeze:</strong> A freeze on a specified amount of an account’s free balance
+until a specified block number. Multiple freezes always operate over the
+same funds, so they “overlay” rather than “stack”</p>
+</li>
+</ul>
+<h3 id="genesis-config"><a href="#genesis-config">Genesis config</a></h3>
+<p>The ParachainStaking pallet depends on the <a href="pallet/struct.GenesisConfig.html" title="struct parachain_staking::pallet::GenesisConfig"><code>GenesisConfig</code></a>.</p>
+<h3 id="assumptions"><a href="#assumptions">Assumptions</a></h3>
+<ul>
+<li>At the start of session s(i), the set of session ids for session s(i+1)
+are chosen. These equal the set of selected candidates. Thus, we cannot
+allow collators to leave at least until the start of session s(i+2).</li>
+</ul>
+</div></details><h2 id="reexports" class="small-section-header"><a href="#reexports">Re-exports</a></h2><ul class="item-table"><li><div class="item-name" id="reexport.WeightInfo"><code>pub use crate::default_weights::<a class="trait" href="default_weights/trait.WeightInfo.html" title="trait parachain_staking::default_weights::WeightInfo">WeightInfo</a>;</code></div></li><li><div class="item-name"><code>pub use crate::<a class="mod" href="pallet/index.html" title="mod parachain_staking::pallet">pallet</a>::*;</code></div></li></ul><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="api/index.html" title="mod parachain_staking::api">api</a></div></li><li><div class="item-name"><a class="mod" href="benchmarking/index.html" title="mod parachain_staking::benchmarking">benchmarking</a></div><div class="desc docblock-short">Benchmarking</div></li><li><div class="item-name"><a class="mod" href="default_weights/index.html" title="mod parachain_staking::default_weights">default_weights</a></div><div class="desc docblock-short">Autogenerated weights for parachain_staking</div></li><li><div class="item-name"><a class="mod" href="pallet/index.html" title="mod parachain_staking::pallet">pallet</a></div><div class="desc docblock-short">The <code>pallet</code> module in each FRAME pallet hosts the most important items needed
+to construct this pallet.</div></li></ul></section></div></main></body></html>
