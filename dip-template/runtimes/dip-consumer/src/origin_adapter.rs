@@ -21,6 +21,7 @@ use frame_support::traits::EnsureOrigin;
 use kilt_dip_primitives::RevealedDidMerkleProofLeaf;
 use pallet_dip_consumer::{DipOrigin, EnsureDipOrigin};
 use pallet_postit::traits::GetUsername;
+use pallet_nft_marketplace::traits::GetUsername1;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
@@ -51,6 +52,25 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureDipOriginAdapter {
 pub struct DipOriginAdapter(DipOrigin<DidIdentifier, AccountId, MerkleProofVerifierOutput>);
 
 impl GetUsername for DipOriginAdapter {
+	type Username = Web3Name;
+
+	// Use the first revealed web3name as the user's username
+	fn username(&self) -> Result<Self::Username, &'static str> {
+		self.0
+			.details
+			.iter_leaves()
+			.find_map(|revealed_leaf| {
+				if let RevealedDidMerkleProofLeaf::Web3Name(revealed_web3name_leaf) = revealed_leaf {
+					Some(revealed_web3name_leaf.web3_name.clone())
+				} else {
+					None
+				}
+			})
+			.ok_or("No username for the subject.")
+	}
+}
+
+impl GetUsername1 for DipOriginAdapter {
 	type Username = Web3Name;
 
 	// Use the first revealed web3name as the user's username

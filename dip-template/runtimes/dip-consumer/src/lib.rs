@@ -152,6 +152,7 @@ construct_runtime!(
 		// Custom
 		PostIt: pallet_postit = 30,
 		XcavateWhitelist: pallet_xcavate_whitelist = 31,
+		NftMarketplace: pallet_nft_marketplace = 32,
 
 		// DIP
 		DipConsumer: pallet_dip_consumer = 40,
@@ -574,6 +575,38 @@ impl pallet_xcavate_whitelist::Config for Runtime {
 	type MaxUsersInWhitelist = MaxWhitelistUsers;
 }
 
+parameter_types! {
+	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
+	pub const CommunityProjectPalletId: PalletId = PalletId(*b"py/cmprj");
+	pub const NftMarketplacePalletId: PalletId = PalletId(*b"py/nftxc");
+	pub const MaxNftTokens: u32 = 250;
+	pub const Postcode: u32 = 10;
+}
+
+/// Configure the pallet-nft-marketplace in pallets/nft-marketplace.
+impl pallet_nft_marketplace::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_nft_marketplace::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
+	type PalletId = NftMarketplacePalletId;
+	type MaxNftToken = MaxNftTokens;
+	type LocationOrigin = EnsureRoot<Self::AccountId>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_nft_marketplace::NftHelper;
+	type CollectionId = u32;
+	type ItemId = u32;
+	type TreasuryId = TreasuryPalletId;
+	type CommunityProjectsId = CommunityProjectPalletId;
+	type FractionalizeCollectionId = <Self as pallet_nfts::Config>::CollectionId;
+	type FractionalizeItemId = <Self as pallet_nfts::Config>::ItemId;
+	type AssetId = <Self as pallet_assets::Config<Instance1>>::AssetId;
+	type AssetId2 = u32;
+	type PostcodeLimit = Postcode;
+	type OriginCheck = EnsureDipOriginAdapter;
+	type OriginSuccess = DipOriginAdapter;
+	type Username = Web3Name;
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
@@ -582,6 +615,7 @@ mod benches {
 		[pallet_relay_store, RelayStore]
 		[pallet_relay_store, RelayStore]
 		[pallet_xcavate_whitelist, XcavateWhitelist]
+		[pallet_nft_marketplace, NftMarketplace]
 		[pallet_nfts, Nfts]
 		[pallet_assets, Assets]
 		[pallet_nft_fractionalization, NftFractionalization]

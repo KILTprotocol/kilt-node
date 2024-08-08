@@ -2956,6 +2956,7 @@ dependencies = [
  "pallet-collective",
  "pallet-dip-consumer",
  "pallet-nft-fractionalization",
+ "pallet-nft-marketplace",
  "pallet-nfts",
  "pallet-postit",
  "pallet-relay-store",
@@ -7693,6 +7694,28 @@ dependencies = [
  "pallet-nfts",
  "parity-scale-codec",
  "scale-info",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-nft-marketplace"
+version = "4.0.0-dev"
+dependencies = [
+ "enumflags2",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-balances",
+ "pallet-nft-fractionalization",
+ "pallet-nfts",
+ "pallet-xcavate-whitelist",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
