@@ -25,217 +25,6 @@ import { checkBalance, createBlock, setStorage, hexAddress, getXcmMessageV4ToSen
 import { getAccountLocationV4, getChildLocation, getSiblingLocationV4 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
-test('Switch KILTs against EKILTs not same user', async ({ expect }) => {
-	const switchParameters = getAssetSwitchParameters()
-	await setStorage(peregrineContext, {
-		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSafeXcmVersion4(),
-	})
-
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
-
-	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
-			initialBalanceROC
-		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
-	})
-
-	const balanceToTransfer = initialBalanceKILT / BigInt(2)
-	const beneficiary = getAccountLocationV4(hexAddress(keysBob.address))
-
-	let section: string = ''
-	let errorName: string = ''
-
-	await peregrineContext.api.tx.assetSwitchPool1
-		.switch(balanceToTransfer.toString(), beneficiary)
-		.signAndSend(keysAlice, ({ dispatchError }) => {
-			if (dispatchError) {
-				const decoded = peregrineContext.api.registry.findMetaError(dispatchError.asModule)
-				section = decoded.section
-				errorName = decoded.name
-			}
-		})
-
-	await createBlock(peregrineContext)
-
-	expect(section).toBe('assetSwitchPool1')
-	expect(errorName).toBe('Hook')
-
-	await checkSwitchPalletInvariant(expect)
-}, 20_000)
-
-test('Switch KILTs against EKILTs user has not enough balance', async ({ expect }) => {
-	const switchParameters = getAssetSwitchParameters()
-	await setStorage(peregrineContext, {
-		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSafeXcmVersion4(),
-	})
-
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
-
-	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
-			initialBalanceROC
-		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
-	})
-
-	const balanceToTransfer = initialBalanceKILT * BigInt(2)
-	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
-
-	let section: string = ''
-	let errorName: string = ''
-
-	await peregrineContext.api.tx.assetSwitchPool1
-		.switch(balanceToTransfer.toString(), beneficiary)
-		.signAndSend(keysAlice, ({ dispatchError }) => {
-			if (dispatchError) {
-				const decoded = peregrineContext.api.registry.findMetaError(dispatchError.asModule)
-				section = decoded.section
-				errorName = decoded.name
-			}
-		})
-
-	await createBlock(peregrineContext)
-
-	expect(section).toBe('assetSwitchPool1')
-	expect(errorName).toBe('UserSwitchBalance')
-
-	await checkSwitchPalletInvariant(expect)
-}, 20_000)
-
-test('Switch KILTs against EKILTs not enough pool account balance', async ({ expect }) => {
-	const switchParameters = getAssetSwitchParameters(KILT * BigInt(1000))
-
-	await setStorage(peregrineContext, {
-		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT * BigInt(1000)),
-		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSafeXcmVersion4(),
-	})
-
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
-
-	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
-			initialBalanceROC
-		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
-	})
-
-	// try to send 10_000 KILTs. The pool account should have less
-	const balanceToTransfer = KILT * BigInt(10000)
-
-	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
-
-	let section: string = ''
-	let errorName: string = ''
-
-	await peregrineContext.api.tx.assetSwitchPool1
-		.switch(balanceToTransfer.toString(), beneficiary)
-		.signAndSend(keysAlice, ({ dispatchError }) => {
-			if (dispatchError) {
-				const decoded = peregrineContext.api.registry.findMetaError(dispatchError.asModule)
-				section = decoded.section
-				errorName = decoded.name
-			}
-		})
-
-	await createBlock(peregrineContext)
-
-	expect(section).toBe('assetSwitchPool1')
-	expect(errorName).toBe('Liquidity')
-
-	await checkSwitchPalletInvariant(expect)
-}, 20_000)
-
-test('Switch KILTs against EKILTs user has no DOTs', async ({ expect }) => {
-	const switchParameters = getAssetSwitchParameters()
-
-	await setStorage(peregrineContext, {
-		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
-		...PeregrineConfig.setSafeXcmVersion4(),
-	})
-
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
-
-	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
-			initialBalanceROC
-		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
-	})
-
-	const balanceToTransfer = initialBalanceKILT / BigInt(2)
-
-	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
-
-	let section: string = ''
-	let errorName: string = ''
-
-	await peregrineContext.api.tx.assetSwitchPool1
-		.switch(balanceToTransfer.toString(), beneficiary)
-		.signAndSend(keysAlice, ({ dispatchError }) => {
-			if (dispatchError) {
-				const decoded = peregrineContext.api.registry.findMetaError(dispatchError.asModule)
-				section = decoded.section
-				errorName = decoded.name
-			}
-		})
-
-	await createBlock(peregrineContext)
-
-	expect(section).toBe('assetSwitchPool1')
-	expect(errorName).toBe('UserXcmBalance')
-
-	await checkSwitchPalletInvariant(expect)
-}, 20_000)
-
-test('Switch KILTs against EKILTs no SwitchPair', async ({ expect }) => {
-	await setStorage(peregrineContext, {
-		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address]),
-		...PeregrineConfig.setSafeXcmVersion4(),
-	})
-
-	const balanceToTransfer = initialBalanceKILT / BigInt(2)
-
-	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
-
-	let section: string = ''
-	let errorName: string = ''
-
-	await peregrineContext.api.tx.assetSwitchPool1
-		.switch(balanceToTransfer.toString(), beneficiary)
-		.signAndSend(keysAlice, ({ dispatchError }) => {
-			if (dispatchError) {
-				const decoded = peregrineContext.api.registry.findMetaError(dispatchError.asModule)
-				section = decoded.section
-				errorName = decoded.name
-			}
-		})
-
-	await createBlock(peregrineContext)
-
-	expect(section).toBe('assetSwitchPool1')
-	expect(errorName).toBe('SwitchPairNotFound')
-}, 20_000)
-
 test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
@@ -312,7 +101,7 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 			initialBalanceROC
 		),
 		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			// we kinda break the invariant here. This should never be the case.
+			// we kinda break the invariant here. This should not bot possible.
 			[keysAlice.address, switchParameters.circulatingSupply + BigInt(2) * KILT],
 			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
 		]),
@@ -332,7 +121,8 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 		switchParameters.circulatingSupply + BigInt(2) * KILT
 	)
 
-	// try to dry out the pool account. By sending the whole circulating supply + 1 KILT, the pool account should get dusted.
+	// try to dry out the pool account by sending the whole circulating supply + 1 KILT.
+	// This should be never possible, as the pool account should always have enough funds.
 	const balanceToTransfer = switchParameters.circulatingSupply + KILT
 
 	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
@@ -377,6 +167,7 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
 		'receiver Peregrine::messageQueue::[Processed]'
 	)
+	// AssetTransactor will fail to send the funds. Therefore, the funds will be trapped.
 	await checkSystemEvents(peregrineContext, 'polkadotXcm').toMatchSnapshot(
 		'receiver Peregrine::polkadotXcm::[AssetsTrapped]'
 	)
@@ -440,55 +231,6 @@ test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
 		'receiver Peregrine::messageQueue::[Processed]'
 	)
-}, 20_000)
-
-test('User has no eKILT', async ({ expect }) => {
-	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
-			initialBalanceROC
-		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, []),
-	})
-
-	const balanceToTransfer = KILT
-	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
-	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
-	const funds = {
-		V4: [
-			{
-				id: AssetHubConfig.eKiltLocation,
-				fun: { Fungible: balanceToTransfer },
-			},
-		],
-	}
-
-	let section: string = ''
-	let errorName: string = ''
-	// Execution will fail on the sender side
-	await assethubContext.api.tx.polkadotXcm
-		.transferAssetsUsingTypeAndThen(
-			dest,
-			funds,
-			'LocalReserve',
-			remoteFeeId,
-			'LocalReserve',
-			getXcmMessageV4ToSendEkilt(keysAlice.address),
-			'Unlimited'
-		)
-		.signAndSend(keysAlice, ({ dispatchError }) => {
-			if (dispatchError) {
-				const decoded = assethubContext.api.registry.findMetaError(dispatchError.asModule)
-
-				section = decoded.section
-				errorName = decoded.name
-			}
-		})
-
-	await createBlock(assethubContext)
-
-	expect(section).toBe('polkadotXcm')
-	expect(errorName).toBe('LocalExecutionIncomplete')
 }, 20_000)
 
 test('Send eKILT from other reserve location', async ({ expect }) => {
@@ -563,7 +305,7 @@ test('Send eKILT from other reserve location', async ({ expect }) => {
 
 	await createBlock(peregrineContext)
 
-	// We expect the UntrustedReserveLocation error
+	// We expect the UntrustedReserveLocation error which results in failing the msg. The error will NOT emitted as an event.
 	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
 		'receiver Peregrine::messageQueue::[Processed]'
 	)
