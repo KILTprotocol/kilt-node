@@ -8,23 +8,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  get_head_commit_msg:
+  get-head-commit-msg:
     runs-on: ubuntu-latest
     outputs:
-      head_commit_msg: ${{ steps.step_head_commit.outputs.headCommitMsg }}
+      head-commit-msg: ${{ steps.step-head-commit.outputs.headCommitMsg }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.GITHUB_SHA }}
       - name: Get Head Commit Message
-        id: step_head_commit
+        id: step-head-commit
         run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
 
   integration-tests:
     runs-on: ubuntu-latest
-    needs: get_head_commit_msg
-    if: ${{ !contains(needs.get_head_commit_msg.outputs.head_commit_msg, 'ci-skip-integration-tests') }}
+    needs: get-head-commit-msg
+    if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-integration-tests') }}
     env:
       working-directory: ./integration-tests/chopsticks
     defaults:
@@ -37,7 +37,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: "${{ env.working-directory }}/.nvmrc"
 
       - name: Install dependencies
         run: yarn --immutable

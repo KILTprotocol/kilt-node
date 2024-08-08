@@ -8,24 +8,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  get_head_commit_msg:
+  get-head-commit-msg:
     runs-on: ubuntu-latest
     outputs:
-      head_commit_msg: ${{ steps.step_head_commit.outputs.headCommitMsg }}
+      head-commit-msg: ${{ steps.step-head-commit.outputs.headCommitMsg }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.GITHUB_SHA }}
       - name: Get Head Commit Message
-        id: step_head_commit
+        id: step-head-commit
         run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
 
   check-fmt:
     runs-on: ubuntu-latest
-    needs: get_head_commit_msg
+    needs: get-head-commit-msg
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
-    if: ${{ !contains(needs.get_head_commit_msg.outputs.head_commit_msg, 'ci-skip-rust') }}
+    if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-rust') }}
     steps:
       - uses: actions/checkout@v4
       - name: Run cargo fmt
