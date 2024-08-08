@@ -1,6 +1,6 @@
-/* /// Money matters.
+/// Money matters.
 pub mod currency {
-	use node_primitives::Balance;
+	pub type Balance = u128;
 
 	pub const MILLICENTS: Balance = 1_000_000_000;
 	pub const INIT_SUPPLY_FACTOR: Balance = 100;
@@ -11,7 +11,7 @@ pub mod currency {
 	pub const fn deposit(items: u32, bytes: u32) -> Balance {
 		items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
 	}
-} */
+} 
 
 /// Time.
 pub mod time {

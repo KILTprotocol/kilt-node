@@ -178,6 +178,9 @@ sp-trie                                    = { git = "https://github.com/parityt
 sp-version                                 = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-weights                                 = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 try-runtime-cli                            = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+pallet-assets                              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+pallet-nfts                                = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+pallet-nft-fractionalization               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 
 # Polkadot (with default disabled)
 pallet-xcm                  = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }

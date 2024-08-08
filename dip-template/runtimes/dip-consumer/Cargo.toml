@@ -56,6 +56,8 @@ sp-transaction-pool                        = { workspace = true }
 sp-version                                 = { workspace = true }
 sp-weights                                 = { workspace = true }
 pallet-collective                          = { workspace = true }
+pallet-nfts                                = { workspace = true }
+pallet-assets                              = { workspace = true }
 
 # Cumulus
 cumulus-pallet-aura-ext         = { workspace = true }
@@ -123,6 +125,8 @@ std = [
   "sp-weights/std",
   "pallet-xcavate-whitelist/std",
   "pallet-collective/std",
+  "pallet-assets/std",
+  "pallet-nfts/std",
 ]
 
 runtime-benchmarks = [
@@ -146,4 +150,6 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
   "pallet-xcavate-whitelist/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
+  "pallet-assets/runtime-benchmarks",
+  "pallet-nfts/runtime-benchmarks",
 ]
