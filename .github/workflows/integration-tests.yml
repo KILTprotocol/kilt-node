@@ -2,17 +2,19 @@ name: Integration tests
 
 on:
   pull_request:
-    types: [ opened, synchronize, reopened, edited ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  NVM_VERSION: v0.39.7
+
 jobs:
   get_head_commit_msg:
     runs-on: ubuntu-latest
     outputs:
-      head_commit_message: ${{ steps.step_head_commit.outputs.headCommitMsg }}
+      head_commit_msg: ${{ steps.step_head_commit.outputs.headCommitMsg }}
     env:
       working-directory: ./integration-tests/chopsticks
     defaults:
@@ -30,14 +32,14 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     needs: get_head_commit_msg
-    if: ${{ !contains(needs.get_head_commit_msg.outputs.head_commit_message, 'ci-skip-integration-tests') }}
+    if: ${{ !contains(needs.get_head_commit_msg.outputs.head_commit_msg, 'ci-skip-integration-tests') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js environment
+      - name: Setup Node.js environment
         run: |
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${{ env.NVM_VERSION }}/install.sh | bash
           echo 'export NVM_DIR="$HOME/.nvm"' >> $HOME/.bashrc
           echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $HOME/.bashrc
           eval "$(cat $HOME/.bashrc | tail -n +10)"

@@ -37,6 +37,7 @@ check-rustdoc:
   image: paritytech/ci-unified:bullseye-1.74.0
   variables:
     SKIP_WASM_BUILD: 1
+    RUSTDOCFLAGS: '-D warnings'
   stage: check
   cache:
     key: cargo-check-rustdoc

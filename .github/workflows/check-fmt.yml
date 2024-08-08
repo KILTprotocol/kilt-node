@@ -2,7 +2,6 @@ name: Check fmt
 
 on:
   pull_request:
-      types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,7 +11,7 @@ jobs:
   get_head_commit_msg:
     runs-on: ubuntu-latest
     outputs:
-      head_commit_message: ${{ steps.step_head_commit.outputs.headCommitMsg }}
+      head_commit_msg: ${{ steps.step_head_commit.outputs.headCommitMsg }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,7 +25,7 @@ jobs:
     needs: get_head_commit_msg
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
-    if: ${{ !contains(needs.get_head_commit_msg.outputs.head_commit_message, 'ci-skip-rust') }}
+    if: ${{ !contains(needs.get_head_commit_msg.outputs.head_commit_msg, 'ci-skip-rust') }}
     steps:
       - uses: actions/checkout@v4
       - name: Run cargo fmt

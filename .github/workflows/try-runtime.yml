@@ -2,7 +2,6 @@ name: Try-runtime
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,13 +10,12 @@ concurrency:
 env:
   TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0
   CARGO_HOME: ./.cargo
-  SUBCOMMAND_EXTRA_ARGS: "--no-weight-warnings"
 
 jobs:
   get_head_commit_msg:
     runs-on: ubuntu-latest
     outputs:
-      head_commit_message: ${{ steps.step_head_commit.outputs.headCommitMsg }}
+      head_commit_msg: ${{ steps.step_head_commit.outputs.headCommitMsg }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,7 +33,7 @@ jobs:
     needs: get_head_commit_msg
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
-    if: ${{ !contains(needs.get_head_commit_msg.outputs.head_commit_message, 'ci-skip-rust') }}
+    if: ${{ !contains(needs.get_head_commit_msg.outputs.head_commit_msg, 'ci-skip-rust') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -63,4 +61,4 @@ jobs:
 
           echo "---------- Executing on-runtime-upgrade for ${{ matrix.runtime }} ----------"
           ./try-runtime --runtime ./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm \
-              on-runtime-upgrade --disable-spec-version-check --checks=all ${{ env.SUBCOMMAND_EXTRA_ARGS }} live --uri wss://${{ matrix.runtime }}.kilt.io
+              on-runtime-upgrade --disable-spec-version-check --checks=all live --uri wss://${{ matrix.runtime }}.kilt.io
