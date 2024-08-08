@@ -69,6 +69,9 @@ export function setSudoKey(sudoKey: string) {
 
 export function setSwitchPair(
 	parameters: AssetSwitchSupplyParameters,
+	remoteAssetId: Object,
+	remoteXcmFeeAssetId: Object,
+	remoteReserveLocation: Object,
 	poolAccountId: string = initialPoolAccountId,
 	status: 'Running' | 'Paused' = 'Running'
 ) {
@@ -79,37 +82,9 @@ export function setSwitchPair(
 				remoteAssetSovereignTotalBalance: parameters.sovereignSupply,
 				remoteAssetCirculatingSupply: parameters.circulatingSupply,
 				remoteAssetTotalSupply: parameters.totalSupply,
-				remoteAssetId: {
-					V4: {
-						parents: 2,
-						interior: {
-							X2: [
-								{ GlobalConsensus: { Ethereum: { chainId: 11155111 } } },
-								{
-									AccountKey20: {
-										network: null,
-										key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
-									},
-								},
-							],
-						},
-					},
-				},
-				remoteXcmFee: {
-					V4: {
-						id: {
-							parents: 1,
-							interior: 'Here',
-						},
-						fun: { Fungible: remoteFee },
-					},
-				},
-				remoteReserveLocation: {
-					V4: {
-						parents: 1,
-						interior: { X1: [{ Parachain: { id: 1000 } }] },
-					},
-				},
+				remoteAssetId,
+				remoteXcmFee,
+				remoteReserveLocation,
 				status,
 			},
 		},
@@ -133,7 +108,7 @@ export const ROC_LOCATION = {
 export const remoteFee = ROC / BigInt(10)
 
 /// Sibling sovereign account for other chains
-export const siblingSovereignAccount = '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'
+export const sovereignAccountAsSibling = '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'
 // ED on Peregrine
 export const existentialDeposit = BigInt('10000000000000')
 
