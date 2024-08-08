@@ -20,7 +20,7 @@ export const getSetupOptions = ({
 	}) as SetupOption
 
 /// AssetHub has no own coin. Teleported dots are used as the native token.
-export function assignDotTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
+export function assignDotTokensToAccountsAsStorage(addr: string[], balance: bigint = initialBalanceDOT) {
 	return {
 		System: {
 			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance.toString() } }]),
