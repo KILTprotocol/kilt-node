@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 pub trait GetUsername1 {
-	type Username;
+	type DidIdentifier;
 
-	fn username(&self) -> Result<Self::Username, &'static str>;
+	//fn username(&self) -> Result<Self::Username, &'static str>;
 }

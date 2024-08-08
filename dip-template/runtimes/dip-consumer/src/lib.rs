@@ -577,6 +577,9 @@ impl pallet_xcavate_whitelist::Config for Runtime {
 	type MaxUsersInWhitelist = MaxWhitelistUsers;
 }
 
+use frame_support::traits::EnsureOrigin;
+use pallet_dip_consumer::{DipOrigin, EnsureDipOrigin};
+
 parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const CommunityProjectPalletId: PalletId = PalletId(*b"py/cmprj");
@@ -604,9 +607,11 @@ impl pallet_nft_marketplace::Config for Runtime {
 	type AssetId = <Self as pallet_assets::Config<Instance1>>::AssetId;
 	type AssetId2 = u32;
 	type PostcodeLimit = Postcode;
-	type OriginCheck = EnsureDipOriginAdapter;
+/* 	type OriginCheck = EnsureDipOriginAdapter;
 	type OriginSuccess = DipOriginAdapter;
-	type Username = Web3Name;
+	type Username = Web3Name; */
+	type DidIdentifier = dip_provider_runtime_template::DidIdentifier;
+	type BuyTokenOrigin = DipOriginToDidAdapter;
 }
 
 parameter_types! {

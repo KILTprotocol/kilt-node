@@ -46,6 +46,32 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureDipOriginAdapter {
 	}
 }
 
+pub struct DipOriginToDidAdapter;
+
+impl EnsureOrigin<RuntimeOrigin> for DipOriginToDidAdapter {
+    type Success = dip_provider_runtime_template::DidIdentifier;
+
+    fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		let dip_origin = EnsureDipOrigin::<
+			dip_provider_runtime_template::DidIdentifier,
+			dip_provider_runtime_template::AccountId,
+			(),
+		>::try_origin(o)?;
+		Ok(dip_origin.identifier)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+        let successful_origin = EnsureDipOrigin::<
+            dip_provider_runtime_template::DidIdentifier,
+            dip_provider_runtime_template::AccountId,
+            (),
+        >::try_successful_origin()?;
+
+        Ok(successful_origin)
+    }
+}
+
 /// A wrapper around a [`DipOrigin`] that makes sure the origin has a web3name,
 /// or else the origin is invalid.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -71,9 +97,9 @@ impl GetUsername for DipOriginAdapter {
 }
 
 impl GetUsername1 for DipOriginAdapter {
-	type Username = Web3Name;
+	type DidIdentifier = DidIdentifier;
 
-	// Use the first revealed web3name as the user's username
+	/* // Use the first revealed web3name as the user's username
 	fn username(&self) -> Result<Self::Username, &'static str> {
 		self.0
 			.details
@@ -86,5 +112,5 @@ impl GetUsername1 for DipOriginAdapter {
 				}
 			})
 			.ok_or("No username for the subject.")
-	}
-}
+	} */
+} 

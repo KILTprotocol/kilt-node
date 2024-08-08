@@ -260,9 +260,11 @@ pub mod pallet {
 		#[pallet::constant]
 		type PostcodeLimit: Get<u32>;
 
-		type OriginCheck: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
+/* 		type OriginCheck: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		type OriginSuccess: GetUsername1<Username = Self::Username>;
-		type Username: Encode + Decode + TypeInfo + MaxEncodedLen + Clone + PartialEq + Debug + Default;
+		type Username: Encode + Decode + TypeInfo + MaxEncodedLen + Clone + PartialEq + Debug + Default; */
+		type DidIdentifier: Parameter + MaxEncodedLen;
+		type BuyTokenOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::DidIdentifier>;
 	}
 
 	pub type AssetId<T> = <T as Config>::AssetId;
@@ -605,8 +607,7 @@ pub mod pallet {
 			data: BoundedVec<u8, <T as pallet_nfts::Config>::StringLimit>,
 		) -> DispatchResult {
 			let signer = ensure_signed(origin.clone())?;
-			let success_origin = T::OriginCheck::ensure_origin(origin)?;
-			let author = success_origin.username().map_err(DispatchError::Other)?;
+			let did_origin = T::BuyTokenOrigin::ensure_origin(origin)?;
 			ensure!(
 				pallet_xcavate_whitelist::Pallet::<T>::whitelisted_accounts(signer.clone()),
 				Error::<T>::UserNotWhitelisted
