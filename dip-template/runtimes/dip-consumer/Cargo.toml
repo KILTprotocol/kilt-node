@@ -55,6 +55,7 @@ sp-std                                     = { workspace = true }
 sp-transaction-pool                        = { workspace = true }
 sp-version                                 = { workspace = true }
 sp-weights                                 = { workspace = true }
+pallet-collective                          = { workspace = true }
 
 # Cumulus
 cumulus-pallet-aura-ext         = { workspace = true }
@@ -121,6 +122,7 @@ std = [
   "sp-version/std",
   "sp-weights/std",
   "pallet-xcavate-whitelist/std",
+  "pallet-collective/std",
 ]
 
 runtime-benchmarks = [
@@ -143,4 +145,5 @@ runtime-benchmarks = [
   "rococo-runtime/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "pallet-xcavate-whitelist/runtime-benchmarks",
+  "pallet-collective/runtime-benchmarks",
 ]

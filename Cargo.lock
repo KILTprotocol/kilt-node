@@ -2952,6 +2952,7 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-collator-selection",
+ "pallet-collective",
  "pallet-dip-consumer",
  "pallet-postit",
  "pallet-relay-store",
