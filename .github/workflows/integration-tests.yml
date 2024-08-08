@@ -37,14 +37,17 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version-file: '.nvmrc'
 
       - name: Install dependencies
         run: yarn --immutable
 
-      - name: Lint & Test
-        run: |
-          yarn ts-check
-          yarn lint
-          yarn test:CI
+      - name: Type Checking
+        run: yarn ts-check
+
+      - name: Linting
+        run: yarn lint
+
+      - name: Test Suite
+        run: yarn test:CI
 
