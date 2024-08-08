@@ -58,6 +58,7 @@ sp-weights                                 = { workspace = true }
 pallet-collective                          = { workspace = true }
 pallet-nfts                                = { workspace = true }
 pallet-assets                              = { workspace = true }
+pallet-nft-fractionalization               = { workspace = true }
 
 # Cumulus
 cumulus-pallet-aura-ext         = { workspace = true }
@@ -127,6 +128,7 @@ std = [
   "pallet-collective/std",
   "pallet-assets/std",
   "pallet-nfts/std",
+  "pallet-nft-fractionalization/std",
 ]
 
 runtime-benchmarks = [
@@ -152,4 +154,5 @@ runtime-benchmarks = [
   "pallet-collective/runtime-benchmarks",
   "pallet-assets/runtime-benchmarks",
   "pallet-nfts/runtime-benchmarks",
+  "pallet-nft-fractionalization/runtime-benchmarks",
 ]

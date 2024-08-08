@@ -50,7 +50,7 @@ use frame_support::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
 		IdentityFee, Weight,
 	},
-	PalletId,
+	PalletId, BoundedVec,
 };
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
@@ -137,6 +137,7 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment = 11,
 		Nfts: pallet_nfts = 12,
 		Assets: pallet_assets::<Instance1> = 13,
+		NftFractionalization: pallet_nft_fractionalization = 14,
 
 		// Collators
 		Authorship: pallet_authorship = 20,
@@ -532,6 +533,33 @@ impl pallet_assets::Config<Instance1> for Runtime {
 }
 
 parameter_types! {
+	pub const NftFractionalizationPalletId: PalletId = PalletId(*b"fraction");
+	pub NewAssetSymbol: BoundedVec<u8, StringLimit> = (*b"BRIX").to_vec().try_into().unwrap();
+	pub NewAssetName: BoundedVec<u8, StringLimit> = (*b"Brix").to_vec().try_into().unwrap();
+	pub const Deposit: Balance = DOLLARS;
+}
+
+impl pallet_nft_fractionalization::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Deposit = Deposit;
+	type Currency = Balances;
+	type NewAssetSymbol = NewAssetSymbol;
+	type NewAssetName = NewAssetName;
+	type NftCollectionId = <Self as pallet_nfts::Config>::CollectionId;
+	type NftId = <Self as pallet_nfts::Config>::ItemId;
+	type AssetBalance = <Self as pallet_balances::Config>::Balance;
+	type AssetId = <Self as pallet_assets::Config<Instance1>>::AssetId;
+	type Assets = Assets;
+	type Nfts = Nfts;
+	type PalletId = NftFractionalizationPalletId;
+	type WeightInfo = ();
+	type StringLimit = StringLimit;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+	type RuntimeHoldReason = RuntimeHoldReason;
+}
+
+parameter_types! {
 	pub const MaxWhitelistUsers: u32 = 1000;
 }
 
@@ -556,6 +584,7 @@ mod benches {
 		[pallet_xcavate_whitelist, XcavateWhitelist]
 		[pallet_nfts, Nfts]
 		[pallet_assets, Assets]
+		[pallet_nft_fractionalization, NftFractionalization]
 	);
 }
 

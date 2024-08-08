@@ -2955,6 +2955,7 @@ dependencies = [
  "pallet-collator-selection",
  "pallet-collective",
  "pallet-dip-consumer",
+ "pallet-nft-fractionalization",
  "pallet-nfts",
  "pallet-postit",
  "pallet-relay-store",
