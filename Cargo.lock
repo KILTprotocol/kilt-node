@@ -2961,6 +2961,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
+ "pallet-xcavate-whitelist",
  "parity-scale-codec",
  "rococo-runtime",
  "scale-info",
@@ -8299,6 +8300,21 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-api",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-xcavate-whitelist"
+version = "1.14.0-dev"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]

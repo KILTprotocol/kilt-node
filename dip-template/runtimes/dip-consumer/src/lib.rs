@@ -140,6 +140,7 @@ construct_runtime!(
 
 		// PostIt
 		PostIt: pallet_postit = 30,
+		XcavateWhitelist: pallet_xcavate_whitelist = 31,
 
 		// DIP
 		DipConsumer: pallet_dip_consumer = 40,
@@ -378,12 +379,26 @@ impl pallet_postit::Config for Runtime {
 	type Username = Web3Name;
 }
 
+parameter_types! {
+	pub const MaxWhitelistUsers: u32 = 1000;
+}
+
+/// Configure the pallet-xcavate-whitelist in pallets/xcavate-whitelist.
+impl pallet_xcavate_whitelist::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_xcavate_whitelist::weights::SubstrateWeight<Runtime>;
+	type WhitelistOrigin = EnsureRoot<AccountId>;
+	type MaxUsersInWhitelist = MaxWhitelistUsers;
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_dip_consumer, DipConsumer]
 		[pallet_relay_store, RelayStore]
+		[pallet_relay_store, RelayStore]
+		[pallet_xcavate_whitelist, XcavateWhitelist]
 	);
 }
 
