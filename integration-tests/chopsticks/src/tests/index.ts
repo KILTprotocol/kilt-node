@@ -137,6 +137,10 @@ export async function checkSwitchPalletInvariant(expect: ExpectStatic, soft: boo
 		return
 	}
 
+	// check pool account balance
+	const switchPoolAccount = switchPairInfo.unwrap().switchPoolAccount
+	const poolAccountBalance = await getFreeBalancePeregrine(switchPoolAccount)
+
 	const sovereignEKiltSupply = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
 
 	const remoteAssetSovereignTotalBalance = switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
@@ -144,6 +148,9 @@ export async function checkSwitchPalletInvariant(expect: ExpectStatic, soft: boo
 	const remoteAssetTotalSupply = switchPairInfo.unwrap().remoteAssetTotalSupply.toBigInt()
 
 	const lockedBalanceFromTotalAndCirculating = remoteAssetTotalSupply - remoteAssetCirculatingSupply
+
+	// Check pool account has enough funds to cover the circulating supply
+	expect(poolAccountBalance).toBe(remoteAssetCirculatingSupply)
 
 	if (soft) {
 		expect(remoteAssetSovereignTotalBalance).toBeGreaterThanOrEqual(lockedBalanceFromTotalAndCirculating)
