@@ -153,6 +153,8 @@ construct_runtime!(
 		PostIt: pallet_postit = 30,
 		XcavateWhitelist: pallet_xcavate_whitelist = 31,
 		NftMarketplace: pallet_nft_marketplace = 32,
+		PropertyManagement: pallet_property_management = 33,
+		PropertyGovernance: pallet_property_governance = 34,
 
 		// DIP
 		DipConsumer: pallet_dip_consumer = 40,
@@ -607,6 +609,68 @@ impl pallet_nft_marketplace::Config for Runtime {
 	type Username = Web3Name;
 }
 
+parameter_types! {
+	pub const MinimumStakingAmount: Balance = 100 * DOLLARS;
+	pub const PropertyManagementPalletId: PalletId = PalletId(*b"py/ppmmt");
+	pub const MaxProperty: u32 = 1000;
+	pub const MaxLettingAgent: u32 = 100;
+	pub const MaxLocation: u32 = 100;
+	pub const PropertyReserves: Balance = 1000 * DOLLARS;
+	pub const PolkadotJsMultiply: Balance = 1/* CENTS */;
+}
+
+/// Configure the pallet-property-management in pallets/property-management.
+impl pallet_property_management::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_property_management::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
+	type PalletId = PropertyManagementPalletId;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_property_management::AssetHelper;
+	type AgentOrigin = EnsureRoot<Self::AccountId>;
+	type MinStakingAmount = MinimumStakingAmount;
+	type MaxProperties = MaxProperty;
+	type MaxLettingAgents = MaxLettingAgent;
+	type MaxLocations = MaxLocation;
+	type GovernanceId = PropertyGovernancePalletId;
+	type PropertyReserve = PropertyReserves;
+	type AssetId = <Self as pallet_assets::Config<Instance1>>::AssetId;
+	type PolkadotJsMultiplier = PolkadotJsMultiply;
+}
+
+parameter_types! {
+	pub const PropertyVotingTime: BlockNumber = 20;
+	pub const MaxVoteForBlock: u32 = 100;
+	pub const MinimumSlashingAmount: Balance = 10 * DOLLARS;
+	pub const MaximumVoter: u32 = 100;
+	pub const VotingThreshold: u8 = 51;
+	pub const HighVotingThreshold: u8 = 67;
+	pub const LowProposal: Balance = 500 * CENTS;
+	pub const HighProposal: Balance = 10_000 * CENTS;
+	pub const PropertyGovernancePalletId: PalletId = PalletId(*b"py/gvrnc");
+}
+
+/// Configure the pallet-property-governance in pallets/property-governance.
+impl pallet_property_governance::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_property_governance::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
+	type VotingTime = PropertyVotingTime;
+	type MaxVotesForBlock = MaxVoteForBlock;
+	type Slash = ();
+	type MinSlashingAmount = MinimumSlashingAmount;
+	type MaxVoter = MaximumVoter;
+	type Threshold = VotingThreshold;
+	type HighThreshold = HighVotingThreshold;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_property_governance::AssetHelper;
+	type LowProposal = LowProposal;
+	type HighProposal = HighProposal;
+	type PalletId = PropertyGovernancePalletId;
+	type AssetId = <Self as pallet_assets::Config<Instance1>>::AssetId;
+	type PolkadotJsMultiplier = PolkadotJsMultiply;
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
@@ -616,6 +680,8 @@ mod benches {
 		[pallet_relay_store, RelayStore]
 		[pallet_xcavate_whitelist, XcavateWhitelist]
 		[pallet_nft_marketplace, NftMarketplace]
+		[pallet_property_management, PropertyManagement]
+		[pallet_property_governance, PropertyGovernance]
 		[pallet_nfts, Nfts]
 		[pallet_assets, Assets]
 		[pallet_nft_fractionalization, NftFractionalization]

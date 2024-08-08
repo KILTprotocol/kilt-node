@@ -1,0 +1,55 @@
+[package]
+name = "pallet-property-management"
+version = "4.0.0-dev"
+description = "The Xcavate pallet property management"
+authors = ["Xcavate Network"]
+homepage = "https://xcavate.io"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+repository = "https://github.com/XcavateBlockchain/MarketplaceMVP_Substrate/"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
+
+frame-benchmarking = { workspace = true, optional = true}
+frame-support      = { workspace = true }
+frame-system       = { workspace = true }
+serde              = { workspace = true }
+
+pallet-nfts = { workspace = true }
+pallet-balances = { workspace = true }
+pallet-assets = { workspace = true }
+pallet-nft-fractionalization = { workspace = true }
+
+# Local dependencies
+pallet-xcavate-whitelist = { path = "../xcavate-whitelist", default-features = false }
+pallet-nft-marketplace = { path = "../nft-marketplace", default-features = false }
+
+[dev-dependencies]
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"parity-scale-codec/std",
+	"frame-benchmarking?/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+	"serde/std",
+	"pallet-nfts/std",
+	"pallet-xcavate-whitelist/std",
+	"pallet-balances/std",
+	"pallet-nft-marketplace/std",
+	"pallet-assets/std",
+	"pallet-nft-fractionalization/std",
+]
+runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
+try-runtime = ["frame-support/try-runtime"]

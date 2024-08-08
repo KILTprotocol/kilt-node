@@ -81,6 +81,8 @@ dip-provider-runtime-template = { path = "dip-template/runtimes/dip-provider", d
 pallet-postit                 = { path = "dip-template/pallets/pallet-postit", default-features = false }
 pallet-xcavate-whitelist      = { path = "dip-template/pallets/xcavate-whitelist", default-features = false }
 pallet-nft-marketplace      = { path = "dip-template/pallets/nft-marketplace", default-features = false }
+pallet-property-management      = { path = "dip-template/pallets/property-management", default-features = false }
+pallet-property-governance      = { path = "dip-template/pallets/property-governance", default-features = false }
 
 # Internal runtime API (with default disabled)
 kilt-runtime-api-did                = { path = "runtime-api/did", default-features = false }
