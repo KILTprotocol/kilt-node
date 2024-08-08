@@ -23,9 +23,9 @@ jobs:
   check-fmt:
     runs-on: ubuntu-latest
     needs: get-head-commit-msg
+    if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-rust') }}
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
-    if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-rust') }}
     steps:
       - uses: actions/checkout@v4
       - name: Run cargo fmt
