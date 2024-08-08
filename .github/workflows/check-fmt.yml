@@ -28,11 +28,10 @@ jobs:
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
     steps:
-      - env:
-          OUTPUT1: ${{needs.get-head-commit-msg.outputs.head-commit-msg}}
-        run: echo "$OUTPUT1 ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-rust') }}"
       - uses: actions/checkout@v4
+
       - name: Run cargo fmt
         run: cargo fmt -- --check
+
       - name: Run taplo
         run: taplo fmt --check

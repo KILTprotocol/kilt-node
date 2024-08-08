@@ -1,11 +1,3 @@
-.check_skip_rust:
-  before_script:
-    - |-
-      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-rust"; then
-        echo "Skipping rust tests due to commit title"
-        exit 0
-      fi
-
 cargo-clippy:
   extends: .check_skip_rust
   image: paritytech/ci-unified:bullseye-1.74.0
