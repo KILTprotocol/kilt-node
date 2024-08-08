@@ -39,6 +39,8 @@ jobs:
         with:
           node-version: 'lts/*'
           cache: 'yarn'
+
+      - name: Install dependencies
         run: yarn --immutable
 
       - name: Lint & Test
