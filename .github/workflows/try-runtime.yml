@@ -17,12 +17,10 @@ jobs:
     outputs:
       head-commit-msg: ${{ steps.step-head-commit.outputs.headCommitMsg }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.GITHUB_SHA }}
+      - uses: actions/checkout@v4head-commit-msg
       - name: Get Head Commit Message
         id: step-head-commit
-        run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
+        run: echo "headCommitMsg=$(git log -1 --pretty=format:%s)" >> "$GITHUB_OUTPUT"
 
 
   test-try-runtime:
