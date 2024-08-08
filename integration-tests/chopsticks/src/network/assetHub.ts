@@ -28,7 +28,7 @@ export function assignDotTokensToAccounts(addr: string[], balance: bigint = init
 	}
 }
 
-export function createForeignAsset(manager: string, accountInfo: [string, bigint][]) {
+export function createForeignAsset(manager: string, assetId = eKiltLocation) {
 	const supply = accountInfo.map(([, balance]) => balance).reduce((acc, balance) => acc + balance, BigInt(0))
 	return {
 		foreignAssets: {
@@ -51,8 +51,7 @@ export function createForeignAsset(manager: string, accountInfo: [string, bigint
 						},
 					],
 					{
-						// owner is set to relay chain sovereign account. Check out if this is correct.
-						owner: '5Dt6dpkWPwLaH4BBCKJwjiWrFVAGyYk3tLUabvyn4v7KtESG',
+						owner: manager,
 						issuer: manager,
 						admin: manager,
 						freezer: manager,
@@ -67,34 +66,6 @@ export function createForeignAsset(manager: string, accountInfo: [string, bigint
 					},
 				],
 			],
-
-			account: accountInfo.map((account) => [
-				[
-					{
-						parents: 2,
-						interior: {
-							X2: [
-								{
-									GlobalConsensus: { Ethereum: { chainId: 11155111 } },
-								},
-								{
-									AccountKey20: {
-										network: null,
-										key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
-									},
-								},
-							],
-						},
-					},
-					account[0],
-				],
-				{
-					balance: account[1],
-					status: 'Liquid',
-					reason: 'Consumer',
-					extra: null,
-				},
-			]),
 		},
 	}
 }
@@ -118,7 +89,7 @@ export function assignKSMtoAccounts(addr: string[], balance: bigint = initialBal
 
 /// Assigns the foreign asset to the accounts.
 /// Does not check if supply is matching the sum of the account balances.
-export function assignForeignAssetToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
+export function assignForeignAssetToAccounts(addr: string[], accountInfo: [string, bigint][]) {
 	return {
 		foreignAssets: {
 			account: [
