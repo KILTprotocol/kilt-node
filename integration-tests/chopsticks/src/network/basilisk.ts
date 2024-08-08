@@ -32,31 +32,11 @@ export function assignRocTokensToAccounts(addr: string[], balance: bigint = init
 	}
 }
 
-export function createRemoteAsset(addr: string[], balance: bigint = initialBalanceKILT) {
+export function createRemoteAsset(addr: string[], assetId: Object, balance: bigint = initialBalanceKILT) {
 	return {
 		assetRegistry: {
 			assetIds: [[['eKILT'], 90]],
-			assetLocations: [
-				[
-					[90],
-					{
-						parents: 2,
-						interior: {
-							X2: [
-								{
-									GlobalConsensus: { Ethereum: { chainId: 11155111 } },
-								},
-								{
-									AccountKey20: {
-										network: null,
-										key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
-									},
-								},
-							],
-						},
-					},
-				],
-			],
+			assetLocations: [[[90], assetId]],
 			assetMetadataMap: [[[90], { symbol: 'eKILT', decimals: 15 }]],
 		},
 
