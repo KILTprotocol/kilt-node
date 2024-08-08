@@ -12,11 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       head_commit_msg: ${{ steps.step_head_commit.outputs.headCommitMsg }}
-    env:
-      working-directory: ./integration-tests/chopsticks
-    defaults:
-      run:
-        working-directory: ${{ env.working-directory }}
 
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: get_head_commit_msg
     if: ${{ !contains(needs.get_head_commit_msg.outputs.head_commit_msg, 'ci-skip-integration-tests') }}
+    env:
+      working-directory: ./integration-tests/chopsticks
+    defaults:
+      run:
+        working-directory: ${{ env.working-directory }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
