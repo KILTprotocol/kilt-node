@@ -9,9 +9,11 @@ export function getSiblingLocationV3(paraId: number) {
 
 export function getSiblingLocationV4(paraId: number) {
 	return {
-		parents: 1,
-		interior: {
-			X1: [{ Parachain: paraId }],
+		V4: {
+			parents: 1,
+			interior: {
+				X1: [{ Parachain: paraId }],
+			},
 		},
 	}
 }

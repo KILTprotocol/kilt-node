@@ -45,7 +45,7 @@ test('Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Acco
 	await checkBalance(getFreeRocAssetHub, keysAlice.address, expect, initialBalanceROC)
 
 	const bobAddress = hexAddress(keysBob.address)
-	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
 	const beneficiary = getAccountLocationV4(bobAddress)
 
 	const signedTx = assethubContext.api.tx.polkadotXcm

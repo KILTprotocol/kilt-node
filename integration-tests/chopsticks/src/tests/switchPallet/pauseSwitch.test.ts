@@ -53,7 +53,7 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 		]),
 	})
 
-	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
 	const beneficiary1 = getAccountLocationV4(hexAddress(keysAlice.address))
 	const rocAsset = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 
@@ -123,7 +123,7 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 	})
 
 	// 1. send ROCs 2 Peregrine
-	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
 	const beneficiary1 = getAccountLocationV4(hexAddress(keysAlice.address))
 	const rocAsset = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 
@@ -215,7 +215,7 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 
 	// 1. send ROCs 2 Peregrine
 
-	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
 	const beneficiary1 = getAccountLocationV4(hexAddress(keysAlice.address))
 	const rocAsset = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 
@@ -272,7 +272,7 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	await createBlock(peregrineContext)
 
 	// 4. send eKILTs back
-	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
 	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 	const funds = {
 		V4: [
@@ -343,7 +343,7 @@ test('Withdraw ROCs while switch is paused', async ({ expect }) => {
 	let section: string = ''
 	let errorName: string = ''
 
-	const assetHubDestination = { V4: getSiblingLocationV4(AssetHubConfig.paraId) }
+	const assetHubDestination = getSiblingLocationV4(AssetHubConfig.paraId)
 	const assets = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 

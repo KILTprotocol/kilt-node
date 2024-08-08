@@ -46,7 +46,7 @@ test('Initiate withdraw assets Peregrine Account Alice -> AH Account Alice', asy
 	expect(balanceAliceRocAssetHubBeforeTx).toBe(BigInt(0))
 	expect(balanceSovereignAccountAssetHubBeforeTx).toBe(initialBalanceROC)
 
-	const assetHubDestination = { V4: getSiblingLocationV4(AssetHubConfig.paraId) }
+	const assetHubDestination = getSiblingLocationV4(AssetHubConfig.paraId)
 	// We send 1 ROC
 	const assets = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))

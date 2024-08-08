@@ -63,7 +63,7 @@ test('Full e2e tests', async ({ expect }) => {
 
 	// 1. send ROCs 2 Peregrine
 
-	const peregrineDestination = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
 	const beneficiary = getAccountLocationV4(hexAddress(keysAlice.address))
 	const rocAsset = { V4: [getRelayNativeAssetIdLocationV4((ROC * BigInt(2)).toString())] }
 
@@ -108,7 +108,7 @@ test('Full e2e tests', async ({ expect }) => {
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, balanceToTransfer)
 
 	// 3. send eKILTs back
-	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
 	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 	const funds = {
 		V4: [
@@ -149,7 +149,7 @@ test('Full e2e tests', async ({ expect }) => {
 
 	// 4. send ROCs back
 
-	const assetHubDestination = { V4: getSiblingLocationV4(AssetHubConfig.paraId) }
+	const assetHubDestination = getSiblingLocationV4(AssetHubConfig.paraId)
 
 	const assets = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 

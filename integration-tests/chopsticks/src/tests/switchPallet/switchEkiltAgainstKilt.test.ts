@@ -52,7 +52,7 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	// 50 PILTS
 	const balanceToTransfer = BigInt('50000000000000000')
 
-	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
 
 	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 

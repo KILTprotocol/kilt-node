@@ -61,7 +61,7 @@ test('Trapped assets', async ({ expect }) => {
 	})
 
 	// 1. send the coin and force a trap
-	const dest = { v4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
 	const remoteFeeId = { v4: AssetHubConfig.eKiltLocation }
 
 	const funds = {

@@ -335,7 +335,7 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 	// try to dry out the pool account. By sending the whole circulating supply + 1 KILT, the pool account should get dusted.
 	const balanceToTransfer = switchParameters.circulatingSupply + KILT
 
-	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
 
 	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 
@@ -399,7 +399,7 @@ test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 		]),
 	})
 
-	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
 	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 
 	const funds = {
@@ -452,7 +452,7 @@ test('User has no eKILT', async ({ expect }) => {
 	})
 
 	const balanceToTransfer = KILT
-	const dest = { V4: getSiblingLocationV4(PeregrineConfig.paraId) }
+	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
 	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 	const funds = {
 		V4: [
