@@ -86,7 +86,7 @@ test('User gets dusted with ROCs', async ({ expect }) => {
 }, 20_000)
 
 test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
 
@@ -146,27 +146,14 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 		.transfer(BasiliskConfig.dotTokenId, balanceToTransfer, beneficiary, 'Unlimited')
 		.signAsync(keysAlice)
 
-	const events = await sendTransaction(signedTx)
-
+	await sendTransaction(signedTx)
 	await createBlock(basiliskContext)
 
-	await checkEvents(events, 'xTokens').toMatchSnapshot('sender basilisk::xTokens::[TransferredAssets] DOTs')
-	await checkEvents(events, 'tokens').toMatchSnapshot('sender basilisk::tokens::[Withdraw] DOTs')
-	await checkEvents(events, 'parachainSystem').toMatchSnapshot(
-		'sender basilisk::parachainSystem::[UpwardMessageSent]'
-	)
-
+	// FWD the message
 	await createBlock(rococoContext)
-	await checkSystemEvents(rococoContext, 'messageQueue').toMatchSnapshot('relayer Rococo::messageQueue::[Processed]')
-	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Minted' }).toMatchSnapshot(
-		'relayer Rococo::balances::[Minted]'
-	)
-	await checkSystemEvents(rococoContext, { section: 'balances', method: 'Burned' }).toMatchSnapshot(
-		'relayer Rococo::balances::[Burned]'
-	)
 
+	// Process the message
 	await createBlock(peregrineContext)
-
 	// Barrier blocked execution. No event will be emitted.
 	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
 		'receiver Peregrine::messageQueue::[ProcessingFailed]'

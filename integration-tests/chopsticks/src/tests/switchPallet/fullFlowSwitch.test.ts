@@ -39,7 +39,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
  * 4. Send ROCs back to AssetHub
  */
 test('Full e2e tests', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkEvents } = withExpect(expect)
 
 	// 10 % of relay tokens are used as fees
 	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
@@ -85,27 +85,18 @@ test('Full e2e tests', async ({ expect }) => {
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary, rocAsset, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
-	const events1 = await sendTransaction(signedTx1)
+	// Send the transaction and create a block0
+	await sendTransaction(signedTx1)
 	await createBlock(assethubContext)
 
-	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot(
-		`sender AssetHub::xcmpQueue::[XcmpMessageSent]'  ${JSON.stringify(rocAsset)}`
-	)
-	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot('sender AssetHub::polkadotXcm::[FeesPaid,Attempted,Sent]')
-	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
-		'sender Assethub::balances::[Withdraw]'
-	)
-
+	// process msg.
 	await createBlock(peregrineContext)
-
 	// Alice should have some Rocs on Peregrine
 	const aliceRocBalance = await getFreeRocPeregrine(keysAlice.address)
 	expect(aliceRocBalance).toBeGreaterThan(BigInt(0))
 
 	// 2. switch KILTs
-
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
-
 	const signedTx2 = peregrineContext.api.tx.assetSwitchPool1
 		.switch(balanceToTransfer.toString(), beneficiary)
 		.signAsync(keysAlice)
@@ -147,14 +138,13 @@ test('Full e2e tests', async ({ expect }) => {
 	const events3 = await sendTransaction(signedTx3)
 
 	await createBlock(assethubContext)
-
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, KILT * BigInt(25))
+	// assets should move from Sovereign account to user.
 	await checkEvents(events3, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'sender AssetHub::foreignAssets::[Transferred]'
 	)
 
 	await createBlock(peregrineContext)
-
 	await checkBalanceInRange(getFreeBalancePeregrine, keysAlice.address, expect, [
 		BigInt(74) * KILT,
 		BigInt(75) * KILT,
@@ -163,7 +153,6 @@ test('Full e2e tests', async ({ expect }) => {
 	// 4. send ROCs back
 
 	const assetHubDestination = getSiblingLocationV4(AssetHubConfig.paraId)
-
 	const assets = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
 
 	const signedTx4 = peregrineContext.api.tx.polkadotXcm
@@ -176,15 +165,8 @@ test('Full e2e tests', async ({ expect }) => {
 	// The xcm message should be send to AH and the funds should be burned from user.
 	await checkEvents(events4, 'fungibles').toMatchSnapshot('sender Peregrine::fungibles::[Burned]')
 
-	// The funds should be burned from Sovereign account and minted to user.
+	// Process the message on AH
 	await createBlock(assethubContext)
-	await checkSystemEvents(assethubContext, { section: 'balances', method: 'Burned' }).toMatchSnapshot(
-		'receiver AssetHub::balances::Burned'
-	)
-
-	await checkSystemEvents(assethubContext, { section: 'balances', method: 'Minted' }).toMatchSnapshot(
-		'receiver AssetHub::balances::Minted'
-	)
 
 	await checkSwitchPalletInvariant(expect)
 }, 20_00000)

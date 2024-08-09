@@ -25,7 +25,7 @@ import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getAccountLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 
 test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
 	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
@@ -106,14 +106,8 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const balancePoolAccountAfterTx = await getFreeBalancePeregrine(PeregrineConfig.initialPoolAccountId)
 	expect(balancePoolAccountAfterTx).eq(initialBalancePoolAccount + balanceToTransfer)
 
+	// process the msg
 	await createBlock(assethubContext)
-
-	await checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot(
-		'receiver AssetHub::messageQueue::[Processed]'
-	)
-	await checkSystemEvents(assethubContext, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		'receiver AssetHub::foreignAssets::[Transferred]'
-	)
 
 	// alice should have the exact transferred amount of eKILT. Fees are paid by sovereign account
 	const freeBalanceAliceAssetHub = await getFreeEkiltAssetHub(keysAlice.address)

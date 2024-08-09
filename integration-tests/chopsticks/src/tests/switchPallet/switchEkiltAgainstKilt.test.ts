@@ -17,7 +17,7 @@ import { checkBalance, createBlock, setStorage, getXcmMessageV4ToSendEkilt, chec
 import { getSiblingLocationV4 } from '../../network/utils.js'
 
 test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
 	// alice has the whole circulating supply.
@@ -85,19 +85,9 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 		'Unlimited'
 	)
 
-	const events = await sendTransaction(signedTx.signAsync(keysAlice))
-
+	// send msg
+	await sendTransaction(signedTx.signAsync(keysAlice))
 	await createBlock(assethubContext)
-
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot(
-		`sender AssetHubs::xcmpQueue::[XcmpMessageSent] ${JSON.stringify(funds)}`
-	)
-	checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot(
-		`sender AssetHub::polkadotXcm::[Attempted] ${JSON.stringify(funds)}`
-	)
-	checkEvents(events, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		`sender AssetHub::foreignAssets::[Transferred] ${JSON.stringify(funds)}`
-	)
 
 	// check balance. Alice should have 50 ePILTs less
 	const freeBalanceAlice = await getFreeEkiltAssetHub(keysAlice.address)

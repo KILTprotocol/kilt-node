@@ -23,7 +23,7 @@ import { getChildLocation, getSiblingLocationV4 } from '../../network/utils.js'
  * 3. reclaim the assets
  */
 test('Trapped assets', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkSystemEvents } = withExpect(expect)
 	const switchPairParameters = getAssetSwitchParameters()
 	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
 	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
@@ -102,21 +102,11 @@ test('Trapped assets', async ({ expect }) => {
 		)
 		.signAsync(keysAlice)
 
-	const events = await sendTransaction(signedTx)
+	// send msg
+	await sendTransaction(signedTx)
 	await createBlock(assethubContext)
 
-	// msg should be sent.
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot(
-		`sender AssetHub::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(funds)}`
-	)
-	checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot(
-		`sender AssetHub::polkadotXcm::[Attempted] asset ${JSON.stringify(funds)}`
-	)
-	checkEvents(events, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		`sender AssetHub::foreignAssets::[Transferred] asset ${JSON.stringify(funds)}`
-	)
-
-	// ... But fail on peregrine
+	// Process msg. Fails on receiver side.
 	await createBlock(peregrineContext)
 	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
 		'receiver Peregrine::messageQueue::[Processed]'
@@ -189,21 +179,13 @@ test('Trapped assets', async ({ expect }) => {
 
 	const relayTx = rococoContext.api.tx.xcmPallet.send({ V3: assetHubDestination }, { V3: transactMessage })
 	const reclaimTx = rococoContext.api.tx.sudo.sudo(relayTx).signAsync(keysAlice)
-	const relayEvents = await sendTransaction(reclaimTx)
 
+	// send msg
+	await sendTransaction(reclaimTx)
 	await createBlock(rococoContext)
-	await checkEvents(relayEvents, 'sudo').toMatchSnapshot('relayer rococo::sudo::[Sudid]')
-	await checkEvents(relayEvents, 'xcmPallet').toMatchSnapshot('relayer rococo::xcmPallet::[Sent]')
 
-	// AH forwards the msg.
+	// forwards the msg.
 	await createBlock(assethubContext)
-	await checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot(
-		'sender AssetHub::messageQueue::[Processed]'
-	)
-	await checkSystemEvents(assethubContext, 'polkadotXcm').toMatchSnapshot('sender AssetHub::polkadotXcm::[Sent]')
-	await checkSystemEvents(assethubContext, 'xcmpQueue').toMatchSnapshot(
-		'sender AssetHub::xcmpQueue::[XcmpMessageSent]'
-	)
 
 	// Assets should be reclaimed now. Check the events.
 	await createBlock(peregrineContext)

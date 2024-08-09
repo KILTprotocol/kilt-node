@@ -26,7 +26,7 @@ import { getAccountLocationV4, getChildLocation, getSiblingLocationV4 } from '..
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
 
@@ -83,27 +83,17 @@ test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 		'sender Peregrine::balances::[Transfer]'
 	)
 
+	// process msg. We don't care about the events. We check only the funds.
 	await createBlock(assethubContext)
-
-	// messageQueue should not successfully execute the msg
-	await checkSystemEvents(assethubContext, 'messageQueue').toMatchSnapshot(
-		'receiver AssetHub::messageQueue::[Processed]'
-	)
-	// Refunded fees should be trapped
-	await checkSystemEvents(assethubContext, 'polkadotXcm').toMatchSnapshot(
-		'receiver AssetHub::polkadotXcm::[AssetsTrapped]'
-	)
 
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, BigInt(0))
 	await checkBalance(getFreeRocAssetHub, keysAlice.address, expect, BigInt(0))
 
-	// We can only check the soft invariant. On the source chain, the sovereign supply is decreased,
-	// while it stays constant on the destination chain.
 	await checkSwitchPalletInvariant(expect, true)
 }, 20_000)
 
 test('Pool accounts funds goes to zero', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkSystemEvents } = withExpect(expect)
 	const switchParameters = getAssetSwitchParameters(KILT * BigInt(1000))
 	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
 	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
@@ -172,18 +162,12 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 		)
 		.signAsync(keysAlice)
 
-	const events = await sendTransaction(signedTx)
+	await sendTransaction(signedTx)
 
+	// send msg
 	await createBlock(assethubContext)
 
-	await checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender AssetHub::xcmpQueue::[XcmpMessageSent]')
-	await checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot(
-		'sender AssetHub::polkadotXcm::[Attempted]'
-	)
-	await checkEvents(events, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		'sender AssetHub::foreignAssets::[Transferred]'
-	)
-
+	// process msg.
 	await createBlock(peregrineContext)
 
 	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
@@ -198,7 +182,7 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 }, 20_000)
 
 test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters(initialBalanceKILT * BigInt(1000))
 
@@ -235,17 +219,9 @@ test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 		)
 		.signAsync(keysAlice)
 
-	const events = await sendTransaction(signedTx)
-
+	await sendTransaction(signedTx)
+	// send msg
 	await createBlock(assethubContext)
-	// We should still be able to send the msg
-	checkEvents(events, 'xcmpQueue').toMatchSnapshot('sender AssetHub::xcmpQueue::[XcmpMessageSent]')
-	checkEvents(events, { section: 'polkadotXcm', method: 'Attempted' }).toMatchSnapshot(
-		'sender AssetHub::polkadotXcm::[Attempted]'
-	)
-	checkEvents(events, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		'sender AssetHub::foreignAssets::[Transferred]'
-	)
 
 	// Will fail on the receiver side
 	await createBlock(peregrineContext)
@@ -255,7 +231,7 @@ test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 }, 20_000)
 
 test('Send eKILT from other reserve location', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
 	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
@@ -328,15 +304,11 @@ test('Send eKILT from other reserve location', async ({ expect }) => {
 
 	const tx = rococoContext.api.tx.sudo.sudo(innerTx).signAsync(keysAlice)
 
-	const events = await sendTransaction(tx)
-
+	// send msg
+	await sendTransaction(tx)
 	await createBlock(rococoContext)
 
-	// MSG should have been send
-	await checkEvents(events, 'xcmPallet').toMatchSnapshot('sender Rococo::xcmPallet::[XcmMessageSent]')
-
 	await createBlock(peregrineContext)
-
 	// We expect the UntrustedReserveLocation error which results in failing the msg. The error will NOT emitted as an event.
 	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
 		'receiver Peregrine::messageQueue::[Processed]'

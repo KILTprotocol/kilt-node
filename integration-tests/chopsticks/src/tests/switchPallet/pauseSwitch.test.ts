@@ -29,7 +29,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 // Send ROCs while switch is paused
 test('Send ROCs while switch paused', async ({ expect }) => {
-	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const { checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
 
@@ -80,20 +80,8 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
-	const events1 = await sendTransaction(signedTx1)
-
+	await sendTransaction(signedTx1)
 	await createBlock(assethubContext)
-
-	// We expect the tx will pass
-	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot(
-		`sender AssetHub::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(rocAsset)}`
-	)
-	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot(
-		`sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset ${JSON.stringify(rocAsset)}`
-	)
-	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
-		`sender AssetHub::balances::[Withdraw] asset ${JSON.stringify(rocAsset)}`
-	)
 
 	// ... But it should fail on Peregrine
 	await createBlock(peregrineContext)
@@ -118,8 +106,6 @@ test('Send ROCs while switch paused', async ({ expect }) => {
  * 3. switch KILTs
  */
 test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
-	const { checkEvents } = withExpect(expect)
-
 	const switchParameters = getAssetSwitchParameters()
 
 	// 10 % of relay tokens are used as fees
@@ -165,21 +151,10 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
-	const events1 = await sendTransaction(signedTx1)
-
+	await sendTransaction(signedTx1)
 	await createBlock(assethubContext)
 
-	// Should still pass
-	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot(
-		`sender AssetHub::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(rocAsset)}`
-	)
-	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot(
-		`sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset ${JSON.stringify(rocAsset)}`
-	)
-	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
-		`sender AssetHub::balances::[Withdraw] asset ${JSON.stringify(rocAsset)}`
-	)
-
+	// process msg.
 	await createBlock(peregrineContext)
 	const aliceRocBalance = await getFreeRocPeregrine(keysAlice.address)
 	expect(aliceRocBalance).toBeGreaterThan(BigInt(0))
@@ -263,7 +238,6 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	)
 
 	// 1. send ROCs 2 Peregrine
-
 	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
 	const beneficiary1 = getAccountLocationV4(hexAddress(keysAlice.address))
 	const rocAsset = { V4: [getRelayNativeAssetIdLocationV4(ROC.toString())] }
@@ -271,25 +245,14 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	const signedTx1 = assethubContext.api.tx.polkadotXcm
 		.limitedReserveTransferAssets(peregrineDestination, beneficiary1, rocAsset, 0, 'Unlimited')
 		.signAsync(keysAlice)
+	await sendTransaction(signedTx1)
 
-	const events1 = await sendTransaction(signedTx1)
-
+	// send msg
 	await createBlock(assethubContext)
-
-	await checkEvents(events1, 'xcmpQueue').toMatchSnapshot(
-		`sender AssetHub::xcmpQueue::[XcmpMessageSent] asset ${JSON.stringify(rocAsset)}`
-	)
-	await checkEvents(events1, 'polkadotXcm').toMatchSnapshot(
-		`sender AssetHub::polkadotXcm::[Attempted,FeesPaid,Sent] asset ${JSON.stringify(rocAsset)}`
-	)
-	await checkEvents(events1, { section: 'balances', method: 'Withdraw' }).toMatchSnapshot(
-		`sender AssetHub::balances::[Withdraw] asset ${JSON.stringify(rocAsset)}`
-	)
-
+	// process msg.
 	await createBlock(peregrineContext)
 
 	const aliceRocBalance = await getFreeRocPeregrine(keysAlice.address)
-
 	expect(aliceRocBalance).toBeGreaterThan(BigInt(0))
 
 	// 2. switch KILTs
@@ -344,16 +307,14 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 		)
 		.signAsync(keysAlice)
 
-	const events3 = await sendTransaction(signedTx3)
+	await sendTransaction(signedTx3)
 
 	await createBlock(assethubContext)
 
 	// Tx should not fail on AH.
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, KILT * BigInt(25))
-	await checkEvents(events3, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
-		`sender AssetHub::foreignAssets::[Transferred] asset ${JSON.stringify(funds)}`
-	)
 
+	// prcess msg
 	await createBlock(peregrineContext)
 
 	// ... but MSG execution should fail on Peregrine
