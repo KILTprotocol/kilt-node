@@ -102,10 +102,10 @@ test('Full e2e tests', async ({ expect }) => {
 		.switch(balanceToTransfer.toString(), beneficiary)
 		.signAsync(keysAlice)
 
-	const events2 = await sendTransaction(signedTx2)
+	const events1 = await sendTransaction(signedTx2)
 
 	await createBlock(peregrineContext)
-	await checkEvents(events2, 'assetSwitchPool1').toMatchSnapshot(
+	await checkEvents(events1, 'assetSwitchPool1').toMatchSnapshot(
 		'receiver Peregrine::assetSwitchPool1::[LocalToRemoteSwitchExecuted]'
 	)
 
@@ -138,12 +138,12 @@ test('Full e2e tests', async ({ expect }) => {
 		)
 		.signAsync(keysAlice)
 
-	const events3 = await sendTransaction(signedTx3)
+	const events2 = await sendTransaction(signedTx3)
 
 	await createBlock(assethubContext)
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, balanceToTransfer)
 	// assets should move from Sovereign account to user.
-	await checkEvents(events3, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
+	await checkEvents(events2, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'sender AssetHub::foreignAssets::[Transferred]'
 	)
 
@@ -164,11 +164,13 @@ test('Full e2e tests', async ({ expect }) => {
 		.transferAssets(assetHubDestination, beneficiary, assets, 0, 'Unlimited')
 		.signAsync(keysAlice)
 
-	const events4 = await sendTransaction(signedTx4)
+	const events3 = await sendTransaction(signedTx4)
 	await createBlock(peregrineContext)
 
 	// The xcm message should be send to AH and the funds should be burned from user.
-	await checkEvents(events4, 'fungibles').toMatchSnapshot('sender Peregrine::fungibles::[Burned]')
+	await checkEvents(events3, 'fungibles').toMatchSnapshot('sender Peregrine::fungibles::[Burned]')
+
+	expect(await getFreeRocPeregrine(keysAlice.address)).toBe(BigInt(899999965317))
 
 	// Process the message on AH
 	await createBlock(assethubContext)
