@@ -121,7 +121,7 @@ test('Full e2e tests', async ({ expect }) => {
 		V4: [
 			{
 				id: AssetHubConfig.eKiltLocation,
-				fun: { Fungible: balanceToTransfer / BigInt(2) },
+				fun: { Fungible: balanceToTransfer },
 			},
 		],
 	}
@@ -141,7 +141,7 @@ test('Full e2e tests', async ({ expect }) => {
 	const events3 = await sendTransaction(signedTx3)
 
 	await createBlock(assethubContext)
-	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, KILT * BigInt(25))
+	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, balanceToTransfer)
 	// assets should move from Sovereign account to user.
 	await checkEvents(events3, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'sender AssetHub::foreignAssets::[Transferred]'
