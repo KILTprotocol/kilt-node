@@ -1,9 +1,17 @@
 default:
   interruptible: true
+
+.check_skip_rust:
+  before_script:
+    - |-
+      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-rust"; then
+        echo "Skipping rust tests due to commit title"
+        exit 0
+      fi
 include:
   - local: '.gitlab/check.yml'
   - local: '.gitlab/test.yml'
-  - local: '.gitlab/build.yml'
+  - local: '.gitlab/build_docker_img.yml'
 
 variables:
   CARGO_CACHE_PATH: $CARGO_CACHE_PATH

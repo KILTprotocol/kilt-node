@@ -2,7 +2,6 @@ name: Try-runtime
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -13,27 +12,29 @@ env:
   CARGO_HOME: ./.cargo
 
 jobs:
-  check_skip_flags:
+  get-head-commit-msg:
     runs-on: ubuntu-latest
+    outputs:
+      head-commit-msg: ${{ steps.step-head-commit.outputs.headCommitMsg }}
     steps:
-      - name: Checkout Commit
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ env.GITHUB_SHA }}
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Get Head Commit Message
-        id: head-commit-message
-        run: echo "HEAD_COMMIT_MESSAGE=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
+        id: step-head-commit
+        run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
+
 
   test-try-runtime:
     strategy:
       matrix:
         runtime: [peregrine, spiritnet]
     runs-on: ubuntu-latest
-    needs: check_skip_flags
+    needs: get-head-commit-msg
+    if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-rust') }}
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
-
-    if: ${{ !contains(needs.check_skip_flags.outputs.head-commit-message, 'ci-skip-rust') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -61,4 +62,4 @@ jobs:
 
           echo "---------- Executing on-runtime-upgrade for ${{ matrix.runtime }} ----------"
           ./try-runtime --runtime ./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm \
-              on-runtime-upgrade --disable-spec-version-check --checks=all ${{ matrix.subcommand_extra_args }} live --uri wss://${{ matrix.runtime }}.kilt.io
+              on-runtime-upgrade --disable-spec-version-check --checks=all live --uri wss://${{ matrix.runtime }}.kilt.io

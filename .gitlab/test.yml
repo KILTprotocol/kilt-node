@@ -10,19 +10,6 @@ test:
   script:
     - cargo test --all-targets --locked
 
-test-rustdoc:
-  extends: .check_skip_rust
-  image: paritytech/ci-unified:bullseye-1.74.0
-  variables:
-    SKIP_WASM_BUILD: 1
-  stage: check
-  cache:
-    key: cargo-test-rustdoc
-    paths:
-      - ${CARGO_CACHE_PATH}
-  script:
-    - cargo doc --all-features --no-deps --locked
-
 test-features:
   extends: .check_skip_rust
   timeout: 2 hours

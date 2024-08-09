@@ -2,47 +2,53 @@ name: Integration tests
 
 on:
   pull_request:
-    types: [ opened, synchronize, reopened, edited ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check_skip_flags:
+  get-head-commit-msg:
     runs-on: ubuntu-latest
+    outputs:
+      head-commit-msg: ${{ steps.step-head-commit.outputs.headCommitMsg }}
+
     steps:
-      - name: Checkout Commit
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ env.GITHUB_SHA }}
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Get Head Commit Message
-        id: head-commit-message
-        run: echo "HEAD_COMMIT_MESSAGE=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
+        id: step-head-commit
+        run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
 
   integration-tests:
     runs-on: ubuntu-latest
-    needs: check_skip_flags
-    if: ${{ !contains(needs.check_skip_flags.outputs.head-commit-message, 'ci-skip-integration-tests') }}
+    needs: get-head-commit-msg
+    if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-integration-tests') }}
+    env:
+      working-directory: ./integration-tests/chopsticks
+    defaults:
+      run:
+        working-directory: ${{ env.working-directory }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js environment
-        run: |
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-          echo 'export NVM_DIR="$HOME/.nvm"' >> $HOME/.bashrc
-          echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $HOME/.bashrc
-          eval "$(cat $HOME/.bashrc | tail -n +10)"
-          nvm install
-          nvm use
-          yarn --immutable
-        working-directory: ./integration-tests/chopsticks
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "${{ env.working-directory }}/.nvmrc"
 
-      - name: Lint & Test
-        run: |
-          yarn ts-check
-          yarn lint
-          yarn test:CI
-        working-directory: ./integration-tests/chopsticks
+      - name: Install dependencies
+        run: yarn --immutable
+
+      - name: Type Checking
+        run: yarn ts-check
+
+      - name: Linting
+        run: yarn lint
+
+      - name: Test Suite
+        run: yarn test:CI
 

@@ -1,15 +1,18 @@
 name: Srtool build
 
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - develop
+      - master
+      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
-  SUBWASM_VERSION: v0.20.0
+  SUBWASM_VERSION: v0.21.3
 
 jobs:
   build-wasm:
@@ -67,7 +70,7 @@ jobs:
           subwasm get -o ${{ matrix.runtime }}-live.wasm wss://${{ matrix.runtime }}.kilt.io
           subwasm diff --no-color ${{ matrix.runtime }}-live.wasm  ${{ steps.srtool_build.outputs.wasm }} || \
             echo "Subwasm call failed, check the logs. This is likely because ${{ matrix.runtime }} is not known by subwasm" | \
-            tee ${{ matrix.chain }}-diff.txt
+            tee ${{ matrix.runtime }}-diff.txt
 
       - name: Archive Subwasm results
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
