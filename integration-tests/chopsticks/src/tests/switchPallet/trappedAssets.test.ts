@@ -116,9 +116,8 @@ test('Trapped assets', async ({ expect }) => {
 		`sender AssetHub::foreignAssets::[Transferred] asset ${JSON.stringify(funds)}`
 	)
 
-	await createBlock(peregrineContext)
-
 	// ... But fail on peregrine
+	await createBlock(peregrineContext)
 	await checkSystemEvents(peregrineContext, 'messageQueue').toMatchSnapshot(
 		'receiver Peregrine::messageQueue::[Processed]'
 	)
@@ -172,7 +171,7 @@ test('Trapped assets', async ({ expect }) => {
 	]
 
 	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
-	const transactExtrinsic = assethubContext.api.tx.polkadotXcm.send({ V4: peregrineDestination }, { V4: reclaimMsg })
+	const transactExtrinsic = assethubContext.api.tx.polkadotXcm.send(peregrineDestination, { V4: reclaimMsg })
 	const assetHubDestination = getChildLocation(AssetHubConfig.paraId)
 
 	const transactMessage = [
@@ -218,7 +217,5 @@ test('Trapped assets', async ({ expect }) => {
 		'receiver Peregrine::assetSwitchPool1::[RemoteToLocalSwitchExecuted]'
 	)
 
-	await assethubContext.pause()
-
 	await checkSwitchPalletInvariant(expect)
-}, 20_00000)
+}, 20_000)
