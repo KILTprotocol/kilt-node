@@ -1,11 +1,11 @@
 name: Build and Deploy Chain docs
 
 on:
-    release:
-      types: [published]
-    push:
-      branches:
-        - chrisward/docs-autogen   #TODO Remove
+  push:
+    branches:
+      - develop
+      - master
+      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
   build-and-deploy:
@@ -15,16 +15,9 @@ jobs:
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: true
+
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up caching for Cargo
-        uses: actions/cache@v4
-        with:
-          path: ${{ secrets.CARGO_CACHE_PATH }}
-          key: chain-docs-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            chain-docs-${{ matrix.runtime }}-
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -44,4 +37,4 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages # The branch the action should deploy to.
-          folder: target/doc # The folder the action should deploy to.
+          folder: target/doc
