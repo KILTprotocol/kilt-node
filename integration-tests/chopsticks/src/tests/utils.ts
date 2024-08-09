@@ -4,6 +4,8 @@ import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 
 import { Config } from '../network/types.js'
+import { getFreeBalancePeregrine, getFreeEkiltAssetHub, peregrineContext } from './index.js'
+import * as PeregrineConfig from '../network/peregrine.js'
 
 /// Creates a new block for the given context
 export async function createBlock(context: Config) {
@@ -68,4 +70,32 @@ export function getXcmMessageV4ToSendEkilt(address: string) {
 			},
 		],
 	}
+}
+
+// Delta represents the amount of trapped assets on the KILT side
+export async function checkSwitchPalletInvariant(expect: ExpectStatic, delta = BigInt(0)) {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
+	if (switchPairInfo.isNone) {
+		return
+	}
+
+	// check pool account balance
+	const switchPoolAccount = switchPairInfo.unwrap().poolAccount
+
+	const poolAccountBalance = await getFreeBalancePeregrine(switchPoolAccount)
+
+	const sovereignEKiltSupply = await getFreeEkiltAssetHub(PeregrineConfig.sovereignAccountAsSibling)
+
+	const remoteAssetSovereignTotalBalance = switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
+	const remoteAssetCirculatingSupply = switchPairInfo.unwrap().remoteAssetCirculatingSupply.toBigInt()
+	const remoteAssetTotalSupply = switchPairInfo.unwrap().remoteAssetTotalSupply.toBigInt()
+
+	const lockedBalanceFromTotalAndCirculating = remoteAssetTotalSupply - remoteAssetCirculatingSupply
+
+	// Check pool account has enough funds to cover the circulating supply
+
+	expect(poolAccountBalance).toBe(remoteAssetCirculatingSupply)
+	expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
+	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + delta)
 }

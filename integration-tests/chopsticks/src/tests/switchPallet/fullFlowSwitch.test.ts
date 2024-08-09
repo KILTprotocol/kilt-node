@@ -17,7 +17,6 @@ import {
 	getFreeRocPeregrine,
 	getFreeEkiltAssetHub,
 	assethubContext,
-	checkSwitchPalletInvariant,
 } from '../index.js'
 import {
 	checkBalance,
@@ -26,6 +25,7 @@ import {
 	hexAddress,
 	checkBalanceInRange,
 	getXcmMessageV4ToSendEkilt,
+	checkSwitchPalletInvariant,
 } from '../utils.js'
 import { getAccountLocationV4, getRelayNativeAssetIdLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'

@@ -11,14 +11,15 @@ import {
 	keysAlice,
 	keysCharlie,
 } from '../../utils.js'
+import { peregrineContext, getFreeRocPeregrine, getFreeEkiltAssetHub, assethubContext } from '../index.js'
 import {
-	peregrineContext,
-	getFreeRocPeregrine,
-	getFreeEkiltAssetHub,
-	assethubContext,
+	checkBalance,
+	createBlock,
+	setStorage,
+	hexAddress,
+	getXcmMessageV4ToSendEkilt,
 	checkSwitchPalletInvariant,
-} from '../index.js'
-import { checkBalance, createBlock, setStorage, hexAddress, getXcmMessageV4ToSendEkilt } from '../utils.js'
+} from '../utils.js'
 import { getAccountLocationV4, getRelayNativeAssetIdLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 

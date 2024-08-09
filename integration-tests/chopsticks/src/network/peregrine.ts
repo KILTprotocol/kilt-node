@@ -116,3 +116,6 @@ export const initialPoolAccountId = '4nv4phaKc4EcwENdRERuMF79ZSSB5xvnAk3zNySSbVb
 export async function getContext(): Promise<Config> {
 	return setupContext(options)
 }
+
+export const treasuryAccount = '5EYCAe5hitmhtZcXaCrygrqw4kbmJ8bGm15PBuwUdDdQTUgY'
+export const parachainStakingRewards = BigInt('760514107536694')

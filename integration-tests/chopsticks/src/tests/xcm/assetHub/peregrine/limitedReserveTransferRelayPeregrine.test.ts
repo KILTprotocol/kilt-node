@@ -3,19 +3,31 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../../../network/peregrine.js'
 import * as RococoConfig from '../../../../network/rococo.js'
+import * as AssetHubConfig from '../../../../network/assetHub.js'
 import {
 	getAssetSwitchParameters,
 	initialBalanceKILT,
 	initialBalanceROC,
 	keysAlice,
 	keysCharlie,
+	ROC,
 } from '../../../../utils.js'
 import { peregrineContext, getFreeBalancePeregrine, getFreeRocPeregrine, rococoContext } from '../../../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../../../utils.js'
-import { getAccountLocationV3, getChildLocation, getNativeAssetIdLocationV3 } from '../../../../network/utils.js'
+import {
+	getAccountLocationV3,
+	getChildLocation,
+	getNativeAssetIdLocationV3,
+	getSiblingLocationV4,
+} from '../../../../network/utils.js'
 
 test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
+
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
@@ -23,7 +35,10 @@ test('Send DOTs from Relay 2 Peregrine', async ({ expect }) => {
 		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(getAssetSwitchParameters(), remoteAssetId, remoteXcmFeeId, remoteReserveLocation)
+	)
 
 	await setStorage(rococoContext, RococoConfig.assignNativeTokensToAccounts([keysAlice.address]))
 

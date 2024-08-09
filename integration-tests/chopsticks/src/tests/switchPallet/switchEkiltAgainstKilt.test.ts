@@ -11,9 +11,15 @@ import {
 	getFreeEkiltAssetHub,
 	assethubContext,
 	getRemoteLockedSupply,
-	checkSwitchPalletInvariant,
 } from '../index.js'
-import { checkBalance, createBlock, setStorage, getXcmMessageV4ToSendEkilt, checkBalanceInRange } from '../utils.js'
+import {
+	checkSwitchPalletInvariant,
+	checkBalance,
+	createBlock,
+	setStorage,
+	getXcmMessageV4ToSendEkilt,
+	checkBalanceInRange,
+} from '../utils.js'
 import { getSiblingLocationV4 } from '../../network/utils.js'
 
 test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {

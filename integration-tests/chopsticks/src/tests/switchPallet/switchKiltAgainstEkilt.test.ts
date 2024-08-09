@@ -19,9 +19,8 @@ import {
 	assethubContext,
 	getFreeRocAssetHub,
 	getRemoteLockedSupply,
-	checkSwitchPalletInvariant,
 } from '../index.js'
-import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
+import { checkSwitchPalletInvariant, checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
 import { getAccountLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 
 test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
@@ -127,4 +126,4 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	expect(remoteLockedSupply).eq(initialRemoteLockedSupply - balanceToTransfer)
 
 	await checkSwitchPalletInvariant(expect)
-}, 20_0000)
+}, 20_000)

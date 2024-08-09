@@ -19,9 +19,15 @@ import {
 	basiliskContext,
 	rococoContext,
 	assethubContext,
-	checkSwitchPalletInvariant,
 } from '../index.js'
-import { checkBalance, createBlock, setStorage, hexAddress, checkBalanceInRange } from '../utils.js'
+import {
+	checkBalance,
+	createBlock,
+	setStorage,
+	hexAddress,
+	checkBalanceInRange,
+	checkSwitchPalletInvariant,
+} from '../utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import { getSiblingLocationV4 } from '../../network/utils.js'
 

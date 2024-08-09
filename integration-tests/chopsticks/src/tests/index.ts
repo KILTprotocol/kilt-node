@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, ExpectStatic } from 'vitest'
+import { beforeEach, afterEach } from 'vitest'
 import { connectParachains, connectVertical } from '@acala-network/chopsticks'
 import { setTimeout } from 'timers/promises'
 
@@ -86,6 +86,18 @@ export async function getFreeBalancePeregrine(account: string): Promise<bigint> 
 	return accountInfo.data.free.toBigInt()
 }
 
+export async function getFreeBalancePeregrineAt(account: string, at: number): Promise<bigint> {
+	const blockHash = await peregrineContext.api.rpc.chain.getBlockHash(at)
+	const api = await peregrineContext.api.at(blockHash)
+	const accountInfo = await api.query.system.account(account)
+	return accountInfo.data.free.toBigInt()
+}
+
+export async function getCurrentBlockNumberPeregrine(): Promise<number> {
+	const blockNumber = await peregrineContext.api.query.system.number()
+	return blockNumber.toNumber()
+}
+
 export async function getFreeRocPeregrine(account: string): Promise<bigint> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const accountInfo: any = await peregrineContext.api.query.fungibles.account(
@@ -131,32 +143,4 @@ export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const accountInfo: any = await hydradxContext.api.query.tokens.accounts(account, HydraDxConfig.kiltTokenId)
 	return accountInfo.free.toBigInt()
-}
-
-// Delta represents the amount of trapped assets on the KILT side
-export async function checkSwitchPalletInvariant(expect: ExpectStatic, delta = BigInt(0)) {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
-	if (switchPairInfo.isNone) {
-		return
-	}
-
-	// check pool account balance
-	const switchPoolAccount = switchPairInfo.unwrap().poolAccount
-
-	const poolAccountBalance = await getFreeBalancePeregrine(switchPoolAccount)
-
-	const sovereignEKiltSupply = await getFreeEkiltAssetHub(PeregrineConfig.sovereignAccountAsSibling)
-
-	const remoteAssetSovereignTotalBalance = switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
-	const remoteAssetCirculatingSupply = switchPairInfo.unwrap().remoteAssetCirculatingSupply.toBigInt()
-	const remoteAssetTotalSupply = switchPairInfo.unwrap().remoteAssetTotalSupply.toBigInt()
-
-	const lockedBalanceFromTotalAndCirculating = remoteAssetTotalSupply - remoteAssetCirculatingSupply
-
-	// Check pool account has enough funds to cover the circulating supply
-
-	expect(poolAccountBalance).toBe(remoteAssetCirculatingSupply)
-	expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
-	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + delta)
 }
