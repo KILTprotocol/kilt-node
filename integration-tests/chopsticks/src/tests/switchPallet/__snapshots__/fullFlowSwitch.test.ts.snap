@@ -28,7 +28,39 @@ exports[`Full e2e tests > receiver Peregrine::assetSwitchPool1::[LocalToRemoteSw
 ]
 `;
 
-exports[`Full e2e tests > sender AssetHub::foreignAssets::[Transferred] 1`] = `[]`;
+exports[`Full e2e tests > sender AssetHub::foreignAssets::[Transferred] 1`] = `
+[
+  {
+    "data": {
+      "amount": 50000000000000000,
+      "assetId": {
+        "interior": {
+          "X2": [
+            {
+              "GlobalConsensus": {
+                "Ethereum": {
+                  "chainId": "(rounded 11000000)",
+                },
+              },
+            },
+            {
+              "AccountKey20": {
+                "key": "0x06012c8cf97bead5deae237070f9587f8e7a266d",
+                "network": null,
+              },
+            },
+          ],
+        },
+        "parents": 2,
+      },
+      "from": "15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8",
+      "to": "13cKp88mpGREFCq8KsJEFjpSBnjFuCNWq6bmD3js7fu4f66e",
+    },
+    "method": "Transferred",
+    "section": "foreignAssets",
+  },
+]
+`;
 
 exports[`Full e2e tests > sender Peregrine::fungibles::[Burned] 1`] = `
 [
