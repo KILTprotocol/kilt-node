@@ -42,8 +42,8 @@ export function createForeignAsset(manager: string, assetId = eKiltLocation) {
 						freezer: manager,
 						// Just make it big enough
 						supply: '10000000000000000000000000000',
-						deposit: 100000000000,
-						minBalance: 100,
+						deposit: 0,
+						minBalance: 0,
 						isSufficient: false,
 						accounts: 0,
 						sufficients: 0,
