@@ -4,7 +4,13 @@ import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 
 import { Config } from '../network/types.js'
-import { getFreeBalancePeregrine, getFreeEkiltAssetHub, peregrineContext } from './index.js'
+import {
+	getCurrentBlockNumber,
+	getFreeBalancePeregrine,
+	getFreeBalancePeregrineAt,
+	getFreeEkiltAssetHub,
+	peregrineContext,
+} from './index.js'
 import * as PeregrineConfig from '../network/peregrine.js'
 
 /// Creates a new block for the given context
@@ -98,4 +104,35 @@ export async function checkSwitchPalletInvariant(expect: ExpectStatic, delta = B
 	expect(poolAccountBalance).toBe(remoteAssetCirculatingSupply)
 	expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
 	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + delta)
+}
+
+export async function checkBalanceMovementIncomingSwitch(
+	transferredBalance: bigint,
+	expect: ExpectStatic,
+	receiver: string,
+	deltaBlockNumber = 1
+) {
+	const currentBlockNumber = await getCurrentBlockNumber(peregrineContext)
+
+	// the inital balance before the incoming switch
+	const initialBalanceTreasury = await getFreeBalancePeregrineAt(
+		PeregrineConfig.treasuryAccount,
+		currentBlockNumber - deltaBlockNumber
+	)
+	const initialBalanceReciver = await getFreeBalancePeregrineAt(receiver, currentBlockNumber - deltaBlockNumber)
+
+	// Current balance
+	const currentBalanceReciever = await getFreeBalancePeregrine(receiver)
+	const currentBalanceTreasury = await getFreeBalancePeregrine(PeregrineConfig.treasuryAccount)
+
+	// deltas of the balance between receiver and treasury
+	const deltaReceivedBalance = currentBalanceReciever - initialBalanceReciver
+
+	// remove staking rewards
+	const deltaTreasuryBalance =
+		currentBalanceTreasury -
+		initialBalanceTreasury -
+		PeregrineConfig.parachainStakingRewards * BigInt(deltaBlockNumber)
+
+	expect(deltaReceivedBalance + deltaTreasuryBalance).toBe(transferredBalance)
 }

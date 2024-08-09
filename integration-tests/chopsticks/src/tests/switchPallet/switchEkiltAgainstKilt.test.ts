@@ -19,6 +19,7 @@ import {
 	setStorage,
 	getXcmMessageV4ToSendEkilt,
 	checkBalanceInRange,
+	checkBalanceMovementIncomingSwitch,
 } from '../utils.js'
 import { getSiblingLocationV4 } from '../../network/utils.js'
 
@@ -128,4 +129,5 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	expect(remoteLockedSupply).toBe(initialRemoteLockedSupply + balanceToTransfer)
 
 	await checkSwitchPalletInvariant(expect)
+	await checkBalanceMovementIncomingSwitch(balanceToTransfer, expect, keysAlice.address)
 }, 20_000)

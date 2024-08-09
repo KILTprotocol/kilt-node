@@ -26,6 +26,7 @@ import {
 	checkBalanceInRange,
 	getXcmMessageV4ToSendEkilt,
 	checkSwitchPalletInvariant,
+	checkBalanceMovementIncomingSwitch,
 } from '../utils.js'
 import { getAccountLocationV4, getRelayNativeAssetIdLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
@@ -141,7 +142,7 @@ test('Full e2e tests', async ({ expect }) => {
 	const events2 = await sendTransaction(signedTx3)
 
 	await createBlock(assethubContext)
-	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, balanceToTransfer)
+	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, BigInt(0))
 	// assets should move from Sovereign account to user.
 	await checkEvents(events2, { section: 'foreignAssets', method: 'Transferred' }).toMatchSnapshot(
 		'sender AssetHub::foreignAssets::[Transferred]'
@@ -154,6 +155,7 @@ test('Full e2e tests', async ({ expect }) => {
 	])
 
 	await checkSwitchPalletInvariant(expect)
+	await checkBalanceMovementIncomingSwitch(balanceToTransfer, expect, keysAlice.address)
 
 	// 4. send ROCs back
 
@@ -176,4 +178,4 @@ test('Full e2e tests', async ({ expect }) => {
 	await createBlock(assethubContext)
 
 	await checkSwitchPalletInvariant(expect)
-}, 20_00000)
+}, 20_000)

@@ -93,8 +93,8 @@ export async function getFreeBalancePeregrineAt(account: string, at: number): Pr
 	return accountInfo.data.free.toBigInt()
 }
 
-export async function getCurrentBlockNumberPeregrine(): Promise<number> {
-	const blockNumber = await peregrineContext.api.query.system.number()
+export async function getCurrentBlockNumber(context: Config): Promise<number> {
+	const blockNumber = await context.api.query.system.number()
 	return blockNumber.toNumber()
 }
 
