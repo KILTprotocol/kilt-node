@@ -284,13 +284,14 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	await createBlock(peregrineContext)
 
 	// 4. send eKILTs back
+	const balanceToTransferBack = balanceToTransfer / BigInt(2)
 	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
 	const remoteFeeId = { V4: AssetHubConfig.eKiltLocation }
 	const funds = {
 		V4: [
 			{
 				id: AssetHubConfig.eKiltLocation,
-				fun: { Fungible: (balanceToTransfer / BigInt(2)).toString() },
+				fun: { Fungible: balanceToTransferBack.toString() },
 			},
 		],
 	}
@@ -326,7 +327,7 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 	)
 
 	// The msg will not be processed. Therefore, some assets are not moved. We can not do strict checks here.
-	await checkSwitchPalletInvariant(expect, true)
+	await checkSwitchPalletInvariant(expect, balanceToTransferBack)
 }, 30_000)
 
 test('Withdraw ROCs while switch is paused', async ({ expect }) => {

@@ -133,7 +133,8 @@ export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint
 	return accountInfo.free.toBigInt()
 }
 
-export async function checkSwitchPalletInvariant(expect: ExpectStatic, soft: boolean = false) {
+// Delta represents the amount of trapped assets on the KILT side
+export async function checkSwitchPalletInvariant(expect: ExpectStatic, delta = BigInt(0)) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
 	if (switchPairInfo.isNone) {
@@ -155,14 +156,7 @@ export async function checkSwitchPalletInvariant(expect: ExpectStatic, soft: boo
 
 	// Check pool account has enough funds to cover the circulating supply
 
-	console.log('poolAccountBalance', poolAccountBalance, 'remoteAssetCirculatingSupply', remoteAssetCirculatingSupply)
 	expect(poolAccountBalance).toBe(remoteAssetCirculatingSupply)
-
-	if (soft) {
-		expect(remoteAssetSovereignTotalBalance).toBeGreaterThanOrEqual(lockedBalanceFromTotalAndCirculating)
-		expect(sovereignEKiltSupply).toBeGreaterThanOrEqual(remoteAssetSovereignTotalBalance)
-	} else {
-		expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
-		expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance)
-	}
+	expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
+	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + delta)
 }

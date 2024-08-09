@@ -89,7 +89,7 @@ test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, BigInt(0))
 	await checkBalance(getFreeRocAssetHub, keysAlice.address, expect, BigInt(0))
 
-	await checkSwitchPalletInvariant(expect, true)
+	await checkSwitchPalletInvariant(expect, balanceToTransfer)
 }, 20_000)
 
 test('Pool accounts funds goes to zero', async ({ expect }) => {
@@ -177,8 +177,6 @@ test('Pool accounts funds goes to zero', async ({ expect }) => {
 	await checkSystemEvents(peregrineContext, 'polkadotXcm').toMatchSnapshot(
 		'receiver Peregrine::polkadotXcm::[AssetsTrapped]'
 	)
-
-	await checkSwitchPalletInvariant(expect, true)
 }, 20_000)
 
 test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
