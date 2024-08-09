@@ -6,6 +6,7 @@ import * as AssetHubConfig from '../../network/assetHub.js'
 import * as RococoConfig from '../../network/rococo.js'
 import {
 	KILT,
+	ROC,
 	getAssetSwitchParameters,
 	initialBalanceKILT,
 	initialBalanceROC,
@@ -24,6 +25,10 @@ import { getChildLocation, getSiblingLocationV4 } from '../../network/utils.js'
 test('Trapped assets', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 	const switchPairParameters = getAssetSwitchParameters()
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [
@@ -41,7 +46,14 @@ test('Trapped assets', async ({ expect }) => {
 	// pause switch pair
 	await setStorage(
 		peregrineContext,
-		PeregrineConfig.setSwitchPair(switchPairParameters, PeregrineConfig.initialPoolAccountId, 'Paused')
+		PeregrineConfig.setSwitchPair(
+			switchPairParameters,
+			remoteAssetId,
+			remoteXcmFeeId,
+			remoteReserveLocation,
+			PeregrineConfig.initialPoolAccountId,
+			'Paused'
+		)
 	)
 
 	await setStorage(rococoContext, {
@@ -50,15 +62,20 @@ test('Trapped assets', async ({ expect }) => {
 	})
 
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage(
+			[keysAlice.address, PeregrineConfig.sovereignAccountAsSibling],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchPairParameters.sovereignSupply],
-			[keysAlice.address, switchPairParameters.circulatingSupply],
-		]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address),
 	})
+
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.assignForeignAssetToAccounts([
+			[PeregrineConfig.sovereignAccountAsSibling, switchPairParameters.sovereignSupply],
+			[keysAlice.address, switchPairParameters.circulatingSupply],
+		])
+	)
 
 	// 1. send the coin and force a trap
 	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
@@ -201,5 +218,7 @@ test('Trapped assets', async ({ expect }) => {
 		'receiver Peregrine::assetSwitchPool1::[RemoteToLocalSwitchExecuted]'
 	)
 
+	await assethubContext.pause()
+
 	await checkSwitchPalletInvariant(expect)
-}, 20_000)
+}, 20_00000)

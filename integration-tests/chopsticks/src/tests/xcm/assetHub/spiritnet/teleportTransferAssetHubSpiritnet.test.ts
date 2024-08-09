@@ -13,7 +13,7 @@ test('Teleport Transfers from AH Account Alice -> Spiritnet Account Alice', asyn
 
 	// Assign alice some KSM
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts([keysAlice.address]),
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage([keysAlice.address]),
 		...AssetHubConfig.assignKSMtoAccounts([keysAlice.address]),
 	})
 

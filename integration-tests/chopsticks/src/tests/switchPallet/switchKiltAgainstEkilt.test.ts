@@ -3,7 +3,14 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assetHub.js'
-import { getAssetSwitchParameters, initialBalanceKILT, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
+import {
+	getAssetSwitchParameters,
+	initialBalanceKILT,
+	initialBalanceROC,
+	keysAlice,
+	keysCharlie,
+	ROC,
+} from '../../utils.js'
 import {
 	peregrineContext,
 	getFreeBalancePeregrine,
@@ -15,12 +22,17 @@ import {
 	checkSwitchPalletInvariant,
 } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress } from '../utils.js'
-import { getAccountLocationV4 } from '../../network/utils.js'
+import { getAccountLocationV4, getSiblingLocationV4 } from '../../network/utils.js'
 
 test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 	const switchParameters = getAssetSwitchParameters()
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
 
 	// Assign alice some KILT and ROC tokens
 	await setStorage(peregrineContext, {
@@ -29,17 +41,25 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(switchParameters, remoteAssetId, remoteXcmFeeId, remoteReserveLocation)
+	)
 
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage(
+			[keysAlice.address, PeregrineConfig.sovereignAccountAsSibling],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address),
 	})
+
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.assignForeignAssetToAccounts([
+			[PeregrineConfig.sovereignAccountAsSibling, switchParameters.sovereignSupply],
+		])
+	)
 
 	// check initial balance of Alice on Spiritnet
 	await checkBalance(getFreeBalancePeregrine, keysAlice.address, expect, initialBalanceKILT)
@@ -50,8 +70,8 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 
 	// initial balance of the pool account and sovereign account
 	const initialBalancePoolAccount = await getFreeBalancePeregrine(PeregrineConfig.initialPoolAccountId)
-	const initialBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
-	const initialBalanceRocSovereignAccount = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const initialBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.sovereignAccountAsSibling)
+	const initialBalanceRocSovereignAccount = await getFreeRocAssetHub(PeregrineConfig.sovereignAccountAsSibling)
 	const initialRemoteLockedSupply = await getRemoteLockedSupply()
 
 	// 50 PILTS
@@ -100,12 +120,12 @@ test('Switch PILTs against ePILTS on AssetHub', async ({ expect }) => {
 	expect(freeBalanceAliceAssetHub).eq(balanceToTransfer)
 
 	// sovereign account should have less eKILT by the amount of the transferred PILTs
-	const freeBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const freeBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.sovereignAccountAsSibling)
 	expect(initialBalanceSovereignAccount - balanceToTransfer).eq(freeBalanceSovereignAccount)
 
 	// sovereign account should have paid the fees. Calculating the fees is not simple in context of XCM.
 	// We just check that the balance has decreased
-	const freeRocsSovereignAccount = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const freeRocsSovereignAccount = await getFreeRocAssetHub(PeregrineConfig.sovereignAccountAsSibling)
 	expect(freeRocsSovereignAccount).toBeLessThan(initialBalanceRocSovereignAccount)
 
 	// remote locked supply should have decreased by the amount of the transferred PILTs

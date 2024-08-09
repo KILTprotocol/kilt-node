@@ -24,6 +24,10 @@ const ROC_ASSET_V4 = { V4: [getRelayNativeAssetIdLocationV4(ROC)] }
 
 test('Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Account Bob', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
 
 	// Assign alice some KILT tokens to create the account
 	await setStorage(peregrineContext, {
@@ -31,12 +35,18 @@ test('Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Acco
 		...PeregrineConfig.assignNativeTokensToAccounts([keysBob.address], initialBalanceKILT),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(getAssetSwitchParameters()))
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(getAssetSwitchParameters(), remoteAssetId, remoteXcmFeeId, remoteReserveLocation)
+	)
 
 	// Give Alice some Rocs
-	await setStorage(assethubContext, AssetHubConfig.assignDotTokensToAccounts([keysAlice.address], initialBalanceROC))
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.assignDotTokensToAccountsAsStorage([keysAlice.address], initialBalanceROC)
+	)
 
-	const peregrineSovereignAccountBalanceBeforeTx = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const peregrineSovereignAccountBalanceBeforeTx = await getFreeRocAssetHub(PeregrineConfig.sovereignAccountAsSibling)
 
 	// Bob should have no ROCs on Peregrine
 	await checkBalance(getFreeRocPeregrine, keysBob.address, expect, BigInt(0))
@@ -67,7 +77,7 @@ test('Limited Reserve V4 Transfers from AssetHub Account Alice -> Peregrine Acco
 	// check balance. The sovereign account should hold one additional ROC.
 	await checkBalance(
 		getFreeRocAssetHub,
-		PeregrineConfig.siblingSovereignAccount,
+		PeregrineConfig.sovereignAccountAsSibling,
 		expect,
 		peregrineSovereignAccountBalanceBeforeTx + ROC
 	)

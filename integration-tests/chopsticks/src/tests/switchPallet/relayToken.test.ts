@@ -10,6 +10,7 @@ import {
 	keysAlice,
 	keysBob,
 	keysCharlie,
+	ROC,
 } from '../../utils.js'
 import {
 	peregrineContext,
@@ -22,6 +23,7 @@ import {
 } from '../index.js'
 import { checkBalance, createBlock, setStorage, hexAddress, checkBalanceInRange } from '../utils.js'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
+import { getSiblingLocationV4 } from '../../network/utils.js'
 
 test('User transfers all of his dots', async ({ expect }) => {
 	const { checkEvents } = withExpect(expect)
@@ -88,18 +90,32 @@ test('Send DOTs from basilisk 2 Peregrine', async ({ expect }) => {
 
 	const switchParameters = getAssetSwitchParameters()
 
+	// 10 % of relay tokens are used as fees
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
+
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
 		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(switchParameters, remoteAssetId, remoteXcmFeeId, remoteReserveLocation)
+	)
+
+	await setStorage(assethubContext, {
+		...AssetHubConfig.createForeignAsset(keysCharlie.address),
+	})
 
 	await setStorage(
 		assethubContext,
-		AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
+		AssetHubConfig.assignForeignAssetToAccounts([
+			[PeregrineConfig.sovereignAccountAsSibling, switchParameters.sovereignSupply],
 		])
 	)
 

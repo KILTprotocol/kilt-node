@@ -33,6 +33,13 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 
 	const switchParameters = getAssetSwitchParameters()
 
+	// 10 % of relay tokens are used as fees
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
+
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.setSafeXcmVersion4(),
@@ -40,18 +47,30 @@ test('Send ROCs while switch paused', async ({ expect }) => {
 
 	await setStorage(
 		peregrineContext,
-		PeregrineConfig.setSwitchPair(switchParameters, PeregrineConfig.initialPoolAccountId, 'Paused')
+		PeregrineConfig.setSwitchPair(
+			switchParameters,
+			remoteAssetId,
+			remoteXcmFeeId,
+			remoteReserveLocation,
+			PeregrineConfig.initialPoolAccountId,
+			'Paused'
+		)
 	)
 
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage(
+			[keysAlice.address, PeregrineConfig.sovereignAccountAsSibling],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address),
 	})
+
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.assignForeignAssetToAccounts([
+			[PeregrineConfig.sovereignAccountAsSibling, switchParameters.sovereignSupply],
+		])
+	)
 
 	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
 	const beneficiary1 = getAccountLocationV4(hexAddress(keysAlice.address))
@@ -103,6 +122,13 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 
 	const switchParameters = getAssetSwitchParameters()
 
+	// 10 % of relay tokens are used as fees
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
+
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
@@ -110,17 +136,25 @@ test('Switch PILTs against ePILTs while paused', async ({ expect }) => {
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(switchParameters, remoteAssetId, remoteXcmFeeId, remoteReserveLocation)
+	)
 
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage(
+			[keysAlice.address, PeregrineConfig.sovereignAccountAsSibling],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address),
 	})
+
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.assignForeignAssetToAccounts([
+			[PeregrineConfig.sovereignAccountAsSibling, switchParameters.sovereignSupply],
+		])
+	)
 
 	// 1. send ROCs 2 Peregrine
 	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
@@ -194,6 +228,13 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 
 	const switchParameters = getAssetSwitchParameters()
 
+	// 10 % of relay tokens are used as fees
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
+
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, []),
@@ -201,17 +242,25 @@ test('Switch ePILTs against PILTs while paused', async ({ expect }) => {
 		...PeregrineConfig.setSudoKey(keysAlice.address),
 	})
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(switchParameters, remoteAssetId, remoteXcmFeeId, remoteReserveLocation)
+	)
 
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage(
+			[keysAlice.address, PeregrineConfig.sovereignAccountAsSibling],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address),
 	})
+
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.assignForeignAssetToAccounts([
+			[PeregrineConfig.sovereignAccountAsSibling, switchParameters.sovereignSupply],
+		])
+	)
 
 	// 1. send ROCs 2 Peregrine
 
@@ -327,18 +376,39 @@ test('Withdraw ROCs while switch is paused', async ({ expect }) => {
 	})
 
 	const switchParameters = getAssetSwitchParameters()
+	// 10 % of relay tokens are used as fees
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
 
 	await setStorage(
 		peregrineContext,
-		PeregrineConfig.setSwitchPair(switchParameters, PeregrineConfig.initialPoolAccountId, 'Paused')
+		PeregrineConfig.setSwitchPair(
+			switchParameters,
+			remoteAssetId,
+			remoteXcmFeeId,
+			remoteReserveLocation,
+			PeregrineConfig.initialPoolAccountId,
+			'Paused'
+		)
 	)
 
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts([PeregrineConfig.siblingSovereignAccount], initialBalanceROC),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage(
+			[PeregrineConfig.sovereignAccountAsSibling],
+			initialBalanceROC
+		),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address),
 	})
+
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.assignForeignAssetToAccounts([
+			[PeregrineConfig.sovereignAccountAsSibling, switchParameters.sovereignSupply],
+		])
+	)
 
 	let section: string = ''
 	let errorName: string = ''

@@ -1,7 +1,7 @@
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 
 import type { Config } from './types.js'
-import { initialBalanceDOT, initialBalanceKILT, toNumber } from '../utils.js'
+import { initialBalanceDOT, toNumber } from '../utils.js'
 
 /// Options used to create the Spiritnet context
 export const getSetupOptions = ({
@@ -17,6 +17,7 @@ export const getSetupOptions = ({
 		port: toNumber(process.env.ASSETHUB_PORT) || 9003,
 		wasmOverride,
 		blockNumber,
+		runtimeLogLevel: 5,
 	}) as SetupOption
 
 /// AssetHub has no own coin. Teleported dots are used as the native token.
@@ -29,37 +30,22 @@ export function assignDotTokensToAccountsAsStorage(addr: string[], balance: bigi
 }
 
 export function createForeignAsset(manager: string, assetId = eKiltLocation) {
-	const supply = accountInfo.map(([, balance]) => balance).reduce((acc, balance) => acc + balance, BigInt(0))
 	return {
 		foreignAssets: {
 			asset: [
 				[
-					[
-						{
-							parents: 2,
-							interior: {
-								X2: [
-									{ GlobalConsensus: { Ethereum: { chainId: 11155111 } } },
-									{
-										AccountKey20: {
-											network: null,
-											key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
-										},
-									},
-								],
-							},
-						},
-					],
+					[assetId],
 					{
 						owner: manager,
 						issuer: manager,
 						admin: manager,
 						freezer: manager,
-						supply,
+						// Just make it big enough
+						supply: '10000000000000000000000000000',
 						deposit: 100000000000,
 						minBalance: 100,
 						isSufficient: false,
-						accounts: accountInfo.length,
+						accounts: 0,
 						sufficients: 0,
 						approvals: 0,
 						status: 'Live',
@@ -89,38 +75,18 @@ export function assignKSMtoAccounts(addr: string[], balance: bigint = initialBal
 
 /// Assigns the foreign asset to the accounts.
 /// Does not check if supply is matching the sum of the account balances.
-export function assignForeignAssetToAccounts(addr: string[], accountInfo: [string, bigint][]) {
+export function assignForeignAssetToAccounts(accountInfo: [string, bigint][], assetId = eKiltLocation) {
 	return {
 		foreignAssets: {
-			account: [
-				addr.map(
-					(addr) => [
-						{
-							parents: 2,
-							interior: {
-								X2: [
-									{
-										GlobalConsensus: { Ethereum: { chainId: 11155111 } },
-									},
-									{
-										AccountKey20: {
-											network: null,
-											key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
-										},
-									},
-								],
-							},
-						},
-						addr,
-					],
-					{
-						balance: balance,
-						status: 'Liquid',
-						reason: 'Consumer',
-						extra: null,
-					}
-				),
-			],
+			account: accountInfo.map(([account, balance]) => [
+				[assetId, account],
+				{
+					balance: balance,
+					status: 'Liquid',
+					reason: 'Consumer',
+					extra: null,
+				},
+			]),
 		},
 	}
 }
@@ -141,7 +107,7 @@ export const KSMAssetLocation = {
 export const sovereignAccountOnSiblingChains = '4qXPdpimHh8TR24RSk994yVzxx4TLfvKj5i1qH5puvWmfAqy'
 
 /// Native token in AssetHub
-export const native = { parents: 1, interior: 'Here' }
+export const nativeTokenLocation = { parents: 1, interior: 'Here' }
 
 export const eKiltLocation = {
 	parents: 2,

@@ -32,11 +32,15 @@ export function assignRocTokensToAccounts(addr: string[], balance: bigint = init
 	}
 }
 
-export function createRemoteAsset(addr: string[], assetId: Object, balance: bigint = initialBalanceKILT) {
+export function createRemoteAsset(
+	addr: string[],
+	assetLocation: Record<string, unknown>,
+	balance: bigint = initialBalanceKILT
+) {
 	return {
 		assetRegistry: {
 			assetIds: [[['eKILT'], 90]],
-			assetLocations: [[[90], assetId]],
+			assetLocations: [[[90], assetLocation]],
 			assetMetadataMap: [[[90], { symbol: 'eKILT', decimals: 15 }]],
 		},
 

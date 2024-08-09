@@ -3,7 +3,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 
 import * as PeregrineConfig from '../../network/peregrine.js'
 import * as AssetHubConfig from '../../network/assetHub.js'
-import { KILT, getAssetSwitchParameters, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
+import { KILT, ROC, getAssetSwitchParameters, initialBalanceROC, keysAlice, keysCharlie } from '../../utils.js'
 import {
 	peregrineContext,
 	getFreeBalancePeregrine,
@@ -22,23 +22,33 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	const switchParameters = getAssetSwitchParameters()
 	// alice has the whole circulating supply.
 	const fundsAlice = switchParameters.circulatingSupply
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.createAndAssignRocs(keysCharlie.address, [keysAlice.address], initialBalanceROC),
-		...PeregrineConfig.setSwitchPair(switchParameters),
+		...PeregrineConfig.setSwitchPair(switchParameters, remoteAssetId, remoteXcmFeeId, remoteReserveLocation),
 		...PeregrineConfig.setSafeXcmVersion4(),
 	})
 
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage(
+			[keysAlice.address, PeregrineConfig.sovereignAccountAsSibling],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-			[keysAlice.address, fundsAlice],
-		]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address),
 	})
+
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.assignForeignAssetToAccounts([
+			[PeregrineConfig.sovereignAccountAsSibling, switchParameters.sovereignSupply],
+			[keysAlice.address, fundsAlice],
+		])
+	)
 
 	// check initial balance of Alice on Spiritnet. Alice should have 0 KILT
 	await checkBalance(getFreeBalancePeregrine, keysAlice.address, expect, BigInt(0))
@@ -46,7 +56,7 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, switchParameters.circulatingSupply)
 
 	const initialBalancePoolAccount = await getFreeBalancePeregrine(PeregrineConfig.initialPoolAccountId)
-	const initialBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const initialBalanceSovereignAccount = await getFreeEkiltAssetHub(PeregrineConfig.sovereignAccountAsSibling)
 	const initialRemoteLockedSupply = await getRemoteLockedSupply()
 
 	// 50 PILTS
@@ -94,7 +104,7 @@ test('Switch ePILTs against PILTS on Peregrine', async ({ expect }) => {
 	expect(freeBalanceAlice).toBe(fundsAlice - balanceToTransfer)
 
 	// the sovereign account should have 50 more PILTs
-	const balanceSovereignAccountAfterTx = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const balanceSovereignAccountAfterTx = await getFreeEkiltAssetHub(PeregrineConfig.sovereignAccountAsSibling)
 	expect(balanceSovereignAccountAfterTx).eq(initialBalanceSovereignAccount + balanceToTransfer)
 
 	await createBlock(peregrineContext)

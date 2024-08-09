@@ -88,7 +88,10 @@ export async function getFreeBalancePeregrine(account: string): Promise<bigint> 
 
 export async function getFreeRocPeregrine(account: string): Promise<bigint> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const accountInfo: any = await peregrineContext.api.query.fungibles.account(AssetHubConfig.native, account)
+	const accountInfo: any = await peregrineContext.api.query.fungibles.account(
+		AssetHubConfig.nativeTokenLocation,
+		account
+	)
 	if (accountInfo.isNone) {
 		return BigInt(0)
 	}
@@ -138,10 +141,11 @@ export async function checkSwitchPalletInvariant(expect: ExpectStatic, soft: boo
 	}
 
 	// check pool account balance
-	const switchPoolAccount = switchPairInfo.unwrap().switchPoolAccount
+	const switchPoolAccount = switchPairInfo.unwrap().poolAccount
+
 	const poolAccountBalance = await getFreeBalancePeregrine(switchPoolAccount)
 
-	const sovereignEKiltSupply = await getFreeEkiltAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const sovereignEKiltSupply = await getFreeEkiltAssetHub(PeregrineConfig.sovereignAccountAsSibling)
 
 	const remoteAssetSovereignTotalBalance = switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
 	const remoteAssetCirculatingSupply = switchPairInfo.unwrap().remoteAssetCirculatingSupply.toBigInt()
@@ -150,6 +154,8 @@ export async function checkSwitchPalletInvariant(expect: ExpectStatic, soft: boo
 	const lockedBalanceFromTotalAndCirculating = remoteAssetTotalSupply - remoteAssetCirculatingSupply
 
 	// Check pool account has enough funds to cover the circulating supply
+
+	console.log('poolAccountBalance', poolAccountBalance, 'remoteAssetCirculatingSupply', remoteAssetCirculatingSupply)
 	expect(poolAccountBalance).toBe(remoteAssetCirculatingSupply)
 
 	if (soft) {

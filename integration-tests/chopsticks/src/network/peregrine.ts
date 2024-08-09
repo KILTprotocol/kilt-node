@@ -10,6 +10,7 @@ const options = {
 	db: './db/peregrine.db.sqlite',
 	port: toNumber(process.env.PEREGRINE_PORT) || 9004,
 	wasmOverride: process.env.PEREGRINE_WASM_OVERRIDE || undefined,
+	runtimeLogLevel: 5,
 } as SetupOption
 
 /// Assigns the native tokens to an accounts
@@ -36,7 +37,7 @@ export function createAndAssignRocs(manager: string, addr: string[], balance: bi
 				[
 					[ROC_LOCATION],
 					{
-						owner: '4qPZ8fv6BjGoGKzfx5LtBFnEUp2b5Q5C1ErrjBNGmoFTLNHG',
+						owner: manager,
 						issuer: manager,
 						admin: manager,
 						freezer: manager,
@@ -69,9 +70,9 @@ export function setSudoKey(sudoKey: string) {
 
 export function setSwitchPair(
 	parameters: AssetSwitchSupplyParameters,
-	remoteAssetId: Object,
-	remoteXcmFeeAssetId: Object,
-	remoteReserveLocation: Object,
+	remoteAssetId: Record<string, unknown>,
+	remoteXcmFee: Record<string, unknown>,
+	remoteReserveLocation: Record<string, unknown>,
 	poolAccountId: string = initialPoolAccountId,
 	status: 'Running' | 'Paused' = 'Running'
 ) {
@@ -90,9 +91,7 @@ export function setSwitchPair(
 		},
 		// the pool account needs at least as much fund to cover the circulating supply. Give him exactly that amount + ED.
 		System: {
-			Account: [
-				[[poolAccountId], { providers: 1, data: { free: parameters.circulatingSupply + existentialDeposit } }],
-			],
+			Account: [[[poolAccountId], { providers: 1, data: { free: parameters.circulatingSupply } }]],
 		},
 	}
 }

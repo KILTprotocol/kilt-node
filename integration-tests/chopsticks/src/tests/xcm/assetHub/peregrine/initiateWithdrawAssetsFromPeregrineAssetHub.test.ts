@@ -22,6 +22,10 @@ import { checkBalanceInRange, createBlock, hexAddress, setStorage } from '../../
 
 test('Initiate withdraw assets Peregrine Account Alice -> AH Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
@@ -31,16 +35,22 @@ test('Initiate withdraw assets Peregrine Account Alice -> AH Account Alice', asy
 
 	const switchParameters = getAssetSwitchParameters()
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(switchParameters, remoteAssetId, remoteXcmFeeId, remoteReserveLocation)
+	)
 
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts([PeregrineConfig.siblingSovereignAccount], initialBalanceROC),
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage(
+			[PeregrineConfig.sovereignAccountAsSibling],
+			initialBalanceROC
+		),
 	})
 
 	// check initial state
 	const balanceAliceRocPeregrineBeforeTx = await getFreeRocPeregrine(keysAlice.address)
 	const balanceAliceRocAssetHubBeforeTx = await getFreeRocAssetHub(keysAlice.address)
-	const balanceSovereignAccountAssetHubBeforeTx = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const balanceSovereignAccountAssetHubBeforeTx = await getFreeRocAssetHub(PeregrineConfig.sovereignAccountAsSibling)
 
 	expect(balanceAliceRocPeregrineBeforeTx).toBe(initialBalanceROC)
 	expect(balanceAliceRocAssetHubBeforeTx).toBe(BigInt(0))
@@ -85,7 +95,7 @@ test('Initiate withdraw assets Peregrine Account Alice -> AH Account Alice', asy
 	)
 
 	// state sovereign account
-	const balanceSovereignAccountAssetHubAfterTx = await getFreeRocAssetHub(PeregrineConfig.siblingSovereignAccount)
+	const balanceSovereignAccountAssetHubAfterTx = await getFreeRocAssetHub(PeregrineConfig.sovereignAccountAsSibling)
 	expect(balanceSovereignAccountAssetHubAfterTx).toBe(initialBalanceROC - ROC)
 
 	// state alice on asset hub

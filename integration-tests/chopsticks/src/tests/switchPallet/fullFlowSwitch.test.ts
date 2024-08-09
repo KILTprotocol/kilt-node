@@ -36,10 +36,17 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
  * 1. Send ROCs from AssetHub to Peregrine
  * 2. Switch KILTs on Peregrine
  * 3. Send eKILTs back to AssetHub
- * 4. Send ROCs back to AssetHub (Currently not implemented)
+ * 4. Send ROCs back to AssetHub
  */
 test('Full e2e tests', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
+
+	// 10 % of relay tokens are used as fees
+	const feeAmount = (ROC * BigInt(10)) / BigInt(100)
+
+	const remoteAssetId = { V4: AssetHubConfig.eKiltLocation }
+	const remoteXcmFeeId = { V4: { id: AssetHubConfig.nativeTokenLocation, fun: { Fungible: feeAmount } } }
+	const remoteReserveLocation = getSiblingLocationV4(AssetHubConfig.paraId)
 
 	await setStorage(peregrineContext, {
 		...PeregrineConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
@@ -49,17 +56,24 @@ test('Full e2e tests', async ({ expect }) => {
 
 	const switchParameters = getAssetSwitchParameters()
 
-	await setStorage(peregrineContext, PeregrineConfig.setSwitchPair(switchParameters))
+	await setStorage(
+		peregrineContext,
+		PeregrineConfig.setSwitchPair(switchParameters, remoteAssetId, remoteXcmFeeId, remoteReserveLocation)
+	)
 
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts(
-			[keysAlice.address, PeregrineConfig.siblingSovereignAccount],
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage(
+			[keysAlice.address, PeregrineConfig.sovereignAccountAsSibling],
 			initialBalanceROC
 		),
-		...AssetHubConfig.createForeignAsset(keysCharlie.address, [
-			[PeregrineConfig.siblingSovereignAccount, switchParameters.sovereignSupply],
-		]),
+		...AssetHubConfig.createForeignAsset(keysCharlie.address),
 	})
+	await setStorage(
+		assethubContext,
+		AssetHubConfig.assignForeignAssetToAccounts([
+			[PeregrineConfig.sovereignAccountAsSibling, switchParameters.sovereignSupply],
+		])
+	)
 
 	// 1. send ROCs 2 Peregrine
 
@@ -85,7 +99,6 @@ test('Full e2e tests', async ({ expect }) => {
 	await createBlock(peregrineContext)
 
 	// Alice should have some Rocs on Peregrine
-
 	const aliceRocBalance = await getFreeRocPeregrine(keysAlice.address)
 	expect(aliceRocBalance).toBeGreaterThan(BigInt(0))
 
@@ -174,4 +187,4 @@ test('Full e2e tests', async ({ expect }) => {
 	)
 
 	await checkSwitchPalletInvariant(expect)
-}, 20_000)
+}, 20_00000)

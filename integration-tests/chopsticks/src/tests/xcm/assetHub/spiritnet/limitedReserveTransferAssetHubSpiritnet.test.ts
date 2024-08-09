@@ -13,7 +13,7 @@ test('Limited Reserve Transfers from AH Account Alice -> Spiritnet Account Alice
 
 	// Assign alice some KSM
 	await setStorage(assethubContext, {
-		...AssetHubConfig.assignDotTokensToAccounts([keysAlice.address]),
+		...AssetHubConfig.assignDotTokensToAccountsAsStorage([keysAlice.address]),
 		...AssetHubConfig.assignKSMtoAccounts([keysAlice.address]),
 	})
 

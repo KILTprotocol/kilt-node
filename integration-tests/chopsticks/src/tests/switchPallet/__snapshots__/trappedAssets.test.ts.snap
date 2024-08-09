@@ -1,17 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Trapped assets > receiver Peregrine::assetSwitchPool1::[RemoteToLocalSwitchExecuted] 1`] = `
-[
-  {
-    "data": {
-      "amount": 1000000000000000,
-      "to": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
-    },
-    "method": "RemoteToLocalSwitchExecuted",
-    "section": "assetSwitchPool1",
-  },
-]
-`;
+exports[`Trapped assets > receiver Peregrine::assetSwitchPool1::[RemoteToLocalSwitchExecuted] 1`] = `[]`;
 
 exports[`Trapped assets > receiver Peregrine::messageQueue::[Processed] 1`] = `
 [
@@ -50,21 +39,6 @@ exports[`Trapped assets > receiver Peregrine::messageQueue::[Processed] 2`] = `
     "method": "Processed",
     "section": "messageQueue",
   },
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": 1000,
-      },
-      "success": true,
-      "weightUsed": {
-        "proofSize": 0,
-        "refTime": 1000000000,
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
 ]
 `;
 
@@ -86,52 +60,6 @@ exports[`Trapped assets > receiver Peregrine::polkadotXcm::[AssetsClaimed] 1`] =
       "messageId": "(hash)",
     },
     "method": "VersionNotifyStarted",
-    "section": "polkadotXcm",
-  },
-  {
-    "data": {
-      "assets": {
-        "V4": [
-          {
-            "fun": {
-              "Fungible": 1000000000000000,
-            },
-            "id": {
-              "interior": {
-                "X2": [
-                  {
-                    "GlobalConsensus": {
-                      "Ethereum": {
-                        "chainId": "(rounded 11000000)",
-                      },
-                    },
-                  },
-                  {
-                    "AccountKey20": {
-                      "key": "0x06012c8cf97bead5deae237070f9587f8e7a266d",
-                      "network": null,
-                    },
-                  },
-                ],
-              },
-              "parents": 2,
-            },
-          },
-        ],
-      },
-      "hash_": "(hash)",
-      "origin": {
-        "interior": {
-          "X1": [
-            {
-              "Parachain": 1000,
-            },
-          ],
-        },
-        "parents": 1,
-      },
-    },
-    "method": "AssetsClaimed",
     "section": "polkadotXcm",
   },
 ]
@@ -317,133 +245,9 @@ exports[`Trapped assets > sender AssetHub::polkadotXcm::[Attempted] asset {"v4":
 ]
 `;
 
-exports[`Trapped assets > sender AssetHub::polkadotXcm::[Sent] 1`] = `
-[
-  {
-    "data": {
-      "destination": {
-        "interior": {
-          "X1": [
-            {
-              "Parachain": "(rounded 2100)",
-            },
-          ],
-        },
-        "parents": 1,
-      },
-      "message": [
-        {
-          "WithdrawAsset": [
-            {
-              "fun": {
-                "Fungible": 1000000000000000,
-              },
-              "id": {
-                "interior": "Here",
-                "parents": 0,
-              },
-            },
-          ],
-        },
-        {
-          "BuyExecution": {
-            "fees": {
-              "fun": {
-                "Fungible": 1000000000000000,
-              },
-              "id": {
-                "interior": "Here",
-                "parents": 0,
-              },
-            },
-            "weightLimit": "Unlimited",
-          },
-        },
-        {
-          "ClaimAsset": {
-            "assets": [
-              {
-                "fun": {
-                  "Fungible": 1000000000000000,
-                },
-                "id": {
-                  "interior": {
-                    "X2": [
-                      {
-                        "GlobalConsensus": {
-                          "Ethereum": {
-                            "chainId": "(rounded 11000000)",
-                          },
-                        },
-                      },
-                      {
-                        "AccountKey20": {
-                          "key": "0x06012c8cf97bead5deae237070f9587f8e7a266d",
-                          "network": null,
-                        },
-                      },
-                    ],
-                  },
-                  "parents": 2,
-                },
-              },
-            ],
-            "ticket": {
-              "interior": {
-                "X1": [
-                  {
-                    "GeneralIndex": 4,
-                  },
-                ],
-              },
-              "parents": 0,
-            },
-          },
-        },
-        {
-          "DepositAsset": {
-            "assets": {
-              "Wild": "All",
-            },
-            "beneficiary": {
-              "interior": {
-                "X1": [
-                  {
-                    "AccountId32": {
-                      "id": "(hash)",
-                      "network": null,
-                    },
-                  },
-                ],
-              },
-              "parents": 0,
-            },
-          },
-        },
-      ],
-      "messageId": "(hash)",
-      "origin": {
-        "interior": "Here",
-        "parents": 0,
-      },
-    },
-    "method": "Sent",
-    "section": "polkadotXcm",
-  },
-]
-`;
+exports[`Trapped assets > sender AssetHub::polkadotXcm::[Sent] 1`] = `[]`;
 
-exports[`Trapped assets > sender AssetHub::xcmpQueue::[XcmpMessageSent] 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
+exports[`Trapped assets > sender AssetHub::xcmpQueue::[XcmpMessageSent] 1`] = `[]`;
 
 exports[`Trapped assets > sender AssetHub::xcmpQueue::[XcmpMessageSent] asset {"v4":[{"id":{"parents":2,"interior":{"X2":[{"GlobalConsensus":{"Ethereum":{"chainId":11155111}}},{"AccountKey20":{"network":null,"key":"0x06012c8cf97bead5deae237070f9587f8e7a266d"}}]}},"fun":{"Fungible":"1000000000000000"}}]} 1`] = `
 [

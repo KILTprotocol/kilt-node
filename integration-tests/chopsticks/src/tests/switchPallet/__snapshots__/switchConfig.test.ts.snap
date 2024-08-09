@@ -258,90 +258,13 @@ exports[`Send eKILT from other reserve location > sender Rococo::xcmPallet::[Xcm
 ]
 `;
 
-exports[`Send eKILT while switch Pair does not exist > receiver Peregrine::messageQueue::[Processed] 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": 1000,
-      },
-      "success": false,
-      "weightUsed": {
-        "proofSize": 0,
-        "refTime": 200000000,
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
+exports[`Send eKILT while switch Pair does not exist > receiver Peregrine::messageQueue::[Processed] 1`] = `[]`;
 
-exports[`Send eKILT while switch Pair does not exist > sender AssetHub::foreignAssets::[Transferred] 1`] = `
-[
-  {
-    "data": {
-      "amount": 1000000000000000,
-      "assetId": {
-        "interior": {
-          "X2": [
-            {
-              "GlobalConsensus": {
-                "Ethereum": {
-                  "chainId": "(rounded 11000000)",
-                },
-              },
-            },
-            {
-              "AccountKey20": {
-                "key": "0x06012c8cf97bead5deae237070f9587f8e7a266d",
-                "network": null,
-              },
-            },
-          ],
-        },
-        "parents": 2,
-      },
-      "from": "15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8",
-      "to": "13cKp88mpGREFCq8KsJEFjpSBnjFuCNWq6bmD3js7fu4f66e",
-    },
-    "method": "Transferred",
-    "section": "foreignAssets",
-  },
-]
-`;
+exports[`Send eKILT while switch Pair does not exist > sender AssetHub::foreignAssets::[Transferred] 1`] = `[]`;
 
-exports[`Send eKILT while switch Pair does not exist > sender AssetHub::polkadotXcm::[Attempted] 1`] = `
-[
-  {
-    "data": {
-      "outcome": {
-        "Complete": {
-          "used": {
-            "proofSize": "(rounded 6200)",
-            "refTime": "(rounded 290000000)",
-          },
-        },
-      },
-    },
-    "method": "Attempted",
-    "section": "polkadotXcm",
-  },
-]
-`;
+exports[`Send eKILT while switch Pair does not exist > sender AssetHub::polkadotXcm::[Attempted] 1`] = `[]`;
 
-exports[`Send eKILT while switch Pair does not exist > sender AssetHub::xcmpQueue::[XcmpMessageSent] 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
+exports[`Send eKILT while switch Pair does not exist > sender AssetHub::xcmpQueue::[XcmpMessageSent] 1`] = `[]`;
 
 exports[`Switch KILTs against EKILTs no enough DOTs on AH > receiver AssetHub::messageQueue::[Processed] 1`] = `
 [
