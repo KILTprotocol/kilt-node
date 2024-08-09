@@ -74,7 +74,6 @@ test('Full e2e tests', async ({ expect }) => {
 			[PeregrineConfig.sovereignAccountAsSibling, switchParameters.sovereignSupply],
 		])
 	)
-
 	// 1. send ROCs 2 Peregrine
 
 	const peregrineDestination = getSiblingLocationV4(PeregrineConfig.paraId)
@@ -95,6 +94,8 @@ test('Full e2e tests', async ({ expect }) => {
 	const aliceRocBalance = await getFreeRocPeregrine(keysAlice.address)
 	expect(aliceRocBalance).toBeGreaterThan(BigInt(0))
 
+	await checkSwitchPalletInvariant(expect)
+
 	// 2. switch KILTs
 	const balanceToTransfer = initialBalanceKILT / BigInt(2)
 	const signedTx2 = peregrineContext.api.tx.assetSwitchPool1
@@ -110,6 +111,8 @@ test('Full e2e tests', async ({ expect }) => {
 
 	await createBlock(assethubContext)
 	await checkBalance(getFreeEkiltAssetHub, keysAlice.address, expect, balanceToTransfer)
+
+	await checkSwitchPalletInvariant(expect)
 
 	// 3. send eKILTs back
 	const dest = getSiblingLocationV4(PeregrineConfig.paraId)
@@ -149,6 +152,8 @@ test('Full e2e tests', async ({ expect }) => {
 		BigInt(74) * KILT,
 		BigInt(75) * KILT,
 	])
+
+	await checkSwitchPalletInvariant(expect)
 
 	// 4. send ROCs back
 
