@@ -1,0 +1,85 @@
+db: './db/peregrine.db.sqlite'
+port: 9004
+endpoint: 'wss://peregrine.kilt.io'
+wasm-override: ./peregrine_runtime.compact.compressed.wasm
+
+import-storage:
+    assetSwitchPool1:
+        switchPair:
+            # Pool account id Charlie
+            poolAccountId: '5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y'
+            remoteAssetBalance: '100000000000000000'
+            remoteAssetSovereignTotalBalance: '90000000000000000000'
+            remoteAssetCirculatingSupply: '10000000000000000000'
+            remoteAssetTotalSupply: '100000000000000000000'
+            remoteAssetId:
+                V3:
+                    Concrete:
+                        parents: 2
+                        interior:
+                            X2:
+                                - GlobalConsensus:
+                                      Ethereum:
+                                          chainId: 11155111
+                                - AccountKey20:
+                                      network: null
+                                      key: '0x06012c8cf97bead5deae237070f9587f8e7a266d'
+            remoteXcmFee:
+                V3:
+                    id:
+                        concrete:
+                            parents: 1
+                            interior: 'Here'
+                    fun:
+                        Fungible: 1000000000000
+            remoteReserveLocation:
+                V3:
+                    parents: 1
+                    interior:
+                        X1:
+                            Parachain:
+                                id: 1000
+            status: 'Running'
+
+    fungibles:
+        asset:
+            - - - parents: 1
+                  interior: 'Here'
+              # Alice account
+              - owner: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
+                issuer: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
+                admin: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
+                freezer: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
+                supply: '4242424242424242424242'
+                deposit: 100000000000
+                minBalance: 100
+                isSufficient: false
+                accounts: 1
+                sufficients: 0
+                approvals: 0
+                status: 'Live'
+
+        account:
+            - - - parents: 1
+                  interior: 'Here'
+                  # Alice account
+                - '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
+              - balance: '10000000000000000'
+                status: 'Liquid'
+                reason: 'Consumer'
+                extra: null
+
+    System:
+        Account:
+            # Alice account
+            - - - '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
+              - providers: 1
+                data:
+                    free: '100000000000000000'
+            # Charlie account
+            - - - '5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y'
+              - providers: 1
+                data:
+                    free: '100000000000000000'
+    polkadotXcm:
+        safeXcmVersion: 3
