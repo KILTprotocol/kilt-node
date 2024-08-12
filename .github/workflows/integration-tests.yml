@@ -4,7 +4,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -27,10 +27,11 @@ jobs:
     needs: get-head-commit-msg
     if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-integration-tests') }}
     env:
-      working-directory: ./integration-tests/chopsticks
+      working-dir: ./integration-tests/chopsticks
+      CI: "true"
     defaults:
       run:
-        working-directory: ${{ env.working-directory }}
+        working-directory: ${{ env.working-dir }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,7 +39,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version-file: "${{ env.working-directory }}/.nvmrc"
+          node-version-file: "${{ env.working-dir }}/.nvmrc"
 
       - name: Install dependencies
         run: yarn --immutable

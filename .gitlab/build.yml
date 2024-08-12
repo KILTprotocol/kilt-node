@@ -1,4 +1,4 @@
-build:
+build-images:
   timeout: 2 hours
   image:
     name: kiltprotocol/kilt-ci:2.7.31

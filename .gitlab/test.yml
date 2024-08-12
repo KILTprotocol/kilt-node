@@ -4,7 +4,7 @@ test:
   image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   cache:
-    key: cargo-test
+    key: cargo-test-${CI_COMMIT_REF_NAME}
     paths:
       - ${CARGO_CACHE_PATH}
   script:
@@ -16,7 +16,7 @@ test-features:
   image: paritytech/ci-unified:bullseye-1.74.0
   stage: test
   cache:
-    key: cargo-test-features
+    key: cargo-test-features-${CI_COMMIT_REF_NAME}
     paths:
       - ${CARGO_CACHE_PATH}
   script:

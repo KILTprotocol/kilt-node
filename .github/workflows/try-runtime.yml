@@ -4,7 +4,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 env:
@@ -43,9 +43,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ secrets.CARGO_CACHE_PATH }}
-          key: cargo-try-runtime-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
+          key: cargo-try-runtime-${{ matrix.runtime }}-${{ github.ref_name }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            cargo-try-runtime-${{ matrix.runtime }}-
+            cargo-try-runtime-${{ matrix.runtime }}-${{ github.ref_name }}-
 
       - name: Run try-runtime
         run: |
