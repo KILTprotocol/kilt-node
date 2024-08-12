@@ -35,5 +35,5 @@ jobs:
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages # The branch the action should deploy to.
+          branch: gh-pages-${{ github.ref_name }}
           folder: target/doc
