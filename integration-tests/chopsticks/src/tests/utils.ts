@@ -79,7 +79,7 @@ export function getXcmMessageV4ToSendEkilt(address: string) {
 }
 
 // Delta represents the amount of trapped assets on the KILT side
-export async function checkSwitchPalletInvariant(expect: ExpectStatic, delta = BigInt(0)) {
+export async function checkSwitchPalletInvariant(expect: ExpectStatic, deltaStoredSovereignSupply = BigInt(0)) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
 	if (switchPairInfo.isNone) {
@@ -103,7 +103,7 @@ export async function checkSwitchPalletInvariant(expect: ExpectStatic, delta = B
 
 	expect(poolAccountBalance).toBe(remoteAssetCirculatingSupply)
 	expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
-	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + delta)
+	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + deltaStoredSovereignSupply)
 }
 
 export async function checkBalanceMovementIncomingSwitch(
