@@ -23,10 +23,11 @@ use sp_std::vec::Vec;
 
 sp_api::decl_runtime_apis! {
 	/// Runtime API to compute the pool account for a given switch pair ID and remote asset.
-	pub trait AssetSwitch<AssetId, AccountId> where
+	pub trait AssetSwitch<AssetId, AccountId, Error> where
 		AssetId: Codec,
 		AccountId: Codec,
+		Error: Codec,
 		{
-			fn pool_account_id(pair_id: Vec<u8>, asset_id: AssetId) -> AccountId;
+			fn pool_account_id(pair_id: Vec<u8>, asset_id: AssetId) -> Result<AccountId, Error>;
 		}
 }
