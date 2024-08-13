@@ -1,0 +1,23 @@
+test:
+  extends: .check_skip_rust
+  timeout: 2 hours
+  image: paritytech/ci-unified:bullseye-1.74.0
+  stage: test
+  cache:
+    key: cargo-test-${CI_COMMIT_REF_NAME}
+    paths:
+      - ${CARGO_CACHE_PATH}
+  script:
+    - cargo test --all-targets --locked
+
+test-features:
+  extends: .check_skip_rust
+  timeout: 2 hours
+  image: paritytech/ci-unified:bullseye-1.74.0
+  stage: test
+  cache:
+    key: cargo-test-features-${CI_COMMIT_REF_NAME}
+    paths:
+      - ${CARGO_CACHE_PATH}
+  script:
+    - cargo test --all-features --all-targets --locked
