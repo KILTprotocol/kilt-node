@@ -39,8 +39,7 @@ jobs:
 
       - name: Summary
         run: |
-          echo '${{ steps.srtool_build.outputs.json }}' | jq > ${{ matrix.runtime }}-srtool-digest.json
-          cat ${{ matrix.runtime }}-srtool-digest.json
+          echo '${{ steps.srtool_build.outputs.json }}' | jq | tee ${{ matrix.runtime }}-srtool-digest.json
           echo "Compressed Runtime: ${{ steps.srtool_build.outputs.wasm_compressed }}"
 
       - name: Install subwasm
@@ -52,12 +51,14 @@ jobs:
       - name: Show Runtime information
         shell: bash
         run: |
+          subwasm info ${{ steps.srtool_build.outputs.wasm_compressed }}
           subwasm info --json  ${{ steps.srtool_build.outputs.wasm_compressed }} > ${{ matrix.runtime }}-compressed-info.json
 
       - name: Extract the metadata
         shell: bash
         run: |
-          subwasm meta --format=json+scale ${{ steps.srtool_build.outputs.wasm_compressed }}
+          subwasm meta ${{ steps.srtool_build.outputs.wasm_compressed }}
+          subwasm meta --format=json+scale ${{ steps.srtool_build.outputs.wasm_compressed }} > ${{ matrix.runtime }}-metadata.json
 
       - name: Check the metadata diff
         shell: bash
@@ -73,6 +74,7 @@ jobs:
           name: ${{ matrix.runtime }}-runtime
           path: |
             ${{ matrix.runtime }}-compressed-info.json
+            ${{ matrix.runtime }}-metadata.json
             ${{ matrix.runtime }}-diff.txt
             ${{ steps.srtool_build.outputs.wasm_compressed }}
             ${{ matrix.runtime }}-srtool-digest.json
