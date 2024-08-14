@@ -1013,7 +1013,7 @@ impl pallet_assets::Config for Runtime {
 	type AssetDeposit = ConstU128<0>;
 	type AssetId = Location;
 	type AssetIdParameter = Location;
-	type Balance = u128;
+	type Balance = Balance;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 	type CallbackHandle = ();
