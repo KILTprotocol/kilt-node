@@ -107,7 +107,7 @@ where
 		let xcm_fee_asset_v4: Asset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
-				"Failed to convert stored asset ID {:?} into v4 MultiAsset with error {:?}",
+				"Failed to convert stored asset ID {:?} into v4 Asset with error {:?}",
 				switch_pair.remote_xcm_fee,
 				e
 			);

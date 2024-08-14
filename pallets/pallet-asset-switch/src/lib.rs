@@ -452,14 +452,14 @@ pub mod pallet {
 				);
 				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
-			// Use the same local `AccountIdConverter` to generate a `MultiLocation` to use
+			// Use the same local `AccountIdConverter` to generate a `Location` to use
 			// to send funds on remote.
-			let submitter_as_multilocation = T::AccountIdConverter::try_convert(submitter.clone())
+			let submitter_as_location = T::AccountIdConverter::try_convert(submitter.clone())
 				.map(|j| j.into_location())
 				.map_err(|e| {
 					log::info!(
 						target: LOG_TARGET,
-						"Failed to convert account {:?} into `MultiLocation` with error {:?}",
+						"Failed to convert account {:?} into `Location` with error {:?}",
 						submitter,
 						e
 					);
@@ -471,7 +471,7 @@ pub mod pallet {
 				RefundSurplus,
 				DepositAsset {
 					assets: AssetFilter::Wild(WildAsset::All),
-					beneficiary: submitter_as_multilocation.clone(),
+					beneficiary: submitter_as_location.clone(),
 				},
 			]
 			.into();
@@ -521,19 +521,17 @@ pub mod pallet {
 			}
 
 			// 9. Take XCM fee from submitter.
-			let withdrawn_fees =
-				T::AssetTransactor::withdraw_asset(&remote_asset_fee_v4, &submitter_as_multilocation, None).map_err(
-					|e| {
-						log::info!(
-							target: LOG_TARGET,
-							"Failed to withdraw asset {:?} from location {:?} with error {:?}",
-							remote_asset_fee_v4,
-							submitter_as_multilocation,
-							e
-						);
-						DispatchError::from(Error::<T, I>::UserXcmBalance)
-					},
-				)?;
+			let withdrawn_fees = T::AssetTransactor::withdraw_asset(&remote_asset_fee_v4, &submitter_as_location, None)
+				.map_err(|e| {
+					log::info!(
+						target: LOG_TARGET,
+						"Failed to withdraw asset {:?} from location {:?} with error {:?}",
+						remote_asset_fee_v4,
+						submitter_as_location,
+						e
+					);
+					DispatchError::from(Error::<T, I>::UserXcmBalance)
+				})?;
 			if withdrawn_fees != vec![remote_asset_fee_v4.clone()].into() {
 				log::error!(
 					target: LOG_TARGET,
