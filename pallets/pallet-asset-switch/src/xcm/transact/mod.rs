@@ -35,7 +35,7 @@ const LOG_TARGET: &str = "xcm::pallet-asset-switch::SwitchPairRemoteAssetTransac
 
 /// Type implementing [TransactAsset] that moves from the switch pair pool
 /// account, if present, as many local tokens as remote assets received into
-/// the specified `MultiLocation` if the incoming asset ID matches the remote
+/// the specified `Location` if the incoming asset ID matches the remote
 /// asset ID as specified in the switch pair and if they are both fungible.
 pub struct SwitchPairRemoteAssetTransactor<AccountIdConverter, T, I>(PhantomData<(AccountIdConverter, T, I)>);
 
