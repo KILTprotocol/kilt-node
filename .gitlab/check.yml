@@ -1,0 +1,41 @@
+cargo-clippy:
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.74.0
+  variables:
+    RUSTDOCFLAGS: '-D warnings'
+    SKIP_WASM_BUILD: 1
+  stage: check
+  cache:
+    key: cargo-clippy-${CI_COMMIT_REF_NAME}
+    paths:
+    - ${CARGO_CACHE_PATH}
+  script:
+    -  cargo clippy --all-targets --locked --quiet
+
+cargo-clippy-all-features:
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.74.0
+  variables:
+    RUSTDOCFLAGS: '-D warnings'
+    SKIP_WASM_BUILD: 1
+  stage: check
+  cache:
+    key: cargo-clippy-all-features-${CI_COMMIT_REF_NAME}
+    paths:
+      - ${CARGO_CACHE_PATH}
+  script:
+    -  cargo clippy --all-targets --all-features --locked --quiet
+
+check-rustdoc:
+  extends: .check_skip_rust
+  image: paritytech/ci-unified:bullseye-1.74.0
+  variables:
+    SKIP_WASM_BUILD: 1
+    RUSTDOCFLAGS: '-D warnings'
+  stage: check
+  cache:
+    key: cargo-check-rustdoc-${CI_COMMIT_REF_NAME}
+    paths:
+      - ${CARGO_CACHE_PATH}
+  script:
+    - cargo doc --all-features --no-deps --locked
