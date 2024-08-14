@@ -31,7 +31,7 @@ mod tests;
 const LOG_TARGET: &str = "xcm::pallet-asset-switch::MatchesSwitchPairXcmFeeFungibleAsset";
 
 /// Type implementing [MatchesFungibles] and returns the provided
-/// fungible amount if the specified `MultiLocation` matches the asset used by
+/// fungible amount if the specified `Location` matches the asset used by
 /// the switch pallet to pay for XCM fees at the configured remote location
 /// (`switch_pair_info.remote_xcm_fee`).
 pub struct MatchesSwitchPairXcmFeeFungibleAsset<T, I>(PhantomData<(T, I)>);

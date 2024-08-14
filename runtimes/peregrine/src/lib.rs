@@ -1013,9 +1013,7 @@ impl pallet_assets::Config for Runtime {
 	type AssetDeposit = ConstU128<0>;
 	type AssetId = Location;
 	type AssetIdParameter = Location;
-	type Balance = u128;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
+	type Balance = Balance;
 	type CallbackHandle = ();
 	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
 	type Currency = Balances;
@@ -1027,8 +1025,10 @@ impl pallet_assets::Config for Runtime {
 	type RemoveItemsLimit = ConstU32<1_000>;
 	type RuntimeEvent = RuntimeEvent;
 	type StringLimit = ConstU32<4>;
-	// TODO: Change before release
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 }
 
 construct_runtime! {
