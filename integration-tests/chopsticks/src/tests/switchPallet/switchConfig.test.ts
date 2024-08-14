@@ -12,14 +12,7 @@ import {
 	keysAlice,
 	keysCharlie,
 } from '../../utils.js'
-import {
-	peregrineContext,
-	getFreeBalancePeregrine,
-	getFreeEkiltAssetHub,
-	assethubContext,
-	getFreeRocAssetHub,
-	rococoContext,
-} from '../index.js'
+import { peregrineContext, getFreeEkiltAssetHub, assethubContext, getFreeRocAssetHub, rococoContext } from '../index.js'
 import {
 	checkSwitchPalletInvariant,
 	checkBalance,
@@ -97,7 +90,6 @@ test('Switch KILTs against EKILTs no enough DOTs on AH', async ({ expect }) => {
 
 	await checkSwitchPalletInvariant(expect, balanceToTransfer)
 }, 20_000)
-
 
 test('Send eKILT while switch Pair does not exist', async ({ expect }) => {
 	const { checkSystemEvents } = withExpect(expect)
