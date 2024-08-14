@@ -1025,8 +1025,7 @@ impl pallet_assets::Config for Runtime {
 	type RemoveItemsLimit = ConstU32<1_000>;
 	type RuntimeEvent = RuntimeEvent;
 	type StringLimit = ConstU32<4>;
-	// TODO: Change before release
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;

@@ -45,6 +45,7 @@ pallets=(
 # Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
   pallets+=(
+	pallet-assets
 	pallet-asset-switch
   )
 fi
