@@ -115,8 +115,7 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 					Err(ProcessMessageError::Unsupported) // Deny
 				}
 
-				// An unexpected reserve transfer has arrived from the Relay Chain. Generally,
-				// `IsReserve` should not allow this, but we just log it here.
+				// We don't accept DOTs from the relay chain for the moment. Only AH should pass.
 				ReserveAssetDeposited { .. }
 					if matches!(
 						origin,
@@ -126,11 +125,7 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 						}
 					) =>
 				{
-					log::warn!(
-						target: "xcm::barrier",
-						"Unexpected ReserveAssetDeposited from the Relay Chain",
-					);
-					Ok(ControlFlow::Continue(()))
+					Err(ProcessMessageError::Unsupported) // Deny
 				}
 
 				_ => Ok(ControlFlow::Continue(())),

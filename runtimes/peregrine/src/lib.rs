@@ -33,18 +33,16 @@ use frame_support::{
 	traits::{
 		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter, LinearStoragePrice, PrivilegeCmp,
+		AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter,
+		LinearStoragePrice, PrivilegeCmp,
 	},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
+use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-
-#[cfg(feature = "try-runtime")]
-use frame_try_runtime::UpgradeCheckSelect;
-
 use sp_api::impl_runtime_apis;
-use sp_core::{ConstBool, OpaqueMetadata};
+use sp_core::{ConstBool, ConstU128, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
@@ -53,14 +51,16 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
+use xcm::{v4::Location, VersionedAssetId};
+use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
-
 use runtime_common::{
+	asset_switch::{runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury},
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
@@ -76,17 +76,24 @@ use runtime_common::{
 	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
+use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-#[cfg(feature = "runtime-benchmarks")]
-use {kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+#[cfg(feature = "runtime-benchmarks")]
+use {kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
+
+#[cfg(feature = "try-runtime")]
+use frame_try_runtime::UpgradeCheckSelect;
+
 #[cfg(test)]
 mod tests;
 
+mod asset_switch;
 mod dip;
 mod weights;
 pub mod xcm_config;
@@ -969,6 +976,61 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
+parameter_types! {
+	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
+}
+
+pub type KiltToEKiltSwitchPallet = pallet_asset_switch::Instance1;
+impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
+	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
+	type AssetTransactor = FungiblesAdapter<
+		Fungibles,
+		MatchesSwitchPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwitchPallet>,
+		LocationToAccountIdConverter,
+		AccountId,
+		NoChecking,
+		CheckingAccount,
+	>;
+	type FeeOrigin = EnsureRoot<AccountId>;
+	type LocalCurrency = Balances;
+	type PauseOrigin = EnsureRoot<AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type SubmitterOrigin = EnsureSigned<AccountId>;
+	type SwitchHooks = asset_switch::RestrictswitchDestinationToSelf;
+	type SwitchOrigin = EnsureRoot<AccountId>;
+	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
+	type XcmRouter = XcmRouter;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = crate::benches::CreateFungibleForAssetSwitchPool1;
+}
+
+// No deposit is taken since creation is permissioned. Only the root origin can
+// create new assets, and the owner will be the treasury account.
+impl pallet_assets::Config for Runtime {
+	type ApprovalDeposit = ConstU128<0>;
+	type AssetAccountDeposit = ConstU128<0>;
+	type AssetDeposit = ConstU128<0>;
+	type AssetId = Location;
+	type AssetIdParameter = Location;
+	type Balance = Balance;
+	type CallbackHandle = ();
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
+	type Currency = Balances;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
+	type MetadataDepositBase = ConstU128<0>;
+	type MetadataDepositPerByte = ConstU128<0>;
+	type RemoveItemsLimit = ConstU32<1_000>;
+	type RuntimeEvent = RuntimeEvent;
+	type StringLimit = ConstU32<4>;
+	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
+}
+
 construct_runtime! {
 	pub enum Runtime
 	{
@@ -1019,6 +1081,9 @@ construct_runtime! {
 		Tips: pallet_tips = 46,
 
 		Multisig: pallet_multisig = 47,
+
+		AssetSwitchPool1: pallet_asset_switch::<Instance1> = 48,
+		Fungibles: pallet_assets = 49,
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
@@ -1137,6 +1202,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
 	(
+		runtime_common::migrations::BumpStorageVersion<Runtime>,
 		cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
 		pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 	),
@@ -1144,6 +1210,13 @@ pub type Executive = frame_executive::Executive<
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
+
+	use frame_system::RawOrigin;
+	use pallet_asset_switch::PartialBenchmarkInfo;
+	use runtime_common::AccountId;
+	use xcm::v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location, ParentThen};
+
+	use crate::{Fungibles, ParachainSystem};
 
 	frame_support::parameter_types! {
 		pub const MaxBalance: crate::Balance = crate::Balance::max_value();
@@ -1181,11 +1254,58 @@ mod benches {
 		[pallet_migration, Migration]
 		[pallet_dip_provider, DipProvider]
 		[pallet_deposit_storage, DepositStorage]
+		[pallet_asset_switch, AssetSwitchPool1]
+		[pallet_assets, Fungibles]
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
 		[cumulus_pallet_dmp_queue, DmpQueue]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
+
+	// Required since the pallet `AssetTransactor` will try to deduct the XCM fee
+	// from the user's balance, and the asset must exist.
+	pub struct CreateFungibleForAssetSwitchPool1;
+
+	impl pallet_asset_switch::BenchmarkHelper for CreateFungibleForAssetSwitchPool1 {
+		fn setup() -> Option<PartialBenchmarkInfo> {
+			const DESTINATION_PARA_ID: u32 = 1_000;
+
+			let asset_location: Location = Junctions::Here.into();
+			Fungibles::create(
+				RawOrigin::Root.into(),
+				asset_location.clone(),
+				AccountId::from([0; 32]).into(),
+				1u32.into(),
+			)
+			.unwrap();
+			let beneficiary = Junctions::X1(
+				[Junction::AccountId32 {
+					network: None,
+					id: [0; 32],
+				}]
+				.into(),
+			)
+			.into();
+			let destination = Location::from(ParentThen(Junctions::X1(
+				[Junction::Parachain(DESTINATION_PARA_ID)].into(),
+			)))
+			.into();
+			let remote_xcm_fee = Asset {
+				id: AssetId(asset_location),
+				fun: Fungibility::Fungible(1_000),
+			}
+			.into();
+
+			ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(DESTINATION_PARA_ID.into());
+
+			Some(PartialBenchmarkInfo {
+				beneficiary: Some(beneficiary),
+				destination: Some(destination),
+				remote_asset_id: None,
+				remote_xcm_fee: Some(remote_xcm_fee),
+			})
+		}
+	}
 }
 
 impl_runtime_apis! {
@@ -1469,6 +1589,26 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId, AssetSwitchApiError> for Runtime {
+		fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> Result<AccountId, AssetSwitchApiError> {
+			use core::str;
+			use frame_support::traits::PalletInfoAccess;
+
+			let Ok(pair_id_as_string) = str::from_utf8(pair_id.as_slice()) else {
+				return Err(AssetSwitchApiError::InvalidInput);
+			};
+			match pair_id_as_string {
+				kilt_to_ekilt if kilt_to_ekilt == AssetSwitchPool1::name() => {
+					AssetSwitchPool1::pool_account_id_for_remote_asset(&asset_id).map_err(|e| {
+						log::error!("Failed to calculate pool account address for asset ID {:?} with error: {:?}", asset_id, e);
+						AssetSwitchApiError::Internal
+					})
+				},
+				_ => Err(AssetSwitchApiError::SwitchPoolNotFound)
+			}
+		}
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (
@@ -1516,6 +1656,34 @@ impl_runtime_apis! {
 						xcm_benchmarking::NativeAsset::get(),
 						xcm_benchmarking::ParachainLocation::get(),
 					))
+				}
+
+				fn set_up_complex_asset_transfer() -> Option<(Assets, u32, Location, Box<dyn FnOnce()>)> {
+					let (transferable_asset, dest) = Self::reserve_transferable_asset_and_dest().unwrap();
+
+					let fee_amount = ExistentialDeposit::get();
+					let fee_asset: Asset = (Location::here(), fee_amount).into();
+
+					// Make account free to pay the fee
+					let who = frame_benchmarking::whitelisted_caller();
+					let balance = fee_amount + ExistentialDeposit::get() * 1000;
+					let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
+						&who, balance,
+					);
+
+					// verify initial balance
+					assert_eq!(Balances::free_balance(&who), balance);
+
+
+					let assets: Assets = vec![fee_asset.clone(), transferable_asset.clone()].into();
+					let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
+
+					let verify = Box::new( move || {
+						let Fungibility::Fungible(transferable_amount) = transferable_asset.fun else { return; };
+						assert_eq!(Balances::free_balance(&who), balance - fee_amount - transferable_amount);
+					});
+
+					Some((assets,fee_index , dest, verify))
 				}
 
 				fn get_asset() -> Asset {

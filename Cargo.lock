@@ -6907,6 +6907,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-asset-switch"
+version = "1.14.0-dev"
+dependencies = [
+ "env_logger 0.10.2",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+]
+
+[[package]]
+name = "pallet-asset-switch-runtime-api"
+version = "1.14.0-dev"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-asset-tx-payment"
 version = "29.0.0"
 source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.7.0#e046d3b2caaca6c43a60f26594052c5c806b980e"
@@ -8656,6 +8687,7 @@ name = "peregrine-runtime"
 version = "1.14.0-dev"
 dependencies = [
  "attestation",
+ "cfg-if",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
@@ -8669,6 +8701,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
+ "enum-iterator",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -8683,6 +8716,9 @@ dependencies = [
  "kilt-runtime-api-staking",
  "kilt-support",
  "log",
+ "pallet-asset-switch",
+ "pallet-asset-switch-runtime-api",
+ "pallet-assets",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
@@ -10868,6 +10904,7 @@ dependencies = [
  "kilt-dip-primitives",
  "kilt-support",
  "log",
+ "pallet-assets",
  "pallet-authorship",
  "pallet-balances",
  "pallet-deposit-storage",
