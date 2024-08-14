@@ -1,0 +1,146 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Send DOTs from Relay 2 Peregrine > receiver Peregrine::messageQueue::[ProcessingFailed] 1`] = `
+[
+  {
+    "data": {
+      "error": "Unsupported",
+      "id": "(hash)",
+      "origin": "Parent",
+    },
+    "method": "ProcessingFailed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Send DOTs from Relay 2 Peregrine > sender Rococo::xcmPallet::[XcmMessageSent] 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "used": {
+            "proofSize": "(rounded 6200)",
+            "refTime": "(rounded 300000000)",
+          },
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "xcmPallet",
+  },
+  {
+    "data": {
+      "fees": [
+        {
+          "fun": {
+            "Fungible": "(rounded 130000000)",
+          },
+          "id": {
+            "interior": "Here",
+            "parents": 0,
+          },
+        },
+      ],
+      "paying": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Rococo",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "FeesPaid",
+    "section": "xcmPallet",
+  },
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": "(rounded 2100)",
+            },
+          ],
+        },
+        "parents": 0,
+      },
+      "message": [
+        {
+          "ReserveAssetDeposited": [
+            {
+              "fun": {
+                "Fungible": 50000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 50000000000000,
+              },
+              "id": {
+                "interior": "Here",
+                "parents": 1,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": {
+                "AllCounted": 1,
+              },
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Rococo",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "xcmPallet",
+  },
+]
+`;

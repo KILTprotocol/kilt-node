@@ -17,8 +17,46 @@ export const getSetupOptions = ({
 		port: toNumber(process.env.ASSETHUB_PORT) || 9003,
 		wasmOverride,
 		blockNumber,
+		runtimeLogLevel: 5,
 	}) as SetupOption
 
+/// AssetHub has no own coin. Teleported dots are used as the native token.
+export function assignDotTokensToAccountsAsStorage(addr: string[], balance: bigint = initialBalanceDOT) {
+	return {
+		System: {
+			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance.toString() } }]),
+		},
+	}
+}
+
+export function createForeignAsset(manager: string, assetId = eKiltLocation) {
+	return {
+		foreignAssets: {
+			asset: [
+				[
+					[assetId],
+					{
+						owner: manager,
+						issuer: manager,
+						admin: manager,
+						freezer: manager,
+						// Just make it big enough
+						supply: '10000000000000000000000000000',
+						deposit: 0,
+						minBalance: 0,
+						isSufficient: false,
+						accounts: 0,
+						sufficients: 0,
+						approvals: 0,
+						status: 'Live',
+					},
+				],
+			],
+		},
+	}
+}
+
+/// Assigns KSM to an account
 export function assignKSMtoAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
 	return {
 		foreignAssets: {
@@ -35,11 +73,20 @@ export function assignKSMtoAccounts(addr: string[], balance: bigint = initialBal
 	}
 }
 
-/// AssetHub has no own coin. Teleported dots are used as the native token.
-export function assignDotTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
+/// Assigns the foreign asset to the accounts.
+/// Does not check if supply is matching the sum of the account balances.
+export function assignForeignAssetToAccounts(accountInfo: [string, bigint][], assetId = eKiltLocation) {
 	return {
-		System: {
-			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance.toString() } }]),
+		foreignAssets: {
+			account: accountInfo.map(([account, balance]) => [
+				[assetId, account],
+				{
+					balance: balance,
+					status: 'Liquid',
+					reason: 'Consumer',
+					extra: null,
+				},
+			]),
 		},
 	}
 }
@@ -58,6 +105,26 @@ export const KSMAssetLocation = {
 
 // Sibling Sovereign Account
 export const sovereignAccountOnSiblingChains = '4qXPdpimHh8TR24RSk994yVzxx4TLfvKj5i1qH5puvWmfAqy'
+
+/// Native token in AssetHub
+export const nativeTokenLocation = { parents: 1, interior: 'Here' }
+
+export const eKiltLocation = {
+	parents: 2,
+	interior: {
+		X2: [
+			{
+				GlobalConsensus: { Ethereum: { chainId: 11155111 } },
+			},
+			{
+				AccountKey20: {
+					network: null,
+					key: '0x06012c8cf97bead5deae237070f9587f8e7a266d',
+				},
+			},
+		],
+	},
+}
 
 export async function getContext(): Promise<Config> {
 	const options = getSetupOptions({})

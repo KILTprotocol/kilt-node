@@ -5,10 +5,11 @@ import * as SpiritnetConfig from '../../../network/spiritnet.js'
 import * as HydraDxConfig from '../../../network/hydraDx.js'
 import { KILT, initialBalanceKILT, keysAlice } from '../../../utils.js'
 import { spiritnetContext, hydradxContext, getFreeBalanceSpiritnet, getFreeBalanceHydraDxKilt } from '../../index.js'
-import { getAccountLocationV2, getNativeAssetIdLocation, getSiblingLocation } from '../../../network/utils.js'
+import { getAccountLocationV2, getNativeAssetIdLocationV3, getSiblingLocationV3 } from '../../../network/utils.js'
 import { checkBalance, checkBalanceInRange, createBlock, hexAddress, setStorage } from '../../utils.js'
 
-const KILT_ASSET_V2 = { V2: [getNativeAssetIdLocation(KILT)] }
+// native asset location is the same for V2 and V3
+const KILT_ASSET_V2 = { V2: [getNativeAssetIdLocationV3(KILT)] }
 
 test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Account Alice', async ({ expect }) => {
 	const { checkEvents, checkSystemEvents } = withExpect(expect)
@@ -31,7 +32,7 @@ test('Limited Reserve V2 Transfers from Spiritnet Account Alice -> HydraDx Accou
 	await checkBalance(getFreeBalanceHydraDxKilt, keysAlice.address, expect, BigInt(0))
 
 	const aliceAddress = hexAddress(keysAlice.address)
-	const hydraDxDestination = { V2: getSiblingLocation(HydraDxConfig.paraId) }
+	const hydraDxDestination = { V2: getSiblingLocationV3(HydraDxConfig.paraId) }
 	const beneficiary = getAccountLocationV2(aliceAddress)
 
 	const signedTx = spiritnetContext.api.tx.polkadotXcm

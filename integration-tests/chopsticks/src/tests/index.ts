@@ -1,4 +1,4 @@
-import { beforeAll, afterAll } from 'vitest'
+import { beforeEach, afterEach } from 'vitest'
 import { connectParachains, connectVertical } from '@acala-network/chopsticks'
 import { setTimeout } from 'timers/promises'
 
@@ -6,25 +6,39 @@ import * as SpiritnetConfig from '../network/spiritnet.js'
 import * as PolkadotConfig from '../network/polkadot.js'
 import * as HydraDxConfig from '../network/hydraDx.js'
 import * as AssetHubConfig from '../network/assetHub.js'
+import * as RococoConfig from '../network/rococo.js'
+import * as BasiliskConfig from '../network/basilisk.js'
+import * as PeregrineConfig from '../network/peregrine.js'
 import type { Config } from '../network/types.js'
 
 export let spiritnetContext: Config
 export let hydradxContext: Config
 export let polkadotContext: Config
-export let assetHubContext: Config
+export let assethubContext: Config
+export let peregrineContext: Config
+export let rococoContext: Config
+export let basiliskContext: Config
 
-beforeAll(async () => {
+beforeEach(async () => {
 	spiritnetContext = await SpiritnetConfig.getContext()
 	hydradxContext = await HydraDxConfig.getContext()
 	polkadotContext = await PolkadotConfig.getContext()
-	assetHubContext = await AssetHubConfig.getContext()
+	assethubContext = await AssetHubConfig.getContext()
+	rococoContext = await RococoConfig.getContext()
+	peregrineContext = await PeregrineConfig.getContext()
+	basiliskContext = await BasiliskConfig.getContext()
 
-	// Setup network
-
+	// Setup Polkadot network
 	await connectVertical(polkadotContext.chain, spiritnetContext.chain)
 	await connectVertical(polkadotContext.chain, hydradxContext.chain)
-	await connectVertical(polkadotContext.chain, assetHubContext.chain)
-	await connectParachains([spiritnetContext.chain, hydradxContext.chain, assetHubContext.chain])
+	await connectVertical(polkadotContext.chain, assethubContext.chain)
+	await connectParachains([spiritnetContext.chain, hydradxContext.chain, assethubContext.chain])
+
+	// Setup Rococo network
+	await connectVertical(rococoContext.chain, assethubContext.chain)
+	await connectVertical(rococoContext.chain, peregrineContext.chain)
+	await connectVertical(rococoContext.chain, basiliskContext.chain)
+	await connectParachains([peregrineContext.chain, basiliskContext.chain, assethubContext.chain])
 
 	const newBlockConfig = { count: 2 }
 	// fixes api runtime disconnect warning
@@ -34,27 +48,95 @@ beforeAll(async () => {
 		polkadotContext.dev.newBlock(newBlockConfig),
 		spiritnetContext.dev.newBlock(newBlockConfig),
 		hydradxContext.dev.newBlock(newBlockConfig),
-		assetHubContext.dev.newBlock(newBlockConfig),
+		assethubContext.dev.newBlock(newBlockConfig),
+		rococoContext.dev.newBlock(newBlockConfig),
+		peregrineContext.dev.newBlock(newBlockConfig),
+		basiliskContext.dev.newBlock(newBlockConfig),
 	])
-}, 300_000)
+}, 90_000)
 
-afterAll(async () => {
+afterEach(async () => {
+	// fixes api runtime disconnect warning
+
 	try {
-		await setTimeout(50)
 		await Promise.all([
 			spiritnetContext.teardown(),
 			hydradxContext.teardown(),
 			polkadotContext.teardown(),
-			assetHubContext.teardown(),
+			assethubContext.teardown(),
+			rococoContext.teardown(),
+			peregrineContext.teardown(),
+			basiliskContext.teardown(),
 		])
-	} catch (e) {
-		console.error(e)
+	} catch (error) {
+		if (!(error instanceof TypeError)) {
+			console.error(error)
+		}
 	}
+	await setTimeout(50)
 })
 
 export async function getFreeBalanceSpiritnet(account: string): Promise<bigint> {
 	const accountInfo = await spiritnetContext.api.query.system.account(account)
 	return accountInfo.data.free.toBigInt()
+}
+
+export async function getFreeBalancePeregrine(account: string): Promise<bigint> {
+	const accountInfo = await peregrineContext.api.query.system.account(account)
+	return accountInfo.data.free.toBigInt()
+}
+
+export async function getFreeBalancePeregrineAt(account: string, at: number): Promise<bigint> {
+	const blockHash = await peregrineContext.api.rpc.chain.getBlockHash(at)
+	const api = await peregrineContext.api.at(blockHash)
+	const accountInfo = await api.query.system.account(account)
+	return accountInfo.data.free.toBigInt()
+}
+
+export async function getCurrentBlockNumber(context: Config): Promise<number> {
+	const blockNumber = await context.api.query.system.number()
+	return blockNumber.toNumber()
+}
+
+export async function getFreeRocPeregrine(account: string): Promise<bigint> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const accountInfo: any = await peregrineContext.api.query.fungibles.account(
+		AssetHubConfig.nativeTokenLocation,
+		account
+	)
+	if (accountInfo.isNone) {
+		return BigInt(0)
+	}
+	return accountInfo.unwrap().balance.toBigInt()
+}
+
+export async function getFreeRocAssetHub(account: string): Promise<bigint> {
+	const accountInfo = await assethubContext.api.query.system.account(account)
+	return accountInfo.data.free.toBigInt()
+}
+
+export async function getRemoteLockedSupply(): Promise<bigint> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
+
+	if (switchPairInfo.isNone) {
+		return BigInt(0)
+	}
+
+	return switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
+}
+
+export async function getFreeEkiltAssetHub(account: string): Promise<bigint> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const accountInfo: any = await assethubContext.api.query.foreignAssets.account(
+		AssetHubConfig.eKiltLocation,
+		account
+	)
+	if (accountInfo.isNone) {
+		return BigInt(0)
+	}
+
+	return accountInfo.unwrap().balance.toBigInt()
 }
 
 export async function getFreeBalanceHydraDxKilt(account: string): Promise<bigint> {

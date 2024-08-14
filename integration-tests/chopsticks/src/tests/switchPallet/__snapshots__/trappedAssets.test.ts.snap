@@ -1,0 +1,189 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Trapped assets > receiver Peregrine::assetSwitchPool1::[RemoteToLocalSwitchExecuted] 1`] = `
+[
+  {
+    "data": {
+      "amount": 1000000000000000,
+      "to": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "RemoteToLocalSwitchExecuted",
+    "section": "assetSwitchPool1",
+  },
+]
+`;
+
+exports[`Trapped assets > receiver Peregrine::messageQueue::[Processed] 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": 1000,
+      },
+      "success": false,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 600000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Trapped assets > receiver Peregrine::messageQueue::[Processed] 2`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": 1000,
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": 1000,
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 1000000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Trapped assets > receiver Peregrine::polkadotXcm::[AssetsClaimed] 1`] = `
+[
+  {
+    "data": {
+      "cost": [],
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": 1000,
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "messageId": "(hash)",
+    },
+    "method": "VersionNotifyStarted",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "assets": {
+        "V4": [
+          {
+            "fun": {
+              "Fungible": 1000000000000000,
+            },
+            "id": {
+              "interior": {
+                "X2": [
+                  {
+                    "GlobalConsensus": {
+                      "Ethereum": {
+                        "chainId": "(rounded 11000000)",
+                      },
+                    },
+                  },
+                  {
+                    "AccountKey20": {
+                      "key": "0x06012c8cf97bead5deae237070f9587f8e7a266d",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 2,
+            },
+          },
+        ],
+      },
+      "hash_": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": 1000,
+            },
+          ],
+        },
+        "parents": 1,
+      },
+    },
+    "method": "AssetsClaimed",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Trapped assets > receiver Peregrine::polkadotXcm::[AssetsTrapped] 1`] = `
+[
+  {
+    "data": {
+      "assets": {
+        "V4": [
+          {
+            "fun": {
+              "Fungible": 1000000000000000,
+            },
+            "id": {
+              "interior": {
+                "X2": [
+                  {
+                    "GlobalConsensus": {
+                      "Ethereum": {
+                        "chainId": "(rounded 11000000)",
+                      },
+                    },
+                  },
+                  {
+                    "AccountKey20": {
+                      "key": "0x06012c8cf97bead5deae237070f9587f8e7a266d",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 2,
+            },
+          },
+        ],
+      },
+      "hash_": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": 1000,
+            },
+          ],
+        },
+        "parents": 1,
+      },
+    },
+    "method": "AssetsTrapped",
+    "section": "polkadotXcm",
+  },
+]
+`;
