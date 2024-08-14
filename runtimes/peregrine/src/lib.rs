@@ -1014,8 +1014,6 @@ impl pallet_assets::Config for Runtime {
 	type AssetId = Location;
 	type AssetIdParameter = Location;
 	type Balance = Balance;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 	type CallbackHandle = ();
 	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
 	type Currency = Balances;
@@ -1029,6 +1027,9 @@ impl pallet_assets::Config for Runtime {
 	type StringLimit = ConstU32<4>;
 	// TODO: Change before release
 	type WeightInfo = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 }
 
 construct_runtime! {
