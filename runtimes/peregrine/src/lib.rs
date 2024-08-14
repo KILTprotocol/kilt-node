@@ -60,7 +60,7 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 use runtime_common::{
-	asset_switch::EnsureRootAsTreasury,
+	asset_switch::{runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury},
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
@@ -1589,21 +1589,25 @@ impl_runtime_apis! {
 		}
 	}
 
-		// TODO: I think it's fine to panic in runtime APIs, but should double check that.
-		impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId> for Runtime {
-			fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> AccountId {
-				use core::str;
-				use frame_support::traits::PalletInfoAccess;
+	impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId, AssetSwitchApiError> for Runtime {
+		fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> Result<AccountId, AssetSwitchApiError> {
+			use core::str;
+			use frame_support::traits::PalletInfoAccess;
 
-				let pair_id_as_string = str::from_utf8(pair_id.as_slice()).expect("Provided switch pair ID is not a valid UTF-8 string.");
-				match pair_id_as_string {
-					kilt_to_ekilt if kilt_to_ekilt == AssetSwitchPool1::name() => {
-						AssetSwitchPool1::pool_account_id_for_remote_asset(&asset_id).expect("Should never fail to generate a pool account for a given asset.")
-					},
-					_ => panic!("No switch pair with specified pool ID found")
-				}
+			let Ok(pair_id_as_string) = str::from_utf8(pair_id.as_slice()) else {
+				return Err(AssetSwitchApiError::InvalidInput);
+			};
+			match pair_id_as_string {
+				kilt_to_ekilt if kilt_to_ekilt == AssetSwitchPool1::name() => {
+					AssetSwitchPool1::pool_account_id_for_remote_asset(&asset_id).map_err(|e| {
+						log::error!("Failed to calculate pool account address for asset ID {:?} with error: {:?}", asset_id, e);
+						AssetSwitchApiError::Internal
+					})
+				},
+				_ => Err(AssetSwitchApiError::SwitchPoolNotFound)
 			}
 		}
+	}
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {

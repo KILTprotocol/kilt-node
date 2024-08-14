@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+pub mod runtime_api;
+
 use frame_support::traits::EnsureOrigin;
 use frame_system::EnsureRoot;
 use sp_std::marker::PhantomData;

@@ -16,18 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![cfg_attr(not(feature = "std"), no_std)]
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 
-use parity_scale_codec::Codec;
-use sp_std::vec::Vec;
-
-sp_api::decl_runtime_apis! {
-	/// Runtime API to compute the pool account for a given switch pair ID and remote asset.
-	pub trait AssetSwitch<AssetId, AccountId, Error> where
-		AssetId: Codec,
-		AccountId: Codec,
-		Error: Codec,
-		{
-			fn pool_account_id(pair_id: Vec<u8>, asset_id: AssetId) -> Result<AccountId, Error>;
-		}
+#[derive(Debug, Encode, Decode, TypeInfo, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Error {
+	InvalidInput,
+	SwitchPoolNotFound,
+	Internal,
 }
