@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub(crate) mod runtime_api;
-
 use pallet_asset_switch::traits::SwitchHooks;
 use runtime_common::{AccountId, Balance};
 use xcm::{

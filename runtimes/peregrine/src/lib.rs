@@ -60,7 +60,7 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 use runtime_common::{
-	asset_switch::EnsureRootAsTreasury,
+	asset_switch::{runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury},
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
@@ -76,10 +76,7 @@ use runtime_common::{
 	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
-use crate::{
-	asset_switch::runtime_api::Error as AssetSwitchApiError,
-	xcm_config::{LocationToAccountIdConverter, XcmRouter},
-};
+use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
