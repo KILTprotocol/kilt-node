@@ -25,10 +25,10 @@ The pallet makes the following assumptions:
 Add the following line to the runtime `Cargo.toml` dependencies section:
 
 ```toml
-pallet-asset-switch = {git = "https://github.com/KILTprotocol/kilt-node.git", branch = "release-1.13.0"}
+pallet-asset-switch = {git = "https://github.com/KILTprotocol/kilt-node.git", branch = "release-1.14.0"}
 ```
 
-The asset switch pallet is available in the KILT node release 1.13.0 and later.
+The asset switch pallet is available in the KILT node release 1.14.0 and later.
 
 ## Configure the pallet
 
