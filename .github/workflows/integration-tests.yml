@@ -28,7 +28,6 @@ jobs:
     if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-integration-tests') }}
     env:
       working-dir: ./integration-tests/chopsticks
-      CI: "true"
       PEREGRINE_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
     defaults:
       run:
