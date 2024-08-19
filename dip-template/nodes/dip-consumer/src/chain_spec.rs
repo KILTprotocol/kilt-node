@@ -73,7 +73,6 @@ fn testnet_genesis(
 	id: ParaId,
 ) -> RuntimeGenesisConfig {
 	RuntimeGenesisConfig {
-		parachain_system: Default::default(),
 		parachain_info: ParachainInfoConfig {
 			parachain_id: id,
 			..Default::default()
@@ -84,7 +83,6 @@ fn testnet_genesis(
 		balances: BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
 		},
-		transaction_payment: Default::default(),
 		collator_selection: CollatorSelectionConfig {
 			invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
 			candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
