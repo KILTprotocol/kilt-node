@@ -1,4 +1,4 @@
-name: Build and Deploy Chain docs
+name: Cargo Clippy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - github-runner
 
 jobs:
-  build-and-deploy:
+  cargo-clippy:
     runs-on: ubuntu-latest
     steps:
       - name: Free Disk Space
@@ -41,4 +41,5 @@ jobs:
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "
-              RUSTDOCFLAGS='-D warnings' SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --quiet"
+              RUSTDOCFLAGS='-D warnings' SKIP_WASM_BUILD=1 cargo clippy --all-targets --locked --quiet && \
+              chown -R $(id -u):$(id -g) target/"
