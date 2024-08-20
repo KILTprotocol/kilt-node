@@ -1,4 +1,4 @@
-name: Check Clippy
+name: Test all-features
 
 on:
   pull_request:
@@ -45,7 +45,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Run Clippy
+      - name: Run Test all-features
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
@@ -54,5 +54,4 @@ jobs:
             -e RUSTDOCFLAGS='-D warnings' \
             -e SKIP_WASM_BUILD=1 \
             paritytech/ci-unified:bullseye-1.74.0 \
-            bash -c "
-              cargo test --all-features --all-targets --locked"
+            bash -c "cargo test --all-features --all-targets --locked"
