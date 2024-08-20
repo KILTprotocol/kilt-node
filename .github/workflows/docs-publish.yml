@@ -26,10 +26,10 @@ jobs:
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v "${HOME}/.cargo:/root/.cargo" \
+           -e RUSTDOCFLAGS='-D warnings' \
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
-            bash -c "
-              RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked && \
+            bash -c "cargo doc --all-features --no-deps --locked && \
               chown -R $(id -u):$(id -g) target/doc"
 
       - name: Deploy
