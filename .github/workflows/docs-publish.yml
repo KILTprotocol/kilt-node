@@ -1,4 +1,4 @@
-name: Build and Deploy Chain docs
+name: Deploy Chain docs
 
 on:
   push:
