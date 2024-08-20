@@ -47,19 +47,7 @@ jobs:
 
       - name: Build Docker Images
         run: |
-          cargo build --locked --release --features default
-          docker build -t kilt-node .
-
-
-      - name: Push Image - Commit SHA
-        if: github.ref_type == 'branch'
-        run: |
-          ./.maintain/push-image.sh build "${{ env.CI_COMMIT_SHORT_SHA }}"
-
-      - name: Push Image - Latest Branch
-        if: github.ref_type == 'branch'
-        run: |
-          ./.maintain/push-image.sh build "latest-${{ env.CI_COMMIT_BRANCH }}"
+          ./.maintain/build-image.sh build
 
       - name: Push Image - Tag
         if: startsWith(github.ref, 'refs/tags/')
