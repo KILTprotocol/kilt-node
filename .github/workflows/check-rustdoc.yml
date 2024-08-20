@@ -55,4 +55,4 @@ jobs:
             -e SKIP_WASM_BUILD=1 \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "
-              cargo doc --all-features --no-deps --locked
+              cargo doc --all-features --no-deps --locked"

@@ -55,5 +55,5 @@ jobs:
             -e SKIP_WASM_BUILD=1 \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "
-              cargo clippy --all-targets --all-features --locked --quiet
+              cargo clippy --all-targets --all-features --locked --quiet"
 
