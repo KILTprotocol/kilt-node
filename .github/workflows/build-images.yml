@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-images:
-    runs-on: ubuntu-latest
+    runs-on: macos-13
     timeout-minutes: 120
     env:
       DOCKER_HUB_PARACHAIN: kiltprotocol/kilt-node
@@ -19,26 +19,8 @@ jobs:
       CI_COMMIT_BRANCH: ${{ github.ref_name }}
       CI_COMMIT_TAG: ${{ github.ref_name }}
     steps:
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
-
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Cargo Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-build-images-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-build-images-
 
       - name: Display AWS and Docker Versions
         run: |
