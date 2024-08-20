@@ -47,7 +47,9 @@ jobs:
 
       - name: Build Docker Images
         run: |
-          ./.maintain/build-image.sh build
+          cargo build --locked --release --features default
+          docker build -t kilt-node .
+
 
       - name: Push Image - Commit SHA
         if: github.ref_type == 'branch'
