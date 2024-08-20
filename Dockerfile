@@ -7,8 +7,7 @@ WORKDIR /build
 
 ARG FEATURES=default
 
-COPY Cargo.toml Cargo.lock ./
-COPY ./src ./src
+COPY . .
 
 RUN cargo build --locked --release --features $FEATURES
 
