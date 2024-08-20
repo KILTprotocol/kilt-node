@@ -38,9 +38,9 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: $ ${{ github.job }}-${{ github.ref }}-rustdoc-${{ hashFiles('**/Cargo.lock') }}
+          key: $ ${{ github.job }}-${{ github.ref_name }}-rustdoc-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            $ ${{ github.job }}-${{ github.ref }}-rustdoc-
+            $ ${{ github.job }}-${{ github.ref_name }}-rustdoc-
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -55,5 +55,4 @@ jobs:
             -e SKIP_WASM_BUILD=1 \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "
-              cargo doc --all-features --no-deps --locked && \
-              chown -R $(id -u):$(id -g) target/"
+              cargo doc --all-features --no-deps --locked
