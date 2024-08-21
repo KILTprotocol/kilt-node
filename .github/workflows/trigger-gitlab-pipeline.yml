@@ -1,13 +1,17 @@
-name: Trigger GitLab CI
+name: Trigger GitLab Pipeline
 
 on:
   workflow_run:
-    workflows: ["Srtool build", "Deploy Chain docs"]
+    workflows: ["Clippy-checks", "Cargo-tests", "Try-runtime", "Integration-tests"]
+    branches:
+      - develop
+      - master
+      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
     types:
       - completed
 
 jobs:
-  trigger_gitlab:
+  trigger-gitlab:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:

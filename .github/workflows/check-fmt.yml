@@ -8,12 +8,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  get-head-commit-msg:
+  check-fmt:
     runs-on: ubuntu-latest
     outputs:
       head-commit-msg: ${{ steps.step-head-commit.outputs.headCommitMsg }}
+    container:
+      image: paritytech/ci-unified:bullseye-1.74.0
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -21,17 +24,10 @@ jobs:
         id: step-head-commit
         run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
 
-  check-fmt:
-    runs-on: ubuntu-latest
-    needs: get-head-commit-msg
-    if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-rust') }}
-    container:
-      image: paritytech/ci-unified:bullseye-1.74.0
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Run cargo fmt
+        if: ${{ !contains(steps.step-head-commit.outputs.headCommitMsg, 'ci-skip-rust') }}
         run: cargo fmt -- --check
 
       - name: Run taplo
+        if: ${{ !contains(steps.step-head-commit.outputs.headCommitMsg, 'ci-skip-rust') }}
         run: taplo fmt --check
