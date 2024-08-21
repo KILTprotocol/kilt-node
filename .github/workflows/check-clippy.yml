@@ -44,9 +44,13 @@ jobs:
             target/
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-cargo-cache
 
-      - name: Run Clippy with "${{ matrix.features }}"
-        run: cargo clippy --all-targets --locked ${{ matrix.features }}
-
-
-
-
+      - name: Run Test
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo:/root/.cargo" \
+            -w /workspace \
+            -e RUSTDOCFLAGS='-D warnings' \
+            -e SKIP_WASM_BUILD=1 \
+            paritytech/ci-unified:bullseye-1.74.0 \
+            bash -c "cargo clippy --locked --quiet ${{ matrix.features }}"
