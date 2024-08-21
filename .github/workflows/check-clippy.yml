@@ -41,7 +41,6 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-cargo-cache
 
       - name: Run Test
