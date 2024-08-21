@@ -1,31 +1,20 @@
-name: Integration tests
+name: Integration-tests
 
 on:
   pull_request:
+  push:
+    branches:
+      - develop
+      - master
+      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  get-head-commit-msg:
-    runs-on: ubuntu-latest
-    outputs:
-      head-commit-msg: ${{ steps.step-head-commit.outputs.headCommitMsg }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Get Head Commit Message
-        id: step-head-commit
-        run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
-
   integration-tests:
     runs-on: ubuntu-latest
-    needs: get-head-commit-msg
-    if: ${{ !contains(needs.get-head-commit-msg.outputs.head-commit-msg, 'ci-skip-integration-tests') }}
     env:
       working-dir: ./integration-tests/chopsticks
       CI: "true"
@@ -36,24 +25,36 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Get Head Commit Message
+        id: step-head-commit
+        run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js environment
+        if: ${{ !contains(steps.step-head-commit.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
         uses: actions/setup-node@v4
         with:
           node-version-file: "${{ env.working-dir }}/.nvmrc"
 
       - name: Install dependencies
+        if: ${{ !contains(steps.step-head-commit.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
         run: yarn --immutable
 
       - name: Type Checking
+        if: ${{ !contains(steps.step-head-commit.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
         run: yarn ts-check
 
       - name: Linting
+        if: ${{ !contains(steps.step-head-commit.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
         run: yarn lint
-      
+
       - name: Build Runtime
+        if: ${{ !contains(steps.step-head-commit.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
         run: cargo build -p peregrine-runtime
 
       - name: Test Suite
+        if: ${{ !contains(steps.step-head-commit.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
         run: yarn test:CI
 

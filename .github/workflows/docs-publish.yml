@@ -1,4 +1,4 @@
-name: Deploy Chain docs
+name: Deploy rustdoc
 
 on:
   push:
@@ -18,10 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and Deploy in Container
+      - name: Run cargo doc
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
