@@ -1,0 +1,50 @@
+name: Deploy rustdoc
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-rustdocs:
+    name: Deploy rustdoc
+    runs-on: ubuntu-latest
+    env:
+      DOCS_TARGET: target/doc
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.job }}-${{ github.ref }}
+
+      - name: Run `cargo doc`
+        run: |
+          docker run --rm
+            -v "${GITHUB_WORKSPACE}:/workspace"
+            -v "${HOME}/.cargo:/root/.cargo"
+            -w /workspace
+           -e RUSTDOCFLAGS='-D warnings'
+            paritytech/ci-unified:bullseye-1.74.0
+            bash -c "cargo doc --all-features --no-deps --locked
+              && chown -R $(id -u):$(id -g) ${{ env.DOCS_TARGET }}"
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages-${{ github.ref_name }}
+          folder: ${{ env.DOCS_TARGET }}
