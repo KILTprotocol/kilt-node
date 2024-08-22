@@ -52,12 +52,12 @@ jobs:
 
       - name: Run `cargo clippy`
         run: |
-          docker run --rm
-            -v "${GITHUB_WORKSPACE}:/workspace"
-            -v "${HOME}/.cargo:/root/.cargo"
-            -w /workspace
-            -e SKIP_WASM_BUILD=1
-            paritytech/ci-unified:bullseye-1.74.0
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo:/root/.cargo" \
+            -w /workspace \
+            -e SKIP_WASM_BUILD=1 \
+            paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "cargo clippy --all-targets --locked ${{ matrix.features }} -- -D warnings"
 
   cargo-test:
@@ -88,12 +88,12 @@ jobs:
 
       - name: Run `cargo test`
         run: |
-          docker run --rm
-            -v "${GITHUB_WORKSPACE}:/workspace"
-            -v "${HOME}/.cargo:/root/.cargo"
-            -w /workspace
-            -e SKIP_WASM_BUILD=1
-            paritytech/ci-unified:bullseye-1.74.0
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo:/root/.cargo" \
+            -w /workspace \
+            -e SKIP_WASM_BUILD=1 \
+            paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "cargo test --all-targets --locked ${{ matrix.features }}"
 
   cargo-fmt:
@@ -148,13 +148,13 @@ jobs:
 
       - name: Run `cargo doc`
         run: |
-          docker run --rm
-            -v "${GITHUB_WORKSPACE}:/workspace"
-            -v "${HOME}/.cargo:/root/.cargo"
-            -w /workspace
-            -e RUSTDOCFLAGS='-D warnings'
-            -e SKIP_WASM_BUILD=1
-            paritytech/ci-unified:bullseye-1.74.0
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo:/root/.cargo" \
+            -w /workspace \
+            -e RUSTDOCFLAGS='-D warnings' \
+            -e SKIP_WASM_BUILD=1 \
+            paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "cargo doc --no-deps --locked ${{ matrix.features }}"
 
   try-runtime:
@@ -196,12 +196,12 @@ jobs:
 
       - name: Run `try-runtime`
         run: |
-          ./try-runtime
-          --runtime=./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm
-          on-runtime-upgrade
-            --disable-spec-version-check
-            --checks=all
-          live
+          ./try-runtime \
+          --runtime=./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm \
+          on-runtime-upgrade \
+            --disable-spec-version-check \
+            --checks=all \
+          live \
             --uri=wss://${{ matrix.runtime }}.kilt.io
 
   integration-tests:
