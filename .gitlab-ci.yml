@@ -17,9 +17,7 @@ build-wasms:
   stage: build
   parallel:
     matrix:
-      - RUNTIME
-        - peregrine
-        - spiritnet
+      - RUNTIME: ["peregrine", "spiritnet"]
   script:
     - export PACKAGE=${RUNTIME}-runtime
     - export RUNTIME_DIR=runtimes/${RUNTIME}
