@@ -60,11 +60,72 @@ jobs:
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "cargo clippy --all-targets --locked ${{ matrix.features }} -- -D warnings"
 
+  cargo-fmt:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    container:
+      image: paritytech/ci-unified:bullseye-1.74.0
+    needs: get-commit-head
+    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          # Latest 1.74 nightly release
+          toolchain: nightly-2023-10-01
+          components: rustfmt
+
+      - name: Run `cargo fmt`
+        run: cargo fmt -- --check
+
+      - name: Run `taplo`
+        run: taplo fmt --check
+
+  integration-tests:
+    name: Run Chopsticks tests
+    runs-on: ubuntu-latest
+    env:
+      working-dir: ./integration-tests/chopsticks
+      CI: true
+      PEREGRINE_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
+    defaults:
+      run:
+        working-directory: ${{ env.working-dir }}
+    needs: get-commit-head
+    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "${{ env.working-dir }}/.nvmrc"
+
+      - name: Install dependencies
+        run: yarn --immutable
+
+      - name: Check TS
+        run: yarn ts-check
+
+      - name: Check lints
+        run: yarn lint
+
+      - name: Build Peregrine runtime
+        run: cargo build -p peregrine-runtime
+
+      - name: Run Chopsticks tests
+        run: yarn test:CI
+
   cargo-test:
     name: Run Cargo tests
     runs-on: ubuntu-latest
-    needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+    needs: cargo-clippy
 
     strategy:
       matrix:
@@ -96,36 +157,10 @@ jobs:
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "cargo test --all-targets --locked ${{ matrix.features }}"
 
-  cargo-fmt:
-    name: Check formatting
-    runs-on: ubuntu-latest
-    container:
-      image: paritytech/ci-unified:bullseye-1.74.0
-    needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          # Latest 1.74 nightly release
-          toolchain: nightly-2023-10-01
-          components: rustfmt
-
-      - name: Run `cargo fmt`
-        run: cargo fmt -- --check
-
-      - name: Run `taplo`
-        run: taplo fmt --check
-
   cargo-doc:
     name: Check Rustdoc
     runs-on: ubuntu-latest
-    needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+    needs: cargo-clippy
 
     strategy:
       matrix:
@@ -161,6 +196,7 @@ jobs:
   try-runtime:
     name: Run try-runtime
     runs-on: ubuntu-latest
+    needs: cargo-clippy
     env:
       TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0
     container:
@@ -204,40 +240,3 @@ jobs:
             --checks=all \
           live \
             --uri=wss://${{ matrix.runtime }}.kilt.io
-
-  integration-tests:
-    name: Run Chopsticks tests
-    runs-on: ubuntu-latest
-    env:
-      working-dir: ./integration-tests/chopsticks
-      CI: true
-      PEREGRINE_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
-    defaults:
-      run:
-        working-directory: ${{ env.working-dir }}
-    needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup environment
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: "${{ env.working-dir }}/.nvmrc"
-
-      - name: Install dependencies
-        run: yarn --immutable
-
-      - name: Check TS
-        run: yarn ts-check
-
-      - name: Check lints
-        run: yarn lint
-
-      - name: Build Peregrine runtime
-        run: cargo build -p peregrine-runtime
-
-      - name: Run Chopsticks tests
-        run: yarn test:CI
