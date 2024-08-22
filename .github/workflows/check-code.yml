@@ -95,8 +95,7 @@ jobs:
     defaults:
       run:
         working-directory: ${{ env.working-dir }}
-    needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
+    needs: cargo-clippy
 
     steps:
       - name: Checkout repository
