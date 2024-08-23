@@ -16,8 +16,9 @@ jobs:
   get-commit-head:
     name: Get HEAD commit message
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
     outputs:
-      headCommitMsg: ${{ steps.get-head-commit-message.outputs.headCommitMsg }}
+      headCommitMsg: ${{ steps.get-head-commit-message.outputs.headCommitMsg || 'No commit message' }}
 
     steps:
       - name: Checkout repository
@@ -34,7 +35,7 @@ jobs:
     name: Run Clippy checks
     runs-on: ubuntu-latest
     needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+    if: ${{ needs.get-commit-head.outputs.headCommitMsg && !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
     strategy:
       matrix:
@@ -78,7 +79,7 @@ jobs:
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
     needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+    if: ${{ needs.get-commit-head.outputs.headCommitMsg && !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
     steps:
       - name: Checkout repository
