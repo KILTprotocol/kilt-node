@@ -20,6 +20,9 @@ jobs:
       headCommitMsg: ${{ steps.get-head-commit-message.outputs.headCommitMsg }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Get HEAD commit message
         id: get-head-commit-message
         run: echo "headCommitMsg=$(git show -s --format=%s)" >> $GITHUB_OUTPUT
