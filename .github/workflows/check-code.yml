@@ -25,7 +25,7 @@ jobs:
 
       - name: Get HEAD commit message
         id: get-head-commit-message
-        run: echo "headCommitMsg=$(git show -s --format=%s)" >> $GITHUB_OUTPUT
+        run: echo "headCommitMsg=${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
 
   cargo-clippy:
     name: Run Clippy checks
