@@ -22,10 +22,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Get HEAD commit message
         id: get-head-commit-message
-        run: echo "headCommitMsg=${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
+        run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
+
 
   cargo-clippy:
     name: Run Clippy checks
