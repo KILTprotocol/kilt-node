@@ -438,7 +438,7 @@ benchmarks! {
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, amount);
 
 		// increase stake so we can unstake, because current stake is minimum
-		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(15)));
+		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(17)));
 		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::CurrencyBalance::from(u as u64)));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, amount + T::CurrencyBalance::from(u as u64));
 
