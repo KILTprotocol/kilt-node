@@ -533,7 +533,7 @@ benchmarks! {
 		let u in 1 .. (T::MaxUnstakeRequests::get() - 1);
 
 		let candidate = account("collator", 0u32, COLLATOR_ACCOUNT_SEED);
-		let free_balance = T::CurrencyBalance::from(10u128.pow(15));
+		let free_balance = T::CurrencyBalance::from(10u128.pow(20));
 		let stake = T::MinCollatorCandidateStake::get();
 		T::Currency::set_balance(&candidate, free_balance);
 		assert_ok!(Pallet::<T>::join_candidates(
