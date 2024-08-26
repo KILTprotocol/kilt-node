@@ -42,7 +42,7 @@ use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use sp_api::impl_runtime_apis;
-use sp_core::{ConstBool, ConstU128, OpaqueMetadata};
+use sp_core::{ConstBool, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
@@ -59,6 +59,7 @@ use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
+
 use runtime_common::{
 	asset_switch::{runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury},
 	assets::{AssetDid, PublicCredentialsFilter},
@@ -169,7 +170,6 @@ impl frame_system::Config for Runtime {
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
 	type SS58Prefix = SS58Prefix;
-
 	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
@@ -261,6 +261,13 @@ parameter_types! {
 	pub const ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
 
+type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
+	Runtime,
+	RELAY_CHAIN_SLOT_DURATION_MILLIS,
+	BLOCK_PROCESSING_VELOCITY,
+	UNINCLUDED_SEGMENT_CAPACITY,
+>;
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type OnSystemEvent = ();
@@ -274,13 +281,6 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ConsensusHook = ConsensusHook;
 	type WeightInfo = weights::cumulus_pallet_parachain_system::WeightInfo<Runtime>;
 }
-
-type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
-	Runtime,
-	RELAY_CHAIN_SLOT_DURATION_MILLIS,
-	BLOCK_PROCESSING_VELOCITY,
-	UNINCLUDED_SEGMENT_CAPACITY,
->;
 
 impl parachain_info::Config for Runtime {}
 
@@ -323,11 +323,11 @@ impl pallet_vesting::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type BlockNumberToBalance = ConvertInto;
+	type BlockNumberProvider = System;
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = constants::MinVestedTransfer;
 	type WeightInfo = weights::pallet_vesting::WeightInfo<Runtime>;
 	type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
-	type BlockNumberProvider = System;
 	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
 }
 
@@ -1008,9 +1008,9 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 // No deposit is taken since creation is permissioned. Only the root origin can
 // create new assets, and the owner will be the treasury account.
 impl pallet_assets::Config for Runtime {
-	type ApprovalDeposit = ConstU128<0>;
-	type AssetAccountDeposit = ConstU128<0>;
-	type AssetDeposit = ConstU128<0>;
+	type ApprovalDeposit = runtime_common::constants::asset_switch::ApprovalDeposit;
+	type AssetAccountDeposit = runtime_common::constants::asset_switch::AssetAccountDeposit;
+	type AssetDeposit = runtime_common::constants::asset_switch::AssetDeposit;
 	type AssetId = Location;
 	type AssetIdParameter = Location;
 	type Balance = Balance;
@@ -1020,11 +1020,11 @@ impl pallet_assets::Config for Runtime {
 	type Extra = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Freezer = ();
-	type MetadataDepositBase = ConstU128<0>;
-	type MetadataDepositPerByte = ConstU128<0>;
-	type RemoveItemsLimit = ConstU32<1_000>;
+	type MetadataDepositBase = runtime_common::constants::asset_switch::MetaDepositBase;
+	type MetadataDepositPerByte = runtime_common::constants::asset_switch::MetaDepositPerByte;
+	type RemoveItemsLimit = runtime_common::constants::asset_switch::RemoveItemsLimit;
 	type RuntimeEvent = RuntimeEvent;
-	type StringLimit = ConstU32<4>;
+	type StringLimit = runtime_common::constants::asset_switch::StringLimit;
 	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
@@ -1443,13 +1443,14 @@ impl_runtime_apis! {
 			Aura::authorities().into_inner()
 		}
 	}
+
 	impl cumulus_primitives_aura::AuraUnincludedSegmentApi<Block> for Runtime {
 		fn can_build_upon(
 			included_hash: <Block as BlockT>::Hash,
 			slot: cumulus_primitives_aura::Slot,
-		) -> bool {
-			ConsensusHook::can_build_upon(included_hash, slot)
-		}
+			) -> bool {
+				ConsensusHook::can_build_upon(included_hash, slot)
+			}
 	}
 
 	impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
@@ -1765,8 +1766,8 @@ impl_runtime_apis! {
 		}
 
 	}
-
 }
+
 cumulus_pallet_parachain_system::register_validate_block! {
 	Runtime = Runtime,
 	BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,

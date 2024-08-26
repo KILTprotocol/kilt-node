@@ -13742,6 +13742,7 @@ name = "spiritnet-runtime"
 version = "1.14.0-dev"
 dependencies = [
  "attestation",
+ "cfg-if",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
@@ -13755,6 +13756,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
+ "enum-iterator",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -13769,6 +13771,9 @@ dependencies = [
  "kilt-runtime-api-staking",
  "kilt-support",
  "log",
+ "pallet-asset-switch",
+ "pallet-asset-switch-runtime-api",
+ "pallet-assets",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",

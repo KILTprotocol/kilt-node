@@ -152,6 +152,28 @@ pub mod attestation {
 	}
 }
 
+pub mod asset_switch {
+	use super::*;
+
+	pub const APPROVAL_DEPOSIT: u128 = 0;
+	pub const ASSET_ACCOUNT_DEPOSIT: u128 = 0;
+	pub const ASSET_DEPOSIT: u128 = 0;
+	pub const META_DEPOSIT_BASE: u128 = 0;
+	pub const META_DEPOSIT_PER_BYTE: u128 = 0;
+	pub const REMOVE_ITEMS_LIMIT: u32 = 1000;
+	pub const STRING_LIMIT: u32 = 4;
+
+	parameter_types! {
+		pub const ApprovalDeposit: u128 = APPROVAL_DEPOSIT;
+		pub const AssetAccountDeposit: u128 = ASSET_ACCOUNT_DEPOSIT;
+		pub const AssetDeposit: u128 = ASSET_DEPOSIT;
+		pub const MetaDepositBase: u128 = META_DEPOSIT_BASE;
+		pub const MetaDepositPerByte: u128 = META_DEPOSIT_PER_BYTE;
+		pub const RemoveItemsLimit: u32 = REMOVE_ITEMS_LIMIT;
+		pub const StringLimit: u32 = STRING_LIMIT;
+	}
+}
+
 pub mod delegation {
 	use scale_info::TypeInfo;
 
