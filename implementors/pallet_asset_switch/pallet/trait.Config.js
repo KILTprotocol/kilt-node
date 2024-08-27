@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"peregrine_runtime":[["impl <a class=\"trait\" href=\"pallet_asset_switch/pallet/trait.Config.html\" title=\"trait pallet_asset_switch::pallet::Config\">Config</a>&lt;Instance1&gt; for <a class=\"struct\" href=\"peregrine_runtime/struct.Runtime.html\" title=\"struct peregrine_runtime::Runtime\">Runtime</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

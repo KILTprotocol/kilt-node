@@ -3,6 +3,7 @@
 "ctype":[["impl&lt;T&gt; PalletError for <a class=\"enum\" href=\"ctype/pallet/enum.Error.html\" title=\"enum ctype::pallet::Error\">Error</a>&lt;T&gt;"]],
 "delegation":[["impl&lt;T&gt; PalletError for <a class=\"enum\" href=\"delegation/pallet/enum.Error.html\" title=\"enum delegation::pallet::Error\">Error</a>&lt;T&gt;"]],
 "did":[["impl&lt;T&gt; PalletError for <a class=\"enum\" href=\"did/pallet/enum.Error.html\" title=\"enum did::pallet::Error\">Error</a>&lt;T&gt;"]],
+"pallet_asset_switch":[["impl&lt;T, I&gt; PalletError for <a class=\"enum\" href=\"pallet_asset_switch/pallet/enum.Error.html\" title=\"enum pallet_asset_switch::pallet::Error\">Error</a>&lt;T, I&gt;"]],
 "pallet_configuration":[["impl&lt;T&gt; PalletError for <a class=\"enum\" href=\"pallet_configuration/pallet/enum.Error.html\" title=\"enum pallet_configuration::pallet::Error\">Error</a>&lt;T&gt;"]],
 "pallet_deposit_storage":[["impl&lt;T&gt; PalletError for <a class=\"enum\" href=\"pallet_deposit_storage/pallet/enum.Error.html\" title=\"enum pallet_deposit_storage::pallet::Error\">Error</a>&lt;T&gt;"]],
 "pallet_did_lookup":[["impl&lt;T&gt; PalletError for <a class=\"enum\" href=\"pallet_did_lookup/pallet/enum.Error.html\" title=\"enum pallet_did_lookup::pallet::Error\">Error</a>&lt;T&gt;"]],

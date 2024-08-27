@@ -168,11 +168,6 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
 </pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
 // Copyright (C) 2019-2024 BOTLabs GmbH
 
@@ -290,8 +285,7 @@
 					<span class="prelude-val">Err</span>(ProcessMessageError::Unsupported) <span class="comment">// Deny
 				</span>}
 
-				<span class="comment">// An unexpected reserve transfer has arrived from the Relay Chain. Generally,
-				// `IsReserve` should not allow this, but we just log it here.
+				<span class="comment">// We don&#39;t accept DOTs from the relay chain for the moment. Only AH should pass.
 				</span>ReserveAssetDeposited { .. }
 					<span class="kw">if </span><span class="macro">matches!</span>(
 						origin,
@@ -301,12 +295,8 @@
 						}
 					) =&gt;
 				{
-					<span class="macro">log::warn!</span>(
-						target: <span class="string">&quot;xcm::barrier&quot;</span>,
-						<span class="string">&quot;Unexpected ReserveAssetDeposited from the Relay Chain&quot;</span>,
-					);
-					<span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-				}
+					<span class="prelude-val">Err</span>(ProcessMessageError::Unsupported) <span class="comment">// Deny
+				</span>}
 
 				<span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(ControlFlow::Continue(())),
 			},
