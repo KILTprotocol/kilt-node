@@ -41,19 +41,16 @@ pallets=(
 	cumulus-pallet-parachain-system
 	cumulus-pallet-dmp-queue
 	pallet_multisig
+	pallet-assets
+	pallet-asset-switch
 )
 
-#Add pallets, which have multiple instances, here
-multiple_instances_pallet=(
-	pallet-collective
-)
 
 
 # Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
   pallets+=(
-	pallet-assets
-	pallet-asset-switch
+	pallet-sudo
   )
 fi
 
@@ -63,12 +60,6 @@ cargo build $standard_args
 
 for pallet in "${pallets[@]}"; do
 	echo "Runtime: $runtime. Pallet: $pallet"
-
-	output_file="./runtimes/${runtime}/src/weights/"
-    if [[ ! " ${multiple_instances_pallet[@]} " =~ " ${pallet} " ]]; then
-		output_file+=${pallet//-/_}.rs
-    fi
-
 	# shellcheck disable=SC2086
 	./target/release/kilt-parachain benchmark pallet \
 		--template=".maintain/runtime-weight-template.hbs" \
@@ -80,5 +71,6 @@ for pallet in "${pallets[@]}"; do
 		--chain="${chain}" \
 		--pallet="$pallet" \
 		--extrinsic="*" \
-		--output="${output_file}"
+		--output="./runtimes/${runtime}/src/weights/"
+
 done
