@@ -7,7 +7,7 @@ on:
       - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
