@@ -3,8 +3,7 @@ name: Build and Deploy Chain docs
 on:
   push:
     branches:
-      - deploy-pages
-      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
+      - develop
 
 permissions:
   contents: write
@@ -13,8 +12,8 @@ permissions:
 
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -27,7 +26,7 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build in Container
+      - name: Build
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
@@ -42,7 +41,6 @@ jobs:
         with:
           branch: gh-pages
           folder: target/doc
-
 
   deploy:
     environment:
