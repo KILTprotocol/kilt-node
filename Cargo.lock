@@ -10895,10 +10895,12 @@ name = "runtime-common"
 version = "1.14.0-dev"
 dependencies = [
  "attestation",
+ "cfg-if",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "did",
+ "enum-iterator",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -10906,6 +10908,7 @@ dependencies = [
  "kilt-dip-primitives",
  "kilt-support",
  "log",
+ "pallet-asset-switch",
  "pallet-assets",
  "pallet-authorship",
  "pallet-balances",

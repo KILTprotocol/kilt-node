@@ -12,11 +12,13 @@ version       = { workspace = true }
 
 [dev-dependencies]
 did                 = { workspace = true, features = ["mock", "std"] }
+enum-iterator       = { workspace = true }
 kilt-dip-primitives = { workspace = true, features = ["std"] }
 sp-io               = { workspace = true, features = ["std"] }
 
 [dependencies]
 # External dependencies
+cfg-if             = { workspace = true }
 kilt-asset-dids    = { workspace = true }
 log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
@@ -27,6 +29,7 @@ attestation            = { workspace = true }
 did                    = { workspace = true }
 kilt-dip-primitives    = { workspace = true }
 kilt-support           = { workspace = true }
+pallet-asset-switch    = { workspace = true }
 pallet-deposit-storage = { workspace = true }
 pallet-did-lookup      = { workspace = true }
 pallet-dip-provider    = { workspace = true }
@@ -80,6 +83,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "kilt-dip-primitives/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
+  "pallet-asset-switch/runtime-benchmarks",
   "pallet-assets/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-deposit-storage/runtime-benchmarks",
@@ -107,6 +111,7 @@ std = [
   "kilt-dip-primitives/std",
   "kilt-support/std",
   "log/std",
+  "pallet-asset-switch/std",
   "pallet-assets/std",
   "pallet-authorship/std",
   "pallet-balances/std",
@@ -144,6 +149,7 @@ try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",
+  "pallet-asset-switch/try-runtime",
   "pallet-assets/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",

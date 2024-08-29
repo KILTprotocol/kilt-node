@@ -16,29 +16,36 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::traits::fungible::Inspect;
 use pallet_asset_switch::traits::SwitchHooks;
-use runtime_common::{AccountId, Balance};
+use sp_std::marker::PhantomData;
 use xcm::{
 	v4::{Junction, Junctions, Location},
 	VersionedLocation,
 };
 
-use crate::{KiltToEKiltSwitchPallet, Runtime};
+const LOG_TARGET: &str = "runtime::asset-switch::RestrictTransfersToSameUser";
 
-const LOG_TARGET: &str = "runtime::peregrine::asset-switch::RestrictTransfersToSameUser";
+type AccountIdOf<R> = <R as frame_system::Config>::AccountId;
+type BalanceOf<R, I> = <<R as pallet_asset_switch::Config<I>>::LocalCurrency as Inspect<AccountIdOf<R>>>::Balance;
 
 /// Check requiring the beneficiary be a single `AccountId32` junction
 /// containing the same account ID as the account on this chain initiating the
 /// switch.
-pub struct RestrictswitchDestinationToSelf;
+pub struct RestrictSwitchDestinationToSelf<R, P>(PhantomData<(R, P)>);
 
-impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestinationToSelf {
+impl<R, I> SwitchHooks<R, I> for RestrictSwitchDestinationToSelf<R, I>
+where
+	R: pallet_asset_switch::Config<I> + pallet_balances::Config,
+	I: 'static,
+	[u8; 32]: From<AccountIdOf<R>>,
+{
 	type Error = Error;
 
 	fn pre_local_to_remote_switch(
-		from: &AccountId,
+		from: &AccountIdOf<R>,
 		to: &VersionedLocation,
-		_amount: Balance,
+		_amount: BalanceOf<R, I>,
 	) -> Result<(), Self::Error> {
 		let to_as: Location = to.clone().try_into().map_err(|e| {
 			log::error!(
@@ -70,18 +77,18 @@ impl SwitchHooks<Runtime, KiltToEKiltSwitchPallet> for RestrictswitchDestination
 
 	// We don't need to take any actions after the switch is executed
 	fn post_local_to_remote_switch(
-		_from: &AccountId,
+		_from: &AccountIdOf<R>,
 		_to: &VersionedLocation,
-		_amount: Balance,
+		_amount: BalanceOf<R, I>,
 	) -> Result<(), Self::Error> {
 		Ok(())
 	}
 
-	fn pre_remote_to_local_switch(_to: &AccountId, _amount: u128) -> Result<(), Self::Error> {
+	fn pre_remote_to_local_switch(_to: &AccountIdOf<R>, _amount: u128) -> Result<(), Self::Error> {
 		Ok(())
 	}
 
-	fn post_remote_to_local_switch(_to: &AccountId, _amount: u128) -> Result<(), Self::Error> {
+	fn post_remote_to_local_switch(_to: &AccountIdOf<R>, _amount: u128) -> Result<(), Self::Error> {
 		Ok(())
 	}
 }
