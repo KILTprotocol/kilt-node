@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # We use different payloads depending on whether this is a `push` or a `pull_request` event
-          ref: ${{ github.event.head_commit.message || github.event.pull_request.head.sha }}
+          ref: ${{ github.event.head_commit.id || github.event.pull_request.head.sha }}
 
       - name: Get HEAD commit message
         id: get-head-commit-message
