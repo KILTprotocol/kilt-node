@@ -1000,9 +1000,9 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 // No deposit is taken since creation is permissioned. Only the root origin can
 // create new assets, and the owner will be the treasury account.
 impl pallet_assets::Config for Runtime {
-	type ApprovalDeposit = runtime_common::constants::pallet_asset::ApprovalDeposit;
-	type AssetAccountDeposit = runtime_common::constants::pallet_asset::AssetAccountDeposit;
-	type AssetDeposit = runtime_common::constants::pallet_asset::AssetDeposit;
+	type ApprovalDeposit = runtime_common::constants::asset::ApprovalDeposit;
+	type AssetAccountDeposit = runtime_common::constants::asset::AssetAccountDeposit;
+	type AssetDeposit = runtime_common::constants::asset::AssetDeposit;
 	type AssetId = Location;
 	type AssetIdParameter = Location;
 	type Balance = Balance;
@@ -1012,11 +1012,11 @@ impl pallet_assets::Config for Runtime {
 	type Extra = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Freezer = ();
-	type MetadataDepositBase = runtime_common::constants::pallet_asset::MetaDepositBase;
-	type MetadataDepositPerByte = runtime_common::constants::pallet_asset::MetaDepositPerByte;
-	type RemoveItemsLimit = runtime_common::constants::pallet_asset::RemoveItemsLimit;
+	type MetadataDepositBase = runtime_common::constants::asset::MetaDepositBase;
+	type MetadataDepositPerByte = runtime_common::constants::asset::MetaDepositPerByte;
+	type RemoveItemsLimit = runtime_common::constants::asset::RemoveItemsLimit;
 	type RuntimeEvent = RuntimeEvent;
-	type StringLimit = runtime_common::constants::pallet_asset::StringLimit;
+	type StringLimit = runtime_common::constants::asset::StringLimit;
 	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
