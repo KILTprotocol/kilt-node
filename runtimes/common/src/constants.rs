@@ -152,7 +152,7 @@ pub mod attestation {
 	}
 }
 
-pub mod asset {
+pub mod assets {
 	use super::*;
 
 	pub const APPROVAL_DEPOSIT: u128 = 0;
