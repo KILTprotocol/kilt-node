@@ -40,13 +40,17 @@ pallets=(
 	pallet-message-queue
 	cumulus-pallet-parachain-system
 	cumulus-pallet-dmp-queue
+	pallet_multisig
+	pallet-assets
+	pallet-asset-switch
 )
+
+
 
 # Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
   pallets+=(
-	pallet-assets
-	pallet-asset-switch
+	pallet-sudo
   )
 fi
 
@@ -67,5 +71,6 @@ for pallet in "${pallets[@]}"; do
 		--chain="${chain}" \
 		--pallet="$pallet" \
 		--extrinsic="*" \
-		--output="./runtimes/${runtime}/src/weights/${pallet//-/_}.rs"
+		--output="./runtimes/${runtime}/src/weights/"
+
 done
