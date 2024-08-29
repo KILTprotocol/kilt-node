@@ -988,8 +988,7 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type PauseOrigin = EnsureRoot<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<AccountId>;
-	type SwitchHooks =
-		runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf<Runtime, KiltToEKiltSwitchPallet>;
+	type SwitchHooks = runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf;
 	type SwitchOrigin = EnsureRoot<AccountId>;
 	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
 	type XcmRouter = XcmRouter;

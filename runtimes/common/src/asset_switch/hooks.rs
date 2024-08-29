@@ -18,7 +18,6 @@
 
 use frame_support::traits::fungible::Inspect;
 use pallet_asset_switch::traits::SwitchHooks;
-use sp_std::marker::PhantomData;
 use xcm::{
 	v4::{Junction, Junctions, Location},
 	VersionedLocation,
@@ -32,9 +31,9 @@ type BalanceOf<R, I> = <<R as pallet_asset_switch::Config<I>>::LocalCurrency as 
 /// Check requiring the beneficiary be a single `AccountId32` junction
 /// containing the same account ID as the account on this chain initiating the
 /// switch.
-pub struct RestrictSwitchDestinationToSelf<R, P>(PhantomData<(R, P)>);
+pub struct RestrictSwitchDestinationToSelf;
 
-impl<R, I> SwitchHooks<R, I> for RestrictSwitchDestinationToSelf<R, I>
+impl<R, I> SwitchHooks<R, I> for RestrictSwitchDestinationToSelf
 where
 	R: pallet_asset_switch::Config<I> + pallet_balances::Config,
 	I: 'static,
