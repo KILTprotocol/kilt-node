@@ -1815,7 +1815,7 @@
 <span class="kw">use </span>pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 <span class="kw">use </span>parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 <span class="kw">use </span>sp_api::impl_runtime_apis;
-<span class="kw">use </span>sp_core::{ConstBool, ConstU128, OpaqueMetadata};
+<span class="kw">use </span>sp_core::{ConstBool, OpaqueMetadata};
 <span class="kw">use </span>sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block <span class="kw">as </span>BlockT, ConvertInto, OpaqueKeys},
@@ -1832,6 +1832,7 @@
 <span class="kw">use </span>pallet_did_lookup::linkable_account::LinkableAccountId;
 <span class="kw">pub use </span>parachain_staking::InflationInfo;
 <span class="kw">pub use </span>public_credentials;
+
 <span class="kw">use </span>runtime_common::{
 	asset_switch::{runtime_api::Error <span class="kw">as </span>AssetSwitchApiError, EnsureRootAsTreasury},
 	assets::{AssetDid, PublicCredentialsFilter},
@@ -1866,7 +1867,6 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests;
 
-<span class="kw">mod </span>asset_switch;
 <span class="kw">mod </span>dip;
 <span class="kw">mod </span>weights;
 <span class="kw">pub mod </span>xcm_config;
@@ -1942,7 +1942,6 @@
 	<span class="kw">type </span>BlockWeights = BlockWeights;
 	<span class="kw">type </span>BlockLength = BlockLength;
 	<span class="kw">type </span>SS58Prefix = SS58Prefix;
-
 	<span class="doccomment">/// The set code logic
 	</span><span class="kw">type </span>OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode&lt;Runtime&gt;;
 	<span class="kw">type </span>MaxConsumers = frame_support::traits::ConstU32&lt;<span class="number">16</span>&gt;;
@@ -2034,6 +2033,13 @@
 	<span class="kw">pub const </span>ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(<span class="number">4</span>);
 }
 
+<span class="kw">type </span>ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook&lt;
+	Runtime,
+	RELAY_CHAIN_SLOT_DURATION_MILLIS,
+	BLOCK_PROCESSING_VELOCITY,
+	UNINCLUDED_SEGMENT_CAPACITY,
+&gt;;
+
 <span class="kw">impl </span>cumulus_pallet_parachain_system::Config <span class="kw">for </span>Runtime {
 	<span class="kw">type </span>RuntimeEvent = RuntimeEvent;
 	<span class="kw">type </span>OnSystemEvent = ();
@@ -2047,13 +2053,6 @@
 	<span class="kw">type </span>ConsensusHook = ConsensusHook;
 	<span class="kw">type </span>WeightInfo = weights::cumulus_pallet_parachain_system::WeightInfo&lt;Runtime&gt;;
 }
-
-<span class="kw">type </span>ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook&lt;
-	Runtime,
-	RELAY_CHAIN_SLOT_DURATION_MILLIS,
-	BLOCK_PROCESSING_VELOCITY,
-	UNINCLUDED_SEGMENT_CAPACITY,
-&gt;;
 
 <span class="kw">impl </span>parachain_info::Config <span class="kw">for </span>Runtime {}
 
@@ -2096,11 +2095,11 @@
 	<span class="kw">type </span>RuntimeEvent = RuntimeEvent;
 	<span class="kw">type </span>Currency = Balances;
 	<span class="kw">type </span>BlockNumberToBalance = ConvertInto;
+	<span class="kw">type </span>BlockNumberProvider = System;
 	<span class="comment">// disable vested transfers by setting min amount to max balance
 	</span><span class="kw">type </span>MinVestedTransfer = constants::MinVestedTransfer;
 	<span class="kw">type </span>WeightInfo = weights::pallet_vesting::WeightInfo&lt;Runtime&gt;;
 	<span class="kw">type </span>UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
-	<span class="kw">type </span>BlockNumberProvider = System;
 	<span class="kw">const </span>MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
 }
 
@@ -2769,7 +2768,7 @@
 	<span class="kw">type </span>PauseOrigin = EnsureRoot&lt;AccountId&gt;;
 	<span class="kw">type </span>RuntimeEvent = RuntimeEvent;
 	<span class="kw">type </span>SubmitterOrigin = EnsureSigned&lt;AccountId&gt;;
-	<span class="kw">type </span>SwitchHooks = asset_switch::RestrictswitchDestinationToSelf;
+	<span class="kw">type </span>SwitchHooks = runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf;
 	<span class="kw">type </span>SwitchOrigin = EnsureRoot&lt;AccountId&gt;;
 	<span class="kw">type </span>WeightInfo = weights::pallet_asset_switch::WeightInfo&lt;Runtime&gt;;
 	<span class="kw">type </span>XcmRouter = XcmRouter;
@@ -2781,9 +2780,9 @@
 <span class="comment">// No deposit is taken since creation is permissioned. Only the root origin can
 // create new assets, and the owner will be the treasury account.
 </span><span class="kw">impl </span>pallet_assets::Config <span class="kw">for </span>Runtime {
-	<span class="kw">type </span>ApprovalDeposit = ConstU128&lt;<span class="number">0</span>&gt;;
-	<span class="kw">type </span>AssetAccountDeposit = ConstU128&lt;<span class="number">0</span>&gt;;
-	<span class="kw">type </span>AssetDeposit = ConstU128&lt;<span class="number">0</span>&gt;;
+	<span class="kw">type </span>ApprovalDeposit = runtime_common::constants::assets::ApprovalDeposit;
+	<span class="kw">type </span>AssetAccountDeposit = runtime_common::constants::assets::AssetAccountDeposit;
+	<span class="kw">type </span>AssetDeposit = runtime_common::constants::assets::AssetDeposit;
 	<span class="kw">type </span>AssetId = Location;
 	<span class="kw">type </span>AssetIdParameter = Location;
 	<span class="kw">type </span>Balance = Balance;
@@ -2793,11 +2792,11 @@
 	<span class="kw">type </span>Extra = ();
 	<span class="kw">type </span>ForceOrigin = EnsureRoot&lt;AccountId&gt;;
 	<span class="kw">type </span>Freezer = ();
-	<span class="kw">type </span>MetadataDepositBase = ConstU128&lt;<span class="number">0</span>&gt;;
-	<span class="kw">type </span>MetadataDepositPerByte = ConstU128&lt;<span class="number">0</span>&gt;;
-	<span class="kw">type </span>RemoveItemsLimit = ConstU32&lt;<span class="number">1_000</span>&gt;;
+	<span class="kw">type </span>MetadataDepositBase = runtime_common::constants::assets::MetaDepositBase;
+	<span class="kw">type </span>MetadataDepositPerByte = runtime_common::constants::assets::MetaDepositPerByte;
+	<span class="kw">type </span>RemoveItemsLimit = runtime_common::constants::assets::RemoveItemsLimit;
 	<span class="kw">type </span>RuntimeEvent = RuntimeEvent;
-	<span class="kw">type </span>StringLimit = ConstU32&lt;<span class="number">4</span>&gt;;
+	<span class="kw">type </span>StringLimit = runtime_common::constants::assets::StringLimit;
 	<span class="kw">type </span>WeightInfo = weights::pallet_assets::WeightInfo&lt;Runtime&gt;;
 
 	<span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
@@ -3216,13 +3215,14 @@
 			Aura::authorities().into_inner()
 		}
 	}
+
 	<span class="kw">impl </span>cumulus_primitives_aura::AuraUnincludedSegmentApi&lt;Block&gt; <span class="kw">for </span>Runtime {
 		<span class="kw">fn </span>can_build_upon(
 			included_hash: &lt;Block <span class="kw">as </span>BlockT&gt;::Hash,
 			slot: cumulus_primitives_aura::Slot,
-		) -&gt; bool {
-			ConsensusHook::can_build_upon(included_hash, slot)
-		}
+			) -&gt; bool {
+				ConsensusHook::can_build_upon(included_hash, slot)
+			}
 	}
 
 	<span class="kw">impl </span>cumulus_primitives_core::CollectCollationInfo&lt;Block&gt; <span class="kw">for </span>Runtime {
@@ -3538,8 +3538,8 @@
 		}
 
 	}
-
 }
+
 <span class="macro">cumulus_pallet_parachain_system::register_validate_block! </span>{
 	Runtime = Runtime,
 	BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::&lt;Runtime, Executive&gt;,

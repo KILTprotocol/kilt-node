@@ -1,3 +1,4 @@
 (function() {var implementors = {
-"pallet_asset_switch":[]
+"pallet_asset_switch":[],
+"runtime_common":[["impl&lt;R, I&gt; SwitchHooks&lt;R, I&gt; for <a class=\"struct\" href=\"runtime_common/asset_switch/hooks/struct.RestrictSwitchDestinationToSelf.html\" title=\"struct runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf\">RestrictSwitchDestinationToSelf</a><span class=\"where fmt-newline\">where\n    R: Config&lt;I&gt; + Config,\n    I: 'static,\n    [<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.74.0/std/primitive.u8.html\">u8</a>; <a class=\"primitive\" href=\"https://doc.rust-lang.org/1.74.0/std/primitive.array.html\">32</a>]: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.74.0/core/convert/trait.From.html\" title=\"trait core::convert::From\">From</a>&lt;&lt;R as Config&gt;::AccountId&gt;,</span>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

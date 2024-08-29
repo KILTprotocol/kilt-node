@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["runtime_api"],"struct":["EnsureRootAsTreasury","NoopBenchmarkHelper"]};
+window.SIDEBAR_ITEMS = {"mod":["hooks","runtime_api"],"struct":["EnsureRootAsTreasury","NoopBenchmarkHelper"]};

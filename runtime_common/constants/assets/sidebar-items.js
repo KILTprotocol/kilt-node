@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["APPROVAL_DEPOSIT","ASSET_ACCOUNT_DEPOSIT","ASSET_DEPOSIT","META_DEPOSIT_BASE","META_DEPOSIT_PER_BYTE","REMOVE_ITEMS_LIMIT","STRING_LIMIT"],"struct":["ApprovalDeposit","AssetAccountDeposit","AssetDeposit","MetaDepositBase","MetaDepositPerByte","RemoveItemsLimit","StringLimit"]};
