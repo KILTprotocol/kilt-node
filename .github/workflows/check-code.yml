@@ -23,12 +23,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          # We use different payloads depending on whether this is a `push` or a `pull_request` event
+          ref: ${{ github.event.head_commit.message || github.event.pull_request.head.sha }}
 
       - name: Get HEAD commit message
         id: get-head-commit-message
         run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
-
 
   cargo-clippy:
     name: Run Clippy checks
@@ -77,6 +77,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
+    env:
+      RUSTUP_NIGHTLY_VERSION: nightly-2023-10-02
     needs: get-commit-head
     if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
@@ -84,8 +86,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install nightly toolchain
+        run: rustup toolchain add ${{ env.RUSTUP_NIGHTLY_VERSION }}
+
       - name: Run `cargo fmt`
-        run: cargo fmt -- --check
+        # Latest nightly version matching the base rustc version (1.74.0)
+        run: cargo +${{ env.RUSTUP_NIGHTLY_VERSION }} fmt -- --check
 
       - name: Run `taplo`
         run: taplo fmt --check
@@ -104,7 +110,7 @@ jobs:
       - get-commit-head
       - cargo-clippy
     # Run this job if the `clippy` step completed successfully or was skipped, as long as the commit does not explicitly skip integration tests as well.
-    if: ${{ needs.cargo-clippy.result != 'failure' && !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
+    if: ${{ always() && needs.cargo-clippy.result != 'failure' && !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
 
     steps:
       - name: Checkout repository
@@ -128,6 +134,16 @@ jobs:
 
       - name: Check lints
         run: yarn lint
+
+      - name: Set up Cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build Peregrine runtime
         run: cargo build -p peregrine-runtime
@@ -243,6 +259,12 @@ jobs:
         with:
           tool-cache: true
 
+      - name: Install try-runtime
+        run: |
+          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${{ env.TRY_RUNTIME_CLI_VERSION_TAG }}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
+          chmod +x ./try-runtime
+          ./try-runtime --version
+
       - name: Set up Cargo cache
         uses: actions/cache@v4
         with:
@@ -252,12 +274,6 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
           key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Install try-runtime
-        run: |
-          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${{ env.TRY_RUNTIME_CLI_VERSION_TAG }}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
-          chmod +x ./try-runtime
-          ./try-runtime --version
 
       - name: Build runtime
         run: cargo build --release --locked -p ${{ matrix.runtime }}-runtime --features try-runtime
