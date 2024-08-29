@@ -438,7 +438,7 @@ benchmarks! {
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, amount);
 
 		// increase stake so we can unstake, because current stake is minimum
-		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(15)));
+		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(17)));
 		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::CurrencyBalance::from(u as u64)));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, amount + T::CurrencyBalance::from(u as u64));
 
@@ -474,7 +474,7 @@ benchmarks! {
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get());
 
 		// increase stake so we can unstake, because current stake is minimum
-		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(15)));
+		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(17)));
 		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), amount + amount));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get() + amount + amount);
 
@@ -511,7 +511,7 @@ benchmarks! {
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get());
 
 		// increase stake so we can unstake, because current stake is minimum
-		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(15)));
+		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(17)));
 		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), amount + amount));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get() + amount + amount);
 
@@ -533,7 +533,7 @@ benchmarks! {
 		let u in 1 .. (T::MaxUnstakeRequests::get() - 1);
 
 		let candidate = account("collator", 0u32, COLLATOR_ACCOUNT_SEED);
-		let free_balance = T::CurrencyBalance::from(10u128.pow(15));
+		let free_balance = T::CurrencyBalance::from(10u128.pow(20));
 		let stake = T::MinCollatorCandidateStake::get();
 		T::Currency::set_balance(&candidate, free_balance);
 		assert_ok!(Pallet::<T>::join_candidates(
