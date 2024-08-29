@@ -1,11 +1,7 @@
-name: Deploy rustdoc
+name: Deploy rustdoc (manual)
 
 on:
-  push:
-    branches:
-      - develop
-      - master
-      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
