@@ -30,7 +30,7 @@ jobs:
         run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
 
       - name: Print HEAD commit message
-        run: echo "headCommitMsg=$(git show -s --format=%s)" && echo "${{ github.event.pull_request.head.sha }}" && echo "${{ github.ref }}"
+        run: echo "headCommitMsg=$(git show -s --format=%s)" && echo "${{ github.event.pull_request.head.sha }}" && echo "${{ github.event.head_commit.message }}"
 
   cargo-clippy:
     name: Run Clippy checks
