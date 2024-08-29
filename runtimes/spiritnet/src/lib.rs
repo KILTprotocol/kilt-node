@@ -93,7 +93,6 @@ use frame_try_runtime::UpgradeCheckSelect;
 #[cfg(test)]
 mod tests;
 
-mod asset_switch;
 mod dip;
 mod weights;
 pub mod xcm_config;
@@ -989,7 +988,8 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type PauseOrigin = EnsureRoot<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<AccountId>;
-	type SwitchHooks = asset_switch::RestrictswitchDestinationToSelf;
+	type SwitchHooks =
+		runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf<Runtime, KiltToEKiltSwitchPallet>;
 	type SwitchOrigin = EnsureRoot<AccountId>;
 	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
 	type XcmRouter = XcmRouter;
@@ -1001,9 +1001,9 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 // No deposit is taken since creation is permissioned. Only the root origin can
 // create new assets, and the owner will be the treasury account.
 impl pallet_assets::Config for Runtime {
-	type ApprovalDeposit = runtime_common::constants::asset_switch::ApprovalDeposit;
-	type AssetAccountDeposit = runtime_common::constants::asset_switch::AssetAccountDeposit;
-	type AssetDeposit = runtime_common::constants::asset_switch::AssetDeposit;
+	type ApprovalDeposit = runtime_common::constants::pallet_asset::ApprovalDeposit;
+	type AssetAccountDeposit = runtime_common::constants::pallet_asset::AssetAccountDeposit;
+	type AssetDeposit = runtime_common::constants::pallet_asset::AssetDeposit;
 	type AssetId = Location;
 	type AssetIdParameter = Location;
 	type Balance = Balance;
@@ -1013,11 +1013,11 @@ impl pallet_assets::Config for Runtime {
 	type Extra = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Freezer = ();
-	type MetadataDepositBase = runtime_common::constants::asset_switch::MetaDepositBase;
-	type MetadataDepositPerByte = runtime_common::constants::asset_switch::MetaDepositPerByte;
-	type RemoveItemsLimit = runtime_common::constants::asset_switch::RemoveItemsLimit;
+	type MetadataDepositBase = runtime_common::constants::pallet_asset::MetaDepositBase;
+	type MetadataDepositPerByte = runtime_common::constants::pallet_asset::MetaDepositPerByte;
+	type RemoveItemsLimit = runtime_common::constants::pallet_asset::RemoveItemsLimit;
 	type RuntimeEvent = RuntimeEvent;
-	type StringLimit = runtime_common::constants::asset_switch::StringLimit;
+	type StringLimit = runtime_common::constants::pallet_asset::StringLimit;
 	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]

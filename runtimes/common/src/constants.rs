@@ -152,7 +152,7 @@ pub mod attestation {
 	}
 }
 
-pub mod asset_switch {
+pub mod pallet_asset {
 	use super::*;
 
 	pub const APPROVAL_DEPOSIT: u128 = 0;
