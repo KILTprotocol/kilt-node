@@ -35,6 +35,6 @@
     "lint:fix": "eslint --fix src && prettier --write src",
     "clean": "rm -rf ./db",
     "test": "LOG_LEVEL=error vitest",
-    "test:CI": "vitest --no-file-parallelism --retry 3 --no-isolate"
+    "test:CI": "vitest --retry 3 --no-isolate --no-file-parallelism"
   }
 }
