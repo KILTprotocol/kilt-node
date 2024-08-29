@@ -23,14 +23,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Get HEAD commit message
         id: get-head-commit-message
         run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
 
       - name: Print HEAD commit message
-        run: echo "headCommitMsg=$(git show -s --format=%s HEAD~1)" && echo "${{ github.ref }}"
+        run: echo "headCommitMsg=$(git show -s --format=%s)" && echo "${{ github.event.pull_request.head.sha }}" && echo "${{ github.ref }}"
 
   cargo-clippy:
     name: Run Clippy checks
