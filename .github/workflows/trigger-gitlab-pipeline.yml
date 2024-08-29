@@ -1,0 +1,27 @@
+name: Trigger GitLab Deploy Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Check codebase"]
+    branches:
+      - develop
+      - master
+      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
+    types:
+      - completed
+
+jobs:
+  trigger-gitlab:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Trigger GitLab CI
+        env:
+          GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN }}
+          GITLAB_PROJECT_ID: ${{ secrets.GITLAB_PROJECT_ID }}
+        run: |
+          curl -X POST
+            -F token=$GITLAB_TRIGGER_TOKEN
+            -F ref=${{ github.ref_name }}
+            https://gitlab.com/api/v4/projects/$GITLAB_PROJECT_ID/trigger/pipeline
