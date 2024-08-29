@@ -1087,7 +1087,7 @@
 		<span class="macro">assert_eq!</span>(DelegatorState::&lt;T&gt;::get(<span class="kw-2">&amp;</span>delegator).unwrap().amount, amount);
 
 		<span class="comment">// increase stake so we can unstake, because current stake is minimum
-		</span>T::Currency::set_balance(<span class="kw-2">&amp;</span>delegator, T::CurrencyBalance::from(<span class="number">10u128</span>.pow(<span class="number">15</span>)));
+		</span>T::Currency::set_balance(<span class="kw-2">&amp;</span>delegator, T::CurrencyBalance::from(<span class="number">10u128</span>.pow(<span class="number">17</span>)));
 		<span class="macro">assert_ok!</span>(Pallet::&lt;T&gt;::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::CurrencyBalance::from(u <span class="kw">as </span>u64)));
 		<span class="macro">assert_eq!</span>(DelegatorState::&lt;T&gt;::get(<span class="kw-2">&amp;</span>delegator).unwrap().amount, amount + T::CurrencyBalance::from(u <span class="kw">as </span>u64));
 
@@ -1123,7 +1123,7 @@
 		<span class="macro">assert_eq!</span>(DelegatorState::&lt;T&gt;::get(<span class="kw-2">&amp;</span>delegator).unwrap().amount, T::MinDelegatorStake::get());
 
 		<span class="comment">// increase stake so we can unstake, because current stake is minimum
-		</span>T::Currency::set_balance(<span class="kw-2">&amp;</span>delegator, T::CurrencyBalance::from(<span class="number">10u128</span>.pow(<span class="number">15</span>)));
+		</span>T::Currency::set_balance(<span class="kw-2">&amp;</span>delegator, T::CurrencyBalance::from(<span class="number">10u128</span>.pow(<span class="number">17</span>)));
 		<span class="macro">assert_ok!</span>(Pallet::&lt;T&gt;::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), amount + amount));
 		<span class="macro">assert_eq!</span>(DelegatorState::&lt;T&gt;::get(<span class="kw-2">&amp;</span>delegator).unwrap().amount, T::MinDelegatorStake::get() + amount + amount);
 
@@ -1160,7 +1160,7 @@
 		<span class="macro">assert_eq!</span>(DelegatorState::&lt;T&gt;::get(<span class="kw-2">&amp;</span>delegator).unwrap().amount, T::MinDelegatorStake::get());
 
 		<span class="comment">// increase stake so we can unstake, because current stake is minimum
-		</span>T::Currency::set_balance(<span class="kw-2">&amp;</span>delegator, T::CurrencyBalance::from(<span class="number">10u128</span>.pow(<span class="number">15</span>)));
+		</span>T::Currency::set_balance(<span class="kw-2">&amp;</span>delegator, T::CurrencyBalance::from(<span class="number">10u128</span>.pow(<span class="number">17</span>)));
 		<span class="macro">assert_ok!</span>(Pallet::&lt;T&gt;::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), amount + amount));
 		<span class="macro">assert_eq!</span>(DelegatorState::&lt;T&gt;::get(<span class="kw-2">&amp;</span>delegator).unwrap().amount, T::MinDelegatorStake::get() + amount + amount);
 
@@ -1182,7 +1182,7 @@
 		<span class="kw">let </span>u <span class="kw">in </span><span class="number">1 </span>.. (T::MaxUnstakeRequests::get() - <span class="number">1</span>);
 
 		<span class="kw">let </span>candidate = account(<span class="string">&quot;collator&quot;</span>, <span class="number">0u32</span>, COLLATOR_ACCOUNT_SEED);
-		<span class="kw">let </span>free_balance = T::CurrencyBalance::from(<span class="number">10u128</span>.pow(<span class="number">15</span>));
+		<span class="kw">let </span>free_balance = T::CurrencyBalance::from(<span class="number">10u128</span>.pow(<span class="number">20</span>));
 		<span class="kw">let </span>stake = T::MinCollatorCandidateStake::get();
 		T::Currency::set_balance(<span class="kw-2">&amp;</span>candidate, free_balance);
 		<span class="macro">assert_ok!</span>(Pallet::&lt;T&gt;::join_candidates(
