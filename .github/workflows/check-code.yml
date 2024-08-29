@@ -16,15 +16,14 @@ jobs:
   get-commit-head:
     name: Get HEAD commit message
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
     outputs:
-      headCommitMsg: ${{ steps.get-head-commit-message.outputs.headCommitMsg || 'No commit message' }}
+      headCommitMsg: ${{ steps.get-head-commit-message.outputs.headCommitMsg }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.ref }}
 
       - name: Get HEAD commit message
         id: get-head-commit-message
@@ -35,7 +34,7 @@ jobs:
     name: Run Clippy checks
     runs-on: ubuntu-latest
     needs: get-commit-head
-    if: ${{ needs.get-commit-head.outputs.headCommitMsg && !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
     strategy:
       matrix:
@@ -79,7 +78,7 @@ jobs:
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
     needs: get-commit-head
-    if: ${{ needs.get-commit-head.outputs.headCommitMsg && !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
     steps:
       - name: Checkout repository
@@ -101,7 +100,11 @@ jobs:
     defaults:
       run:
         working-directory: ${{ env.working-dir }}
-    needs: cargo-clippy
+    needs:
+      - get-commit-head
+      - cargo-clippy
+    # Run this job if the `clippy` step completed successfully or was skipped, as long as the commit does not explicitly skip integration tests as well.
+    if: ${{ needs.cargo-clippy.result != 'failure' && !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
 
     steps:
       - name: Checkout repository
