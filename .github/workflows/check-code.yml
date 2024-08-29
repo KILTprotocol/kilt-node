@@ -130,6 +130,16 @@ jobs:
       - name: Check lints
         run: yarn lint
 
+      - name: Set up Cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Build Peregrine runtime
         run: cargo build -p peregrine-runtime
 
@@ -244,6 +254,12 @@ jobs:
         with:
           tool-cache: true
 
+      - name: Install try-runtime
+        run: |
+          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${{ env.TRY_RUNTIME_CLI_VERSION_TAG }}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
+          chmod +x ./try-runtime
+          ./try-runtime --version
+
       - name: Set up Cargo cache
         uses: actions/cache@v4
         with:
@@ -253,12 +269,6 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
           key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Install try-runtime
-        run: |
-          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${{ env.TRY_RUNTIME_CLI_VERSION_TAG }}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
-          chmod +x ./try-runtime
-          ./try-runtime --version
 
       - name: Build runtime
         run: cargo build --release --locked -p ${{ matrix.runtime }}-runtime --features try-runtime
