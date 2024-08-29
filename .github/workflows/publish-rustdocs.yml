@@ -1,10 +1,10 @@
-name: Build and Deploy Chain docs
+name: Deploy rustdoc
 
 on:
   push:
     branches:
-      - master
       - develop
+      - master
       - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
 
 permissions:
@@ -12,22 +12,33 @@ permissions:
   pages: write
   id-token: write
 
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-rustdocs:
+    name: Deploy rustdoc
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: true
 
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Set up Cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Build
         run: |
           docker run --rm \
@@ -62,12 +73,12 @@ jobs:
           folder: target/doc
           target-folder: ${{ github.ref_name }}
 
-  deploy:
+  deploy-rustdoc:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-rustdoc
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,13 +87,16 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
           source: ./
           destination: ./_site
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
