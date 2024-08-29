@@ -1,11 +1,15 @@
 name: Deploy rustdoc
 
 on:
-  push:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Check codebase"]
     branches:
       - develop
       - master
       - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -18,16 +22,16 @@ concurrency:
 
 jobs:
   build-rustdocs:
-    name: Deploy rustdoc
+    name: Build rustdoc
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    env:
+      DOCS_TARGET: target/doc
+      BRANCH: gh-pages
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
 
       - name: Set up Cargo cache
         uses: actions/cache@v4
@@ -39,7 +43,7 @@ jobs:
             ~/.cargo/git/db/
           key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build
+      - name: Run `cargo doc`
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
@@ -48,32 +52,25 @@ jobs:
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "
               RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked && \
-              mv target/doc/help.html target/doc/index.html && chown -R $(id -u):$(id -g) target/doc"
+              mv $DOCS_TARGET/help.html $DOCS_TARGET/index.html && chown -R $(id -u):$(id -g) $DOCS_TARGET"
 
       - name: Push to gh-pages for master branch
         if: github.ref_name == 'master'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages
-          folder: target/doc
+          branch: ${{ env.BRANCH }}
+          folder: ${{ env.DOCS_TARGET }}
 
-      - name: Push to gh-pages for develop branch
-        if: github.ref_name == 'develop'
+      - name: Push to gh-pages for tags and develop
+        if: github.ref_name != 'master'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages
-          folder: target/doc
-          target-folder: develop
-
-      - name: Push to gh-pages for tags
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: target/doc
+          branch: ${{ env.BRANCH }}
+          folder: ${{ env.DOCS_TARGET }}
           target-folder: ${{ github.ref_name }}
 
   deploy-rustdoc:
+    name: Deploy rustdoc
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -83,7 +80,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: gh-pages
+          ref: ${{ env.BRANCH }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

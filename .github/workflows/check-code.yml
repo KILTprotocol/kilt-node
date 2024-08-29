@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # We use different payloads depending on whether this is a `push` or a `pull_request` event
-          ref: ${{ github.event.head_commit.message || github.event.pull_request.head.sha }}
+          ref: ${{ github.event.head_commit.id || github.event.pull_request.head.sha }}
 
       - name: Get HEAD commit message
         id: get-head-commit-message
@@ -108,9 +108,7 @@ jobs:
         working-directory: ${{ env.working-dir }}
     needs:
       - get-commit-head
-      - cargo-clippy
-    # Run this job if the `clippy` step completed successfully or was skipped, as long as the commit does not explicitly skip integration tests as well.
-    if: ${{ always() && needs.cargo-clippy.result != 'failure' && !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
+    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
 
     steps:
       - name: Checkout repository

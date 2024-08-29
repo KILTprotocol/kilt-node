@@ -1,6 +1,7 @@
 name: Trigger GitLab Deploy Pipeline
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["Check codebase"]
     branches:
