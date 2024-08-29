@@ -14,10 +14,12 @@ version       = { workspace = true }
 substrate-wasm-builder = { workspace = true }
 
 [dev-dependencies]
-sp-io = { workspace = true }
+enum-iterator = { workspace = true }
+sp-io         = { workspace = true }
 
 [dependencies]
 # External dependencies
+cfg-if             = { workspace = true }
 log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info         = { workspace = true, features = ["derive"] }
@@ -29,6 +31,7 @@ frame-system-rpc-runtime-api               = { workspace = true }
 kilt-runtime-api-did                       = { workspace = true }
 kilt-runtime-api-public-credentials        = { workspace = true }
 kilt-runtime-api-staking                   = { workspace = true }
+pallet-asset-switch-runtime-api            = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 
 # KILT pallets & primitives
@@ -38,6 +41,7 @@ delegation                    = { workspace = true }
 did                           = { workspace = true }
 kilt-runtime-api-dip-provider = { workspace = true }
 kilt-support                  = { workspace = true }
+pallet-asset-switch           = { workspace = true }
 pallet-deposit-storage        = { workspace = true }
 pallet-did-lookup             = { workspace = true }
 pallet-dip-provider           = { workspace = true }
@@ -65,6 +69,7 @@ sp-weights          = { workspace = true }
 frame-executive            = { workspace = true }
 frame-support              = { workspace = true }
 frame-system               = { workspace = true }
+pallet-assets              = { workspace = true }
 pallet-aura                = { workspace = true }
 pallet-authorship          = { workspace = true }
 pallet-balances            = { workspace = true }
@@ -134,6 +139,8 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "hex-literal",
   "kilt-support/runtime-benchmarks",
+  "pallet-asset-switch/runtime-benchmarks",
+  "pallet-assets/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
@@ -192,6 +199,9 @@ std = [
   "kilt-runtime-api-staking/std",
   "kilt-support/std",
   "log/std",
+  "pallet-asset-switch-runtime-api/std",
+  "pallet-asset-switch/std",
+  "pallet-assets/std",
   "pallet-aura/std",
   "pallet-authorship/std",
   "pallet-balances/std",
@@ -258,6 +268,8 @@ try-runtime = [
   "frame-system/try-runtime",
   "frame-try-runtime",
   "kilt-support/try-runtime",
+  "pallet-asset-switch/try-runtime",
+  "pallet-assets/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
