@@ -13,7 +13,9 @@ on:
 
 jobs:
   validate-pr-title:
+    name: Validate PR title
     runs-on: ubuntu-latest
+
     steps:
       - name: Check title
         uses: amannn/action-semantic-pull-request@v5

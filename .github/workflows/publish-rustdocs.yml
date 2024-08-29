@@ -34,14 +34,13 @@ jobs:
 
       - name: Run `cargo doc`
         run: |
-          docker run --rm
-            -v "${GITHUB_WORKSPACE}:/workspace"
-            -v "${HOME}/.cargo:/root/.cargo"
-            -w /workspace
-           -e RUSTDOCFLAGS='-D warnings'
-            paritytech/ci-unified:bullseye-1.74.0
-            bash -c "cargo doc --all-features --no-deps --locked
-              && chown -R $(id -u):$(id -g) ${{ env.DOCS_TARGET }}"
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo:/root/.cargo" \
+            -w /workspace \
+            -e RUSTDOCFLAGS='-D warnings' \
+            paritytech/ci-unified:bullseye-1.74.0 \
+            bash -c "cargo doc --all-features --no-deps --locked && chown -R $(id -u):$(id -g) ${{ env.DOCS_TARGET }}"
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

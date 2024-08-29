@@ -108,9 +108,7 @@ jobs:
         working-directory: ${{ env.working-dir }}
     needs:
       - get-commit-head
-      - cargo-clippy
-    # Run this job if the `clippy` step completed successfully or was skipped, as long as the commit does not explicitly skip integration tests as well.
-    if: ${{ always() && needs.cargo-clippy.result != 'failure' && !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
+    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
 
     steps:
       - name: Checkout repository
