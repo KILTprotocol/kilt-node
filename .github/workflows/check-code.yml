@@ -77,6 +77,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
+    env:
+      RUSTUP_NIGHTLY_VERSION: nightly-2023-10-02
     needs: get-commit-head
     if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
@@ -84,9 +86,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install nightly toolchain
+        run: rustup toolchain add ${{ env.RUSTUP_NIGHTLY_VERSION }}
+
       - name: Run `cargo fmt`
         # Latest nightly version matching the base rustc version (1.74.0)
-        run: cargo +nightly-2023-10-01 fmt -- --check
+        run: cargo +${{ env.RUSTUP_NIGHTLY_VERSION }} fmt -- --check
 
       - name: Run `taplo`
         run: taplo fmt --check
