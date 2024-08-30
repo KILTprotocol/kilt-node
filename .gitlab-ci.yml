@@ -10,7 +10,7 @@ variables:
   AUTHORIZE_UPGRADE_PREFIX: 0x02
   AUTHORIZE_UPGRADE_CHECK_VERSION: true
 
-build-wasms:
+build-wasm:
   image:
     name: paritytech/srtool:1.74.0
     entrypoint: [""]
@@ -22,6 +22,8 @@ build-wasms:
     - export PACKAGE=${RUNTIME}-runtime
     - export RUNTIME_DIR=runtimes/${RUNTIME}
     - cp -r * /build
+    # TODO: Check if this is fixed in subsequent versions of `srtool`
+    - rustup component add rust-src
     - /srtool/build build
     - subwasm meta --format=json+scale /out/${RUNTIME}_runtime.compact.wasm > /out/${RUNTIME}-metadata.json
     - subwasm get -o ${RUNTIME}-live.wasm wss://${RUNTIME}.kilt.io
