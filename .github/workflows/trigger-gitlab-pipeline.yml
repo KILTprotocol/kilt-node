@@ -13,16 +13,25 @@ on:
 
 jobs:
   trigger-gitlab:
+    name: Trigger GitLab CI
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync HEAD with GitLab
+        uses: saderi/push-to-gitlab@v1
+        with:
+          gitlab_repository: 'gitlab.com/kiltprotocol/kilt-node'
+          gitlab_token: ${{ secrets.KILTBOT_PUSH_ACCESS_TOKEN  }}
+
       - name: Trigger GitLab CI
-        env:
-          GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN }}
-          GITLAB_PROJECT_ID: ${{ secrets.GITLAB_PROJECT_ID }}
         run: |
-          curl -X POST
-            -F token=$GITLAB_TRIGGER_TOKEN
-            -F ref=${{ github.ref_name }}
-            https://gitlab.com/api/v4/projects/$GITLAB_PROJECT_ID/trigger/pipeline
+          curl -X POST \
+            -F token=${{ secrets.GITLAB_TRIGGER_TOKEN }} \
+            -F ref=${{ github.ref_name }} \
+            https://gitlab.com/api/v4/projects/${{ vars.GITLAB_PROJECT_ID }}/trigger/pipeline

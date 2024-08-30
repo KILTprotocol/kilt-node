@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-rustdocs:
+  build-rustdoc:
     name: Build rustdoc
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
