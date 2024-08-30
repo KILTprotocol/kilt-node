@@ -13,6 +13,7 @@ on:
 
 jobs:
   trigger-gitlab:
+    name: Trigger GitLab CI
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
 
@@ -22,7 +23,7 @@ jobs:
           GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN }}
           GITLAB_PROJECT_ID: ${{ secrets.GITLAB_PROJECT_ID }}
         run: |
-          curl -X POST
-            -F token=$GITLAB_TRIGGER_TOKEN
-            -F ref=${{ github.ref_name }}
+          curl -X POST \
+            -F token=$GITLAB_TRIGGER_TOKEN \
+            -F ref=${{ github.ref_name }} \
             https://gitlab.com/api/v4/projects/$GITLAB_PROJECT_ID/trigger/pipeline
