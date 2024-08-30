@@ -5,14 +5,9 @@ workflow:
 stages:
   - build
 
-variables:
-  PARACHAIN_PALLET_ID: 0x50
-  AUTHORIZE_UPGRADE_PREFIX: 0x02
-  AUTHORIZE_UPGRADE_CHECK_VERSION: true
-
 build-wasm:
   image:
-    name: paritytech/srtool:1.77.0
+    name: paritytech/srtool:1.75.0
     entrypoint: [""]
   stage: build
   parallel:
@@ -21,6 +16,9 @@ build-wasm:
   script:
     - export PACKAGE=${RUNTIME}-runtime
     - export RUNTIME_DIR=runtimes/${RUNTIME}
+    - export PARACHAIN_PALLET_ID=0x50
+    - export AUTHORIZE_UPGRADE_PREFIX=0x02
+    - export AUTHORIZE_UPGRADE_CHECK_VERSION=true
     - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/${RUNTIME}_runtime.compact.wasm > /out/${RUNTIME}-metadata.json
