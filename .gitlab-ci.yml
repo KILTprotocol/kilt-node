@@ -1,6 +1,6 @@
 workflow:
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "api"'
+    - if: '$CI_PIPELINE_SOURCE == "trigger"'
 
 stages:
   - build
