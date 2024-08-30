@@ -12,7 +12,7 @@ variables:
 
 build-wasm:
   image:
-    name: paritytech/srtool:1.74.0
+    name: paritytech/srtool:1.74.1
     entrypoint: [""]
   stage: build
   parallel:
@@ -22,8 +22,6 @@ build-wasm:
     - export PACKAGE=${RUNTIME}-runtime
     - export RUNTIME_DIR=runtimes/${RUNTIME}
     - cp -r * /build
-    # TODO: Check if this is fixed in subsequent versions of `srtool`
-    - rustup component add rust-src
     - /srtool/build build
     - subwasm meta --format=json+scale /out/${RUNTIME}_runtime.compact.wasm > /out/${RUNTIME}-metadata.json
     - subwasm get -o ${RUNTIME}-live.wasm wss://${RUNTIME}.kilt.io
