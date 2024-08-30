@@ -12,7 +12,7 @@ variables:
 
 build-wasm:
   image:
-    name: paritytech/srtool:1.75.0
+    name: paritytech/srtool:1.77.0
     entrypoint: [""]
   stage: build
   parallel:
@@ -23,7 +23,6 @@ build-wasm:
     - export RUNTIME_DIR=runtimes/${RUNTIME}
     - cp -r * /build
     - /srtool/build build
-    - cp runtimes/${RUNTIME}/target/srtool/release/wbuild/${RUNTIME}-runtime/* /out
     - subwasm meta --format=json+scale /out/${RUNTIME}_runtime.compact.wasm > /out/${RUNTIME}-metadata.json
     - subwasm get -o ${RUNTIME}-live.wasm wss://${RUNTIME}.kilt.io
     - subwasm diff --no-color ${RUNTIME}-live.wasm /out/${RUNTIME}_runtime.compact.wasm | tee /out/${RUNTIME}-diff.txt
