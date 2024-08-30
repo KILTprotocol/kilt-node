@@ -12,7 +12,7 @@ variables:
 
 build-wasm:
   image:
-    name: paritytech/srtool:1.74.1
+    name: paritytech/srtool:1.75.0
     entrypoint: [""]
   stage: build
   parallel:
