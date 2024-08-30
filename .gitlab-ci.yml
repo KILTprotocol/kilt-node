@@ -1,4 +1,5 @@
 workflow:
+  name: GitLab build pipeline
   rules:
     - if: '$CI_PIPELINE_SOURCE == "trigger"'
 
