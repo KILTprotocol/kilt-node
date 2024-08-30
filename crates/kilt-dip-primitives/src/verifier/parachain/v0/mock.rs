@@ -23,8 +23,11 @@ use did::{
 	DidIdentifierOf, DidVerificationKeyRelationship, KeyIdOf,
 };
 use frame_support::{
-	construct_runtime, pallet_prelude::ValueQuery, parameter_types, storage_alias, traits::EnqueueWithOrigin,
-	traits::Everything, Twox64Concat,
+	construct_runtime,
+	pallet_prelude::ValueQuery,
+	parameter_types, storage_alias,
+	traits::{EnqueueWithOrigin, Everything},
+	Twox64Concat,
 };
 use frame_system::{mocking::MockBlock, pallet_prelude::BlockNumberFor, EnsureSigned};
 use hex_literal::hex;

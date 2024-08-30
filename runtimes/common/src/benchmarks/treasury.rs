@@ -24,8 +24,9 @@ use crate::constants::KILT;
 
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-/// Benchmark helper for the treasury pallet. Implements the `ArgumentsFactory` trait.
-/// Used to create accounts and assets for the treasury pallet benchmarks.
+/// Benchmark helper for the treasury pallet. Implements the `ArgumentsFactory`
+/// trait. Used to create accounts and assets for the treasury pallet
+/// benchmarks.
 pub struct BenchmarkHelper<T>(PhantomData<T>);
 
 impl<T> ArgumentsFactory<(), AccountIdOf<T>> for BenchmarkHelper<T>

@@ -30,8 +30,7 @@ use sp_runtime::{
 	traits::{IdentifyAccount, Zero},
 	AccountId32, MultiSigner,
 };
-use sp_std::ops::Mul;
-use sp_std::{convert::TryInto, vec::Vec};
+use sp_std::{convert::TryInto, ops::Mul, vec::Vec};
 
 use kilt_support::{signature::VerifySignature, Deposit};
 
