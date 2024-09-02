@@ -186,7 +186,6 @@ jobs:
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v "${HOME}/.cargo:/root/.cargo" \
             -w /workspace \
-            -e SKIP_WASM_BUILD=1 \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "cargo test --all-targets --locked ${{ matrix.features }}"
 
