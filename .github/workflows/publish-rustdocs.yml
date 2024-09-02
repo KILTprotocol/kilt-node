@@ -60,13 +60,16 @@ jobs:
               cargo doc --all-features --no-deps --locked && \
               mv $DOCS_TARGET/help.html $DOCS_TARGET/index.html && chown -R $(id -u):$(id -g) $DOCS_TARGET"
 
+      - name: Set target folder for non-master branches
+        if: github.ref_name != 'master'
+        run: echo "TARGET_FOLDER=${{ github.ref_name }}" >> $GITHUB_ENV
+
       - name: Push to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: ${{ env.BRANCH }}
           folder: ${{ env.DOCS_TARGET }}
-          target-folder: >
-            ${{ github.ref_name == 'master' ? '' : github.ref_name }}
+          target-folder: ${{ env.TARGET_FOLDER }}
 
 
   deploy-rustdoc:
