@@ -1,4 +1,4 @@
-# KILT-node &middot; [![tests](https://gitlab.com/kiltprotocol/kilt-node/badges/develop/pipeline.svg)](https://gitlab.com/kiltprotocol/kilt-node/-/commits/develop)
+# KILT-node &middot; [![checks](https://github.com/KILTprotocol/kilt-node/actions/workflows/check-code/badge.svg)](https://github.com/KILTprotocol/kilt-node/tree/develop) &middot; [![rustdocs](https://github.com/KILTprotocol/kilt-node/actions/workflows/publish-rustdocs/badge.svg)](https://github.com/KILTprotocol/kilt-node/tree/develop) &middot; [![build](https://gitlab.com/kiltprotocol/kilt-node/badges/develop/pipeline.svg)](https://github.com/KILTprotocol/kilt-node/tree/develop)
 
 
 <p align="center">
