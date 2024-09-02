@@ -73,9 +73,9 @@ jobs:
 
 
   deploy-rustdoc:
-    name: Deploy rustdoc to the github page
+    name: Deploy rustdoc
     environment:
-      name: github-pages
+      name: gh-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build-rustdoc
@@ -83,7 +83,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.BRANCH }}
+          ref: gh-pages
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
