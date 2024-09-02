@@ -24,12 +24,17 @@ jobs:
   build-rustdoc:
     name: Build rustdoc
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     env:
       DOCS_TARGET: target/doc
       BRANCH: gh-pages
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
 
     steps:
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -48,29 +53,24 @@ jobs:
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v "${HOME}/.cargo:/root/.cargo" \
+            -e RUSTDOCFLAGS='-D warnings' \
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "
-              RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked && \
+              cargo doc --all-features --no-deps --locked && \
               mv $DOCS_TARGET/help.html $DOCS_TARGET/index.html && chown -R $(id -u):$(id -g) $DOCS_TARGET"
 
-      - name: Push to gh-pages for master branch
-        if: github.ref_name == 'master'
+      - name: Push to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: ${{ env.BRANCH }}
           folder: ${{ env.DOCS_TARGET }}
+          target-folder: >
+            ${{ github.ref_name == 'master' ? '' : github.ref_name }}
 
-      - name: Push to gh-pages for tags and develop
-        if: github.ref_name != 'master'
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: ${{ env.BRANCH }}
-          folder: ${{ env.DOCS_TARGET }}
-          target-folder: ${{ github.ref_name }}
 
   deploy-rustdoc:
-    name: Deploy rustdoc
+    name: Deploy rustdoc to the github page
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
