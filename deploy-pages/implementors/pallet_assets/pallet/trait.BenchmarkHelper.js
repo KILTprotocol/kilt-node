@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"runtime_common":[["impl BenchmarkHelper&lt;Location&gt; for <a class=\"struct\" href=\"runtime_common/asset_switch/struct.NoopBenchmarkHelper.html\" title=\"struct runtime_common::asset_switch::NoopBenchmarkHelper\">NoopBenchmarkHelper</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

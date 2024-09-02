@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Call","Error","Event","FreezeReason"],"mod":["dispatchables","storage_types"],"struct":["GenesisConfig","InflationInfo","Pallet","RewardRate","StakingInfo"],"trait":["Config"],"type":["GenesisStaker","Module"]};

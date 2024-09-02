@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["associate_account","associate_sender","change_deposit_owner","reclaim_deposit","remove_account_association","remove_sender_association","update_deposit"]};

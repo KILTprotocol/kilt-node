@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["generate_dev_chain_spec","generate_genesis_state","get_account_id_from_secret","get_authority_keys_from_secret","get_public_key_from_secret","load_spec","template_session_keys"],"type":["ChainSpec"]};

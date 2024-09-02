@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["benchmark","migration","mock","signature","test_utils","traits"],"struct":["Deposit"]};

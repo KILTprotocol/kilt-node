@@ -1,0 +1,6 @@
+(function() {var implementors = {
+"dip_consumer_node_template":[["impl Parser for <a class=\"struct\" href=\"dip_consumer_node_template/cli/struct.Cli.html\" title=\"struct dip_consumer_node_template::cli::Cli\">Cli</a>"]],
+"dip_provider_node_template":[["impl Parser for <a class=\"struct\" href=\"dip_provider_node_template/cli/struct.Cli.html\" title=\"struct dip_provider_node_template::cli::Cli\">Cli</a>"]],
+"kilt_parachain":[["impl Parser for <a class=\"struct\" href=\"kilt_parachain/cli/struct.Cli.html\" title=\"struct kilt_parachain::cli::Cli\">Cli</a>"],["impl Parser for <a class=\"enum\" href=\"kilt_parachain/cli/enum.Subcommand.html\" title=\"enum kilt_parachain::cli::Subcommand\">Subcommand</a>"]],
+"standalone_node":[["impl Parser for <a class=\"enum\" href=\"standalone_node/cli/enum.Subcommand.html\" title=\"enum standalone_node::cli::Subcommand\">Subcommand</a>"],["impl Parser for <a class=\"struct\" href=\"standalone_node/cli/struct.Cli.html\" title=\"struct standalone_node::cli::Cli\">Cli</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

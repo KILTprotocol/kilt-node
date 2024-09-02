@@ -1,0 +1,7 @@
+(function() {var implementors = {
+"dip_consumer_runtime_template":[["impl&lt;Block: BlockT, C: CallApiAt&lt;Block&gt;&gt; ApiExt&lt;Block&gt; for <a class=\"struct\" href=\"dip_consumer_runtime_template/struct.RuntimeApiImpl.html\" title=\"struct dip_consumer_runtime_template::RuntimeApiImpl\">RuntimeApiImpl</a>&lt;Block, C&gt;"]],
+"dip_provider_runtime_template":[["impl&lt;Block: BlockT, C: CallApiAt&lt;Block&gt;&gt; ApiExt&lt;Block&gt; for <a class=\"struct\" href=\"dip_provider_runtime_template/struct.RuntimeApiImpl.html\" title=\"struct dip_provider_runtime_template::RuntimeApiImpl\">RuntimeApiImpl</a>&lt;Block, C&gt;"]],
+"kestrel_runtime":[["impl&lt;Block: BlockT, C: CallApiAt&lt;Block&gt;&gt; ApiExt&lt;Block&gt; for <a class=\"struct\" href=\"kestrel_runtime/struct.RuntimeApiImpl.html\" title=\"struct kestrel_runtime::RuntimeApiImpl\">RuntimeApiImpl</a>&lt;Block, C&gt;"]],
+"peregrine_runtime":[["impl&lt;Block: BlockT, C: CallApiAt&lt;Block&gt;&gt; ApiExt&lt;Block&gt; for <a class=\"struct\" href=\"peregrine_runtime/struct.RuntimeApiImpl.html\" title=\"struct peregrine_runtime::RuntimeApiImpl\">RuntimeApiImpl</a>&lt;Block, C&gt;"]],
+"spiritnet_runtime":[["impl&lt;Block: BlockT, C: CallApiAt&lt;Block&gt;&gt; ApiExt&lt;Block&gt; for <a class=\"struct\" href=\"spiritnet_runtime/struct.RuntimeApiImpl.html\" title=\"struct spiritnet_runtime::RuntimeApiImpl\">RuntimeApiImpl</a>&lt;Block, C&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"pallet_dip_provider":[],
+"runtime_common":[["impl&lt;Runtime, const MAX_LINKED_ACCOUNTS: <a class=\"primitive\" href=\"https://doc.rust-lang.org/1.74.0/std/primitive.u32.html\">u32</a>&gt; IdentityProvider&lt;Runtime&gt; for <a class=\"struct\" href=\"runtime_common/dip/did/struct.LinkedDidInfoProvider.html\" title=\"struct runtime_common::dip::did::LinkedDidInfoProvider\">LinkedDidInfoProvider</a>&lt;MAX_LINKED_ACCOUNTS&gt;<span class=\"where fmt-newline\">where\n    Runtime: Config&lt;DidIdentifier = &lt;Runtime as Config&gt;::Identifier&gt; + Config&lt;Web3NameOwner = &lt;Runtime as Config&gt;::Identifier&gt; + Config&lt;DidIdentifier = &lt;Runtime as Config&gt;::Identifier&gt; + Config,</span>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

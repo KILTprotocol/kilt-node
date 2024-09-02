@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["attestations","authorized_by","benchmarking","default_weights","migrations","mock","pallet"],"trait":["AttestationAccessControl"]};

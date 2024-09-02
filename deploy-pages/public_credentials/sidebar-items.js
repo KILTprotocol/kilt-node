@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["credentials","default_weights","migrations","mock","pallet"],"trait":["PublicCredentialsAccessControl"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["SwitchPairStatus"],"mod":["pallet","traits","xcm"],"struct":["PartialBenchmarkInfo","SwitchPairInfo"],"trait":["BenchmarkHelper","WeightInfo"]};

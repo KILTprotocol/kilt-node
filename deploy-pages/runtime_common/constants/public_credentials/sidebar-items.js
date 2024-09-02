@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH","PUBLIC_CREDENTIAL_DEPOSIT"],"struct":["Deposit","MaxEncodedClaimsLength","MaxSubjectIdLength"]};

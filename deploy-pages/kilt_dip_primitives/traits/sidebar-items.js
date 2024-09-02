@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["RelayStateRootsViaRelayStorePallet"],"trait":["BenchmarkDefault","DipCallOriginFilter","GetWithArg","GetWithoutArg","Incrementable"]};

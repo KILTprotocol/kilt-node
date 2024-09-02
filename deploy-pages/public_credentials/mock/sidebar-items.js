@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["generate_base_credential_entry","generate_base_public_credential_creation_op","generate_credential_id","insert_public_credentials"],"struct":["MockAccessControl"]};

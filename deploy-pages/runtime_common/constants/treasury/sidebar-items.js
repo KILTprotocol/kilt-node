@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["INITIAL_PERIOD_LENGTH","INITIAL_PERIOD_REWARD_PER_BLOCK"],"struct":["InitialPeriodLength","InitialPeriodReward","PayoutPeriod"]};

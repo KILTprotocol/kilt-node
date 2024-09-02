@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DELEGATION_DEPOSIT","MAX_CHILDREN","MAX_PARENT_CHECKS","MAX_REMOVALS","MAX_REVOCATIONS","MAX_SIGNATURE_BYTE_LENGTH"],"struct":["DelegationDeposit","MaxChildren","MaxParentChecks","MaxRemovals","MaxRevocations","MaxSignatureByteLength"]};

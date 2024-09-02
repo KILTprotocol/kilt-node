@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["claim_hash_from_seed","generate_base_attestation","generate_base_attestation_creation_details","generate_base_attestation_with_deposit","insert_attestation","sr25519_did_from_public_key"],"struct":["AttestationCreationDetails","MockAccessControl"],"type":["Hash"]};

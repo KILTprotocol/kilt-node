@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["add_key_agreement_key","add_service_endpoint","change_deposit_owner","create","create_from_account","delete","dispatch_as","reclaim_deposit","remove_attestation_key","remove_delegation_key","remove_key_agreement_key","remove_service_endpoint","set_attestation_key","set_authentication_key","set_delegation_key","submit_did_call","update_deposit"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["benchmarking","default_weights","did_details","errors","migrations","mock_utils","origin","pallet","service_endpoints"],"struct":["DidSignatureVerify"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["KILT_PARA_ID","RILT_PARA_ID"],"enum":["ParachainRuntime","PeregrineRuntime","SpiritnetRuntime"],"mod":["peregrine","rilt","spiritnet","utils"],"struct":["Extensions","ExtensionsFork"]};
