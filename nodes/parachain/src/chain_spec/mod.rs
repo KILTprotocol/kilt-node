@@ -112,7 +112,7 @@ impl FromStr for ParachainRuntime {
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			// Peregrine development
-			"dev" => Ok(Self::Peregrine(PeregrineRuntime::Dev)),
+			"dev" | "peregrine-dev" => Ok(Self::Peregrine(PeregrineRuntime::Dev)),
 			// New blank Peregrine chainspec
 			"peregrine-new" => Ok(Self::Peregrine(PeregrineRuntime::New)),
 			// Peregrine chainspec
