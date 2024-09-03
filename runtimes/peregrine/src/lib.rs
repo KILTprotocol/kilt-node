@@ -295,7 +295,7 @@ impl pallet_aura::Config for Runtime {
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxAuthorities;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type SlotDuration = ConstU64<SLOT_DURATION>;
+    type SlotDuration = ConstU64<SLOT_DURATION>;
 }
 
 parameter_types! {
