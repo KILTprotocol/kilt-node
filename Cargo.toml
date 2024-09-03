@@ -58,6 +58,7 @@ ctype                  = { path = "pallets/ctype", default-features = false }
 delegation             = { path = "pallets/delegation", default-features = false }
 did                    = { path = "pallets/did", default-features = false }
 pallet-asset-switch    = { path = "pallets/pallet-asset-switch", default-features = false }
+pallet-bonded-coins    = { path = "pallets/pallet-bonded-coins", default-features = false }
 pallet-configuration   = { path = "pallets/pallet-configuration", default-features = false }
 pallet-deposit-storage = { path = "pallets/pallet-deposit-storage", default-features = false }
 pallet-did-lookup      = { path = "pallets/pallet-did-lookup", default-features = false }
@@ -160,6 +161,7 @@ pallet-treasury                            = { git = "https://github.com/parityt
 pallet-utility                             = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 pallet-vesting                             = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-api                                     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+sp-arithmetic                              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-authority-discovery                     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-block-builder                           = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-consensus-aura                          = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
