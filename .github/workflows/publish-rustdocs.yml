@@ -58,7 +58,8 @@ jobs:
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "
               cargo doc --all-features --no-deps --locked && \
-              mv $DOCS_TARGET/help.html $DOCS_TARGET/index.html && chown -R $(id -u):$(id -g) $DOCS_TARGET"
+              mv $DOCS_TARGET/help.html $DOCS_TARGET/index.html && \
+              chown -R $(id -u):$(id -g) $DOCS_TARGET"
 
       - name: Set target folder for non-master branches
         if: github.ref_name != 'master'
