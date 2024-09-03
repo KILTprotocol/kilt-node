@@ -47,7 +47,7 @@ use substrate_prometheus_endpoint::Registry;
 
 use runtime_common::{AccountId, AuthorityId, Balance, BlockNumber, Hash, Nonce};
 
-pub const AUTHORING_DURATION: u64 = 500;
+pub const AUTHORING_DURATION: u64 = 1500;
 pub const TASK_MANAGER_IDENTIFIER: &str = "aura";
 
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
