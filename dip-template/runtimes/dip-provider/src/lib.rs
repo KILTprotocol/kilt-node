@@ -154,7 +154,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("dip-provider-runtime-template"),
 	impl_name: create_runtime_str!("dip-provider-runtime-template"),
 	authoring_version: 1,
-	spec_version: 11400,
+	spec_version: 11500,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
