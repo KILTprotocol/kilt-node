@@ -30,6 +30,8 @@ jobs:
 
       - name: Push latest ref (branch or tag)
         run: git push gitlab ${{ github.ref_name }}
+        # It can happen that the Gitlab mirror is updated in the meanwhile, and the ref already exists there, so we ignore the error.
+        continue-on-error: true
 
       - name: Trigger GitLab CI
         run: |
