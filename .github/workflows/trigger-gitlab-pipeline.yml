@@ -28,7 +28,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git remote add gitlab https://oauth2:${{ secrets.KILTBOT_PUSH_ACCESS_TOKEN }}@gitlab.com/kiltprotocol/kilt-node
 
-      - name: Push branch and follow tags
+      - name: Push latest ref (branch or tag)
         run: git push gitlab ${{ github.ref_name }}
 
       - name: Trigger GitLab CI
