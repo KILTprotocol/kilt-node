@@ -37,19 +37,14 @@ jobs:
 
       - name: Push tag
         run: git push gitlab tag ${{ github.ref_name }}
+        continue-on-error: true
 
       - name: Push branch and follow tags
         run: git push gitlab ${{ github.ref_name }} --follow-tags
 
-      # - name: Sync HEAD with GitLab
-      #   uses: saderi/push-to-gitlab@v1
-      #   with:
-      #     gitlab_repository: 'gitlab.com/kiltprotocol/kilt-node'
-      #     gitlab_token: ${{ secrets.KILTBOT_PUSH_ACCESS_TOKEN  }}
-
-      # - name: Trigger GitLab CI
-      #   run: |
-      #     curl -X POST \
-      #       -F token=${{ secrets.GITLAB_TRIGGER_TOKEN }} \
-      #       -F ref=${{ github.ref_name }} \
-      #       https://gitlab.com/api/v4/projects/${{ vars.GITLAB_PROJECT_ID }}/trigger/pipeline
+      - name: Trigger GitLab CI
+        run: |
+          curl -X POST \
+            -F token=${{ secrets.GITLAB_TRIGGER_TOKEN }} \
+            -F ref=${{ github.ref_name }} \
+            https://gitlab.com/api/v4/projects/${{ vars.GITLAB_PROJECT_ID }}/trigger/pipeline
