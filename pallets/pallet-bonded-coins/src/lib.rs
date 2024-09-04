@@ -16,7 +16,11 @@ mod benchmarking;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
+	use frame_support::{
+		dispatch::DispatchResultWithPostInfo,
+		pallet_prelude::*,
+		traits::fungible::{Mutate, MutateHold},
+	};
 	use frame_system::pallet_prelude::*;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -24,6 +28,25 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		/// The currency used for storage deposits.
+		type DepositCurrency: MutateHold<Self::AccountId>;
+		/// The currency used as collateral for minting bonded tokens.
+		type CollateralCurrency: Mutate<Self::AccountId>;
+		/// The maximum amount that a user can place on a bet.
+		/// TODO: Type should be derived from Self::CollateralCurrency
+		#[pallet::constant]
+		type MaxStake: Get<u32>;
+		/// The maximum length allowed for an event name.
+		/// TODO: is there a better type for a length?
+		#[pallet::constant]
+		type MaxNameLength: Get<u32>;
+		/// The maximum number of outcomes allowed for an event.
+		#[pallet::constant]
+		type MaxOutcomes: Get<u32>;
+		/// Who can create new events.
+		type CreateOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		/// Who can mint coins.
+		type MintOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 	}
 
 	#[pallet::pallet]
@@ -99,7 +122,7 @@ pub mod pallet {
 					// Update the value in storage with the incremented result.
 					<Something<T>>::put(new);
 					Ok(().into())
-				},
+				}
 			}
 		}
 	}
