@@ -14,18 +14,22 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+mod types;
+
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::types::EventData;
 	use frame_support::{
 		dispatch::DispatchResultWithPostInfo,
 		pallet_prelude::*,
 		traits::fungible::{Mutate, MutateHold},
 	};
 	use frame_system::pallet_prelude::*;
+	use pallet_assets as assets;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + assets::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The currency used for storage deposits.
@@ -39,10 +43,10 @@ pub mod pallet {
 		/// The maximum length allowed for an event name.
 		/// TODO: is there a better type for a length?
 		#[pallet::constant]
-		type MaxNameLength: Get<u32>;
+		type MaxNameLength: Get<u32> + TypeInfo;
 		/// The maximum number of outcomes allowed for an event.
 		#[pallet::constant]
-		type MaxOutcomes: Get<u32>;
+		type MaxOutcomes: Get<u32> + TypeInfo;
 		/// Who can create new events.
 		type CreateOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		/// Who can mint coins.
@@ -52,13 +56,16 @@ pub mod pallet {
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
 
-	// The pallet's runtime storage items.
-	// https://docs.substrate.io/v3/runtime/storage
+	/// Predictable Events
 	#[pallet::storage]
-	#[pallet::getter(fn something)]
-	// Learn more about declaring storage items:
-	// https://docs.substrate.io/v3/runtime/storage#declaring-storage-items
-	pub type Something<T> = StorageValue<_, u32>;
+	#[pallet::getter(fn events)]
+	pub(crate) type Events<T: Config> = StorageMap<
+		_,
+		Twox64Concat,
+		T::AccountId,
+		EventData<T::AccountId, T::AssetId, T::MaxNameLength, T::MaxOutcomes>,
+		OptionQuery,
+	>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://docs.substrate.io/v3/runtime/events-and-errors
