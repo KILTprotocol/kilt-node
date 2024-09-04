@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["add","change_deposit_owner","reclaim_deposit","remove","revoke","update_deposit"]};

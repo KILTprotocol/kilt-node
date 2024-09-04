@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["force_set_switch_pair","force_unset_switch_pair","pause_switch_pair","resume_switch_pair","set_switch_pair","switch","update_remote_xcm_fee"]};

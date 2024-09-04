@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["LATEST_COMMITMENT_VERSION"],"enum":["Call","Error","Event"],"mod":["dispatchables","storage_types"],"struct":["Pallet"],"trait":["Config"],"type":["IdentityCommitmentOf","IdentityCommitmentVersion","IdentityCommitments","IdentityOf","IdentityProviderOf","Module"]};

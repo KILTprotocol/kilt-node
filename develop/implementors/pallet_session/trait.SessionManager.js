@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"parachain_staking":[["impl&lt;T: <a class=\"trait\" href=\"parachain_staking/pallet/trait.Config.html\" title=\"trait parachain_staking::pallet::Config\">Config</a>&gt; SessionManager&lt;&lt;T as Config&gt;::AccountId&gt; for <a class=\"struct\" href=\"parachain_staking/pallet/struct.Pallet.html\" title=\"struct parachain_staking::pallet::Pallet\">Pallet</a>&lt;T&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

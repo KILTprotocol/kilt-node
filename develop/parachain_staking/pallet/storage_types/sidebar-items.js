@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BlocksAuthored","BlocksRewarded","CandidatePool","DelegatorState","ForceNewRound","InflationConfig","LastDelegation","LastRewardReduction","MaxCollatorCandidateStake","MaxSelectedCandidates","Rewards","Round","TopCandidates","TotalCollatorStake","Unstaking"]};

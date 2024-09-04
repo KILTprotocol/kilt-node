@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AsciiWeb3Name","Web3NameOwnership"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAXIMUM_ASSET_DID_LENGTH","MINIMUM_ASSET_DID_LENGTH"],"struct":["AssetDid"]};

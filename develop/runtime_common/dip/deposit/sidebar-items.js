@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CommitmentDepositRemovalHookError","DepositKey","DepositNamespace"],"struct":["DepositHooks","DipProviderDepositNamespace","PalletDepositStorageBenchmarkHooks"],"type":["DepositCollectorHooks"]};

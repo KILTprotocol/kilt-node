@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"peregrine_runtime":[["impl PrivilegeCmp&lt;<a class=\"enum\" href=\"peregrine_runtime/enum.OriginCaller.html\" title=\"enum peregrine_runtime::OriginCaller\">OriginCaller</a>&gt; for <a class=\"struct\" href=\"peregrine_runtime/struct.OriginPrivilegeCmp.html\" title=\"struct peregrine_runtime::OriginPrivilegeCmp\">OriginPrivilegeCmp</a>"]],
+"spiritnet_runtime":[["impl PrivilegeCmp&lt;<a class=\"enum\" href=\"spiritnet_runtime/enum.OriginCaller.html\" title=\"enum spiritnet_runtime::OriginCaller\">OriginCaller</a>&gt; for <a class=\"struct\" href=\"spiritnet_runtime/struct.OriginPrivilegeCmp.html\" title=\"struct spiritnet_runtime::OriginPrivilegeCmp\">OriginPrivilegeCmp</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

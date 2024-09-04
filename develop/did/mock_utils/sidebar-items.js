@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["generate_base_did_creation_details","generate_base_did_details","get_key_agreement_keys","get_service_endpoints"]};

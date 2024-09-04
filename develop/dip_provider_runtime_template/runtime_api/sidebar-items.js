@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DipProofError"],"struct":["DipProofRequest"]};

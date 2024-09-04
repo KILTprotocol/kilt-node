@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"pallet_asset_switch":[["impl TryConvert&lt;AccountId32, Junction&gt; for <a class=\"struct\" href=\"pallet_asset_switch/xcm/convert/struct.AccountId32ToAccountId32JunctionConverter.html\" title=\"struct pallet_asset_switch::xcm::convert::AccountId32ToAccountId32JunctionConverter\">AccountId32ToAccountId32JunctionConverter</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

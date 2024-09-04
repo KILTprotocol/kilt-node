@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"dip_consumer_runtime_template":[["impl <a class=\"trait\" href=\"pallet_postit/traits/trait.GetUsername.html\" title=\"trait pallet_postit::traits::GetUsername\">GetUsername</a> for <a class=\"struct\" href=\"dip_consumer_runtime_template/struct.DipOriginAdapter.html\" title=\"struct dip_consumer_runtime_template::DipOriginAdapter\">DipOriginAdapter</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

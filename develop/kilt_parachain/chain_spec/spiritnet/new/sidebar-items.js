@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["generate_chain_spec","generate_genesis_state"]};

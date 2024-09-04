@@ -1,0 +1,5 @@
+(function() {var implementors = {
+"kestrel_runtime":[["impl InstanceFilter&lt;<a class=\"enum\" href=\"kestrel_runtime/enum.RuntimeCall.html\" title=\"enum kestrel_runtime::RuntimeCall\">RuntimeCall</a>&gt; for <a class=\"enum\" href=\"kestrel_runtime/enum.ProxyType.html\" title=\"enum kestrel_runtime::ProxyType\">ProxyType</a>"]],
+"peregrine_runtime":[["impl InstanceFilter&lt;<a class=\"enum\" href=\"peregrine_runtime/enum.RuntimeCall.html\" title=\"enum peregrine_runtime::RuntimeCall\">RuntimeCall</a>&gt; for <a class=\"enum\" href=\"peregrine_runtime/enum.ProxyType.html\" title=\"enum peregrine_runtime::ProxyType\">ProxyType</a>"]],
+"spiritnet_runtime":[["impl InstanceFilter&lt;<a class=\"enum\" href=\"spiritnet_runtime/enum.RuntimeCall.html\" title=\"enum spiritnet_runtime::RuntimeCall\">RuntimeCall</a>&gt; for <a class=\"enum\" href=\"spiritnet_runtime/enum.ProxyType.html\" title=\"enum spiritnet_runtime::ProxyType\">ProxyType</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

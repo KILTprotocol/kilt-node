@@ -1,0 +1,339 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Weight functions needed for did."><title>WeightInfo in did::default_weights - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="did" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../../did/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a></nav><nav class="sidebar"><a class="logo-container" href="../../did/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 class="location"><a href="#">WeightInfo</a></h2><div class="sidebar-elems"><section><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.add_ecdsa_key_agreement_key">add_ecdsa_key_agreement_key</a></li><li><a href="#tymethod.add_ed25519_key_agreement_key">add_ed25519_key_agreement_key</a></li><li><a href="#tymethod.add_service_endpoint">add_service_endpoint</a></li><li><a href="#tymethod.add_sr25519_key_agreement_key">add_sr25519_key_agreement_key</a></li><li><a href="#tymethod.change_deposit_owner">change_deposit_owner</a></li><li><a href="#tymethod.create_ecdsa_keys">create_ecdsa_keys</a></li><li><a href="#tymethod.create_ed25519_keys">create_ed25519_keys</a></li><li><a href="#tymethod.create_from_account">create_from_account</a></li><li><a href="#tymethod.create_sr25519_keys">create_sr25519_keys</a></li><li><a href="#tymethod.delete">delete</a></li><li><a href="#tymethod.dispatch_as">dispatch_as</a></li><li><a href="#tymethod.reclaim_deposit">reclaim_deposit</a></li><li><a href="#tymethod.remove_ecdsa_attestation_key">remove_ecdsa_attestation_key</a></li><li><a href="#tymethod.remove_ecdsa_delegation_key">remove_ecdsa_delegation_key</a></li><li><a href="#tymethod.remove_ecdsa_key_agreement_key">remove_ecdsa_key_agreement_key</a></li><li><a href="#tymethod.remove_ed25519_attestation_key">remove_ed25519_attestation_key</a></li><li><a href="#tymethod.remove_ed25519_delegation_key">remove_ed25519_delegation_key</a></li><li><a href="#tymethod.remove_ed25519_key_agreement_key">remove_ed25519_key_agreement_key</a></li><li><a href="#tymethod.remove_service_endpoint">remove_service_endpoint</a></li><li><a href="#tymethod.remove_sr25519_attestation_key">remove_sr25519_attestation_key</a></li><li><a href="#tymethod.remove_sr25519_delegation_key">remove_sr25519_delegation_key</a></li><li><a href="#tymethod.remove_sr25519_key_agreement_key">remove_sr25519_key_agreement_key</a></li><li><a href="#tymethod.set_ecdsa_attestation_key">set_ecdsa_attestation_key</a></li><li><a href="#tymethod.set_ecdsa_authentication_key">set_ecdsa_authentication_key</a></li><li><a href="#tymethod.set_ecdsa_delegation_key">set_ecdsa_delegation_key</a></li><li><a href="#tymethod.set_ed25519_attestation_key">set_ed25519_attestation_key</a></li><li><a href="#tymethod.set_ed25519_authentication_key">set_ed25519_authentication_key</a></li><li><a href="#tymethod.set_ed25519_delegation_key">set_ed25519_delegation_key</a></li><li><a href="#tymethod.set_sr25519_attestation_key">set_sr25519_attestation_key</a></li><li><a href="#tymethod.set_sr25519_authentication_key">set_sr25519_authentication_key</a></li><li><a href="#tymethod.set_sr25519_delegation_key">set_sr25519_delegation_key</a></li><li><a href="#tymethod.signature_verification_ecdsa">signature_verification_ecdsa</a></li><li><a href="#tymethod.signature_verification_ed25519">signature_verification_ed25519</a></li><li><a href="#tymethod.signature_verification_sr25519">signature_verification_sr25519</a></li><li><a href="#tymethod.submit_did_call_ecdsa_key">submit_did_call_ecdsa_key</a></li><li><a href="#tymethod.submit_did_call_ed25519_key">submit_did_call_ed25519_key</a></li><li><a href="#tymethod.submit_did_call_sr25519_key">submit_did_call_sr25519_key</a></li><li><a href="#tymethod.update_deposit">update_deposit</a></li></ul><h3><a href="#foreign-impls">Implementations on Foreign Types</a></h3><ul class="block"><li><a href="#impl-WeightInfo-for-()">()</a></li></ul><h3><a href="#implementors">Implementors</a></h3></section><h2><a href="index.html">In did::default_weights</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Trait <a href="../index.html">did</a>::<wbr><a href="index.html">default_weights</a>::<wbr><a class="trait" href="#">WeightInfo</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../src/did/default_weights.rs.html#34-73">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub trait WeightInfo {
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 38 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.create_ed25519_keys" class="fn">create_ed25519_keys</a>(n: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>, c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.create_sr25519_keys" class="fn">create_sr25519_keys</a>(n: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>, c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.create_ecdsa_keys" class="fn">create_ecdsa_keys</a>(n: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>, c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.delete" class="fn">delete</a>(c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.reclaim_deposit" class="fn">reclaim_deposit</a>(c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.submit_did_call_ed25519_key" class="fn">submit_did_call_ed25519_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.submit_did_call_sr25519_key" class="fn">submit_did_call_sr25519_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.submit_did_call_ecdsa_key" class="fn">submit_did_call_ecdsa_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_ed25519_authentication_key" class="fn">set_ed25519_authentication_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_sr25519_authentication_key" class="fn">set_sr25519_authentication_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_ecdsa_authentication_key" class="fn">set_ecdsa_authentication_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_ed25519_delegation_key" class="fn">set_ed25519_delegation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_sr25519_delegation_key" class="fn">set_sr25519_delegation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_ecdsa_delegation_key" class="fn">set_ecdsa_delegation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_ed25519_delegation_key" class="fn">remove_ed25519_delegation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_sr25519_delegation_key" class="fn">remove_sr25519_delegation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_ecdsa_delegation_key" class="fn">remove_ecdsa_delegation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_ed25519_attestation_key" class="fn">set_ed25519_attestation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_sr25519_attestation_key" class="fn">set_sr25519_attestation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_ecdsa_attestation_key" class="fn">set_ecdsa_attestation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_ed25519_attestation_key" class="fn">remove_ed25519_attestation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_sr25519_attestation_key" class="fn">remove_sr25519_attestation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_ecdsa_attestation_key" class="fn">remove_ecdsa_attestation_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.add_ed25519_key_agreement_key" class="fn">add_ed25519_key_agreement_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.add_sr25519_key_agreement_key" class="fn">add_sr25519_key_agreement_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.add_ecdsa_key_agreement_key" class="fn">add_ecdsa_key_agreement_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_ed25519_key_agreement_key" class="fn">remove_ed25519_key_agreement_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_sr25519_key_agreement_key" class="fn">remove_sr25519_key_agreement_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_ecdsa_key_agreement_key" class="fn">remove_ecdsa_key_agreement_key</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.add_service_endpoint" class="fn">add_service_endpoint</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_service_endpoint" class="fn">remove_service_endpoint</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.signature_verification_sr25519" class="fn">signature_verification_sr25519</a>(l: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.signature_verification_ed25519" class="fn">signature_verification_ed25519</a>(l: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.signature_verification_ecdsa" class="fn">signature_verification_ecdsa</a>(l: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.change_deposit_owner" class="fn">change_deposit_owner</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.update_deposit" class="fn">update_deposit</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.dispatch_as" class="fn">dispatch_as</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.create_from_account" class="fn">create_from_account</a>() -&gt; Weight;
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Weight functions needed for did.</p>
+</div></details><h2 id="required-methods" class="small-section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><section id="tymethod.create_ed25519_keys" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#35">source</a><h4 class="code-header">fn <a href="#tymethod.create_ed25519_keys" class="fn">create_ed25519_keys</a>(n: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>, c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section><section id="tymethod.create_sr25519_keys" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#36">source</a><h4 class="code-header">fn <a href="#tymethod.create_sr25519_keys" class="fn">create_sr25519_keys</a>(n: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>, c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section><section id="tymethod.create_ecdsa_keys" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#37">source</a><h4 class="code-header">fn <a href="#tymethod.create_ecdsa_keys" class="fn">create_ecdsa_keys</a>(n: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>, c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section><section id="tymethod.delete" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#38">source</a><h4 class="code-header">fn <a href="#tymethod.delete" class="fn">delete</a>(c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section><section id="tymethod.reclaim_deposit" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#39">source</a><h4 class="code-header">fn <a href="#tymethod.reclaim_deposit" class="fn">reclaim_deposit</a>(c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section><section id="tymethod.submit_did_call_ed25519_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#40">source</a><h4 class="code-header">fn <a href="#tymethod.submit_did_call_ed25519_key" class="fn">submit_did_call_ed25519_key</a>() -&gt; Weight</h4></section><section id="tymethod.submit_did_call_sr25519_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#41">source</a><h4 class="code-header">fn <a href="#tymethod.submit_did_call_sr25519_key" class="fn">submit_did_call_sr25519_key</a>() -&gt; Weight</h4></section><section id="tymethod.submit_did_call_ecdsa_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#42">source</a><h4 class="code-header">fn <a href="#tymethod.submit_did_call_ecdsa_key" class="fn">submit_did_call_ecdsa_key</a>() -&gt; Weight</h4></section><section id="tymethod.set_ed25519_authentication_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#43">source</a><h4 class="code-header">fn <a href="#tymethod.set_ed25519_authentication_key" class="fn">set_ed25519_authentication_key</a>() -&gt; Weight</h4></section><section id="tymethod.set_sr25519_authentication_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#44">source</a><h4 class="code-header">fn <a href="#tymethod.set_sr25519_authentication_key" class="fn">set_sr25519_authentication_key</a>() -&gt; Weight</h4></section><section id="tymethod.set_ecdsa_authentication_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#45">source</a><h4 class="code-header">fn <a href="#tymethod.set_ecdsa_authentication_key" class="fn">set_ecdsa_authentication_key</a>() -&gt; Weight</h4></section><section id="tymethod.set_ed25519_delegation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#46">source</a><h4 class="code-header">fn <a href="#tymethod.set_ed25519_delegation_key" class="fn">set_ed25519_delegation_key</a>() -&gt; Weight</h4></section><section id="tymethod.set_sr25519_delegation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#47">source</a><h4 class="code-header">fn <a href="#tymethod.set_sr25519_delegation_key" class="fn">set_sr25519_delegation_key</a>() -&gt; Weight</h4></section><section id="tymethod.set_ecdsa_delegation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#48">source</a><h4 class="code-header">fn <a href="#tymethod.set_ecdsa_delegation_key" class="fn">set_ecdsa_delegation_key</a>() -&gt; Weight</h4></section><section id="tymethod.remove_ed25519_delegation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#49">source</a><h4 class="code-header">fn <a href="#tymethod.remove_ed25519_delegation_key" class="fn">remove_ed25519_delegation_key</a>() -&gt; Weight</h4></section><section id="tymethod.remove_sr25519_delegation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#50">source</a><h4 class="code-header">fn <a href="#tymethod.remove_sr25519_delegation_key" class="fn">remove_sr25519_delegation_key</a>() -&gt; Weight</h4></section><section id="tymethod.remove_ecdsa_delegation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#51">source</a><h4 class="code-header">fn <a href="#tymethod.remove_ecdsa_delegation_key" class="fn">remove_ecdsa_delegation_key</a>() -&gt; Weight</h4></section><section id="tymethod.set_ed25519_attestation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#52">source</a><h4 class="code-header">fn <a href="#tymethod.set_ed25519_attestation_key" class="fn">set_ed25519_attestation_key</a>() -&gt; Weight</h4></section><section id="tymethod.set_sr25519_attestation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#53">source</a><h4 class="code-header">fn <a href="#tymethod.set_sr25519_attestation_key" class="fn">set_sr25519_attestation_key</a>() -&gt; Weight</h4></section><section id="tymethod.set_ecdsa_attestation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#54">source</a><h4 class="code-header">fn <a href="#tymethod.set_ecdsa_attestation_key" class="fn">set_ecdsa_attestation_key</a>() -&gt; Weight</h4></section><section id="tymethod.remove_ed25519_attestation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#55">source</a><h4 class="code-header">fn <a href="#tymethod.remove_ed25519_attestation_key" class="fn">remove_ed25519_attestation_key</a>() -&gt; Weight</h4></section><section id="tymethod.remove_sr25519_attestation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#56">source</a><h4 class="code-header">fn <a href="#tymethod.remove_sr25519_attestation_key" class="fn">remove_sr25519_attestation_key</a>() -&gt; Weight</h4></section><section id="tymethod.remove_ecdsa_attestation_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#57">source</a><h4 class="code-header">fn <a href="#tymethod.remove_ecdsa_attestation_key" class="fn">remove_ecdsa_attestation_key</a>() -&gt; Weight</h4></section><section id="tymethod.add_ed25519_key_agreement_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#58">source</a><h4 class="code-header">fn <a href="#tymethod.add_ed25519_key_agreement_key" class="fn">add_ed25519_key_agreement_key</a>() -&gt; Weight</h4></section><section id="tymethod.add_sr25519_key_agreement_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#59">source</a><h4 class="code-header">fn <a href="#tymethod.add_sr25519_key_agreement_key" class="fn">add_sr25519_key_agreement_key</a>() -&gt; Weight</h4></section><section id="tymethod.add_ecdsa_key_agreement_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#60">source</a><h4 class="code-header">fn <a href="#tymethod.add_ecdsa_key_agreement_key" class="fn">add_ecdsa_key_agreement_key</a>() -&gt; Weight</h4></section><section id="tymethod.remove_ed25519_key_agreement_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#61">source</a><h4 class="code-header">fn <a href="#tymethod.remove_ed25519_key_agreement_key" class="fn">remove_ed25519_key_agreement_key</a>() -&gt; Weight</h4></section><section id="tymethod.remove_sr25519_key_agreement_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#62">source</a><h4 class="code-header">fn <a href="#tymethod.remove_sr25519_key_agreement_key" class="fn">remove_sr25519_key_agreement_key</a>() -&gt; Weight</h4></section><section id="tymethod.remove_ecdsa_key_agreement_key" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#63">source</a><h4 class="code-header">fn <a href="#tymethod.remove_ecdsa_key_agreement_key" class="fn">remove_ecdsa_key_agreement_key</a>() -&gt; Weight</h4></section><section id="tymethod.add_service_endpoint" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#64">source</a><h4 class="code-header">fn <a href="#tymethod.add_service_endpoint" class="fn">add_service_endpoint</a>() -&gt; Weight</h4></section><section id="tymethod.remove_service_endpoint" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#65">source</a><h4 class="code-header">fn <a href="#tymethod.remove_service_endpoint" class="fn">remove_service_endpoint</a>() -&gt; Weight</h4></section><section id="tymethod.signature_verification_sr25519" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#66">source</a><h4 class="code-header">fn <a href="#tymethod.signature_verification_sr25519" class="fn">signature_verification_sr25519</a>(l: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section><section id="tymethod.signature_verification_ed25519" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#67">source</a><h4 class="code-header">fn <a href="#tymethod.signature_verification_ed25519" class="fn">signature_verification_ed25519</a>(l: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section><section id="tymethod.signature_verification_ecdsa" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#68">source</a><h4 class="code-header">fn <a href="#tymethod.signature_verification_ecdsa" class="fn">signature_verification_ecdsa</a>(l: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section><section id="tymethod.change_deposit_owner" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#69">source</a><h4 class="code-header">fn <a href="#tymethod.change_deposit_owner" class="fn">change_deposit_owner</a>() -&gt; Weight</h4></section><section id="tymethod.update_deposit" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#70">source</a><h4 class="code-header">fn <a href="#tymethod.update_deposit" class="fn">update_deposit</a>() -&gt; Weight</h4></section><section id="tymethod.dispatch_as" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#71">source</a><h4 class="code-header">fn <a href="#tymethod.dispatch_as" class="fn">dispatch_as</a>() -&gt; Weight</h4></section><section id="tymethod.create_from_account" class="method"><a class="src rightside" href="../../src/did/default_weights.rs.html#72">source</a><h4 class="code-header">fn <a href="#tymethod.create_from_account" class="fn">create_from_account</a>() -&gt; Weight</h4></section></div><h2 id="foreign-impls" class="small-section-header">Implementations on Foreign Types<a href="#foreign-impls" class="anchor">§</a></h2><details class="toggle implementors-toggle"><summary><section id="impl-WeightInfo-for-()" class="impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#748-1416">source</a><a href="#impl-WeightInfo-for-()" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="trait.WeightInfo.html" title="trait did::default_weights::WeightInfo">WeightInfo</a> for <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.unit.html">()</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.create_ed25519_keys" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#763-776">source</a><a href="#method.create_ed25519_keys" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.create_ed25519_keys" class="fn">create_ed25519_keys</a>(n: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>, c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did DidBlacklist (r:1 w:0)
+Proof: Did DidBlacklist (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
+Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: System Account (r:2 w:2)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:0 w:1)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: Did ServiceEndpoints (r:0 w:25)
+Proof: Did ServiceEndpoints (max_values: None, max_size: Some(615), added: 3090, mode: MaxEncodedLen)
+The range of component <code>n</code> is <code>[1, 10]</code>.
+The range of component <code>c</code> is <code>[1, 25]</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.create_sr25519_keys" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#791-804">source</a><a href="#method.create_sr25519_keys" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.create_sr25519_keys" class="fn">create_sr25519_keys</a>(n: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>, c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did DidBlacklist (r:1 w:0)
+Proof: Did DidBlacklist (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
+Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: System Account (r:2 w:2)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:0 w:1)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: Did ServiceEndpoints (r:0 w:25)
+Proof: Did ServiceEndpoints (max_values: None, max_size: Some(615), added: 3090, mode: MaxEncodedLen)
+The range of component <code>n</code> is <code>[1, 10]</code>.
+The range of component <code>c</code> is <code>[1, 25]</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.create_ecdsa_keys" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#819-832">source</a><a href="#method.create_ecdsa_keys" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.create_ecdsa_keys" class="fn">create_ecdsa_keys</a>(n: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>, c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did DidBlacklist (r:1 w:0)
+Proof: Did DidBlacklist (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
+Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: System Account (r:2 w:2)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:0 w:1)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: Did ServiceEndpoints (r:0 w:25)
+Proof: Did ServiceEndpoints (max_values: None, max_size: Some(615), added: 3090, mode: MaxEncodedLen)
+The range of component <code>n</code> is <code>[1, 10]</code>.
+The range of component <code>c</code> is <code>[1, 25]</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.delete" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#846-859">source</a><a href="#method.delete" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.delete" class="fn">delete</a>(c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did DidEndpointsCount (r:1 w:1)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: Did ServiceEndpoints (r:25 w:25)
+Proof: Did ServiceEndpoints (max_values: None, max_size: Some(615), added: 3090, mode: MaxEncodedLen)
+Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Did DidBlacklist (r:0 w:1)
+Proof: Did DidBlacklist (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
+The range of component <code>c</code> is <code>[1, 25]</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.reclaim_deposit" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#873-886">source</a><a href="#method.reclaim_deposit" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.reclaim_deposit" class="fn">reclaim_deposit</a>(c: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:1)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: Did ServiceEndpoints (r:25 w:25)
+Proof: Did ServiceEndpoints (max_values: None, max_size: Some(615), added: 3090, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Did DidBlacklist (r:0 w:1)
+Proof: Did DidBlacklist (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
+The range of component <code>c</code> is <code>[1, 25]</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.submit_did_call_ed25519_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#889-897">source</a><a href="#method.submit_did_call_ed25519_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.submit_did_call_ed25519_key" class="fn">submit_did_call_ed25519_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.submit_did_call_sr25519_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#900-908">source</a><a href="#method.submit_did_call_sr25519_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.submit_did_call_sr25519_key" class="fn">submit_did_call_sr25519_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.submit_did_call_ecdsa_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#911-919">source</a><a href="#method.submit_did_call_ecdsa_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.submit_did_call_ecdsa_key" class="fn">submit_did_call_ecdsa_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_ed25519_authentication_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#928-936">source</a><a href="#method.set_ed25519_authentication_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.set_ed25519_authentication_key" class="fn">set_ed25519_authentication_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_sr25519_authentication_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#945-953">source</a><a href="#method.set_sr25519_authentication_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.set_sr25519_authentication_key" class="fn">set_sr25519_authentication_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_ecdsa_authentication_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#962-970">source</a><a href="#method.set_ecdsa_authentication_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.set_ecdsa_authentication_key" class="fn">set_ecdsa_authentication_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_ed25519_delegation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#979-987">source</a><a href="#method.set_ed25519_delegation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.set_ed25519_delegation_key" class="fn">set_ed25519_delegation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_sr25519_delegation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#996-1004">source</a><a href="#method.set_sr25519_delegation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.set_sr25519_delegation_key" class="fn">set_sr25519_delegation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_ecdsa_delegation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1013-1021">source</a><a href="#method.set_ecdsa_delegation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.set_ecdsa_delegation_key" class="fn">set_ecdsa_delegation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_ed25519_delegation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1030-1038">source</a><a href="#method.remove_ed25519_delegation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_ed25519_delegation_key" class="fn">remove_ed25519_delegation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_sr25519_delegation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1047-1055">source</a><a href="#method.remove_sr25519_delegation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_sr25519_delegation_key" class="fn">remove_sr25519_delegation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_ecdsa_delegation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1064-1072">source</a><a href="#method.remove_ecdsa_delegation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_ecdsa_delegation_key" class="fn">remove_ecdsa_delegation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_ed25519_attestation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1081-1089">source</a><a href="#method.set_ed25519_attestation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.set_ed25519_attestation_key" class="fn">set_ed25519_attestation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_sr25519_attestation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1098-1106">source</a><a href="#method.set_sr25519_attestation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.set_sr25519_attestation_key" class="fn">set_sr25519_attestation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_ecdsa_attestation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1115-1123">source</a><a href="#method.set_ecdsa_attestation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.set_ecdsa_attestation_key" class="fn">set_ecdsa_attestation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_ed25519_attestation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1132-1140">source</a><a href="#method.remove_ed25519_attestation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_ed25519_attestation_key" class="fn">remove_ed25519_attestation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_sr25519_attestation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1149-1157">source</a><a href="#method.remove_sr25519_attestation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_sr25519_attestation_key" class="fn">remove_sr25519_attestation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_ecdsa_attestation_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1166-1174">source</a><a href="#method.remove_ecdsa_attestation_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_ecdsa_attestation_key" class="fn">remove_ecdsa_attestation_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.add_ed25519_key_agreement_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1183-1191">source</a><a href="#method.add_ed25519_key_agreement_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.add_ed25519_key_agreement_key" class="fn">add_ed25519_key_agreement_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.add_sr25519_key_agreement_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1200-1208">source</a><a href="#method.add_sr25519_key_agreement_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.add_sr25519_key_agreement_key" class="fn">add_sr25519_key_agreement_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.add_ecdsa_key_agreement_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1217-1225">source</a><a href="#method.add_ecdsa_key_agreement_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.add_ecdsa_key_agreement_key" class="fn">add_ecdsa_key_agreement_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_ed25519_key_agreement_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1234-1242">source</a><a href="#method.remove_ed25519_key_agreement_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_ed25519_key_agreement_key" class="fn">remove_ed25519_key_agreement_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_sr25519_key_agreement_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1251-1259">source</a><a href="#method.remove_sr25519_key_agreement_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_sr25519_key_agreement_key" class="fn">remove_sr25519_key_agreement_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_ecdsa_key_agreement_key" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1268-1276">source</a><a href="#method.remove_ecdsa_key_agreement_key" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_ecdsa_key_agreement_key" class="fn">remove_ecdsa_key_agreement_key</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.add_service_endpoint" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1287-1295">source</a><a href="#method.add_service_endpoint" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.add_service_endpoint" class="fn">add_service_endpoint</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:1)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: Did ServiceEndpoints (r:1 w:1)
+Proof: Did ServiceEndpoints (max_values: None, max_size: Some(615), added: 3090, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_service_endpoint" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1306-1314">source</a><a href="#method.remove_service_endpoint" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.remove_service_endpoint" class="fn">remove_service_endpoint</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did ServiceEndpoints (r:1 w:1)
+Proof: Did ServiceEndpoints (max_values: None, max_size: Some(615), added: 3090, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:1)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.signature_verification_sr25519" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1318-1327">source</a><a href="#method.signature_verification_sr25519" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.signature_verification_sr25519" class="fn">signature_verification_sr25519</a>(l: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:0)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+The range of component <code>l</code> is <code>[1, 5242880]</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.signature_verification_ed25519" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1331-1340">source</a><a href="#method.signature_verification_ed25519" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.signature_verification_ed25519" class="fn">signature_verification_ed25519</a>(l: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:0)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+The range of component <code>l</code> is <code>[1, 5242880]</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.signature_verification_ecdsa" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1344-1353">source</a><a href="#method.signature_verification_ecdsa" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.signature_verification_ecdsa" class="fn">signature_verification_ecdsa</a>(l: <a class="primitive" href="https://doc.rust-lang.org/1.74.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:0)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+The range of component <code>l</code> is <code>[1, 5242880]</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.change_deposit_owner" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1360-1368">source</a><a href="#method.change_deposit_owner" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.change_deposit_owner" class="fn">change_deposit_owner</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_deposit" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1377-1385">source</a><a href="#method.update_deposit" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.update_deposit" class="fn">update_deposit</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:1 w:1)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.dispatch_as" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1389-1396">source</a><a href="#method.dispatch_as" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.dispatch_as" class="fn">dispatch_as</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did Did (r:1 w:0)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.create_from_account" class="method trait-impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#1407-1415">source</a><a href="#method.create_from_account" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.create_from_account" class="fn">create_from_account</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: Did DidBlacklist (r:1 w:0)
+Proof: Did DidBlacklist (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
+Storage: Did Did (r:1 w:1)
+Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+Storage: Did DidEndpointsCount (r:1 w:0)
+Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+Storage: System Account (r:2 w:2)
+Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+Storage: Balances Holds (r:1 w:1)
+Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)</p>
+</div></details></div></details><h2 id="implementors" class="small-section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-WeightInfo-for-SubstrateWeight%3CT%3E" class="impl"><a class="src rightside" href="../../src/did/default_weights.rs.html#77-745">source</a><a href="#impl-WeightInfo-for-SubstrateWeight%3CT%3E" class="anchor">§</a><h3 class="code-header">impl&lt;T: Config&gt; <a class="trait" href="trait.WeightInfo.html" title="trait did::default_weights::WeightInfo">WeightInfo</a> for <a class="struct" href="struct.SubstrateWeight.html" title="struct did::default_weights::SubstrateWeight">SubstrateWeight</a>&lt;T&gt;</h3></section></div><script src="../../implementors/did/default_weights/trait.WeightInfo.js" data-ignore-extern-crates="std" async></script></section></div></main></body></html>

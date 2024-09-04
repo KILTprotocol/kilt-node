@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LinkedDidInfoProviderError"],"struct":["LinkedDidInfoOf","LinkedDidInfoProvider"],"type":["Web3OwnershipOf"]};
