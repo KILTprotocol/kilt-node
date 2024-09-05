@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::path::{Path, PathBuf};
-
 use runtime_common::{AccountId, AccountPublic};
 use sc_service::Properties;
 use sp_core::{Pair, Public};
@@ -57,18 +55,14 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 				"rococo_local",
 			))),
 			PeregrineRuntime::New => Ok(Box::new(chain_spec::peregrine::new::generate_chain_spec())),
-			PeregrineRuntime::Peregrine => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
-				get_chainspec_full_path("peregrine/peregrine-paseo.json")
-					.to_str()
-					.unwrap(),
+			PeregrineRuntime::Peregrine => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_bytes(
+				include_bytes!("../../../../chainspecs/peregrine/peregrine-paseo.json").as_slice(),
 			)?)),
-			PeregrineRuntime::PeregrineStg => Ok(Box::new(chain_spec::peregrine::load_chain_spec(
-				get_chainspec_full_path("peregrine-stg/peregrine-stg.json")
-					.to_str()
-					.unwrap(),
+			PeregrineRuntime::PeregrineStg => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_bytes(
+				include_bytes!("../../../../chainspecs/peregrine-stg/peregrine-stg.json").as_slice(),
 			)?)),
-			PeregrineRuntime::Rilt => Ok(Box::new(chain_spec::rilt::load_chain_spec(
-				get_chainspec_full_path("rilt/peregrine-rilt.json").to_str().unwrap(),
+			PeregrineRuntime::Rilt => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_bytes(
+				include_bytes!("../../../../chainspecs/rilt/peregrine-rilt.json").as_slice(),
 			)?)),
 			PeregrineRuntime::RiltNew => Ok(Box::new(chain_spec::rilt::new::generate_chain_spec())),
 			PeregrineRuntime::Other(s) => Ok(Box::new(chain_spec::peregrine::load_chain_spec(s.as_str())?)),
@@ -78,38 +72,10 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 				"rococo_local",
 			))),
 			SpiritnetRuntime::New => Ok(Box::new(chain_spec::spiritnet::new::generate_chain_spec())),
-			SpiritnetRuntime::Spiritnet => Ok(Box::new(chain_spec::spiritnet::load_chain_spec(
-				get_chainspec_full_path("spiritnet/spiritnet.json").to_str().unwrap(),
+			SpiritnetRuntime::Spiritnet => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_bytes(
+				include_bytes!("../../../../chainspecs/spiritnet/spiritnet.json").as_slice(),
 			)?)),
 			SpiritnetRuntime::Other(s) => Ok(Box::new(chain_spec::spiritnet::load_chain_spec(s.as_str())?)),
 		},
 	}
-}
-
-// Compile-time env variable used when running the binary with cargo or via
-// cargo (after `cargo build`).
-const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
-// Name of the runtime-time env variable that can be used to configure the
-// chainspecs folder path, useful especially when running the binary in a Docker
-// container.
-const CHAINSPECS_FOLDER_VAR_NAME: &str = "CHAINSPECS_FOLDER";
-
-fn get_chainspec_full_path(path: &str) -> PathBuf {
-	// Use the provided env variable, if present at runtime, or else uses the
-	// compile-time `CARGO_MANIFEST_DIR` variable (e.g., if the binary is run via
-	// cargo instead of in a Docker container).
-	let chainspecs_root = match std::env::var(CHAINSPECS_FOLDER_VAR_NAME) {
-		Ok(chainspecs_folder_name) => chainspecs_folder_name.to_owned(),
-		Err(_) => Path::new(MANIFEST_DIR)
-			.join("..")
-			.join("..")
-			.join("chainspecs")
-			.to_string_lossy()
-			.into_owned(),
-	};
-
-	Path::new(chainspecs_root.as_str())
-		.join(path)
-		.canonicalize()
-		.expect("Invalid path provided.")
 }
