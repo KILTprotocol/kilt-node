@@ -1,7 +1,7 @@
 # this container builds the kilt-parachain binary from source files and the runtime library
 # pinned the version to avoid build cache invalidation
 
-FROM paritytech/ci-unified:bullseye-1.70.0 as builder
+FROM paritytech/ci-unified:bullseye-1.74.0 as builder
 
 WORKDIR /build
 
@@ -31,6 +31,8 @@ EXPOSE 30333 9933 9944
 VOLUME ["/data"]
 
 COPY ./chainspecs /node/chainspecs
+
+ENV CHAINSPECS_FOLDER=/node/chainspecs
 
 ENTRYPOINT ["/usr/local/bin/node-executable"]
 CMD ["--help"]
