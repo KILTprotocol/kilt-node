@@ -86,15 +86,29 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 	}
 }
 
+// Compile-time env variable used when running the binary with cargo or via
+// cargo (after `cargo build`).
 const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
-const CHAINSPECS_FOLDER: &str = "chainspecs";
+// Name of the runtime-time env variable that can be used to configure the
+// chainspecs folder path, useful especially when running the binary in a Docker
+// container.
+const CHAINSPECS_FOLDER_VAR_NAME: &str = "CHAINSPECS_FOLDER";
 
-// Prepends the given path with the `<workspace_root>/chainspecs` path.
 fn get_chainspec_full_path(path: &str) -> PathBuf {
-	Path::new(MANIFEST_DIR)
-		.join("..")
-		.join("..")
-		.join(CHAINSPECS_FOLDER)
+	// Use the provided env variable, if present at runtime, or else uses the
+	// compile-time `CARGO_MANIFEST_DIR` variable (e.g., if the binary is run via
+	// cargo instead of in a Docker container).
+	let chainspecs_root = match std::env::var(CHAINSPECS_FOLDER_VAR_NAME) {
+		Ok(chainspecs_folder_name) => chainspecs_folder_name.to_owned(),
+		Err(_) => Path::new(MANIFEST_DIR)
+			.join("..")
+			.join("..")
+			.join("chainspecs")
+			.to_string_lossy()
+			.into_owned(),
+	};
+
+	Path::new(chainspecs_root.as_str())
 		.join(path)
 		.canonicalize()
 		.expect("Invalid path provided.")
