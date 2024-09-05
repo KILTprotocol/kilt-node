@@ -32,7 +32,5 @@ VOLUME ["/data"]
 
 COPY ./chainspecs /node/chainspecs
 
-ENV CHAINSPECS_FOLDER=/node/chainspecs
-
 ENTRYPOINT ["/usr/local/bin/node-executable"]
 CMD ["--help"]
