@@ -81,9 +81,9 @@ pub mod pallet {
 			+ From<Self::AssetId>
 			+ Into<Self::AccountId>
 			+ Into<DepositCurrencyHoldReasonOf<Self>>;
-		///
+		/// Type of an asset id in the Fungibles implementation
 		type AssetId: AssetId + Default + EnsureAddAssign + One;
-		///
+		/// The balance of assets in the Fungibles implementation
 		type Balance: Balance;
 	}
 
@@ -147,9 +147,6 @@ pub mod pallet {
 		pub min_balance: Balance,
 	}
 
-	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsics", which are often compared to transactions.
-	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
