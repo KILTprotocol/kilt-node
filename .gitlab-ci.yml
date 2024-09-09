@@ -41,6 +41,9 @@ build-try-state-wasm:
   parallel:
     matrix:
       - RUNTIME: ["peregrine", "spiritnet"]
+  variables:
+    # Move cargo data INSIDE the project dir so it can be cached
+    CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
   cache:
     when: always
     key:
