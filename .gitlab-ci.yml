@@ -56,6 +56,8 @@ build-try-state-wasm:
       - $CARGO_HOME/registry/index/
       - $CARGO_HOME/registry/cache/
       - $CARGO_HOME/git/db/
+      - target/release/deps
+      - target/release/build
   script:
     - cargo build --release --locked -p ${RUNTIME}-runtime --features try-runtime
     - mkdir -p out
