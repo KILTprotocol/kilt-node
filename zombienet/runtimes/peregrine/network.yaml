@@ -11,13 +11,13 @@ settings:
 # * PARA_RPC: RPC port for one parachain node
 
 relaychain:
-    # Relative to workdir from where the network is spawned, which is the `zombienet` folder from the root
-    chain_spec_path: "runtimes/peregrine/paseo-local.plain.json"
+    # This must be replaced with Paseo once the Paseo runtime can be used with Zombienet
+    chain: rococo-local
     default_image: "{{RELAY_IMAGE}}"
     nodes:
         - name: "relay-alice"
           rpc_port: "{{RELAY_RPC}}"
-        - name: "relay-alice"
+        - name: "relay-bob"
 
 parachains:
     - id: 2086
@@ -25,50 +25,9 @@ parachains:
 
       collators:
           - command: "node-executable"
-            image: "{{ PARA_IMAGE }}"
+            image: "{{PARA_IMAGE}}"
             name: "para-alice"
-            rpc_port: "{{ PARA_RPC }}"
+            rpc_port: "{{PARA_RPC}}"
           - command: "node-executable"
-            image: "{{ PARA_IMAGE }}"
+            image: "{{PARA_IMAGE}}"
             name: "para-bob"
-# [settings]
-# node_verifier = "None"
-# provider      = "kubernetes"
-# # 18000 seconds -> 300 minutes -> 5 hours
-# timeout = 18000
-
-# # Env variables:
-# # * RELAY_IMAGE: Docker image for relaychain nodes
-# # * RELAY_RPC: RPC port for one relaychain node
-# # * PARA_IMAGE: Docker image for the parachain nodes
-# # * PARA_RPC: RPC port for one parachain node
-
-# [relaychain]
-# chain         = "paseo-local"
-# default_image = "{{RELAY_IMAGE}}"
-
-# [[relaychain.nodes]]
-# name     = "relay-alice"
-# rpc_port = "{{RELAY_RPC}}"
-
-# [[relaychain.nodes]]
-# name = "relay-bob"
-
-# # [[relaychain.nodes]]
-# # name = "relay-charlie"
-
-# [[parachains]]
-# genesis_wasm_generator = "cargo build --profile release-unoptimized -p peregrine-runtime"
-# id                     = 2086
-
-# [[parachains.collator]]
-
-# command  = "node-executable"
-# image    = "{{PARA_IMAGE}}"
-# name     = "para-alice"
-# rpc_port = "{{PARA_RPC}}"
-
-# # [[parachains.collator]]
-# # command = "node-executable"
-# # image   = "{{PARA_IMAGE}}"
-# # name    = "para-bob"
