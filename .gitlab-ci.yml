@@ -49,14 +49,14 @@ build-try-state-wasm:
       files:
         - Cargo.lock
     paths:
-      - .cargo/bin/
-      - .cargo/registry/index/
-      - .cargo/registry/cache/
-      - .cargo/git/db/
+      - ./.cargo/bin/
+      - ./.cargo/registry/index/
+      - ./.cargo/registry/cache/
+      - ./.cargo/git/db/
   script: cargo build --release --locked -p ${RUNTIME}-runtime --features try-runtime
   artifacts:
     paths:
-      - target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm
+      - ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm
     expire_in: 12 week
 # build-docker-images:
 #   timeout: 2 hours
