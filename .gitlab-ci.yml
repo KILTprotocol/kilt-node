@@ -45,7 +45,7 @@ build-try-state-wasm:
     when: always
     key:
       # E.g., `build-try-state-wasm-develop-peregrine` and `build-try-state-wasm-develop-spiritnet`
-      prefix: "$CI_JOB_NAME-CI_COMMIT_REF_NAME-${RUNTIME}"
+      prefix: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME-${RUNTIME}"
       files:
         - Cargo.lock
     paths:
