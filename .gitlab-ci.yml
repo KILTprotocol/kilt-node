@@ -59,7 +59,7 @@ build-try-state-wasm:
   script:
     - cargo build --release --locked -p ${RUNTIME}-runtime --features try-runtime
     - mkdir -p out
-    - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm out
+    - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm out/**UNSAFE**${RUNTIME}_runtime_try_runtime.compact.compressed.wasm
   artifacts:
     paths:
       - out
