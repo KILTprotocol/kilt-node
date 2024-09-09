@@ -45,21 +45,21 @@ build-try-state-wasm:
     when: always
     key:
       # E.g., `build-try-state-wasm-develop-peregrine` and `build-try-state-wasm-develop-spiritnet`
-      prefix: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME-${RUNTIME}"
+      prefix: "$CI_JOB_NAME:$CI_COMMIT_REF_NAME:${RUNTIME}"
       files:
         - Cargo.lock
     paths:
-      - ./.cargo/bin/
-      - ./.cargo/registry/index/
-      - ./.cargo/registry/cache/
-      - ./.cargo/git/db/
+      - $CARGO_HOME/bin/
+      - $CARGO_HOME/registry/index/
+      - $CARGO_HOME/registry/cache/
+      - $CARGO_HOME/git/db/
   script:
     - cargo build --release --locked -p ${RUNTIME}-runtime --features try-runtime
-    - mkdir -p /out
-    - mv ./target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm /out
+    - mkdir -p out
+    - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm out
   artifacts:
     paths:
-      - /out
+      - out
     expire_in: 12 week
 # build-docker-images:
 #   timeout: 2 hours
