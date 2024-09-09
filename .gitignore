@@ -11,6 +11,8 @@
 
 # ignore env files
 .env
+# but not the ones for our Zombienet setup
+!zombienet/**/.env
 
 # ignore vscode settings
 .vscode
