@@ -11,9 +11,8 @@ settings:
 # * PARA_RPC: RPC port for one parachain node
 
 relaychain:
-    # Generated from https://github.com/polkadot-fellows/runtimes with `cargo run -- polkadot-local`
-	# FIXME: Relaychain part of the node is using rococo-local, and hence not talking to the relaychain nodes.
-    chain_spec_path: runtimes/spiritnet/kusama-local-v1.3.2-e220854.json
+    # TODO: Replace with `polkadot-local` chainspec when able to use it: https://github.com/paritytech/zombienet-sdk/issues/255.
+    chain: rococo-local
     default_image: "{{RELAY_IMAGE}}"
     nodes:
         - name: "relay-alice"
@@ -21,6 +20,7 @@ relaychain:
           args:
               - "-lparachain=debug"
         - name: "relay-bob"
+        - name: "relay-charlie"
 
 parachains:
     - id: 2086
