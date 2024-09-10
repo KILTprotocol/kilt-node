@@ -4,36 +4,58 @@ use scale_info::TypeInfo;
 use sp_core::Get;
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum EventState<CurrencyId> {
+pub struct Locks {
+	pub allow_mint: bool,
+	pub allow_burn: bool,
+	pub allow_swap: bool,
+}
+
+#[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub enum EventState<LockType> {
 	#[default]
 	Active,
-	Frozen,
-	Sealed, /// TODO: save block number where seal happened here
-	Decided(CurrencyId),
+	Frozen(LockType),
 	Destroying,
 }
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct EventData<AccountId, CurrencyId, MaxNameLength: Get<u32>, MaxOptions: Get<u32>> {
+pub struct PoolDetails<AccountId, CurrencyId, ParametrizedCurve, MaxOptions: Get<u32>> {
 	pub creator: AccountId,
-	pub name: BoundedVec<u8, MaxNameLength>,
-	pub linked_currencies: BoundedVec<CurrencyId, MaxOptions>,
-	pub state: EventState<CurrencyId>,
+	pub curve: ParametrizedCurve,
+	pub bonded_currencies: BoundedVec<CurrencyId, MaxOptions>,
+	pub state: EventState<Locks>,
+	pub transferable: bool,
 }
 
-impl<AccountId, CurrencyId, MaxNameLength: Get<u32>, MaxOptions: Get<u32>>
-	EventData<AccountId, CurrencyId, MaxNameLength, MaxOptions>
+impl<AccountId, CurrencyId, ParametrizedCurve, MaxOptions: Get<u32>>
+	PoolDetails<AccountId, CurrencyId, ParametrizedCurve, MaxOptions>
 {
 	pub fn new(
 		creator: AccountId,
-		name: BoundedVec<u8, MaxNameLength>,
-		linked_currencies: BoundedVec<CurrencyId, MaxOptions>,
+		curve: ParametrizedCurve,
+		bonded_currencies: BoundedVec<CurrencyId, MaxOptions>,
+		transferable: bool,
 	) -> Self {
 		Self {
 			creator,
-			name,
-			linked_currencies,
+			curve,
+			bonded_currencies,
+			transferable,
 			state: EventState::default(),
 		}
 	}
+}
+
+#[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
+pub struct TokenMeta<Balance> {
+	pub name: Vec<u8>,
+	pub symbol: Vec<u8>,
+	pub decimals: u8,
+	pub min_balance: Balance,
+}
+
+#[derive(Default, Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub enum Curve {
+	#[default]
+	LinearRatioCurve,
 }
