@@ -21,28 +21,32 @@ pub mod pallet {
 	use crate::types::{Curve, PoolDetails, TokenMeta};
 	use frame_support::{
 		dispatch::DispatchResultWithPostInfo,
-		pallet_prelude::{ValueQuery, *},
+		pallet_prelude::*,
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate, MutateHold},
 			fungibles::{
 				metadata::Mutate as FungiblesMetadata, Create as CreateFungibles, Destroy as DestroyFungibles,
+				Inspect as InspectFungibles,
 			},
-			tokens::{AssetId, Balance},
 		},
+		Hashable,
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::EncodeLike;
-	use sp_runtime::{
-		traits::{EnsureAddAssign, One, Saturating},
-		SaturatedConversion,
-	};
+	use sp_runtime::{traits::Saturating, SaturatedConversion};
 
-	pub type BalanceOf<T, A> = <T as InspectFungible<A>>::Balance;
+	pub type DepositCurrencyBalanceOf<T> =
+		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 	pub type DepositCurrencyHoldReasonOf<T> =
 		<<T as Config>::DepositCurrency as frame_support::traits::fungible::InspectHold<
 			<T as frame_system::Config>::AccountId,
 		>>::Reason;
-
+	pub type CollateralCurrencyBalanceOf<T> =
+		<<T as Config>::CollateralCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
+	pub type FungiblesBalanceOf<T> =
+		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
+	pub type FungiblesAssetIdOf<T> =
+		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -53,15 +57,15 @@ pub mod pallet {
 		/// The currency used as collateral for minting bonded tokens.
 		type CollateralCurrency: Mutate<Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
-		type Fungibles: CreateFungibles<Self::AccountId, Balance = Self::Balance, AssetId = Self::AssetId>
-			+ DestroyFungibles<Self::AccountId, Balance = Self::Balance, AssetId = Self::AssetId>
-			+ FungiblesMetadata<Self::AccountId, Balance = Self::Balance, AssetId = Self::AssetId>;
+		type Fungibles: CreateFungibles<Self::AccountId>
+			+ DestroyFungibles<Self::AccountId>
+			+ FungiblesMetadata<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
 		type MaxCurrencies: Get<u32> + TypeInfo;
 		/// The deposit required for each bonded currency.
 		#[pallet::constant]
-		type DepositPerCurrency: Get<BalanceOf<Self::DepositCurrency, Self::AccountId>>;
+		type DepositPerCurrency: Get<DepositCurrencyBalanceOf<Self>>;
 		/// Who can create new bonded currency pools.
 		type PoolCreateOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The type used for pool ids
@@ -70,13 +74,9 @@ pub mod pallet {
 			+ TypeInfo
 			+ Clone
 			+ MaxEncodedLen
-			+ From<Self::AssetId>
+			+ From<[u8; 32]>
 			+ Into<Self::AccountId>
 			+ Into<DepositCurrencyHoldReasonOf<Self>>;
-		/// Type of an asset id in the Fungibles implementation
-		type AssetId: AssetId + Default + EnsureAddAssign + One;
-		/// The balance of assets in the Fungibles implementation
-		type Balance: Balance;
 	}
 
 	#[pallet::pallet]
@@ -89,14 +89,9 @@ pub mod pallet {
 		_,
 		Twox64Concat,
 		T::PoolId,
-		PoolDetails<T::AccountId, T::AssetId, Curve, T::MaxCurrencies>,
+		PoolDetails<T::AccountId, FungiblesAssetIdOf<T>, Curve, T::MaxCurrencies>,
 		OptionQuery,
 	>;
-
-	/// The asset id to be used for the next pool creation.
-	#[pallet::storage]
-	#[pallet::getter(fn next_asset_id)]
-	pub(crate) type NextAssetId<T: Config> = StorageValue<_, T::AssetId, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -136,7 +131,7 @@ pub mod pallet {
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			curve: Curve,
-			currencies: BoundedVec<TokenMeta<T::Balance>, T::MaxCurrencies>,
+			currencies: BoundedVec<TokenMeta<FungiblesBalanceOf<T>, FungiblesAssetIdOf<T>>, T::MaxCurrencies>,
 			frozen: bool,
 			// currency_admin: Option<T::AccountId> TODO: use this to set currency admin
 		) -> DispatchResultWithPostInfo {
@@ -148,8 +143,9 @@ pub mod pallet {
 				Error::<T>::CurrenciesOutOfBounds
 			);
 
-			let mut asset_id = Self::next_asset_id();
-			let pool_id = T::PoolId::from(asset_id.clone());
+			let currency_ids = BoundedVec::truncate_from(currencies.iter().map(|c| c.id.clone()).collect());
+
+			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
 			T::DepositCurrency::hold(
 				&pool_id.clone().into(), // TODO: just assumed that you can use a pool id as hold reason, not sure that's true though
@@ -159,15 +155,15 @@ pub mod pallet {
 					.saturated_into(),
 			)?;
 
-			let mut currency_ids = BoundedVec::with_bounded_capacity(currencies.len());
+			for entry in currencies {
+				let asset_id = entry.id.clone();
 
-			for (idx, entry) in currencies.iter().enumerate() {
+				// create new assset class; fail if it already exists
 				T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, entry.min_balance)?;
-				currency_ids[idx] = asset_id.clone();
-				asset_id.ensure_add_assign(T::AssetId::one())?;
 
+				// set metadata for new asset class
 				T::Fungibles::set(
-					asset_id.clone(),
+					asset_id,
 					&pool_id.clone().into(),
 					entry.name.clone(),
 					entry.symbol.clone(),
@@ -176,8 +172,6 @@ pub mod pallet {
 
 				// TODO: use fungibles::roles::ResetTeam to update currency admin
 			}
-
-			<NextAssetId<T>>::put(asset_id);
 
 			<Pools<T>>::set(
 				pool_id,

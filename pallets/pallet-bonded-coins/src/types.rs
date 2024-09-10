@@ -11,7 +11,7 @@ pub struct Locks {
 }
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum EventState<LockType> {
+pub enum PoolStatus<LockType> {
 	#[default]
 	Active,
 	Frozen(LockType),
@@ -23,7 +23,7 @@ pub struct PoolDetails<AccountId, CurrencyId, ParametrizedCurve, MaxOptions: Get
 	pub creator: AccountId,
 	pub curve: ParametrizedCurve,
 	pub bonded_currencies: BoundedVec<CurrencyId, MaxOptions>,
-	pub state: EventState<Locks>,
+	pub state: PoolStatus<Locks>,
 	pub transferable: bool,
 }
 
@@ -41,13 +41,14 @@ impl<AccountId, CurrencyId, ParametrizedCurve, MaxOptions: Get<u32>>
 			curve,
 			bonded_currencies,
 			transferable,
-			state: EventState::default(),
+			state: PoolStatus::default(),
 		}
 	}
 }
 
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
-pub struct TokenMeta<Balance> {
+pub struct TokenMeta<Balance, AssetId> {
+	pub id: AssetId,
 	pub name: Vec<u8>,
 	pub symbol: Vec<u8>,
 	pub decimals: u8,
