@@ -11,15 +11,13 @@ settings:
 # * PARA_RPC: RPC port for one parachain node
 
 relaychain:
-    # TODO: Change this with the polkadot chainspec once we change the dev runtime to work with any relaychain
-    chain: rococo-local
+    # Generated from https://github.com/polkadot-fellows/runtimes with `cargo run -- polkadot-local`
+    chain_spec_path: runtimes/spiritnet/polkadot-local-v1.3.2-e220854.json
     default_image: "{{RELAY_IMAGE}}"
     nodes:
         - name: "relay-alice"
           rpc_port: "{{RELAY_RPC}}"
         - name: "relay-bob"
-        - name: "relay-charlie"
-        - name: "relay-dave"
 
 parachains:
     - id: 2086
