@@ -6,9 +6,9 @@
     "@zombienet/cli": "^1.3.109"
   },
   "scripts": {
-    "spawn:peregrine": "yarn zombienet spawn --spawn-concurrency=1 runtimes/peregrine/network.yaml",
-    "span:peregrine:with-env": "env $(cat runtimes/peregrine/.env | xargs) yarn spawn:peregrine",
-    "spawn:spiritnet": "yarn zombienet spawn runtimes/spiritnet/network.yaml",
+    "spawn:peregrine": "yarn zombienet --spawn-concurrency=3 spawn runtimes/peregrine/network.yaml",
+    "spawn:peregrine:with-env": "env $(cat runtimes/peregrine/.env | xargs) yarn spawn:peregrine",
+    "spawn:spiritnet": "yarn zombienet --spawn-concurrency=3 spawn runtimes/spiritnet/network.yaml",
     "spawn:spiritnet:with-env": "env $(cat runtimes/spiritnet/.env | xargs) yarn spawn:spiritnet"
   }
 }

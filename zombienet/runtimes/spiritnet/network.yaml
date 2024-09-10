@@ -11,13 +11,15 @@ settings:
 # * PARA_RPC: RPC port for one parachain node
 
 relaychain:
-    # This must be replaced with Polkadot once we find a way to make it work for a local setup
+    # TODO: Change this with the polkadot chainspec once we change the dev runtime to work with any relaychain
     chain: rococo-local
     default_image: "{{RELAY_IMAGE}}"
     nodes:
         - name: "relay-alice"
           rpc_port: "{{RELAY_RPC}}"
         - name: "relay-bob"
+        - name: "relay-charlie"
+        - name: "relay-dave"
 
 parachains:
     - id: 2086

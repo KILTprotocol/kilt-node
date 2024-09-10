@@ -11,13 +11,14 @@ settings:
 # * PARA_RPC: RPC port for one parachain node
 
 relaychain:
-    # This must be replaced with Paseo once the Paseo runtime can be used with Zombienet
+    # TODO: Replace `rococo-local` with a local paseo chainspec once the runtime panic is fixed.
     chain: rococo-local
     default_image: "{{RELAY_IMAGE}}"
     nodes:
         - name: "relay-alice"
           rpc_port: "{{RELAY_RPC}}"
         - name: "relay-bob"
+        - name: "relay-charlie"
 
 parachains:
     - id: 2086
