@@ -7,8 +7,8 @@
   },
   "scripts": {
     "spawn:peregrine": "yarn zombienet spawn --spawn-concurrency=1 runtimes/peregrine/network.yaml",
-    "span:peregrine:with-env": "env $(cat runtimes/peregrine/.env | xargs) spawn:peregrine",
-    "spawn:spiritnet": "yarn zombienet spawn runtimes/spiritnet/network.toml",
-    "spawn:spiritnet:with-env": "env $(cat runtimes/spiritnet/.env | xargs) spawn:spiritnet"
+    "span:peregrine:with-env": "env $(cat runtimes/peregrine/.env | xargs) yarn spawn:peregrine",
+    "spawn:spiritnet": "yarn zombienet spawn runtimes/spiritnet/network.yaml",
+    "spawn:spiritnet:with-env": "env $(cat runtimes/spiritnet/.env | xargs) yarn spawn:spiritnet"
   }
 }
