@@ -16,6 +16,12 @@ pub enum PoolStatus<LockType> {
 	Destroying,
 }
 
+impl<LockType: Default> Default for PoolStatus<LockType> {
+	fn default() -> Self {
+		Self::Locked(LockType::default())
+	}
+}
+
 impl<LockType> PoolStatus<LockType> {
 	pub fn is_active(&self) -> bool {
 		matches!(self, Self::Active)
@@ -55,7 +61,7 @@ where
 			curve,
 			bonded_currencies,
 			transferable,
-			state: PoolStatus::Locked(Default::default()),
+			state: PoolStatus::default(),
 		}
 	}
 
