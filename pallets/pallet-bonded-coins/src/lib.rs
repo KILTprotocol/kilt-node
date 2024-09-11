@@ -34,10 +34,11 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{
-		traits::{Saturating, Zero},
+		traits::{Saturating, Zero, StaticLookup},
 		ArithmeticError, SaturatedConversion,
 	};
 
+	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 	pub type DepositCurrencyBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 	pub type DepositCurrencyHoldReasonOf<T> =
@@ -143,7 +144,7 @@ pub mod pallet {
 			curve: Curve,
 			currencies: BoundedVec<TokenMeta<FungiblesBalanceOf<T>, FungiblesAssetIdOf<T>>, T::MaxCurrencies>,
 			frozen: bool,
-			// currency_admin: Option<T::AccountId> TODO: use this to set currency admin
+			// currency_admin: Option<AccountIdLookupOf<T>> TODO: use this to set currency admin
 		) -> DispatchResultWithPostInfo {
 			// ensure origin is PoolCreateOrigin
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
@@ -201,9 +202,10 @@ pub mod pallet {
 			currency_idx: u32,
 			amount_to_mint: FungiblesBalanceOf<T>,
 			max_cost: CollateralCurrencyBalanceOf<T>,
-			beneficiary: T::AccountId,
+			beneficiary: AccountIdLookupOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let signer = ensure_signed(origin)?;
+			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
 			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
@@ -254,6 +256,8 @@ pub mod pallet {
 
 			// mint tokens into beneficiary account
 			T::Fungibles::mint_into(mint_currency_id.clone(), &beneficiary, amount_to_mint)?;
+
+			// TODO: apply lock if pool_details.transferable != true
 
 			Ok(().into())
 		}
