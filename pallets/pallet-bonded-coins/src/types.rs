@@ -10,12 +10,16 @@ pub struct Locks {
 	pub allow_swap: bool,
 }
 
-#[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum PoolStatus<LockType> {
-	#[default]
 	Active,
 	Frozen(LockType),
 	Destroying,
+}
+impl<LockType: Default> Default for PoolStatus<LockType> {
+	fn default() -> Self {
+		Self::Frozen(LockType::default())
+	}
 }
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
