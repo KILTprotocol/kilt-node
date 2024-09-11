@@ -18,7 +18,7 @@ mod types;
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
-	use crate::types::{Curve, PoolDetails, PoolStatus, TokenMeta};
+	use crate::types::{Curve, MockCurve, PoolDetails, PoolStatus, TokenMeta};
 	use frame_support::{
 		dispatch::DispatchResultWithPostInfo,
 		pallet_prelude::*,
@@ -34,7 +34,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{
-		traits::{Saturating, Zero, StaticLookup},
+		traits::{CheckedAdd, CheckedConversion, Saturating, StaticLookup, Zero},
 		ArithmeticError, SaturatedConversion,
 	};
 
@@ -79,10 +79,6 @@ pub mod pallet {
 			+ From<[u8; 32]>
 			+ Into<Self::AccountId>
 			+ Into<DepositCurrencyHoldReasonOf<Self>>;
-	}
-
-	fn mock_curve_impl<T: Saturating>(_: Curve, active_pre: T, active_post: T, __: T) -> T {
-		active_post.saturating_sub(active_pre)
 	}
 
 	#[pallet::pallet]
@@ -217,36 +213,22 @@ pub mod pallet {
 			};
 			ensure!(mint_enabled, Error::<T>::Locked);
 
+			let currency_idx_usize: usize = currency_idx.checked_into().ok_or(Error::<T>::IndexOutOfBounds)?;
+
 			// get id of the currency we want to mint
 			// this also serves as a validation of the currency_idx parameter
 			let mint_currency_id = pool_details
 				.bonded_currencies
-				.get::<usize>(currency_idx.saturated_into())
+				.get(currency_idx_usize)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let mut total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
 				.bonded_currencies
 				.iter()
 				.map(|id| T::Fungibles::total_issuance(id.clone()))
 				.collect();
 
-			// calculate parameters for bonding curve
-			// we've checked the vector length before
-			let active_issuance_pre = total_issuances.swap_remove(currency_idx.saturated_into());
-			let active_issuance_post = active_issuance_pre.saturating_add(amount_to_mint); // TODO: use checked_add and fail on overflow?
-			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
-				.iter()
-				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
-
-			// calculate cost
-			let cost: CollateralCurrencyBalanceOf<T> = mock_curve_impl(
-				pool_details.curve,
-				active_issuance_pre,
-				active_issuance_post,
-				passive_issuance,
-			)
-			.try_into()
-			.map_err(|_| ArithmeticError::Overflow)?;
+			let cost = Self::get_cost(pool_details.curve, &amount_to_mint, total_issuances, currency_idx_usize)?;
 
 			// fail if cost > max_cost
 			ensure!(!cost.gt(&max_cost), Error::<T>::Slippage);
@@ -260,6 +242,38 @@ pub mod pallet {
 			// TODO: apply lock if pool_details.transferable != true
 
 			Ok(().into())
+		}
+	}
+
+	impl<T: Config> Pallet<T>
+	where
+		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
+	{
+		pub fn get_cost(
+			curve: Curve,
+			amount_to_mint: &FungiblesBalanceOf<T>,
+			mut total_issuances: Vec<FungiblesBalanceOf<T>>,
+			mint_into_idx: usize,
+		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
+			// calculate parameters for bonding curve
+			// we've checked the vector length before
+			let active_issuance_pre = total_issuances.swap_remove(mint_into_idx);
+			let active_issuance_post = active_issuance_pre
+				.checked_add(amount_to_mint)
+				.ok_or(ArithmeticError::Overflow)?;
+			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
+				.iter()
+				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
+
+			// match curve implementation
+			let curve_impl = match curve {
+				Curve::LinearRatioCurve => MockCurve::new(),
+			};
+
+			let cost = curve_impl.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance);
+
+			// Try conversion to Collateral Balance type
+			return cost.try_into().map_err(|_| ArithmeticError::Overflow);
 		}
 	}
 }

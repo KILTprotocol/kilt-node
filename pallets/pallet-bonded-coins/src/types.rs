@@ -2,6 +2,7 @@ use frame_support::BoundedVec;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::Get;
+use sp_runtime::traits::Saturating;
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct Locks {
@@ -63,4 +64,21 @@ pub struct TokenMeta<Balance, AssetId> {
 pub enum Curve {
 	#[default]
 	LinearRatioCurve,
+}
+
+pub struct MockCurve {}
+
+impl MockCurve {
+	pub fn new() -> Self {
+			Self {  }
+		}
+	
+	pub fn calculate_cost<Balance: Saturating>(
+		self,
+		active_issuance_pre: Balance,
+		active_issuance_post: Balance,
+		_: Balance,
+	) -> Balance {
+        active_issuance_pre.saturating_sub(active_issuance_post)
+	}
 }
