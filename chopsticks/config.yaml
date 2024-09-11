@@ -1,6 +1,14 @@
 endpoint:
-    - wss://peregrine.kilt.io
+    - wss://spiritnet.kilt.io
 db: db/peregrine.sqlite
 runtime-log-level: 5
 port: 50002
 wasm-override: /home/antonio/Developer/kilt-node/target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
+
+import-storage:
+    System:
+        Account:
+            - - - 4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ
+              - providers: 1
+                data:
+                    free: "100000000000000000000000"

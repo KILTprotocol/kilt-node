@@ -82,32 +82,41 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 		Weight::from_parts(3_573_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
-	// Storage: ParachainStaking CandidatePool (r:76 w:0)
-	// Proof: ParachainStaking CandidatePool (max_values: None, max_size: Some(1790), added: 4265, mode: MaxEncodedLen)
-	// Storage: ParachainStaking BlocksAuthored (r:75 w:0)
-	// Proof: ParachainStaking BlocksAuthored (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	// Storage: ParachainStaking BlocksRewarded (r:2700 w:2700)
-	// Proof: ParachainStaking BlocksRewarded (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	// Storage: ParachainStaking Rewards (r:2700 w:2700)
-	// Proof: ParachainStaking Rewards (max_values: None, max_size: Some(56), added: 2531, mode: MaxEncodedLen)
-	// Storage: ParachainStaking TotalCollatorStake (r:1 w:0)
-	// Proof: ParachainStaking TotalCollatorStake (max_values: Some(1), max_size: Some(32), added: 527, mode: MaxEncodedLen)
-	// Storage: ParachainStaking InflationConfig (r:1 w:1)
-	// Proof: ParachainStaking InflationConfig (max_values: Some(1), max_size: Some(96), added: 591, mode: MaxEncodedLen)
-	// Storage: ParachainStaking CounterForCandidatePool (r:1 w:0)
-	// Proof: ParachainStaking CounterForCandidatePool (max_values: Some(1), max_size: Some(4), added: 499, mode: MaxEncodedLen)
+	/// Storage: `ParachainStaking::CounterForCandidatePool` (r:1 w:0)
+	/// Proof: `ParachainStaking::CounterForCandidatePool` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::CandidatePool` (r:76 w:0)
+	/// Proof: `ParachainStaking::CandidatePool` (`max_values`: None, `max_size`: Some(1790), added: 4265, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::BlocksAuthored` (r:75 w:0)
+	/// Proof: `ParachainStaking::BlocksAuthored` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::BlocksRewarded` (r:2700 w:2700)
+	/// Proof: `ParachainStaking::BlocksRewarded` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::Rewards` (r:2700 w:2700)
+	/// Proof: `ParachainStaking::Rewards` (`max_values`: None, `max_size`: Some(56), added: 2531, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::TotalCollatorStake` (r:1 w:0)
+	/// Proof: `ParachainStaking::TotalCollatorStake` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::InflationConfig` (r:1 w:1)
+	/// Proof: `ParachainStaking::InflationConfig` (`max_values`: Some(1), `max_size`: Some(96), added: 591, mode: `MaxEncodedLen`)
+	/// The range of component `n` is `[0, 75]`.
+	/// The range of component `m` is `[0, 35]`.
 	fn set_inflation(n: u32, m: u32, ) -> Weight {
-		Weight::from_parts(663_557_000 as u64, 0)
-			// Standard Error: 4_566_075
-			.saturating_add(Weight::from_parts(143_112_464 as u64, 0).saturating_mul(n as u64))
-			// Standard Error: 9_803_263
-			.saturating_add(Weight::from_parts(269_841_967 as u64, 0).saturating_mul(m as u64))
-			.saturating_add(T::DbWeight::get().reads(152 as u64))
-			.saturating_add(T::DbWeight::get().reads((27 as u64).saturating_mul(n as u64)))
-			.saturating_add(T::DbWeight::get().reads((51 as u64).saturating_mul(m as u64)))
-			.saturating_add(T::DbWeight::get().writes(145 as u64))
-			.saturating_add(T::DbWeight::get().writes((25 as u64).saturating_mul(n as u64)))
-			.saturating_add(T::DbWeight::get().writes((51 as u64).saturating_mul(m as u64)))
+		// Proof Size summary in bytes:
+		//  Measured:  `0 + m * (7573 ±0) + n * (3709 ±0)`
+		//  Estimated: `183222 + m * (64823 ±2_174) + n * (31965 ±1_012)`
+		// Minimum execution time: 515_122_000 picoseconds.
+		Weight::from_parts(518_293_000, 0)
+			.saturating_add(Weight::from_parts(0, 183222))
+			// Standard Error: 3_677_844
+			.saturating_add(Weight::from_parts(111_333_125, 0).saturating_mul(n.into()))
+			// Standard Error: 7_896_252
+			.saturating_add(Weight::from_parts(222_448_275, 0).saturating_mul(m.into()))
+			.saturating_add(T::DbWeight::get().reads(152))
+			.saturating_add(T::DbWeight::get().reads((27_u64).saturating_mul(n.into())))
+			.saturating_add(T::DbWeight::get().reads((51_u64).saturating_mul(m.into())))
+			.saturating_add(T::DbWeight::get().writes(145))
+			.saturating_add(T::DbWeight::get().writes((25_u64).saturating_mul(n.into())))
+			.saturating_add(T::DbWeight::get().writes((51_u64).saturating_mul(m.into())))
+			.saturating_add(Weight::from_parts(0, 64823).saturating_mul(m.into()))
+			.saturating_add(Weight::from_parts(0, 31965).saturating_mul(n.into()))
 	}
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:1)
 	// Proof: ParachainStaking MaxSelectedCandidates (max_values: Some(1), max_size: Some(4), added: 499, mode: MaxEncodedLen)
@@ -523,33 +532,42 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
-	// Storage: ParachainStaking LastRewardReduction (r:1 w:1)
-	// Proof: ParachainStaking LastRewardReduction (max_values: Some(1), max_size: Some(8), added: 503, mode: MaxEncodedLen)
-	// Storage: ParachainStaking InflationConfig (r:1 w:1)
-	// Proof: ParachainStaking InflationConfig (max_values: Some(1), max_size: Some(96), added: 591, mode: MaxEncodedLen)
-	// Storage: ParachainStaking CandidatePool (r:76 w:0)
-	// Proof: ParachainStaking CandidatePool (max_values: None, max_size: Some(1790), added: 4265, mode: MaxEncodedLen)
-	// Storage: ParachainStaking BlocksAuthored (r:75 w:0)
-	// Proof: ParachainStaking BlocksAuthored (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	// Storage: ParachainStaking BlocksRewarded (r:2700 w:2700)
-	// Proof: ParachainStaking BlocksRewarded (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	// Storage: ParachainStaking Rewards (r:2700 w:2700)
-	// Proof: ParachainStaking Rewards (max_values: None, max_size: Some(56), added: 2531, mode: MaxEncodedLen)
-	// Storage: ParachainStaking TotalCollatorStake (r:1 w:0)
-	// Proof: ParachainStaking TotalCollatorStake (max_values: Some(1), max_size: Some(32), added: 527, mode: MaxEncodedLen)
-	// Storage: ParachainStaking CounterForCandidatePool (r:1 w:0)
-	// Proof: ParachainStaking CounterForCandidatePool (max_values: Some(1), max_size: Some(4), added: 499, mode: MaxEncodedLen)
+	/// Storage: `ParachainStaking::CounterForCandidatePool` (r:1 w:0)
+	/// Proof: `ParachainStaking::CounterForCandidatePool` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::LastRewardReduction` (r:1 w:1)
+	/// Proof: `ParachainStaking::LastRewardReduction` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::InflationConfig` (r:1 w:1)
+	/// Proof: `ParachainStaking::InflationConfig` (`max_values`: Some(1), `max_size`: Some(96), added: 591, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::CandidatePool` (r:76 w:0)
+	/// Proof: `ParachainStaking::CandidatePool` (`max_values`: None, `max_size`: Some(1790), added: 4265, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::BlocksAuthored` (r:75 w:0)
+	/// Proof: `ParachainStaking::BlocksAuthored` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::BlocksRewarded` (r:2700 w:2700)
+	/// Proof: `ParachainStaking::BlocksRewarded` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::Rewards` (r:2700 w:2700)
+	/// Proof: `ParachainStaking::Rewards` (`max_values`: None, `max_size`: Some(56), added: 2531, mode: `MaxEncodedLen`)
+	/// Storage: `ParachainStaking::TotalCollatorStake` (r:1 w:0)
+	/// Proof: `ParachainStaking::TotalCollatorStake` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// The range of component `n` is `[0, 75]`.
+	/// The range of component `m` is `[0, 35]`.
 	fn execute_scheduled_reward_change(n: u32, m: u32, ) -> Weight {
-		Weight::from_parts(657_155_000 as u64, 0)
-			// Standard Error: 4_390_482
-			.saturating_add(Weight::from_parts(136_436_522 as u64, 0).saturating_mul(n as u64))
-			// Standard Error: 9_426_268
-			.saturating_add(Weight::from_parts(263_946_048 as u64, 0).saturating_mul(m as u64))
-			.saturating_add(T::DbWeight::get().reads(153 as u64))
-			.saturating_add(T::DbWeight::get().reads((27 as u64).saturating_mul(n as u64)))
-			.saturating_add(T::DbWeight::get().reads((51 as u64).saturating_mul(m as u64)))
-			.saturating_add(T::DbWeight::get().writes(146 as u64))
-			.saturating_add(T::DbWeight::get().writes((25 as u64).saturating_mul(n as u64)))
-			.saturating_add(T::DbWeight::get().writes((51 as u64).saturating_mul(m as u64)))
+		// Proof Size summary in bytes:
+		//  Measured:  `0 + m * (7573 ±0) + n * (3647 ±0)`
+		//  Estimated: `183222 + m * (64823 ±2_174) + n * (31965 ±1)`
+		// Minimum execution time: 504_156_000 picoseconds.
+		Weight::from_parts(530_057_000, 0)
+			.saturating_add(Weight::from_parts(0, 183222))
+			// Standard Error: 3_574_815
+			.saturating_add(Weight::from_parts(108_544_791, 0).saturating_mul(n.into()))
+			// Standard Error: 7_675_050
+			.saturating_add(Weight::from_parts(207_839_756, 0).saturating_mul(m.into()))
+			.saturating_add(T::DbWeight::get().reads(153))
+			.saturating_add(T::DbWeight::get().reads((27_u64).saturating_mul(n.into())))
+			.saturating_add(T::DbWeight::get().reads((51_u64).saturating_mul(m.into())))
+			.saturating_add(T::DbWeight::get().writes(146))
+			.saturating_add(T::DbWeight::get().writes((25_u64).saturating_mul(n.into())))
+			.saturating_add(T::DbWeight::get().writes((51_u64).saturating_mul(m.into())))
+			.saturating_add(Weight::from_parts(0, 64823).saturating_mul(m.into()))
+			.saturating_add(Weight::from_parts(0, 31965).saturating_mul(n.into()))
 	}
 }

@@ -5,6 +5,6 @@
     "@acala-network/chopsticks": "^0.14.1"
   },
   "scripts": {
-    "spawn:": "cargo build -p peregrine-runtime && yarn chopsticks -c config.yaml"
+    "spawn": "cargo build -p peregrine-runtime && yarn chopsticks -c config.yaml"
   }
 }
