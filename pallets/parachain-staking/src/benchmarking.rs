@@ -196,7 +196,8 @@ benchmarks! {
 			Perquintill::from_percent(10),
 			Perquintill::from_percent(15),
 			Perquintill::from_percent(40),
-			Perquintill::from_percent(10)
+			Perquintill::from_percent(10),
+			n
 		);
 	}: _(RawOrigin::Root, inflation.collator.max_rate, inflation.collator.reward_rate.annual, inflation.delegator.max_rate, inflation.delegator.reward_rate.annual)
 	verify {
@@ -627,7 +628,7 @@ benchmarks! {
 		let old = InflationConfig::<T>::get();
 		assert_eq!(LastRewardReduction::<T>::get(), BlockNumberFor::<T>::zero());
 		System::<T>::set_block_number(T::BLOCKS_PER_YEAR + BlockNumberFor::<T>::one());
-	}: _(RawOrigin::Signed(collator))
+	}: _(RawOrigin::Signed(collator), n)
 	verify {
 		let new = InflationConfig::<T>::get();
 		assert_eq!(LastRewardReduction::<T>::get(), BlockNumberFor::<T>::one());
