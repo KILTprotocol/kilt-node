@@ -16,9 +16,9 @@ mod benchmarking;
 
 mod types;
 
-#[frame_support::pallet]
+#[frame_support::pallet(dev_mode)]
 pub mod pallet {
-	use crate::types::{Curve, PoolDetails, TokenMeta};
+	use crate::types::{Curve, PoolDetails, PoolStatus, TokenMeta};
 	use frame_support::{
 		dispatch::DispatchResultWithPostInfo,
 		pallet_prelude::*,
@@ -26,14 +26,17 @@ pub mod pallet {
 			fungible::{Inspect as InspectFungible, Mutate, MutateHold},
 			fungibles::{
 				metadata::Mutate as FungiblesMetadata, Create as CreateFungibles, Destroy as DestroyFungibles,
-				Inspect as InspectFungibles,
+				Inspect as InspectFungibles, Mutate as MutateFungibles,
 			},
+			tokens::Preservation,
 		},
 		Hashable,
 	};
 	use frame_system::pallet_prelude::*;
-	use parity_scale_codec::EncodeLike;
-	use sp_runtime::{traits::Saturating, SaturatedConversion};
+	use sp_runtime::{
+		traits::{Saturating, Zero},
+		ArithmeticError, SaturatedConversion,
+	};
 
 	pub type DepositCurrencyBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
@@ -59,7 +62,8 @@ pub mod pallet {
 		/// Implementation of creating and managing new fungibles
 		type Fungibles: CreateFungibles<Self::AccountId>
 			+ DestroyFungibles<Self::AccountId>
-			+ FungiblesMetadata<Self::AccountId>;
+			+ FungiblesMetadata<Self::AccountId>
+			+ MutateFungibles<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
 		type MaxCurrencies: Get<u32> + TypeInfo;
@@ -69,14 +73,15 @@ pub mod pallet {
 		/// Who can create new bonded currency pools.
 		type PoolCreateOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The type used for pool ids
-		type PoolId: EncodeLike
-			+ Decode
-			+ TypeInfo
-			+ Clone
+		type PoolId: Parameter
 			+ MaxEncodedLen
 			+ From<[u8; 32]>
 			+ Into<Self::AccountId>
 			+ Into<DepositCurrencyHoldReasonOf<Self>>;
+	}
+
+	fn mock_curve_impl<T: Saturating>(_: Curve, active_pre: T, active_post: T, __: T) -> T {
+		active_post.saturating_sub(active_pre)
 	}
 
 	#[pallet::pallet]
@@ -119,15 +124,20 @@ pub mod pallet {
 		PoolUnknown,
 		/// The pool has no associated bonded currency with the given index.
 		IndexOutOfBounds,
+		/// The cost or returns for a mint, burn, or swap operation is outside the user-defined slippage tolerance.
+		Slippage,
 	}
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
+	{
 		#[pallet::call_index(0)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] // TODO: properly configure weights
+		// #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] TODO: properly configure weights
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			curve: Curve,
@@ -181,6 +191,70 @@ pub mod pallet {
 			// Emit an event.
 			Self::deposit_event(Event::PoolCreated(who));
 			// Return a successful DispatchResultWithPostInfo
+			Ok(().into())
+		}
+
+		#[pallet::call_index(1)]
+		pub fn mint_into(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_idx: u32,
+			amount_to_mint: FungiblesBalanceOf<T>,
+			max_cost: CollateralCurrencyBalanceOf<T>,
+			beneficiary: T::AccountId,
+		) -> DispatchResultWithPostInfo {
+			let signer = ensure_signed(origin)?;
+
+			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			let mint_enabled = match pool_details.state {
+				// if mint is locked, then operation is priviledged
+				PoolStatus::Frozen(locks) => locks.allow_mint || signer == pool_details.creator,
+				PoolStatus::Active => true,
+				_ => false,
+			};
+			ensure!(mint_enabled, Error::<T>::Locked);
+
+			// get id of the currency we want to mint
+			// this also serves as a validation of the currency_idx parameter
+			let mint_currency_id = pool_details
+				.bonded_currencies
+				.get::<usize>(currency_idx.saturated_into())
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			let mut total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+				.bonded_currencies
+				.iter()
+				.map(|id| T::Fungibles::total_issuance(id.clone()))
+				.collect();
+
+			// calculate parameters for bonding curve
+			// we've checked the vector length before
+			let active_issuance_pre = total_issuances.swap_remove(currency_idx.saturated_into());
+			let active_issuance_post = active_issuance_pre.saturating_add(amount_to_mint); // TODO: use checked_add and fail on overflow?
+			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
+				.iter()
+				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
+
+			// calculate cost
+			let cost: CollateralCurrencyBalanceOf<T> = mock_curve_impl(
+				pool_details.curve,
+				active_issuance_pre,
+				active_issuance_post,
+				passive_issuance,
+			)
+			.try_into()
+			.map_err(|_| ArithmeticError::Overflow)?;
+
+			// fail if cost > max_cost
+			ensure!(!cost.gt(&max_cost), Error::<T>::Slippage);
+
+			// withdraw the collateral and put it in the deposit account
+			T::CollateralCurrency::transfer(&signer, &pool_id.into(), cost, Preservation::Preserve)?;
+
+			// mint tokens into beneficiary account
+			T::Fungibles::mint_into(mint_currency_id.clone(), &beneficiary, amount_to_mint)?;
+
 			Ok(().into())
 		}
 	}
