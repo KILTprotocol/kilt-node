@@ -1,5 +1,5 @@
 endpoint:
-    - wss://spiritnet.kilt.io
+    - wss://peregrine.kilt.io
 db: db/peregrine.sqlite
 runtime-log-level: 5
 port: 50002
