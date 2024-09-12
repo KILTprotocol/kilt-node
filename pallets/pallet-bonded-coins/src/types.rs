@@ -61,12 +61,16 @@ pub struct TokenMeta<Balance, AssetId> {
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub struct LinearRatioCurveParams<ParamType> {
+	pub scaling_factor: ParamType,
+}
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<ParamType> {
 	/// Price scales linearly with the ratio of the total issuance of the active currency to the sum of all total issuances.
 	/// `f(i_active) = s * i_active / (i_active + i_passive)`, where s is a scaling factor.
 	/// Parameters:
 	/// - Scaling Factor
-	LinearRatioCurve(ParamType),
+	LinearRatioCurve(LinearRatioCurveParams<ParamType>),
 }
 
 pub struct MockCurve {}
