@@ -207,10 +207,6 @@ pub mod pallet {
 			let signer = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
-			if !amount_to_mint.gt(&Zero::zero()) {
-				return Ok(().into())
-			}
-
 			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
 			let mint_enabled = match pool_details.state {
@@ -229,6 +225,10 @@ pub mod pallet {
 				.bonded_currencies
 				.get(currency_idx_usize)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			if !amount_to_mint.gt(&Zero::zero()) {
+				return Ok(().into());
+			}
 
 			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
 				.bonded_currencies
@@ -270,10 +270,6 @@ pub mod pallet {
 			let signer = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
-			if !amount_to_burn.gt(&Zero::zero()) {
-				return Ok(().into());
-			}
-
 			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
 			let burn_enabled = match pool_details.state {
@@ -292,6 +288,10 @@ pub mod pallet {
 				.bonded_currencies
 				.get(currency_idx_usize)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			if !amount_to_burn.gt(&Zero::zero()) {
+				return Ok(().into());
+			}
 
 			// TODO: remove lock if one exists / if pool_details.transferable != true
 
