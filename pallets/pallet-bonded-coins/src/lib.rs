@@ -83,6 +83,8 @@ pub mod pallet {
 			+ Into<DepositCurrencyHoldReasonOf<Self>>;
 	}
 
+	type CurveParameterType = u32;
+
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
 
@@ -93,7 +95,7 @@ pub mod pallet {
 		_,
 		Twox64Concat,
 		T::PoolId,
-		PoolDetails<T::AccountId, FungiblesAssetIdOf<T>, Curve, T::MaxCurrencies>,
+		PoolDetails<T::AccountId, FungiblesAssetIdOf<T>, Curve<CurveParameterType>, T::MaxCurrencies>,
 		OptionQuery,
 	>;
 
@@ -139,7 +141,7 @@ pub mod pallet {
 		// #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] TODO: properly configure weights
 		pub fn create_pool(
 			origin: OriginFor<T>,
-			curve: Curve,
+			curve: Curve<CurveParameterType>,
 			currencies: BoundedVec<TokenMeta<FungiblesBalanceOf<T>, FungiblesAssetIdOf<T>>, T::MaxCurrencies>,
 			frozen: bool,
 			// currency_admin: Option<AccountIdLookupOf<T>> TODO: use this to set currency admin
@@ -252,7 +254,7 @@ pub mod pallet {
 		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
 	{
 		pub fn get_cost(
-			curve: Curve,
+			curve: Curve<CurveParameterType>,
 			amount_to_mint: &FungiblesBalanceOf<T>,
 			mut total_issuances: Vec<FungiblesBalanceOf<T>>,
 			mint_into_idx: usize,
@@ -269,7 +271,7 @@ pub mod pallet {
 
 			// match curve implementation
 			let curve_impl = match curve {
-				Curve::LinearRatioCurve => MockCurve::new(),
+				Curve::LinearRatioCurve(_) => MockCurve::new(),
 			};
 
 			let cost = curve_impl.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance);

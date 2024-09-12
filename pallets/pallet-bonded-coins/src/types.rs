@@ -60,25 +60,28 @@ pub struct TokenMeta<Balance, AssetId> {
 	pub min_balance: Balance,
 }
 
-#[derive(Default, Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum Curve {
-	#[default]
-	LinearRatioCurve,
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub enum Curve<ParamType> {
+	/// Price scales linearly with the ratio of the total issuance of the active currency to the sum of all total issuances.
+	/// `f(i_active) = s * i_active / (i_active + i_passive)`, where s is a scaling factor.
+	/// Parameters:
+	/// - Scaling Factor
+	LinearRatioCurve(ParamType),
 }
 
 pub struct MockCurve {}
 
 impl MockCurve {
 	pub fn new() -> Self {
-			Self {  }
-		}
-	
+		Self {}
+	}
+
 	pub fn calculate_cost<Balance: Saturating>(
 		self,
 		active_issuance_pre: Balance,
 		active_issuance_post: Balance,
 		_: Balance,
 	) -> Balance {
-        active_issuance_pre.saturating_sub(active_issuance_post)
+		active_issuance_pre.saturating_sub(active_issuance_post)
 	}
 }
