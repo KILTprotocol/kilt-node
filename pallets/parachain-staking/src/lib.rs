@@ -297,7 +297,7 @@ pub mod pallet {
 		/// NOTE: To protect against irremovability of a candidate or delegator,
 		/// we only allow for MaxUnstakeRequests - 1 many manual unstake
 		/// requests. The last one serves as a placeholder for the cases of
-		/// calling either `kick_delegator`, force_remove_candidate` or
+		/// calling either `kick_delegator`, `force_remove_candidate` or
 		/// `execute_leave_candidates`. Otherwise, a user could max out their
 		/// unstake requests and prevent themselves from being kicked from the
 		/// set of candidates/delegators until they unlock their funds.
