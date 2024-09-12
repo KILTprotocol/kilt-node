@@ -107,7 +107,7 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 
-	/// Storage: `ParachainStaking::CounterForCandidatePool` (r:1 w:0)
+/// Storage: `ParachainStaking::CounterForCandidatePool` (r:1 w:0)
 	/// Proof: `ParachainStaking::CounterForCandidatePool` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
 	/// Storage: `ParachainStaking::CandidatePool` (r:76 w:0)
 	/// Proof: `ParachainStaking::CandidatePool` (`max_values`: None, `max_size`: Some(1790), added: 4265, mode: `MaxEncodedLen`)
@@ -126,14 +126,14 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	fn set_inflation(n: u32, m: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0 + m * (7573 ±0) + n * (3709 ±0)`
-		//  Estimated: `183222 + m * (64823 ±2_174) + n * (31965 ±1_012)`
-		// Minimum execution time: 515_122_000 picoseconds.
-		Weight::from_parts(518_293_000, 0)
+		//  Estimated: `183222 + m * (64823 ±2_167) + n * (31965 ±1_009)`
+		// Minimum execution time: 704_611_000 picoseconds.
+		Weight::from_parts(707_105_000, 0)
 			.saturating_add(Weight::from_parts(0, 183222))
-			// Standard Error: 3_677_844
-			.saturating_add(Weight::from_parts(111_333_125, 0).saturating_mul(n.into()))
-			// Standard Error: 7_896_252
-			.saturating_add(Weight::from_parts(222_448_275, 0).saturating_mul(m.into()))
+			// Standard Error: 4_876_636
+			.saturating_add(Weight::from_parts(150_694_630, 0).saturating_mul(n.into()))
+			// Standard Error: 10_470_032
+			.saturating_add(Weight::from_parts(290_425_882, 0).saturating_mul(m.into()))
 			.saturating_add(T::DbWeight::get().reads(152))
 			.saturating_add(T::DbWeight::get().reads((27_u64).saturating_mul(n.into())))
 			.saturating_add(T::DbWeight::get().reads((51_u64).saturating_mul(m.into())))
@@ -696,14 +696,14 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	fn execute_scheduled_reward_change(n: u32, m: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0 + m * (7573 ±0) + n * (3647 ±0)`
-		//  Estimated: `183222 + m * (64823 ±2_174) + n * (31965 ±1)`
-		// Minimum execution time: 504_156_000 picoseconds.
-		Weight::from_parts(530_057_000, 0)
+		//  Estimated: `183222 + m * (64823 ±2_167) + n * (31965 ±1_009)`
+		// Minimum execution time: 683_160_000 picoseconds.
+		Weight::from_parts(687_351_000, 0)
 			.saturating_add(Weight::from_parts(0, 183222))
-			// Standard Error: 3_574_815
-			.saturating_add(Weight::from_parts(108_544_791, 0).saturating_mul(n.into()))
-			// Standard Error: 7_675_050
-			.saturating_add(Weight::from_parts(207_839_756, 0).saturating_mul(m.into()))
+			// Standard Error: 4_643_820
+			.saturating_add(Weight::from_parts(141_740_256, 0).saturating_mul(n.into()))
+			// Standard Error: 9_970_180
+			.saturating_add(Weight::from_parts(280_674_034, 0).saturating_mul(m.into()))
 			.saturating_add(T::DbWeight::get().reads(153))
 			.saturating_add(T::DbWeight::get().reads((27_u64).saturating_mul(n.into())))
 			.saturating_add(T::DbWeight::get().reads((51_u64).saturating_mul(m.into())))
@@ -762,7 +762,7 @@ mod tests {
 				.max_extrinsic
 				.unwrap_or_else(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value)
 				.proof_size()
-				> 383346
+				> 183222
 		);
 	}
 	#[test]
@@ -978,7 +978,7 @@ mod tests {
 				.max_extrinsic
 				.unwrap_or_else(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value)
 				.proof_size()
-				> 383849
+				> 183222
 		);
 	}
 }
