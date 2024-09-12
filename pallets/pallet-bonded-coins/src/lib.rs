@@ -18,7 +18,6 @@ mod types;
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
-	use crate::types::{Curve, MockCurve, PoolDetails, PoolStatus, TokenMeta};
 	use frame_support::{
 		dispatch::DispatchResultWithPostInfo,
 		pallet_prelude::*,
@@ -34,23 +33,26 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{
-		traits::{CheckedAdd, CheckedConversion, Saturating, StaticLookup, Zero},
+		traits::{CheckedAdd, Saturating, StaticLookup, Zero},
 		ArithmeticError, SaturatedConversion,
 	};
 
+	use crate::types::{Curve, MockCurve, PoolDetails, PoolStatus, TokenMeta};
+
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
-	pub type DepositCurrencyBalanceOf<T> =
+	type DepositCurrencyBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
-	pub type DepositCurrencyHoldReasonOf<T> =
+	type DepositCurrencyHoldReasonOf<T> =
 		<<T as Config>::DepositCurrency as frame_support::traits::fungible::InspectHold<
 			<T as frame_system::Config>::AccountId,
 		>>::Reason;
-	pub type CollateralCurrencyBalanceOf<T> =
+	type CollateralCurrencyBalanceOf<T> =
 		<<T as Config>::CollateralCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
-	pub type FungiblesBalanceOf<T> =
+	type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
-	pub type FungiblesAssetIdOf<T> =
+	type FungiblesAssetIdOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -213,7 +215,7 @@ pub mod pallet {
 			};
 			ensure!(mint_enabled, Error::<T>::Locked);
 
-			let currency_idx_usize: usize = currency_idx.checked_into().ok_or(Error::<T>::IndexOutOfBounds)?;
+			let currency_idx_usize: usize = currency_idx.saturated_into();
 
 			// get id of the currency we want to mint
 			// this also serves as a validation of the currency_idx parameter
