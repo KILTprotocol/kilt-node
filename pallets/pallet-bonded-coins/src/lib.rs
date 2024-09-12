@@ -118,7 +118,7 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		/// The number of bonded currencies on a new pool is either lower than 1 or greater than MaxCurrencies.
-		CurrenciesOutOfBounds,
+		CurrenciesNumber,
 		/// A token swap cannot be executed due to a lock placed on this operation.
 		Locked,
 		/// The pool id is not currently registered.
@@ -150,8 +150,8 @@ pub mod pallet {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
 			ensure!(
-				(2..=T::MaxCurrencies::get().saturated_into()).contains(&currencies.len()),
-				Error::<T>::CurrenciesOutOfBounds
+				(1..=T::MaxCurrencies::get().saturated_into()).contains(&currencies.len()),
+				Error::<T>::CurrenciesNumber
 			);
 
 			let currency_ids = BoundedVec::truncate_from(currencies.iter().map(|c| c.id.clone()).collect());
