@@ -196,7 +196,7 @@ benchmarks! {
 			Perquintill::from_percent(10),
 			Perquintill::from_percent(15),
 			Perquintill::from_percent(40),
-			Perquintill::from_percent(10),
+			Perquintill::from_percent(10)
 		);
 
 		let candidate_pool_size = candidates.len() as u32;
