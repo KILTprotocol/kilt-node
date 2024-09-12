@@ -11,8 +11,8 @@ settings:
 # * PARA_RPC: RPC port for one parachain node
 
 relaychain:
-    # TODO: Replace with `polkadot-local` chainspec when able to use it: https://github.com/paritytech/zombienet-sdk/issues/255.
-    chain: rococo-local
+    chain: polkadot-local
+    chain_spec_path: runtimes/spiritnet/polkadot-local-fast-runtime-v1.2.3-60e1eb8.json
     default_image: "{{RELAY_IMAGE}}"
     nodes:
         - name: "relay-alice"
