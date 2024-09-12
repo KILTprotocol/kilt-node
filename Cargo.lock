@@ -7129,7 +7129,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-bonded-coins"
-version = "0.8.0"
+version = "1.15.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
