@@ -39,7 +39,6 @@ pallets=(
 	pallet-dip-provider
 	pallet-message-queue
 	cumulus-pallet-parachain-system
-	cumulus-pallet-dmp-queue
 	pallet_multisig
 	pallet-assets
 	pallet-asset-switch

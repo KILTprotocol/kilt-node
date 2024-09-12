@@ -25,7 +25,7 @@ use crate::{
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
 use frame_support::{
 	parameter_types,
-	traits::{Contains, EnqueueWithOrigin, Everything, Nothing, TransformOrigin},
+	traits::{Contains, Everything, Nothing, TransformOrigin},
 };
 use frame_system::EnsureRoot;
 use pallet_asset_switch::xcm::{
@@ -329,15 +329,4 @@ impl pallet_message_queue::Config for Runtime {
 	type HeapSize = HeapSize;
 	type MaxStale = MaxStale;
 	type ServiceWeight = ServiceWeight;
-}
-
-// Remove me in 1.15.0
-parameter_types! {
-	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
-}
-
-impl cumulus_pallet_dmp_queue::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type DmpSink = EnqueueWithOrigin<MessageQueue, RelayOrigin>;
-	type WeightInfo = crate::weights::cumulus_pallet_dmp_queue::WeightInfo<Runtime>;
 }
