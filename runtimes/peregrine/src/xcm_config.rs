@@ -25,7 +25,7 @@ use crate::{
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
 use frame_support::{
 	parameter_types,
-	traits::{Contains, EnqueueWithOrigin, Everything, Nothing, TransformOrigin},
+	traits::{Contains, Everything, Nothing, TransformOrigin},
 };
 use frame_system::EnsureRoot;
 use pallet_asset_switch::xcm::{
