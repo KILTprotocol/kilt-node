@@ -76,7 +76,7 @@ pub enum Curve<ParamType> {
 pub struct MockCurve {}
 
 impl MockCurve {
-	pub fn new() -> Self {
+	pub fn new<T>(_: T) -> Self {
 		Self {}
 	}
 

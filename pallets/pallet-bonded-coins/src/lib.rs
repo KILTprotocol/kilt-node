@@ -271,7 +271,7 @@ pub mod pallet {
 
 			// match curve implementation
 			let curve_impl = match curve {
-				Curve::LinearRatioCurve(_) => MockCurve::new(),
+				Curve::LinearRatioCurve(params) => MockCurve::new(params),
 			};
 
 			let cost = curve_impl.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance);
