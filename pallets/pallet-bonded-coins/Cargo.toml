@@ -1,29 +1,30 @@
 [package]
-name = "pallet-bonded-coins"
-authors = ["Anonymous"]
-description = "FRAME pallet template for defining custom runtime logic."
-version = "0.8.0"
-license = "Unlicense"
-homepage = "https://substrate.io"
+authors              = ["Anonymous"]
+description          = "FRAME pallet template for defining custom runtime logic."
+edition.workspace    = true
+homepage             = "https://substrate.io"
+license              = "Unlicense"
+name                 = "pallet-bonded-coins"
 repository.workspace = true
-edition.workspace = true
-
+version              = "0.8.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-parity-scale-codec = { workspace = true, features = ["derive"]}
-scale-info = { workspace = true, features = ["derive"]}
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info         = { workspace = true, features = ["derive"] }
 # Substrate
-frame-benchmarking =  { workspace = true }
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-sp-core = { workspace = true }
-sp-runtime = { workspace = true }
+frame-benchmarking = { workspace = true }
+frame-support      = { workspace = true }
+frame-system       = { workspace = true }
+sp-arithmetic      = { workspace = true }
+sp-core            = { workspace = true }
+sp-runtime         = { workspace = true }
+sp-std             = { workspace = true }
 
 [dev-dependencies]
-serde = { workspace = true}
+serde = { workspace = true }
 
 # Substrate
 sp-io = { workspace = true }
@@ -36,13 +37,10 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 ]
 std = [
-	"parity-scale-codec/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
+	"parity-scale-codec/std",
 	"scale-info/std",
 ]
-try-runtime = [
-	"frame-support/try-runtime",
-	"frame-system/try-runtime",
-]
+try-runtime = ["frame-support/try-runtime", "frame-system/try-runtime"]
