@@ -4,7 +4,7 @@ use scale_info::TypeInfo;
 use sp_core::Get;
 use sp_runtime::{ArithmeticError, FixedPointNumber};
 
-use crate::curves_parameters::{self, BondingFunction};
+use crate::curves_parameters::{self, BondingFunction, SquareRoot};
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct Locks {
@@ -64,16 +64,15 @@ pub struct TokenMeta<Balance, AssetId> {
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<F> {
-	/// Price scales linearly with the ratio of the total issuance of the active currency to the sum of all total issuances.
-	/// `f(i_active) = s * i_active / (i_active + i_passive)`, where s is a scaling factor.
-	/// Parameters:
-	/// - Scaling Factor
 	LinearRatioCurve(curves_parameters::LinearBondingFunctionParameters<F>),
+	QuadraticRatioCurve(curves_parameters::QuadraticBondingFunctionParameters<F>),
+	SquareRootBondingFunction(curves_parameters::SquareRootBondingFunctionParameters<F>),
+	RationalBondingFunction(curves_parameters::RationalBondingFunctionParameters<F>),
 }
 
 impl<F> Curve<F>
 where
-	F: FixedPointNumber,
+	F: FixedPointNumber + SquareRoot,
 {
 	pub fn calculate_cost(
 		&self,
@@ -81,13 +80,23 @@ where
 		active_issuance_post: F,
 		passive_issuance: F,
 	) -> Result<F, ArithmeticError> {
-		let calculation_param = match self {
-			Curve::LinearRatioCurve(params) => params,
-		};
-
 		let active_issuance_pre_with_passive = active_issuance_pre.saturating_add(passive_issuance);
 		let active_issuance_post_with_passive = active_issuance_post.saturating_add(passive_issuance);
 
-		calculation_param.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
+		match self {
+			Curve::LinearRatioCurve(params) => {
+				params.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
+			}
+			Curve::QuadraticRatioCurve(params) => {
+				params.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
+			}
+			Curve::SquareRootBondingFunction(params) => {
+				params.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
+			}
+			Curve::RationalBondingFunction(params) => params.calculate_costs(
+				(active_issuance_pre, passive_issuance),
+				(active_issuance_post, passive_issuance),
+			),
+		}
 	}
 }
