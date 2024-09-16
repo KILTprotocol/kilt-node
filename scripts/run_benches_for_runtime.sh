@@ -6,7 +6,13 @@
 
 runtime=${1-"peregrine"}
 chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
-standard_args="--release --locked --features=runtime-benchmarks --bin=kilt-parachain"
+# Dev profile is the debug target
+profile=${2-"dev"}
+standard_args="--profile $2 --locked --features=runtime-benchmarks --bin=kilt-parachain"
+
+echo $target_folder
+
+exit 0
 
 pallets=(
 	pallet-migration
@@ -44,8 +50,6 @@ pallets=(
 	pallet-asset-switch
 )
 
-
-
 # Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
   pallets+=(
@@ -57,10 +61,16 @@ echo "[+] Running all runtime benchmarks for $runtime --chain=$chain"
 
 cargo build $standard_args
 
+if [ $profile == "dev" ]; then
+    target_folder="debug"
+else
+    target_folder=$profile
+fi
+
 for pallet in "${pallets[@]}"; do
 	echo "Runtime: $runtime. Pallet: $pallet"
 	# shellcheck disable=SC2086
-	./target/release/kilt-parachain benchmark pallet \
+	./target/$target_folder/kilt-parachain benchmark pallet \
 		--template=".maintain/runtime-weight-template.hbs" \
 		--header="HEADER-GPL" \
 		--wasm-execution=compiled \
