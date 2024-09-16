@@ -16,6 +16,7 @@ mod benchmarking;
 
 mod types;
 
+mod curves_parameters;
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
 	use frame_support::{
@@ -24,8 +25,9 @@ pub mod pallet {
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate, MutateHold},
 			fungibles::{
-				metadata::Mutate as FungiblesMetadata, Create as CreateFungibles, Destroy as DestroyFungibles,
-				Inspect as InspectFungibles, Mutate as MutateFungibles,
+				metadata::Inspect as FungiblesInspect, metadata::Mutate as FungiblesMetadata,
+				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
+				Mutate as MutateFungibles,
 			},
 			tokens::Preservation,
 		},
@@ -34,10 +36,13 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{
 		traits::{CheckedAdd, Saturating, StaticLookup, Zero},
-		ArithmeticError, SaturatedConversion,
+		ArithmeticError, FixedU128, SaturatedConversion,
 	};
 
-	use crate::types::{Curve, MockCurve, PoolDetails, PoolStatus, TokenMeta};
+	use crate::{
+		curves_parameters::transform_denomination_currency_amount,
+		types::{Curve, PoolDetails, PoolStatus, TokenMeta},
+	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 	type DepositCurrencyBalanceOf<T> =
@@ -66,6 +71,7 @@ pub mod pallet {
 		type Fungibles: CreateFungibles<Self::AccountId>
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
+			+ FungiblesInspect<Self::AccountId>
 			+ MutateFungibles<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
@@ -83,7 +89,7 @@ pub mod pallet {
 			+ Into<DepositCurrencyHoldReasonOf<Self>>;
 	}
 
-	type CurveParameterType = u32;
+	type CurveParameterType = FixedU128;
 
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
@@ -226,13 +232,23 @@ pub mod pallet {
 				.get(currency_idx_usize)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+			let currencies_metadata: Vec<(FungiblesBalanceOf<T>, u8)> = pool_details
 				.bonded_currencies
 				.iter()
-				.map(|id| T::Fungibles::total_issuance(id.clone()))
+				.map(|id| {
+					(
+						T::Fungibles::total_issuance(id.clone()),
+						T::Fungibles::decimals(id.clone()),
+					)
+				})
 				.collect();
 
-			let cost = Self::get_cost(pool_details.curve, &amount_to_mint, total_issuances, currency_idx_usize)?;
+			let cost = Self::get_cost(
+				pool_details.curve,
+				&amount_to_mint,
+				currencies_metadata,
+				currency_idx_usize,
+			)?;
 
 			// fail if cost > max_cost
 			ensure!(!cost.gt(&max_cost), Error::<T>::Slippage);
@@ -252,32 +268,67 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
+		CollateralCurrencyBalanceOf<T>: TryInto<u128>,
 	{
+		/// Calculate the cost of minting a given amount of a currency into a pool.
+		/// The pool currency might have all different denominations. Therefore,
+		/// the cost is calculated by normalizing all currencies to the same denomination.
 		pub fn get_cost(
 			curve: Curve<CurveParameterType>,
 			amount_to_mint: &FungiblesBalanceOf<T>,
-			mut total_issuances: Vec<FungiblesBalanceOf<T>>,
+			total_issuances: Vec<(FungiblesBalanceOf<T>, u8)>,
 			mint_into_idx: usize,
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
-			// calculate parameters for bonding curve
-			// we've checked the vector length before
-			let active_issuance_pre = total_issuances.swap_remove(mint_into_idx);
+			// todo: change that. We have also to restrict the denomination of the pool currencies maybe?
+			let target_denomination_normalization = 18;
+			let target_denomination_costs = 10;
+
+			// normalize all issuances to the same denomination representation
+			let mut normalized_issuances = total_issuances
+				.clone()
+				.into_iter()
+				.map(|(x, d)| {
+					transform_denomination_currency_amount(
+						x.saturated_into::<u128>(),
+						d,
+						target_denomination_normalization,
+					)
+				})
+				.collect::<Result<Vec<FixedU128>, ArithmeticError>>()?;
+
+			// normalize the amount to mint
+			let normalized_amount_to_mint = transform_denomination_currency_amount(
+				amount_to_mint.clone().saturated_into(),
+				total_issuances[mint_into_idx].1,
+				target_denomination_normalization,
+			)?;
+
+			// remove the target currency from the normalized total issuances
+			let active_issuance_pre = normalized_issuances.swap_remove(mint_into_idx);
+
+			// add the normalized amount to mint to the active target issuance
 			let active_issuance_post = active_issuance_pre
-				.checked_add(amount_to_mint)
+				.checked_add(&normalized_amount_to_mint)
 				.ok_or(ArithmeticError::Overflow)?;
-			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
+
+			// calculate the passive issuance
+			let passive_issuance = normalized_issuances
 				.iter()
-				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
+				.fold(FixedU128::zero(), |sum, x| sum.saturating_add(*x));
 
-			// match curve implementation
-			let curve_impl = match curve {
-				Curve::LinearRatioCurve(params) => MockCurve::new(params),
-			};
+			let normalize_cost = curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance)?;
 
-			let cost = curve_impl.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance);
+			// transform the cost back to the target denomination of the collateral currency
+			let real_costs = transform_denomination_currency_amount(
+				normalize_cost.into_inner(),
+				target_denomination_normalization,
+				target_denomination_costs,
+			)?;
 
-			// Try conversion to Collateral Balance type
-			return cost.try_into().map_err(|_| ArithmeticError::Overflow);
+			real_costs
+				.into_inner()
+				.try_into()
+				.map_err(|_| ArithmeticError::Overflow)
 		}
 	}
 }
