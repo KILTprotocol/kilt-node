@@ -316,7 +316,8 @@ jobs:
             ~/.cargo/git/db/
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run benchmarks for runtime
+      # We don't care if the weight files are updated.
+      - name: Run runtime benchmarks
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \

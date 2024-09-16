@@ -12,8 +12,6 @@ standard_args="--profile $2 --locked --features=runtime-benchmarks --bin=kilt-pa
 
 echo $target_folder
 
-exit 0
-
 pallets=(
 	pallet-migration
 	attestation
