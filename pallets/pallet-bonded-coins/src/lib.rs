@@ -27,17 +27,17 @@ pub mod pallet {
 				metadata::Mutate as FungiblesMetadata, Create as CreateFungibles, Destroy as DestroyFungibles,
 				Inspect as InspectFungibles, Mutate as MutateFungibles,
 			},
-			tokens::Preservation,
+			tokens::{Fortitude, Precision, Preservation},
 		},
 		Hashable,
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{
-		traits::{CheckedAdd, Saturating, StaticLookup, Zero},
+		traits::{CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero},
 		ArithmeticError, SaturatedConversion,
 	};
 
-	use crate::types::{Curve, MockCurve, PoolDetails, PoolStatus, TokenMeta};
+	use crate::types::{Curve, DiffKind, MockCurve, PoolDetails, PoolStatus, TokenMeta};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 	type DepositCurrencyBalanceOf<T> =
@@ -127,6 +127,8 @@ pub mod pallet {
 		IndexOutOfBounds,
 		/// The cost or returns for a mint, burn, or swap operation is outside the user-defined slippage tolerance.
 		Slippage,
+		/// The amount to mint, burn, or swap is zero.
+		ZeroAmount,
 	}
 
 	#[pallet::hooks]
@@ -217,6 +219,8 @@ pub mod pallet {
 			};
 			ensure!(mint_enabled, Error::<T>::Locked);
 
+			ensure!(amount_to_mint.is_zero(), Error::<T>::ZeroAmount);
+
 			let currency_idx_usize: usize = currency_idx.saturated_into();
 
 			// get id of the currency we want to mint
@@ -232,7 +236,13 @@ pub mod pallet {
 				.map(|id| T::Fungibles::total_issuance(id.clone()))
 				.collect();
 
-			let cost = Self::get_cost(pool_details.curve, &amount_to_mint, total_issuances, currency_idx_usize)?;
+			let cost = Self::get_collateral_diff(
+				DiffKind::Mint,
+				pool_details.curve,
+				&amount_to_mint,
+				total_issuances,
+				currency_idx_usize,
+			)?;
 
 			// fail if cost > max_cost
 			ensure!(!cost.gt(&max_cost), Error::<T>::Slippage);
@@ -247,24 +257,99 @@ pub mod pallet {
 
 			Ok(().into())
 		}
+
+		#[pallet::call_index(2)]
+		pub fn burn_into(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_idx: u32,
+			amount_to_burn: FungiblesBalanceOf<T>,
+			min_return: CollateralCurrencyBalanceOf<T>,
+			beneficiary: AccountIdLookupOf<T>,
+		) -> DispatchResultWithPostInfo {
+			let signer = ensure_signed(origin)?;
+			let beneficiary = T::Lookup::lookup(beneficiary)?;
+
+			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			let burn_enabled = match pool_details.state {
+				// if mint is locked, then operation is priviledged
+				PoolStatus::Frozen(locks) => locks.allow_burn || signer == pool_details.creator,
+				PoolStatus::Active => true,
+				_ => false,
+			};
+			ensure!(burn_enabled, Error::<T>::Locked);
+
+			ensure!(amount_to_burn.is_zero(), Error::<T>::ZeroAmount);
+
+			let currency_idx_usize: usize = currency_idx.saturated_into();
+
+			// get id of the currency we want to burn
+			// this also serves as a validation of the currency_idx parameter
+			let burn_currency_id = pool_details
+				.bonded_currencies
+				.get(currency_idx_usize)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			// TODO: remove lock if one exists / if pool_details.transferable != true
+
+			// Debit from caller to ensure sufficient funds before making expensive cost calculations
+			let burnt_amount = T::Fungibles::burn_from(
+				burn_currency_id.clone(),
+				&signer,
+				amount_to_burn,
+				Precision::Exact,
+				Fortitude::Polite,
+			)?;
+
+			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+				.bonded_currencies
+				.iter()
+				.map(|id| T::Fungibles::total_issuance(id.clone()))
+				.collect();
+
+			//
+			let returns = Self::get_collateral_diff(
+				DiffKind::Burn,
+				pool_details.curve,
+				&burnt_amount,
+				total_issuances,
+				currency_idx_usize,
+			)?;
+
+			// fail if returns < min_return
+			ensure!(!returns.lt(&min_return), Error::<T>::Slippage);
+
+			// withdraw collateral from deposit and transfer to beneficiary account; deposit account may be drained
+			T::CollateralCurrency::transfer(&pool_id.into(), &beneficiary, returns, Preservation::Expendable)?;
+
+			Ok(().into())
+		}
 	}
 
 	impl<T: Config> Pallet<T>
 	where
 		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
 	{
-		pub fn get_cost(
+		pub fn get_collateral_diff(
+			kind: DiffKind,
 			curve: Curve<CurveParameterType>,
-			amount_to_mint: &FungiblesBalanceOf<T>,
+			amount: &FungiblesBalanceOf<T>,
 			mut total_issuances: Vec<FungiblesBalanceOf<T>>,
-			mint_into_idx: usize,
+			currency_idx: usize,
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
 			// calculate parameters for bonding curve
 			// we've checked the vector length before
-			let active_issuance_pre = total_issuances.swap_remove(mint_into_idx);
-			let active_issuance_post = active_issuance_pre
-				.checked_add(amount_to_mint)
-				.ok_or(ArithmeticError::Overflow)?;
+
+			let (active_issuance_pre, active_issuance_post) =
+				Self::calculate_pre_post_issuances(kind, amount, &total_issuances, currency_idx)?;
+
+			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
+				.iter()
+				.enumerate()
+				.filter(|&(idx, _)| idx != currency_idx)
+				.fold(Zero::zero(), |sum, (_, x)| sum.saturating_add(*x));
+
 			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
 				.iter()
 				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
@@ -278,6 +363,24 @@ pub mod pallet {
 
 			// Try conversion to Collateral Balance type
 			return cost.try_into().map_err(|_| ArithmeticError::Overflow);
+		}
+
+		fn calculate_pre_post_issuances(
+			kind: DiffKind,
+			amount: &FungiblesBalanceOf<T>,
+			total_issuances: &[FungiblesBalanceOf<T>],
+			currency_idx: usize,
+		) -> Result<(FungiblesBalanceOf<T>, FungiblesBalanceOf<T>), ArithmeticError> {
+			let active_issuance_pre = total_issuances[currency_idx];
+			let active_issuance_post = match kind {
+				DiffKind::Mint => active_issuance_pre
+					.checked_add(amount)
+					.ok_or(ArithmeticError::Overflow)?,
+				DiffKind::Burn => active_issuance_pre
+					.checked_sub(amount)
+					.ok_or(ArithmeticError::Underflow)?,
+			};
+			Ok((active_issuance_pre, active_issuance_post))
 		}
 	}
 }

@@ -73,6 +73,11 @@ pub enum Curve<ParamType> {
 	LinearRatioCurve(LinearRatioCurveParams<ParamType>),
 }
 
+pub enum DiffKind {
+	Mint,
+	Burn,
+}
+
 pub struct MockCurve {}
 
 impl MockCurve {
