@@ -127,6 +127,8 @@ pub mod pallet {
 		IndexOutOfBounds,
 		/// The cost or returns for a mint, burn, or swap operation is outside the user-defined slippage tolerance.
 		Slippage,
+		/// The amount to mint, burn, or swap is zero.
+		ZeroAmount,
 	}
 
 	#[pallet::hooks]
@@ -217,6 +219,8 @@ pub mod pallet {
 			};
 			ensure!(mint_enabled, Error::<T>::Locked);
 
+			ensure!(amount_to_mint.is_zero(), Error::<T>::ZeroAmount);
+
 			let currency_idx_usize: usize = currency_idx.saturated_into();
 
 			// get id of the currency we want to mint
@@ -225,10 +229,6 @@ pub mod pallet {
 				.bonded_currencies
 				.get(currency_idx_usize)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
-
-			if !amount_to_mint.gt(&Zero::zero()) {
-				return Ok(().into());
-			}
 
 			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
 				.bonded_currencies
@@ -280,6 +280,8 @@ pub mod pallet {
 			};
 			ensure!(burn_enabled, Error::<T>::Locked);
 
+			ensure!(amount_to_burn.is_zero(), Error::<T>::ZeroAmount);
+
 			let currency_idx_usize: usize = currency_idx.saturated_into();
 
 			// get id of the currency we want to burn
@@ -288,10 +290,6 @@ pub mod pallet {
 				.bonded_currencies
 				.get(currency_idx_usize)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
-
-			if !amount_to_burn.gt(&Zero::zero()) {
-				return Ok(().into());
-			}
 
 			// TODO: remove lock if one exists / if pool_details.transferable != true
 
@@ -342,21 +340,16 @@ pub mod pallet {
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
 			// calculate parameters for bonding curve
 			// we've checked the vector length before
-			let mut active_issuance_pre = total_issuances.swap_remove(currency_idx);
-			let mut active_issuance_post = active_issuance_pre.clone();
-			// burn and mint are symmetric; we can thus treat a burn as a mint from post -> prior
-			match kind {
-				DiffKind::Mint => {
-					active_issuance_post = active_issuance_post
-						.checked_add(amount)
-						.ok_or(ArithmeticError::Overflow)?
-				}
-				DiffKind::Burn => {
-					active_issuance_pre = active_issuance_pre
-						.checked_sub(amount)
-						.ok_or(ArithmeticError::Underflow)?
-				}
-			};
+
+			let (active_issuance_pre, active_issuance_post) =
+				Self::calculate_pre_post_issuances(kind, amount, &total_issuances, currency_idx)?;
+
+			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
+				.iter()
+				.enumerate()
+				.filter(|&(idx, _)| idx != currency_idx)
+				.fold(Zero::zero(), |sum, (_, x)| sum.saturating_add(*x));
+
 			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
 				.iter()
 				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
@@ -370,6 +363,24 @@ pub mod pallet {
 
 			// Try conversion to Collateral Balance type
 			return cost.try_into().map_err(|_| ArithmeticError::Overflow);
+		}
+
+		fn calculate_pre_post_issuances(
+			kind: DiffKind,
+			amount: &FungiblesBalanceOf<T>,
+			total_issuances: &[FungiblesBalanceOf<T>],
+			currency_idx: usize,
+		) -> Result<(FungiblesBalanceOf<T>, FungiblesBalanceOf<T>), ArithmeticError> {
+			let active_issuance_pre = total_issuances[currency_idx];
+			let active_issuance_post = match kind {
+				DiffKind::Mint => active_issuance_pre
+					.checked_add(amount)
+					.ok_or(ArithmeticError::Overflow)?,
+				DiffKind::Burn => active_issuance_pre
+					.checked_sub(amount)
+					.ok_or(ArithmeticError::Underflow)?,
+			};
+			Ok((active_issuance_pre, active_issuance_post))
 		}
 	}
 }
