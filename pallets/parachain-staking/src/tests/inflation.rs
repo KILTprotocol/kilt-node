@@ -18,13 +18,13 @@
 
 //! Unit testing
 
-use frame_support::assert_ok;
+use frame_support::{assert_noop, assert_ok};
 use pallet_authorship::EventHandler;
 use sp_runtime::{traits::Zero, Perquintill};
 
 use crate::{
 	mock::{roll_to_claim_rewards, ExtBuilder, RuntimeOrigin, StakePallet, System, Test, DECIMALS},
-	Config, InflationInfo, RewardRate, StakingInfo,
+	Config, Error, InflationInfo, RewardRate, StakingInfo,
 };
 
 #[test]
@@ -52,7 +52,8 @@ fn rewards_set_inflation() {
 				hundred,
 				hundred,
 				hundred,
-				hundred
+				hundred,
+				2
 			));
 			// rewards and counters should be set
 			(1..=5).for_each(|id| {
@@ -89,7 +90,10 @@ fn rewards_yearly_inflation_adjustment() {
 			});
 
 			// execute to trigger reward increment
-			assert_ok!(StakePallet::execute_scheduled_reward_change(RuntimeOrigin::signed(1)));
+			assert_ok!(StakePallet::execute_scheduled_reward_change(
+				RuntimeOrigin::signed(1),
+				2
+			));
 			(1..=5).for_each(|id| {
 				assert!(
 					!StakePallet::blocks_rewarded(id).is_zero(),
@@ -133,6 +137,7 @@ fn update_inflation() {
 				Perquintill::from_percent(100),
 				Perquintill::from_percent(100),
 				Perquintill::from_percent(100),
+				2
 			));
 			assert_ok!(StakePallet::set_inflation(
 				RuntimeOrigin::root(),
@@ -140,6 +145,7 @@ fn update_inflation() {
 				Perquintill::from_percent(0),
 				Perquintill::from_percent(100),
 				Perquintill::from_percent(100),
+				2
 			));
 			assert_ok!(StakePallet::set_inflation(
 				RuntimeOrigin::root(),
@@ -147,6 +153,7 @@ fn update_inflation() {
 				Perquintill::from_percent(100),
 				Perquintill::from_percent(0),
 				Perquintill::from_percent(100),
+				2
 			));
 			assert_ok!(StakePallet::set_inflation(
 				RuntimeOrigin::root(),
@@ -154,6 +161,27 @@ fn update_inflation() {
 				Perquintill::from_percent(100),
 				Perquintill::from_percent(100),
 				Perquintill::from_percent(0),
+				2
 			));
+		});
+}
+
+#[test]
+fn too_small_candidate_size_provided_for_new_inflation() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10), (2, 100)])
+		.with_collators(vec![(1, 10), (2, 10)])
+		.build_and_execute_with_sanity_tests(|| {
+			assert_noop!(
+				StakePallet::set_inflation(
+					RuntimeOrigin::root(),
+					Perquintill::from_percent(0),
+					Perquintill::from_percent(100),
+					Perquintill::from_percent(100),
+					Perquintill::from_percent(100),
+					1
+				),
+				Error::<Test>::InvalidInput
+			);
 		});
 }

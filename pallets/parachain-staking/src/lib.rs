@@ -417,6 +417,9 @@ pub mod pallet {
 		UnstakingIsEmpty,
 		/// Cannot claim rewards if empty.
 		RewardsNotFound,
+		/// Invalid input provided. The meaning of this error is
+		/// extrinsic-dependent.
+		InvalidInput,
 	}
 
 	#[pallet::event]
@@ -762,15 +765,21 @@ pub mod pallet {
 		///
 		/// Emits `RoundInflationSet`.
 		#[pallet::call_index(1)]
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation(*current_collator_candidate_pool_size, T::MaxDelegatorsPerCollator::get()))]
 		pub fn set_inflation(
 			origin: OriginFor<T>,
 			collator_max_rate_percentage: Perquintill,
 			collator_annual_reward_rate_percentage: Perquintill,
 			delegator_max_rate_percentage: Perquintill,
 			delegator_annual_reward_rate_percentage: Perquintill,
+			current_collator_candidate_pool_size: u32,
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
+
+			ensure!(
+				current_collator_candidate_pool_size >= CandidatePool::<T>::count(),
+				Error::<T>::InvalidInput
+			);
 
 			// Update inflation and increment rewards
 			let (num_col, num_del) = Self::do_set_inflation(
@@ -1725,9 +1734,17 @@ pub mod pallet {
 		///
 		/// Emits `RoundInflationSet`.
 		#[pallet::call_index(20)]
-		#[pallet::weight(<T as Config>::WeightInfo::execute_scheduled_reward_change(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
-		pub fn execute_scheduled_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+		#[pallet::weight(<T as Config>::WeightInfo::execute_scheduled_reward_change(*current_collator_candidate_pool_size, T::MaxDelegatorsPerCollator::get()))]
+		pub fn execute_scheduled_reward_change(
+			origin: OriginFor<T>,
+			current_collator_candidate_pool_size: u32,
+		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
+
+			ensure!(
+				current_collator_candidate_pool_size >= CandidatePool::<T>::count(),
+				Error::<T>::InvalidInput
+			);
 
 			let now = frame_system::Pallet::<T>::block_number();
 			let year = now / T::BLOCKS_PER_YEAR;
