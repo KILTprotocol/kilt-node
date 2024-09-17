@@ -2,7 +2,9 @@ use frame_support::BoundedVec;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::Get;
-use sp_runtime::traits::Saturating;
+use sp_runtime::{ArithmeticError, FixedPointNumber};
+
+use crate::curves_parameters::{self, BondingFunction, SquareRoot};
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct Locks {
@@ -61,16 +63,11 @@ pub struct TokenMeta<Balance, AssetId> {
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct LinearRatioCurveParams<ParamType> {
-	pub scaling_factor: ParamType,
-}
-#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum Curve<ParamType> {
-	/// Price scales linearly with the ratio of the total issuance of the active currency to the sum of all total issuances.
-	/// `f(i_active) = s * i_active / (i_active + i_passive)`, where s is a scaling factor.
-	/// Parameters:
-	/// - Scaling Factor
-	LinearRatioCurve(LinearRatioCurveParams<ParamType>),
+pub enum Curve<F> {
+	LinearRatioCurve(curves_parameters::LinearBondingFunctionParameters<F>),
+	QuadraticRatioCurve(curves_parameters::QuadraticBondingFunctionParameters<F>),
+	SquareRootBondingFunction(curves_parameters::SquareRootBondingFunctionParameters<F>),
+	RationalBondingFunction(curves_parameters::RationalBondingFunctionParameters<F>),
 }
 
 pub enum DiffKind {
@@ -78,19 +75,34 @@ pub enum DiffKind {
 	Burn,
 }
 
-pub struct MockCurve {}
 
-impl MockCurve {
-	pub fn new<T>(_: T) -> Self {
-		Self {}
-	}
+impl<F> Curve<F>
+where
+	F: FixedPointNumber + SquareRoot,
+{
+	pub fn calculate_cost(
+		&self,
+		active_issuance_pre: F,
+		active_issuance_post: F,
+		passive_issuance: F,
+	) -> Result<F, ArithmeticError> {
+		let active_issuance_pre_with_passive = active_issuance_pre.saturating_add(passive_issuance);
+		let active_issuance_post_with_passive = active_issuance_post.saturating_add(passive_issuance);
 
-	pub fn calculate_cost<Balance: Saturating>(
-		self,
-		active_issuance_pre: Balance,
-		active_issuance_post: Balance,
-		_: Balance,
-	) -> Balance {
-		active_issuance_pre.saturating_sub(active_issuance_post)
+		match self {
+			Curve::LinearRatioCurve(params) => {
+				params.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
+			}
+			Curve::QuadraticRatioCurve(params) => {
+				params.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
+			}
+			Curve::SquareRootBondingFunction(params) => {
+				params.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
+			}
+			Curve::RationalBondingFunction(params) => params.calculate_costs(
+				(active_issuance_pre, passive_issuance),
+				(active_issuance_post, passive_issuance),
+			),
+		}
 	}
 }

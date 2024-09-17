@@ -16,6 +16,7 @@ mod benchmarking;
 
 mod types;
 
+mod curves_parameters;
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
 	use frame_support::{
@@ -24,8 +25,9 @@ pub mod pallet {
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate, MutateHold},
 			fungibles::{
-				metadata::Mutate as FungiblesMetadata, Create as CreateFungibles, Destroy as DestroyFungibles,
-				Inspect as InspectFungibles, Mutate as MutateFungibles,
+				metadata::Inspect as FungiblesInspect, metadata::Mutate as FungiblesMetadata,
+				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
+				Mutate as MutateFungibles,
 			},
 			tokens::{Fortitude, Precision, Preservation},
 		},
@@ -36,8 +38,9 @@ pub mod pallet {
 		traits::{CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero},
 		ArithmeticError, SaturatedConversion,
 	};
+	use sp_arithmetic::FixedU128;
 
-	use crate::types::{Curve, DiffKind, MockCurve, PoolDetails, PoolStatus, TokenMeta};
+	use crate::{types::{Curve, DiffKind, PoolDetails, PoolStatus, TokenMeta}, curves_parameters::transform_denomination_currency_amount};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 	type DepositCurrencyBalanceOf<T> =
@@ -66,6 +69,7 @@ pub mod pallet {
 		type Fungibles: CreateFungibles<Self::AccountId>
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
+			+ FungiblesInspect<Self::AccountId>
 			+ MutateFungibles<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
@@ -83,7 +87,7 @@ pub mod pallet {
 			+ Into<DepositCurrencyHoldReasonOf<Self>>;
 	}
 
-	type CurveParameterType = u32;
+	type CurveParameterType = FixedU128;
 
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
@@ -230,17 +234,23 @@ pub mod pallet {
 				.get(currency_idx_usize)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+			let currencies_metadata: Vec<(FungiblesBalanceOf<T>, u8)> = pool_details
 				.bonded_currencies
 				.iter()
-				.map(|id| T::Fungibles::total_issuance(id.clone()))
+				.map(|id| {
+					(
+						T::Fungibles::total_issuance(id.clone()),
+						T::Fungibles::decimals(id.clone()),
+					)
+				})
 				.collect();
+
 
 			let cost = Self::get_collateral_diff(
 				DiffKind::Mint,
 				pool_details.curve,
 				&amount_to_mint,
-				total_issuances,
+				currencies_metadata,
 				currency_idx_usize,
 			)?;
 
@@ -306,6 +316,17 @@ pub mod pallet {
 				Precision::Exact,
 				Fortitude::Polite,
 			)?;
+
+
+			let total_issuances: Vec<(FungiblesBalanceOf<T>, u8)> = pool_details
+				.bonded_currencies
+				.iter()
+				.map(|id| 	(
+						T::Fungibles::total_issuance(id.clone()),
+						T::Fungibles::decimals(id.clone()),
+					))
+				.collect();
+
 
 			//
 			let returns = Self::get_collateral_diff(
@@ -398,43 +419,75 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
+		CollateralCurrencyBalanceOf<T>: TryInto<u128>,
 	{
+
+		/// save usage of currency_ids. 
 		pub fn get_collateral_diff(
 			kind: DiffKind,
 			curve: Curve<CurveParameterType>,
 			amount: &FungiblesBalanceOf<T>,
-			total_issuances: Vec<FungiblesBalanceOf<T>>,
+			total_issuances: Vec<(FungiblesBalanceOf<T>, u8)>,
 			currency_idx: usize,
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
-			// calculate parameters for bonding curve
-			// we've checked the vector length before
+
+			// todo: change that. We have also to restrict the denomination of the pool currencies maybe?
+			let target_denomination_normalization = 18;
+			let target_denomination_costs = 10;
+
+			
+
+			let normalized_issuances = total_issuances
+				.clone()
+				.into_iter()
+				.map(|(x, d)| {
+					transform_denomination_currency_amount(
+						x.saturated_into::<u128>(),
+						d,
+						target_denomination_normalization,
+					)
+				})
+				.collect::<Result<Vec<FixedU128>, ArithmeticError>>()?;
+
+			// normalize the amount to mint
+			let normalized_amount_to_mint = transform_denomination_currency_amount(
+				amount.clone().saturated_into(),
+				total_issuances[currency_idx].1,
+				target_denomination_normalization,
+			)?;
 
 			let (active_issuance_pre, active_issuance_post) =
-				Self::calculate_pre_post_issuances(kind, amount, &total_issuances, currency_idx)?;
+				Self::calculate_pre_post_issuances(kind, &normalized_amount_to_mint, &normalized_issuances, currency_idx)?;
 
-			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
+			let passive_issuance = normalized_issuances
 				.iter()
 				.enumerate()
 				.filter(|&(idx, _)| idx != currency_idx)
-				.fold(Zero::zero(), |sum, (_, x)| sum.saturating_add(*x));
+				.fold(FixedU128::zero(), |sum, (_, x)| sum.saturating_add(*x));
 
-			// match curve implementation
-			let curve_impl = match curve {
-				Curve::LinearRatioCurve(params) => MockCurve::new(params),
-			};
+ 
 
-			let cost = curve_impl.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance);
+			let normalize_cost = curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance)?;
 
-			// Try conversion to Collateral Balance type
-			return cost.try_into().map_err(|_| ArithmeticError::Overflow);
+			// transform the cost back to the target denomination of the collateral currency
+			let real_costs = transform_denomination_currency_amount(
+				normalize_cost.into_inner(),
+				target_denomination_normalization,
+				target_denomination_costs,
+			)?;
+
+			real_costs
+				.into_inner()
+				.try_into()
+				.map_err(|_| ArithmeticError::Overflow)
 		}
 
 		fn calculate_pre_post_issuances(
 			kind: DiffKind,
-			amount: &FungiblesBalanceOf<T>,
-			total_issuances: &[FungiblesBalanceOf<T>],
+			amount: &FixedU128,
+			total_issuances: &[FixedU128],
 			currency_idx: usize,
-		) -> Result<(FungiblesBalanceOf<T>, FungiblesBalanceOf<T>), ArithmeticError> {
+		) -> Result<(FixedU128, FixedU128), ArithmeticError> {
 			let active_issuance_pre = total_issuances[currency_idx];
 			let active_issuance_post = match kind {
 				DiffKind::Mint => active_issuance_pre
