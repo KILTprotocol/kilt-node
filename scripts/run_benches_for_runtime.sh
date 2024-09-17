@@ -5,9 +5,10 @@
 # current Substrate reference machine: https://github.com/paritytech/substrate/pull/5848
 
 runtime=${1-"peregrine"}
+profile=${2-"dev"}
+
 chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 # Dev profile is the debug target
-profile=${2-"dev"}
 standard_args="--profile $2 --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
 echo $target_folder
@@ -61,8 +62,14 @@ cargo build $standard_args
 
 if [ $profile == "dev" ]; then
     target_folder="debug"
+	# We care about benchmark correctness, not accuracy.
+	steps=1
+	repeat=1
 else
     target_folder=$profile
+	# Defaults for the benchmark command
+	steps=50
+	repeat=20
 fi
 
 for pallet in "${pallets[@]}"; do
@@ -73,8 +80,8 @@ for pallet in "${pallets[@]}"; do
 		--header="HEADER-GPL" \
 		--wasm-execution=compiled \
 		--heap-pages=4096 \
-		--steps=50 \
-		--repeat=20 \
+		--steps=$steps \
+		--repeat=$repeat \
 		--chain="${chain}" \
 		--pallet="$pallet" \
 		--extrinsic="*" \
