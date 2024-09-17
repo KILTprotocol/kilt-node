@@ -28,7 +28,7 @@ use frame_support::{
 use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
-use sp_core::{ConstBool, ConstU64, H256};
+use sp_core::{ConstBool, H256};
 use sp_runtime::{
 	impl_opaque_keys,
 	testing::UintAuthorityId,
@@ -120,7 +120,6 @@ impl pallet_aura::Config for Test {
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxCollatorCandidates;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type SlotDuration = ConstU64<2>;
 }
 
 impl pallet_authorship::Config for Test {

@@ -367,7 +367,6 @@ impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<100_000>;
-	type SlotDuration = ConstU64<SLOT_DURATION>;
 }
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}

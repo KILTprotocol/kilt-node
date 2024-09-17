@@ -12,7 +12,7 @@ version       = { workspace = true }
 
 [dev-dependencies]
 kilt-support      = { workspace = true, features = ["mock", "try-runtime"] }
-pallet-aura       = { workspace = true, features = ["experimental", "std"] }
+pallet-aura       = { workspace = true, features = ["std"] }
 pallet-timestamp  = { workspace = true, features = ["std"] }
 sp-consensus-aura = { workspace = true, features = ["std"] }
 sp-core           = { workspace = true, features = ["std"] }
