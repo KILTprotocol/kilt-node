@@ -35,22 +35,12 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{
-<<<<<<< HEAD
-		traits::{CheckedAdd, Saturating, StaticLookup, Zero},
-		ArithmeticError, FixedU128, SaturatedConversion,
-	};
-
-	use crate::{
-		curves_parameters::transform_denomination_currency_amount,
-		types::{Curve, PoolDetails, PoolStatus, TokenMeta},
-	};
-=======
 		traits::{CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero},
 		ArithmeticError, SaturatedConversion,
 	};
+	use sp_arithmetic::FixedU128;
 
-	use crate::types::{Curve, DiffKind, MockCurve, PoolDetails, PoolStatus, TokenMeta};
->>>>>>> feat-bonded-coins
+	use crate::{types::{Curve, DiffKind, PoolDetails, PoolStatus, TokenMeta}, curves_parameters::transform_denomination_currency_amount};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 	type DepositCurrencyBalanceOf<T> =
@@ -322,10 +312,13 @@ pub mod pallet {
 				Fortitude::Polite,
 			)?;
 
-			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+			let total_issuances: Vec<(FungiblesBalanceOf<T>, u8)> = pool_details
 				.bonded_currencies
 				.iter()
-				.map(|id| T::Fungibles::total_issuance(id.clone()))
+				.map(|id| 	(
+						T::Fungibles::total_issuance(id.clone()),
+						T::Fungibles::decimals(id.clone()),
+					))
 				.collect();
 
 			//
@@ -352,11 +345,13 @@ pub mod pallet {
 		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
 		CollateralCurrencyBalanceOf<T>: TryInto<u128>,
 	{
+
+		/// save usage of currency_ids. 
 		pub fn get_collateral_diff(
 			kind: DiffKind,
 			curve: Curve<CurveParameterType>,
 			amount: &FungiblesBalanceOf<T>,
-			mut total_issuances: Vec<FungiblesBalanceOf<T>>,
+			total_issuances: Vec<(FungiblesBalanceOf<T>, u8)>,
 			currency_idx: usize,
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
 
@@ -364,10 +359,9 @@ pub mod pallet {
 			let target_denomination_normalization = 18;
 			let target_denomination_costs = 10;
 
-			// calculate parameters for bonding curve
-			// we've checked the vector length before
+			
 
-			let mut normalized_issuances = total_issuances
+			let normalized_issuances = total_issuances
 				.clone()
 				.into_iter()
 				.map(|(x, d)| {
@@ -379,20 +373,21 @@ pub mod pallet {
 				})
 				.collect::<Result<Vec<FixedU128>, ArithmeticError>>()?;
 
+			// normalize the amount to mint
 			let normalized_amount_to_mint = transform_denomination_currency_amount(
-				amount_to_mint.clone().saturated_into(),
-				total_issuances[mint_into_idx].1,
+				amount.clone().saturated_into(),
+				total_issuances[currency_idx].1,
 				target_denomination_normalization,
 			)?;
 
 			let (active_issuance_pre, active_issuance_post) =
-				Self::calculate_pre_post_issuances(kind, amount, &normalized_issuances, currency_idx)?;
+				Self::calculate_pre_post_issuances(kind, &normalized_amount_to_mint, &normalized_issuances, currency_idx)?;
 
-			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
+			let passive_issuance = normalized_issuances
 				.iter()
 				.enumerate()
 				.filter(|&(idx, _)| idx != currency_idx)
-				.fold(Zero::zero(), |sum, (_, x)| sum.saturating_add(*x));
+				.fold(FixedU128::zero(), |sum, (_, x)| sum.saturating_add(*x));
 
 
 			let normalize_cost = curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance)?;
@@ -412,10 +407,10 @@ pub mod pallet {
 
 		fn calculate_pre_post_issuances(
 			kind: DiffKind,
-			amount: &FungiblesBalanceOf<T>,
-			total_issuances: &[FungiblesBalanceOf<T>],
+			amount: &FixedU128,
+			total_issuances: &[FixedU128],
 			currency_idx: usize,
-		) -> Result<(FungiblesBalanceOf<T>, FungiblesBalanceOf<T>), ArithmeticError> {
+		) -> Result<(FixedU128, FixedU128), ArithmeticError> {
 			let active_issuance_pre = total_issuances[currency_idx];
 			let active_issuance_post = match kind {
 				DiffKind::Mint => active_issuance_pre
