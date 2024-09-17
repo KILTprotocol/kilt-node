@@ -61,24 +61,21 @@ cargo build $standard_args
 if [ $profile == "dev" ]; then
     target_folder="debug"
 	# We care about benchmark correctness, not accuracy.
-	additional_args="--steps=1 --repeat=1 --default-pov-mode=ignored --no-verify"
+	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored --no-verify"
 else
     target_folder=$profile
-	additional_args=""
+	additional_args="--header=\"HEADER-GPL\" --template=\".maintain/runtime-weight-template.hbs\" --output=\"./runtimes/${runtime}/src/weights/\""
 fi
 
 for pallet in "${pallets[@]}"; do
 	echo "Runtime: $runtime. Pallet: $pallet"
 	# shellcheck disable=SC2086
 	./target/$target_folder/kilt-parachain benchmark pallet \
-		--template=".maintain/runtime-weight-template.hbs" \
-		--header="HEADER-GPL" \
 		--wasm-execution=compiled \
 		--heap-pages=4096 \
 		--chain="${chain}" \
 		--pallet="$pallet" \
 		--extrinsic="*" \
-		--output="./runtimes/${runtime}/src/weights/" \
 		$additional_args
 
 done
