@@ -11,8 +11,6 @@ chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 # Dev profile is the debug target
 standard_args="--profile $2 --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
-echo $target_folder
-
 pallets=(
 	pallet-migration
 	attestation
@@ -56,20 +54,17 @@ if [ "$runtime" = "peregrine" ]; then
   )
 fi
 
-echo "[+] Running all runtime benchmarks for $runtime --chain=$chain"
+echo "[+] Running all runtime benchmarks for \"$runtime\", \"--chain=$chain\" and profile \"$profile\""
 
 cargo build $standard_args
 
 if [ $profile == "dev" ]; then
     target_folder="debug"
 	# We care about benchmark correctness, not accuracy.
-	steps=1
-	repeat=1
+	additional_args="--steps=1 --repeat=1 --default-pov-mode=ignored --no-verify"
 else
     target_folder=$profile
-	# Defaults for the benchmark command
-	steps=50
-	repeat=20
+	additional_args=""
 fi
 
 for pallet in "${pallets[@]}"; do
@@ -80,11 +75,10 @@ for pallet in "${pallets[@]}"; do
 		--header="HEADER-GPL" \
 		--wasm-execution=compiled \
 		--heap-pages=4096 \
-		--steps=$steps \
-		--repeat=$repeat \
 		--chain="${chain}" \
 		--pallet="$pallet" \
 		--extrinsic="*" \
-		--output="./runtimes/${runtime}/src/weights/"
+		--output="./runtimes/${runtime}/src/weights/" \
+		$additional_args
 
 done

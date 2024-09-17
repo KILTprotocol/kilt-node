@@ -324,4 +324,4 @@ jobs:
             -v "${HOME}/.cargo:/root/.cargo" \
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
-            bash -c "bash scripts/run_benches_for_runtime.sh ${{ matrix.runtime }}-dev dev > /dev/null"
+            bash -c "bash -x scripts/run_benches_for_runtime.sh ${{ matrix.runtime }}-dev dev"
