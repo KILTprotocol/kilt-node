@@ -70,6 +70,12 @@ pub enum Curve<F> {
 	RationalBondingFunction(curves_parameters::RationalBondingFunctionParameters<F>),
 }
 
+pub enum DiffKind {
+	Mint,
+	Burn,
+}
+
+
 impl<F> Curve<F>
 where
 	F: FixedPointNumber + SquareRoot,
