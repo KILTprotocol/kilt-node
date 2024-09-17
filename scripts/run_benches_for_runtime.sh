@@ -78,4 +78,11 @@ for pallet in "${pallets[@]}"; do
 		--extrinsic="*" \
 		$additional_args
 
+	bench_status=$?
+
+	# Exit with error as soon as one benchmark fails
+	if [ $bench_status -ne 0 ]; then
+    	exit $bench_status
+  	fi
+
 done
