@@ -5,7 +5,7 @@
 # current Substrate reference machine: https://github.com/paritytech/substrate/pull/5848
 
 runtime=${1-"peregrine"}
-profile=${2-"dev"}
+profile=${2-"release"}
 
 chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 # Dev profile is the debug target
