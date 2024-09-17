@@ -1102,8 +1102,7 @@ construct_runtime! {
 		PolkadotXcm: pallet_xcm = 83,
 		// Does nothing cool, just provides an origin.
 		CumulusXcm: cumulus_pallet_xcm exclude_parts { Call } = 84,
-		// Fix: delete this pallet in the next release
-		DmpQueue: cumulus_pallet_dmp_queue = 85,
+		// DmpQueue: cumulus_pallet_dmp_queue = 85,
 		// Queue and pass DMP messages on to be executed.
 		MessageQueue: pallet_message_queue = 86,
 	}
@@ -1192,12 +1191,12 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(
-		runtime_common::migrations::BumpStorageVersion<Runtime>,
-		cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
-		pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	),
+	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>,
 >;
+
+parameter_types! {
+	pub const DmpPalletName: &'static str = "DmpQueue";
+}
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
@@ -1248,7 +1247,6 @@ mod benches {
 		[pallet_assets, Fungibles]
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
-		[cumulus_pallet_dmp_queue, DmpQueue]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 

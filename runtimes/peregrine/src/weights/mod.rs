@@ -19,7 +19,6 @@
 
 pub mod attestation;
 pub mod ctype;
-pub mod cumulus_pallet_dmp_queue;
 pub mod cumulus_pallet_parachain_system;
 pub mod delegation;
 pub mod did;
