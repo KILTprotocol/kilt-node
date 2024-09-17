@@ -335,7 +335,7 @@ pub mod pallet {
 			kind: DiffKind,
 			curve: Curve<CurveParameterType>,
 			amount: &FungiblesBalanceOf<T>,
-			mut total_issuances: Vec<FungiblesBalanceOf<T>>,
+			total_issuances: Vec<FungiblesBalanceOf<T>>,
 			currency_idx: usize,
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
 			// calculate parameters for bonding curve
@@ -349,10 +349,6 @@ pub mod pallet {
 				.enumerate()
 				.filter(|&(idx, _)| idx != currency_idx)
 				.fold(Zero::zero(), |sum, (_, x)| sum.saturating_add(*x));
-
-			let passive_issuance: FungiblesBalanceOf<T> = total_issuances
-				.iter()
-				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
 
 			// match curve implementation
 			let curve_impl = match curve {
