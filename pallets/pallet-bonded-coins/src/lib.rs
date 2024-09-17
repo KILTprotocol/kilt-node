@@ -19,7 +19,7 @@ mod types;
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
 	use frame_support::{
-		dispatch::DispatchResultWithPostInfo,
+		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate, MutateHold},
@@ -293,7 +293,12 @@ pub mod pallet {
 
 			// TODO: remove lock if one exists / if pool_details.transferable != true
 
-			// Debit from caller to ensure sufficient funds before making expensive cost calculations
+						let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+				.bonded_currencies
+				.iter()
+				.map(|id| T::Fungibles::total_issuance(id.clone()))
+				.collect();
+
 			let burnt_amount = T::Fungibles::burn_from(
 				burn_currency_id.clone(),
 				&signer,
@@ -301,12 +306,6 @@ pub mod pallet {
 				Precision::Exact,
 				Fortitude::Polite,
 			)?;
-
-			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
-				.bonded_currencies
-				.iter()
-				.map(|id| T::Fungibles::total_issuance(id.clone()))
-				.collect();
 
 			//
 			let returns = Self::get_collateral_diff(
@@ -322,8 +321,77 @@ pub mod pallet {
 
 			// withdraw collateral from deposit and transfer to beneficiary account; deposit account may be drained
 			T::CollateralCurrency::transfer(&pool_id.into(), &beneficiary, returns, Preservation::Expendable)?;
+			
 
 			Ok(().into())
+		}
+
+		#[pallet::call_index(3)]
+		pub fn swap_into(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			from_idx: u32,
+			to_idx: u32,
+			amount_to_swap: FungiblesBalanceOf<T>,
+			beneficiary: AccountIdLookupOf<T>,
+			min_return: FungiblesBalanceOf<T>,
+		) -> DispatchResult {
+
+			// 
+			let signer = ensure_signed(origin)?;
+			let beneficiary = T::Lookup::lookup(beneficiary)?;
+
+			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			let swap_enabled = match pool_details.state {
+				// if swap is locked, then operation is priviledged
+				PoolStatus::Frozen(locks) => locks.allow_swap || signer == pool_details.creator,
+				PoolStatus::Active => true,
+				_ => false,
+			};
+
+			ensure!(swap_enabled, Error::<T>::Locked);
+			ensure!(amount_to_swap.is_zero(), Error::<T>::ZeroAmount);
+
+			let from_idx_usize: usize = from_idx.saturated_into();
+			let to_idx_usize: usize = to_idx.saturated_into();
+
+			let burn_currency_id = pool_details
+				.bonded_currencies
+				.get(from_idx_usize)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			let mint_currency_id = pool_details.bonded_currencies.get(to_idx_usize).ok_or(Error::<T>::IndexOutOfBounds)?;
+
+
+			// 1. calculate the total issuances of the pool.
+						let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+				.bonded_currencies
+				.iter()
+				.map(|id| T::Fungibles::total_issuance(id.clone()))
+				.collect();
+
+			// 2. burn tokens from signer. Burned amount is used to mint new tokens.
+			let burned_amount = T::Fungibles::burn_from(
+				burn_currency_id.clone(),
+				&signer,
+				amount_to_swap,
+				Precision::Exact,
+				Fortitude::Polite,
+			)?;
+
+			// 3. calculate collatoral diff 
+
+			let returns = Self::get_collateral_diff(
+				DiffKind::Burn,
+				pool_details.curve,
+				&burned_amount,
+				total_issuances,
+				from_idx_usize,
+			)?;
+
+
+			Ok(())
 		}
 	}
 
