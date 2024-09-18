@@ -171,7 +171,6 @@ where
 			.checked_add(&b_divided_sum_squared_multiplied_multiplied)
 			.ok_or(ArithmeticError::Overflow)
 	}
-
 }
 
 pub fn transform_denomination_currency_amount(

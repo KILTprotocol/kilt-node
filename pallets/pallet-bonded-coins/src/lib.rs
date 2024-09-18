@@ -19,6 +19,8 @@ mod types;
 mod curves_parameters;
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
+	use core::f32::consts::E;
+
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
@@ -42,7 +44,7 @@ pub mod pallet {
 
 	use crate::{
 		curves_parameters::transform_denomination_currency_amount,
-		types::{Curve, DiffKind, PoolDetails, PoolStatus, TokenMeta},
+		types::{Curve, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta},
 	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -308,7 +310,6 @@ pub mod pallet {
 			beneficiary: AccountIdLookupOf<T>,
 			min_return: FungiblesBalanceOf<T>,
 		) -> DispatchResult {
-			
 			let signer = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
@@ -414,6 +415,36 @@ pub mod pallet {
 			};
 
 			Ok(())
+		}
+
+		#[pallet::call_index(4)]
+		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			Pools::<T>::try_mutate(pool_id, |pool| -> DispatchResult {
+				if let Some(pool) = pool {
+					ensure!(who == pool.creator, Error::<T>::PoolUnknown);
+					pool.state = PoolStatus::Frozen(lock);
+					Ok(())
+				} else {
+					Err(Error::<T>::PoolUnknown.into())
+				}
+			})
+		}
+
+		#[pallet::call_index(5)]
+		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			Pools::<T>::try_mutate(pool_id, |pool| -> DispatchResult {
+				if let Some(pool) = pool {
+					ensure!(who == pool.creator, Error::<T>::PoolUnknown);
+					pool.state = PoolStatus::Active;
+					Ok(())
+				} else {
+					Err(Error::<T>::PoolUnknown.into())
+				}
+			})
 		}
 	}
 

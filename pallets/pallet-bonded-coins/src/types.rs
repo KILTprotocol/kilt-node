@@ -6,7 +6,7 @@ use sp_runtime::{ArithmeticError, FixedPointNumber};
 
 use crate::curves_parameters::{self, BondingFunction, SquareRoot};
 
-#[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub struct Locks {
 	pub allow_mint: bool,
 	pub allow_burn: bool,
