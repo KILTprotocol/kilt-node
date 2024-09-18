@@ -75,7 +75,6 @@ pub enum DiffKind {
 	Burn,
 }
 
-
 impl<F> Curve<F>
 where
 	F: FixedPointNumber + SquareRoot,

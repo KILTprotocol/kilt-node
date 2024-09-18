@@ -57,14 +57,11 @@ impl<F> BondingFunction<F> for LinearBondingFunctionParameters<F>
 where
 	F: FixedPointNumber,
 {
-	/// F(x) = m * x^2 + n * x
+	/// F(x) = m * x + n
 	fn get_value(&self, x: F) -> Result<F, ArithmeticError> {
-		let x2 = Self::get_power_2(x)?;
+		let mx = self.m.clone().checked_mul(&x).ok_or(ArithmeticError::Overflow)?;
 
-		let mx2 = self.m.clone().checked_mul(&x2).ok_or(ArithmeticError::Overflow)?;
-		let nx = self.n.clone().checked_mul(&x).ok_or(ArithmeticError::Overflow)?;
-
-		let result = mx2.checked_add(&nx).ok_or(ArithmeticError::Overflow)?;
+		let result = mx.checked_add(&self.n).ok_or(ArithmeticError::Overflow)?;
 		Ok(result)
 	}
 }
@@ -174,6 +171,7 @@ where
 			.checked_add(&b_divided_sum_squared_multiplied_multiplied)
 			.ok_or(ArithmeticError::Overflow)
 	}
+
 }
 
 pub fn transform_denomination_currency_amount(
