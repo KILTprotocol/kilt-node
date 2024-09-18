@@ -21,7 +21,7 @@ mod curves_parameters;
 pub mod pallet {
 
 	use frame_support::{
-		dispatch::{DispatchResult, DispatchResultWithPostInfo},
+		dispatch::DispatchResult,
 		ensure,
 		pallet_prelude::*,
 		traits::{
@@ -51,10 +51,6 @@ pub mod pallet {
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	type DepositCurrencyBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
-	type DepositCurrencyHoldReasonOf<T> =
-		<<T as Config>::DepositCurrency as frame_support::traits::fungible::InspectHold<
-			<T as frame_system::Config>::AccountId,
-		>>::Reason;
 	type CollateralCurrencyBalanceOf<T> =
 		<<T as Config>::CollateralCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 	type FungiblesBalanceOf<T> =
@@ -75,7 +71,7 @@ pub mod pallet {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The currency used for storage deposits.
-		type DepositCurrency: MutateHold<Self::AccountId>;
+		type DepositCurrency: MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 		/// The currency used as collateral for minting bonded tokens.
 		type CollateralCurrency: Mutate<Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
@@ -93,11 +89,9 @@ pub mod pallet {
 		/// Who can create new bonded currency pools.
 		type PoolCreateOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The type used for pool ids
-		type PoolId: Parameter
-			+ MaxEncodedLen
-			+ From<[u8; 32]>
-			+ Into<Self::AccountId>
-			+ Into<DepositCurrencyHoldReasonOf<Self>>;
+		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
+
+		type RuntimeHoldReason: From<HoldReason>;
 	}
 
 	type CurveParameterType = FixedU128;
@@ -114,15 +108,15 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new bonded token pool has been initiated. [pool_id]
-		PoolCreated(T::AccountId),
+		PoolCreated(T::PoolId),
 		/// Trading locks on a pool have been removed. [pool_id]
-		Unlocked(T::AccountId),
+		Unlocked(T::PoolId),
 		/// Trading locks on a pool have been set or changed. [pool_id]
-		LockSet(T::AccountId),
+		LockSet(T::PoolId),
 		/// A bonded token pool has been moved to destroying state. [pool_id]
-		DestructionStarted(T::AccountId),
+		DestructionStarted(T::PoolId),
 		/// A bonded token pool has been fully destroyed and all collateral and deposits have been refunded. [pool_id]
-		Destroyed(T::AccountId),
+		Destroyed(T::PoolId),
 	}
 
 	// Errors inform users that something went wrong.
@@ -142,6 +136,13 @@ pub mod pallet {
 		ZeroAmount,
 		/// The pool is already in the process of being destroyed.
 		Destroying,
+		/// The user is not privileged to perform the requested operation.
+		Unauthorized,
+	}
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
 	}
 
 	#[pallet::hooks]
@@ -158,9 +159,11 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			curve: Curve<CurveParameterType>,
 			currencies: BoundedVec<TokenMeta<FungiblesBalanceOf<T>, FungiblesAssetIdOf<T>>, T::MaxCurrencies>,
-			frozen: bool,
-			// currency_admin: Option<AccountIdLookupOf<T>> TODO: use this to set currency admin
-		) -> DispatchResultWithPostInfo {
+			tradable: bool, // Todo: why do we need that?
+			state: PoolStatus<Locks>,
+			pool_manager: AccountIdOf<T>, // Todo: maybe change that back to owner.
+			                              // currency_admin: Option<AccountIdLookupOf<T>> TODO: use this to set currency admin
+		) -> DispatchResult {
 			// ensure origin is PoolCreateOrigin
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
@@ -174,7 +177,7 @@ pub mod pallet {
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
 			T::DepositCurrency::hold(
-				&pool_id.clone().into(), // TODO: just assumed that you can use a pool id as hold reason, not sure that's true though
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&who,
 				T::DepositPerCurrency::get()
 					.saturating_mul(currencies.len().saturated_into())
@@ -200,14 +203,13 @@ pub mod pallet {
 			}
 
 			Pools::<T>::set(
-				pool_id,
-				Some(PoolDetails::new(who.clone(), curve, currency_ids, !frozen)),
+				&pool_id,
+				Some(PoolDetails::new(pool_manager, curve, currency_ids, tradable, state)),
 			);
 
-			// Emit an event.
-			Self::deposit_event(Event::PoolCreated(who));
-			// Return a successful DispatchResultWithPostInfo
-			Ok(().into())
+			Self::deposit_event(Event::PoolCreated(pool_id));
+
+			Ok(())
 		}
 
 		#[pallet::call_index(1)]
@@ -218,19 +220,13 @@ pub mod pallet {
 			amount_to_mint: FungiblesBalanceOf<T>,
 			max_cost: CollateralCurrencyBalanceOf<T>,
 			beneficiary: AccountIdLookupOf<T>,
-		) -> DispatchResultWithPostInfo {
-			let signer = ensure_signed(origin)?;
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
 			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			let mint_enabled = match &pool_details.state {
-				// if mint is locked, then operation is priviledged
-				PoolStatus::Frozen(locks) => locks.allow_mint || signer == pool_details.creator,
-				PoolStatus::Active => true,
-				_ => false,
-			};
-			ensure!(mint_enabled, Error::<T>::Locked);
+			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::Locked);
 
 			ensure!(amount_to_mint.is_zero(), Error::<T>::ZeroAmount);
 
@@ -244,12 +240,14 @@ pub mod pallet {
 			)?;
 
 			// withdraw the collateral and put it in the deposit account
-			let real_costs = T::CollateralCurrency::transfer(&signer, &pool_id.into(), cost, Preservation::Preserve)?;
+			let real_costs = T::CollateralCurrency::transfer(&who, &pool_id.into(), cost, Preservation::Preserve)?;
 
 			// fail if cost > max_cost
-			ensure!(!real_costs.gt(&max_cost), Error::<T>::Slippage);
+			ensure!(real_costs <= max_cost, Error::<T>::Slippage);
 
-			Ok(().into())
+			// TODO: apply lock if pool_details.transferable != true
+
+			Ok(())
 		}
 
 		#[pallet::call_index(2)]
@@ -261,18 +259,12 @@ pub mod pallet {
 			min_return: CollateralCurrencyBalanceOf<T>,
 			beneficiary: AccountIdLookupOf<T>,
 		) -> DispatchResult {
-			let signer = ensure_signed(origin)?;
+			let who = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
 			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			let burn_enabled = match &pool_details.state {
-				// if mint is locked, then operation is priviledged
-				PoolStatus::Frozen(locks) => locks.allow_burn || signer == pool_details.creator,
-				PoolStatus::Active => true,
-				_ => false,
-			};
-			ensure!(burn_enabled, Error::<T>::Locked);
+			ensure!(pool_details.is_burning_authorized(&who), Error::<T>::Locked);
 
 			ensure!(amount_to_burn.is_zero(), Error::<T>::ZeroAmount);
 
@@ -281,7 +273,7 @@ pub mod pallet {
 			let collateral_return = Self::burn_pool_currency_and_calculate_collateral(
 				&pool_details,
 				currency_idx_usize,
-				signer,
+				who,
 				amount_to_burn,
 			)?;
 
@@ -297,7 +289,7 @@ pub mod pallet {
 			// this also serves as a validation of the currency_idx parameter
 
 			// fail if returns < min_return
-			ensure!(!returns.lt(&min_return), Error::<T>::Slippage);
+			ensure!(returns >= min_return, Error::<T>::Slippage);
 
 			Ok(())
 		}
@@ -312,19 +304,12 @@ pub mod pallet {
 			beneficiary: AccountIdLookupOf<T>,
 			min_return: FungiblesBalanceOf<T>,
 		) -> DispatchResult {
-			let signer = ensure_signed(origin)?;
+			let who = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
 			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			let swap_enabled = match &pool_details.state {
-				// if swap is locked, then operation is priviledged
-				PoolStatus::Frozen(locks) => locks.allow_swap || signer == pool_details.creator,
-				PoolStatus::Active => true,
-				_ => false,
-			};
-
-			ensure!(swap_enabled, Error::<T>::Locked);
+			ensure!(pool_details.is_swapping_authorized(&who), Error::<T>::Locked);
 			ensure!(amount_to_swap.is_zero(), Error::<T>::ZeroAmount);
 
 			let from_idx_usize: usize = from_idx.saturated_into();
@@ -348,7 +333,7 @@ pub mod pallet {
 					let collateral = Self::burn_pool_currency_and_calculate_collateral(
 						&pool_details,
 						from_idx_usize,
-						signer,
+						who,
 						amount_to_swap,
 					)?;
 
@@ -404,7 +389,7 @@ pub mod pallet {
 					Self::burn_pool_currency_and_calculate_collateral(
 						&pool_details,
 						from_idx_usize,
-						signer,
+						who,
 						amount_to_swap,
 					)?;
 					Self::mint_pool_currency_and_calculate_collateral(
@@ -423,15 +408,17 @@ pub mod pallet {
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Pools::<T>::try_mutate(pool_id, |pool| -> DispatchResult {
+			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				if let Some(pool) = pool {
-					ensure!(who == pool.creator, Error::<T>::PoolUnknown);
-					pool.state = PoolStatus::Frozen(lock);
+					ensure!(pool.is_manager(&who), Error::<T>::Unauthorized);
+					pool.state = PoolStatus::Locked(lock);
 					Ok(())
 				} else {
 					Err(Error::<T>::PoolUnknown.into())
 				}
 			})?;
+
+			Self::deposit_event(Event::LockSet(pool_id));
 
 			Ok(())
 		}
@@ -440,15 +427,17 @@ pub mod pallet {
 		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Pools::<T>::try_mutate(pool_id, |pool| -> DispatchResult {
+			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				if let Some(pool) = pool {
-					ensure!(who == pool.creator, Error::<T>::PoolUnknown);
+					ensure!(pool.is_manager(&who), Error::<T>::Unauthorized);
 					pool.state = PoolStatus::Active;
 					Ok(())
 				} else {
 					Err(Error::<T>::PoolUnknown.into())
 				}
 			})?;
+
+			Self::deposit_event(Event::Unlocked(pool_id));
 
 			Ok(())
 		}
@@ -459,9 +448,12 @@ pub mod pallet {
 
 			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(who == pool_details.creator, Error::<T>::PoolUnknown);
+			ensure!(pool_details.is_manager(&who), Error::<T>::Unauthorized);
 
-			Self::do_start_destroy_pool(&mut pool_details)
+			Self::do_start_destroy_pool(&mut pool_details)?;
+
+			Self::deposit_event(Event::DestructionStarted(pool_id));
+			Ok(())
 		}
 
 		#[pallet::call_index(7)]
@@ -470,9 +462,13 @@ pub mod pallet {
 
 			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			Self::do_start_destroy_pool(&mut pool_details)
+			Self::do_start_destroy_pool(&mut pool_details)?;
+
+			Self::deposit_event(Event::DestructionStarted(pool_id));
+			Ok(())
 		}
 
+		// todo: check if we really need that tx.
 		#[pallet::call_index(8)]
 		pub fn destroy_accounts(origin: OriginFor<T>, pool_id: T::PoolId, max_accounts: u32) -> DispatchResult {
 			ensure_signed(origin)?;
@@ -511,12 +507,14 @@ pub mod pallet {
 
 			T::CollateralCurrency::transfer(
 				&pool_account,
-				&pool_details.creator,
+				&pool_details.manager,
 				total_collateral_issuance,
 				Preservation::Expendable,
 			)?;
 
-			Pools::<T>::remove(pool_id);
+			Pools::<T>::remove(&pool_id);
+
+			Self::deposit_event(Event::Destroyed(pool_id));
 
 			Ok(())
 		}
