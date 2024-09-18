@@ -1,0 +1,64 @@
+# Config file reference can be found at https://embarkstudios.github.io/cargo-deny/checks/cfg.html.
+
+[graph]
+all-features        = false
+exclude-dev         = true
+features            = ["std"]
+no-default-features = true
+
+# This section is considered when running `cargo deny check advisories`
+# More documentation for the advisories section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/advisories/cfg.html
+[advisories]
+ignore = [
+  { id = "RUSTSEC-2020-0168", reason = "There is no suitable replacement for `mach` and the `mach2` crate has not been vetted." },
+  { id = "RUSTSEC-2021-0139", reason = "Substrate dependency deprecation. See https://github.com/paritytech/polkadot-sdk/issues/31." },
+  { id = "RUSTSEC-2022-0061", reason = "Substrate dependency deprecation. Eventually there will be an update. See https://github.com/paritytech/parity-wasm/pull/334 and https://github.com/paritytech/polkadot-sdk/issues/118." },
+  { id = "RUSTSEC-2022-0080", reason = "Substrate dependency deprecation. Eventually there will be an update." },
+  { id = "RUSTSEC-2024-0336", reason = "Only use of rustls@v0.20.9 is in `futures-rustls` which does not use the affected code." },
+  { id = "RUSTSEC-2024-0344", reason = "We are only able to remove this once Parity updates its dependencies. Older versions of `curve25519-dalek` should get replaced with >= 4.1.3." },
+  { id = "RUSTSEC-2024-0370", reason = "Substrate dependency deprecation. Eventually there will be an update." },
+] # The path where the advisory databases are cloned/fetched into
+#db-path = "$CARGO_HOME/advisory-dbs"
+# The url(s) of the advisory databases to use
+#db-urls = ["https://github.com/rustsec/advisory-db"]
+# A list of advisory IDs to ignore. Note that ignored advisories will still
+# output a note when they are encountered.
+# If this is true, then cargo deny will use the git executable to fetch advisory database.
+# If this is false, then it uses a built-in git library.
+# Setting this to true can be helpful if you have special authentication requirements that cargo-deny does not support.
+# See Git Authentication for more information about setting up git authentication.
+#git-fetch-with-cli = true
+
+[bans]
+allow-wildcard-paths = true
+multiple-versions    = "allow"
+
+[licenses]
+allow = [
+  "Apache-2.0 WITH LLVM-exception",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "CC0-1.0",
+  "GPL-3.0 WITH Classpath-exception-2.0",
+  "GPL-3.0",
+  "ISC",
+  "MIT",
+  "MPL-2.0",
+  "OpenSSL",
+  "SSPL-1.0",
+  "Unicode-DFS-2016",
+  "Zlib",
+]
+private = { ignore = false }
+
+[[licenses.clarify]]
+expression    = "MIT AND ISC AND OpenSSL"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+name          = "ring"
+
+[sources]
+allow-git        = ["https://github.com/paritytech/polkadot-sdk"]
+unknown-git      = "deny"
+unknown-registry = "deny"
