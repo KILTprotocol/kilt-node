@@ -232,10 +232,8 @@ jobs:
   #           bash -c "cargo doc --no-deps --locked ${{ matrix.features }}"
 
   cargo-deny:
-    name: Check carg-deny rules
+    name: Check cargo-deny rules
     runs-on: ubuntu-latest
-    container:
-      image: paritytech/ci-unified:bullseye-1.74.0
     # needs: cargo-clippy
 
     steps:
@@ -243,9 +241,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run `cargo deny`
-        run: |
-          cargo deny --version
-          cargo deny check --hide-inclusion-graph -c .cargo-deny.toml
+        uses: EmbarkStudios/cargo-deny-action@v2
 
   # try-runtime:
   #   name: Run try-runtime
