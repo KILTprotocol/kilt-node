@@ -242,6 +242,8 @@ jobs:
 
       - name: Run `cargo deny`
         uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command-arguments: "--hide-inclusion-graph -c .cargo-deny.toml"
 
   # try-runtime:
   #   name: Run try-runtime
