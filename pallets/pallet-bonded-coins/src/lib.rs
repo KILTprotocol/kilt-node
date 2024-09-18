@@ -19,15 +19,15 @@ mod types;
 mod curves_parameters;
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
-	use core::f32::consts::E;
 
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
+		ensure,
 		pallet_prelude::*,
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate, MutateHold},
 			fungibles::{
-				metadata::Inspect as FungiblesInspect, metadata::Mutate as FungiblesMetadata,
+				metadata::{Inspect as FungiblesInspect, Mutate as FungiblesMetadata},
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
@@ -35,7 +35,7 @@ pub mod pallet {
 		},
 		Hashable,
 	};
-	use frame_system::pallet_prelude::*;
+	use frame_system::{ensure_root, pallet_prelude::*};
 	use sp_arithmetic::{traits::CheckedDiv, FixedU128};
 	use sp_runtime::{
 		traits::{CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero},
@@ -140,6 +140,8 @@ pub mod pallet {
 		Slippage,
 		/// The amount to mint, burn, or swap is zero.
 		ZeroAmount,
+		/// The pool is already in the process of being destroyed.
+		Destroying,
 	}
 
 	#[pallet::hooks]
@@ -182,7 +184,7 @@ pub mod pallet {
 			for entry in currencies {
 				let asset_id = entry.id.clone();
 
-				// create new assset class; fail if it already exists
+				// create new asset class; fail if it already exists
 				T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, entry.min_balance)?;
 
 				// set metadata for new asset class
@@ -429,7 +431,9 @@ pub mod pallet {
 				} else {
 					Err(Error::<T>::PoolUnknown.into())
 				}
-			})
+			})?;
+
+			Ok(())
 		}
 
 		#[pallet::call_index(5)]
@@ -444,7 +448,77 @@ pub mod pallet {
 				} else {
 					Err(Error::<T>::PoolUnknown.into())
 				}
-			})
+			})?;
+
+			Ok(())
+		}
+
+		#[pallet::call_index(6)]
+		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(who == pool_details.creator, Error::<T>::PoolUnknown);
+
+			Self::do_start_destroy_pool(&mut pool_details)
+		}
+
+		#[pallet::call_index(7)]
+		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+			ensure_root(origin)?;
+
+			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			Self::do_start_destroy_pool(&mut pool_details)
+		}
+
+		#[pallet::call_index(8)]
+		pub fn destroy_accounts(origin: OriginFor<T>, pool_id: T::PoolId, max_accounts: u32) -> DispatchResult {
+			ensure_signed(origin)?;
+
+			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(pool_details.state == PoolStatus::Destroying, Error::<T>::Destroying);
+
+			let max_accounts_to_destroy_per_currency =
+				max_accounts.saturating_div(pool_details.bonded_currencies.len().saturated_into());
+
+			for (idx, currency_id) in pool_details.bonded_currencies.clone().iter().enumerate() {
+				let destroyed_accounts =
+					T::Fungibles::destroy_accounts(currency_id.clone(), max_accounts_to_destroy_per_currency)?;
+				if destroyed_accounts == 0 {
+					T::Fungibles::finish_destroy(currency_id.clone())?;
+					pool_details.bonded_currencies.swap_remove(idx);
+				}
+			}
+
+			Ok(())
+		}
+
+		#[pallet::call_index(9)]
+		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+			ensure_signed(origin)?;
+
+			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(pool_details.state == PoolStatus::Destroying, Error::<T>::Destroying);
+			ensure!(pool_details.bonded_currencies.is_empty(), Error::<T>::Destroying);
+
+			let pool_account = pool_id.clone().into();
+
+			let total_collateral_issuance = T::CollateralCurrency::total_balance(&pool_account);
+
+			T::CollateralCurrency::transfer(
+				&pool_account,
+				&pool_details.creator,
+				total_collateral_issuance,
+				Preservation::Expendable,
+			)?;
+
+			Pools::<T>::remove(pool_id);
+
+			Ok(())
 		}
 	}
 
@@ -607,6 +681,17 @@ pub mod pallet {
 			T::Fungibles::mint_into(mint_currency_id.clone(), &beneficiary, amount)?;
 
 			Ok(cost)
+		}
+
+		fn do_start_destroy_pool(pool_details: &mut PoolDetailsOf<T>) -> DispatchResult {
+			ensure!(pool_details.state != PoolStatus::Destroying, Error::<T>::Destroying);
+
+			pool_details.state.destroy();
+
+			for currency_id in pool_details.bonded_currencies.iter() {
+				T::Fungibles::start_destroy(currency_id.clone(), None)?;
+			}
+			Ok(())
 		}
 	}
 }

@@ -19,6 +19,32 @@ pub enum PoolStatus<LockType> {
 	Frozen(LockType),
 	Destroying,
 }
+
+impl<LockType> PoolStatus<LockType>
+where
+	LockType: Eq,
+{
+	pub fn is_active(&self) -> bool {
+		matches!(self, Self::Active)
+	}
+
+	pub fn is_frozen(&self, lock: LockType) -> bool {
+		matches!(self, Self::Frozen(ref l) if l == &lock)
+	}
+
+	pub fn is_destroying(&self) -> bool {
+		matches!(self, Self::Destroying)
+	}
+
+	pub fn freeze(&mut self, lock: LockType) {
+		*self = Self::Frozen(lock);
+	}
+
+	pub fn destroy(&mut self) {
+		*self = Self::Destroying;
+	}
+}
+
 impl<LockType: Default> Default for PoolStatus<LockType> {
 	fn default() -> Self {
 		Self::Frozen(LockType::default())
