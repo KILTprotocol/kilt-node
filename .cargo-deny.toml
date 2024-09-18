@@ -9,7 +9,7 @@ no-default-features = true
 [advisories]
 ignore = [
   { id = "RUSTSEC-2020-0168", reason = "`mach` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
-  { id = "RUSTSEC-2021-0139", reason = "`mach` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2021-0139", reason = "`ansi_term` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2022-0061", reason = "`parity-wasm` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2022-0080", reason = "`parity-util-mem` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0336", reason = "`rustls` vulnerability. Re-verify upon next polkadot-sdk updates." },
