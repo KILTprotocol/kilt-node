@@ -206,9 +206,9 @@ jobs:
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
-            -v "~/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
-            -v "~/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
-            -v "~/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
+            -v "${HOME}/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
+            -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
+            -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "cargo test --all-targets --locked ${{ matrix.features }}"
