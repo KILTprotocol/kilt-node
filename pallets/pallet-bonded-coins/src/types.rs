@@ -95,8 +95,7 @@ where
 }
 
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
-pub struct TokenMeta<Balance, AssetId, Symbol, Name> {
-	pub id: AssetId,
+pub struct TokenMeta<Balance, Symbol, Name> {
 	pub name: Name,
 	pub symbol: Symbol,
 	pub decimals: u8,

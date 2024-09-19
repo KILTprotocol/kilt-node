@@ -749,6 +749,7 @@ impl pallet_bonded_coins::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type CollateralAssetId = AssetLocation;
 	type MaxStringLength = runtime_common::constants::assets::StringLimit;
+	type AssetId = u32;
 }
 
 impl pallet_inflation::Config for Runtime {

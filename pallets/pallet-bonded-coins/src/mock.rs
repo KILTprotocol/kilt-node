@@ -1,27 +1,39 @@
+use frame_support::{
+	parameter_types,
+	traits::{ConstU128, ConstU32},
+	weights::constants::RocksDbWeight,
+	Hashable,
+};
+use frame_system::{EnsureRoot, EnsureSigned};
+use sp_runtime::{
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	BuildStorage, MultiSignature,
+};
+
+pub type Hash = sp_core::H256;
+pub type Balance = u128;
+pub type AssetId = u32;
+pub type Signature = MultiSignature;
+pub type AccountPublic = <Signature as Verify>::Signer;
+pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
 #[cfg(test)]
 pub mod runtime {
+
+	use super::*;
+
 	use crate::{Config, DepositCurrencyBalanceOf};
-	use frame_support::{
-		parameter_types,
-		traits::{ConstU128, ConstU32},
-		weights::constants::RocksDbWeight,
-	};
-	use frame_system::{EnsureRoot, EnsureSigned};
-	use sp_runtime::{
-		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BuildStorage, MultiSignature,
-	};
 
 	pub type Block = frame_system::mocking::MockBlock<Test>;
-	pub type Hash = sp_core::H256;
-	pub type Balance = u128;
-	pub type Signature = MultiSignature;
-	pub type AccountPublic = <Signature as Verify>::Signer;
-	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
-	pub(super) const DEFAULT_COLLATERAL_CURRENCY: (u32, AccountId, Balance, [u8; 4], u8) =
-		(0, ACCOUNT_00, 1_000_000_000_000, [85, 83, 68, 84], 10);
+	pub(crate) const DEFAULT_COLLATERAL_CURRENCY: (u32, AccountId, Balance, [u8; 4], u8) =
+		(u32::MAX, ACCOUNT_00, 1_000_000_000_000, [85, 83, 68, 84], 10);
+
+	pub const UNIT: Balance = 10u128.pow(15);
+
+	pub(crate) fn calculate_pool_id(currencies: Vec<AssetId>) -> AccountId {
+		AccountId::from(currencies.blake2_256())
+	}
 
 	frame_support::construct_runtime!(
 		pub enum Test
@@ -97,30 +109,28 @@ pub mod runtime {
 	impl pallet_assets::Config for Test {
 		type RuntimeEvent = ();
 		type Balance = Balance;
-		type AssetId = u32;
-		type AssetIdParameter = u32;
+		type AssetId = AssetId;
+		type AssetIdParameter = AssetId;
 		type Currency = Balances;
 		type CreateOrigin = EnsureSigned<AccountId>;
 		type ForceOrigin = EnsureRoot<AccountId>;
-		type AssetDeposit = ConstU128<1>;
+		type AssetDeposit = ConstU128<0>;
 		type AssetAccountDeposit = ConstU128<10>;
-		type MetadataDepositBase = ConstU128<1>;
-		type MetadataDepositPerByte = ConstU128<1>;
-		type ApprovalDeposit = ConstU128<1>;
+		type MetadataDepositBase = ConstU128<0>;
+		type MetadataDepositPerByte = ConstU128<0>;
+		type ApprovalDeposit = ConstU128<0>;
 		type StringLimit = StringLimit;
 		type Freezer = ();
 		type WeightInfo = ();
 		type CallbackHandle = ();
 		type Extra = ();
 		type RemoveItemsLimit = ConstU32<5>;
-		#[cfg(feature = "runtime-benchmarks")]
-		type BenchmarkHelper = ();
 	}
 
 	parameter_types! {
 		pub const CurrencyDeposit: Balance = 500;
 		pub const MaxCurrencies: u32 = 50;
-		pub const CollateralAssetId: u32 = 0;
+		pub const CollateralAssetId: u32 = u32::MAX;
 	}
 
 	impl Config for Test {
@@ -135,13 +145,15 @@ pub mod runtime {
 		type PoolId = AccountId;
 		type RuntimeEvent = ();
 		type RuntimeHoldReason = RuntimeHoldReason;
+		type AssetId = AssetId;
+		type BaseDeposit = ExistentialDeposit;
 	}
 
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
 		balances: Vec<(AccountId, DepositCurrencyBalanceOf<Test>)>,
 		// id, owner, balance amount, Name, Decimals
-		bonded_currency: Vec<(u32, AccountId, Balance, [u8; 4], u8)>,
+		bonded_currency: Vec<(AssetId, AccountId, Balance, [u8; 4], u8)>,
 	}
 
 	impl ExtBuilder {
@@ -150,7 +162,10 @@ pub mod runtime {
 			self
 		}
 
-		pub(crate) fn with_currencies(mut self, bonded_currency: Vec<(u32, AccountId, Balance, [u8; 4], u8)>) -> Self {
+		pub(crate) fn with_currencies(
+			mut self,
+			bonded_currency: Vec<(AssetId, AccountId, Balance, [u8; 4], u8)>,
+		) -> Self {
 			self.bonded_currency = bonded_currency;
 			self
 		}
@@ -164,15 +179,14 @@ pub mod runtime {
 			.expect("assimilate should not fail");
 
 			pallet_assets::GenesisConfig::<Test> {
-				
 				assets: self
 					.bonded_currency
 					.clone()
 					.into_iter()
-					// id, admin, is_sufficient, min_balance 
+					// id, admin, is_sufficient, min_balance
 					.map(|(id, acc, _, _, _)| (id, acc, false, 1))
 					.collect(),
-				
+
 				metadata: self
 					.bonded_currency
 					.clone()
@@ -180,7 +194,7 @@ pub mod runtime {
 					// id, name, symbol, decimals
 					.map(|(id, _, _, name, denomination)| (id, name.clone().into(), name.into(), denomination))
 					.collect(),
-				
+
 				accounts: self
 					.bonded_currency
 					.into_iter()

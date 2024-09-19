@@ -23,7 +23,7 @@ pub mod pallet {
 	use frame_support::{
 		dispatch::DispatchResult,
 		ensure,
-		pallet_prelude::*,
+		pallet_prelude::{OptionQuery, *},
 		traits::{
 			fungible::{Inspect as InspectFungible, MutateHold},
 			fungibles::{
@@ -36,12 +36,13 @@ pub mod pallet {
 		Hashable,
 	};
 	use frame_system::{ensure_root, pallet_prelude::*};
+	use parity_scale_codec::FullCodec;
 	use sp_arithmetic::{traits::CheckedDiv, FixedU128};
 	use sp_runtime::{
-		traits::{CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero},
+		traits::{CheckedAdd, CheckedSub, One, Saturating, StaticLookup, Zero},
 		ArithmeticError, BoundedVec, SaturatedConversion,
 	};
-	use sp_std::vec::Vec;
+	use sp_std::{iter::Iterator, vec::Vec};
 
 	use crate::{
 		curves_parameters::transform_denomination_currency_amount,
@@ -72,12 +73,11 @@ pub mod pallet {
 
 	type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
 
-	type CurrencyNameOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
+	pub(crate) type CurrencyNameOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
 
-	type CurrencySymbolOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
+	pub(crate) type CurrencySymbolOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
 
-	type TokenMetaOf<T> =
-		TokenMeta<FungiblesBalanceOf<T>, FungiblesAssetIdOf<T>, CurrencySymbolOf<T>, CurrencyNameOf<T>>;
+	type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, CurrencySymbolOf<T>, CurrencyNameOf<T>>;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -89,7 +89,7 @@ pub mod pallet {
 		/// The currency used as collateral for minting bonded tokens.
 		type CollateralCurrency: MutateFungibles<Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
-		type Fungibles: CreateFungibles<Self::AccountId>
+		type Fungibles: CreateFungibles<Self::AccountId, AssetId = Self::AssetId>
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
@@ -106,12 +106,27 @@ pub mod pallet {
 		#[pallet::constant]
 		type DepositPerCurrency: Get<DepositCurrencyBalanceOf<Self>>;
 
+		/// The base deposit required to create a new pool, primarily to cover the ED of the pool account.
+		#[pallet::constant]
+		type BaseDeposit: Get<DepositCurrencyBalanceOf<Self>>;
+
 		/// The asset id of the collateral currency.
 		type CollateralAssetId: Get<CollateralAssetIdOf<Self>>;
 		/// Who can create new bonded currency pools.
 		type PoolCreateOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The type used for pool ids
 		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
+
+		type AssetId: FullCodec
+			+ Clone
+			+ Eq
+			+ PartialEq
+			+ sp_std::fmt::Debug
+			+ scale_info::TypeInfo
+			+ MaxEncodedLen
+			+ Default
+			+ Saturating
+			+ One;
 
 		type RuntimeHoldReason: From<HoldReason>;
 	}
@@ -125,6 +140,10 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn pools)]
 	pub(crate) type Pools<T: Config> = StorageMap<_, Twox64Concat, T::PoolId, PoolDetailsOf<T>, OptionQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn nex_asset_id)]
+	pub(crate) type NextAssetId<T: Config> = StorageValue<_, FungiblesAssetIdOf<T>, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -189,38 +208,50 @@ pub mod pallet {
 			// ensure origin is PoolCreateOrigin
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
+			let currency_length = currencies.len();
+
 			ensure!(
-				(1..=T::MaxCurrencies::get().saturated_into()).contains(&currencies.len()),
+				(1..=T::MaxCurrencies::get().saturated_into()).contains(&currency_length),
 				Error::<T>::CurrenciesNumber
 			);
 
-			let currency_ids = BoundedVec::truncate_from(currencies.iter().map(|c| c.id.clone()).collect());
+			let current_asset_id = NextAssetId::<T>::get();
+
+			let (currency_ids_vec, next_asset_id) =
+				Self::generate_sequential_asset_ids(current_asset_id, currency_length);
+
+			// update the storage for the next tx.
+			NextAssetId::<T>::set(next_asset_id);
+
+			// Should never fail.
+			let currency_ids =
+				BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(currency_ids_vec.clone())
+					.map_err(|_| Error::<T>::CurrenciesNumber)?;
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
 			T::DepositCurrency::hold(
 				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&who,
-				T::DepositPerCurrency::get()
-					.saturating_mul(currencies.len().saturated_into())
-					.saturated_into(),
+				T::BaseDeposit::get().saturating_add(
+					T::DepositPerCurrency::get()
+						.saturating_mul(currency_length.saturated_into())
+						.saturated_into(),
+				),
 			)?;
 
-			for entry in currencies {
-				let asset_id = entry.id.clone();
-
-				// create new asset class; fail if it already exists
+			for (idx, entry) in currencies.iter().enumerate() {
+				let asset_id = currency_ids_vec.get(idx).ok_or(Error::<T>::CurrenciesNumber)?;
 				T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, entry.min_balance)?;
 
 				// set metadata for new asset class
 				T::Fungibles::set(
-					asset_id,
+					asset_id.clone(),
 					&pool_id.clone().into(),
 					entry.name.clone().into(),
 					entry.symbol.clone().into(),
 					entry.decimals,
 				)?;
-
 				// TODO: use fungibles::roles::ResetTeam to update currency admin
 			}
 
@@ -730,6 +761,15 @@ pub mod pallet {
 				T::Fungibles::start_destroy(currency_id.clone(), None)?;
 			}
 			Ok(())
+		}
+
+		fn generate_sequential_asset_ids(mut start_id: T::AssetId, count: usize) -> (Vec<T::AssetId>, T::AssetId) {
+			let mut currency_ids_vec = Vec::new();
+			for _ in 0..count {
+				currency_ids_vec.push(start_id.clone());
+				start_id = start_id.saturating_plus_one();
+			}
+			(currency_ids_vec, start_id)
 		}
 	}
 }
