@@ -704,6 +704,57 @@ impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = Migration;
 }
 
+pub type BondedCoinsAssets = pallet_assets::Instance2;
+impl pallet_assets::Config<BondedCoinsAssets> for Runtime {
+	type ApprovalDeposit = runtime_common::constants::assets::ApprovalDeposit;
+	type AssetAccountDeposit = runtime_common::constants::assets::AssetAccountDeposit;
+	type AssetDeposit = runtime_common::constants::assets::AssetDeposit;
+	type AssetId = u32;
+	type AssetIdParameter = u32;
+	type Balance = Balance;
+	type CallbackHandle = ();
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
+	type Currency = Balances;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
+	type MetadataDepositBase = runtime_common::constants::assets::MetaDepositBase;
+	type MetadataDepositPerByte = runtime_common::constants::assets::MetaDepositPerByte;
+	type RemoveItemsLimit = runtime_common::constants::assets::RemoveItemsLimit;
+	type RuntimeEvent = RuntimeEvent;
+	type StringLimit = runtime_common::constants::assets::StringLimit;
+	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+}
+
+parameter_types! {
+	pub MaxCurrenciesLength: u32 = 100;
+	pub MaxNameLength: u32 = 100;
+	pub MaxSymbolLength: u32 = 100;
+	pub AssetLocation: Location = xcm::v4::Junctions::Here.into();
+	
+}
+
+
+impl pallet_bonded_coins::Config for Runtime {
+	type CollateralCurrency = Fungibles;
+	type DepositCurrency = Balances;
+	type DepositPerCurrency = runtime_common::constants::assets::MetaDepositBase;
+	type Fungibles = BondedFungibles;
+	type MaxCurrencies = MaxCurrenciesLength;
+	type PoolCreateOrigin = EnsureSigned<AccountId>;
+	type PoolId = AccountId;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type CollateralAssetId = AssetLocation;
+	type MaxNameLength = MaxNameLength;
+	type MaxSymbolLength = MaxSymbolLength;
+}
+
+
+
 impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;
 	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
@@ -1084,6 +1135,11 @@ construct_runtime! {
 
 		AssetSwitchPool1: pallet_asset_switch::<Instance1> = 48,
 		Fungibles: pallet_assets = 49,
+
+		BondedFungibles: pallet_assets::<Instance2> = 50,
+		BondingCurvesPallet: pallet_bonded_coins = 51,
+
+
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,

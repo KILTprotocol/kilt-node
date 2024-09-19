@@ -1,0 +1,20 @@
+
+endpoint:	
+    # We fetch relevant storage elements from Spiritnet even tho we are running Peregrine (with sudo).	
+    - wss://kilt.ibp.network	
+db: db/peregrine.sqlite	
+runtime-log-level: 5	
+port: 50002	
+wasm-override: /home/adel/projects/kilt-node/target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
+
+import-storage:	
+    System:	
+        Account:	
+            - - - 5HeHMRTEabP45PkFugDAy5hRnagQmmQJMfUFffWhAmDUw8TR	
+              - providers: 1	
+                data:	
+                    free: "100000000000000000000000"	
+    Sudo:	
+        Key: 5HeHMRTEabP45PkFugDAy5hRnagQmmQJMfUFffWhAmDUw8TR
+
+

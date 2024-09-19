@@ -1,7 +1,5 @@
-use frame_support::BoundedVec;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_core::Get;
 use sp_runtime::{ArithmeticError, FixedPointNumber};
 
 use crate::curves_parameters::{self, BondingFunction, SquareRoot};
@@ -39,24 +37,23 @@ impl<LockType> PoolStatus<LockType> {
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct PoolDetails<AccountId, CurrencyId, ParametrizedCurve, MaxOptions: Get<u32>> {
+pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
 	pub manager: AccountId,
 	pub curve: ParametrizedCurve,
-	pub bonded_currencies: BoundedVec<CurrencyId, MaxOptions>,
+	pub bonded_currencies: Currencies,
 	pub state: PoolStatus<Locks>,
 	pub transferable: bool,
 }
 
-impl<AccountId, CurrencyId, ParametrizedCurve, MaxOptions>
-	PoolDetails<AccountId, CurrencyId, ParametrizedCurve, MaxOptions>
+impl<AccountId, ParametrizedCurve, Currencies>
+	PoolDetails<AccountId, ParametrizedCurve, Currencies>
 where
 	AccountId: PartialEq,
-	MaxOptions: Get<u32>,
 {
 	pub fn new(
 		manager: AccountId,
 		curve: ParametrizedCurve,
-		bonded_currencies: BoundedVec<CurrencyId, MaxOptions>,
+		bonded_currencies: Currencies,
 		transferable: bool,
 		state: PoolStatus<Locks>,
 	) -> Self {
@@ -99,10 +96,10 @@ where
 }
 
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
-pub struct TokenMeta<Balance, AssetId> {
+pub struct TokenMeta<Balance, AssetId, Symbol, Name> {
 	pub id: AssetId,
-	pub name: Vec<u8>,
-	pub symbol: Vec<u8>,
+	pub name: Name,
+	pub symbol: Symbol,
 	pub decimals: u8,
 	pub min_balance: Balance,
 }
