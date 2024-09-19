@@ -25,7 +25,7 @@ pub mod pallet {
 		ensure,
 		pallet_prelude::*,
 		traits::{
-			fungible::{Inspect as InspectFungible,  MutateHold},
+			fungible::{Inspect as InspectFungible, MutateHold},
 			fungibles::{
 				metadata::{Inspect as FungiblesInspect, Mutate as FungiblesMetadata},
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
@@ -35,12 +35,13 @@ pub mod pallet {
 		},
 		Hashable,
 	};
-	use sp_std::vec::Vec;
 	use frame_system::{ensure_root, pallet_prelude::*};
 	use sp_arithmetic::{traits::CheckedDiv, FixedU128};
 	use sp_runtime::{
-		traits::{CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero}, ArithmeticError, BoundedVec, SaturatedConversion
+		traits::{CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero},
+		ArithmeticError, BoundedVec, SaturatedConversion,
 	};
+	use sp_std::vec::Vec;
 
 	use crate::{
 		curves_parameters::transform_denomination_currency_amount,
@@ -48,29 +49,35 @@ pub mod pallet {
 	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
+
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	type DepositCurrencyBalanceOf<T> =
+
+	pub(crate) type DepositCurrencyBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
+
 	type CollateralCurrencyBalanceOf<T> =
 		<<T as Config>::CollateralCurrency as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
+
 	type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
+
 	type FungiblesAssetIdOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
-	type PoolDetailsOf<T> = PoolDetails<
-		<T as frame_system::Config>::AccountId,
-		Curve<CurveParameterType>,
-		BoundedCurrencyVec<T>
-	>;
+	type PoolDetailsOf<T> =
+		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterType>, BoundedCurrencyVec<T>>;
 
-	type CollateralAssetIdOf<T> = <<T as Config>::CollateralCurrency as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
+	type CollateralAssetIdOf<T> =
+		<<T as Config>::CollateralCurrency as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
-	type BoundedNameVec<T> = BoundedVec<u8, <T as Config>::MaxNameLength>;
-	type BoundedSymbolVec<T> = BoundedVec<u8, <T as Config>::MaxSymbolLength>;
-	type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, FungiblesAssetIdOf<T>, BoundedSymbolVec<T>, BoundedNameVec<T>>;
 
+	type CurrencyNameOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
+
+	type CurrencySymbolOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
+
+	type TokenMetaOf<T> =
+		TokenMeta<FungiblesBalanceOf<T>, FungiblesAssetIdOf<T>, CurrencySymbolOf<T>, CurrencyNameOf<T>>;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -91,16 +98,14 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxCurrencies: Get<u32>;
 		/// The deposit required for each bonded currency.
-		
-		#[pallet::constant]
-		type MaxSymbolLength: Get<u32>;
 
 		#[pallet::constant]
-		type MaxNameLength: Get<u32>;
+		type MaxStringLength: Get<u32>;
+
 		/// The deposit required for each bonded currency.
 		#[pallet::constant]
 		type DepositPerCurrency: Get<DepositCurrencyBalanceOf<Self>>;
-		
+
 		/// The asset id of the collateral currency.
 		type CollateralAssetId: Get<CollateralAssetIdOf<Self>>;
 		/// Who can create new bonded currency pools.
@@ -171,7 +176,7 @@ pub mod pallet {
 		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
 	{
 		#[pallet::call_index(0)]
-		 #[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			curve: Curve<CurveParameterType>,
@@ -230,7 +235,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(1)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn mint_into(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -258,7 +263,13 @@ pub mod pallet {
 			)?;
 
 			// withdraw the collateral and put it in the deposit account
-			let real_costs = T::CollateralCurrency::transfer(T::CollateralAssetId::get(), &who, &pool_id.into(), cost, Preservation::Preserve)?;
+			let real_costs = T::CollateralCurrency::transfer(
+				T::CollateralAssetId::get(),
+				&who,
+				&pool_id.into(),
+				cost,
+				Preservation::Preserve,
+			)?;
 
 			// fail if cost > max_cost
 			ensure!(real_costs <= max_cost, Error::<T>::Slippage);
@@ -269,7 +280,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(2)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn burn_into(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -315,7 +326,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(3)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn swap_into(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -426,7 +437,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(4)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -446,7 +457,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(5)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -466,7 +477,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(6)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -481,7 +492,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(7)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			ensure_root(origin)?;
 
@@ -495,7 +506,7 @@ pub mod pallet {
 
 		// todo: check if we really need that tx.
 		#[pallet::call_index(8)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn destroy_accounts(origin: OriginFor<T>, pool_id: T::PoolId, max_accounts: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 
@@ -519,7 +530,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(9)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))] 
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			ensure_signed(origin)?;
 
@@ -530,7 +541,8 @@ pub mod pallet {
 
 			let pool_account = pool_id.clone().into();
 
-			let total_collateral_issuance = T::CollateralCurrency::total_balance(T::CollateralAssetId::get(), &pool_account);
+			let total_collateral_issuance =
+				T::CollateralCurrency::total_balance(T::CollateralAssetId::get(), &pool_account);
 
 			T::CollateralCurrency::transfer(
 				T::CollateralAssetId::get(),

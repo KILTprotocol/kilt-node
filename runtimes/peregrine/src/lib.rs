@@ -734,9 +734,8 @@ parameter_types! {
 	pub MaxNameLength: u32 = 100;
 	pub MaxSymbolLength: u32 = 100;
 	pub AssetLocation: Location = xcm::v4::Junctions::Here.into();
-	
-}
 
+}
 
 impl pallet_bonded_coins::Config for Runtime {
 	type CollateralCurrency = Fungibles;
@@ -749,11 +748,8 @@ impl pallet_bonded_coins::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type CollateralAssetId = AssetLocation;
-	type MaxNameLength = MaxNameLength;
-	type MaxSymbolLength = MaxSymbolLength;
+	type MaxStringLength = runtime_common::constants::assets::StringLimit;
 }
-
-
 
 impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;

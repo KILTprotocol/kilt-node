@@ -26,7 +26,10 @@ sp-runtime         = { workspace = true }
 sp-std             = { workspace = true }
 
 [dev-dependencies]
-serde = { workspace = true }
+pallet-assets   = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
+serde           = { workspace = true }
+sp-keystore     = { workspace = true, features = ["std"] }
 
 # Substrate
 sp-io = { workspace = true }

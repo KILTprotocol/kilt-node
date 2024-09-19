@@ -45,8 +45,7 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
 	pub transferable: bool,
 }
 
-impl<AccountId, ParametrizedCurve, Currencies>
-	PoolDetails<AccountId, ParametrizedCurve, Currencies>
+impl<AccountId, ParametrizedCurve, Currencies> PoolDetails<AccountId, ParametrizedCurve, Currencies>
 where
 	AccountId: PartialEq,
 {
