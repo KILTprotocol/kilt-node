@@ -194,9 +194,9 @@ jobs:
           # These paths are mounted inside the Docker container.
           # We cannot mount the `.cargo/bin` folder since the container already contains binaries, and overriding with an empty one breaks compilation.
           path: |
-            ${HOME}/.cargo/registry/index/
-            ${HOME}/.cargo/registry/cache/
-            ${HOME}/.cargo/git/db
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
           save-always: true
 
@@ -206,9 +206,9 @@ jobs:
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
-            -v "${HOME}/.cargo/registry/index:/${{ env.CARGO_HOME }}/registry/index" \
-            -v "${HOME}/.cargo/registry/cache:/${{ env.CARGO_HOME }}/registry/cache" \
-            -v "${HOME}/.cargo/git/db:/${{ env.CARGO_HOME }}/git/db" \
+            -v "~/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
+            -v "~/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
+            -v "~/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "cargo test --all-targets --locked ${{ matrix.features }}"
