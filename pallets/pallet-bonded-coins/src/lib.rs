@@ -32,6 +32,7 @@ pub mod pallet {
 				Mutate as MutateFungibles,
 			},
 			tokens::{Fortitude, Precision, Preservation},
+			AccountTouch,
 		},
 		Hashable,
 	};
@@ -87,13 +88,14 @@ pub mod pallet {
 		/// The currency used for storage deposits.
 		type DepositCurrency: MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 		/// The currency used as collateral for minting bonded tokens.
-		type CollateralCurrency: MutateFungibles<Self::AccountId>;
+		type CollateralCurrency: MutateFungibles<Self::AccountId>
+			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
 		type Fungibles: CreateFungibles<Self::AccountId, AssetId = Self::AssetId>
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
-			+ MutateFungibles<Self::AccountId>;
+			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
 		type MaxCurrencies: Get<u32>;
@@ -190,10 +192,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T>
-	where
-		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
-	{
+	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn create_pool(
@@ -203,7 +202,6 @@ pub mod pallet {
 			tradable: bool, // Todo: why do we need that?
 			state: PoolStatus<Locks>,
 			pool_manager: AccountIdOf<T>, // Todo: maybe change that back to owner.
-			                              // currency_admin: Option<AccountIdLookupOf<T>> TODO: use this to set currency admin
 		) -> DispatchResult {
 			// ensure origin is PoolCreateOrigin
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
@@ -254,6 +252,8 @@ pub mod pallet {
 				)?;
 				// TODO: use fungibles::roles::ResetTeam to update currency admin
 			}
+
+			T::CollateralCurrency::touch(T::CollateralAssetId::get(), &pool_id.clone().into(), &who)?;
 
 			Pools::<T>::set(
 				&pool_id,
@@ -591,10 +591,7 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Pallet<T>
-	where
-		FungiblesBalanceOf<T>: TryInto<CollateralCurrencyBalanceOf<T>>,
-		CollateralCurrencyBalanceOf<T>: TryInto<u128>,
+	impl<T: Config> Pallet<T>	
 	{
 		/// save usage of currency_ids.
 		pub fn get_collateral_diff(

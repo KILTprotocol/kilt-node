@@ -1,6 +1,6 @@
 use frame_support::{
 	assert_ok,
-	traits::fungibles::{metadata::Inspect as InspectMetaData, roles::Inspect as InspectRoles},
+	traits::{fungibles::{metadata::Inspect as InspectMetaData, roles::Inspect as InspectRoles}, ContainsPair},
 };
 use sp_arithmetic::FixedU128;
 use sp_runtime::BoundedVec;
@@ -91,5 +91,9 @@ fn test_create_pool_linear_bonding_curve() {
 			// Supply should be zero
 			let total_supply = Assets::total_supply(currency_id);
 			assert_eq!(total_supply, 0);
+
+			// check if pool_account is created. 
+			assert!(Assets::contains(&DEFAULT_COLLATERAL_CURRENCY.0, &pool_id));
+
 		});
 }
