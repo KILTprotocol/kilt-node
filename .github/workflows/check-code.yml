@@ -315,6 +315,11 @@ jobs:
   test-runtime-benchmarks:
     name: Test runtime benchmarks
     runs-on: ubuntu-latest
+    container:
+      image: paritytech/ci-unified:bullseye-1.74.0
+    env:
+      # Configured by the Docker image. We can't change this unless the image does it.
+      CARGO_HOME: /usr/local/cargo
     needs: cargo-clippy
     if: ${{ github.event_name == 'push'}}
 
@@ -338,17 +343,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
+            ${{ env.CARGO_HOME }}/bin/
+            ${{ env.CARGO_HOME }}/registry/index/
+            ${{ env.CARGO_HOME }}/registry/cache/
+            ${{ env.CARGO_HOME }}/git/db/
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run runtime benchmarks
-        run: |
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -v "${HOME}/.cargo:/root/.cargo" \
-            -w /workspace \
-            paritytech/ci-unified:bullseye-1.74.0 \
-            bash -c "bash -x scripts/run_benches_for_runtime.sh ${{ matrix.runtime }} dev"
+        run: bash -x scripts/run_benches_for_runtime.sh ${{ matrix.runtime }} dev
