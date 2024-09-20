@@ -93,5 +93,9 @@ fn test_create_pool() {
 
 			// check if pool_account is created.
 			assert!(Assets::contains(&DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id));
+
+			// check events
+
+			assert_eq!(events(), vec![crate::Event::<Test>::PoolCreated(pool_id)])
 		});
 }

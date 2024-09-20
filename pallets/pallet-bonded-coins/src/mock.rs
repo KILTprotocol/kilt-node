@@ -77,6 +77,20 @@ pub mod runtime {
 		}
 	}
 
+	pub(crate) fn events() -> Vec<crate::Event<Test>> {
+		System::events()
+			.into_iter()
+			.map(|r| r.event)
+			.filter_map(|e| {
+				if let RuntimeEvent::BondingPallet(e) = e {
+					Some(e)
+				} else {
+					None
+				}
+			})
+			.collect::<Vec<_>>()
+	}
+
 	frame_support::construct_runtime!(
 		pub enum Test
 		{
@@ -103,7 +117,7 @@ pub mod runtime {
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -134,7 +148,7 @@ pub mod runtime {
 		type MaxFreezes = ();
 		type Balance = Balance;
 		type DustRemoval = ();
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -149,7 +163,7 @@ pub mod runtime {
 	}
 
 	impl pallet_assets::Config for Test {
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type Balance = Balance;
 		type AssetId = AssetId;
 		type AssetIdParameter = AssetId;
@@ -185,7 +199,7 @@ pub mod runtime {
 		type MaxStringLength = StringLimit;
 		type PoolCreateOrigin = EnsureSigned<AccountId>;
 		type PoolId = AccountId;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
@@ -271,6 +285,8 @@ pub mod runtime {
 			let mut ext = sp_io::TestExternalities::new(storage);
 
 			ext.execute_with(|| {
+				System::set_block_number(System::block_number() + 1);
+
 				self.pools.iter().for_each(|(pool_id, pool)| {
 					crate::Pools::<Test>::insert(pool_id.clone(), pool.clone());
 
