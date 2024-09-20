@@ -110,6 +110,23 @@ jobs:
       - name: Run `taplo`
         run: taplo fmt --check
 
+  cargo-deny:
+    name: Check cargo-deny rules
+    runs-on: ubuntu-latest
+    needs: get-commit-head
+    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run `cargo deny`
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          # All is set in the config file
+          arguments:
+          command-arguments: "--hide-inclusion-graph -c .cargo-deny.toml --show-stats -D warnings"
+
   integration-tests:
     name: Run Chopsticks tests
     runs-on: ubuntu-latest
