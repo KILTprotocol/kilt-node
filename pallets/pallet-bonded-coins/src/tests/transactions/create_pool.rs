@@ -1,23 +1,21 @@
 use frame_support::{
 	assert_ok,
-	traits::{fungibles::{metadata::Inspect as InspectMetaData, roles::Inspect as InspectRoles}, ContainsPair},
+	traits::{
+		fungibles::{metadata::Inspect as InspectMetaData, roles::Inspect as InspectRoles},
+		ContainsPair,
+	},
 };
-use sp_arithmetic::FixedU128;
 use sp_runtime::BoundedVec;
 
 use crate::{
-	curves_parameters::LinearBondingFunctionParameters,
-	mock::{runtime::*, AccountId},
-	types::{Curve, PoolStatus, TokenMeta},
+	mock::{runtime::*, *},
+	types::{PoolStatus, TokenMeta},
 	NextAssetId, Pools,
 };
 
 #[test]
-fn test_create_pool_linear_bonding_curve() {
-	// Create curve with shape f(x) = 2x + 3, resulting into integral function F(x) = x^2 + 3x
-	let m = FixedU128::from_u32(2);
-	let n = FixedU128::from_u32(3);
-	let curve = Curve::LinearRatioCurve(LinearBondingFunctionParameters { m, n });
+fn test_create_pool() {
+	let curve = get_linear_bonding_curve();
 	let state = PoolStatus::Active;
 
 	let token_meta = TokenMeta {
@@ -30,8 +28,9 @@ fn test_create_pool_linear_bonding_curve() {
 	let currencies = BoundedVec::try_from(vec![token_meta.clone()]).expect("creating currencies should not fail");
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, UNIT * 10)])
-		.with_currencies(vec![DEFAULT_COLLATERAL_CURRENCY])
+		.with_native_balances(vec![(ACCOUNT_00, UNIT_NATIVE * 10)])
+		.with_collateral_asset_id(DEFAULT_COLLATERAL_CURRENCY_ID)
+		.with_metadata(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, DEFAULT_COLLATERAL_DENOMINATION)])
 		.build()
 		.execute_with(|| {
 			let current_asset_id = NextAssetId::<Test>::get();
@@ -77,7 +76,7 @@ fn test_create_pool_linear_bonding_curve() {
 			assert_eq!(name, token_meta.name.into_inner());
 			assert_eq!(symbol, token_meta.symbol.into_inner());
 
-			// check roles of created assets
+			// check roles of created assets TODO needs to be changed later.
 			let owner = <Assets as InspectRoles<AccountId>>::owner(currency_id).expect("Owner should be set");
 			let admin = <Assets as InspectRoles<AccountId>>::admin(currency_id).expect("Admin should be set");
 			let issuer = <Assets as InspectRoles<AccountId>>::issuer(currency_id).expect("Issuer should be set");
@@ -92,8 +91,7 @@ fn test_create_pool_linear_bonding_curve() {
 			let total_supply = Assets::total_supply(currency_id);
 			assert_eq!(total_supply, 0);
 
-			// check if pool_account is created. 
-			assert!(Assets::contains(&DEFAULT_COLLATERAL_CURRENCY.0, &pool_id));
-
+			// check if pool_account is created.
+			assert!(Assets::contains(&DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id));
 		});
 }

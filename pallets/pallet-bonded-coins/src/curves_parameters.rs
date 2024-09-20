@@ -59,9 +59,12 @@ where
 {
 	/// F(x) = m * x + n
 	fn get_value(&self, x: F) -> Result<F, ArithmeticError> {
-		let mx = self.m.clone().checked_mul(&x).ok_or(ArithmeticError::Overflow)?;
+		let x2 = Self::get_power_2(x)?;
 
-		let result = mx.checked_add(&self.n).ok_or(ArithmeticError::Overflow)?;
+		let mx2 = self.m.clone().checked_mul(&x2).ok_or(ArithmeticError::Overflow)?;
+		let nx = self.n.clone().checked_mul(&x).ok_or(ArithmeticError::Overflow)?;
+
+		let result = mx2.checked_add(&nx).ok_or(ArithmeticError::Overflow)?;
 		Ok(result)
 	}
 }

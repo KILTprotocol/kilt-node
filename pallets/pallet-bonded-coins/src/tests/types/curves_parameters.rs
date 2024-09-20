@@ -27,9 +27,9 @@ fn test_linear_bonding_function_fraction() {
 
 	let curve = LinearBondingFunctionParameters { m, n };
 
-	// 0.5*1^2 + 2*1 = 2
+	// 0.5*1^2 + 2*1 = 2.5
 	let result = curve.get_value(x).unwrap();
-	assert_eq!(result, FixedU128::from_u32(2));
+	assert_eq!(result, FixedU128::from_rational(5, 2));
 }
 
 #[test]

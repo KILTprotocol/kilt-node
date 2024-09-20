@@ -66,7 +66,7 @@ pub mod pallet {
 	type FungiblesAssetIdOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
-	type PoolDetailsOf<T> =
+	pub(crate) type PoolDetailsOf<T> =
 		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterType>, BoundedCurrencyVec<T>>;
 
 	type CollateralAssetIdOf<T> =
@@ -591,8 +591,7 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Pallet<T>	
-	{
+	impl<T: Config> Pallet<T> {
 		/// save usage of currency_ids.
 		pub fn get_collateral_diff(
 			kind: DiffKind,

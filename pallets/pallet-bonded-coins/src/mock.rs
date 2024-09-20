@@ -1,13 +1,20 @@
 use frame_support::{
 	parameter_types,
-	traits::{ConstU128, ConstU32},
+	traits::{fungible::Mutate, AccountTouch, ConstU128, ConstU32},
 	weights::constants::RocksDbWeight,
 	Hashable,
 };
 use frame_system::{EnsureRoot, EnsureSigned};
+use sp_arithmetic::FixedU128;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BuildStorage, MultiSignature,
+	BoundedVec, BuildStorage, MultiSignature,
+};
+
+use crate::{
+	curves_parameters::LinearBondingFunctionParameters,
+	types::{Curve, Locks, PoolStatus},
+	Config, DepositCurrencyBalanceOf, PoolDetailsOf,
 };
 
 pub type Hash = sp_core::H256;
@@ -17,22 +24,57 @@ pub type Signature = MultiSignature;
 pub type AccountPublic = <Signature as Verify>::Signer;
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
+// accounts
+// should not be used for testing
+const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
+pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
+pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
+
+// assets
+pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 0;
+pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = AssetId::MAX;
+pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
+pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
+pub const UNIT_NATIVE: Balance = 10u128.pow(15);
+
+// helper functions
+
+pub(crate) fn get_linear_bonding_curve() -> Curve<FixedU128> {
+	let m = FixedU128::from_u32(2);
+	let n = FixedU128::from_u32(3);
+	Curve::LinearRatioCurve(LinearBondingFunctionParameters { m, n })
+}
+
+pub(crate) fn calculate_pool_id(currencies: Vec<AssetId>) -> AccountId {
+	AccountId::from(currencies.blake2_256())
+}
+
+pub(crate) fn get_currency_unit(denomination: u8) -> Balance {
+	10u128.pow(denomination as u32)
+}
+
 #[cfg(test)]
 pub mod runtime {
 
 	use super::*;
 
-	use crate::{Config, DepositCurrencyBalanceOf};
-
 	pub type Block = frame_system::mocking::MockBlock<Test>;
-	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
-	pub(crate) const DEFAULT_COLLATERAL_CURRENCY: (u32, AccountId, Balance, [u8; 4], u8) =
-		(u32::MAX, ACCOUNT_00, 1_000_000_000_000, [85, 83, 68, 84], 10);
 
-	pub const UNIT: Balance = 10u128.pow(15);
-
-	pub(crate) fn calculate_pool_id(currencies: Vec<AssetId>) -> AccountId {
-		AccountId::from(currencies.blake2_256())
+	pub fn calculate_pool_details(
+		currencies: Vec<AssetId>,
+		manager: AccountId,
+		transferable: bool,
+		curve: Curve<FixedU128>,
+		state: PoolStatus<Locks>,
+	) -> PoolDetailsOf<Test> {
+		let bonded_currencies = BoundedVec::truncate_from(currencies);
+		PoolDetailsOf::<Test> {
+			curve,
+			manager,
+			transferable,
+			bonded_currencies,
+			state,
+		}
 	}
 
 	frame_support::construct_runtime!(
@@ -115,7 +157,7 @@ pub mod runtime {
 		type CreateOrigin = EnsureSigned<AccountId>;
 		type ForceOrigin = EnsureRoot<AccountId>;
 		type AssetDeposit = ConstU128<0>;
-		type AssetAccountDeposit = ConstU128<10>;
+		type AssetAccountDeposit = ConstU128<0>;
 		type MetadataDepositBase = ConstU128<0>;
 		type MetadataDepositPerByte = ConstU128<0>;
 		type ApprovalDeposit = ConstU128<0>;
@@ -151,55 +193,76 @@ pub mod runtime {
 
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
-		balances: Vec<(AccountId, DepositCurrencyBalanceOf<Test>)>,
-		// id, owner, balance amount, Name, Decimals
-		bonded_currency: Vec<(AssetId, AccountId, Balance, [u8; 4], u8)>,
+		native_assets: Vec<(AccountId, DepositCurrencyBalanceOf<Test>)>,
+		currencies: Vec<Vec<AssetId>>,
+		bonded_balance: Vec<(AssetId, AccountId, Balance)>,
+		meta_data: Vec<(AssetId, u8)>,
+		pools: Vec<(AccountId, PoolDetailsOf<Test>)>,
+		collateral_asset_id: AssetId,
 	}
 
 	impl ExtBuilder {
-		pub(crate) fn with_balances(mut self, balances: Vec<(AccountId, DepositCurrencyBalanceOf<Test>)>) -> Self {
-			self.balances = balances;
-			self
-		}
-
-		pub(crate) fn with_currencies(
+		pub(crate) fn with_native_balances(
 			mut self,
-			bonded_currency: Vec<(AssetId, AccountId, Balance, [u8; 4], u8)>,
+			native_assets: Vec<(AccountId, DepositCurrencyBalanceOf<Test>)>,
 		) -> Self {
-			self.bonded_currency = bonded_currency;
+			self.native_assets = native_assets;
 			self
 		}
 
-		pub(crate) fn build(self) -> sp_io::TestExternalities {
+		pub(crate) fn with_collateral_asset_id(mut self, collateral_asset_id: AssetId) -> Self {
+			self.collateral_asset_id = collateral_asset_id;
+			self
+		}
+
+		pub(crate) fn with_currencies(mut self, currencies: Vec<Vec<AssetId>>) -> Self {
+			self.currencies = currencies;
+			self
+		}
+
+		pub(crate) fn with_metadata(mut self, meta_data: Vec<(AssetId, u8)>) -> Self {
+			self.meta_data = meta_data;
+			self
+		}
+
+		pub(crate) fn with_pools(mut self, pools: Vec<(AccountId, PoolDetailsOf<Test>)>) -> Self {
+			self.pools = pools;
+			self
+		}
+
+		pub(crate) fn with_bonded_balance(mut self, bonded_balance: Vec<(AssetId, AccountId, Balance)>) -> Self {
+			self.bonded_balance = bonded_balance;
+			self
+		}
+
+		pub(crate) fn build(mut self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
-				balances: self.balances.clone(),
+				balances: self.native_assets.clone(),
 			}
 			.assimilate_storage(&mut storage)
 			.expect("assimilate should not fail");
 
+			self.currencies.push(vec![self.collateral_asset_id]);
+
 			pallet_assets::GenesisConfig::<Test> {
 				assets: self
-					.bonded_currency
-					.clone()
+					.currencies
 					.into_iter()
-					// id, admin, is_sufficient, min_balance
-					.map(|(id, acc, _, _, _)| (id, acc, false, 1))
+					.map(|x| {
+						let admin = calculate_pool_id(x.clone());
+						x.into_iter()
+							.map(|id| (id, admin.clone(), false, 1u128))
+							.collect::<Vec<(u32, AccountId, bool, u128)>>()
+					})
+					.flatten()
 					.collect(),
 
+				accounts: self.bonded_balance,
 				metadata: self
-					.bonded_currency
-					.clone()
+					.meta_data
 					.into_iter()
-					// id, name, symbol, decimals
-					.map(|(id, _, _, name, denomination)| (id, name.clone().into(), name.into(), denomination))
-					.collect(),
-
-				accounts: self
-					.bonded_currency
-					.into_iter()
-					// id, owner, balance
-					.map(|(id, acc, balance, _, _)| (id, acc, balance))
+					.map(|(id, denomination)| (id, vec![], vec![], denomination))
 					.collect(),
 			}
 			.assimilate_storage(&mut storage)
@@ -207,7 +270,17 @@ pub mod runtime {
 
 			let mut ext = sp_io::TestExternalities::new(storage);
 
-			ext.execute_with(|| {});
+			ext.execute_with(|| {
+				self.pools.iter().for_each(|(pool_id, pool)| {
+					crate::Pools::<Test>::insert(pool_id.clone(), pool.clone());
+
+					<Balances as Mutate<AccountId>>::mint_into(&ACCOUNT_99, UNIT_NATIVE * 100)
+						.expect("Minting should not fail.");
+
+					<Assets as AccountTouch<AssetId, AccountId>>::touch(self.collateral_asset_id, pool_id, &ACCOUNT_99)
+						.expect("Touching pool_id should not fail.");
+				});
+			});
 
 			ext
 		}
