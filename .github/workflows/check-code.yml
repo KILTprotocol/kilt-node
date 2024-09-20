@@ -111,7 +111,7 @@ jobs:
         with:
           # All is set in the config file
           arguments:
-          command-arguments: "--hide-inclusion-graph -c .cargo-deny.toml --show-stats -D advisory-not-detected -D license-exception-not-encountered"
+          command-arguments: "--hide-inclusion-graph -c .cargo-deny.toml --show-stats -D warnings"
 
   integration-tests:
     name: Run Chopsticks tests
