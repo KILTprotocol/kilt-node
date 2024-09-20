@@ -38,11 +38,7 @@ for pallet in "${pallets[@]}"; do
 	./target/release/kilt-parachain benchmark pallet \
 		--template=".maintain/weight-template.hbs" \
 		--header="HEADER-GPL" \
-		--execution=wasm \
-		--wasm-execution=compiled \
 		--heap-pages=4096 \
-		--steps=50 \
-		--repeat=20 \
 		--chain="${chain}" \
 		--pallet="$pallet" \
 		--extrinsic="*" \
