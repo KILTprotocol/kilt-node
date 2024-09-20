@@ -321,7 +321,7 @@ jobs:
       # Configured by the Docker image. We can't change this unless the image does it.
       CARGO_HOME: /usr/local/cargo
     needs: cargo-clippy
-    # if: ${{ github.event_name == 'push'}}
+    if: ${{ github.event_name == 'push'}}
 
     strategy:
       matrix:
