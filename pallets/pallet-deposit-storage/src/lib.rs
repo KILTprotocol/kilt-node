@@ -27,6 +27,7 @@
 
 mod default_weights;
 mod deposit;
+mod fungible_hold_adapter;
 pub mod traits;
 
 #[cfg(test)]
@@ -94,7 +95,7 @@ pub mod pallet {
 		/// The aggregated `Event` type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The aggregated `HoldReason` type.
-		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
+		type RuntimeHoldReason: From<Self::Namespace> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -204,7 +205,7 @@ pub mod pallet {
 					reserve_deposit::<AccountIdOf<T>, T::Currency>(
 						entry.deposit.owner.clone(),
 						entry.deposit.amount,
-						&entry.reason,
+						&namespace.into(),
 					)
 					.map_err(|_| Error::<T>::FailedToHold)?;
 					Self::deposit_event(Event::<T>::DepositAdded {
@@ -236,7 +237,7 @@ pub mod pallet {
 					Error::<T>::Unauthorized
 				);
 			}
-			free_deposit::<AccountIdOf<T>, T::Currency>(&existing_entry.deposit, &existing_entry.reason)
+			free_deposit::<AccountIdOf<T>, T::Currency>(&existing_entry.deposit, &namespace.clone().into())
 				.map_err(|_| Error::<T>::FailedToRelease)?;
 			Self::deposit_event(Event::<T>::DepositReclaimed {
 				namespace: namespace.clone(),
