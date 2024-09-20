@@ -71,7 +71,6 @@ for pallet in "${pallets[@]}"; do
 	echo "Runtime: $runtime. Pallet: $pallet"
 	# shellcheck disable=SC2086
 	./target/$target_folder/kilt-parachain benchmark pallet \
-		--wasm-execution=compiled \
 		--heap-pages=4096 \
 		--chain="${chain}" \
 		--pallet="$pallet" \
