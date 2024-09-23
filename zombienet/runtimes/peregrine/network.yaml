@@ -11,14 +11,13 @@ settings:
 # * PARA_RPC: RPC port for one parachain node
 
 relaychain:
-    # TODO: Replace `rococo-local` with a local paseo chainspec once the runtime panic is fixed.
-    chain: rococo-local
+    chain: paseo-local
+    chain_spec_path: runtimes/peregrine/paseo-local-fast-v1.3.1-e1fd37c.json
     default_image: "{{RELAY_IMAGE}}"
     nodes:
         - name: "relay-alice"
           rpc_port: "{{RELAY_RPC}}"
         - name: "relay-bob"
-        - name: "relay-charlie"
 
 parachains:
     - id: 2086
