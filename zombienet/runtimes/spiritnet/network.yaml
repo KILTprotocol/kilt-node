@@ -12,15 +12,12 @@ settings:
 
 relaychain:
     chain: polkadot-local
-    chain_spec_path: runtimes/spiritnet/polkadot-local-fast-runtime-v1.2.3-60e1eb8.json
+    chain_spec_path: runtimes/spiritnet/polkadot-local-fast-v1.3.2-e220854.json
     default_image: "{{RELAY_IMAGE}}"
     nodes:
         - name: "relay-alice"
           rpc_port: "{{RELAY_RPC}}"
-          args:
-              - "-lparachain=debug"
         - name: "relay-bob"
-        - name: "relay-charlie"
 
 parachains:
     - id: 2086
