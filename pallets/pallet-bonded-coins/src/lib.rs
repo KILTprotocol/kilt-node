@@ -365,7 +365,6 @@ pub mod pallet {
 			to_idx: u32,
 			amount_to_swap: FungiblesBalanceOf<T>,
 			beneficiary: AccountIdLookupOf<T>,
-			min_return: FungiblesBalanceOf<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
@@ -459,7 +458,7 @@ pub mod pallet {
 						&pool_details,
 						to_idx_usize,
 						beneficiary,
-						min_return,
+						amount_to_swap,
 					)?;
 				}
 			};
