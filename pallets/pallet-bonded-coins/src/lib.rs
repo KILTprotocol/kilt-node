@@ -617,18 +617,14 @@ pub mod pallet {
 				.collect::<Result<Vec<FixedU128>, ArithmeticError>>()?;
 
 			// normalize the amount to mint
-			let normalized_amount_to_mint = transform_denomination_currency_amount(
+			let normalized_amount = transform_denomination_currency_amount(
 				amount.clone().saturated_into(),
 				total_issuances[currency_idx].1,
 				target_denomination_normalization,
 			)?;
 
-			let (active_issuance_pre, active_issuance_post) = Self::calculate_pre_post_issuances(
-				kind,
-				&normalized_amount_to_mint,
-				&normalized_issuances,
-				currency_idx,
-			)?;
+			let (active_issuance_pre, active_issuance_post) =
+				Self::calculate_pre_post_issuances(&kind, &normalized_amount, &normalized_issuances, currency_idx)?;
 
 			let passive_issuance = normalized_issuances
 				.iter()
@@ -636,7 +632,8 @@ pub mod pallet {
 				.filter(|&(idx, _)| idx != currency_idx)
 				.fold(FixedU128::zero(), |sum, (_, x)| sum.saturating_add(*x));
 
-			let normalize_cost = curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance)?;
+			let normalize_cost =
+				curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance, kind)?;
 
 			// transform the cost back to the target denomination of the collateral currency
 			let real_costs = transform_denomination_currency_amount(
@@ -652,7 +649,7 @@ pub mod pallet {
 		}
 
 		fn calculate_pre_post_issuances(
-			kind: DiffKind,
+			kind: &DiffKind,
 			amount: &FixedU128,
 			total_issuances: &[FixedU128],
 			currency_idx: usize,
@@ -680,14 +677,6 @@ pub mod pallet {
 				.get(currency_idx)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let real_amount = T::Fungibles::burn_from(
-				burn_currency_id.clone(),
-				&payer,
-				amount,
-				Precision::Exact,
-				Fortitude::Polite,
-			)?;
-
 			let currencies_metadata: Vec<(FungiblesBalanceOf<T>, u8)> = pool_details
 				.bonded_currencies
 				.iter()
@@ -698,6 +687,14 @@ pub mod pallet {
 					)
 				})
 				.collect();
+
+			let real_amount = T::Fungibles::burn_from(
+				burn_currency_id.clone(),
+				&payer,
+				amount,
+				Precision::Exact,
+				Fortitude::Polite,
+			)?;
 
 			//
 			let returns = Self::get_collateral_diff(

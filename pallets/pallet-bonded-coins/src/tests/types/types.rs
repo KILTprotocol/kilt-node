@@ -3,7 +3,7 @@ use sp_runtime::traits::Zero;
 
 use crate::{
 	curves_parameters::{transform_denomination_currency_amount, LinearBondingFunctionParameters},
-	types::Curve,
+	types::{Curve, DiffKind},
 };
 
 // target denomination for collateral currency
@@ -38,6 +38,7 @@ fn test_mint_first_coin() {
 			normalized_active_issuance_pre,
 			normalized_active_issuance_post,
 			passive_issuance,
+			DiffKind::Mint,
 		)
 		.unwrap();
 
@@ -73,6 +74,7 @@ fn test_mint_coin_with_existing_supply() {
 			normalized_active_issuance_pre,
 			normalized_active_issuance_post,
 			passive_issuance,
+			DiffKind::Mint,
 		)
 		.unwrap();
 
@@ -112,6 +114,7 @@ fn test_mint_coin_with_existing_passive_supply() {
 			normalized_active_issuance_pre,
 			normalized_active_issuance_post,
 			normalized_passive_issuance,
+			DiffKind::Mint,
 		)
 		.unwrap();
 
@@ -151,6 +154,7 @@ fn test_mint_coin_with_existing_passive_supply_and_existing_active_supply() {
 			normalized_active_issuance_pre,
 			normalized_active_issuance_post,
 			normalized_passive_issuance,
+			DiffKind::Mint,
 		)
 		.unwrap();
 
@@ -186,6 +190,7 @@ fn test_mint_first_coin_frac_bonding_curve() {
 			normalized_active_issuance_pre,
 			normalized_active_issuance_post,
 			passive_issuance,
+			DiffKind::Mint,
 		)
 		.unwrap();
 

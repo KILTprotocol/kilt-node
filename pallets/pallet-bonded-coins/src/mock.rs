@@ -1,6 +1,6 @@
 use frame_support::{
 	parameter_types,
-	traits::{fungible::Mutate, AccountTouch, ConstU128, ConstU32},
+	traits::{ConstU128, ConstU32},
 	weights::constants::RocksDbWeight,
 	Hashable,
 };
@@ -25,8 +25,6 @@ pub type AccountPublic = <Signature as Verify>::Signer;
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
 // accounts
-// should not be used for testing
-const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
 
@@ -289,12 +287,6 @@ pub mod runtime {
 
 				self.pools.iter().for_each(|(pool_id, pool)| {
 					crate::Pools::<Test>::insert(pool_id.clone(), pool.clone());
-
-					<Balances as Mutate<AccountId>>::mint_into(&ACCOUNT_99, UNIT_NATIVE * 100)
-						.expect("Minting should not fail.");
-
-					<Assets as AccountTouch<AssetId, AccountId>>::touch(self.collateral_asset_id, pool_id, &ACCOUNT_99)
-						.expect("Touching pool_id should not fail.");
 				});
 			});
 

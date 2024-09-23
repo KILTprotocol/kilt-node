@@ -124,20 +124,23 @@ where
 		active_issuance_pre: F,
 		active_issuance_post: F,
 		passive_issuance: F,
+		kind: DiffKind,
 	) -> Result<F, ArithmeticError> {
-		let active_issuance_pre_with_passive = active_issuance_pre.saturating_add(passive_issuance);
-		let active_issuance_post_with_passive = active_issuance_post.saturating_add(passive_issuance);
+		let (low, high) = match kind {
+			DiffKind::Burn => (
+				active_issuance_post.saturating_add(passive_issuance),
+				active_issuance_pre.saturating_add(passive_issuance),
+			),
+			DiffKind::Mint => (
+				active_issuance_pre.saturating_add(passive_issuance),
+				active_issuance_post.saturating_add(passive_issuance),
+			),
+		};
 
 		match self {
-			Curve::LinearRatioCurve(params) => {
-				params.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
-			}
-			Curve::QuadraticRatioCurve(params) => {
-				params.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
-			}
-			Curve::SquareRootBondingFunction(params) => {
-				params.calculate_costs(active_issuance_pre_with_passive, active_issuance_post_with_passive)
-			}
+			Curve::LinearRatioCurve(params) => params.calculate_costs(low, high),
+			Curve::QuadraticRatioCurve(params) => params.calculate_costs(low, high),
+			Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
 			Curve::RationalBondingFunction(params) => params.calculate_costs(
 				(active_issuance_pre, passive_issuance),
 				(active_issuance_post, passive_issuance),

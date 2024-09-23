@@ -4,7 +4,7 @@ use sp_runtime::FixedU128;
 use crate::{
 	curves_parameters::transform_denomination_currency_amount,
 	mock::{runtime::*, *},
-	types::PoolStatus,
+	types::{DiffKind, PoolStatus},
 };
 
 #[test]
@@ -23,7 +23,12 @@ fn test_mint_into_account() {
 	let active_issuance_post = FixedU128::from_u32(1);
 
 	let expected_costs_normalized = curve
-		.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance)
+		.calculate_cost(
+			active_issuance_pre,
+			active_issuance_post,
+			passive_issuance,
+			DiffKind::Mint,
+		)
 		.expect("Cost calculation should not fail");
 
 	let expected_raw_costs =
@@ -31,8 +36,10 @@ fn test_mint_into_account() {
 			.expect("Transforming costs should not fail")
 			.into_inner();
 
+	let collateral_balance_supply = one_collateral_currency * 10;
+
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, UNIT_NATIVE * 10)])
+		.with_native_balances(vec![(ACCOUNT_00, UNIT_NATIVE * 10), (pool_id.clone(), UNIT_NATIVE)])
 		.with_collateral_asset_id(DEFAULT_COLLATERAL_CURRENCY_ID)
 		.with_currencies(vec![vec![DEFAULT_BONDED_CURRENCY_ID]])
 		.with_metadata(vec![
@@ -43,7 +50,7 @@ fn test_mint_into_account() {
 		.with_bonded_balance(vec![(
 			DEFAULT_COLLATERAL_CURRENCY_ID,
 			ACCOUNT_00,
-			one_collateral_currency * 10,
+			collateral_balance_supply,
 		)])
 		.build()
 		.execute_with(|| {
@@ -56,10 +63,23 @@ fn test_mint_into_account() {
 				ACCOUNT_00
 			));
 
+			// user should have the requested bonded coin
 			let supply_minted_coins = Assets::balance(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00);
 			assert_eq!(supply_minted_coins, one_bonded_currency);
 
+			// pool should have the required collateral for minting the coin
 			let collateral_balance = Assets::balance(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id);
 			assert_eq!(collateral_balance, expected_raw_costs);
+
+			// the total supply should be one
+			let bonded_currency_total_supply = Assets::total_supply(DEFAULT_BONDED_CURRENCY_ID);
+			assert_eq!(bonded_currency_total_supply, one_bonded_currency);
+
+			// the submitter should have the collateral balance reduced by the minting cost
+			let collateral_balance_submitter = Assets::balance(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00);
+			assert_eq!(
+				collateral_balance_submitter,
+				collateral_balance_supply - expected_raw_costs
+			);
 		});
 }
