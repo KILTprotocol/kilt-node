@@ -236,6 +236,15 @@ pub mod pallet {
 			/// was deleted.
 			claim_hash: ClaimHashOf<T>,
 		},
+		/// The deposit for an attestation has changed owner.
+		DepositOwnerChanged {
+			/// The claim hash of the credential whose deposit owner changed.
+			claim_hash: ClaimHashOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -477,8 +486,14 @@ pub mod pallet {
 
 			AttestationStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
 				&claim_hash,
-				sender,
+				sender.clone(),
 			)?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				claim_hash,
+				from: attestation.deposit.owner,
+				to: sender,
+			});
 
 			Ok(())
 		}
