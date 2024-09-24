@@ -251,7 +251,7 @@ pub mod pallet {
 		/// The deposit for a delegation has changed owner.
 		DepositOwnerChanged {
 			/// The ID of the delegation whose deposit owner changed.
-			delegation_id: DelegationNodeIdOf<T>,
+			id: DelegationNodeIdOf<T>,
 			/// The old deposit owner.
 			from: AccountIdOf<T>,
 			/// The new deposit owner.
@@ -706,7 +706,7 @@ pub mod pallet {
 			)?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
-				delegation_id,
+				id: delegation_id,
 				from: delegation.deposit.owner,
 				to: sender,
 			});

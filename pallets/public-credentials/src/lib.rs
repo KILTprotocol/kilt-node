@@ -227,7 +227,7 @@ pub mod pallet {
 		/// The deposit for a public credential has changed owner.
 		DepositOwnerChanged {
 			/// The claim hash of the credential whose deposit owner changed.
-			credential_id: CredentialIdOf<T>,
+			id: CredentialIdOf<T>,
 			/// The old deposit owner.
 			from: AccountIdOf<T>,
 			/// The new deposit owner.
@@ -545,7 +545,7 @@ pub mod pallet {
 			)?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
-				credential_id,
+				id: credential_id,
 				from: credential_entry.deposit.owner,
 				to: sender,
 			});

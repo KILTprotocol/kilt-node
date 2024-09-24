@@ -155,10 +155,8 @@ pub mod pallet {
 		MigrationCompleted,
 		/// The deposit for an linked account has changed owner.
 		DepositOwnerChanged {
-			/// The DID whose deposit owner changed.
-			did: DidIdentifierOf<T>,
-			/// The account linked to the DID whose deposit owner changed.
-			account: LinkableAccountId,
+			/// The tuple of (DID, linked account) whose deposit owner changed.
+			id: (DidIdentifierOf<T>, LinkableAccountId)
 			/// The old deposit owner.
 			from: AccountIdOf<T>,
 			/// The new deposit owner.
@@ -396,8 +394,7 @@ pub mod pallet {
 			)?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
-				did: subject,
-				account,
+				id: (subject, account),
 				from: record.deposit.owner,
 				to: sender,
 			});

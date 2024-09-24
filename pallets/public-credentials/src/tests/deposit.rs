@@ -149,7 +149,7 @@ fn test_change_deposit_owner() {
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert!(System::events().iter().any(|e| e.event
 				== Event::<Test>::DepositOwnerChanged {
-					credential_id,
+					id: credential_id,
 					from: ACCOUNT_00,
 					to: ACCOUNT_01
 				}

@@ -239,7 +239,7 @@ pub mod pallet {
 		/// The deposit for an attestation has changed owner.
 		DepositOwnerChanged {
 			/// The claim hash of the credential whose deposit owner changed.
-			claim_hash: ClaimHashOf<T>,
+			id: ClaimHashOf<T>,
 			/// The old deposit owner.
 			from: AccountIdOf<T>,
 			/// The new deposit owner.
@@ -490,7 +490,7 @@ pub mod pallet {
 			)?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
-				claim_hash,
+				id: claim_hash,
 				from: attestation.deposit.owner,
 				to: sender,
 			});

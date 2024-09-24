@@ -79,7 +79,7 @@ fn test_change_deposit_owner() {
 			);
 			assert!(System::events().iter().any(|e| e.event
 				== Event::<Test>::DepositOwnerChanged {
-					claim_hash,
+					id: claim_hash,
 					from: ACCOUNT_00,
 					to: ACCOUNT_01
 				}

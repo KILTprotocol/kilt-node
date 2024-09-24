@@ -50,7 +50,7 @@ fn test_change_deposit_owner() {
 			);
 			assert!(System::events().iter().any(|e| e.event
 				== Event::<Test>::DepositOwnerChanged {
-					web3name: web3_name_00.clone(),
+					id: web3_name_00.clone(),
 					from: ACCOUNT_00,
 					to: ACCOUNT_01
 				}

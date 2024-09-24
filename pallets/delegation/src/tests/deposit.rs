@@ -77,7 +77,7 @@ fn test_change_deposit_owner() {
 			);
 			assert!(System::events().iter().any(|e| e.event
 				== Event::<Test>::DepositOwnerChanged {
-					delegation_id,
+					id: delegation_id,
 					from: ACCOUNT_00,
 					to: ACCOUNT_01
 				}

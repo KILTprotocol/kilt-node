@@ -165,7 +165,7 @@ pub mod pallet {
 		/// The deposit for a web3name has changed owner.
 		DepositOwnerChanged {
 			/// The web3name whose deposit owner changed.
-			web3name: Web3NameOf<T>,
+			id: Web3NameOf<T>,
 			/// The old deposit owner.
 			from: AccountIdOf<T>,
 			/// The new deposit owner.
@@ -372,7 +372,7 @@ pub mod pallet {
 			)?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
-				web3name: name,
+				id: name,
 				from: w3n_entry.deposit.owner,
 				to: sender,
 			});

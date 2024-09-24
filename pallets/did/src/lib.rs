@@ -372,7 +372,7 @@ pub mod pallet {
 		/// The deposit for a DID has changed owner.
 		DepositOwnerChanged {
 			/// The DID whose deposit owner changed.
-			did: DidIdentifierOf<T>,
+			id: DidIdentifierOf<T>,
 			/// The old deposit owner.
 			from: AccountIdOf<T>,
 			/// The new deposit owner.
@@ -1122,7 +1122,7 @@ pub mod pallet {
 			)?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
-				did: subject,
+				id: subject,
 				from: did_entry.deposit.owner,
 				to: sender,
 			});

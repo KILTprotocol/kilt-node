@@ -41,8 +41,7 @@ fn test_change_deposit_owner() {
 			);
 			assert!(System::events().iter().any(|e| e.event
 				== Event::<Test>::DepositOwnerChanged {
-					did: DID_00,
-					account: LINKABLE_ACCOUNT_00,
+					id: (DID_00, LINKABLE_ACCOUNT_00),
 					from: ACCOUNT_00,
 					to: ACCOUNT_01
 				}
