@@ -248,6 +248,15 @@ pub mod pallet {
 		/// A delegation has been removed.
 		/// \[remover ID, delegation node ID\]
 		DelegationRemoved(AccountIdOf<T>, DelegationNodeIdOf<T>),
+		/// The deposit for a delegation has changed owner.
+		DepositOwnerChanged {
+			/// The ID of the delegation whose deposit owner changed.
+			delegation_id: DelegationNodeIdOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -683,6 +692,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let sender = source.sender();
 
 			let delegation = DelegationNodes::<T>::get(delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
@@ -692,8 +702,16 @@ pub mod pallet {
 
 			DelegationDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
 				&delegation_id,
-				source.sender(),
-			)
+				sender.clone(),
+			)?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				delegation_id,
+				from: delegation.deposit.owner,
+				to: sender,
+			});
+
+			Ok(())
 		}
 
 		/// Updates the deposit amount to the current deposit rate.

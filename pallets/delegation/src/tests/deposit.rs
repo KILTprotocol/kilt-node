@@ -23,7 +23,7 @@ use frame_support::{
 use kilt_support::mock::mock_origin::DoubleOrigin;
 use sp_runtime::{traits::Zero, TokenError};
 
-use crate::{self as delegation, mock::*, Config, Error, HoldReason};
+use crate::{self as delegation, mock::*, Config, Error, Event, HoldReason};
 
 #[test]
 fn test_change_deposit_owner() {
@@ -75,6 +75,13 @@ fn test_change_deposit_owner() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				<Test as Config>::Deposit::get()
 			);
+			assert!(System::events().iter().any(|e| e.event
+				== Event::<Test>::DepositOwnerChanged {
+					delegation_id,
+					from: ACCOUNT_00,
+					to: ACCOUNT_01
+				}
+				.into()));
 		});
 }
 
