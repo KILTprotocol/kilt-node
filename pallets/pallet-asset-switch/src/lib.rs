@@ -200,6 +200,8 @@ pub mod pallet {
 		Xcm,
 		/// Internal error.
 		Internal,
+		/// Attempt to switch zero tokens.
+		ZeroAmount,
 	}
 
 	#[pallet::storage]
@@ -379,17 +381,24 @@ pub mod pallet {
 		) -> DispatchResult {
 			let submitter = T::SubmitterOrigin::ensure_origin(origin)?;
 
-			// 1. Retrieve switch pair info from storage, else fail.
+			// 1. Prevent switches of 0 tokens, which would just waste users' XCM fee
+			//    balances.
+			ensure!(
+				local_asset_amount > LocalCurrencyBalanceOf::<T, I>::zero(),
+				Error::<T, I>::ZeroAmount
+			);
+
+			// 2. Retrieve switch pair info from storage, else fail.
 			let switch_pair =
 				SwitchPair::<T, I>::get().ok_or(DispatchError::from(Error::<T, I>::SwitchPairNotFound))?;
 
-			// 2. Check if switches are enabled.
+			// 3. Check if switches are enabled.
 			ensure!(
 				switch_pair.is_enabled(),
 				DispatchError::from(Error::<T, I>::SwitchPairNotEnabled)
 			);
 
-			// 3. Verify the tx submitter has enough local assets for the switch, without
+			// 4. Verify the tx submitter has enough local assets for the switch, without
 			//    having their balance go to zero.
 			T::LocalCurrency::can_withdraw(&submitter, local_asset_amount)
 				.into_result(true)
@@ -398,7 +407,7 @@ pub mod pallet {
 					DispatchError::from(Error::<T, I>::UserSwitchBalance)
 				})?;
 
-			// 4. Verify the local assets can be transferred to the switch pool account.
+			// 5. Verify the local assets can be transferred to the switch pool account.
 			//    This could fail if the pool's balance is `0` and the sent amount is less
 			//    than ED.
 			T::LocalCurrency::can_deposit(&switch_pair.pool_account, local_asset_amount, Provenance::Extant)
@@ -408,7 +417,7 @@ pub mod pallet {
 					DispatchError::from(Error::<T, I>::LocalPoolBalance)
 				})?;
 
-			// 5. Verify we have enough balance (minus ED, already substracted from the
+			// 6. Verify we have enough balance (minus ED, already substracted from the
 			//    stored balance info) on the remote location to perform the transfer.
 			let remote_asset_amount_as_u128 = local_asset_amount.into();
 			ensure!(
@@ -466,7 +475,7 @@ pub mod pallet {
 					DispatchError::from(Error::<T, I>::Xcm)
 				})?;
 
-			// 6. Compose and validate XCM message
+			// 7. Compose and validate XCM message
 			let appendix: Xcm<()> = vec![
 				RefundSurplus,
 				DepositAsset {
@@ -499,11 +508,11 @@ pub mod pallet {
 					DispatchError::from(Error::<T, I>::Xcm)
 				})?;
 
-			// 7. Call into hook pre-switch checks
+			// 8. Call into hook pre-switch checks
 			T::SwitchHooks::pre_local_to_remote_switch(&submitter, &beneficiary, local_asset_amount)
 				.map_err(|e| DispatchError::from(Error::<T, I>::Hook(e.into())))?;
 
-			// 8. Transfer funds from user to pool
+			// 9. Transfer funds from user to pool
 			let transferred_amount = T::LocalCurrency::transfer(
 				&submitter,
 				&switch_pair.pool_account,
@@ -520,7 +529,7 @@ pub mod pallet {
 				return Err(Error::<T, I>::Internal.into());
 			}
 
-			// 9. Take XCM fee from submitter.
+			// 10. Take XCM fee from submitter.
 			let withdrawn_fees = T::AssetTransactor::withdraw_asset(&remote_asset_fee_v4, &submitter_as_location, None)
 				.map_err(|e| {
 					log::info!(
@@ -542,13 +551,13 @@ pub mod pallet {
 				return Err(DispatchError::from(Error::<T, I>::Internal));
 			}
 
-			// 10. Send XCM out
+			// 11. Send XCM out
 			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
 				log::info!("Failed to deliver ticket with error {:?}", e);
 				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
 
-			// 11. Update remote asset balance and circulating supply.
+			// 12. Update remote asset balance and circulating supply.
 			SwitchPair::<T, I>::try_mutate(|entry| {
 				let Some(switch_pair_info) = entry.as_mut() else {
 					log::error!(target: LOG_TARGET, "Failed to borrow stored switch pair info as mut.");
@@ -567,7 +576,7 @@ pub mod pallet {
 				Ok(())
 			})?;
 
-			// 12. Call into hook post-switch checks
+			// 13. Call into hook post-switch checks
 			T::SwitchHooks::post_local_to_remote_switch(&submitter, &beneficiary, local_asset_amount)
 				.map_err(|e| DispatchError::from(Error::<T, I>::Hook(e.into())))?;
 

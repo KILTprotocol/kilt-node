@@ -235,6 +235,33 @@ fn successful() {
 }
 
 #[test]
+fn fails_on_zero_amount() {
+	let user = AccountId32::from([0; 32]);
+	let pool_account = AccountId32::from([1; 32]);
+	ExtBuilder::default()
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
+			pool_account,
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
+			remote_asset_id: get_remote_erc20_asset_id().into(),
+			remote_asset_total_supply: 100_000,
+			remote_reserve_location: get_asset_hub_location().into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
+			status: SwitchPairStatus::Running,
+		})
+		.build_and_execute_with_sanity_tests(|| {
+			assert_noop!(
+				Pallet::<MockRuntime>::switch(
+					RawOrigin::Signed(user).into(),
+					0,
+					Box::new(get_asset_hub_location().into())
+				),
+				Error::<MockRuntime>::ZeroAmount
+			);
+		});
+}
+
+#[test]
 fn fails_on_invalid_origin() {
 	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
