@@ -19,7 +19,7 @@ use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use kilt_support::mock::mock_origin;
 use sp_runtime::{traits::Zero, TokenError};
 
-use crate::{mock::*, Error, HoldReason};
+use crate::{mock::*, Error, Event, HoldReason};
 
 #[test]
 fn test_change_deposit_owner() {
@@ -39,6 +39,14 @@ fn test_change_deposit_owner() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				<Test as crate::Config>::Deposit::get()
 			);
+			assert!(System::events().iter().any(|e| e.event
+				== Event::<Test>::DepositOwnerChanged {
+					did: DID_00,
+					account: LINKABLE_ACCOUNT_00,
+					from: ACCOUNT_00,
+					to: ACCOUNT_01
+				}
+				.into()));
 		})
 }
 
