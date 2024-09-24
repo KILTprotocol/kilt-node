@@ -369,6 +369,15 @@ pub mod pallet {
 		/// A DID-authorised call has been executed.
 		/// \[DID caller, dispatch result\]
 		DidCallDispatched(DidIdentifierOf<T>, DispatchResult),
+		/// The deposit for a DID has changed owner.
+		DepositOwnerChanged {
+			/// The DID whose deposit owner changed.
+			did: DidIdentifierOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -1105,7 +1114,18 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidDepositCollector::<T>::change_deposit_owner::<<T as Config>::BalanceMigrationManager>(&subject, sender)?;
+			let did_entry = Did::<T>::get(&subject).ok_or(Error::<T>::NotFound)?;
+
+			DidDepositCollector::<T>::change_deposit_owner::<<T as Config>::BalanceMigrationManager>(
+				&subject,
+				sender.clone(),
+			)?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				did: subject,
+				from: did_entry.deposit.owner,
+				to: sender,
+			});
 
 			Ok(())
 		}
