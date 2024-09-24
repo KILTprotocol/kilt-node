@@ -539,14 +539,13 @@ pub mod pallet {
 
 			ensure!(subject == credential_entry.attester, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&credential_id,
-				sender.clone(),
-			)?;
+			let old_deposit_owner = PublicCredentialDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&credential_id, sender.clone())?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
 				id: credential_id,
-				from: credential_entry.deposit.owner,
+				from: old_deposit_owner,
 				to: sender,
 			});
 

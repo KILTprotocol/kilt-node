@@ -156,7 +156,7 @@ pub mod pallet {
 		/// The deposit for an linked account has changed owner.
 		DepositOwnerChanged {
 			/// The tuple of (DID, linked account) whose deposit owner changed.
-			id: (DidIdentifierOf<T>, LinkableAccountId)
+			id: (DidIdentifierOf<T>, LinkableAccountId),
 			/// The old deposit owner.
 			from: AccountIdOf<T>,
 			/// The new deposit owner.
@@ -388,14 +388,13 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.did == subject, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&account,
-				sender.clone(),
-			)?;
+			let old_deposit_owner = LinkableAccountDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&account, sender.clone())?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
 				id: (subject, account),
-				from: record.deposit.owner,
+				from: old_deposit_owner,
 				to: sender,
 			});
 

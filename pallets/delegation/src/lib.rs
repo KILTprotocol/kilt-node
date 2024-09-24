@@ -700,14 +700,13 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&delegation_id,
-				sender.clone(),
-			)?;
+			let old_deposit_owner = DelegationDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&delegation_id, sender.clone())?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
 				id: delegation_id,
-				from: delegation.deposit.owner,
+				from: old_deposit_owner,
 				to: sender,
 			});
 

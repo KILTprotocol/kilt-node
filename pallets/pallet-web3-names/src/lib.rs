@@ -364,16 +364,14 @@ pub mod pallet {
 			let w3n_owner = source.subject();
 			let sender = source.sender();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::NotFound)?;
-			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
 
-			Web3NameStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&name,
-				sender.clone(),
-			)?;
+			let old_deposit_owner = Web3NameStorageDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&name, sender.clone())?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
 				id: name,
-				from: w3n_entry.deposit.owner,
+				from: old_deposit_owner,
 				to: sender,
 			});
 

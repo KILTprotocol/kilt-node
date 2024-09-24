@@ -484,14 +484,13 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&claim_hash,
-				sender.clone(),
-			)?;
+			let old_deposit_owner = AttestationStorageDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&claim_hash, sender.clone())?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
 				id: claim_hash,
-				from: attestation.deposit.owner,
+				from: old_deposit_owner,
 				to: sender,
 			});
 

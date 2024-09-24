@@ -1114,16 +1114,13 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			let did_entry = Did::<T>::get(&subject).ok_or(Error::<T>::NotFound)?;
-
-			DidDepositCollector::<T>::change_deposit_owner::<<T as Config>::BalanceMigrationManager>(
-				&subject,
-				sender.clone(),
-			)?;
+			let old_deposit_owner = DidDepositCollector::<T>::change_deposit_owner::<
+				<T as Config>::BalanceMigrationManager,
+			>(&subject, sender.clone())?;
 
 			Self::deposit_event(Event::<T>::DepositOwnerChanged {
 				id: subject,
-				from: did_entry.deposit.owner,
+				from: old_deposit_owner,
 				to: sender,
 			});
 
