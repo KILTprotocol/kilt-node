@@ -180,17 +180,19 @@ where
 
 pub fn transform_denomination_currency_amount<T: Config>(
 	amount: u128,
-	current_denomination: u8,
-	target_denomination: u8,
+	current_denomination: u128,
+	target_denomination: u128,
 ) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
-	let diff = target_denomination as i8 - current_denomination as i8;
 	let value = {
-		if diff > 0 {
-			let factor = 10u128.pow(diff as u32);
+		if target_denomination > current_denomination {
+			let factor = target_denomination
+				.checked_div(current_denomination)
+				.ok_or(ArithmeticError::DivisionByZero)?;
 			amount.checked_mul(factor).ok_or(ArithmeticError::Overflow)
 		} else {
-			let factor = 10u128.pow(diff.abs() as u32);
-			// Dividing by zero can never happen 10^0 = 1. Lets be save.
+			let factor = current_denomination
+				.checked_div(target_denomination)
+				.ok_or(ArithmeticError::DivisionByZero)?;
 			amount.checked_div(factor).ok_or(ArithmeticError::DivisionByZero)
 		}
 	}?;

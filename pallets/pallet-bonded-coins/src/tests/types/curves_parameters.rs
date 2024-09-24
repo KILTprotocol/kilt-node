@@ -60,8 +60,8 @@ fn test_linear_bonding_overflow_m() {
 #[test]
 fn test_increase_denomination_currency_amount() {
 	let amount = 100;
-	let current_denomination = 2;
-	let target_denomination = 3;
+	let current_denomination = 100;
+	let target_denomination = 1000;
 
 	let result =
 		transform_denomination_currency_amount::<Test>(amount, current_denomination, target_denomination).unwrap();
@@ -71,8 +71,8 @@ fn test_increase_denomination_currency_amount() {
 #[test]
 fn test_decrease_denomination_currency_amount() {
 	let amount = 1000;
-	let current_denomination = 3;
-	let target_denomination = 2;
+	let current_denomination = 1000;
+	let target_denomination = 100;
 
 	let result =
 		transform_denomination_currency_amount::<Test>(amount, current_denomination, target_denomination).unwrap();
@@ -82,10 +82,10 @@ fn test_decrease_denomination_currency_amount() {
 #[test]
 fn test_increase_denomination_overflow() {
 	let amount = u128::MAX;
-	let current_denomination = 10;
+	let current_denomination = 10000000000;
 
 	// just increase denomination by one. This should overflow
-	let target_denomination = 11;
+	let target_denomination = 100000000000;
 
 	let result = transform_denomination_currency_amount::<Test>(amount, current_denomination, target_denomination);
 	assert_err!(result, ArithmeticError::Overflow);
@@ -94,10 +94,10 @@ fn test_increase_denomination_overflow() {
 #[test]
 fn test_decrease_denomination_underflow() {
 	let amount = 1;
-	let current_denomination = 5;
+	let current_denomination = 100000;
 
 	// just increase
-	let target_denomination = 4;
+	let target_denomination = 10000;
 
 	// we should have dropped all relevant bits. This should gives use an Ok with zero
 	let result =

@@ -123,10 +123,12 @@ pub mod pallet {
 		/// The type used for pool ids
 		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
 
+		/// The type used for asset ids. This is the type of the bonded currencies.
 		type AssetId: Parameter + Member + FullCodec + TypeInfo + MaxEncodedLen + Saturating + One + Default;
 
 		type RuntimeHoldReason: From<HoldReason>;
 
+		/// The type used for the curve parameters.
 		type CurveParameterType: Parameter
 			+ Member
 			+ FixedPointNumber<Inner = u128>
@@ -136,8 +138,6 @@ pub mod pallet {
 			+ Zero
 			+ CheckedAdd
 			+ CheckedSub;
-
-		type NormalizationFactor: Get<u8>;
 	}
 
 	#[pallet::pallet]
@@ -204,7 +204,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			curve: Curve<CurveParameterTypeOf<T>>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
-			tradable: bool, // Todo: why do we need that?
+			tradable: bool, // Todo: make it useful.
 			state: PoolStatus<Locks>,
 			pool_manager: AccountIdOf<T>,
 		) -> DispatchResult {
@@ -256,7 +256,8 @@ pub mod pallet {
 					entry.symbol.clone().into(),
 					entry.decimals,
 				)?;
-				// TODO: use fungibles::roles::ResetTeam to update currency admin
+
+				// TODO: reset team account
 			}
 
 			// Touch the pool account in order to able to transfer the collateral currency to it
@@ -285,7 +286,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
-			let pool_details = <Pools<T>>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::Locked);
 
@@ -301,7 +302,7 @@ pub mod pallet {
 			)?;
 
 			// withdraw the collateral and put it in the deposit account
-			let real_costs = T::CollateralCurrency::transfer(
+			T::CollateralCurrency::transfer(
 				T::CollateralAssetId::get(),
 				&who,
 				&pool_id.into(),
@@ -310,7 +311,7 @@ pub mod pallet {
 			)?;
 
 			// fail if cost > max_cost
-			ensure!(real_costs <= max_cost, Error::<T>::Slippage);
+			ensure!(cost <= max_cost, Error::<T>::Slippage);
 
 			// TODO: apply lock if pool_details.transferable != true
 
@@ -386,18 +387,19 @@ pub mod pallet {
 
 			match &pool_details.curve {
 				Curve::RationalBondingFunction(_) => {
-					let target_denomination_normalization = T::NormalizationFactor::get();
+					let target_denomination_normalization = CurveParameterTypeOf::<T>::DIV;
 
-					let currencies_metadata: Vec<(FungiblesBalanceOf<T>, u8)> = pool_details
+					let currencies_metadata = pool_details
 						.bonded_currencies
 						.iter()
 						.map(|id| {
-							(
-								T::Fungibles::total_issuance(id.clone()),
-								T::Fungibles::decimals(id.clone()),
-							)
+							let total_issuance = T::Fungibles::total_issuance(id.clone());
+							let decimals = 10u128
+								.checked_pow(T::Fungibles::decimals(id.clone()).into())
+								.ok_or(ArithmeticError::Overflow)?;
+							Ok((total_issuance, decimals))
 						})
-						.collect();
+						.collect::<Result<Vec<(FungiblesBalanceOf<T>, u128)>, ArithmeticError>>()?;
 
 					let collateral = Self::burn_pool_currency_and_calculate_collateral(
 						&pool_details,
@@ -605,12 +607,13 @@ pub mod pallet {
 			kind: DiffKind,
 			curve: &Curve<CurveParameterTypeOf<T>>,
 			amount: &FungiblesBalanceOf<T>,
-			total_issuances: Vec<(FungiblesBalanceOf<T>, u8)>,
+			total_issuances: Vec<(FungiblesBalanceOf<T>, u128)>,
 			currency_idx: usize,
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
-			// todo: change that. We have also to restrict the denomination of the pool currencies maybe?
-			let target_denomination_normalization = T::NormalizationFactor::get();
-			let target_denomination_costs = T::CollateralCurrency::decimals(T::CollateralAssetId::get());
+			let target_denomination_normalization = CurveParameterTypeOf::<T>::DIV;
+			let target_denomination_costs = 10u128
+				.checked_pow(T::CollateralCurrency::decimals(T::CollateralAssetId::get()).into())
+				.ok_or(ArithmeticError::Overflow)?;
 
 			let normalized_issuances = total_issuances
 				.clone()
@@ -685,16 +688,17 @@ pub mod pallet {
 				.get(currency_idx)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let currencies_metadata: Vec<(FungiblesBalanceOf<T>, u8)> = pool_details
+			let currencies_metadata = pool_details
 				.bonded_currencies
 				.iter()
 				.map(|id| {
-					(
-						T::Fungibles::total_issuance(id.clone()),
-						T::Fungibles::decimals(id.clone()),
-					)
+					let total_issuance = T::Fungibles::total_issuance(id.clone());
+					let decimals = 10u128
+						.checked_pow(T::Fungibles::decimals(id.clone()).into())
+						.ok_or(ArithmeticError::Overflow)?;
+					Ok((total_issuance, decimals))
 				})
-				.collect();
+				.collect::<Result<Vec<(FungiblesBalanceOf<T>, u128)>, ArithmeticError>>()?;
 
 			let real_amount = T::Fungibles::burn_from(
 				burn_currency_id.clone(),
@@ -729,16 +733,17 @@ pub mod pallet {
 				.get(currency_idx)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let currencies_metadata: Vec<(FungiblesBalanceOf<T>, u8)> = pool_details
+			let currencies_metadata = pool_details
 				.bonded_currencies
 				.iter()
 				.map(|id| {
-					(
-						T::Fungibles::total_issuance(id.clone()),
-						T::Fungibles::decimals(id.clone()),
-					)
+					let total_issuance = T::Fungibles::total_issuance(id.clone());
+					let decimals = 10u128
+						.checked_pow(T::Fungibles::decimals(id.clone()).into())
+						.ok_or(ArithmeticError::Overflow)?;
+					Ok((total_issuance, decimals))
 				})
-				.collect();
+				.collect::<Result<Vec<(FungiblesBalanceOf<T>, u128)>, ArithmeticError>>()?;
 
 			let cost = Self::get_collateral_diff(
 				DiffKind::Mint,

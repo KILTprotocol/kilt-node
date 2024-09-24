@@ -1,5 +1,5 @@
 use frame_support::assert_ok;
-use sp_runtime::{traits::Zero, FixedU128};
+use sp_runtime::{traits::Zero, FixedPointNumber, FixedU128};
 
 use crate::{
 	curves_parameters::transform_denomination_currency_amount,
@@ -11,8 +11,6 @@ use crate::{
 fn test_burn_into_account() {
 	let currencies = vec![DEFAULT_BONDED_CURRENCY_ID];
 	let pool_id = calculate_pool_id(currencies.clone());
-	let one_bonded_currency = get_currency_unit(DEFAULT_BONDED_DENOMINATION);
-	let one_collateral_currency = get_currency_unit(DEFAULT_COLLATERAL_DENOMINATION);
 
 	let curve = get_linear_bonding_curve();
 
@@ -33,13 +31,13 @@ fn test_burn_into_account() {
 
 	let expected_raw_return = transform_denomination_currency_amount::<Test>(
 		expected_costs_normalized.into_inner(),
-		18,
-		DEFAULT_BONDED_DENOMINATION,
+		FixedU128::DIV,
+		10u128.pow(DEFAULT_BONDED_DENOMINATION.into()),
 	)
 	.expect("Transforming costs should not fail")
 	.into_inner();
 
-	let collateral_balance_supply = one_collateral_currency * 10;
+	let collateral_balance_supply = DEFAULT_COLLATERAL_UNIT * 10;
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, UNIT_NATIVE * 10), (pool_id.clone(), UNIT_NATIVE)])
@@ -56,7 +54,7 @@ fn test_burn_into_account() {
 				pool_id.clone(),
 				collateral_balance_supply,
 			),
-			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, one_bonded_currency),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, DEFAULT_BONDED_UNIT),
 		])
 		.build()
 		.execute_with(|| {
@@ -64,7 +62,7 @@ fn test_burn_into_account() {
 				RuntimeOrigin::signed(ACCOUNT_00),
 				pool_id.clone(),
 				0,
-				one_bonded_currency,
+				DEFAULT_BONDED_UNIT,
 				0,
 				ACCOUNT_00
 			));

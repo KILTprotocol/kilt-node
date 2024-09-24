@@ -1,16 +1,15 @@
 use sp_arithmetic::FixedU128;
-use sp_runtime::traits::Zero;
+use sp_runtime::{traits::Zero, FixedPointNumber};
 
 use crate::{
 	curves_parameters::{transform_denomination_currency_amount, LinearBondingFunctionParameters},
 	mock::runtime::*,
 	types::{Curve, DiffKind},
 };
-
 // target denomination for collateral currency
-const CURRENT_DENOMINATION: u8 = 15;
-const NORMALIZED_DENOMINATION: u8 = 18;
-const ONE_COIN: u128 = 10u128.pow(CURRENT_DENOMINATION as u32);
+const CURRENT_DENOMINATION: u128 = 10u128.pow(15);
+const NORMALIZED_DENOMINATION: u128 = FixedU128::DIV;
+const ONE_COIN: u128 = CURRENT_DENOMINATION;
 
 #[test]
 fn test_mint_first_coin() {

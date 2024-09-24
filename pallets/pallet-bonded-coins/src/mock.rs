@@ -33,6 +33,8 @@ pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 0;
 pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = AssetId::MAX;
 pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
 pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
+pub(crate) const DEFAULT_COLLATERAL_UNIT: Balance = 10u128.pow(10);
+pub(crate) const DEFAULT_BONDED_UNIT: Balance = 10u128.pow(10);
 pub const UNIT_NATIVE: Balance = 10u128.pow(15);
 
 // helper functions
@@ -185,7 +187,6 @@ pub mod runtime {
 		pub const CurrencyDeposit: Balance = 500;
 		pub const MaxCurrencies: u32 = 50;
 		pub const CollateralAssetId: u32 = u32::MAX;
-		pub const NormalizationFactor: u8 = 18;
 	}
 
 	impl Config for Test {
@@ -203,7 +204,6 @@ pub mod runtime {
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
 		type CurveParameterType = FixedU128;
-		type NormalizationFactor = NormalizationFactor;
 	}
 
 	#[derive(Clone, Default)]
