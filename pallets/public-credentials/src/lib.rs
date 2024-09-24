@@ -224,6 +224,15 @@ pub mod pallet {
 			/// The id of the unrevoked credential.
 			credential_id: CredentialIdOf<T>,
 		},
+		/// The deposit for a public credential has changed owner.
+		DepositOwnerChanged {
+			/// The claim hash of the credential whose deposit owner changed.
+			credential_id: CredentialIdOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -524,6 +533,7 @@ pub mod pallet {
 		pub fn change_deposit_owner(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let subject = source.subject();
+			let sender = source.sender();
 
 			let (_, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
@@ -531,8 +541,14 @@ pub mod pallet {
 
 			PublicCredentialDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
 				&credential_id,
-				source.sender(),
+				sender.clone(),
 			)?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				credential_id,
+				from: credential_entry.deposit.owner,
+				to: sender,
+			});
 
 			Ok(())
 		}
