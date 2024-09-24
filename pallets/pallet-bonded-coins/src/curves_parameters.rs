@@ -3,6 +3,8 @@ use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use sp_runtime::{FixedPointNumber, FixedU128};
 use sp_std::marker::PhantomData;
+
+use crate::{Config, CurveParameterTypeOf};
 /// Little helper trait to calculate the square root of Fixed, in order to maintain the generic.
 pub trait SquareRoot: Sized {
 	fn try_sqrt(self) -> Option<Self>;
@@ -176,11 +178,11 @@ where
 	}
 }
 
-pub fn transform_denomination_currency_amount(
+pub fn transform_denomination_currency_amount<T: Config>(
 	amount: u128,
 	current_denomination: u8,
 	target_denomination: u8,
-) -> Result<FixedU128, ArithmeticError> {
+) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
 	let diff = target_denomination as i8 - current_denomination as i8;
 	let value = {
 		if diff > 0 {
@@ -193,5 +195,5 @@ pub fn transform_denomination_currency_amount(
 		}
 	}?;
 
-	Ok(FixedU128::from_inner(value))
+	Ok(CurveParameterTypeOf::<T>::from_inner(value))
 }

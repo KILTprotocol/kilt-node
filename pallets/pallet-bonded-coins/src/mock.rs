@@ -185,6 +185,7 @@ pub mod runtime {
 		pub const CurrencyDeposit: Balance = 500;
 		pub const MaxCurrencies: u32 = 50;
 		pub const CollateralAssetId: u32 = u32::MAX;
+		pub const NormalizationFactor: u8 = 18;
 	}
 
 	impl Config for Test {
@@ -201,6 +202,8 @@ pub mod runtime {
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
+		type CurveParameterType = FixedU128;
+		type NormalizationFactor = NormalizationFactor;
 	}
 
 	#[derive(Clone, Default)]

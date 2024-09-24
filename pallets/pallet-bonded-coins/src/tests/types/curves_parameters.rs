@@ -2,8 +2,9 @@ use frame_support::assert_err;
 use sp_arithmetic::{ArithmeticError, FixedU128};
 use sp_runtime::traits::Zero;
 
-use crate::curves_parameters::{
-	transform_denomination_currency_amount, BondingFunction, LinearBondingFunctionParameters,
+use crate::{
+	curves_parameters::{transform_denomination_currency_amount, BondingFunction, LinearBondingFunctionParameters},
+	mock::runtime::*,
 };
 
 #[test]
@@ -62,7 +63,8 @@ fn test_increase_denomination_currency_amount() {
 	let current_denomination = 2;
 	let target_denomination = 3;
 
-	let result = transform_denomination_currency_amount(amount, current_denomination, target_denomination).unwrap();
+	let result =
+		transform_denomination_currency_amount::<Test>(amount, current_denomination, target_denomination).unwrap();
 	assert_eq!(result, FixedU128::from_inner(1000));
 }
 
@@ -72,7 +74,8 @@ fn test_decrease_denomination_currency_amount() {
 	let current_denomination = 3;
 	let target_denomination = 2;
 
-	let result = transform_denomination_currency_amount(amount, current_denomination, target_denomination).unwrap();
+	let result =
+		transform_denomination_currency_amount::<Test>(amount, current_denomination, target_denomination).unwrap();
 	assert_eq!(result, FixedU128::from_inner(100));
 }
 
@@ -84,7 +87,7 @@ fn test_increase_denomination_overflow() {
 	// just increase denomination by one. This should overflow
 	let target_denomination = 11;
 
-	let result = transform_denomination_currency_amount(amount, current_denomination, target_denomination);
+	let result = transform_denomination_currency_amount::<Test>(amount, current_denomination, target_denomination);
 	assert_err!(result, ArithmeticError::Overflow);
 }
 
@@ -97,6 +100,7 @@ fn test_decrease_denomination_underflow() {
 	let target_denomination = 4;
 
 	// we should have dropped all relevant bits. This should gives use an Ok with zero
-	let result = transform_denomination_currency_amount(amount, current_denomination, target_denomination).unwrap();
+	let result =
+		transform_denomination_currency_amount::<Test>(amount, current_denomination, target_denomination).unwrap();
 	assert_eq!(result, FixedU128::zero())
 }

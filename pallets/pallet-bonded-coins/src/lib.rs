@@ -34,19 +34,20 @@ pub mod pallet {
 			tokens::{Fortitude, Precision, Preservation},
 			AccountTouch,
 		},
-		Hashable,
+		Hashable, Parameter,
 	};
 	use frame_system::{ensure_root, pallet_prelude::*};
 	use parity_scale_codec::FullCodec;
-	use sp_arithmetic::{traits::CheckedDiv, FixedU128};
+	use scale_info::TypeInfo;
+	use sp_arithmetic::traits::CheckedDiv;
 	use sp_runtime::{
 		traits::{CheckedAdd, CheckedSub, One, Saturating, StaticLookup, Zero},
-		ArithmeticError, BoundedVec, SaturatedConversion,
+		ArithmeticError, BoundedVec, FixedPointNumber, SaturatedConversion,
 	};
-	use sp_std::{iter::Iterator, vec::Vec};
+	use sp_std::{default::Default, iter::Iterator, vec::Vec};
 
 	use crate::{
-		curves_parameters::transform_denomination_currency_amount,
+		curves_parameters::{transform_denomination_currency_amount, SquareRoot},
 		types::{Curve, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta},
 	};
 
@@ -67,7 +68,7 @@ pub mod pallet {
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type PoolDetailsOf<T> =
-		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterType>, BoundedCurrencyVec<T>>;
+		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterTypeOf<T>>, BoundedCurrencyVec<T>>;
 
 	type CollateralAssetIdOf<T> =
 		<<T as Config>::CollateralCurrency as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
@@ -80,6 +81,8 @@ pub mod pallet {
 
 	type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, CurrencySymbolOf<T>, CurrencyNameOf<T>>;
 
+	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -89,7 +92,8 @@ pub mod pallet {
 		type DepositCurrency: MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 		/// The currency used as collateral for minting bonded tokens.
 		type CollateralCurrency: MutateFungibles<Self::AccountId>
-			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>;
+			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>
+			+ FungiblesMetadata<Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
 		type Fungibles: CreateFungibles<Self::AccountId, AssetId = Self::AssetId>
 			+ DestroyFungibles<Self::AccountId>
@@ -119,21 +123,22 @@ pub mod pallet {
 		/// The type used for pool ids
 		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
 
-		type AssetId: FullCodec
-			+ Clone
-			+ Eq
-			+ PartialEq
-			+ sp_std::fmt::Debug
-			+ scale_info::TypeInfo
-			+ MaxEncodedLen
-			+ Default
-			+ Saturating
-			+ One;
+		type AssetId: Parameter + Member + FullCodec + TypeInfo + MaxEncodedLen + Saturating + One + Default;
 
 		type RuntimeHoldReason: From<HoldReason>;
-	}
 
-	type CurveParameterType = FixedU128;
+		type CurveParameterType: Parameter
+			+ Member
+			+ FixedPointNumber<Inner = u128>
+			+ TypeInfo
+			+ MaxEncodedLen
+			+ SquareRoot
+			+ Zero
+			+ CheckedAdd
+			+ CheckedSub;
+
+		type NormalizationFactor: Get<u8>;
+	}
 
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
@@ -197,11 +202,11 @@ pub mod pallet {
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn create_pool(
 			origin: OriginFor<T>,
-			curve: Curve<CurveParameterType>,
+			curve: Curve<CurveParameterTypeOf<T>>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			tradable: bool, // Todo: why do we need that?
 			state: PoolStatus<Locks>,
-			pool_manager: AccountIdOf<T>, // Todo: maybe change that back to owner.
+			pool_manager: AccountIdOf<T>,
 		) -> DispatchResult {
 			// ensure origin is PoolCreateOrigin
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
@@ -228,6 +233,7 @@ pub mod pallet {
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
+			// Todo: change that.
 			T::DepositCurrency::hold(
 				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&who,
@@ -253,6 +259,7 @@ pub mod pallet {
 				// TODO: use fungibles::roles::ResetTeam to update currency admin
 			}
 
+			// Touch the pool account in order to able to transfer the collateral currency to it
 			T::CollateralCurrency::touch(T::CollateralAssetId::get(), &pool_id.clone().into(), &who)?;
 
 			Pools::<T>::set(
@@ -379,7 +386,7 @@ pub mod pallet {
 
 			match &pool_details.curve {
 				Curve::RationalBondingFunction(_) => {
-					let target_denomination_normalization = 18;
+					let target_denomination_normalization = T::NormalizationFactor::get();
 
 					let currencies_metadata: Vec<(FungiblesBalanceOf<T>, u8)> = pool_details
 						.bonded_currencies
@@ -399,13 +406,13 @@ pub mod pallet {
 						amount_to_swap,
 					)?;
 
-					let normalized_collateral = transform_denomination_currency_amount(
+					let normalized_collateral = transform_denomination_currency_amount::<T>(
 						collateral.saturated_into::<u128>(),
 						currencies_metadata[from_idx_usize].1,
 						target_denomination_normalization,
 					)?;
 
-					let normalized_target_issuance = transform_denomination_currency_amount(
+					let normalized_target_issuance = transform_denomination_currency_amount::<T>(
 						amount_to_swap.clone().saturated_into(),
 						currencies_metadata[to_idx_usize].1,
 						target_denomination_normalization,
@@ -417,13 +424,15 @@ pub mod pallet {
 						.enumerate()
 						.filter(|(idx, _)| *idx != to_idx_usize)
 						.map(|(_, (x, d))| {
-							transform_denomination_currency_amount(
+							transform_denomination_currency_amount::<T>(
 								x.saturated_into::<u128>(),
 								d,
 								target_denomination_normalization,
 							)
 						})
-						.try_fold(FixedU128::zero(), |sum, result| result.map(|x| sum.saturating_add(x)))?;
+						.try_fold(CurveParameterTypeOf::<T>::zero(), |sum, result| {
+							result.map(|x| sum.saturating_add(x))
+						})?;
 
 					let ratio = normalized_target_issuance
 						.checked_div(&normalized_passive_issuances)
@@ -433,7 +442,7 @@ pub mod pallet {
 						.checked_div(&ratio)
 						.ok_or(ArithmeticError::DivisionByZero)?;
 
-					let raw_supply = transform_denomination_currency_amount(
+					let raw_supply = transform_denomination_currency_amount::<T>(
 						supply_to_mint.into_inner(),
 						target_denomination_normalization,
 						currencies_metadata[to_idx_usize].1,
@@ -594,29 +603,29 @@ pub mod pallet {
 		/// save usage of currency_ids.
 		pub fn get_collateral_diff(
 			kind: DiffKind,
-			curve: &Curve<CurveParameterType>,
+			curve: &Curve<CurveParameterTypeOf<T>>,
 			amount: &FungiblesBalanceOf<T>,
 			total_issuances: Vec<(FungiblesBalanceOf<T>, u8)>,
 			currency_idx: usize,
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
 			// todo: change that. We have also to restrict the denomination of the pool currencies maybe?
-			let target_denomination_normalization = 18;
-			let target_denomination_costs = 10;
+			let target_denomination_normalization = T::NormalizationFactor::get();
+			let target_denomination_costs = T::CollateralCurrency::decimals(T::CollateralAssetId::get());
 
 			let normalized_issuances = total_issuances
 				.clone()
 				.into_iter()
 				.map(|(x, d)| {
-					transform_denomination_currency_amount(
+					transform_denomination_currency_amount::<T>(
 						x.saturated_into::<u128>(),
 						d,
 						target_denomination_normalization,
 					)
 				})
-				.collect::<Result<Vec<FixedU128>, ArithmeticError>>()?;
+				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
 			// normalize the amount to mint
-			let normalized_amount = transform_denomination_currency_amount(
+			let normalized_amount = transform_denomination_currency_amount::<T>(
 				amount.clone().saturated_into(),
 				total_issuances[currency_idx].1,
 				target_denomination_normalization,
@@ -629,13 +638,13 @@ pub mod pallet {
 				.iter()
 				.enumerate()
 				.filter(|&(idx, _)| idx != currency_idx)
-				.fold(FixedU128::zero(), |sum, (_, x)| sum.saturating_add(*x));
+				.fold(CurveParameterTypeOf::<T>::zero(), |sum, (_, x)| sum.saturating_add(*x));
 
 			let normalize_cost =
 				curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance, kind)?;
 
 			// transform the cost back to the target denomination of the collateral currency
-			let real_costs = transform_denomination_currency_amount(
+			let real_costs = transform_denomination_currency_amount::<T>(
 				normalize_cost.into_inner(),
 				target_denomination_normalization,
 				target_denomination_costs,
@@ -649,10 +658,10 @@ pub mod pallet {
 
 		fn calculate_pre_post_issuances(
 			kind: &DiffKind,
-			amount: &FixedU128,
-			total_issuances: &[FixedU128],
+			amount: &CurveParameterTypeOf<T>,
+			total_issuances: &[CurveParameterTypeOf<T>],
 			currency_idx: usize,
-		) -> Result<(FixedU128, FixedU128), ArithmeticError> {
+		) -> Result<(CurveParameterTypeOf<T>, CurveParameterTypeOf<T>), ArithmeticError> {
 			let active_issuance_pre = total_issuances[currency_idx];
 			let active_issuance_post = match kind {
 				DiffKind::Mint => active_issuance_pre

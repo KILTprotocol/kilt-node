@@ -40,5 +40,8 @@ fn test_set_lock() {
 			let pool_details_after_tx = Pools::<Test>::get(&pool_id).expect("Pool should exist");
 
 			assert_eq!(pool_details_after_tx.state, PoolStatus::Locked(target_lock));
+
+			// check events
+			assert_eq!(events(), vec![crate::Event::<Test>::LockSet(pool_id)])
 		});
 }

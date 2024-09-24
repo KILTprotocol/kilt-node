@@ -31,10 +31,13 @@ fn test_burn_into_account() {
 		)
 		.expect("Cost calculation should not fail");
 
-	let expected_raw_return =
-		transform_denomination_currency_amount(expected_costs_normalized.into_inner(), 18, DEFAULT_BONDED_DENOMINATION)
-			.expect("Transforming costs should not fail")
-			.into_inner();
+	let expected_raw_return = transform_denomination_currency_amount::<Test>(
+		expected_costs_normalized.into_inner(),
+		18,
+		DEFAULT_BONDED_DENOMINATION,
+	)
+	.expect("Transforming costs should not fail")
+	.into_inner();
 
 	let collateral_balance_supply = one_collateral_currency * 10;
 

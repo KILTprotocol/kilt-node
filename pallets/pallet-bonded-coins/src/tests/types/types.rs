@@ -3,6 +3,7 @@ use sp_runtime::traits::Zero;
 
 use crate::{
 	curves_parameters::{transform_denomination_currency_amount, LinearBondingFunctionParameters},
+	mock::runtime::*,
 	types::{Curve, DiffKind},
 };
 
@@ -25,12 +26,18 @@ fn test_mint_first_coin() {
 	// single coin in pool. Passive issuance is zero.
 	let passive_issuance = FixedU128::zero();
 
-	let normalized_active_issuance_pre =
-		transform_denomination_currency_amount(active_issuance_pre, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
-	let normalized_active_issuance_post =
-		transform_denomination_currency_amount(active_issuance_post, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
+	let normalized_active_issuance_pre = transform_denomination_currency_amount::<Test>(
+		active_issuance_pre,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
+	let normalized_active_issuance_post = transform_denomination_currency_amount::<Test>(
+		active_issuance_post,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
 
 	// The cost to mint the first coin should be 4.
 	let costs = curve
@@ -59,12 +66,18 @@ fn test_mint_coin_with_existing_supply() {
 	// single coin in pool. Passive issuance is zero.
 	let passive_issuance = FixedU128::zero();
 
-	let normalized_active_issuance_pre =
-		transform_denomination_currency_amount(active_issuance_pre, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
-	let normalized_active_issuance_post =
-		transform_denomination_currency_amount(active_issuance_post, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
+	let normalized_active_issuance_pre = transform_denomination_currency_amount::<Test>(
+		active_issuance_pre,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
+	let normalized_active_issuance_post = transform_denomination_currency_amount::<Test>(
+		active_issuance_post,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
 
 	// Existing supply: 100^2 + 3*100 = 10300
 	// New supply: 110^2 + 3*110 = 12130
@@ -95,14 +108,20 @@ fn test_mint_coin_with_existing_passive_supply() {
 	// Multiple coins in pool. Passive issuance is 10.
 	let passive_issuance = ONE_COIN * 10;
 
-	let normalized_active_issuance_pre =
-		transform_denomination_currency_amount(active_issuance_pre, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
-	let normalized_active_issuance_post =
-		transform_denomination_currency_amount(active_issuance_post, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
+	let normalized_active_issuance_pre = transform_denomination_currency_amount::<Test>(
+		active_issuance_pre,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
+	let normalized_active_issuance_post = transform_denomination_currency_amount::<Test>(
+		active_issuance_post,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
 	let normalized_passive_issuance =
-		transform_denomination_currency_amount(passive_issuance, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
+		transform_denomination_currency_amount::<Test>(passive_issuance, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
 			.unwrap();
 
 	// The passive issuance should influence the price of the new selected currency.
@@ -135,14 +154,20 @@ fn test_mint_coin_with_existing_passive_supply_and_existing_active_supply() {
 	// Multiple coins in pool. Passive issuance is 10.
 	let passive_issuance = ONE_COIN * 10;
 
-	let normalized_active_issuance_pre =
-		transform_denomination_currency_amount(active_issuance_pre, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
-	let normalized_active_issuance_post =
-		transform_denomination_currency_amount(active_issuance_post, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
+	let normalized_active_issuance_pre = transform_denomination_currency_amount::<Test>(
+		active_issuance_pre,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
+	let normalized_active_issuance_post = transform_denomination_currency_amount::<Test>(
+		active_issuance_post,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
 	let normalized_passive_issuance =
-		transform_denomination_currency_amount(passive_issuance, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
+		transform_denomination_currency_amount::<Test>(passive_issuance, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
 			.unwrap();
 
 	// The passive issuance should influence the price of the new selected currency.
@@ -175,12 +200,18 @@ fn test_mint_first_coin_frac_bonding_curve() {
 	// single coin in pool. Passive issuance is zero.
 	let passive_issuance = FixedU128::zero();
 
-	let normalized_active_issuance_pre =
-		transform_denomination_currency_amount(active_issuance_pre, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
-	let normalized_active_issuance_post =
-		transform_denomination_currency_amount(active_issuance_post, CURRENT_DENOMINATION, NORMALIZED_DENOMINATION)
-			.unwrap();
+	let normalized_active_issuance_pre = transform_denomination_currency_amount::<Test>(
+		active_issuance_pre,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
+	let normalized_active_issuance_post = transform_denomination_currency_amount::<Test>(
+		active_issuance_post,
+		CURRENT_DENOMINATION,
+		NORMALIZED_DENOMINATION,
+	)
+	.unwrap();
 
 	// Existing supply: 1/2*(0)^2 + (0)*3 = 0
 	// New supply: 1/2*(1)^2 + (1)*3 = 3.5
