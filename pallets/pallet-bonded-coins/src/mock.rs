@@ -8,11 +8,11 @@ use frame_system::{EnsureRoot, EnsureSigned};
 use sp_arithmetic::FixedU128;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, MultiSignature,
+	BoundedVec, BuildStorage, FixedI128, MultiSignature,
 };
 
 use crate::{
-	curves_parameters::LinearBondingFunctionParameters,
+	curves_parameters::{LinearBondingFunctionParameters, SquareRoot},
 	types::{Curve, Locks, PoolStatus},
 	Config, DepositCurrencyBalanceOf, PoolDetailsOf,
 };
@@ -51,6 +51,18 @@ pub(crate) fn calculate_pool_id(currencies: Vec<AssetId>) -> AccountId {
 
 pub(crate) fn get_currency_unit(denomination: u8) -> Balance {
 	10u128.pow(denomination as u32)
+}
+
+// trait implementations
+
+impl SquareRoot for FixedI128 {
+	fn sqrt(self) -> Self {
+		self.sqrt()
+	}
+
+	fn try_sqrt(self) -> Option<Self> {
+		self.try_sqrt()
+	}
 }
 
 #[cfg(test)]

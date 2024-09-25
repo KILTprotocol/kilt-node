@@ -1,3 +1,4 @@
+use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
@@ -63,7 +64,7 @@ impl<F> BondingFunction<F> for LinearBondingFunctionParameters<F>
 where
 	F: FixedPointNumber,
 {
-	/// F(x) = m * x + n
+	/// F(x) = m * x^2 + xn
 	fn get_value(&self, x: F) -> Result<F, ArithmeticError> {
 		let x2 = Self::get_power_2(x)?;
 
@@ -71,6 +72,8 @@ where
 		let nx = self.n.clone().checked_mul(&x).ok_or(ArithmeticError::Overflow)?;
 
 		let result = mx2.checked_add(&nx).ok_or(ArithmeticError::Overflow)?;
+
+		ensure!(result >= F::zero(), ArithmeticError::Underflow);
 		Ok(result)
 	}
 }
@@ -100,6 +103,8 @@ where
 			.ok_or(ArithmeticError::Overflow)?
 			.checked_add(&ox)
 			.ok_or(ArithmeticError::Overflow)?;
+
+		ensure!(result >= F::zero(), ArithmeticError::Underflow);
 		Ok(result)
 	}
 }
@@ -114,14 +119,17 @@ impl<F> BondingFunction<F> for SquareRootBondingFunctionParameters<F>
 where
 	F: FixedPointNumber + SquareRoot,
 {
-	/// F(x) = m * sqrt(x^2) + n * x
+	/// F(x) = m * sqrt(x^3) + n * x
 	fn get_value(&self, x: F) -> Result<F, ArithmeticError> {
 		let x3 = Self::get_power_3(x)?;
-		let sqrt_x3 = x3.try_sqrt().ok_or(ArithmeticError::Overflow)?;
+		let sqrt_x3 = x3.try_sqrt().ok_or(ArithmeticError::Underflow)?;
 		let mx3 = self.m.clone().checked_mul(&sqrt_x3).ok_or(ArithmeticError::Overflow)?;
 		let nx = self.n.clone().checked_mul(&x).ok_or(ArithmeticError::Overflow)?;
 
-		mx3.checked_add(&nx).ok_or(ArithmeticError::Overflow)
+		let result = mx3.checked_add(&nx).ok_or(ArithmeticError::Overflow)?;
+
+		ensure!(result >= F::zero(), ArithmeticError::Underflow);
+		Ok(result)
 	}
 }
 

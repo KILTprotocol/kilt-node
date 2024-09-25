@@ -1,2 +1,2 @@
-mod curves_parameters;
+mod curve_parameters;
 mod types;

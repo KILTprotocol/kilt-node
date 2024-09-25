@@ -1,61 +1,12 @@
+mod linear_function;
+mod quadratic_function;
+mod square_root_function;
+
 use frame_support::assert_err;
 use sp_arithmetic::{ArithmeticError, FixedU128};
 use sp_runtime::traits::Zero;
 
-use crate::{
-	curves_parameters::{convert_currency_amount, BondingFunction, LinearBondingFunctionParameters},
-	mock::runtime::*,
-};
-
-#[test]
-fn test_linear_bonding_function_basic_test() {
-	let m = FixedU128::from_u32(1);
-	let n = FixedU128::from_u32(2);
-	let x = FixedU128::from_u32(1);
-
-	let curve = LinearBondingFunctionParameters { m, n };
-
-	// 1*1^2 + 2*1 = 3
-	let result = curve.get_value(x).unwrap();
-	assert_eq!(result, FixedU128::from_u32(3));
-}
-
-#[test]
-fn test_linear_bonding_function_fraction() {
-	let m = FixedU128::from_rational(1, 2);
-	let n = FixedU128::from_u32(2);
-	let x = FixedU128::from_u32(1);
-
-	let curve = LinearBondingFunctionParameters { m, n };
-
-	// 0.5*1^2 + 2*1 = 2.5
-	let result = curve.get_value(x).unwrap();
-	assert_eq!(result, FixedU128::from_rational(5, 2));
-}
-
-#[test]
-fn test_linear_bonding_overflow_n() {
-	let m = FixedU128::from_u32(1);
-	let n = FixedU128::from_inner(u128::MAX);
-	let x = FixedU128::from_u32(2);
-
-	let curve = LinearBondingFunctionParameters { m, n };
-
-	let result = curve.get_value(x);
-	assert_err!(result, ArithmeticError::Overflow);
-}
-
-#[test]
-fn test_linear_bonding_overflow_m() {
-	let m = FixedU128::from_inner(u128::MAX);
-	let n = FixedU128::from_inner(1);
-	let x = FixedU128::from_u32(2);
-
-	let curve = LinearBondingFunctionParameters { m, n };
-
-	let result = curve.get_value(x);
-	assert_err!(result, ArithmeticError::Overflow);
-}
+use crate::{curves_parameters::convert_currency_amount, mock::runtime::*};
 
 #[test]
 fn test_increase_denomination_currency_amount() {
