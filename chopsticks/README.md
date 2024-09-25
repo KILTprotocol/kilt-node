@@ -30,4 +30,4 @@ This process can be applied to every chain folder, also for multiple within the 
 
 When spawning a network, a temporary file called `.tmp.yaml` will be generated within each chain's folder.
 **THIS DOES NOT HAVE TO BE MANUALLY EDITED**, and it will be automatically cleaned up whenever the network spawning process is stopped.
-If, for any reason, this should not be the case, you can run `peregrine:cleanup` or `spiritnet:cleanup` to clean up these temporary files.
+If, for any reason, this should not be the case, you can run `yarn peregrine:cleanup` or `yarn spiritnet:cleanup` to clean up these temporary files.
