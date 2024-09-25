@@ -104,8 +104,7 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<F> {
-	LinearRatioCurve(curves_parameters::LinearBondingFunctionParameters<F>),
-	QuadraticRatioCurve(curves_parameters::QuadraticBondingFunctionParameters<F>),
+	PolynomialFunction(curves_parameters::PolynomialFunctionParameters<F>),
 	SquareRootBondingFunction(curves_parameters::SquareRootBondingFunctionParameters<F>),
 	RationalBondingFunction(curves_parameters::RationalBondingFunctionParameters<F>),
 }
@@ -138,8 +137,7 @@ where
 		};
 
 		match self {
-			Curve::LinearRatioCurve(params) => params.calculate_costs(low, high),
-			Curve::QuadraticRatioCurve(params) => params.calculate_costs(low, high),
+			Curve::PolynomialFunction(params) => params.calculate_costs(low, high),
 			Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
 			// TODO: This is probably a bug.
 			Curve::RationalBondingFunction(params) => params.calculate_costs(

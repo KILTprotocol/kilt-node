@@ -2,11 +2,11 @@ use frame_support::assert_err;
 use sp_arithmetic::{ArithmeticError, FixedI128, FixedU128};
 use sp_runtime::FixedPointNumber;
 
-use crate::curves_parameters::{BondingFunction, QuadraticBondingFunctionParameters};
+use crate::curves_parameters::{BondingFunction, PolynomialFunctionParameters};
 
 #[test]
 fn test_all_zero() {
-	let params = QuadraticBondingFunctionParameters {
+	let params = PolynomialFunctionParameters {
 		m: FixedU128::from(0),
 		n: FixedU128::from(0),
 		o: FixedU128::from(0),
@@ -22,7 +22,7 @@ fn test_basic_test() {
 	let o = FixedU128::from_u32(3);
 	let x = FixedU128::from_u32(1);
 
-	let curve = QuadraticBondingFunctionParameters { m, n, o };
+	let curve = PolynomialFunctionParameters { m, n, o };
 
 	// 1*1^3 + 2*1^2 + 3* 1 = 6
 	let result = curve.get_value(x).unwrap();
@@ -36,7 +36,7 @@ fn test_fraction() {
 	let o = FixedU128::from_u32(3);
 	let x = FixedU128::from_u32(1);
 
-	let curve = QuadraticBondingFunctionParameters { m, n, o };
+	let curve = PolynomialFunctionParameters { m, n, o };
 
 	// 0.5*1^3 + 2*1^2 + 3* 1 = 5.5
 	let result = curve.get_value(x).unwrap();
@@ -45,7 +45,7 @@ fn test_fraction() {
 
 #[test]
 fn test_large_values() {
-	let params = QuadraticBondingFunctionParameters {
+	let params = PolynomialFunctionParameters {
 		m: FixedU128::from_u32(1000000),
 		n: FixedU128::from_u32(1000000),
 		o: FixedU128::from_u32(1000000),
@@ -57,7 +57,7 @@ fn test_large_values() {
 
 #[test]
 fn test_large_x() {
-	let params = QuadraticBondingFunctionParameters {
+	let params = PolynomialFunctionParameters {
 		m: FixedU128::from(2),
 		n: FixedU128::from(3),
 		o: FixedU128::from(4),
@@ -70,7 +70,7 @@ fn test_large_x() {
 
 #[test]
 fn test_negative() {
-	let params = QuadraticBondingFunctionParameters {
+	let params = PolynomialFunctionParameters {
 		m: FixedI128::from(2),
 		n: FixedI128::from(3),
 		o: FixedI128::from(4),
@@ -83,7 +83,7 @@ fn test_negative() {
 
 #[test]
 fn test_negative_m() {
-	let params = QuadraticBondingFunctionParameters {
+	let params = PolynomialFunctionParameters {
 		m: FixedI128::from(-2),
 		n: FixedI128::from(3),
 		o: FixedI128::from(4),
@@ -95,7 +95,7 @@ fn test_negative_m() {
 
 #[test]
 fn test_negative_m_and_n() {
-	let params = QuadraticBondingFunctionParameters {
+	let params = PolynomialFunctionParameters {
 		m: FixedI128::from(-2),
 		n: FixedI128::from(-3),
 		o: FixedI128::from(4),
@@ -108,7 +108,7 @@ fn test_negative_m_and_n() {
 
 #[test]
 fn test_negative_m_n_and_o() {
-	let params = QuadraticBondingFunctionParameters {
+	let params = PolynomialFunctionParameters {
 		m: FixedI128::from(-2),
 		n: FixedI128::from(-3),
 		o: FixedI128::from(-4),
@@ -121,7 +121,7 @@ fn test_negative_m_n_and_o() {
 
 #[test]
 fn test_negative_n() {
-	let params = QuadraticBondingFunctionParameters {
+	let params = PolynomialFunctionParameters {
 		m: FixedI128::from(2),
 		n: FixedI128::from(-3),
 		o: FixedI128::from(4),
@@ -138,7 +138,7 @@ fn test_overflow_m() {
 	let o = FixedU128::from_inner(1);
 	let x = FixedU128::from_u32(2);
 
-	let curve = QuadraticBondingFunctionParameters { m, n, o };
+	let curve = PolynomialFunctionParameters { m, n, o };
 
 	let result = curve.get_value(x);
 	assert_err!(result, ArithmeticError::Overflow);
@@ -151,7 +151,7 @@ fn test_overflow_n() {
 	let o = FixedU128::from_u32(1);
 	let x = FixedU128::from_u32(2);
 
-	let curve = QuadraticBondingFunctionParameters { m, n, o };
+	let curve = PolynomialFunctionParameters { m, n, o };
 
 	let result = curve.get_value(x);
 	assert_err!(result, ArithmeticError::Overflow);
@@ -164,7 +164,7 @@ fn test_overflow_o() {
 	let o = FixedU128::from_inner(u128::MAX);
 	let x = FixedU128::from_u32(2);
 
-	let curve = QuadraticBondingFunctionParameters { m, n, o };
+	let curve = PolynomialFunctionParameters { m, n, o };
 
 	let result = curve.get_value(x);
 	assert_err!(result, ArithmeticError::Overflow);
@@ -177,7 +177,7 @@ fn test_precision_large_fraction() {
 	let o = FixedU128::from_rational(999999, 1000000); // 0.999999
 	let x = FixedU128::from_rational(999999, 1000000); // 0.999999
 
-	let curve = QuadraticBondingFunctionParameters { m, n, o };
+	let curve = PolynomialFunctionParameters { m, n, o };
 
 	// 0.999999*(0.999999^3) + 0.999999*0.999999^2 + 0.999999*0.999999
 	// = 2.999991000009999995000001
@@ -195,7 +195,7 @@ fn test_precision_mixed_fraction() {
 	let o = FixedU128::from_rational(1, 2);
 	let x = FixedU128::from_u32(1); // 1
 
-	let curve = QuadraticBondingFunctionParameters { m, n, o };
+	let curve = PolynomialFunctionParameters { m, n, o };
 
 	// 0.3*(1^3) + 0.75*1^2 + 0.5*1
 	// = 1.55
@@ -212,7 +212,7 @@ fn test_precision_small_fraction() {
 	// 1
 	let x = FixedU128::from_u32(1);
 
-	let curve = QuadraticBondingFunctionParameters { m, n, o };
+	let curve = PolynomialFunctionParameters { m, n, o };
 
 	// 0.001*(1^3) + 0.001*1^2 + 0.001*1
 	// = 0.003
@@ -222,7 +222,7 @@ fn test_precision_small_fraction() {
 
 #[test]
 fn test_zero_x() {
-	let params = QuadraticBondingFunctionParameters {
+	let params = PolynomialFunctionParameters {
 		m: FixedI128::from(2),
 		n: FixedI128::from(3),
 		o: FixedI128::from(4),

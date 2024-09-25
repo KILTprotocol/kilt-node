@@ -1,6 +1,7 @@
-mod linear_function;
 mod quadratic_function;
 mod square_root_function;
+
+mod ratio_function;
 
 use frame_support::assert_err;
 use sp_arithmetic::{ArithmeticError, FixedU128};

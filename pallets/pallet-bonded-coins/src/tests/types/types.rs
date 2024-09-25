@@ -2,7 +2,7 @@ use sp_arithmetic::FixedU128;
 use sp_runtime::{traits::Zero, FixedPointNumber};
 
 use crate::{
-	curves_parameters::{convert_currency_amount, LinearBondingFunctionParameters},
+	curves_parameters::{convert_currency_amount, PolynomialFunctionParameters},
 	mock::runtime::*,
 	types::{Curve, DiffKind},
 };
@@ -14,9 +14,10 @@ const ONE_COIN: u128 = CURRENT_DENOMINATION;
 #[test]
 fn test_mint_first_coin() {
 	// Create curve with shape f(x) = 2x + 3, resulting into integral function F(x) = x^2 + 3x
-	let m = FixedU128::from_u32(1);
-	let n = FixedU128::from_u32(3);
-	let curve = Curve::LinearRatioCurve(LinearBondingFunctionParameters { m, n });
+	let m = FixedU128::from_u32(0);
+	let n = FixedU128::from_u32(1);
+	let o = FixedU128::from_u32(3);
+	let curve = Curve::PolynomialFunction(PolynomialFunctionParameters { m, n, o });
 
 	// Create supply, where denomination is 15. Active issuance is zero.
 	let active_issuance_pre: u128 = 0;
@@ -46,9 +47,10 @@ fn test_mint_first_coin() {
 #[test]
 fn test_mint_coin_with_existing_supply() {
 	// Create curve with shape f(x) = 2x + 3, resulting into integral function F(x) = x^2 + 3x
-	let m = FixedU128::from_u32(1);
-	let n = FixedU128::from_u32(3);
-	let curve = Curve::LinearRatioCurve(LinearBondingFunctionParameters { m, n });
+	let m = FixedU128::from_u32(0);
+	let n = FixedU128::from_u32(1);
+	let o = FixedU128::from_u32(3);
+	let curve = Curve::PolynomialFunction(PolynomialFunctionParameters { m, n, o });
 
 	// Create supply. Active issuance is 100. We want to mint 10 additional coins.
 	let active_issuance_pre: u128 = ONE_COIN * 100;
@@ -80,9 +82,10 @@ fn test_mint_coin_with_existing_supply() {
 #[test]
 fn test_mint_coin_with_existing_passive_supply() {
 	// Create curve with shape f(x) = 2x + 3, resulting into integral function F(x) = x^2 + 3x
-	let m = FixedU128::from_u32(1);
-	let n = FixedU128::from_u32(3);
-	let curve = Curve::LinearRatioCurve(LinearBondingFunctionParameters { m, n });
+	let m = FixedU128::from_u32(0);
+	let n = FixedU128::from_u32(1);
+	let o = FixedU128::from_u32(3);
+	let curve = Curve::PolynomialFunction(PolynomialFunctionParameters { m, n, o });
 
 	// Create supply. Active issuance is Zero. We only mint a single coin.
 	let active_issuance_pre: u128 = 0;
@@ -117,9 +120,10 @@ fn test_mint_coin_with_existing_passive_supply() {
 #[test]
 fn test_mint_coin_with_existing_passive_supply_and_existing_active_supply() {
 	// Create curve with shape f(x) = 2x + 3, resulting into integral function F(x) = x^2 + 3x
-	let m = FixedU128::from_u32(1);
-	let n = FixedU128::from_u32(3);
-	let curve = Curve::LinearRatioCurve(LinearBondingFunctionParameters { m, n });
+	let m = FixedU128::from_u32(0);
+	let n = FixedU128::from_u32(1);
+	let o = FixedU128::from_u32(3);
+	let curve = Curve::PolynomialFunction(PolynomialFunctionParameters { m, n, o });
 
 	// Create supply. Active issuance is 10. We mint 10 additional coins.
 	let active_issuance_pre: u128 = ONE_COIN * 10;
@@ -154,9 +158,10 @@ fn test_mint_coin_with_existing_passive_supply_and_existing_active_supply() {
 #[test]
 fn test_mint_first_coin_frac_bonding_curve() {
 	// Create curve with shape f(x) = x + 3, resulting into integral function F(x) = 1/2*x^2 + 3x
-	let m = FixedU128::from_rational(1, 2);
-	let n = FixedU128::from_u32(3);
-	let curve = Curve::LinearRatioCurve(LinearBondingFunctionParameters { m, n });
+	let m = FixedU128::from_u32(0);
+	let n = FixedU128::from_rational(1, 2);
+	let o = FixedU128::from_u32(3);
+	let curve = Curve::PolynomialFunction(PolynomialFunctionParameters { m, n, o });
 
 	// Create supply, where denomination is 15. Active issuance is zero.
 	let active_issuance_pre: u128 = 0;

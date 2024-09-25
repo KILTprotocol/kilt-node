@@ -12,7 +12,7 @@ use sp_runtime::{
 };
 
 use crate::{
-	curves_parameters::{LinearBondingFunctionParameters, SquareRoot},
+	curves_parameters::{PolynomialFunctionParameters, SquareRoot},
 	types::{Curve, Locks, PoolStatus},
 	Config, DepositCurrencyBalanceOf, PoolDetailsOf,
 };
@@ -40,9 +40,10 @@ pub const UNIT_NATIVE: Balance = 10u128.pow(15);
 // helper functions
 
 pub(crate) fn get_linear_bonding_curve() -> Curve<FixedU128> {
-	let m = FixedU128::from_u32(2);
-	let n = FixedU128::from_u32(3);
-	Curve::LinearRatioCurve(LinearBondingFunctionParameters { m, n })
+	let m = FixedU128::from_u32(0);
+	let n = FixedU128::from_u32(2);
+	let o = FixedU128::from_u32(3);
+	Curve::PolynomialFunction(PolynomialFunctionParameters { m, n, o })
 }
 
 pub(crate) fn calculate_pool_id(currencies: Vec<AssetId>) -> AccountId {

@@ -51,41 +51,14 @@ pub trait BondingFunction<F: FixedPointNumber> {
 	}
 }
 
-/// A linear bonding function with the shape of f(x) = mx + n,
-///  which results in the primitive integral F(x) = m' * x^2 + n * x.
-/// It is expected that the user provides the correct parameters for the curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct LinearBondingFunctionParameters<F> {
-	pub m: F,
-	pub n: F,
-}
-
-impl<F> BondingFunction<F> for LinearBondingFunctionParameters<F>
-where
-	F: FixedPointNumber,
-{
-	/// F(x) = m * x^2 + xn
-	fn get_value(&self, x: F) -> Result<F, ArithmeticError> {
-		let x2 = Self::get_power_2(x)?;
-
-		let mx2 = self.m.clone().checked_mul(&x2).ok_or(ArithmeticError::Overflow)?;
-		let nx = self.n.clone().checked_mul(&x).ok_or(ArithmeticError::Overflow)?;
-
-		let result = mx2.checked_add(&nx).ok_or(ArithmeticError::Overflow)?;
-
-		ensure!(result >= F::zero(), ArithmeticError::Underflow);
-		Ok(result)
-	}
-}
-
-#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct QuadraticBondingFunctionParameters<F> {
+pub struct PolynomialFunctionParameters<F> {
 	pub m: F,
 	pub n: F,
 	pub o: F,
 }
 
-impl<F> BondingFunction<F> for QuadraticBondingFunctionParameters<F>
+impl<F> BondingFunction<F> for PolynomialFunctionParameters<F>
 where
 	F: FixedPointNumber,
 {
