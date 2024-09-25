@@ -232,7 +232,7 @@ pub(crate) mod runtime {
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -264,7 +264,7 @@ pub(crate) mod runtime {
 		type MaxFreezes = MaxFreezes;
 		type Balance = Balance;
 		type DustRemoval = ();
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -288,7 +288,7 @@ pub(crate) mod runtime {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OverarchingOrigin = EnsureSigned<AccountId>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type WeightInfo = ();
 
 		type Currency = Balances;
@@ -305,7 +305,7 @@ pub(crate) mod runtime {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, DelegatorIdOf<Self>>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, DelegatorIdOf<Self>>;
 		type RuntimeHoldReason = RuntimeHoldReason;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type WeightInfo = ();
 
 		type Currency = Balances;
@@ -335,7 +335,7 @@ pub(crate) mod runtime {
 		type DelegationNodeId = Hash;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::DelegationEntityId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::DelegationEntityId>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type MaxSignatureByteLength = MaxSignatureByteLength;
 		type MaxParentChecks = MaxParentChecks;
 		type MaxRevocations = MaxRevocations;
@@ -503,6 +503,10 @@ pub(crate) mod runtime {
 			let mut ext = sp_io::TestExternalities::new(storage);
 
 			ext.execute_with(|| {
+				// ensure that we are not at the genesis block. Events are not registered for
+				// the genesis block.
+				System::set_block_number(System::block_number() + 1);
+
 				for (ctype_hash, owner) in self.ctypes.iter() {
 					ctype::Ctypes::<Test>::insert(
 						ctype_hash,

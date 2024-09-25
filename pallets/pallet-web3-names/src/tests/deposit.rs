@@ -21,7 +21,7 @@ use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use kilt_support::{mock::mock_origin, Deposit};
 use sp_runtime::{traits::Zero, TokenError};
 
-use crate::{mock::*, Config, Error, HoldReason, Owner, Pallet};
+use crate::{mock::*, Config, Error, Event, HoldReason, Owner, Pallet};
 
 #[test]
 fn test_change_deposit_owner() {
@@ -48,6 +48,13 @@ fn test_change_deposit_owner() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				<Test as Config>::Deposit::get()
 			);
+			assert!(System::events().iter().any(|e| e.event
+				== Event::<Test>::DepositOwnerChanged {
+					id: web3_name_00.clone(),
+					from: ACCOUNT_00,
+					to: ACCOUNT_01
+				}
+				.into()));
 		})
 }
 

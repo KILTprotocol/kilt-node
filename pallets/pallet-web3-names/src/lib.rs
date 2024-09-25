@@ -162,6 +162,15 @@ pub mod pallet {
 		Web3NameBanned { name: Web3NameOf<T> },
 		/// A name has been unbanned.
 		Web3NameUnbanned { name: Web3NameOf<T> },
+		/// The deposit for a web3name has changed owner.
+		DepositOwnerChanged {
+			/// The web3name whose deposit owner changed.
+			id: Web3NameOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -353,11 +362,18 @@ pub mod pallet {
 		pub fn change_deposit_owner(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
+			let sender = source.sender();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::NotFound)?;
-			Web3NameStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&name,
-				source.sender(),
-			)?;
+
+			let old_deposit_owner = Web3NameStorageDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&name, sender.clone())?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				id: name,
+				from: old_deposit_owner,
+				to: sender,
+			});
 
 			Ok(())
 		}
