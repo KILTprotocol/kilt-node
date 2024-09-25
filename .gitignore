@@ -17,10 +17,8 @@
 # ignore vscode settings
 .vscode
 
-**/__pycache__
-
 **/node_modules
 
 runtimes/spiritnet/src/xcm_tests/e2e/out
 
-*.db.sqlite*
+chopsticks/**/db.sqlite*

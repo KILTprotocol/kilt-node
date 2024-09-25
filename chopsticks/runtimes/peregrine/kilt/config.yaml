@@ -1,0 +1,3 @@
+endpoint:
+    - wss://peregrine.kilt.io
+db: db/peregrine/kilt/db.sqlite
