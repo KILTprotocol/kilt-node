@@ -22,7 +22,7 @@ So, if for example the sudo key for the Peregrine network must be overridden, fo
 
 1. Create the file `runtimes/peregrine/kilt/extra.yaml`.
 2. Copy the content of [`storage.example.yaml`](./examples/storage.example.yaml) into `runtimes/peregrine/kilt/extra.yaml`.
-3. From within the `chopsticks` directory run `peregrine:spawn`.
+3. From within the `chopsticks` directory run `yarn peregrine:spawn`.
 
 This process can be applied to every chain folder, also for multiple within the same environment, e.g., the sudo key for PILT and the sudo key for Paseo can be overridden by having two `extra.yaml` files within each folder.
 
