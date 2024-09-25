@@ -22,3 +22,4 @@
 runtimes/spiritnet/src/xcm_tests/e2e/out
 
 chopsticks/**/db.sqlite*
+chopsticks/**/extra.yaml
