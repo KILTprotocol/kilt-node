@@ -141,6 +141,7 @@ where
 			Curve::LinearRatioCurve(params) => params.calculate_costs(low, high),
 			Curve::QuadraticRatioCurve(params) => params.calculate_costs(low, high),
 			Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
+			// TODO: This is probably a bug.
 			Curve::RationalBondingFunction(params) => params.calculate_costs(
 				(active_issuance_pre, passive_issuance),
 				(active_issuance_post, passive_issuance),

@@ -2,7 +2,7 @@ use frame_support::assert_ok;
 use sp_runtime::{traits::Zero, FixedPointNumber, FixedU128};
 
 use crate::{
-	curves_parameters::transform_denomination_currency_amount,
+	curves_parameters::convert_currency_amount,
 	mock::{runtime::*, *},
 	types::{DiffKind, PoolStatus},
 };
@@ -29,7 +29,7 @@ fn test_burn_into_account() {
 		)
 		.expect("Cost calculation should not fail");
 
-	let expected_raw_return = transform_denomination_currency_amount::<Test>(
+	let expected_raw_return = convert_currency_amount::<Test>(
 		expected_costs_normalized.into_inner(),
 		FixedU128::DIV,
 		10u128.pow(DEFAULT_BONDED_DENOMINATION.into()),

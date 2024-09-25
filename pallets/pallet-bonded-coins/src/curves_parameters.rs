@@ -1,10 +1,14 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
-use sp_runtime::{FixedPointNumber, FixedU128};
+use sp_runtime::{
+	traits::{CheckedDiv, Zero},
+	DispatchError, FixedPointNumber, FixedU128, SaturatedConversion, Saturating,
+};
 use sp_std::marker::PhantomData;
 
-use crate::{Config, CurveParameterTypeOf};
+use crate::{CollateralCurrencyBalanceOf, Config, CurveParameterTypeOf, Error, FungiblesBalanceOf};
+
 /// Little helper trait to calculate the square root of Fixed, in order to maintain the generic.
 pub trait SquareRoot: Sized {
 	fn try_sqrt(self) -> Option<Self>;
@@ -176,9 +180,67 @@ where
 			.checked_add(&b_divided_sum_squared_multiplied_multiplied)
 			.ok_or(ArithmeticError::Overflow)
 	}
+
+	pub fn process_swap<T: Config>(
+		&self,
+		currencies_metadata: Vec<(FungiblesBalanceOf<T>, u128)>,
+		collateral_meta: (CollateralCurrencyBalanceOf<T>, u128),
+		to_idx_usize: usize,
+	) -> Result<FungiblesBalanceOf<T>, DispatchError> {
+		let normalized_denomination = CurveParameterTypeOf::<T>::DIV;
+
+		let (collateral, denomination) = collateral_meta;
+
+		let normalized_collateral = convert_currency_amount::<T>(
+			collateral.saturated_into::<u128>(),
+			denomination,
+			normalized_denomination,
+		)?;
+
+		let target_issuance = currencies_metadata
+			.get(to_idx_usize)
+			.ok_or(Error::<T>::IndexOutOfBounds)?
+			.0;
+
+		let normalized_target_issuance = convert_currency_amount::<T>(
+			target_issuance.clone().saturated_into(),
+			currencies_metadata
+				.get(to_idx_usize)
+				.ok_or(Error::<T>::IndexOutOfBounds)?
+				.1,
+			normalized_denomination,
+		)?;
+
+		let normalized_total_issuances = currencies_metadata
+			.clone()
+			.into_iter()
+			.map(|(x, d)| convert_currency_amount::<T>(x.saturated_into::<u128>(), d, normalized_denomination))
+			.try_fold(CurveParameterTypeOf::<T>::zero(), |sum, result| {
+				result.map(|x| sum.saturating_add(x))
+			})?;
+
+		let ratio = normalized_target_issuance
+			.checked_div(&normalized_total_issuances)
+			.ok_or(ArithmeticError::DivisionByZero)?;
+
+		let supply_to_mint = normalized_collateral
+			.checked_div(&ratio)
+			.ok_or(ArithmeticError::DivisionByZero)?;
+
+		let raw_supply = convert_currency_amount::<T>(
+			supply_to_mint.into_inner(),
+			normalized_denomination,
+			currencies_metadata
+				.get(to_idx_usize)
+				.ok_or(Error::<T>::IndexOutOfBounds)?
+				.1,
+		)?;
+
+		Ok(raw_supply.into_inner().saturated_into())
+	}
 }
 
-pub fn transform_denomination_currency_amount<T: Config>(
+pub fn convert_currency_amount<T: Config>(
 	amount: u128,
 	current_denomination: u128,
 	target_denomination: u128,
