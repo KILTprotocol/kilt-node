@@ -15,7 +15,7 @@ fn test_all_zero() {
 }
 
 #[test]
-fn test_basic_test() {
+fn test_basic() {
 	let m = FixedU128::from_u32(1);
 	let n = FixedU128::from_u32(2);
 	let x = FixedU128::from_u32(1);

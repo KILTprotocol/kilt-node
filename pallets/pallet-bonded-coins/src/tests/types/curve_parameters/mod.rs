@@ -1,4 +1,4 @@
-mod quadratic_function;
+mod polynomial_function;
 mod square_root_function;
 
 mod ratio_function;

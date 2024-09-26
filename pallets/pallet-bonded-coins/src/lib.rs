@@ -46,7 +46,7 @@ pub mod pallet {
 	use sp_std::{default::Default, iter::Iterator, vec::Vec};
 
 	use crate::{
-		curves_parameters::{convert_currency_amount, SquareRoot},
+		curves_parameters::{convert_currency_amount, RationalBondingFunctionParameters, SquareRoot},
 		types::{Curve, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta},
 	};
 
@@ -385,7 +385,7 @@ pub mod pallet {
 			let to_idx_usize: usize = to_idx.saturated_into();
 
 			match &pool_details.curve {
-				Curve::RationalBondingFunction(para) => {
+				Curve::RationalBondingFunction => {
 					let collateral = Self::burn_pool_currency_and_calculate_collateral(
 						&pool_details,
 						from_idx_usize,
@@ -397,7 +397,7 @@ pub mod pallet {
 
 					let currencies_metadata = Self::get_currencies_metadata(&pool_details)?;
 
-					let raw_supply = para.process_swap::<T>(
+					let raw_supply = RationalBondingFunctionParameters::<T::CurveParameterType>::process_swap::<T>(
 						currencies_metadata,
 						(collateral, collateral_denomination),
 						to_idx_usize,

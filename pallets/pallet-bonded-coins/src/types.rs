@@ -2,7 +2,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{ArithmeticError, FixedPointNumber};
 
-use crate::curves_parameters::{self, BondingFunction, SquareRoot};
+use crate::curves_parameters::{self, BondingFunction, RationalBondingFunctionParameters, SquareRoot};
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub struct Locks {
@@ -106,7 +106,7 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 pub enum Curve<F> {
 	PolynomialFunction(curves_parameters::PolynomialFunctionParameters<F>),
 	SquareRootBondingFunction(curves_parameters::SquareRootBondingFunctionParameters<F>),
-	RationalBondingFunction(curves_parameters::RationalBondingFunctionParameters<F>),
+	RationalBondingFunction,
 }
 
 pub enum DiffKind {
@@ -140,7 +140,7 @@ where
 			Curve::PolynomialFunction(params) => params.calculate_costs(low, high),
 			Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
 			// TODO: This is probably a bug.
-			Curve::RationalBondingFunction(params) => params.calculate_costs(
+			Curve::RationalBondingFunction => RationalBondingFunctionParameters::<F>::calculate_costs(
 				(active_issuance_pre, passive_issuance),
 				(active_issuance_post, passive_issuance),
 			),
