@@ -5,10 +5,11 @@ use crate::{
 	curves_parameters::{convert_currency_amount, PolynomialFunctionParameters},
 	mock::runtime::*,
 	types::{Curve, DiffKind},
+	CurveParameterTypeOf,
 };
 // target denomination for collateral currency
 const CURRENT_DENOMINATION: u128 = 10u128.pow(15);
-const NORMALIZED_DENOMINATION: u128 = FixedU128::DIV;
+const NORMALIZED_DENOMINATION: u128 = CurveParameterTypeOf::<Test>::DIV;
 const ONE_COIN: u128 = CURRENT_DENOMINATION;
 
 #[test]
@@ -189,5 +190,3 @@ fn test_mint_first_coin_frac_bonding_curve() {
 
 	assert_eq!(costs, FixedU128::from_rational(7, 2));
 }
-
-// TODO add more tests for passive and existing active supply.

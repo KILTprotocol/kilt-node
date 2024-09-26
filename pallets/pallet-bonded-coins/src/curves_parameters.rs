@@ -12,15 +12,15 @@ use sp_std::marker::PhantomData;
 use crate::{CollateralCurrencyBalanceOf, Config, CurveParameterTypeOf, Error, FungiblesBalanceOf};
 
 // Utility functions
-mod utils {
+pub(crate) mod utils {
 	use super::*;
 
 	pub fn get_power_2<F: FixedPointNumber>(x: F) -> Result<F, ArithmeticError> {
-		Ok(x.saturating_mul(x))
+		x.checked_mul(&x).ok_or(ArithmeticError::Overflow)
 	}
 
 	pub fn get_power_3<F: FixedPointNumber>(x: F) -> Result<F, ArithmeticError> {
-		Ok(get_power_2(x)?.saturating_mul(x))
+		get_power_2(x)?.checked_mul(&x).ok_or(ArithmeticError::Overflow)
 	}
 }
 
