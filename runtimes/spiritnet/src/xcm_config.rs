@@ -17,8 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balances, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-	RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet, MessageQueue,
+	ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury,
+	WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
@@ -27,6 +28,10 @@ use frame_support::{
 	traits::{Contains, Everything, Nothing, TransformOrigin},
 };
 use frame_system::EnsureRoot;
+use pallet_asset_switch::xcm::{
+	IsSwitchPairRemoteAsset, IsSwitchPairXcmFeeAsset, MatchesSwitchPairXcmFeeFungibleAsset,
+	SwitchPairRemoteAssetTransactor, UsingComponentsForSwitchPairRemoteAsset, UsingComponentsForXcmFeeAsset,
+};
 use pallet_xcm::XcmPassthrough;
 use parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling};
 use polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery;
@@ -35,9 +40,9 @@ use sp_std::prelude::ToOwned;
 use xcm::v4::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
-	EnsureXcmOrigin, FixedWeightBounds, FrameTransactionalProcessor, NativeAsset, RelayChainAsNative,
-	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-	TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
+	EnsureXcmOrigin, FixedWeightBounds, FrameTransactionalProcessor, FungiblesAdapter, NativeAsset, NoChecking,
+	RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32,
+	SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -161,6 +166,10 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 			_ => is_call_allowed(c),
 		}
 	}
+}
+
+parameter_types! {
+	pub TreasuryAccountId: AccountId = Treasury::account_id();
 }
 
 pub struct XcmConfig;
