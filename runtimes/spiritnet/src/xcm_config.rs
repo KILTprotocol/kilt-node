@@ -169,9 +169,30 @@ impl xcm_executor::Config for XcmConfig {
 	// How we send Xcm messages.
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
-	type AssetTransactor = LocalAssetTransactor<Balances, RelayNetworkId>;
+	// Until fixed, `LocalAssetTransactor` must be last since it returns an error if
+	// the operation does not go through, i.e., it cannot be chained with other
+	// transactors.
+	type AssetTransactor = (
+		// Allow the asset from the other side of the pool to be "deposited" into the current system.
+		SwitchPairRemoteAssetTransactor<LocationToAccountIdConverter, Runtime, KiltToEKiltSwitchPallet>,
+		// Allow the asset to pay for remote XCM fees to be deposited into the current system.
+		FungiblesAdapter<
+			Fungibles,
+			MatchesSwitchPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwitchPallet>,
+			LocationToAccountIdConverter,
+			AccountId,
+			NoChecking,
+			CheckingAccount,
+		>,
+		// Transactor for fungibles matching the "Here" location.
+		LocalAssetTransactor<Balances, RelayNetworkId>,
+	);
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	type IsReserve = NativeAsset;
+	type IsReserve = (
+		NativeAsset,
+		IsSwitchPairRemoteAsset<Runtime, KiltToEKiltSwitchPallet>,
+		IsSwitchPairXcmFeeAsset<Runtime, KiltToEKiltSwitchPallet>,
+	);
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	type UniversalLocation = UniversalLocation;
@@ -183,8 +204,20 @@ impl xcm_executor::Config for XcmConfig {
 	// How weight is transformed into fees. The fees are not taken out of the
 	// Balances pallet here. Balances is only used if fees are dropped without being
 	// used. In that case they are put into the treasury.
-	type Trader =
-		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, SendDustAndFeesToTreasury<Runtime>>;
+
+	type Trader = (
+		// Can pay for fees with the remote XCM asset fee (when sending it into this system).
+		UsingComponentsForXcmFeeAsset<Runtime, KiltToEKiltSwitchPallet, WeightToFee<Runtime>>,
+		// Can pay for the remote asset of the switch pair (when "depositing" it into this system).
+		UsingComponentsForSwitchPairRemoteAsset<
+			Runtime,
+			KiltToEKiltSwitchPallet,
+			WeightToFee<Runtime>,
+			TreasuryAccountId,
+		>,
+		// Can pay with the fungible that matches the "Here" location.
+		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, SendDustAndFeesToTreasury<Runtime>>,
+	);
 	type ResponseHandler = PolkadotXcm;
 	// What happens with assets that are left in the register after the XCM message
 	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset
