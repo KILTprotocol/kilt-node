@@ -490,11 +490,11 @@ pub mod pallet {
 					weight_limit: WeightLimit::Unlimited,
 					fees: remote_asset_fee_v4.clone(),
 				},
+				SetAppendix(appendix),
 				TransferAsset {
 					assets: (asset_id_v4, remote_asset_amount_as_u128).into(),
 					beneficiary: beneficiary_v4,
 				},
-				SetAppendix(appendix),
 			]
 			.into();
 			let xcm_ticket =
