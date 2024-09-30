@@ -27,13 +27,11 @@ use scale_info::TypeInfo;
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
 use crate::{
-	merkle_proofs::v0::RevealedDidKey,
-	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
-	utils::OutputOf,
-	DipOriginInfo, ParachainDipDidProof,
+	merkle_proofs::v0::RevealedDidKey, parachain::v1::{CrossChainProof, IdentityDetailsChecks}, traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable}, utils::OutputOf, DipOriginInfo, ParachainDipDidProof
 };
 
 pub mod v0;
+pub mod v1;
 
 mod error;
 pub use error::*;
@@ -51,9 +49,10 @@ pub enum VersionedDipParachainStateProof<
 	KiltWeb3Name,
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
+	DidRoot
 > {
 	V0(
-		ParachainDipDidProof<
+		ParachainDipDidProof< 
 			RelayBlockNumber,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -61,6 +60,18 @@ pub enum VersionedDipParachainStateProof<
 			KiltWeb3Name,
 			KiltLinkableAccountId,
 			ConsumerBlockNumber,
+		>,
+	),
+	V1(
+		CrossChainProof< 
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+			DidRoot
 		>,
 	),
 }
@@ -73,6 +84,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
+		DidRoot
 	>
 	From<
 		ParachainDipDidProof<
@@ -93,6 +105,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
+		DidRoot
 	>
 {
 	fn from(
@@ -176,7 +189,7 @@ impl<
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	> where
 	ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
-	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
+	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default + IdentityDetailsChecks<KiltRuntime::Identifier, RelaychainRuntime::Hash, BlockNumberFor<ConsumerRuntime>>,
 	RelaychainRuntime: frame_system::Config,
 	RelaychainStateRootStore:
 		GetWithArg<BlockNumberFor<RelaychainRuntime>, Result = Option<OutputOf<RelaychainRuntime::Hashing>>>,
@@ -204,6 +217,7 @@ impl<
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 		BlockNumberFor<ConsumerRuntime>,
+		RelaychainRuntime::Hash
 	>;
 	type VerificationResult = DipOriginInfo<
 		KeyIdOf<KiltRuntime>,
@@ -243,6 +257,27 @@ impl<
 				identity_details,
 				v0_proof,
 			),
+			VersionedDipParachainStateProof::V1(v1_proof) => <v1::ParachainVerifier<
+				RelaychainRuntime,
+				RelaychainStateRootStore,
+				KILT_PARA_ID,
+				KiltRuntime,
+				DidCallVerifier,
+				SignedExtra,
+				MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+				MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+				MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+				MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+				MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+				MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+				MAX_DID_MERKLE_LEAVES_REVEALED,
+			> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
+				call,
+				subject,
+				submitter,
+				identity_details,
+				v1_proof,
+			).map_err(|_| DipParachainStateProofVerifierError::Internal),
 		}
 	}
 }

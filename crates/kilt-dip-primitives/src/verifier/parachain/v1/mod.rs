@@ -16,22 +16,20 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::KeyIdOf;
+use did::{DidIdentifierOf, KeyIdOf};
+use frame_support::traits::Contains;
 use frame_system::pallet_prelude::{BlockNumberFor, HeaderFor};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::{traits::IdentityProofVerifier, RuntimeCallOf};
 use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 use pallet_web3_names::Web3NameOf;
-use parity_scale_codec::Encode;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
 use crate::{
-	merkle_proofs::v0::ParachainDipDidProof,
-	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
-	utils::OutputOf,
-	verifier::errors::DipProofComponentTooLargeError,
-	DipOriginInfo, DipParachainStateProofVerifierError, RevealedDidKey,
+	merkle_proofs::v0::ParachainDipDidProof, traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable}, utils::OutputOf, verifier::errors::DipProofComponentTooLargeError, DidMerkleProof, DipDidProofWithVerifiedSubjectCommitment, DipOriginInfo, DipParachainStateProofVerifierError, RevealedDidKey, TimeBoundDidSignature
 };
 
 #[cfg(test)]
@@ -40,7 +38,34 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-const LOG_TARGET: &str = "dip::consumer::ParachainVerifierV0";
+const LOG_TARGET: &str = "dip::consumer::ParachainVerifierV1";
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+pub struct PartialDipProof<DidRoot, KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId, ConsumerBlockNumber> {
+	pub(crate) did_root: DidRoot,
+	pub(crate) dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+}
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+pub enum CrossChainProof<RelayBlockNumber, KiltKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId, ConsumerBlockNumber, DidRoot> {
+	Full(ParachainDipDidProof<
+		RelayBlockNumber,
+		KiltKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>),
+	Cached(PartialDipProof<DidRoot, KiltKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId, ConsumerBlockNumber>),
+}
+
+pub trait CacheableInfo<ProviderDidIdentifier, ProviderMerkleRoot, ConsumerBlockNumber> {
+	fn new(root: ProviderMerkleRoot, expiration: ConsumerBlockNumber, nonce: u128) -> Self;
+	fn set_expiration(&mut self, expiration: ConsumerBlockNumber);
+	fn set_root(&mut self, root: ProviderMerkleRoot);
+}
 
 /// Proof verifier configured given a specific KILT runtime implementation.
 ///
@@ -126,7 +151,7 @@ impl<
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	> where
 	ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
-	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
+	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default + CacheableInfo<KiltRuntime::Identifier, RelaychainRuntime::Hash, BlockNumberFor<ConsumerRuntime>>,
 	RelaychainRuntime: frame_system::Config,
 	RelaychainStateRootStore:
 		GetWithArg<BlockNumberFor<RelaychainRuntime>, Result = Option<OutputOf<RelaychainRuntime::Hashing>>>,
@@ -145,8 +170,8 @@ impl<
 	>,
 	DidCallVerifier::Error: Into<u8> + Debug,
 {
-	type Error = DipParachainStateProofVerifierError<DidCallVerifier::Error>; 
-	type Proof = ParachainDipDidProof<
+	type Error = u16;
+	type Proof = CrossChainProof<
 		BlockNumberFor<RelaychainRuntime>,
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
@@ -154,9 +179,10 @@ impl<
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 		BlockNumberFor<ConsumerRuntime>,
+		RelaychainRuntime::Hash
 	>;
 
-	type VerificationResult = DipOriginInfo<
+	type VerificationResult = DipOriginInfo< 
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
 		BlockNumberFor<KiltRuntime>,
@@ -172,7 +198,9 @@ impl<
 		identity_details: &mut Option<<ConsumerRuntime as pallet_dip_consumer::Config>::LocalIdentityInfo>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		// 1. Verify parachain state is finalized by relay chain and fresh.
+		match proof {
+			CrossChainProof::Full(proof) => {
+				// 1. Verify parachain state is finalized by relay chain and fresh.
 		if proof.provider_head_proof.proof.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into() {
 			let inner_error = DipProofComponentTooLargeError::ParachainHeadProofTooManyLeaves;
 			log::info!(
@@ -348,5 +376,72 @@ impl<
 		};
 
 		Ok(revealed_did_info)
+		},
+			CrossChainProof::Cached(PartialDipProof { did_root, dip_proof, signature }) => {
+				let Some(identity_details) = identity_details else {
+					return Err(101);
+				};
+				
+				// 1. Verify if the stored info about the subject can be considered valid.
+				if !identity_details.is_valid_for_input(subject, &did_root, frame_system::Pallet::<ConsumerRuntime>::block_number()) {
+					// If not, bail out.
+					return Err(102);
+				}
+
+				// 2. Verify the Merkle proof of the DID itself
+				let anchored_dip_proof = DipDidProofWithVerifiedSubjectCommitment { dip_commitment: did_root, dip_proof, signature };
+				let proof_without_dip_merkle = anchored_dip_proof
+					.verify_dip_proof::<KiltRuntime::Hashing, MAX_DID_MERKLE_LEAVES_REVEALED>()
+					.map_err(|e| {
+						log::info!(target: LOG_TARGET, "Failed to verify DIP proof with error {:#?}", e);
+						102u16
+					})?;
+				log::info!(
+					target: LOG_TARGET,
+					"Verified DID Merkle leaves: {:#?}",
+					proof_without_dip_merkle.revealed_leaves
+				);
+
+				// 3. Verify call is signed by one of the DID keys revealed in the proof
+				let current_block_number = frame_system::Pallet::<ConsumerRuntime>::block_number();
+				let consumer_genesis_hash =
+					frame_system::Pallet::<ConsumerRuntime>::block_hash(BlockNumberFor::<ConsumerRuntime>::zero());
+				let signed_extra = SignedExtra::get();
+				log::trace!(target: LOG_TARGET, "Additional components for signature verification: current block number = {:#?}, genesis hash = {:#?}, signed extra = {:#?}", current_block_number, consumer_genesis_hash, signed_extra);
+				let encoded_payload = (
+					call,
+					&identity_details,
+					submitter,
+					proof_without_dip_merkle.signature.valid_until,
+					consumer_genesis_hash,
+					signed_extra,
+				)
+					.encode();
+				log::trace!(target: LOG_TARGET, "Encoded final payload: {:#?}", encoded_payload);
+
+				let revealed_did_info = proof_without_dip_merkle
+					.verify_signature_time(&current_block_number)
+					.and_then(|p| p.retrieve_signing_leaves_for_payload(&encoded_payload[..]))
+					.map_err(|e| {
+						log::info!(target: LOG_TARGET, "Failed to verify DIP proof with error {:#?}", e);
+						103u16
+					})?;
+
+				// 5. Verify the signing key fulfills the requirements
+				let signing_keys = revealed_did_info.get_signing_leaves().map_err(|e| {
+					log::info!(target: LOG_TARGET, "Failed to verify DIP proof with error {:#?}", e);
+					104u16
+				})?;
+				DidCallVerifier::check_call_origin_info(call, &signing_keys.cloned().collect::<Vec<_>>()).map_err(|e| {
+					log::info!(target: LOG_TARGET, "Failed to verify DIP proof with error {:#?}", e);
+					105u16
+				})?;
+
+				// 6. Increment the local details
+				identity_details.increment();
+
+				Ok(revealed_did_info)
+			}
+		}
 	}
 }
