@@ -24,7 +24,7 @@ use frame_support::traits::Contains;
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureSigned};
 use kilt_dip_primitives::{
 	parachain::{
-		DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_COUNT, DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+		v1::CacheableInfo, DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_COUNT, DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
 		DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
 		DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT, DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
 	},
@@ -36,7 +36,7 @@ use rococo_runtime::Runtime as RelaychainRuntime;
 use sp_core::ConstU32;
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
-use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
+use crate::{weights, AccountId, DidIdentifier, Hash, Runtime, RuntimeCall, RuntimeOrigin};
 
 // +1 for the web3name.
 const MAX_PROVIDER_REVEALABLE_KEYS_COUNT: u32 = MAX_PUBLIC_KEYS_PER_DID + MAX_REVEALABLE_LINKED_ACCOUNTS + 1;
@@ -527,6 +527,29 @@ mod worst_case_tests {
 	}
 }
 
+pub struct CacheableStuff {
+	nonce: u128,
+	did_root: Hash,
+	expiration_block: BlockNumberFor<Runtime>,
+}
+
+impl CacheableInfo<Hash, BlockNumberFor<Runtime>> for CacheableStuff {
+	fn did_root(&self) -> Hash {
+		self.did_root
+	}
+	fn expiration(&self) -> BlockNumberFor<Runtime> {
+		self.expiration_block
+	}
+
+	fn new(did_root: Hash, expiration: BlockNumberFor<Runtime>) -> Self {
+		Self {
+			did_root,
+			expiration_block: expiration,
+			nonce: Default::default(),
+		}
+	}
+}
+
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	// Any signed origin can submit a cross-chain DIP tx, since subject
@@ -537,7 +560,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	// Local identity info contains a simple `u128` representing a nonce. This means
 	// that two cross-chain operations targeting the same chain and with the same
 	// nonce cannot be both successfully evaluated.
-	type LocalIdentityInfo = u128;
+	type LocalIdentityInfo = CacheableStuff;
 	type ProofVerifier = ProviderTemplateProofVerifierWrapper;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;

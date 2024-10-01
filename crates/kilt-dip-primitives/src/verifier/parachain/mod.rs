@@ -30,13 +30,67 @@ use crate::{
 	merkle_proofs::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
-	DipOriginInfo, ParachainDipDidProof,
+	DidMerkleProof, DipOriginInfo, ParachainDipDidProof, TimeBoundDidSignature,
 };
 
 pub mod v0;
+pub mod v1;
 
 mod error;
 pub use error::*;
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+pub struct PartialProof<
+	KiltDidKeyId,
+	KiltAccountId,
+	KiltBlockNumber,
+	KiltWeb3Name,
+	KiltLinkableAccountId,
+	ConsumerBlockNumber,
+	DidRoot,
+> {
+	pub(crate) did_root: DidRoot,
+	/// The Merkle proof of the subject's DID details.
+	pub(crate) dip_proof:
+		DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+	/// The cross-chain DID signature.
+	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+}
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+pub enum V1Proof<
+	RelayBlockNumber,
+	KiltDidKeyId,
+	KiltAccountId,
+	KiltBlockNumber,
+	KiltWeb3Name,
+	KiltLinkableAccountId,
+	ConsumerBlockNumber,
+	DidRoot,
+> {
+	Full(
+		ParachainDipDidProof<
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+		>,
+	),
+	Partial(
+		PartialProof<
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+			DidRoot,
+		>,
+	),
+}
 
 /// A KILT-specific DIP identity proof for a sibling consumer that supports
 /// versioning.
@@ -51,6 +105,7 @@ pub enum VersionedDipParachainStateProof<
 	KiltWeb3Name,
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
+	DidRoot,
 > {
 	V0(
 		ParachainDipDidProof<
@@ -63,6 +118,18 @@ pub enum VersionedDipParachainStateProof<
 			ConsumerBlockNumber,
 		>,
 	),
+	V1(
+		V1Proof<
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
+			DidRoot,
+		>,
+	),
 }
 
 impl<
@@ -73,6 +140,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
+		DidRoot,
 	>
 	From<
 		ParachainDipDidProof<
@@ -93,6 +161,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
+		DidRoot,
 	>
 {
 	fn from(
@@ -204,6 +273,7 @@ impl<
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 		BlockNumberFor<ConsumerRuntime>,
+		RelaychainRuntime::Hash,
 	>;
 	type VerificationResult = DipOriginInfo<
 		KeyIdOf<KiltRuntime>,
@@ -242,6 +312,27 @@ impl<
 				submitter,
 				identity_details,
 				v0_proof,
+			),
+			VersionedDipParachainStateProof::V1(v1_proof) => <v1::ParachainVerifier<
+				RelaychainRuntime,
+				RelaychainStateRootStore,
+				KILT_PARA_ID,
+				KiltRuntime,
+				DidCallVerifier,
+				SignedExtra,
+				MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+				MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+				MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+				MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+				MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+				MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+				MAX_DID_MERKLE_LEAVES_REVEALED,
+			> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
+				call,
+				subject,
+				submitter,
+				identity_details,
+				v1_proof,
 			),
 		}
 	}

@@ -43,7 +43,10 @@ use sp_runtime::{
 };
 
 use crate::{
-	parachain::v0::{mock::TestRuntime as TestConsumerRuntime, ParachainVerifier},
+	parachain::{
+		v0::{mock::TestRuntime as TestConsumerRuntime, ParachainVerifier},
+		PartialProof,
+	},
 	traits::DipCallOriginFilter,
 	DipCommitmentStateProof, ParachainDipDidProof, ProviderHeadStateProof, RelayStateRootsViaRelayStorePallet,
 	RevealedDidKey, RevealedWeb3Name, TimeBoundDidSignature,
@@ -195,7 +198,7 @@ pub(crate) fn wrong_call() -> RuntimeCall {
 
 // Cross-chain proof generated over the details exported above.
 #[allow(clippy::type_complexity)]
-pub(crate) fn cross_chain_proof_with_authentication_key_and_web3_name() -> ParachainDipDidProof<
+pub(crate) fn cross_full_chain_proof_with_authentication_key_and_web3_name() -> ParachainDipDidProof<
 	BlockNumberFor<RococoRuntime>,
 	KeyIdOf<PeregrineRuntime>,
 	<PeregrineRuntime as frame_system::Config>::AccountId,
@@ -237,6 +240,52 @@ pub(crate) fn cross_chain_proof_with_authentication_key_and_web3_name() -> Parac
 		}.into()
 	] }, signature: TimeBoundDidSignature::new(did::DidSignature::Sr25519(sr25519::Signature(hex!("3cd5e72f04d248e5155bfdabb94c308a88368db63a8a0cafc15fb3204a709b07da028cf85bd450d9a2bdb6679f2b07ac69188101185ab3acd9f41419cbfb3c81"))), SIGNATURE_VALID_UNTIL) }
 }
+
+pub(crate) fn generate_partial_proof_with_authentication_key_and_web3_name() -> PartialProof<
+	KeyIdOf<PeregrineRuntime>,
+	<PeregrineRuntime as frame_system::Config>::AccountId,
+	BlockNumberFor<PeregrineRuntime>,
+	Web3NameOf<PeregrineRuntime>,
+	LinkableAccountId,
+	BlockNumberFor<TestConsumerRuntime>,
+	H256,
+> {
+	PartialProof {
+		did_root: hex!("1997d38bec607be35cab175edc55e2119e0138976021e1f938942c10f9f7b329").into(),
+		dip_proof,
+	}
+}
+
+// (
+// 	hex!("1997d38bec607be35cab175edc55e2119e0138976021e1f938942c10f9f7b329").
+// into(), 	DidMerkleProof {
+// 		blinded: vec![
+// 			hex!(
+// 				"8027f4809d06d6e9516f8bcbe97b3e1fa94f294b2606a11d00f1162c90bbdbaa0cbc77d480421f140adb34
+// 						53138eb8c4512f9cff60ee9a62502cbb0ddd30355235c12dbd318001ba7e874784b7c79fdc37d1584ff254
+// 						efb6d167087dcb1227c704fd9f6c21d40080a92c5bdfcfbb286551bc43fb263980bc9148f3645f6bc0743c
+// 						4292b88dc4039f8011e7fd2693a380b14bd3dd83736bec3bbcb7f70c7b7e0aaf30a03d2bbf96bd3b80c5a2
+// 						1afb7e16c0f8869ca44efbafddef083c89104fe153d0a77698a5aa1eef7d808cf84bd4fa37829f7229d507
+// 						3cbb504832fc88766def7b06930c5c27f7bf12a080dab6661eac3da9d306e8bbfdffb8ccc901239d8c1664
+// 						220062a4384224babea0"
+// 			)
+// 			.to_vec(),
+// 			hex!("7f0400da6646d21f19b4d7d9f80d5beb103fbef7f4bb95eb94e0c02552175b1bff3a010000").to_vec(),
+// 		],
+// 		revealed: vec![RevealedDidKey {
+// 			id: hex!("50da6646d21f19b4d7d9f80d5beb103fbef7f4bb95eb94e0c02552175b1bff3a").
+// into(), 			relationship: DidVerificationKeyRelationship::Authentication.into(),
+// 			details: DidPublicKeyDetails {
+// 				key: DidVerificationKey::Ed25519(ed25519::Public(hex!(
+// 					"43a72e714401762df66b68c26dfbdf2682aaec9f2474eca4613e424a0fbafd3c"
+// 				)))
+// 				.into(),
+// 				block_number: 0,
+// 			},
+// 		}
+// 		.into()],
+// 	},
+// )
 
 // Aliases requires because the pallet does not expose anything public.
 #[storage_alias]

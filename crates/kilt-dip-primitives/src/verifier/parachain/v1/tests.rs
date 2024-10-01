@@ -21,7 +21,7 @@ use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_runtime::AccountId32;
 
 use crate::{
-	parachain::v0::mock::{
+	parachain::v1::mock::{
 		call, cross_chain_proof_with_authentication_key_and_web3_name, subject, submitter, wrong_call, wrong_submitter,
 		ExtBuilder, TestRuntime, Verifier, GENESIS_HASH, IDENTITY_DETAILS, MAX_DID_MERKLE_LEAVES_REVEALED,
 		MAX_DID_MERKLE_PROOF_LEAVE_COUNT, MAX_DID_MERKLE_PROOF_LEAVE_SIZE, MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
