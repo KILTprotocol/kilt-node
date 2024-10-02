@@ -171,7 +171,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 					return;
 				};
 				// Defensive operations log something on their own.
-				let new_balance = entry.remote_asset_circulating_supply.defensive_saturating_add(amount);
+				let new_balance = entry.remote_asset_circulating_supply.defensive_saturating_sub(amount);
 				entry.remote_asset_circulating_supply = new_balance;
 			});
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
