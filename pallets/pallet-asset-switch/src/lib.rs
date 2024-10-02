@@ -56,13 +56,13 @@ const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::{
-		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus},
+		switch::{NewSwitchPairInfo, PendingSwitchConfirmation, SwitchPairInfo, SwitchPairStatus},
 		traits::SwitchHooks,
 		WeightInfo, LOG_TARGET,
 	};
 
 	use frame_support::{
-		pallet_prelude::*,
+		pallet_prelude::{ValueQuery, *},
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
 			tokens::{Preservation, Provenance},
@@ -72,10 +72,13 @@ pub mod pallet {
 	use frame_system::{ensure_root, pallet_prelude::*};
 	use sp_runtime::traits::{TryConvert, Zero};
 	use sp_std::{boxed::Box, vec};
-	use xcm::{
+	use ::xcm::v4::QueryId;
+use xcm::{
 		v4::{
 			validate_send, Asset, AssetFilter, AssetId,
-			Instruction::{BuyExecution, DepositAsset, RefundSurplus, SetAppendix, TransferAsset, WithdrawAsset},
+			Instruction::{
+				BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, TransferAsset, WithdrawAsset,
+			},
 			Junction, Location, SendXcm, WeightLimit, WildAsset, Xcm,
 		},
 		VersionedAsset, VersionedAssetId, VersionedLocation,
@@ -86,6 +89,7 @@ pub mod pallet {
 		<<T as Config<I>>::LocalCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 	pub type SwitchPairInfoOf<T> = SwitchPairInfo<<T as frame_system::Config>::AccountId>;
 	pub type NewSwitchPairInfoOf<T> = NewSwitchPairInfo<<T as frame_system::Config>::AccountId>;
+	pub type PendingSwitchConfirmationOf<T> = PendingSwitchConfirmation<T::AccountId, LocalCurrencyBalanceOf<T, I>>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -204,9 +208,20 @@ pub mod pallet {
 		ZeroAmount,
 	}
 
+	/// Stores the switch pair.
 	#[pallet::storage]
 	#[pallet::getter(fn switch_pair)]
 	pub(crate) type SwitchPair<T: Config<I>, I: 'static = ()> = StorageValue<_, SwitchPairInfoOf<T>, OptionQuery>;
+
+	/// Stores the block-local nonce for users. This is used to distinguish between switches of the same users within the same block.
+	#[pallet::storage]
+	#[pallet::getter(fn user_switch_index)]
+	pub(crate) type UserNonce<T: Config<I>, I: 'static = ()> = StorageMap<_, T::AccountId, u16, ValueQuery>;
+
+	/// Stores the switches that have been applied locally but not yet on the remote. Used to rollback failed ones.
+	#[pallet::storage]
+	#[pallet::getter(fn pending_switch_confirmations)]
+	pub(crate) type PendingSwitchConfirmations<T: Config<I>, I: 'static = ()> = StorageMap<_, QueryId, PendingSwitchConfirmationOf, OptionQuery>;
 
 	#[pallet::call]
 	impl<T: Config<I>, I: 'static> Pallet<T, I>
@@ -476,6 +491,7 @@ pub mod pallet {
 				})?;
 
 			// 7. Compose and validate XCM message
+			let transfer_id =
 			let appendix: Xcm<()> = vec![
 				RefundSurplus,
 				DepositAsset {
@@ -551,7 +567,7 @@ pub mod pallet {
 				return Err(DispatchError::from(Error::<T, I>::Internal));
 			}
 
-			// 11. Send XCM out
+			// 11. Send XCM out and store query ID for later processing
 			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
 				log::info!("Failed to deliver ticket with error {:?}", e);
 				DispatchError::from(Error::<T, I>::Xcm)
