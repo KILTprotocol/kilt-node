@@ -533,11 +533,12 @@ pub mod pallet {
 				},
 				SetAppendix(appendix),
 				// Because the appendix relies on forwarding the content of the holding registry (there is at the
-				// moment no other way of detecting failed switches), we need to make sure the assets are presents in
-				// the holding registry before execution fails.
+				// moment no other way of detecting failed switches), we need to make sure the assets are present in
+				// the holding registry before the execution could fail.
 				// Using `TransferAsset` could result in assets not even being withdrawn, and we would not be able to
-				// detect the failed switch. Hence, we need to force the transfer to happen in two steps: 1. withdraw,
-				// 2. deposit.
+				// detect the failed switch. Hence, we need to force the transfer to happen in two steps: 1. withdraw
+				// (which we assume would never fail since we know we own the required assets)
+				// 2. deposit (which could fail, e.g., if the beneficiary does not have an ED for a sufficient asset).
 				WithdrawAsset((asset_id_v4.clone(), remote_asset_amount_as_u128).into()),
 				DepositAsset {
 					assets: AssetFilter::Definite((asset_id_v4, remote_asset_amount_as_u128).into()),
