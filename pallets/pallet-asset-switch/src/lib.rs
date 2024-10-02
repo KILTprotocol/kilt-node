@@ -76,9 +76,7 @@ pub mod pallet {
 	use xcm::{
 		v4::{
 			validate_send, Asset, AssetFilter, AssetId,
-			Instruction::{
-				BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, TransferAsset, WithdrawAsset,
-			},
+			Instruction::{BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, WithdrawAsset},
 			Junction, Junctions, Location, QueryResponseInfo, SendXcm, WeightLimit, WildAsset, Xcm,
 		},
 		VersionedAsset, VersionedAssetId, VersionedLocation,
@@ -534,8 +532,15 @@ pub mod pallet {
 					fees: remote_asset_fee_v4.clone(),
 				},
 				SetAppendix(appendix),
-				TransferAsset {
-					assets: (asset_id_v4, remote_asset_amount_as_u128).into(),
+				// Because the appendix relies on forwarding the content of the holding registry (there is at the
+				// moment no other way of detecting failed switches), we need to make sure the assets are presents in
+				// the holding registry before execution fails.
+				// Using `TransferAsset` could result in assets not even being withdrawn, and we would not be able to
+				// detect the failed switch. Hence, we need to force the transfer to happen in two steps: 1. withdraw,
+				// 2. deposit.
+				WithdrawAsset((asset_id_v4.clone(), remote_asset_amount_as_u128).into()),
+				DepositAsset {
+					assets: AssetFilter::Definite((asset_id_v4, remote_asset_amount_as_u128).into()),
 					beneficiary: beneficiary_v4,
 				},
 			]
