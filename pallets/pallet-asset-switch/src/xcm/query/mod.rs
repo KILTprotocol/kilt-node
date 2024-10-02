@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{fungible::Mutate, tokens::Preservation};
+use frame_support::traits::{fungible::Mutate, tokens::Preservation, DefensiveSaturating};
 use xcm::v4::{AssetId, Location, Response, Weight, XcmContext};
 use xcm_executor::traits::OnResponse;
 
@@ -161,6 +161,19 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 				);
 				return Weight::zero();
 			};
+			SwitchPair::<T, I>::mutate(|entry| {
+				let Some(entry) = entry else {
+					log::error!(
+						target: LOG_TARGET,
+						"Switch pair cannot be `None` at this point.",
+					);
+					// Do not change anything
+					return;
+				};
+				// Defensive operations log something on their own.
+				let new_balance = entry.remote_asset_circulating_supply.defensive_saturating_add(amount);
+				entry.remote_asset_circulating_supply = new_balance;
+			});
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
 			T::QueryIdProvider::remove_id(&query_id);
 			Self::deposit_event(Event::<T, I>::SwitchReverted {
