@@ -166,9 +166,3 @@ impl<AccountId> SwitchPairInfo<AccountId> {
 		Ok(())
 	}
 }
-
-#[derive(Encode, Decode, TypeInfo, RuntimeDebug, Clone)]
-pub struct PendingSwitchConfirmation<Destination, Amount> {
-	destination: Destination,
-	amount: Amount,
-}

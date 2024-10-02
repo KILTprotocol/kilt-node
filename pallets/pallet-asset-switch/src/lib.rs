@@ -56,13 +56,14 @@ const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::{
-		switch::{NewSwitchPairInfo, PendingSwitchConfirmation, SwitchPairInfo, SwitchPairStatus},
-		traits::SwitchHooks,
+		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus},
+		traits::{QueryIdProvider, SwitchHooks},
 		WeightInfo, LOG_TARGET,
 	};
 
+	use ::xcm::v4::QueryId;
 	use frame_support::{
-		pallet_prelude::{ValueQuery, *},
+		pallet_prelude::*,
 		traits::{
 			fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
 			tokens::{Preservation, Provenance},
@@ -72,14 +73,13 @@ pub mod pallet {
 	use frame_system::{ensure_root, pallet_prelude::*};
 	use sp_runtime::traits::{TryConvert, Zero};
 	use sp_std::{boxed::Box, vec};
-	use ::xcm::v4::QueryId;
-use xcm::{
+	use xcm::{
 		v4::{
 			validate_send, Asset, AssetFilter, AssetId,
 			Instruction::{
 				BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, TransferAsset, WithdrawAsset,
 			},
-			Junction, Location, SendXcm, WeightLimit, WildAsset, Xcm,
+			Junction, Junctions, Location, QueryResponseInfo, SendXcm, WeightLimit, WildAsset, Xcm,
 		},
 		VersionedAsset, VersionedAssetId, VersionedLocation,
 	};
@@ -89,12 +89,13 @@ use xcm::{
 		<<T as Config<I>>::LocalCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 	pub type SwitchPairInfoOf<T> = SwitchPairInfo<<T as frame_system::Config>::AccountId>;
 	pub type NewSwitchPairInfoOf<T> = NewSwitchPairInfo<<T as frame_system::Config>::AccountId>;
-	pub type PendingSwitchConfirmationOf<T> = PendingSwitchConfirmation<T::AccountId, LocalCurrencyBalanceOf<T, I>>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	#[pallet::config]
 	pub trait Config<I: 'static = ()>: frame_system::Config {
+		/// The universal location report messages should be sent to.
+		const UNIVERSAL_LOCATION: Junctions;
 		/// How to convert a local `AccountId` to a `Junction`, for the purpose
 		/// of taking XCM fees from the user's balance via the configured
 		/// `AssetTransactor`.
@@ -108,6 +109,9 @@ use xcm::{
 		type LocalCurrency: MutateFungible<Self::AccountId>;
 		/// The origin that can pause switches in both directions.
 		type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		/// The type responsible for generating query IDs and ensure they are
+		/// unique across all pallets consuming them.
+		type QueryIdProvider: QueryIdProvider;
 		/// The aggregate event type.
 		type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The origin that can request a switch of some local tokens for some
@@ -172,6 +176,13 @@ use xcm::{
 		},
 		/// A switch of remote -> local asset has taken place.
 		RemoteToLocalSwitchExecuted { to: T::AccountId, amount: u128 },
+		/// A switch has been reversed because it failed to execute at
+		/// destination.
+		SwitchReverted {
+			from: T::AccountId,
+			to: VersionedLocation,
+			amount: u128,
+		},
 	}
 
 	#[pallet::error]
@@ -213,15 +224,13 @@ use xcm::{
 	#[pallet::getter(fn switch_pair)]
 	pub(crate) type SwitchPair<T: Config<I>, I: 'static = ()> = StorageValue<_, SwitchPairInfoOf<T>, OptionQuery>;
 
-	/// Stores the block-local nonce for users. This is used to distinguish between switches of the same users within the same block.
-	#[pallet::storage]
-	#[pallet::getter(fn user_switch_index)]
-	pub(crate) type UserNonce<T: Config<I>, I: 'static = ()> = StorageMap<_, T::AccountId, u16, ValueQuery>;
-
-	/// Stores the switches that have been applied locally but not yet on the remote. Used to rollback failed ones.
+	/// Stores the switches that have been applied locally but not yet on the
+	/// remote. Used to rollback failed ones.
+	// TODO: Change tuple to a proper struct.
 	#[pallet::storage]
 	#[pallet::getter(fn pending_switch_confirmations)]
-	pub(crate) type PendingSwitchConfirmations<T: Config<I>, I: 'static = ()> = StorageMap<_, QueryId, PendingSwitchConfirmationOf, OptionQuery>;
+	pub(crate) type PendingSwitchConfirmations<T: Config<I>, I: 'static = ()> =
+		StorageMap<_, Twox64Concat, QueryId, (T::AccountId, VersionedLocation, u128), OptionQuery>;
 
 	#[pallet::call]
 	impl<T: Config<I>, I: 'static> Pallet<T, I>
@@ -491,8 +500,26 @@ use xcm::{
 				})?;
 
 			// 7. Compose and validate XCM message
-			let transfer_id =
-			let appendix: Xcm<()> = vec![
+			let query_id = T::QueryIdProvider::next_id();
+			let our_location_for_destination = T::UNIVERSAL_LOCATION.invert_target(&destination_v4).map_err(|e| {
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to invert universal location {:?} for destination {:?} with error {:?}",
+					T::UNIVERSAL_LOCATION, destination_v4, e
+				);
+				Error::<T, I>::Internal
+			})?;
+			let appendix = vec![
+				ReportHolding {
+					response_info: QueryResponseInfo {
+						destination: our_location_for_destination,
+						max_weight: Weight::zero(),
+						query_id,
+					},
+					// Include in the report the asset to transfer only if the transfer did not happen at all.
+					assets: AssetFilter::Definite((asset_id_v4.clone(), remote_asset_amount_as_u128).into()),
+				},
+				// After the report is sent, refund the rest to the user that paid for the fees on our chain.
 				RefundSurplus,
 				DepositAsset {
 					assets: AssetFilter::Wild(WildAsset::All),
@@ -567,13 +594,14 @@ use xcm::{
 				return Err(DispatchError::from(Error::<T, I>::Internal));
 			}
 
-			// 11. Send XCM out and store query ID for later processing
+			// 11. Send XCM out
 			T::XcmRouter::deliver(xcm_ticket.0).map_err(|e| {
 				log::info!("Failed to deliver ticket with error {:?}", e);
 				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
 
-			// 12. Update remote asset balance and circulating supply.
+			// 12. Update storage elements
+			// 12.1 Remote asset balance and circulating supply.
 			SwitchPair::<T, I>::try_mutate(|entry| {
 				let Some(switch_pair_info) = entry.as_mut() else {
 					log::error!(target: LOG_TARGET, "Failed to borrow stored switch pair info as mut.");
@@ -590,6 +618,15 @@ use xcm::{
 						Error::<T, I>::Internal
 					})?;
 				Ok(())
+			})?;
+			// 12.2 Write the query ID into storage, checking for the very unlikely
+			// situation in which one already exists.
+			PendingSwitchConfirmations::<T, I>::try_mutate(query_id, |entry| {
+				match entry {
+					// Should never happen.
+					Some(_) => Err(Error::<T, I>::Internal),
+					None => Ok(Some((submitter.clone(), destination_v4, remote_asset_amount_as_u128))),
+				}
 			})?;
 
 			// 13. Call into hook post-switch checks

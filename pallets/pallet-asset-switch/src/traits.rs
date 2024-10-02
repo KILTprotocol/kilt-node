@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use xcm::VersionedLocation;
+use xcm::{v4::QueryId, VersionedLocation};
 
 use crate::{Config, LocalCurrencyBalanceOf};
 
@@ -84,4 +84,16 @@ where
 	fn post_remote_to_local_switch(_to: &<T>::AccountId, _amount: u128) -> Result<(), Self::Error> {
 		Ok(())
 	}
+}
+
+pub trait QueryIdProvider {
+	fn next_id() -> QueryId;
+	fn remove_id(id: &QueryId);
+}
+
+impl QueryIdProvider for () {
+	fn next_id() -> QueryId {
+		QueryId::default()
+	}
+	fn remove_id(_id: &QueryId) {}
 }

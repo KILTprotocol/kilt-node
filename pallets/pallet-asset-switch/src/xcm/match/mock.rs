@@ -30,6 +30,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
 	AccountId32,
 };
+use xcm::v4::Junctions::{self, Here};
 
 use crate::{NewSwitchPairInfoOf, Pallet, SwitchPairInfoOf};
 
@@ -85,11 +86,14 @@ impl pallet_balances::Config for MockRuntime {
 }
 
 impl crate::Config for MockRuntime {
+	const UNIVERSAL_LOCATION: Junctions = Here;
+
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
 	type LocalCurrency = Balances;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
+	type QueryIdProvider = ();
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();

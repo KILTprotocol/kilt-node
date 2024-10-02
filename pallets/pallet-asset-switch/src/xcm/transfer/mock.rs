@@ -31,6 +31,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32, DispatchError,
 };
+use xcm::v4::Junctions::{self, Here};
 
 use crate::{NewSwitchPairInfoOf, Pallet};
 
@@ -121,11 +122,14 @@ impl UnbalancedFungible<AccountId32> for MockCurrency {
 }
 
 impl crate::Config for MockRuntime {
+	const UNIVERSAL_LOCATION: Junctions = Here;
+
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
 	type LocalCurrency = MockCurrency;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
+	type QueryIdProvider = ();
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();

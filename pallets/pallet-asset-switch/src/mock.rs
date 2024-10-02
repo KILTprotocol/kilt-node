@@ -36,7 +36,7 @@ use sp_std::sync::Arc;
 use xcm::v4::{
 	Asset, AssetId, Error as XcmError, Fungibility,
 	Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
-	Junctions::{Here, X1, X2},
+	Junctions::{self, Here, X1, X2},
 	Location, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
 };
 use xcm_executor::{traits::TransactAsset, AssetsInHolding};
@@ -174,11 +174,14 @@ impl SendXcm for AlwaysSuccessfulXcmRouter {
 }
 
 impl crate::Config for MockRuntime {
+	const UNIVERSAL_LOCATION: Junctions = Here;
+
 	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = MockFungibleAssetTransactor;
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
 	type LocalCurrency = Balances;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
+	type QueryIdProvider = ();
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();
