@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{fungible::Mutate, tokens::Preservation, DefensiveSaturating};
+use frame_support::traits::{fungible::Mutate, tokens::Preservation};
 use xcm::v4::{AssetId, Location, Response, Weight, XcmContext};
 use xcm_executor::traits::OnResponse;
 
@@ -101,19 +101,14 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			);
 			return Weight::zero();
 		};
-		let Some(SwitchPairInfo {
-			pool_account,
-			remote_asset_id,
-			..
-		}) = SwitchPair::<T, I>::get()
-		else {
+		let Some(mut switch_pair) = SwitchPair::<T, I>::get() else {
 			log::error!(
 				target: LOG_TARGET,
 				"Cannot fetch switch pair from storage. This should not happen if `expecting_response` returned `true`.",
 			);
 			return Weight::zero();
 		};
-		let Ok(remote_asset_id_v4) = AssetId::try_from(remote_asset_id) else {
+		let Ok(remote_asset_id_v4) = AssetId::try_from(switch_pair.remote_asset_id.clone()) else {
 			log::error!(
 				target: LOG_TARGET,
 				"Failed to convert stored remote asset ID to v4.",
@@ -140,8 +135,6 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
 		// Sad case, we need to revert the user's transfer.
 		} else if is_transfer_present {
-			// TODO: Factor this out into its own function to be used with the remote ->
-			// local switch processing as well.
 			let Ok(fungible_amount_as_currency_balance) = LocalCurrencyBalanceOf::<T, I>::try_from(amount) else {
 				log::error!(
 					target: LOG_TARGET,
@@ -150,7 +143,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 				return Weight::zero();
 			};
 			let Ok(_) = T::LocalCurrency::transfer(
-				&pool_account,
+				&switch_pair.pool_account,
 				&source,
 				fungible_amount_as_currency_balance,
 				Preservation::Preserve,
@@ -161,19 +154,15 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 				);
 				return Weight::zero();
 			};
-			SwitchPair::<T, I>::mutate(|entry| {
-				let Some(entry) = entry else {
-					log::error!(
-						target: LOG_TARGET,
-						"Switch pair cannot be `None` at this point.",
-					);
-					// Do not change anything
-					return;
-				};
-				// Defensive operations log something on their own.
-				let new_balance = entry.remote_asset_circulating_supply.defensive_saturating_sub(amount);
-				entry.remote_asset_circulating_supply = new_balance;
-			});
+			// We act like we received an incoming switch when updating the switch pair.
+			let Ok(_) = switch_pair.try_process_incoming_switch(amount) else {
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to update the switch pair storage to account for the reverted operation.",
+				);
+				return Weight::zero();
+			};
+			SwitchPair::<T, I>::set(Some(switch_pair));
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
 			T::QueryIdProvider::remove_id(&query_id);
 			Self::deposit_event(Event::<T, I>::SwitchReverted {
