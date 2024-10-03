@@ -32,9 +32,9 @@ use crate::{
 		get_asset_hub_location, get_remote_erc20_asset_id, Balances, ExtBuilder, MockFungibleAssetTransactor,
 		MockRuntime, System, FREEZE_REASON, HOLD_REASON, XCM_ASSET_FEE,
 	},
-	switch::SwitchPairStatus,
+	switch::{SwitchPairStatus, UnconfirmedSwitchInfo},
 	xcm::convert::AccountId32ToAccountId32JunctionConverter,
-	Error, Event, NewSwitchPairInfoOf, Pallet, SwitchPair,
+	Error, Event, NewSwitchPairInfoOf, Pallet, PendingSwitchConfirmations, SwitchPair, UnconfirmedSwitchInfoOf,
 };
 
 #[test]
@@ -97,6 +97,14 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
+			assert_eq!(
+				PendingSwitchConfirmations::<MockRuntime>::get(0),
+				Some(UnconfirmedSwitchInfoOf::<MockRuntime> {
+					from: user.clone(),
+					to: get_asset_hub_location().into_versioned(),
+					amount: 99_999
+				})
+			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
@@ -160,6 +168,14 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
+			assert_eq!(
+				PendingSwitchConfirmations::<MockRuntime>::get(0),
+				Some(UnconfirmedSwitchInfoOf::<MockRuntime> {
+					from: user.clone(),
+					to: get_asset_hub_location().into_versioned(),
+					amount: 99_999
+				})
+			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
@@ -224,6 +240,14 @@ fn successful() {
 					.into()
 			)
 			.is_zero());
+			assert_eq!(
+				PendingSwitchConfirmations::<MockRuntime>::get(0),
+				Some(UnconfirmedSwitchInfoOf::<MockRuntime> {
+					from: user.clone(),
+					to: get_asset_hub_location().into_versioned(),
+					amount: 99_999
+				})
+			);
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::LocalToRemoteSwitchExecuted {
 					amount: 99_999,
