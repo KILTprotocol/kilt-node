@@ -20,7 +20,10 @@ use frame_support::traits::{fungible::Mutate, tokens::Preservation};
 use xcm::v4::{AssetId, Junctions::Here, Location, Response, Weight, XcmContext};
 use xcm_executor::traits::OnResponse;
 
-use crate::{Config, Event, LocalCurrencyBalanceOf, Pallet, PendingSwitchConfirmations, SwitchPair, SwitchPairInfo};
+use crate::{
+	Config, Event, LocalCurrencyBalanceOf, Pallet, PendingSwitchConfirmations, SwitchPair, SwitchPairInfo,
+	UnconfirmedSwitchInfoOf,
+};
 
 const LOG_TARGET: &str = "runtime::pallet-asset-switch::OnResponse";
 
@@ -119,7 +122,8 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			return Weight::zero();
 		};
 
-		let Some((source, destination, amount)) = PendingSwitchConfirmations::<T, I>::get(query_id) else {
+		let Some(UnconfirmedSwitchInfoOf::<T> { from, to, amount }) = PendingSwitchConfirmations::<T, I>::get(query_id)
+		else {
 			log::error!(
 				target: LOG_TARGET,
 				"Cannot fetch pending confirmation from storage. This should not happen if `expecting_response` returned `true`.",
@@ -151,7 +155,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			);
 			let Ok(_) = T::LocalCurrency::transfer(
 				&switch_pair.pool_account,
-				&source,
+				&from,
 				fungible_amount_as_currency_balance,
 				Preservation::Preserve,
 			) else {
@@ -171,11 +175,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			};
 			SwitchPair::<T, I>::set(Some(switch_pair));
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
-			Self::deposit_event(Event::<T, I>::SwitchReverted {
-				amount,
-				from: source,
-				to: destination,
-			});
+			Self::deposit_event(Event::<T, I>::SwitchReverted { amount, from, to });
 		// Weird case where the transfer has partially completed. We don't
 		// explicitly handle this for now, but simply generate some error
 		// logs, as this is definitely not expected.

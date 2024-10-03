@@ -56,7 +56,7 @@ const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::{
-		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus},
+		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus, UnconfirmedSwitchInfo},
 		traits::{QueryIdProvider, SwitchHooks},
 		WeightInfo, LOG_TARGET,
 	};
@@ -87,6 +87,8 @@ pub mod pallet {
 		<<T as Config<I>>::LocalCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 	pub type SwitchPairInfoOf<T> = SwitchPairInfo<<T as frame_system::Config>::AccountId>;
 	pub type NewSwitchPairInfoOf<T> = NewSwitchPairInfo<<T as frame_system::Config>::AccountId>;
+	pub type UnconfirmedSwitchInfoOf<T> =
+		UnconfirmedSwitchInfo<<T as frame_system::Config>::AccountId, VersionedLocation, u128>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -228,7 +230,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn pending_switch_confirmations)]
 	pub(crate) type PendingSwitchConfirmations<T: Config<I>, I: 'static = ()> =
-		StorageMap<_, Twox64Concat, QueryId, (T::AccountId, VersionedLocation, u128), OptionQuery>;
+		StorageMap<_, Twox64Concat, QueryId, UnconfirmedSwitchInfoOf<T>, OptionQuery>;
 
 	#[pallet::call]
 	impl<T: Config<I>, I: 'static> Pallet<T, I>
@@ -671,7 +673,11 @@ pub mod pallet {
 						Err(Error::<T, I>::Internal)
 					}
 					None => {
-						*entry = Some((submitter.clone(), *beneficiary.clone(), remote_asset_amount_as_u128));
+						*entry = Some(UnconfirmedSwitchInfoOf::<T> {
+							from: submitter.clone(),
+							to: *beneficiary.clone(),
+							amount: remote_asset_amount_as_u128,
+						});
 						Ok(())
 					}
 				}
