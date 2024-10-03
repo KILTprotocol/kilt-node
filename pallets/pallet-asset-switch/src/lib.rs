@@ -61,7 +61,6 @@ pub mod pallet {
 		WeightInfo, LOG_TARGET,
 	};
 
-	use ::xcm::v4::{InteriorLocation, QueryId};
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
@@ -77,7 +76,8 @@ pub mod pallet {
 		v4::{
 			validate_send, Asset, AssetFilter, AssetId,
 			Instruction::{BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, WithdrawAsset},
-			Junction, Location, QueryResponseInfo, SendXcm, WeightLimit, WildAsset, Xcm,
+			InteriorLocation, Junction, Location, QueryId, QueryResponseInfo, SendXcm, WeightLimit, WildAsset,
+			WildFungibility, Xcm,
 		},
 		VersionedAsset, VersionedAssetId, VersionedLocation,
 	};
@@ -511,21 +511,52 @@ pub mod pallet {
 			let appendix = vec![
 				ReportHolding {
 					response_info: QueryResponseInfo {
-						destination: our_location_for_destination,
+						destination: our_location_for_destination.clone(),
 						max_weight: Weight::zero(),
 						query_id,
 					},
-					// Include in the report the asset to transfer only if the transfer did not happen at all.
-					assets: AssetFilter::Definite((asset_id_v4.clone(), remote_asset_amount_as_u128).into()),
+					// Include in the report the assets that were not transferred.
+					assets: AssetFilter::Wild(WildAsset::AllOf {
+						id: asset_id_v4.clone(),
+						fun: WildFungibility::Fungible,
+					}),
 				},
-				// After the report is sent, refund the rest to the user that paid for the fees on our chain.
-				RefundSurplus,
+				// If the asset to transfer failed to transfer, re-put it back into our own account. Otherwise, if the
+				// transfer succeeded, this asset won't be present in the holding registry, hence this is effectively a
+				// no-op.
 				DepositAsset {
-					assets: AssetFilter::Wild(WildAsset::All),
+					assets: AssetFilter::Wild(WildAsset::AllOf {
+						id: asset_id_v4.clone(),
+						fun: WildFungibility::Fungible,
+					}),
+					beneficiary: our_location_for_destination,
+				},
+				RefundSurplus,
+				// Refund the XCM fee left to the user. We are purposefully only selecting the XCM fee asset, although
+				// there should be no cases in which any other assets are present in the holding registry.
+				DepositAsset {
+					assets: AssetFilter::Wild(WildAsset::AllOf {
+						id: remote_asset_fee_v4.id.clone(),
+						fun: WildFungibility::Fungible,
+					}),
 					beneficiary: submitter_as_location.clone(),
 				},
 			]
 			.into();
+			// Steps performed:
+			// 1. Withdraw XCM fees from our SA
+			// 2. Buy execution
+			// 3. Set the appendix, executed regardless of the outcome of the transfer:
+			// 		3.1 Report back to our chain the assets in the holding registry. This will
+			// 			contain either only the XCM fee token in case of successful transfer, or the
+			//	 		XCM fee token + the amount of funds supposed to be transferred.
+			// 		3.2 Deposit the un-transferred asset (only if the transfer failed) back into
+			// our account. 		3.3 Refund any surplus weight.
+			//		3.4 Deposit the remaining XCM fee assets in the user's account.
+			// 4. Withdraw the requested asset (this operation should be infallible since we
+			//    have full control of this balance)
+			// 5. Try to deposit the withdrawn asset into the user's account. This operation
+			//    could fail and the error is handled in the appendix.
 			let remote_xcm: Xcm<()> = vec![
 				WithdrawAsset(remote_asset_fee_v4.clone().into()),
 				BuyExecution {
