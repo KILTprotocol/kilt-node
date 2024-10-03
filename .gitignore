@@ -17,10 +17,12 @@
 # ignore vscode settings
 .vscode
 
-**/__pycache__
-
 **/node_modules
+**/.yarn/*
+!**/.yarn/releases
 
 runtimes/spiritnet/src/xcm_tests/e2e/out
 
-*.db.sqlite*
+chopsticks/**/db.sqlite*
+chopsticks/**/extra.yaml
+chopsticks/**/.tmp.yaml
