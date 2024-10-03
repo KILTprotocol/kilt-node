@@ -61,7 +61,9 @@ pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
 use runtime_common::{
-	asset_switch::{runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury},
+	asset_switch::{
+		query::QueryIdProviderViaXcmPallet, runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury,
+	},
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
@@ -77,7 +79,7 @@ use runtime_common::{
 	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
-use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
+use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -986,10 +988,12 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type FeeOrigin = EnsureRoot<AccountId>;
 	type LocalCurrency = Balances;
 	type PauseOrigin = EnsureRoot<AccountId>;
+	type QueryIdProvider = QueryIdProviderViaXcmPallet<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<AccountId>;
 	type SwitchHooks = runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf;
 	type SwitchOrigin = EnsureRoot<AccountId>;
+	type UniversalLocation = UniversalLocation;
 	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
 	type XcmRouter = XcmRouter;
 

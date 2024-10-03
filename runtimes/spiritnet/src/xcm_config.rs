@@ -17,9 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet, MessageQueue,
-	ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury,
-	WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, AssetSwitchPool1, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet,
+	MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
+	Treasury, WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
@@ -28,6 +28,7 @@ use frame_support::{
 	traits::{Contains, Everything, Nothing, TransformOrigin},
 };
 use frame_system::EnsureRoot;
+use kilt_support::xcm::Or;
 use pallet_asset_switch::xcm::{
 	IsSwitchPairRemoteAsset, IsSwitchPairXcmFeeAsset, MatchesSwitchPairXcmFeeFungibleAsset,
 	SwitchPairRemoteAssetTransactor, UsingComponentsForSwitchPairRemoteAsset, UsingComponentsForXcmFeeAsset,
@@ -100,7 +101,7 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 			// since local accounts don't have a computed origin (the message isn't send by any router etc.)
 			TakeWeightCredit,
 			// If we request a response we should also allow it to execute.
-			AllowKnownQueryResponses<PolkadotXcm>,
+			AllowKnownQueryResponses<Or<PolkadotXcm, AssetSwitchPool1>>,
 			WithComputedOrigin<
 				(
 					// Allow unpaid execution from the relay chain
