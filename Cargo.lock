@@ -10905,6 +10905,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-treasury",
  "pallet-web3-names",
+ "pallet-xcm",
  "parachain-staking",
  "parity-scale-codec",
  "polkadot-parachain-primitives",

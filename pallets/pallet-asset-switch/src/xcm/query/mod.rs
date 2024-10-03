@@ -16,25 +16,23 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{fungible::Mutate, tokens::Preservation};
+use frame_support::traits::{fungible::Mutate, tokens::Preservation, Get};
 use xcm::v4::{AssetId, Location, Response, Weight, XcmContext};
 use xcm_executor::traits::OnResponse;
 
-use crate::{
-	traits::QueryIdProvider, Config, Event, LocalCurrencyBalanceOf, Pallet, PendingSwitchConfirmations, SwitchPair,
-	SwitchPairInfo,
-};
+use crate::{Config, Event, LocalCurrencyBalanceOf, Pallet, PendingSwitchConfirmations, SwitchPair, SwitchPairInfo};
 
 const LOG_TARGET: &str = "runtime::pallet-asset-switch::OnResponse";
 
 impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 	fn expecting_response(origin: &Location, query_id: u64, querier: Option<&Location>) -> bool {
+		let universal_location = T::UniversalLocation::get();
 		// Verify we are the original queriers.
-		if querier != Some(&T::UNIVERSAL_LOCATION.into_location()) {
+		if querier != Some(&universal_location.clone().into_location()) {
 			log::trace!(
 				target: LOG_TARGET,
 				"Querier for query ID {:?} {:?} is different than configured universal location {:?}",
-				query_id, querier, T::UNIVERSAL_LOCATION
+				query_id, querier, universal_location
 			);
 			return false;
 		}
@@ -46,7 +44,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			log::trace!(
 				target: LOG_TARGET,
 				"Querier for query ID {:?} {:?} is different than configured universal location {:?}",
-				query_id, querier, T::UNIVERSAL_LOCATION
+				query_id, querier, universal_location
 			);
 			return false;
 		};
@@ -164,7 +162,6 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			};
 			SwitchPair::<T, I>::set(Some(switch_pair));
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
-			T::QueryIdProvider::remove_id(&query_id);
 			Self::deposit_event(Event::<T, I>::SwitchReverted {
 				amount,
 				from: source,

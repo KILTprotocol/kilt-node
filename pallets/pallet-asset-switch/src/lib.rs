@@ -61,7 +61,7 @@ pub mod pallet {
 		WeightInfo, LOG_TARGET,
 	};
 
-	use ::xcm::v4::QueryId;
+	use ::xcm::v4::{InteriorLocation, QueryId};
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
@@ -77,7 +77,7 @@ pub mod pallet {
 		v4::{
 			validate_send, Asset, AssetFilter, AssetId,
 			Instruction::{BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, WithdrawAsset},
-			Junction, Junctions, Location, QueryResponseInfo, SendXcm, WeightLimit, WildAsset, Xcm,
+			Junction, Location, QueryResponseInfo, SendXcm, WeightLimit, WildAsset, Xcm,
 		},
 		VersionedAsset, VersionedAssetId, VersionedLocation,
 	};
@@ -92,8 +92,6 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config<I: 'static = ()>: frame_system::Config {
-		/// The universal location report messages should be sent to.
-		const UNIVERSAL_LOCATION: Junctions;
 		/// How to convert a local `AccountId` to a `Junction`, for the purpose
 		/// of taking XCM fees from the user's balance via the configured
 		/// `AssetTransactor`.
@@ -121,6 +119,8 @@ pub mod pallet {
 		/// The origin that can set a new switch pair, remove one, or resume
 		/// switches.
 		type SwitchOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		/// The universal location report messages should be sent to.
+		type UniversalLocation: Get<InteriorLocation>;
 		type WeightInfo: WeightInfo;
 		/// The XCM router to route XCM transfers to the configured reserve
 		/// location.
@@ -499,11 +499,12 @@ pub mod pallet {
 
 			// 7. Compose and validate XCM message
 			let query_id = T::QueryIdProvider::next_id();
-			let our_location_for_destination = T::UNIVERSAL_LOCATION.invert_target(&destination_v4).map_err(|e| {
+			let universal_location = T::UniversalLocation::get();
+			let our_location_for_destination = universal_location.invert_target(&destination_v4).map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
 					"Failed to invert universal location {:?} for destination {:?} with error {:?}",
-					T::UNIVERSAL_LOCATION, destination_v4, e
+					universal_location, destination_v4, e
 				);
 				Error::<T, I>::Internal
 			})?;

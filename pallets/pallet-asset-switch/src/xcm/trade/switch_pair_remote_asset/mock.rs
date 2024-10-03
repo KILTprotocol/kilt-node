@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	construct_runtime,
+	construct_runtime, parameter_types,
 	traits::{
 		fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
 		Everything,
@@ -30,7 +30,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
 	AccountId32,
 };
-use xcm::v4::Junctions::{self, Here};
+use xcm::v4::{InteriorLocation, Junctions::Here};
 
 use crate::{NewSwitchPairInfoOf, Pallet, SwitchPairInfoOf};
 
@@ -85,9 +85,11 @@ impl pallet_balances::Config for MockRuntime {
 	type WeightInfo = ();
 }
 
-impl crate::Config for MockRuntime {
-	const UNIVERSAL_LOCATION: Junctions = Here;
+parameter_types! {
+	pub const UniversalLocation: InteriorLocation = Here;
+}
 
+impl crate::Config for MockRuntime {
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
@@ -98,6 +100,7 @@ impl crate::Config for MockRuntime {
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();
 	type SwitchOrigin = EnsureRoot<Self::AccountId>;
+	type UniversalLocation = UniversalLocation;
 	type XcmRouter = ();
 	type WeightInfo = ();
 

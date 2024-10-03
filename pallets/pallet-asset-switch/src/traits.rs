@@ -88,12 +88,10 @@ where
 
 pub trait QueryIdProvider {
 	fn next_id() -> QueryId;
-	fn remove_id(id: &QueryId);
 }
 
 impl QueryIdProvider for () {
 	fn next_id() -> QueryId {
 		QueryId::default()
 	}
-	fn remove_id(_id: &QueryId) {}
 }

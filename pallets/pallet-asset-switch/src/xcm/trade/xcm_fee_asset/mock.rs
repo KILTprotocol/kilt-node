@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	construct_runtime,
+	construct_runtime, parameter_types,
 	traits::{
 		fungible::Dust,
 		tokens::{
@@ -33,7 +33,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32, DispatchError,
 };
-use xcm::v4::Junctions::{self, Here};
+use xcm::v4::{InteriorLocation, Junctions::Here};
 
 use crate::{NewSwitchPairInfoOf, Pallet};
 
@@ -123,9 +123,11 @@ impl UnbalancedFungible<AccountId32> for MockCurrency {
 	fn set_total_issuance(_amount: Self::Balance) {}
 }
 
-impl crate::Config for MockRuntime {
-	const UNIVERSAL_LOCATION: Junctions = Here;
+parameter_types! {
+	pub const UniversalLocation: InteriorLocation = Here;
+}
 
+impl crate::Config for MockRuntime {
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
@@ -136,6 +138,7 @@ impl crate::Config for MockRuntime {
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();
 	type SwitchOrigin = EnsureRoot<Self::AccountId>;
+	type UniversalLocation = UniversalLocation;
 	type XcmRouter = ();
 	type WeightInfo = ();
 

@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	construct_runtime, storage_alias,
+	construct_runtime, parameter_types, storage_alias,
 	traits::{
 		fungible::{Mutate, MutateFreeze, MutateHold},
 		Everything, VariantCount,
@@ -34,9 +34,9 @@ use sp_runtime::{
 };
 use sp_std::sync::Arc;
 use xcm::v4::{
-	Asset, AssetId, Error as XcmError, Fungibility,
+	Asset, AssetId, Error as XcmError, Fungibility, InteriorLocation,
 	Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
-	Junctions::{self, Here, X1, X2},
+	Junctions::{Here, X1, X2},
 	Location, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
 };
 use xcm_executor::{traits::TransactAsset, AssetsInHolding};
@@ -173,9 +173,11 @@ impl SendXcm for AlwaysSuccessfulXcmRouter {
 	}
 }
 
-impl crate::Config for MockRuntime {
-	const UNIVERSAL_LOCATION: Junctions = Here;
+parameter_types! {
+	pub const UniversalLocation: InteriorLocation = Here;
+}
 
+impl crate::Config for MockRuntime {
 	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = MockFungibleAssetTransactor;
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
@@ -186,6 +188,7 @@ impl crate::Config for MockRuntime {
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();
 	type SwitchOrigin = EnsureRoot<Self::AccountId>;
+	type UniversalLocation = UniversalLocation;
 	type WeightInfo = ();
 	type XcmRouter = AlwaysSuccessfulXcmRouter;
 
