@@ -19,10 +19,10 @@
     "internal:spiritnet:ah-setup": "yarn yaml-merge runtimes/spiritnet/ah/config.yaml runtimes/spiritnet/ah/extra.yaml > runtimes/spiritnet/ah/.tmp.yaml",
     "internal:spiritnet:ah-teardown": "rm runtimes/spiritnet/ah/.tmp.yaml",
     "pre:peregrine:spawn": "yarn internal:peregrine:relay-setup && yarn internal:peregrine:kilt-setup && yarn internal:peregrine:ah-setup",
-    "peregrine:spawn": "bash -c 'trap \"yarn peregrine:cleanup\" SIGINT; yarn pre:peregrine:spawn && yarn chopsticks xcm -r runtimes/peregrine/relay/.tmp.yaml -p runtimes/peregrine/kilt/.tmp.yaml -p runtimes/peregrine/ah/.tmp.yaml'",
+    "peregrine:spawn": "bash -c 'trap \"echo \"\"Cleaning up temporary resources. Please wait a few seconds...\"\" && yarn peregrine:cleanup\" SIGINT; yarn pre:peregrine:spawn && yarn chopsticks xcm -r runtimes/peregrine/relay/.tmp.yaml -p runtimes/peregrine/kilt/.tmp.yaml -p runtimes/peregrine/ah/.tmp.yaml'",
     "peregrine:cleanup": "yarn internal:peregrine:relay-teardown && yarn internal:peregrine:kilt-teardown && yarn internal:peregrine:ah-teardown",
     "pre:spiritnet:spawn": "yarn internal:spiritnet:relay-setup && yarn internal:spiritnet:kilt-setup && yarn internal:spiritnet:ah-setup",
-    "spiritnet:spawn": "bash -c 'trap \"yarn spiritnet:cleanup\" SIGINT; yarn pre:spiritnet:spawn && yarn chopsticks xcm -r runtimes/spiritnet/relay/.tmp.yaml -p runtimes/spiritnet/kilt/.tmp.yaml -p runtimes/spiritnet/ah/.tmp.yaml'",
+    "spiritnet:spawn": "bash -c 'trap \"echo \"\"Cleaning up temporary resources. Please wait a few seconds...\"\" && yarn spiritnet:cleanup\" SIGINT; yarn pre:spiritnet:spawn && yarn chopsticks xcm -r runtimes/spiritnet/relay/.tmp.yaml -p runtimes/spiritnet/kilt/.tmp.yaml -p runtimes/spiritnet/ah/.tmp.yaml'",
     "spiritnet:cleanup": "yarn internal:spiritnet:relay-teardown && yarn internal:spiritnet:kilt-teardown && yarn internal:spiritnet:ah-teardown"
   }
 }
