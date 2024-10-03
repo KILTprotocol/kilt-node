@@ -21,11 +21,13 @@ use sp_weights::Weight;
 use xcm::v4::{Location, Response, XcmContext};
 use xcm_executor::traits::OnResponse;
 
+const LOG_TARGET: &str = "xcm::either-or";
+
 // The `OnResponse` trait is not implemented for generic tuples, so we need to
 // define our own type to do that, as otherwise we hit Rust's orphan rule.
-pub struct Or<A, B>(PhantomData<(A, B)>);
+pub struct EitherOr<A, B>(PhantomData<(A, B)>);
 
-impl<A, B> OnResponse for Or<A, B>
+impl<A, B> OnResponse for EitherOr<A, B>
 where
 	A: OnResponse,
 	B: OnResponse,
@@ -43,10 +45,13 @@ where
 		context: &XcmContext,
 	) -> Weight {
 		if A::expecting_response(origin, query_id, querier) {
+			log::trace!(target: LOG_TARGET, "Forwarding action to handler A.");
 			A::on_response(origin, query_id, querier, response, max_weight, context)
 		} else if B::expecting_response(origin, query_id, querier) {
+			log::trace!(target: LOG_TARGET, "Forwarding action to handler B.");
 			B::on_response(origin, query_id, querier, response, max_weight, context)
 		} else {
+			log::trace!(target: LOG_TARGET, "Neither A nor B handle this response.");
 			Weight::zero()
 		}
 	}

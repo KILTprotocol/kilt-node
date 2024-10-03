@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{fungible::Mutate, tokens::Preservation, Get};
-use xcm::v4::{AssetId, Location, Response, Weight, XcmContext};
+use frame_support::traits::{fungible::Mutate, tokens::Preservation};
+use xcm::v4::{AssetId, Junctions::Here, Location, Response, Weight, XcmContext};
 use xcm_executor::traits::OnResponse;
 
 use crate::{Config, Event, LocalCurrencyBalanceOf, Pallet, PendingSwitchConfirmations, SwitchPair, SwitchPairInfo};
@@ -26,13 +26,12 @@ const LOG_TARGET: &str = "runtime::pallet-asset-switch::OnResponse";
 
 impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 	fn expecting_response(origin: &Location, query_id: u64, querier: Option<&Location>) -> bool {
-		let universal_location = T::UniversalLocation::get();
 		// Verify we are the original queriers.
-		if querier != Some(&universal_location.clone().into_location()) {
+		if querier != Some(&Here.into_location()) {
 			log::trace!(
 				target: LOG_TARGET,
-				"Querier for query ID {:?} {:?} is different than configured universal location {:?}",
-				query_id, querier, universal_location
+				"Querier for query ID {:?} = {:?}, which is not us.",
+				query_id, querier
 			);
 			return false;
 		}
@@ -43,8 +42,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 		else {
 			log::trace!(
 				target: LOG_TARGET,
-				"Querier for query ID {:?} {:?} is different than configured universal location {:?}",
-				query_id, querier, universal_location
+				"Did not find a switch pair set.",
 			);
 			return false;
 		};
@@ -58,6 +56,13 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			);
 			return false;
 		};
+		// This order is important. We want to check if the origin is nested inside the
+		// configure reserve location, and not the reverse. Hence, an `X2` origin would
+		// fail this check if the reserve location is an `X1`. Conversely, if the origin
+		// is an `X1(Parachain(1000))` and the configured reserve location is, for
+		// instance, a `X2(Parachain(1000), AccountId32(<acc>))`, this check will pass,
+		// as we make te same assumption Polkadot does, that nested locations are always
+		// under the control of parent locations.
 		if !remote_reserve_location_v4.starts_with(origin) {
 			log::trace!(
 				target: LOG_TARGET,
@@ -140,6 +145,10 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 				);
 				return Weight::zero();
 			};
+			log::trace!(
+				target: LOG_TARGET,
+				"Switch failed. Reverting the transfer.",
+			);
 			let Ok(_) = T::LocalCurrency::transfer(
 				&switch_pair.pool_account,
 				&source,

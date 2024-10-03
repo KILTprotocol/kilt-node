@@ -662,8 +662,18 @@ pub mod pallet {
 			PendingSwitchConfirmations::<T, I>::try_mutate(query_id, |entry| {
 				match entry {
 					// Should never happen.
-					Some(_) => Err(Error::<T, I>::Internal),
-					None => Ok(Some((submitter.clone(), destination_v4, remote_asset_amount_as_u128))),
+					Some(_) => {
+						log::error!(
+							target: LOG_TARGET,
+							"Found already an entry for query ID {:?} in storage.",
+							query_id
+						);
+						Err(Error::<T, I>::Internal)
+					}
+					None => {
+						*entry = Some((submitter.clone(), *beneficiary.clone(), remote_asset_amount_as_u128));
+						Ok(())
+					}
 				}
 			})?;
 

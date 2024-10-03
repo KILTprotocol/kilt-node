@@ -28,7 +28,7 @@ use frame_support::{
 	traits::{Contains, Everything, Nothing, TransformOrigin},
 };
 use frame_system::EnsureRoot;
-use kilt_support::xcm::Or;
+use kilt_support::xcm::EitherOr;
 use pallet_asset_switch::xcm::{
 	IsSwitchPairRemoteAsset, IsSwitchPairXcmFeeAsset, MatchesSwitchPairXcmFeeFungibleAsset,
 	SwitchPairRemoteAssetTransactor, UsingComponentsForSwitchPairRemoteAsset, UsingComponentsForXcmFeeAsset,
@@ -101,7 +101,7 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 			// since local accounts don't have a computed origin (the message isn't send by any router etc.)
 			TakeWeightCredit,
 			// If we request a response we should also allow it to execute.
-			AllowKnownQueryResponses<Or<PolkadotXcm, AssetSwitchPool1>>,
+			AllowKnownQueryResponses<EitherOr<PolkadotXcm, AssetSwitchPool1>>,
 			WithComputedOrigin<
 				(
 					// Allow unpaid execution from the relay chain
@@ -228,7 +228,7 @@ impl xcm_executor::Config for XcmConfig {
 		// Can pay with the fungible that matches the "Here" location.
 		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, SendDustAndFeesToTreasury<Runtime>>,
 	);
-	type ResponseHandler = PolkadotXcm;
+	type ResponseHandler = EitherOr<PolkadotXcm, AssetSwitchPool1>;
 	// What happens with assets that are left in the register after the XCM message
 	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset
 	// location, amount, version, etc.
