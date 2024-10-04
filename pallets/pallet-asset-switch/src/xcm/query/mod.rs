@@ -21,8 +21,8 @@ use xcm::v4::{AssetId, Junctions::Here, Location, Response, Weight, XcmContext};
 use xcm_executor::traits::OnResponse;
 
 use crate::{
-	Config, Event, LocalCurrencyBalanceOf, Pallet, PendingSwitchConfirmations, SwitchPair, SwitchPairInfo,
-	UnconfirmedSwitchInfoOf,
+	traits::SwitchHooks, Config, Event, LocalCurrencyBalanceOf, Pallet, PendingSwitchConfirmations, SwitchPair,
+	SwitchPairInfo, UnconfirmedSwitchInfoOf,
 };
 
 const LOG_TARGET: &str = "runtime::pallet-asset-switch::OnResponse";
@@ -130,6 +130,13 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			);
 			return Weight::zero();
 		};
+		let Ok(local_amount) = LocalCurrencyBalanceOf::<T, I>::try_from(amount) else {
+			log::error!(
+				target: LOG_TARGET,
+				"Failed to convert input amount {:?} into local balance.", amount
+			);
+			return Weight::zero();
+		};
 
 		let is_transfer_present = holding_assets.contains(&(remote_asset_id_v4, amount).into());
 		// Happy case, let's remove the pending query from the storage.
@@ -140,6 +147,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 				query_id
 			);
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
+			T::SwitchHooks::post_local_to_remote_confirmed(&from, &to, local_amount);
 		// Sad case, we need to revert the user's transfer.
 		} else if is_transfer_present {
 			let Ok(fungible_amount_as_currency_balance) = LocalCurrencyBalanceOf::<T, I>::try_from(amount) else {
@@ -175,6 +183,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			};
 			SwitchPair::<T, I>::set(Some(switch_pair));
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
+			T::SwitchHooks::on_local_to_remote_transfer_revert(&from, &to, local_amount);
 			Self::deposit_event(Event::<T, I>::SwitchReverted { amount, from, to });
 		// Weird case where the transfer has partially completed. We don't
 		// explicitly handle this for now, but simply generate some error

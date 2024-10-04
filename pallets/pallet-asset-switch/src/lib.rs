@@ -684,7 +684,7 @@ pub mod pallet {
 			})?;
 
 			// 13. Call into hook post-switch checks
-			T::SwitchHooks::post_local_to_remote_switch(&submitter, &beneficiary, local_asset_amount)
+			T::SwitchHooks::post_local_to_remote_switch_dispatch(&submitter, &beneficiary, local_asset_amount)
 				.map_err(|e| DispatchError::from(Error::<T, I>::Hook(e.into())))?;
 
 			Self::deposit_event(Event::<T, I>::LocalToRemoteSwitchExecuted {

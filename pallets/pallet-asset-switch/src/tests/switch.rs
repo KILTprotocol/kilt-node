@@ -32,7 +32,7 @@ use crate::{
 		get_asset_hub_location, get_remote_erc20_asset_id, Balances, ExtBuilder, MockFungibleAssetTransactor,
 		MockRuntime, System, FREEZE_REASON, HOLD_REASON, XCM_ASSET_FEE,
 	},
-	switch::{SwitchPairStatus, UnconfirmedSwitchInfo},
+	switch::SwitchPairStatus,
 	xcm::convert::AccountId32ToAccountId32JunctionConverter,
 	Error, Event, NewSwitchPairInfoOf, Pallet, PendingSwitchConfirmations, SwitchPair, UnconfirmedSwitchInfoOf,
 };
