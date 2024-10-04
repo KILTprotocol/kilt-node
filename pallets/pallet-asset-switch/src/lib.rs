@@ -215,8 +215,8 @@ pub mod pallet {
 		Xcm,
 		/// Internal error.
 		Internal,
-		/// Attempt to switch zero tokens.
-		ZeroAmount,
+		/// Attempt to switch less than ED tokens.
+		AmountTooLow,
 	}
 
 	/// Stores the switch pair.
@@ -405,11 +405,15 @@ pub mod pallet {
 		) -> DispatchResult {
 			let submitter = T::SubmitterOrigin::ensure_origin(origin)?;
 
-			// 1. Prevent switches of 0 tokens, which would just waste users' XCM fee
-			//    balances.
+			// 1. Prevent switches of less than ED tokens, since there might be a case where
+			//    a switch is reverted, but the user's balance has been dusted, and when
+			//    trying to revert the transfer, it will fail since the account does not
+			//    exist anymore. Hence, we force the transfer to be >= ED, so that even when
+			//    hitting this edge case, we are still sure the original account is
+			//    re-created.
 			ensure!(
-				local_asset_amount > LocalCurrencyBalanceOf::<T, I>::zero(),
-				Error::<T, I>::ZeroAmount
+				local_asset_amount >= T::LocalCurrency::minimum_balance(),
+				Error::<T, I>::AmountTooLow
 			);
 
 			// 2. Retrieve switch pair info from storage, else fail.
@@ -746,6 +750,16 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	fn unset_switch_pair_bypass_checks() {
 		let switch_pair = SwitchPair::<T, I>::take();
 		if let Some(switch_pair) = switch_pair {
+			// Log a warning if trying to unset a switch pair with unconfirmed transfers.
+			// Proper way to do it would be to pause the switches, let them all be
+			// confirmed, and then call this.
+			let is_pending_switches_map_empty = PendingSwitchConfirmations::<T, I>::iter_keys().next().is_none();
+			if !is_pending_switches_map_empty {
+				log::warn!(
+					target: LOG_TARGET,
+					"Unsetting switch pair while there are unconfirmed switches."
+				);
+			}
 			Self::deposit_event(Event::<T, I>::SwitchPairRemoved {
 				remote_asset_id: switch_pair.remote_asset_id,
 			});

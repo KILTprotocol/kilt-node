@@ -25,6 +25,11 @@ use crate::{
 	SwitchPairInfo, UnconfirmedSwitchInfoOf,
 };
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 const LOG_TARGET: &str = "runtime::pallet-asset-switch::OnResponse";
 
 impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
@@ -94,6 +99,13 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 		max_weight: Weight,
 		context: &XcmContext,
 	) -> Weight {
+		if !Self::expecting_response(origin, query_id, querier) {
+			log::error!(
+				target: LOG_TARGET,
+				"`on_response` called even tho `expecting_response` returned `false`.",
+			);
+			return Weight::zero();
+		}
 		log::info!(
 			target: LOG_TARGET,
 			"Processing query with origin = {:?}, ID = {:?}, querier = {:?}, response = {:?}, max_weight = {:?}, context: {:?}",

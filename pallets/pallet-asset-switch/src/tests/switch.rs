@@ -280,7 +280,7 @@ fn fails_on_zero_amount() {
 					0,
 					Box::new(get_asset_hub_location().into())
 				),
-				Error::<MockRuntime>::ZeroAmount
+				Error::<MockRuntime>::AmountTooLow
 			);
 		});
 }
