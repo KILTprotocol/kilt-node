@@ -150,18 +150,22 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			return Weight::zero();
 		};
 
-		let is_transfer_present = holding_assets.contains(&(remote_asset_id_v4, amount).into());
-		// Happy case, let's remove the pending query from the storage.
-		if holding_assets.is_none() || !is_transfer_present {
+		let mut assets_of_kind = holding_assets
+			.inner()
+			.iter()
+			.filter(|a| a.id == remote_asset_id_v4)
+			.peekable();
+		// No assets are reported or there's no asset of interest for us. Happy case.
+		if holding_assets.is_none() || assets_of_kind.peek().is_none() {
 			log::trace!(
 				target: LOG_TARGET,
-				"Switch was successful. Removing pending query {:?} from storage.",
-				query_id
+				"Switch was successful. Removing pending query {:?} from storage upon receiving holding report: {:?}.",
+				query_id, holding_assets
 			);
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
 			T::SwitchHooks::post_local_to_remote_confirmed(&from, &to, local_amount);
 		// Sad case, we need to revert the user's transfer.
-		} else if is_transfer_present {
+		} else if assets_of_kind.any(|a| a.fun == amount.into()) {
 			let Ok(fungible_amount_as_currency_balance) = LocalCurrencyBalanceOf::<T, I>::try_from(amount) else {
 				log::error!(
 					target: LOG_TARGET,
@@ -171,7 +175,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			};
 			log::trace!(
 				target: LOG_TARGET,
-				"Switch failed. Reverting the transfer.",
+				"Switch failed. Reverting the transfer because of holding asset reported: {:?}.", holding_assets
 			);
 			let Ok(_) = T::LocalCurrency::transfer(
 				&switch_pair.pool_account,

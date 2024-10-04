@@ -162,6 +162,7 @@ impl ExtBuilder {
 
 			self.1.into_iter().for_each(|(query_id, pending_switch)| {
 				PendingSwitchConfirmations::<MockRuntime>::insert(query_id, pending_switch);
+				assert!(PendingSwitchConfirmations::<MockRuntime>::contains_key(query_id));
 			});
 
 			System::reset_events()
