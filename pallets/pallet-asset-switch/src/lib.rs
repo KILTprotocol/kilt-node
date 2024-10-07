@@ -183,6 +183,12 @@ pub mod pallet {
 			to: VersionedLocation,
 			amount: u128,
 		},
+		/// A switch has been finalized at destination.
+		LocalToRemoteSwitchFinalized {
+			from: T::AccountId,
+			to: VersionedLocation,
+			amount: u128,
+		},
 	}
 
 	#[pallet::error]

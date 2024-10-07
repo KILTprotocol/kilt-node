@@ -81,6 +81,14 @@ fn successful_storage_clean_up_on_transfer_successful_and_running_pair() {
 			assert_eq!(switch_info_before, switch_info_after);
 			// The pending switch is removed from storage.
 			assert!(!PendingSwitchConfirmations::<MockRuntime>::contains_key(0));
+			// The right event is generated.
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::LocalToRemoteSwitchFinalized {
+					from: ACCOUNT_0,
+					to: Junctions::Here.into_location().into_versioned(),
+					amount: 10
+				}
+				.into()));
 		});
 
 	ExtBuilder::default()
@@ -122,6 +130,14 @@ fn successful_storage_clean_up_on_transfer_successful_and_running_pair() {
 			assert_eq!(switch_info_before, switch_info_after);
 			// The pending switch is removed from storage.
 			assert!(!PendingSwitchConfirmations::<MockRuntime>::contains_key(0));
+			// The right event is generated.
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::LocalToRemoteSwitchFinalized {
+					from: ACCOUNT_0,
+					to: Junctions::Here.into_location().into_versioned(),
+					amount: 10
+				}
+				.into()));
 		});
 }
 
@@ -170,6 +186,14 @@ fn successful_storage_clean_up_on_transfer_successful_and_paused_pair() {
 			assert_eq!(switch_info_before, switch_info_after);
 			// The pending switch is removed from storage.
 			assert!(!PendingSwitchConfirmations::<MockRuntime>::contains_key(0));
+			// The right event is generated.
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::LocalToRemoteSwitchFinalized {
+					from: ACCOUNT_0,
+					to: Junctions::Here.into_location().into_versioned(),
+					amount: 10
+				}
+				.into()));
 		});
 
 	ExtBuilder::default()
@@ -211,6 +235,14 @@ fn successful_storage_clean_up_on_transfer_successful_and_paused_pair() {
 			assert_eq!(switch_info_before, switch_info_after);
 			// The pending switch is removed from storage.
 			assert!(!PendingSwitchConfirmations::<MockRuntime>::contains_key(0));
+			// The right event is generated.
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::LocalToRemoteSwitchFinalized {
+					from: ACCOUNT_0,
+					to: Junctions::Here.into_location().into_versioned(),
+					amount: 10
+				}
+				.into()));
 		});
 }
 

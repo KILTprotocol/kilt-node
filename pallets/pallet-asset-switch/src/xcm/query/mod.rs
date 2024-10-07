@@ -163,7 +163,8 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 				query_id, holding_assets
 			);
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
-			T::SwitchHooks::post_local_to_remote_confirmed(&from, &to, local_amount);
+			T::SwitchHooks::post_local_to_remote_finalized(&from, &to, local_amount);
+			Self::deposit_event(Event::<T, I>::LocalToRemoteSwitchFinalized { amount, from, to });
 		// Sad case, we need to revert the user's transfer.
 		} else if assets_of_kind.any(|a| a.fun == amount.into()) {
 			let Ok(fungible_amount_as_currency_balance) = LocalCurrencyBalanceOf::<T, I>::try_from(amount) else {

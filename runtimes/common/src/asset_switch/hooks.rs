@@ -83,7 +83,7 @@ where
 		Ok(())
 	}
 
-	fn post_local_to_remote_confirmed(_from: &<R>::AccountId, _to: &VersionedLocation, _amount: BalanceOf<R, I>) {}
+	fn post_local_to_remote_finalized(_from: &<R>::AccountId, _to: &VersionedLocation, _amount: BalanceOf<R, I>) {}
 
 	fn on_local_to_remote_transfer_revert(_from: &<R>::AccountId, _to: &VersionedLocation, _amount: BalanceOf<R, I>) {}
 

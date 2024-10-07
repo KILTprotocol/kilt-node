@@ -71,7 +71,7 @@ where
 		amount: LocalCurrencyBalanceOf<T, I>,
 	) -> Result<(), Self::Error>;
 
-	fn post_local_to_remote_confirmed(
+	fn post_local_to_remote_finalized(
 		from: &T::AccountId,
 		to: &VersionedLocation,
 		amount: LocalCurrencyBalanceOf<T, I>,
@@ -111,7 +111,7 @@ where
 		Ok(())
 	}
 
-	fn post_local_to_remote_confirmed(
+	fn post_local_to_remote_finalized(
 		_from: &T::AccountId,
 		_to: &VersionedLocation,
 		_amount: LocalCurrencyBalanceOf<T, I>,
