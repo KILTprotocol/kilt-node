@@ -46,7 +46,7 @@ use frame_support::traits::{
 	PalletInfoAccess,
 };
 use parity_scale_codec::{Decode, Encode};
-use sp_runtime::traits::TrailingZeroInput;
+use sp_runtime::traits::{TrailingZeroInput, Zero};
 use sp_std::boxed::Box;
 
 pub use crate::pallet::*;
@@ -217,6 +217,8 @@ pub mod pallet {
 		Internal,
 		/// Attempt to switch less than ED tokens.
 		AmountTooLow,
+		/// Some switches have not been finalized.
+		PendingSwitches,
 	}
 
 	/// Stores the switch pair.
@@ -315,12 +317,10 @@ pub mod pallet {
 			);
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
 
-			let pending_confirmations_count = PendingSwitchConfirmations::<T, I>::count();
-			if pending_confirmations_count > Zero::zero() {
+			if Self::is_any_transaction_pending() {
 				log::warn!(
 					target: LOG_TARGET,
-					"Calling `force_set_switch_pair` with a non-empty map of pending swaps. Current count: {:?}",
-					pending_confirmations_count
+					"Calling `force_set_switch_pair` with a non-empty map of pending swaps.",
 				)
 			}
 
@@ -337,13 +337,14 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Unset a switch pair.
+		/// Unset a switch pair, only if there is no pending transactions left.
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(2)]
 		#[pallet::weight(<T as Config<I>>::WeightInfo::force_unset_switch_pair())]
 		pub fn force_unset_switch_pair(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
+			ensure!(!Self::is_any_transaction_pending(), Error::<T, I>::PendingSwitches);
 
 			Self::unset_switch_pair_bypass_checks();
 
@@ -808,5 +809,11 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			);
 			Error::<T, I>::Internal
 		})
+	}
+
+	// Read the first item in the storage and returns `true` if `Some`, and `false`
+	// otherwise.
+	fn is_any_transaction_pending() -> bool {
+		PendingSwitchConfirmations::<T, I>::count() > Zero::zero()
 	}
 }
