@@ -274,7 +274,7 @@ fn successful_revert_on_transfer_revert_and_running_pair() {
 			assert!(!PendingSwitchConfirmations::<MockRuntime>::contains_key(0));
 			// The revert event is generated
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwitchReverted {
+				== Event::<MockRuntime>::LocalToRemoteSwitchReverted {
 					from: ACCOUNT_0,
 					to: Junctions::Here.into_location().into_versioned(),
 					amount: 10
@@ -336,7 +336,7 @@ fn successful_revert_on_transfer_revert_and_running_pair() {
 			assert!(!PendingSwitchConfirmations::<MockRuntime>::contains_key(0));
 			// The revert event is generated
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwitchReverted {
+				== Event::<MockRuntime>::LocalToRemoteSwitchReverted {
 					from: ACCOUNT_0,
 					to: Junctions::Here.into_location().into_versioned(),
 					amount: 10
@@ -405,7 +405,7 @@ fn successful_revert_on_transfer_revert_and_paused_pair() {
 			assert!(!PendingSwitchConfirmations::<MockRuntime>::contains_key(0));
 			// The revert event is generated
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwitchReverted {
+				== Event::<MockRuntime>::LocalToRemoteSwitchReverted {
 					from: ACCOUNT_0,
 					to: Junctions::Here.into_location().into_versioned(),
 					amount: 10
@@ -467,7 +467,7 @@ fn successful_revert_on_transfer_revert_and_paused_pair() {
 			assert!(!PendingSwitchConfirmations::<MockRuntime>::contains_key(0));
 			// The revert event is generated
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
-				== Event::<MockRuntime>::SwitchReverted {
+				== Event::<MockRuntime>::LocalToRemoteSwitchReverted {
 					from: ACCOUNT_0,
 					to: Junctions::Here.into_location().into_versioned(),
 					amount: 10

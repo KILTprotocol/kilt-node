@@ -178,7 +178,7 @@ pub mod pallet {
 		RemoteToLocalSwitchExecuted { to: T::AccountId, amount: u128 },
 		/// A switch has been reversed because it failed to execute at
 		/// destination.
-		SwitchReverted {
+		LocalToRemoteSwitchReverted {
 			from: T::AccountId,
 			to: VersionedLocation,
 			amount: u128,
