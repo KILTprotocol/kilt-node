@@ -263,7 +263,10 @@ pub mod pallet {
 			// 1. Verify switch pair has not already been set.
 			ensure!(!SwitchPair::<T, I>::exists(), Error::<T, I>::SwitchPairAlreadyExisting);
 
-			// 2. Verify that total issuance >= circulating supply and that the amount of
+			// 2. Verify there's no pending transactions from a previous pair.
+			ensure!(!Self::is_any_transaction_pending(), Error::<T, I>::PendingSwitches);
+
+			// 3. Verify that total issuance >= circulating supply and that the amount of
 			//    remote assets locked (total - circulating) is greater than the minimum
 			//    amount required at destination (remote ED).
 			ensure!(
@@ -271,7 +274,7 @@ pub mod pallet {
 				Error::<T, I>::InvalidInput
 			);
 
-			// 3. Verify the pool account has enough local assets to match the circulating
+			// 4. Verify the pool account has enough local assets to match the circulating
 			//    supply of eKILTs to cover for all potential remote -> local switches.
 			//    Handle the special case where circulating supply is `0`.
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
@@ -343,14 +346,20 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Unset a switch pair, only if there is no pending transactions left.
+		/// Unset a switch pair.
 		///
 		/// See the crate's README for more.
 		#[pallet::call_index(2)]
 		#[pallet::weight(<T as Config<I>>::WeightInfo::force_unset_switch_pair())]
 		pub fn force_unset_switch_pair(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
-			ensure!(!Self::is_any_transaction_pending(), Error::<T, I>::PendingSwitches);
+
+			if Self::is_any_transaction_pending() {
+				log::warn!(
+					target: LOG_TARGET,
+					"Calling `force_unset_switch_pair` with a non-empty map of pending swaps.",
+				)
+			}
 
 			Self::unset_switch_pair_bypass_checks();
 

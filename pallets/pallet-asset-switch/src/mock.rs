@@ -37,11 +37,14 @@ use xcm::v4::{
 	Asset, AssetId, Error as XcmError, Fungibility, InteriorLocation,
 	Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
 	Junctions::{Here, X1, X2},
-	Location, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
+	Location, NetworkId, QueryId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
 };
 use xcm_executor::{traits::TransactAsset, AssetsInHolding};
 
-use crate::{xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, Pallet};
+use crate::{
+	xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, Pallet,
+	PendingSwitchConfirmations, UnconfirmedSwitchInfoOf,
+};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -201,6 +204,7 @@ pub(super) struct ExtBuilder(
 	Option<NewSwitchPairInfoOf<MockRuntime>>,
 	Vec<(AccountId32, u64, u64, u64)>,
 	Vec<(AccountId32, Asset)>,
+	Vec<(QueryId, UnconfirmedSwitchInfoOf<MockRuntime>)>,
 );
 
 pub(super) const FREEZE_REASON: [u8; 1] = *b"1";
@@ -219,6 +223,14 @@ impl ExtBuilder {
 
 	pub(super) fn with_fungibles(mut self, fungibles: Vec<(AccountId32, Asset)>) -> Self {
 		self.2 = fungibles;
+		self
+	}
+
+	pub(super) fn with_pending_switches(
+		mut self,
+		switches: Vec<(QueryId, UnconfirmedSwitchInfoOf<MockRuntime>)>,
+	) -> Self {
+		self.3 = switches;
 		self
 	}
 
@@ -268,6 +280,14 @@ impl ExtBuilder {
 						asset, account
 					)
 				});
+			}
+
+			for (query_id, pending_switch) in self.3 {
+				PendingSwitchConfirmations::<MockRuntime>::insert(query_id, pending_switch.clone());
+				assert_eq!(
+					PendingSwitchConfirmations::<MockRuntime>::get(query_id),
+					Some(pending_switch)
+				)
 			}
 
 			// Some setup operations generate events which interfere with our assertions.

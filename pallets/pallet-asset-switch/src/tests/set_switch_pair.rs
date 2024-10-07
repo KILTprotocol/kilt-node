@@ -20,12 +20,12 @@ use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_runtime::{
 	traits::{One, Zero},
-	DispatchError,
+	AccountId32, DispatchError,
 };
 
 use crate::{
 	mock::{get_asset_hub_location, get_remote_erc20_asset_id, ExtBuilder, MockRuntime, System, XCM_ASSET_FEE},
-	switch::SwitchPairStatus,
+	switch::{SwitchPairStatus, UnconfirmedSwitchInfo},
 	Error, Event, NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf,
 };
 
@@ -294,6 +294,36 @@ fn fails_on_pool_existing() {
 					Box::new(XCM_ASSET_FEE.into()),
 				),
 				Error::<MockRuntime>::SwitchPairAlreadyExisting
+			);
+		});
+}
+
+#[test]
+fn fails_on_pending_switches() {
+	let pool_account_address =
+		Pallet::<MockRuntime>::pool_account_id_for_remote_asset(&get_remote_erc20_asset_id().into()).unwrap();
+	ExtBuilder::default()
+		.with_balances(vec![(pool_account_address.clone(), 1, 0, 0)])
+		.with_pending_switches(vec![(
+			0,
+			UnconfirmedSwitchInfo {
+				amount: 10,
+				from: AccountId32::new([100; 32]),
+				to: get_asset_hub_location().into_versioned(),
+			},
+		)])
+		.build_and_execute_with_sanity_tests(|| {
+			assert_noop!(
+				Pallet::<MockRuntime>::set_switch_pair(
+					RawOrigin::Root.into(),
+					100_000,
+					Box::new(get_remote_erc20_asset_id().into()),
+					1_000,
+					Box::new(get_asset_hub_location().into()),
+					0,
+					Box::new(XCM_ASSET_FEE.into()),
+				),
+				Error::<MockRuntime>::PendingSwitches
 			);
 		});
 }
