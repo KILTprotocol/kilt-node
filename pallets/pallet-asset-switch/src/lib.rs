@@ -229,7 +229,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn pending_switch_confirmations)]
 	pub(crate) type PendingSwitchConfirmations<T: Config<I>, I: 'static = ()> =
-		StorageMap<_, Twox64Concat, QueryId, UnconfirmedSwitchInfoOf<T>, OptionQuery>;
+		CountedStorageMap<_, Twox64Concat, QueryId, UnconfirmedSwitchInfoOf<T>, OptionQuery>;
 
 	#[pallet::call]
 	impl<T: Config<I>, I: 'static> Pallet<T, I>
@@ -314,6 +314,15 @@ pub mod pallet {
 				Error::<T, I>::InvalidInput
 			);
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
+
+			let pending_confirmations_count = PendingSwitchConfirmations::<T, I>::count();
+			if pending_confirmations_count > Zero::zero() {
+				log::warn!(
+					target: LOG_TARGET,
+					"Calling `force_set_switch_pair` with a non-empty map of pending swaps. Current count: {:?}",
+					pending_confirmations_count
+				)
+			}
 
 			Self::set_switch_pair_bypass_checks(
 				remote_asset_total_supply,
