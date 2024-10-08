@@ -32,16 +32,16 @@ use crate::{Config, LocalCurrencyBalanceOf};
 ///    switch pallet after all other logic is executed and after the XCM message
 ///    for the transfer is prepared to be sent to the remote location. E.g., it
 ///    can be used to update storage elements of other pallets once the transfer
-///    is guaranteed to take place at destination. This function can still fail,
-///    in which case the message won't be sent. But otherwise, at this stage the
-///    XCM message is guaranteed to at least be deliverable to the destination.
-///    It can still fail at destination, which will in turn call the
-///    `on_transfer_revert` hook.
+///    operation is guaranteed to be sent to destination. This function can
+///    still fail, in which case the message won't be sent. But otherwise, at
+///    this stage the XCM message is guaranteed to at least be deliverable to
+///    the destination. It can still fail at destination, which will in turn
+///    call the `post_local_to_remote_transfer_revert` hook.
 /// 3. `post_local_to_remote_confirmed` (infallible): Called when the remote
 ///    destination confirms the transfer was successful.
-/// 4. `on_local_to_remote_transfer_revert` (infallible): Called when the remote
-///    destination signals that a previously local -> remote switch has instead
-///    failed.
+/// 4. `post_local_to_remote_transfer_revert` (infallible): Called when the
+///    remote destination signals that a previously local -> remote switch has
+///    instead failed.
 ///
 /// The order in which the hooks are called, for any given remote -> local
 /// switch is the following:
@@ -77,7 +77,7 @@ where
 		amount: LocalCurrencyBalanceOf<T, I>,
 	);
 
-	fn on_local_to_remote_transfer_revert(
+	fn post_local_to_remote_transfer_revert(
 		from: &T::AccountId,
 		to: &VersionedLocation,
 		amount: LocalCurrencyBalanceOf<T, I>,
@@ -118,7 +118,7 @@ where
 	) {
 	}
 
-	fn on_local_to_remote_transfer_revert(
+	fn post_local_to_remote_transfer_revert(
 		_from: &<T>::AccountId,
 		_to: &VersionedLocation,
 		_amount: LocalCurrencyBalanceOf<T, I>,

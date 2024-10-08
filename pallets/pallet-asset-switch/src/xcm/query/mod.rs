@@ -200,7 +200,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 			};
 			SwitchPair::<T, I>::set(Some(switch_pair));
 			PendingSwitchConfirmations::<T, I>::remove(query_id);
-			T::SwitchHooks::on_local_to_remote_transfer_revert(&from, &to, local_amount);
+			T::SwitchHooks::post_local_to_remote_transfer_revert(&from, &to, local_amount);
 			Self::deposit_event(Event::<T, I>::LocalToRemoteSwitchReverted { amount, from, to });
 		// Weird case where the transfer has partially completed. We don't
 		// explicitly handle this for now, but simply generate some error
