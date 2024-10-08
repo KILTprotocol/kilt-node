@@ -180,6 +180,7 @@ pub struct UnconfirmedSwitchInfo<Source, Destination, Amount> {
 	pub(crate) amount: Amount,
 }
 
+#[allow(dead_code)]
 pub(crate) struct SwitchPairInfoV4<AccountId, T, I> {
 	pub(crate) pool_account: AccountId,
 	pub(crate) remote_asset_circulating_supply: u128,
@@ -205,6 +206,9 @@ where
 			pool_account: value.pool_account,
 			remote_asset_circulating_supply: value.remote_asset_circulating_supply,
 			remote_asset_ed: value.remote_asset_ed,
+			remote_asset_sovereign_total_balance: value.remote_asset_sovereign_total_balance,
+			remote_asset_total_supply: value.remote_asset_total_supply,
+			status: value.status,
 			remote_asset_id: value.remote_asset_id.clone().try_into().map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
@@ -214,8 +218,6 @@ where
 				);
 				Error::<T, I>::Internal
 			})?,
-			remote_asset_sovereign_total_balance: value.remote_asset_sovereign_total_balance,
-			remote_asset_total_supply: value.remote_asset_total_supply,
 			remote_reserve_location: value.remote_reserve_location.clone().try_into().map_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
@@ -234,7 +236,6 @@ where
 				);
 				Error::<T, I>::Xcm
 			})?,
-			status: value.status,
 			_phantom_data: Default::default(),
 		};
 		Ok(value_v4)

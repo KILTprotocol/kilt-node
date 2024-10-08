@@ -1606,8 +1606,6 @@ impl_runtime_apis! {
 			use sp_runtime::traits::TryConvert;
 			use xcm::v4::{AssetId, Asset};
 
-			use pallet_asset_switch::traits::QueryIdProvider;
-
 			let Ok(pair_id_as_string) = str::from_utf8(pair_id.as_slice()) else {
 				return Err(AssetSwitchApiError::InvalidInput);
 			};
@@ -1628,9 +1626,8 @@ impl_runtime_apis! {
 			}.map_err(|_| AssetSwitchApiError::Other(format!("Failed to invert target for target destination {:?}", to)))?;
 			let asset_id_v4 = AssetId::try_from(switch_pair.remote_asset_id).map_err(|_| AssetSwitchApiError::Internal)?;
 			let remote_asset_fee_v4 = Asset::try_from(switch_pair.remote_xcm_fee).map_err(|_| AssetSwitchApiError::Internal)?;
-			let query_id = QueryIdProviderViaXcmPallet::<Runtime>::next_id();
 
-			Ok(AssetSwitchPool1::compute_xcm_for_switch(&our_location_for_destination, &from_v4.into(), &to_v4, amount, &asset_id_v4, &remote_asset_fee_v4, query_id))
+			Ok(AssetSwitchPool1::compute_xcm_for_switch(&our_location_for_destination, &from_v4.into(), &to_v4, amount, &asset_id_v4, &remote_asset_fee_v4))
 		}
 	}
 

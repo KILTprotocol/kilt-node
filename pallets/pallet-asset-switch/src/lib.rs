@@ -43,7 +43,7 @@ use ::xcm::{
 	v4::{
 		Asset, AssetFilter, AssetId,
 		Instruction::{BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, WithdrawAsset},
-		Location, QueryId, QueryResponseInfo, Weight, WeightLimit, WildAsset, WildFungibility, Xcm,
+		Location, QueryResponseInfo, Weight, WeightLimit, WildAsset, WildFungibility, Xcm,
 	},
 	VersionedAsset, VersionedAssetId, VersionedLocation,
 };
@@ -63,7 +63,7 @@ const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::{
-		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus, UnconfirmedSwitchInfo},
+		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairInfoV4, SwitchPairStatus, UnconfirmedSwitchInfo},
 		traits::SwitchHooks,
 		WeightInfo, LOG_TARGET,
 	};
@@ -481,7 +481,7 @@ pub mod pallet {
 				Error::<T, I>::Liquidity
 			);
 
-			let switch_pair_v4 = SwitchPairInfoV4::try_from(switch_pair).map_err(|e| e.into())?;
+			let switch_pair_v4 = SwitchPairInfoV4::<_, T, I>::try_from(switch_pair).map_err(DispatchError::from)?;
 			let beneficiary_v4: Location = (*beneficiary.clone()).try_into().map_err(|e| {
 				log::info!(
 					target: LOG_TARGET,
@@ -507,32 +507,35 @@ pub mod pallet {
 
 			// 7. Compose and validate XCM message
 			let universal_location = T::UniversalLocation::get();
-			let our_location_for_destination = universal_location.invert_target(&destination_v4).map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to invert universal location {:?} for destination {:?} with error {:?}",
-					universal_location, destination_v4, e
-				);
-				Error::<T, I>::Internal
-			})?;
+			let our_location_for_destination = universal_location
+				.invert_target(&switch_pair_v4.remote_reserve_location)
+				.map_err(|e| {
+					log::error!(
+						target: LOG_TARGET,
+						"Failed to invert universal location {:?} for destination {:?} with error {:?}",
+						universal_location, switch_pair_v4.remote_reserve_location, e
+					);
+					Error::<T, I>::Internal
+				})?;
 			let remote_xcm = Self::compute_xcm_for_switch(
 				&our_location_for_destination,
 				&submitter_as_location,
 				&beneficiary_v4,
 				remote_asset_amount_as_u128,
-				&asset_id_v4,
-				&remote_asset_fee_v4,
+				&switch_pair_v4.remote_asset_id,
+				&switch_pair_v4.remote_xcm_fee,
 			);
 			let xcm_ticket =
-				validate_send::<T::XcmRouter>(destination_v4.clone(), remote_xcm.clone()).map_err(|e| {
-					log::info!(
-						"Failed to call `validate_send` for destination {:?} and remote XCM {:?} with error {:?}",
-						destination_v4,
-						remote_xcm,
-						e
-					);
-					DispatchError::from(Error::<T, I>::Xcm)
-				})?;
+				validate_send::<T::XcmRouter>(switch_pair_v4.remote_reserve_location.clone(), remote_xcm.clone())
+					.map_err(|e| {
+						log::info!(
+							"Failed to call `validate_send` for destination {:?} and remote XCM {:?} with error {:?}",
+							switch_pair_v4.remote_reserve_location,
+							remote_xcm,
+							e
+						);
+						DispatchError::from(Error::<T, I>::Xcm)
+					})?;
 
 			// 8. Call into hook pre-switch checks
 			T::SwitchHooks::pre_local_to_remote_switch(&submitter, &beneficiary, local_asset_amount)
@@ -541,7 +544,7 @@ pub mod pallet {
 			// 9. Transfer funds from user to pool
 			let transferred_amount = T::LocalCurrency::transfer(
 				&submitter,
-				&switch_pair.pool_account,
+				&switch_pair_v4.pool_account,
 				local_asset_amount,
 				// We don't care if the submitter's account gets dusted, but it should not be killed.
 				Preservation::Protect,
@@ -556,23 +559,24 @@ pub mod pallet {
 			}
 
 			// 10. Take XCM fee from submitter.
-			let withdrawn_fees = T::AssetTransactor::withdraw_asset(&remote_asset_fee_v4, &submitter_as_location, None)
-				.map_err(|e| {
-					log::info!(
-						target: LOG_TARGET,
-						"Failed to withdraw asset {:?} from location {:?} with error {:?}",
-						remote_asset_fee_v4,
-						submitter_as_location,
-						e
-					);
-					DispatchError::from(Error::<T, I>::UserXcmBalance)
-				})?;
-			if withdrawn_fees != vec![remote_asset_fee_v4.clone()].into() {
+			let withdrawn_fees =
+				T::AssetTransactor::withdraw_asset(&switch_pair_v4.remote_xcm_fee, &submitter_as_location, None)
+					.map_err(|e| {
+						log::info!(
+							target: LOG_TARGET,
+							"Failed to withdraw asset {:?} from location {:?} with error {:?}",
+							switch_pair_v4.remote_xcm_fee,
+							submitter_as_location,
+							e
+						);
+						DispatchError::from(Error::<T, I>::UserXcmBalance)
+					})?;
+			if withdrawn_fees != vec![switch_pair_v4.remote_xcm_fee.clone()].into() {
 				log::error!(
 					target: LOG_TARGET,
 					"Withdrawn fees {:?} does not match expected fee {:?}.",
 					withdrawn_fees,
-					remote_asset_fee_v4
+					switch_pair_v4.remote_xcm_fee
 				);
 				return Err(DispatchError::from(Error::<T, I>::Internal));
 			}
@@ -602,7 +606,15 @@ pub mod pallet {
 					})?;
 				Ok(())
 			})?;
-			// 12.2 Write the query ID into storage, checking for the very unlikely
+			// 12.2 Update the query ID storage entry. wrapping around the max value since
+			// it's safe to do so, assuming by the time we wrap the previously pending
+			// transfers have all been processed.
+			let query_id = NextQueryId::<T, I>::mutate(|entry| {
+				let next = *entry;
+				*entry = entry.wrapping_add(1);
+				next
+			});
+			// 12.3 Write the query ID into storage, checking for the very unlikely
 			// situation in which one already exists.
 			PendingSwitchConfirmations::<T, I>::try_mutate(query_id, |entry| {
 				match entry {
@@ -625,12 +637,6 @@ pub mod pallet {
 					}
 				}
 			})?;
-			// 12.3 Update the query ID storage entry. wrapping around the max value since
-			// it's safe to do so, assuming by the time we wrap the previously pending
-			// transfers have all been processed.
-			NextQueryId::<T, I>::mutate(|entry| {
-				*entry = entry.wrapping_add(1);
-			});
 
 			// 13. Call into hook post-switch checks
 			T::SwitchHooks::post_local_to_remote_switch_dispatch(&submitter, &beneficiary, local_asset_amount)
