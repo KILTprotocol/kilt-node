@@ -158,12 +158,12 @@ fn successful_with_switch_pair_not_enabled() {
 		.build_and_execute_with_sanity_tests(|| {
 			let (asset_location, asset_amount): (Location, u128) =
 				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
-					id: AssetId(location.clone().try_into().unwrap()),
+					id: AssetId(location.clone()),
 					fun: Fungibility::Fungible(u128::MAX),
 				})
 				.unwrap();
 			// Asset location should match the one stored in the switch pair.
-			assert_eq!(asset_location, location.try_into().unwrap());
+			assert_eq!(asset_location, location);
 			// Asset amount should match the input one.
 			assert_eq!(asset_amount, u128::MAX);
 		});
