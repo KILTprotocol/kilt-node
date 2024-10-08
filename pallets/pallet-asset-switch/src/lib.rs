@@ -80,7 +80,7 @@ pub mod pallet {
 	use sp_runtime::traits::{TryConvert, Zero};
 	use sp_std::{boxed::Box, vec};
 	use xcm::{
-		v4::{validate_send, Asset, AssetId, InteriorLocation, Junction, Location, QueryId, SendXcm},
+		v4::{validate_send, InteriorLocation, Junction, Location, QueryId, SendXcm},
 		VersionedAsset, VersionedAssetId, VersionedLocation,
 	};
 	use xcm_executor::traits::TransactAsset;
@@ -506,7 +506,6 @@ pub mod pallet {
 				})?;
 
 			// 7. Compose and validate XCM message
-			let query_id = NextQueryId::<T, I>::get();
 			let universal_location = T::UniversalLocation::get();
 			let our_location_for_destination = universal_location.invert_target(&destination_v4).map_err(|e| {
 				log::error!(
@@ -523,7 +522,6 @@ pub mod pallet {
 				remote_asset_amount_as_u128,
 				&asset_id_v4,
 				&remote_asset_fee_v4,
-				query_id,
 			);
 			let xcm_ticket =
 				validate_send::<T::XcmRouter>(destination_v4.clone(), remote_xcm.clone()).map_err(|e| {
@@ -759,14 +757,13 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		amount: u128,
 		asset_id: &AssetId,
 		remote_asset_fee: &Asset,
-		query_id: QueryId,
 	) -> Xcm<()> {
 		let appendix = vec![
 			ReportHolding {
 				response_info: QueryResponseInfo {
 					destination: inverted_universal_location.clone(),
 					max_weight: Weight::zero(),
-					query_id,
+					query_id: NextQueryId::<T, I>::get(),
 				},
 				// Include in the report the assets that were not transferred.
 				assets: AssetFilter::Wild(WildAsset::AllOf {
