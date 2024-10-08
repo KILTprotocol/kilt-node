@@ -20,6 +20,7 @@ mod curves_parameters;
 #[frame_support::pallet]
 pub mod pallet {
 
+	use fixed::traits::Fixed;
 	use frame_support::{
 		dispatch::DispatchResult,
 		ensure,
@@ -39,15 +40,16 @@ pub mod pallet {
 	use frame_system::{ensure_root, pallet_prelude::*};
 	use parity_scale_codec::FullCodec;
 	use scale_info::TypeInfo;
+	use sp_arithmetic::FixedPointNumber;
 	use sp_runtime::{
 		traits::{CheckedAdd, CheckedSub, One, Saturating, StaticLookup, Zero},
-		ArithmeticError, BoundedVec, FixedPointNumber, SaturatedConversion,
+		ArithmeticError, BoundedVec, SaturatedConversion,
 	};
 	use sp_std::{default::Default, iter::Iterator, vec::Vec};
 
 	use crate::{
-		curves_parameters::{convert_currency_amount, RationalBondingFunctionParameters, SquareRoot},
-		types::{Curve, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta},
+		curves_parameters::{convert_balance_to_curve_parameter, SquareRoot},
+		types::{Curve, CurveInput, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta},
 	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -67,7 +69,7 @@ pub mod pallet {
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type PoolDetailsOf<T> =
-		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterTypeOf<T>>, BoundedCurrencyVec<T>>;
+		PoolDetails<<T as frame_system::Config>::AccountId, Curve, BoundedCurrencyVec<T>>;
 
 	type CollateralAssetIdOf<T> =
 		<<T as Config>::CollateralCurrency as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
@@ -130,8 +132,7 @@ pub mod pallet {
 		/// The type used for the curve parameters.
 		type CurveParameterType: Parameter
 			+ Member
-			+ FixedPointNumber<Inner = u128>
-			+ TypeInfo
+			+ Fixed
 			+ MaxEncodedLen
 			+ SquareRoot
 			+ Zero
@@ -201,7 +202,7 @@ pub mod pallet {
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn create_pool(
 			origin: OriginFor<T>,
-			curve: Curve<CurveParameterTypeOf<T>>,
+			curve: CurveInput,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			tradable: bool, // Todo: make it useful.
 			state: PoolStatus<Locks>,
@@ -386,29 +387,27 @@ pub mod pallet {
 
 			match &pool_details.curve {
 				Curve::RationalBondingFunction => {
-					let collateral = Self::burn_pool_currency_and_calculate_collateral(
+					let _collateral = Self::burn_pool_currency_and_calculate_collateral(
 						&pool_details,
 						from_idx_usize,
 						who,
 						amount_to_swap,
 					)?;
 
-					let collateral_denomination = Self::get_collateral_denomination()?;
+					let _currencies_metadata = Self::get_currencies_issuance(&pool_details);
 
-					let currencies_metadata = Self::get_currencies_metadata(&pool_details)?;
+					// let raw_supply = RationalBondingFunctionParameters::<T::CurveParameterType>::process_swap::<T>(
+					// 	currencies_metadata,
+					// 	(collateral, collateral_denomination),
+					// 	to_idx_usize,
+					// )?;
 
-					let raw_supply = RationalBondingFunctionParameters::<T::CurveParameterType>::process_swap::<T>(
-						currencies_metadata,
-						(collateral, collateral_denomination),
-						to_idx_usize,
-					)?;
-
-					Self::mint_pool_currency_and_calculate_collateral(
-						&pool_details,
-						to_idx_usize,
-						beneficiary,
-						raw_supply,
-					)?;
+					// Self::mint_pool_currency_and_calculate_collateral(
+					// 	&pool_details,
+					// 	to_idx_usize,
+					// 	beneficiary,
+					// 	raw_supply,
+					// )?;
 				}
 				// The price for burning and minting in the pool is the same, if the bonding curve is not [RationalBondingFunction].
 				_ => {
@@ -559,28 +558,19 @@ pub mod pallet {
 		/// save usage of currency_ids.
 		pub fn get_collateral_diff(
 			kind: DiffKind,
-			curve: &Curve<CurveParameterTypeOf<T>>,
+			curve: &Curve,
 			amount: &FungiblesBalanceOf<T>,
-			total_issuances: Vec<(FungiblesBalanceOf<T>, u128)>,
+			total_issuances: Vec<FungiblesBalanceOf<T>>,
 			currency_idx: usize,
 		) -> Result<CollateralCurrencyBalanceOf<T>, DispatchError> {
-			let denomination_normalization = CurveParameterTypeOf::<T>::DIV;
-			let denomination_collateral_currency = Self::get_collateral_denomination()?;
-
-			let denomination_bonded_currency = total_issuances.get(currency_idx).ok_or(Error::<T>::IndexOutOfBounds)?.1;
-
 			let normalized_total_issuances = total_issuances
 				.clone()
 				.into_iter()
-				.map(|(x, d)| convert_currency_amount::<T>(x.saturated_into::<u128>(), d, denomination_normalization))
+				.map(|x| convert_balance_to_curve_parameter::<T>(x.saturated_into::<u128>()))
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
 			// normalize the amount to mint
-			let normalized_amount = convert_currency_amount::<T>(
-				amount.clone().saturated_into(),
-				denomination_bonded_currency,
-				denomination_normalization,
-			)?;
+			let normalized_amount = convert_balance_to_curve_parameter::<T>(amount.clone().saturated_into())?;
 
 			let (active_issuance_pre, active_issuance_post) = Self::calculate_pre_post_issuances(
 				&kind,
@@ -598,14 +588,7 @@ pub mod pallet {
 			let normalize_cost =
 				curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance, kind)?;
 
-			// transform the cost back to the target denomination of the collateral currency
-			let collateral = convert_currency_amount::<T>(
-				normalize_cost.into_inner(),
-				denomination_normalization,
-				denomination_collateral_currency,
-			)?;
-
-			Ok(collateral.into_inner().saturated_into())
+			Ok(normalize_cost.to_num::<u128>().saturated_into())
 		}
 
 		fn calculate_pre_post_issuances(
@@ -637,7 +620,7 @@ pub mod pallet {
 				.get(currency_idx)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let currencies_metadata = Self::get_currencies_metadata(pool_details)?;
+			let currencies_metadata = Self::get_currencies_issuance(pool_details);
 
 			T::Fungibles::burn_from(
 				burn_currency_id.clone(),
@@ -672,7 +655,7 @@ pub mod pallet {
 				.get(currency_idx)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let currencies_metadata = Self::get_currencies_metadata(pool_details)?;
+			let currencies_metadata = Self::get_currencies_issuance(pool_details);
 
 			let cost = Self::get_collateral_diff(
 				DiffKind::Mint,
@@ -707,26 +690,12 @@ pub mod pallet {
 			(currency_ids_vec, start_id)
 		}
 
-		fn get_currencies_metadata(
-			pool_details: &PoolDetailsOf<T>,
-		) -> Result<Vec<(FungiblesBalanceOf<T>, u128)>, ArithmeticError> {
+		fn get_currencies_issuance(pool_details: &PoolDetailsOf<T>) -> Vec<FungiblesBalanceOf<T>> {
 			pool_details
 				.bonded_currencies
 				.iter()
-				.map(|id| {
-					let total_issuance = T::Fungibles::total_issuance(id.clone());
-					let decimals = 10u128
-						.checked_pow(T::Fungibles::decimals(id.clone()).into())
-						.ok_or(ArithmeticError::Overflow)?;
-					Ok((total_issuance, decimals))
-				})
+				.map(|id| T::Fungibles::total_issuance(id.clone()))
 				.collect()
-		}
-
-		fn get_collateral_denomination() -> Result<u128, ArithmeticError> {
-			10u128
-				.checked_pow(T::CollateralCurrency::decimals(T::CollateralAssetId::get()).into())
-				.ok_or(ArithmeticError::Overflow)
 		}
 	}
 }

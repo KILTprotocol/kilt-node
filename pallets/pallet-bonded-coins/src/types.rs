@@ -102,10 +102,27 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 	pub min_balance: Balance,
 }
 
+pub struct PolynomialFunctionParametersInput<F> {
+	pub m: F,
+	pub n: F,
+	pub o: F,
+}
+
+pub struct SquareRootBondingFunctionParametersInput<F> {
+	pub m: F,
+	pub n: F,
+}
+
+pub enum CurveInput<F> {
+	PolynomialFunction(PolynomialFunctionParametersInput<F>),
+	SquareRootBondingFunction(SquareRootBondingFunctionParametersInput<F>),
+	RationalBondingFunction,
+}
+
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<F> {
 	PolynomialFunction(curves_parameters::PolynomialFunctionParameters<F>),
-	SquareRootBondingFunction(curves_parameters::SquareRootBondingFunctionParameters<F>),
+	//SquareRootBondingFunction(curves_parameters::SquareRootBondingFunctionParameters<F>),
 	RationalBondingFunction,
 }
 
