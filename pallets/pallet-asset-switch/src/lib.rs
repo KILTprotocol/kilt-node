@@ -54,7 +54,7 @@ use frame_support::traits::{
 };
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::traits::{TrailingZeroInput, Zero};
-use sp_std::boxed::Box;
+use sp_std::{boxed::Box, vec};
 
 pub use crate::pallet::*;
 

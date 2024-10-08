@@ -24,6 +24,5 @@ pub enum Error {
 	InvalidInput,
 	SwitchPoolNotFound,
 	SwitchPoolNotSet,
-	Other(String),
 	Internal,
 }
