@@ -51,10 +51,7 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
-use xcm::{
-	v4::{opaque::Xcm, Location},
-	VersionedAssetId, VersionedLocation,
-};
+use xcm::{v4::Location, VersionedAssetId, VersionedLocation, VersionedXcm};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use delegation::DelegationAc;
@@ -1591,7 +1588,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId, u128, VersionedLocation, AssetSwitchApiError, Xcm> for Runtime {
+	impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId, u128, VersionedLocation, AssetSwitchApiError, VersionedXcm<()>> for Runtime {
 		fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> Result<AccountId, AssetSwitchApiError> {
 			use core::str;
 			use frame_support::traits::PalletInfoAccess;
@@ -1610,7 +1607,7 @@ impl_runtime_apis! {
 			}
 		}
 
-		fn xcm_for_switch(pair_id: Vec<u8>, from: AccountId, to: VersionedLocation, amount: u128) -> Result<Xcm, AssetSwitchApiError> {
+		fn xcm_for_switch(pair_id: Vec<u8>, from: AccountId, to: VersionedLocation, amount: u128) -> Result<VersionedXcm<()>, AssetSwitchApiError> {
 			use core::str;
 			use frame_support::traits::PalletInfoAccess;
 			use sp_runtime::traits::TryConvert;
@@ -1637,7 +1634,7 @@ impl_runtime_apis! {
 			let asset_id_v4 = AssetId::try_from(switch_pair.remote_asset_id).map_err(|_| AssetSwitchApiError::Internal)?;
 			let remote_asset_fee_v4 = Asset::try_from(switch_pair.remote_xcm_fee).map_err(|_| AssetSwitchApiError::Internal)?;
 
-			Ok(AssetSwitchPool1::compute_xcm_for_switch(&our_location_for_destination, &from_v4.into(), &to_v4, amount, &asset_id_v4, &remote_asset_fee_v4))
+			Ok(VersionedXcm::V4(AssetSwitchPool1::compute_xcm_for_switch(&our_location_for_destination, &from_v4.into(), &to_v4, amount, &asset_id_v4, &remote_asset_fee_v4)))
 		}
 	}
 
