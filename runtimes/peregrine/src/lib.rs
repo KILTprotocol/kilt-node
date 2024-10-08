@@ -51,7 +51,10 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
-use xcm::{v4::Location, VersionedAssetId};
+use xcm::{
+	v4::{opaque::Xcm, Location},
+	VersionedAssetId, VersionedLocation,
+};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use delegation::DelegationAc;
@@ -1588,7 +1591,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId, AssetSwitchApiError> for Runtime {
+	impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId, u128, VersionedLocation, AssetSwitchApiError, Xcm> for Runtime {
 		fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> Result<AccountId, AssetSwitchApiError> {
 			use core::str;
 			use frame_support::traits::PalletInfoAccess;
@@ -1605,6 +1608,39 @@ impl_runtime_apis! {
 				},
 				_ => Err(AssetSwitchApiError::SwitchPoolNotFound)
 			}
+		}
+
+		fn xcm_for_switch(pair_id: Vec<u8>, from: AccountId, to: VersionedLocation, amount: u128) -> Result<Xcm, AssetSwitchApiError> {
+			use core::str;
+			use frame_support::traits::PalletInfoAccess;
+			use sp_runtime::traits::TryConvert;
+			use xcm::v4::{AssetId, Asset};
+
+			use pallet_asset_switch::traits::QueryIdProvider;
+
+			let Ok(pair_id_as_string) = str::from_utf8(pair_id.as_slice()) else {
+				return Err(AssetSwitchApiError::InvalidInput);
+			};
+
+			if pair_id_as_string != AssetSwitchPool1::name() {
+				return Err(AssetSwitchApiError::SwitchPoolNotFound);
+			}
+
+			let Some(switch_pair) = AssetSwitchPool1::switch_pair() else {
+				return Err(AssetSwitchApiError::SwitchPoolNotSet);
+			};
+
+			let from_v4 = AccountId32ToAccountId32JunctionConverter::try_convert(from).map_err(|e| AssetSwitchApiError::Other(e.to_string()))?;
+			let to_v4 = Location::try_from(to.clone()).map_err(|_| AssetSwitchApiError::Other(format!("Failed to convert provided location {:?} to a `v4` variant.", to)))?;
+			let our_location_for_destination = {
+				let universal_location = UniversalLocation::get();
+				universal_location.invert_target(&to_v4)
+			}.map_err(|_| AssetSwitchApiError::Other(format!("Failed to invert target for target destination {:?}", to)))?;
+			let asset_id_v4 = AssetId::try_from(switch_pair.remote_asset_id).map_err(|_| AssetSwitchApiError::Internal)?;
+			let remote_asset_fee_v4 = Asset::try_from(switch_pair.remote_xcm_fee).map_err(|_| AssetSwitchApiError::Internal)?;
+			let query_id = QueryIdProviderViaXcmPallet::<Runtime>::next_id();
+
+			Ok(AssetSwitchPool1::compute_xcm_for_switch(&our_location_for_destination, &from_v4.into(), &to_v4, amount, &asset_id_v4, &remote_asset_fee_v4, query_id))
 		}
 	}
 
