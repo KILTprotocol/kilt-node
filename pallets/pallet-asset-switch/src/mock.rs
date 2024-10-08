@@ -289,10 +289,6 @@ impl ExtBuilder {
 
 			for (query_id, pending_switch) in self.3 {
 				PendingSwitchConfirmations::<MockRuntime>::insert(query_id, pending_switch.clone());
-				assert_eq!(
-					PendingSwitchConfirmations::<MockRuntime>::get(query_id),
-					Some(pending_switch)
-				)
 			}
 
 			NextQueryId::<MockRuntime>::set(self.4);
