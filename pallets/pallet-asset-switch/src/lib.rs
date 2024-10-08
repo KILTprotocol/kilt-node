@@ -39,14 +39,21 @@ mod benchmarking;
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarking::{BenchmarkHelper, PartialBenchmarkInfo};
 
-use ::xcm::{VersionedAsset, VersionedAssetId, VersionedLocation};
+use ::xcm::{
+	v4::{
+		Asset, AssetFilter, AssetId,
+		Instruction::{BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, WithdrawAsset},
+		Location, QueryId, QueryResponseInfo, Weight, WeightLimit, WildAsset, WildFungibility, Xcm,
+	},
+	VersionedAsset, VersionedAssetId, VersionedLocation,
+};
 use frame_support::traits::{
 	fungible::Inspect,
 	tokens::{Fortitude, Preservation},
 	PalletInfoAccess,
 };
 use parity_scale_codec::{Decode, Encode};
-use sp_runtime::traits::{TrailingZeroInput, Zero};
+use sp_runtime::traits::{Get, TrailingZeroInput, Zero};
 use sp_std::boxed::Box;
 
 pub use crate::pallet::*;
@@ -73,12 +80,7 @@ pub mod pallet {
 	use sp_runtime::traits::{TryConvert, Zero};
 	use sp_std::{boxed::Box, vec};
 	use xcm::{
-		v4::{
-			validate_send, Asset, AssetFilter, AssetId,
-			Instruction::{BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, WithdrawAsset},
-			InteriorLocation, Junction, Location, QueryId, QueryResponseInfo, SendXcm, WeightLimit, WildAsset,
-			WildFungibility, Xcm,
-		},
+		v4::{validate_send, Asset, AssetId, InteriorLocation, Junction, Location, QueryId, SendXcm},
 		VersionedAsset, VersionedAssetId, VersionedLocation,
 	};
 	use xcm_executor::traits::TransactAsset;
@@ -531,86 +533,14 @@ pub mod pallet {
 
 			// 7. Compose and validate XCM message
 			let query_id = NextQueryId::<T, I>::get();
-			let universal_location = T::UniversalLocation::get();
-			let our_location_for_destination = universal_location.invert_target(&destination_v4).map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to invert universal location {:?} for destination {:?} with error {:?}",
-					universal_location, destination_v4, e
-				);
-				Error::<T, I>::Internal
-			})?;
-			let appendix = vec![
-				ReportHolding {
-					response_info: QueryResponseInfo {
-						destination: our_location_for_destination.clone(),
-						max_weight: Weight::zero(),
-						query_id,
-					},
-					// Include in the report the assets that were not transferred.
-					assets: AssetFilter::Wild(WildAsset::AllOf {
-						id: asset_id_v4.clone(),
-						fun: WildFungibility::Fungible,
-					}),
-				},
-				// If the asset to transfer failed to transfer, re-put it back into our own account. Otherwise, if the
-				// transfer succeeded, this asset won't be present in the holding registry, hence this is effectively a
-				// no-op.
-				DepositAsset {
-					assets: AssetFilter::Wild(WildAsset::AllOf {
-						id: asset_id_v4.clone(),
-						fun: WildFungibility::Fungible,
-					}),
-					beneficiary: our_location_for_destination,
-				},
-				RefundSurplus,
-				// Refund the XCM fee left to the user. We are purposefully only selecting the XCM fee asset, although
-				// there should be no cases in which any other assets are present in the holding registry.
-				DepositAsset {
-					assets: AssetFilter::Wild(WildAsset::AllOf {
-						id: remote_asset_fee_v4.id.clone(),
-						fun: WildFungibility::Fungible,
-					}),
-					beneficiary: submitter_as_location.clone(),
-				},
-			]
-			.into();
-			// Steps performed:
-			// 1. Withdraw XCM fees from our SA
-			// 2. Buy execution
-			// 3. Set the appendix, executed regardless of the outcome of the transfer:
-			// 		3.1 Report back to our chain the assets in the holding registry. This will
-			// 			contain either only the XCM fee token in case of successful transfer, or the
-			//	 		XCM fee token + the amount of funds supposed to be transferred.
-			// 		3.2 Deposit the un-transferred asset (only if the transfer failed) back into
-			// our account.
-			//		3.3 Refund any surplus weight.
-			//		3.4 Deposit the remaining XCM fee assets in the user's account.
-			// 4. Withdraw the requested asset (this operation should be infallible since we
-			//    have full control of this balance)
-			// 5. Try to deposit the withdrawn asset into the user's account. This operation
-			//    could fail and the error is handled in the appendix.
-			let remote_xcm: Xcm<()> = vec![
-				WithdrawAsset(remote_asset_fee_v4.clone().into()),
-				BuyExecution {
-					weight_limit: WeightLimit::Unlimited,
-					fees: remote_asset_fee_v4.clone(),
-				},
-				SetAppendix(appendix),
-				// Because the appendix relies on forwarding the content of the holding registry (there is at the
-				// moment no other way of detecting failed switches), we need to make sure the assets are present in
-				// the holding registry before the execution could fail.
-				// Using `TransferAsset` could result in assets not even being withdrawn, and we would not be able to
-				// detect the failed switch. Hence, we need to force the transfer to happen in two steps: 1. withdraw
-				// (which we assume would never fail since we know we own the required assets)
-				// 2. deposit (which could fail, e.g., if the beneficiary does not have an ED for a sufficient asset).
-				WithdrawAsset((asset_id_v4.clone(), remote_asset_amount_as_u128).into()),
-				DepositAsset {
-					assets: AssetFilter::Definite((asset_id_v4, remote_asset_amount_as_u128).into()),
-					beneficiary: beneficiary_v4,
-				},
-			]
-			.into();
+			let remote_xcm = Self::compute_xcm_for_switch(
+				&submitter_as_location,
+				&beneficiary_v4,
+				remote_asset_amount_as_u128,
+				&asset_id_v4,
+				&remote_asset_fee_v4,
+				query_id,
+			)?;
 			let xcm_ticket =
 				validate_send::<T::XcmRouter>(destination_v4.clone(), remote_xcm.clone()).map_err(|e| {
 					log::info!(
@@ -836,6 +766,97 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			);
 			Error::<T, I>::Internal
 		})
+	}
+
+	pub fn compute_xcm_for_switch(
+		from: &Location,
+		to: &Location,
+		amount: u128,
+		asset_id: &AssetId,
+		remote_asset_fee: &Asset,
+		query_id: QueryId,
+	) -> Result<Xcm<()>, Error<T, I>> {
+		let universal_location = T::UniversalLocation::get();
+		let our_location_for_destination = universal_location.invert_target(to).map_err(|e| {
+			log::error!(
+				target: LOG_TARGET,
+				"Failed to invert universal location {:?} for destination {:?} with error {:?}",
+				universal_location, to, e
+			);
+			Error::<T, I>::Internal
+		})?;
+		let appendix = vec![
+			ReportHolding {
+				response_info: QueryResponseInfo {
+					destination: our_location_for_destination.clone(),
+					max_weight: Weight::zero(),
+					query_id,
+				},
+				// Include in the report the assets that were not transferred.
+				assets: AssetFilter::Wild(WildAsset::AllOf {
+					id: asset_id.clone(),
+					fun: WildFungibility::Fungible,
+				}),
+			},
+			// If the asset to transfer failed to transfer, re-put it back into our own account. Otherwise, if the
+			// transfer succeeded, this asset won't be present in the holding registry, hence this is effectively a
+			// no-op.
+			DepositAsset {
+				assets: AssetFilter::Wild(WildAsset::AllOf {
+					id: asset_id.clone(),
+					fun: WildFungibility::Fungible,
+				}),
+				beneficiary: our_location_for_destination,
+			},
+			RefundSurplus,
+			// Refund the XCM fee left to the user. We are purposefully only selecting the XCM fee asset, although
+			// there should be no cases in which any other assets are present in the holding registry.
+			DepositAsset {
+				assets: AssetFilter::Wild(WildAsset::AllOf {
+					id: remote_asset_fee.id.clone(),
+					fun: WildFungibility::Fungible,
+				}),
+				beneficiary: from.clone(),
+			},
+		]
+		.into();
+		// Steps performed:
+		// 1. Withdraw XCM fees from our SA
+		// 2. Buy execution
+		// 3. Set the appendix, executed regardless of the outcome of the transfer:
+		// 		3.1 Report back to our chain the assets in the holding registry. This will
+		// 			contain either only the XCM fee token in case of successful transfer, or the
+		//	 		XCM fee token + the amount of funds supposed to be transferred.
+		// 		3.2 Deposit the un-transferred asset (only if the transfer failed) back into
+		// our account.
+		//		3.3 Refund any surplus weight.
+		//		3.4 Deposit the remaining XCM fee assets in the user's account.
+		// 4. Withdraw the requested asset (this operation should be infallible since we
+		//    have full control of this balance)
+		// 5. Try to deposit the withdrawn asset into the user's account. This operation
+		//    could fail and the error is handled in the appendix.
+		let remote_xcm: Xcm<()> = vec![
+			WithdrawAsset(remote_asset_fee.clone().into()),
+			BuyExecution {
+				weight_limit: WeightLimit::Unlimited,
+				fees: remote_asset_fee.clone(),
+			},
+			SetAppendix(appendix),
+			// Because the appendix relies on forwarding the content of the holding registry (there is at the
+			// moment no other way of detecting failed switches), we need to make sure the assets are present in
+			// the holding registry before the execution could fail.
+			// Using `TransferAsset` could result in assets not even being withdrawn, and we would not be able to
+			// detect the failed switch. Hence, we need to force the transfer to happen in two steps: 1. withdraw
+			// (which we assume would never fail since we know we own the required assets)
+			// 2. deposit (which could fail, e.g., if the beneficiary does not have an ED for a sufficient asset).
+			WithdrawAsset((asset_id.clone(), amount).into()),
+			DepositAsset {
+				assets: AssetFilter::Definite((asset_id.clone(), amount).into()),
+				beneficiary: from.clone(),
+			},
+		]
+		.into();
+		Ok(remote_xcm)
 	}
 
 	// Read the first item in the storage and returns `true` if `Some`, and `false`
