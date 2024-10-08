@@ -61,9 +61,7 @@ pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
 use runtime_common::{
-	asset_switch::{
-		runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury,
-	},
+	asset_switch::{runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury},
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
