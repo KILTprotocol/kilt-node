@@ -714,7 +714,8 @@ pub mod pallet {
 				}
 			})?;
 			// 12.3 Update the query ID storage entry. wrapping around the max value since
-			// it's safe to do so, assuming by the time we wrap the previously pending transfers have all been processed.
+			// it's safe to do so, assuming by the time we wrap the previously pending
+			// transfers have all been processed.
 			NextQueryId::<T, I>::mutate(|entry| {
 				*entry = entry.wrapping_add(1);
 			});
@@ -767,6 +768,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		});
 
 		SwitchPair::<T, I>::set(Some(switch_pair_info));
+		NextQueryId::<T, I>::kill();
 
 		Self::deposit_event(Event::<T, I>::SwitchPairCreated {
 			remote_asset_circulating_supply,
@@ -781,6 +783,8 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 	fn unset_switch_pair_bypass_checks() {
 		let switch_pair = SwitchPair::<T, I>::take();
+		NextQueryId::<T, I>::kill();
+
 		if let Some(switch_pair) = switch_pair {
 			Self::deposit_event(Event::<T, I>::SwitchPairRemoved {
 				remote_asset_id: switch_pair.remote_asset_id,

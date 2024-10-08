@@ -22,11 +22,12 @@ use sp_runtime::{
 	traits::{One, Zero},
 	AccountId32, DispatchError,
 };
+use xcm::v4::QueryId;
 
 use crate::{
 	mock::{get_asset_hub_location, get_remote_erc20_asset_id, ExtBuilder, MockRuntime, System, XCM_ASSET_FEE},
 	switch::{SwitchPairStatus, UnconfirmedSwitchInfo},
-	Error, Event, NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf,
+	Error, Event, NewSwitchPairInfoOf, NextQueryId, Pallet, SwitchPair, SwitchPairInfoOf,
 };
 
 #[test]
@@ -35,6 +36,7 @@ fn successful() {
 		Pallet::<MockRuntime>::pool_account_id_for_remote_asset(&get_remote_erc20_asset_id().into()).unwrap();
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), 1_001, 0, 0)])
+		.with_next_query_id_value(QueryId::MAX)
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
@@ -63,6 +65,7 @@ fn successful() {
 				switch_pair.unwrap().reducible_remote_balance(),
 				(u64::MAX - 1_000) as u128
 			);
+			assert!(NextQueryId::<MockRuntime>::get().is_zero());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
 					pool_account: pool_account_address.clone(),
@@ -79,6 +82,7 @@ fn successful() {
 	// for the pool account
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
+		.with_next_query_id_value(QueryId::MAX)
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
@@ -107,6 +111,7 @@ fn successful() {
 			assert_eq!(switch_pair, Some(expected_switch_pair));
 			// Unit balance since we had to leave ED on this chain
 			assert!(switch_pair.unwrap().reducible_remote_balance().is_one());
+			assert!(NextQueryId::<MockRuntime>::get().is_zero());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
 					pool_account: pool_account_address.clone(),
@@ -122,6 +127,7 @@ fn successful() {
 	// Case where all issuance is locked and controlled by our sovereign account.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), 1, 0, 0)])
+		.with_next_query_id_value(QueryId::MAX)
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
@@ -149,6 +155,7 @@ fn successful() {
 			// Max balance since all circulating supply is controlled by us and we used `0`
 			// as the remote asset ED.
 			assert_eq!(switch_pair.unwrap().reducible_remote_balance(), u64::MAX as u128);
+			assert!(NextQueryId::<MockRuntime>::get().is_zero());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
 					pool_account: pool_account_address.clone(),
@@ -166,6 +173,7 @@ fn successful() {
 	// and the remote balance is calculated accordingly.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
+		.with_next_query_id_value(QueryId::MAX)
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
@@ -196,6 +204,7 @@ fn successful() {
 			// Zero balance since we everything but the required remote asset ED is
 			// circulating.
 			assert!(switch_pair.unwrap().reducible_remote_balance().is_zero());
+			assert!(NextQueryId::<MockRuntime>::get().is_zero());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
 					pool_account: pool_account_address.clone(),
@@ -212,6 +221,7 @@ fn successful() {
 	// but there's a min balance >= `0` on the remote chain.
 	ExtBuilder::default()
 		.with_balances(vec![(pool_account_address.clone(), 1, 0, 0)])
+		.with_next_query_id_value(QueryId::MAX)
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<MockRuntime>::set_switch_pair(
 				RawOrigin::Root.into(),
@@ -237,6 +247,7 @@ fn successful() {
 				});
 			assert_eq!(switch_pair, Some(expected_switch_pair));
 			assert_eq!(switch_pair.unwrap().reducible_remote_balance(), (u64::MAX - 1) as u128);
+			assert!(NextQueryId::<MockRuntime>::get().is_zero());
 			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
 				== Event::<MockRuntime>::SwitchPairCreated {
 					pool_account: pool_account_address.clone(),
