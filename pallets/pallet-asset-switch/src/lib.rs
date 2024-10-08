@@ -481,33 +481,7 @@ pub mod pallet {
 				Error::<T, I>::Liquidity
 			);
 
-			let asset_id_v4: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert asset ID {:?} into v4 `AssetId` with error {:?}",
-					switch_pair.remote_asset_id,
-					e
-				);
-				DispatchError::from(Error::<T, I>::Internal)
-			})?;
-			let remote_asset_fee_v4: Asset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert remote XCM asset fee {:?} into v4 `Asset` with error {:?}",
-					switch_pair.remote_xcm_fee,
-					e
-				);
-				DispatchError::from(Error::<T, I>::Xcm)
-			})?;
-			let destination_v4: Location = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert remote reserve location {:?} into v4 `Location` with error {:?}",
-					switch_pair.remote_reserve_location,
-					e
-				);
-				DispatchError::from(Error::<T, I>::Internal)
-			})?;
+			let switch_pair_v4 = SwitchPairInfoV4::try_from(switch_pair).map_err(|e| e.into())?;
 			let beneficiary_v4: Location = (*beneficiary.clone()).try_into().map_err(|e| {
 				log::info!(
 					target: LOG_TARGET,
