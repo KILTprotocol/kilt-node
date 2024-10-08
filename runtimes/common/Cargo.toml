@@ -62,7 +62,6 @@ sp-weights                      = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 # Polkadot dependencies
-pallet-xcm              = { workspace = true }
 polkadot-parachain      = { workspace = true }
 polkadot-runtime-common = { workspace = true }
 xcm                     = { workspace = true }
@@ -92,7 +91,6 @@ runtime-benchmarks = [
   "pallet-multisig/runtime-benchmarks",
   "pallet-tips/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
-  "pallet-xcm/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "polkadot-runtime-common/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
@@ -127,7 +125,6 @@ std = [
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
   "pallet-web3-names/std",
-  "pallet-xcm/std",
   "parachain-staking/std",
   "parity-scale-codec/std",
   "parity-scale-codec/std",
@@ -161,7 +158,6 @@ try-runtime = [
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
   "pallet-treasury/try-runtime",
-  "pallet-xcm/try-runtime",
   "parachain-staking/try-runtime",
   "public-credentials/try-runtime",
 ]

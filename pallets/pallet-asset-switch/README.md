@@ -83,9 +83,10 @@ The pallet has a single `SwitchPair` storage value that contains a `Option<Switc
 If unset, no switch pair is configured hence no switch can happen.
 When set and its status is `Running`, switches are enabled in both directions.
 
-A second storage component, `PendingSwitchConfirmations`, is used for error recovery.
-Specifically, it stores information about transfers executed locally but that have not been confirmed on the remote destination.
-Once a transfer either succeeds or fails, the entry is removed from the storage and additional actions are taken as needed, e.g., reverting the transfer locally as well.
+Two more storage components, `PendingSwitchConfirmations` and `NextQueryId`, are used for error recovery.
+Specifically, the former stores information about transfers executed locally but that have not been confirmed on the remote destination.
+Once a transfer either succeeds or fails, the entry is removed from the storage and additional actions are taken as needed, e.g., reverting the transfer locally as well.Th
+The latter stores an ever-increasing counter, which wraps around itself when it would overflow, and provides the value the `PendingSwitchConfirmations` storage map uses to keep track of pending confirmations.
 
 ## Events
 
