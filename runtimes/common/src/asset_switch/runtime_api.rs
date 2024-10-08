@@ -23,7 +23,7 @@ use scale_info::TypeInfo;
 pub enum Error {
 	InvalidInput,
 	SwitchPoolNotFound,
-	Internal,
 	SwitchPoolNotSet,
 	Other(String),
+	Internal,
 }
