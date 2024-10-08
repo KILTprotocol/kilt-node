@@ -146,6 +146,30 @@ fn successful_with_stored_v2() {
 }
 
 #[test]
+fn successful_with_switch_pair_not_enabled() {
+	let location = Location {
+		parents: 1,
+		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
+	};
+	let new_switch_pair_info =
+		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Paused);
+	ExtBuilder::default()
+		.with_switch_pair_info(new_switch_pair_info)
+		.build_and_execute_with_sanity_tests(|| {
+			let (asset_location, asset_amount): (Location, u128) =
+				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
+					id: AssetId(location.clone().try_into().unwrap()),
+					fun: Fungibility::Fungible(u128::MAX),
+				})
+				.unwrap();
+			// Asset location should match the one stored in the switch pair.
+			assert_eq!(asset_location, location.try_into().unwrap());
+			// Asset amount should match the input one.
+			assert_eq!(asset_amount, u128::MAX);
+		});
+}
+
+#[test]
 fn skips_on_switch_pair_not_set() {
 	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
@@ -159,27 +183,6 @@ fn skips_on_switch_pair_not_set() {
 			Error::AssetNotHandled
 		);
 	});
-}
-
-#[test]
-fn skips_on_switch_pair_not_enabled() {
-	let location = Location {
-		parents: 1,
-		interior: Junctions::X1([Junction::Parachain(1_000)].into()),
-	};
-	let new_switch_pair_info =
-		get_switch_pair_info_for_remote_location::<MockRuntime>(&location, SwitchPairStatus::Paused);
-	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info)
-		.build_and_execute_with_sanity_tests(|| {
-			assert_noop!(
-				MatchesSwitchPairXcmFeeFungibleAsset::<MockRuntime, _>::matches_fungibles(&Asset {
-					id: AssetId(location),
-					fun: Fungibility::Fungible(u128::MAX),
-				}) as Result<(_, u128), _>,
-				Error::AssetNotHandled
-			);
-		});
 }
 
 #[test]
