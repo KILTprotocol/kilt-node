@@ -53,7 +53,7 @@ use frame_support::traits::{
 	PalletInfoAccess,
 };
 use parity_scale_codec::{Decode, Encode};
-use sp_runtime::traits::{Get, TrailingZeroInput, Zero};
+use sp_runtime::traits::{TrailingZeroInput, Zero};
 use sp_std::boxed::Box;
 
 pub use crate::pallet::*;
@@ -533,14 +533,24 @@ pub mod pallet {
 
 			// 7. Compose and validate XCM message
 			let query_id = NextQueryId::<T, I>::get();
+			let universal_location = T::UniversalLocation::get();
+			let our_location_for_destination = universal_location.invert_target(&destination_v4).map_err(|e| {
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to invert universal location {:?} for destination {:?} with error {:?}",
+					universal_location, destination_v4, e
+				);
+				Error::<T, I>::Internal
+			})?;
 			let remote_xcm = Self::compute_xcm_for_switch(
+				&our_location_for_destination,
 				&submitter_as_location,
 				&beneficiary_v4,
 				remote_asset_amount_as_u128,
 				&asset_id_v4,
 				&remote_asset_fee_v4,
 				query_id,
-			)?;
+			);
 			let xcm_ticket =
 				validate_send::<T::XcmRouter>(destination_v4.clone(), remote_xcm.clone()).map_err(|e| {
 					log::info!(
@@ -769,26 +779,18 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	}
 
 	pub fn compute_xcm_for_switch(
+		inverted_universal_location: &Location,
 		from: &Location,
 		to: &Location,
 		amount: u128,
 		asset_id: &AssetId,
 		remote_asset_fee: &Asset,
 		query_id: QueryId,
-	) -> Result<Xcm<()>, Error<T, I>> {
-		let universal_location = T::UniversalLocation::get();
-		let our_location_for_destination = universal_location.invert_target(to).map_err(|e| {
-			log::error!(
-				target: LOG_TARGET,
-				"Failed to invert universal location {:?} for destination {:?} with error {:?}",
-				universal_location, to, e
-			);
-			Error::<T, I>::Internal
-		})?;
+	) -> Xcm<()> {
 		let appendix = vec![
 			ReportHolding {
 				response_info: QueryResponseInfo {
-					destination: our_location_for_destination.clone(),
+					destination: inverted_universal_location.clone(),
 					max_weight: Weight::zero(),
 					query_id,
 				},
@@ -806,7 +808,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 					id: asset_id.clone(),
 					fun: WildFungibility::Fungible,
 				}),
-				beneficiary: our_location_for_destination,
+				beneficiary: inverted_universal_location.clone(),
 			},
 			RefundSurplus,
 			// Refund the XCM fee left to the user. We are purposefully only selecting the XCM fee asset, although
@@ -835,7 +837,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		//    have full control of this balance)
 		// 5. Try to deposit the withdrawn asset into the user's account. This operation
 		//    could fail and the error is handled in the appendix.
-		let remote_xcm: Xcm<()> = vec![
+		vec![
 			WithdrawAsset(remote_asset_fee.clone().into()),
 			BuyExecution {
 				weight_limit: WeightLimit::Unlimited,
@@ -852,11 +854,10 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			WithdrawAsset((asset_id.clone(), amount).into()),
 			DepositAsset {
 				assets: AssetFilter::Definite((asset_id.clone(), amount).into()),
-				beneficiary: from.clone(),
+				beneficiary: to.clone(),
 			},
 		]
-		.into();
-		Ok(remote_xcm)
+		.into()
 	}
 
 	// Read the first item in the storage and returns `true` if `Some`, and `false`

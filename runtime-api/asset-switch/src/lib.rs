@@ -33,6 +33,6 @@ sp_api::decl_runtime_apis! {
 		Xcm: Codec,
 		{
 			fn pool_account_id(pair_id: Vec<u8>, asset_id: AssetId) -> Result<AccountId, Error>;
-			fn xcm_for_switch(pair_id: Vec<u8>, asset_id: AssetId, from: AccountId, to: Destination, amount: Amount) -> Result<Xcm, Error>;
+			fn xcm_for_switch(pair_id: Vec<u8>, from: AccountId, to: Destination, amount: Amount) -> Result<Xcm, Error>;
 		}
 }
