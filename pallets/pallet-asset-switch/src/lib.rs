@@ -611,7 +611,7 @@ pub mod pallet {
 			let xcm_ticket =
 				validate_send::<T::XcmRouter>(destination_v4.clone(), remote_xcm.clone()).map_err(|e| {
 					log::info!(
-						"Failed to call validate_send for destination {:?} and remote XCM {:?} with error {:?}",
+						"Failed to call `validate_send` for destination {:?} and remote XCM {:?} with error {:?}",
 						destination_v4,
 						remote_xcm,
 						e

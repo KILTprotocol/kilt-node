@@ -208,7 +208,7 @@ impl<T: Config<I>, I: 'static> OnResponse for Pallet<T, I> {
 		} else {
 			log::error!(
 				target: LOG_TARGET,
-				"Transfer was partially completed. Content of the holding register: {:?}",
+				"Transfer was partially completed, which is currently not expected nor handled. Content of the holding register: {:?}",
 				holding_assets
 			);
 		}
