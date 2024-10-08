@@ -23,6 +23,7 @@ use sp_std::vec::Vec;
 
 sp_api::decl_runtime_apis! {
 	/// Runtime API to compute the pool account for a given switch pair ID and remote asset, and to compute the XCM that would be sent to destination for a given switch operation.
+	#[api_version(2)]
 	pub trait AssetSwitch<AssetId, AccountId, Amount, Destination, Error, Xcm> where
 		AssetId: Codec,
 		AccountId: Codec,
