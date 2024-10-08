@@ -77,7 +77,7 @@ use runtime_common::{
 	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
-use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
+use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -997,6 +997,7 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type SubmitterOrigin = EnsureSigned<AccountId>;
 	type SwitchHooks = runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf;
 	type SwitchOrigin = EnsureRoot<AccountId>;
+	type UniversalLocation = UniversalLocation;
 	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
 	type XcmRouter = XcmRouter;
 

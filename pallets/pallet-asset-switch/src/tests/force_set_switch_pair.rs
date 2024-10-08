@@ -20,12 +20,12 @@ use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_runtime::{
 	traits::{One, Zero},
-	DispatchError,
+	AccountId32, DispatchError,
 };
 
 use crate::{
 	mock::{get_asset_hub_location, get_remote_erc20_asset_id, ExtBuilder, MockRuntime, System, XCM_ASSET_FEE},
-	switch::SwitchPairStatus,
+	switch::{SwitchPairStatus, UnconfirmedSwitchInfo},
 	Event, NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf,
 };
 
@@ -257,6 +257,63 @@ fn successful_overwrites_existing_pool() {
 					remote_asset_circulating_supply: 50_000,
 					remote_asset_ed: 0,
 					remote_asset_total_supply: 100_000,
+					remote_asset_id: get_remote_erc20_asset_id().into(),
+					remote_reserve_location: get_asset_hub_location().into(),
+					remote_xcm_fee: Box::new(XCM_ASSET_FEE.into())
+				}
+				.into()));
+		});
+}
+
+#[test]
+fn success_with_pending_switches() {
+	let pool_account_address =
+		Pallet::<MockRuntime>::pool_account_id_for_remote_asset(&get_remote_erc20_asset_id().into()).unwrap();
+	ExtBuilder::default()
+		.with_balances(vec![(pool_account_address.clone(), u64::MAX, 0, 0)])
+		.with_pending_switches(vec![(
+			0,
+			UnconfirmedSwitchInfo {
+				amount: 10,
+				from: AccountId32::new([100; 32]),
+				to: get_asset_hub_location().into_versioned(),
+			},
+		)])
+		.build_and_execute_with_sanity_tests(|| {
+			assert_ok!(Pallet::<MockRuntime>::force_set_switch_pair(
+				RawOrigin::Root.into(),
+				u64::MAX as u128,
+				Box::new(get_remote_erc20_asset_id().into()),
+				// Need to leave 1 on this chain for ED, so `MAX - 1` can at most be exchanged back (and transferred
+				// out from the pool account).
+				(u64::MAX - 1) as u128,
+				Box::new(get_asset_hub_location().into()),
+				0,
+				Box::new(XCM_ASSET_FEE.into()),
+			));
+
+			let switch_pair = SwitchPair::<MockRuntime>::get();
+			let expected_switch_pair =
+				SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(NewSwitchPairInfoOf::<MockRuntime> {
+					pool_account: pool_account_address.clone(),
+					remote_asset_circulating_supply: (u64::MAX - 1) as u128,
+					remote_asset_ed: 0,
+					remote_asset_id: get_remote_erc20_asset_id().into(),
+					remote_asset_total_supply: u64::MAX as u128,
+					remote_reserve_location: get_asset_hub_location().into(),
+					remote_xcm_fee: XCM_ASSET_FEE.into(),
+					status: SwitchPairStatus::Paused,
+				});
+			assert_eq!(switch_pair, Some(expected_switch_pair));
+			// Unit balance since we had to leave ED on this chain and no min balance
+			// requirement (ED) is set for the remote asset.
+			assert!(switch_pair.unwrap().reducible_remote_balance().is_one());
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::SwitchPairCreated {
+					pool_account: pool_account_address.clone(),
+					remote_asset_circulating_supply: (u64::MAX - 1) as u128,
+					remote_asset_ed: 0,
+					remote_asset_total_supply: u64::MAX as u128,
 					remote_asset_id: get_remote_erc20_asset_id().into(),
 					remote_reserve_location: get_asset_hub_location().into(),
 					remote_xcm_fee: Box::new(XCM_ASSET_FEE.into())

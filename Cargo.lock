@@ -5353,6 +5353,8 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-weights",
+ "staging-xcm",
+ "staging-xcm-executor",
 ]
 
 [[package]]

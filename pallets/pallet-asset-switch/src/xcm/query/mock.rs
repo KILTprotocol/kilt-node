@@ -19,8 +19,7 @@
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
-		fungible::{Dust, Inspect as InspectFungible, Mutate as MutateFungible, Unbalanced as UnbalancedFungible},
-		tokens::{DepositConsequence, Fortitude, Preservation, Provenance, WithdrawConsequence},
+		fungible::{Inspect as InspectFungible, Mutate as MutateFungible},
 		Everything,
 	},
 };
@@ -28,16 +27,17 @@ use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
 use pallet_balances::AccountData;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
-	traits::{BlakeTwo256, IdentityLookup},
-	AccountId32, DispatchError,
+	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
+	AccountId32,
 };
-use xcm::v4::{InteriorLocation, Junctions::Here};
+use xcm::v4::{InteriorLocation, Junctions::Here, QueryId};
 
-use crate::{NewSwitchPairInfoOf, Pallet};
+use crate::{NewSwitchPairInfoOf, Pallet, PendingSwitchConfirmations, SwitchPairInfoOf, UnconfirmedSwitchInfoOf};
 
 construct_runtime!(
 	pub enum MockRuntime {
 		System: frame_system,
+		Balances: pallet_balances,
 		Assetswitch: crate
 	}
 );
@@ -45,7 +45,6 @@ construct_runtime!(
 impl frame_system::Config for MockRuntime {
 	type AccountData = AccountData<u64>;
 	type AccountId = AccountId32;
-	type RuntimeTask = ();
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<MockRuntime>;
 	type BlockHashCount = ConstU64<0>;
@@ -64,61 +63,26 @@ impl frame_system::Config for MockRuntime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = ();
 	type SS58Prefix = ConstU16<0>;
 	type SystemWeightInfo = ();
 	type Version = ();
 }
 
-// Currency is not used in this XCM component tests, so we mock the entire
-// currency system.
-pub struct MockCurrency;
-
-impl MutateFungible<AccountId32> for MockCurrency {}
-
-impl InspectFungible<AccountId32> for MockCurrency {
+impl pallet_balances::Config for MockRuntime {
+	type AccountStore = System;
 	type Balance = u64;
-
-	fn active_issuance() -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn balance(_who: &AccountId32) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn can_deposit(_who: &AccountId32, _amount: Self::Balance, _provenance: Provenance) -> DepositConsequence {
-		DepositConsequence::Success
-	}
-
-	fn can_withdraw(_who: &AccountId32, _amount: Self::Balance) -> WithdrawConsequence<Self::Balance> {
-		WithdrawConsequence::Success
-	}
-
-	fn minimum_balance() -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn reducible_balance(_who: &AccountId32, _preservation: Preservation, _force: Fortitude) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn total_balance(_who: &AccountId32) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn total_issuance() -> Self::Balance {
-		Self::Balance::default()
-	}
-}
-
-impl UnbalancedFungible<AccountId32> for MockCurrency {
-	fn handle_dust(_dust: Dust<AccountId32, Self>) {}
-
-	fn write_balance(_who: &AccountId32, _amount: Self::Balance) -> Result<Option<Self::Balance>, DispatchError> {
-		Ok(Some(Self::Balance::default()))
-	}
-
-	fn set_total_issuance(_amount: Self::Balance) {}
+	type DustRemoval = ();
+	type ExistentialDeposit = ConstU64<1>;
+	type FreezeIdentifier = ();
+	type MaxFreezes = ConstU32<0>;
+	type MaxLocks = ConstU32<0>;
+	type MaxReserves = ConstU32<0>;
+	type ReserveIdentifier = ();
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeFreezeReason = ();
+	type RuntimeHoldReason = ();
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -129,7 +93,7 @@ impl crate::Config for MockRuntime {
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
-	type LocalCurrency = MockCurrency;
+	type LocalCurrency = Balances;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
@@ -143,12 +107,25 @@ impl crate::Config for MockRuntime {
 	type BenchmarkHelper = ();
 }
 
+pub(super) const ACCOUNT_0: AccountId32 = AccountId32::new([100; 32]);
+
 #[derive(Default)]
-pub(super) struct ExtBuilder(Option<NewSwitchPairInfoOf<MockRuntime>>);
+pub(super) struct ExtBuilder(
+	Option<NewSwitchPairInfoOf<MockRuntime>>,
+	Vec<(QueryId, UnconfirmedSwitchInfoOf<MockRuntime>)>,
+);
 
 impl ExtBuilder {
 	pub(super) fn with_switch_pair_info(mut self, switch_pair_info: NewSwitchPairInfoOf<MockRuntime>) -> Self {
 		self.0 = Some(switch_pair_info);
+		self
+	}
+
+	pub(super) fn with_pending_switches(
+		mut self,
+		pending_switches: Vec<(QueryId, UnconfirmedSwitchInfoOf<MockRuntime>)>,
+	) -> Self {
+		self.1 = pending_switches;
 		self
 	}
 
@@ -160,6 +137,16 @@ impl ExtBuilder {
 			System::set_block_number(1);
 
 			if let Some(switch_pair_info) = self.0 {
+				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info);
+
+				// Set pool balance to local ED + circulating supply, to maintain
+				// invariants and make them verifiable.
+				let local_ed = <Balances as InspectFungible<AccountId32>>::minimum_balance();
+				<Balances as MutateFungible<AccountId32>>::mint_into(
+					&switch_pair_info.pool_account,
+					local_ed + u64::checked_from(switch_pair_info.remote_asset_circulating_supply).unwrap(),
+				)
+				.unwrap();
 				Pallet::<MockRuntime>::set_switch_pair_bypass_checks(
 					switch_pair_info.remote_asset_total_supply,
 					switch_pair_info.remote_asset_id,
@@ -172,9 +159,22 @@ impl ExtBuilder {
 				Pallet::<MockRuntime>::set_switch_pair_status(switch_pair_info.status).unwrap();
 			}
 
+			self.1.into_iter().for_each(|(query_id, pending_switch)| {
+				PendingSwitchConfirmations::<MockRuntime>::insert(query_id, pending_switch);
+				assert!(PendingSwitchConfirmations::<MockRuntime>::contains_key(query_id));
+			});
+
 			System::reset_events()
 		});
 
 		ext
+	}
+
+	pub(super) fn build_and_execute_with_sanity_tests(self, run: impl FnOnce()) {
+		let mut ext = self.build();
+		ext.execute_with(|| {
+			run();
+			crate::try_state::do_try_state::<MockRuntime, _>(System::block_number()).unwrap();
+		});
 	}
 }

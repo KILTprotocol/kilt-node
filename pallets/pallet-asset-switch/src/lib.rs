@@ -46,7 +46,7 @@ use frame_support::traits::{
 	PalletInfoAccess,
 };
 use parity_scale_codec::{Decode, Encode};
-use sp_runtime::traits::TrailingZeroInput;
+use sp_runtime::traits::{TrailingZeroInput, Zero};
 use sp_std::boxed::Box;
 
 pub use crate::pallet::*;
@@ -56,7 +56,7 @@ const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::{
-		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus},
+		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus, UnconfirmedSwitchInfo},
 		traits::SwitchHooks,
 		WeightInfo, LOG_TARGET,
 	};
@@ -75,8 +75,9 @@ pub mod pallet {
 	use xcm::{
 		v4::{
 			validate_send, Asset, AssetFilter, AssetId,
-			Instruction::{BuyExecution, DepositAsset, RefundSurplus, SetAppendix, TransferAsset, WithdrawAsset},
-			Junction, Location, SendXcm, WeightLimit, WildAsset, Xcm,
+			Instruction::{BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, WithdrawAsset},
+			InteriorLocation, Junction, Location, QueryId, QueryResponseInfo, SendXcm, WeightLimit, WildAsset,
+			WildFungibility, Xcm,
 		},
 		VersionedAsset, VersionedAssetId, VersionedLocation,
 	};
@@ -86,6 +87,8 @@ pub mod pallet {
 		<<T as Config<I>>::LocalCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 	pub type SwitchPairInfoOf<T> = SwitchPairInfo<<T as frame_system::Config>::AccountId>;
 	pub type NewSwitchPairInfoOf<T> = NewSwitchPairInfo<<T as frame_system::Config>::AccountId>;
+	pub type UnconfirmedSwitchInfoOf<T> =
+		UnconfirmedSwitchInfo<<T as frame_system::Config>::AccountId, VersionedLocation, u128>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -115,6 +118,8 @@ pub mod pallet {
 		/// The origin that can set a new switch pair, remove one, or resume
 		/// switches.
 		type SwitchOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		/// The universal location report messages should be sent to.
+		type UniversalLocation: Get<InteriorLocation>;
 		type WeightInfo: WeightInfo;
 		/// The XCM router to route XCM transfers to the configured reserve
 		/// location.
@@ -168,6 +173,19 @@ pub mod pallet {
 		},
 		/// A switch of remote -> local asset has taken place.
 		RemoteToLocalSwitchExecuted { to: T::AccountId, amount: u128 },
+		/// A switch has been reversed because it failed to execute at
+		/// destination.
+		LocalToRemoteSwitchReverted {
+			from: T::AccountId,
+			to: VersionedLocation,
+			amount: u128,
+		},
+		/// A switch has been finalized at destination.
+		LocalToRemoteSwitchFinalized {
+			from: T::AccountId,
+			to: VersionedLocation,
+			amount: u128,
+		},
 	}
 
 	#[pallet::error]
@@ -200,13 +218,28 @@ pub mod pallet {
 		Xcm,
 		/// Internal error.
 		Internal,
-		/// Attempt to switch zero tokens.
-		ZeroAmount,
+		/// Attempt to switch less than the local ED tokens.
+		AmountTooLow,
+		/// Some switches have not yet been processed.
+		PendingSwitches,
 	}
 
+	/// Stores the switch pair.
 	#[pallet::storage]
 	#[pallet::getter(fn switch_pair)]
 	pub(crate) type SwitchPair<T: Config<I>, I: 'static = ()> = StorageValue<_, SwitchPairInfoOf<T>, OptionQuery>;
+
+	/// Stores the switches that have been applied locally but not yet on the
+	/// remote. Used to rollback failed ones.
+	#[pallet::storage]
+	#[pallet::getter(fn pending_switch_confirmations)]
+	pub(crate) type PendingSwitchConfirmations<T: Config<I>, I: 'static = ()> =
+		CountedStorageMap<_, Twox64Concat, QueryId, UnconfirmedSwitchInfoOf<T>, OptionQuery>;
+
+	/// Stores the next query ID to use for queries.
+	#[pallet::storage]
+	#[pallet::getter(fn next_query_id)]
+	pub(crate) type NextQueryId<T: Config<I>, I: 'static = ()> = StorageValue<_, QueryId, ValueQuery>;
 
 	#[pallet::call]
 	impl<T: Config<I>, I: 'static> Pallet<T, I>
@@ -232,7 +265,10 @@ pub mod pallet {
 			// 1. Verify switch pair has not already been set.
 			ensure!(!SwitchPair::<T, I>::exists(), Error::<T, I>::SwitchPairAlreadyExisting);
 
-			// 2. Verify that total issuance >= circulating supply and that the amount of
+			// 2. Verify there's no pending transactions from a previous pair.
+			ensure!(!Self::is_any_transaction_pending(), Error::<T, I>::PendingSwitches);
+
+			// 3. Verify that total issuance >= circulating supply and that the amount of
 			//    remote assets locked (total - circulating) is greater than the minimum
 			//    amount required at destination (remote ED).
 			ensure!(
@@ -240,7 +276,7 @@ pub mod pallet {
 				Error::<T, I>::InvalidInput
 			);
 
-			// 3. Verify the pool account has enough local assets to match the circulating
+			// 4. Verify the pool account has enough local assets to match the circulating
 			//    supply of eKILTs to cover for all potential remote -> local switches.
 			//    Handle the special case where circulating supply is `0`.
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
@@ -292,6 +328,13 @@ pub mod pallet {
 			);
 			let pool_account = Self::pool_account_id_for_remote_asset(&remote_asset_id)?;
 
+			if Self::is_any_transaction_pending() {
+				log::warn!(
+					target: LOG_TARGET,
+					"Calling `force_set_switch_pair` with a non-empty map of pending swaps.",
+				)
+			}
+
 			Self::set_switch_pair_bypass_checks(
 				remote_asset_total_supply,
 				*remote_asset_id,
@@ -312,6 +355,13 @@ pub mod pallet {
 		#[pallet::weight(<T as Config<I>>::WeightInfo::force_unset_switch_pair())]
 		pub fn force_unset_switch_pair(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
+
+			if Self::is_any_transaction_pending() {
+				log::warn!(
+					target: LOG_TARGET,
+					"Calling `force_unset_switch_pair` with a non-empty map of pending swaps.",
+				)
+			}
 
 			Self::unset_switch_pair_bypass_checks();
 
@@ -381,11 +431,15 @@ pub mod pallet {
 		) -> DispatchResult {
 			let submitter = T::SubmitterOrigin::ensure_origin(origin)?;
 
-			// 1. Prevent switches of 0 tokens, which would just waste users' XCM fee
-			//    balances.
+			// 1. Prevent switches of less than ED tokens, since there might be a case where
+			//    a switch is reverted, but the user's balance has been dusted, and when
+			//    trying to revert the transfer, it will fail since the account does not
+			//    exist anymore. Hence, we force the transfer to be >= ED, so that even when
+			//    hitting this edge case, we are still sure the original account is
+			//    re-created.
 			ensure!(
-				local_asset_amount > LocalCurrencyBalanceOf::<T, I>::zero(),
-				Error::<T, I>::ZeroAmount
+				local_asset_amount >= T::LocalCurrency::minimum_balance(),
+				Error::<T, I>::AmountTooLow
 			);
 
 			// 2. Retrieve switch pair info from storage, else fail.
@@ -476,14 +530,66 @@ pub mod pallet {
 				})?;
 
 			// 7. Compose and validate XCM message
-			let appendix: Xcm<()> = vec![
-				RefundSurplus,
+			let query_id = NextQueryId::<T, I>::get();
+			let universal_location = T::UniversalLocation::get();
+			let our_location_for_destination = universal_location.invert_target(&destination_v4).map_err(|e| {
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to invert universal location {:?} for destination {:?} with error {:?}",
+					universal_location, destination_v4, e
+				);
+				Error::<T, I>::Internal
+			})?;
+			let appendix = vec![
+				ReportHolding {
+					response_info: QueryResponseInfo {
+						destination: our_location_for_destination.clone(),
+						max_weight: Weight::zero(),
+						query_id,
+					},
+					// Include in the report the assets that were not transferred.
+					assets: AssetFilter::Wild(WildAsset::AllOf {
+						id: asset_id_v4.clone(),
+						fun: WildFungibility::Fungible,
+					}),
+				},
+				// If the asset to transfer failed to transfer, re-put it back into our own account. Otherwise, if the
+				// transfer succeeded, this asset won't be present in the holding registry, hence this is effectively a
+				// no-op.
 				DepositAsset {
-					assets: AssetFilter::Wild(WildAsset::All),
+					assets: AssetFilter::Wild(WildAsset::AllOf {
+						id: asset_id_v4.clone(),
+						fun: WildFungibility::Fungible,
+					}),
+					beneficiary: our_location_for_destination,
+				},
+				RefundSurplus,
+				// Refund the XCM fee left to the user. We are purposefully only selecting the XCM fee asset, although
+				// there should be no cases in which any other assets are present in the holding registry.
+				DepositAsset {
+					assets: AssetFilter::Wild(WildAsset::AllOf {
+						id: remote_asset_fee_v4.id.clone(),
+						fun: WildFungibility::Fungible,
+					}),
 					beneficiary: submitter_as_location.clone(),
 				},
 			]
 			.into();
+			// Steps performed:
+			// 1. Withdraw XCM fees from our SA
+			// 2. Buy execution
+			// 3. Set the appendix, executed regardless of the outcome of the transfer:
+			// 		3.1 Report back to our chain the assets in the holding registry. This will
+			// 			contain either only the XCM fee token in case of successful transfer, or the
+			//	 		XCM fee token + the amount of funds supposed to be transferred.
+			// 		3.2 Deposit the un-transferred asset (only if the transfer failed) back into
+			// our account.
+			//		3.3 Refund any surplus weight.
+			//		3.4 Deposit the remaining XCM fee assets in the user's account.
+			// 4. Withdraw the requested asset (this operation should be infallible since we
+			//    have full control of this balance)
+			// 5. Try to deposit the withdrawn asset into the user's account. This operation
+			//    could fail and the error is handled in the appendix.
 			let remote_xcm: Xcm<()> = vec![
 				WithdrawAsset(remote_asset_fee_v4.clone().into()),
 				BuyExecution {
@@ -491,8 +597,16 @@ pub mod pallet {
 					fees: remote_asset_fee_v4.clone(),
 				},
 				SetAppendix(appendix),
-				TransferAsset {
-					assets: (asset_id_v4, remote_asset_amount_as_u128).into(),
+				// Because the appendix relies on forwarding the content of the holding registry (there is at the
+				// moment no other way of detecting failed switches), we need to make sure the assets are present in
+				// the holding registry before the execution could fail.
+				// Using `TransferAsset` could result in assets not even being withdrawn, and we would not be able to
+				// detect the failed switch. Hence, we need to force the transfer to happen in two steps: 1. withdraw
+				// (which we assume would never fail since we know we own the required assets)
+				// 2. deposit (which could fail, e.g., if the beneficiary does not have an ED for a sufficient asset).
+				WithdrawAsset((asset_id_v4.clone(), remote_asset_amount_as_u128).into()),
+				DepositAsset {
+					assets: AssetFilter::Definite((asset_id_v4, remote_asset_amount_as_u128).into()),
 					beneficiary: beneficiary_v4,
 				},
 			]
@@ -500,7 +614,7 @@ pub mod pallet {
 			let xcm_ticket =
 				validate_send::<T::XcmRouter>(destination_v4.clone(), remote_xcm.clone()).map_err(|e| {
 					log::info!(
-						"Failed to call validate_send for destination {:?} and remote XCM {:?} with error {:?}",
+						"Failed to call `validate_send` for destination {:?} and remote XCM {:?} with error {:?}",
 						destination_v4,
 						remote_xcm,
 						e
@@ -557,7 +671,8 @@ pub mod pallet {
 				DispatchError::from(Error::<T, I>::Xcm)
 			})?;
 
-			// 12. Update remote asset balance and circulating supply.
+			// 12. Update storage elements
+			// 12.1 Remote asset balance and circulating supply.
 			SwitchPair::<T, I>::try_mutate(|entry| {
 				let Some(switch_pair_info) = entry.as_mut() else {
 					log::error!(target: LOG_TARGET, "Failed to borrow stored switch pair info as mut.");
@@ -575,9 +690,38 @@ pub mod pallet {
 					})?;
 				Ok(())
 			})?;
+			// 12.2 Write the query ID into storage, checking for the very unlikely
+			// situation in which one already exists.
+			PendingSwitchConfirmations::<T, I>::try_mutate(query_id, |entry| {
+				match entry {
+					// Should never happen.
+					Some(_) => {
+						log::error!(
+							target: LOG_TARGET,
+							"Found already an entry for query ID {:?} in storage.",
+							query_id
+						);
+						Err(Error::<T, I>::Internal)
+					}
+					None => {
+						*entry = Some(UnconfirmedSwitchInfoOf::<T> {
+							from: submitter.clone(),
+							to: *beneficiary.clone(),
+							amount: remote_asset_amount_as_u128,
+						});
+						Ok(())
+					}
+				}
+			})?;
+			// 12.3 Update the query ID storage entry. wrapping around the max value since
+			// it's safe to do so, assuming by the time we wrap the previously pending
+			// transfers have all been processed.
+			NextQueryId::<T, I>::mutate(|entry| {
+				*entry = entry.wrapping_add(1);
+			});
 
 			// 13. Call into hook post-switch checks
-			T::SwitchHooks::post_local_to_remote_switch(&submitter, &beneficiary, local_asset_amount)
+			T::SwitchHooks::post_local_to_remote_switch_dispatch(&submitter, &beneficiary, local_asset_amount)
 				.map_err(|e| DispatchError::from(Error::<T, I>::Hook(e.into())))?;
 
 			Self::deposit_event(Event::<T, I>::LocalToRemoteSwitchExecuted {
@@ -624,6 +768,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		});
 
 		SwitchPair::<T, I>::set(Some(switch_pair_info));
+		NextQueryId::<T, I>::kill();
 
 		Self::deposit_event(Event::<T, I>::SwitchPairCreated {
 			remote_asset_circulating_supply,
@@ -638,6 +783,8 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 	fn unset_switch_pair_bypass_checks() {
 		let switch_pair = SwitchPair::<T, I>::take();
+		NextQueryId::<T, I>::kill();
+
 		if let Some(switch_pair) = switch_pair {
 			Self::deposit_event(Event::<T, I>::SwitchPairRemoved {
 				remote_asset_id: switch_pair.remote_asset_id,
@@ -689,5 +836,11 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			);
 			Error::<T, I>::Internal
 		})
+	}
+
+	// Read the first item in the storage and returns `true` if `Some`, and `false`
+	// otherwise.
+	fn is_any_transaction_pending() -> bool {
+		PendingSwitchConfirmations::<T, I>::count() > Zero::zero()
 	}
 }

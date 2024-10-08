@@ -15,20 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
 
-mod deposit;
-pub use deposit::Deposit;
-pub mod migration;
-pub mod signature;
-pub mod traits;
-pub mod xcm;
-
-#[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
-pub mod mock;
-
-#[cfg(any(feature = "try-runtime", test))]
-pub mod test_utils;
-
-#[cfg(feature = "runtime-benchmarks")]
-pub mod benchmark;
+mod expecting_response;
+mod on_response;
