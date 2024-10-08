@@ -61,9 +61,7 @@ pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
 use runtime_common::{
-	asset_switch::{
-		query::QueryIdProviderViaXcmPallet, runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury,
-	},
+	asset_switch::{runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury},
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{
@@ -995,7 +993,6 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type FeeOrigin = EnsureRoot<AccountId>;
 	type LocalCurrency = Balances;
 	type PauseOrigin = EnsureRoot<AccountId>;
-	type QueryIdProvider = QueryIdProviderViaXcmPallet<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<AccountId>;
 	type SwitchHooks = runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf;

@@ -65,7 +65,6 @@ As the pallet is generic over the runtime specifics, the `Config` trait requires
 - `type FeeOrigin: EnsureOrigin<Self::RuntimeOrigin>`: The origin that can update the XCM fee to be paid for the transfer on the remote chain.
 - `type LocalCurrency: MutateFungible<Self::AccountId>`: The chain's local currency.
 - `type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>`: The origin that can pause a switch pair, e.g., if a vulnerability is found.
-- `type QueryIdProvider: QueryIdProvider`: The provider of query IDs for the pallet to store unconfirmed transfers.
 - `type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>`: The aggregate `Event` type.
 - `type SubmitterOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>`: The origin that can call the `switch` extrinsic and perform the switch.
 - `type SwitchHooks: SwitchHooks<Self, I>`: Any additional runtime-specific logic that can be injected both before and after local tokens are exchanged for the remote assets, and before and after the remote assets are converted into local tokens.

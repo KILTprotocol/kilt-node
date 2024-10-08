@@ -133,7 +133,6 @@ impl crate::Config for MockRuntime {
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
 	type LocalCurrency = MockCurrency;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
-	type QueryIdProvider = ();
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();

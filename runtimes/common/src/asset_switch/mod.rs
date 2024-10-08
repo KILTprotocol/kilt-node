@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 pub mod hooks;
-pub mod query;
 pub mod runtime_api;
 
 use frame_support::traits::EnsureOrigin;

@@ -42,7 +42,7 @@ use xcm::v4::{
 use xcm_executor::{traits::TransactAsset, AssetsInHolding};
 
 use crate::{
-	xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, Pallet,
+	xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, NextQueryId, Pallet,
 	PendingSwitchConfirmations, UnconfirmedSwitchInfoOf,
 };
 
@@ -186,7 +186,6 @@ impl crate::Config for MockRuntime {
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
 	type LocalCurrency = Balances;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
-	type QueryIdProvider = ();
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();
@@ -205,6 +204,7 @@ pub(super) struct ExtBuilder(
 	Vec<(AccountId32, u64, u64, u64)>,
 	Vec<(AccountId32, Asset)>,
 	Vec<(QueryId, UnconfirmedSwitchInfoOf<MockRuntime>)>,
+	QueryId,
 );
 
 pub(super) const FREEZE_REASON: [u8; 1] = *b"1";
@@ -231,6 +231,11 @@ impl ExtBuilder {
 		switches: Vec<(QueryId, UnconfirmedSwitchInfoOf<MockRuntime>)>,
 	) -> Self {
 		self.3 = switches;
+		self
+	}
+
+	pub(super) fn with_next_query_id_value(mut self, value: QueryId) -> Self {
+		self.4 = value;
 		self
 	}
 
@@ -289,6 +294,8 @@ impl ExtBuilder {
 					Some(pending_switch)
 				)
 			}
+
+			NextQueryId::<MockRuntime>::set(self.4);
 
 			// Some setup operations generate events which interfere with our assertions.
 			System::reset_events()

@@ -57,7 +57,7 @@ const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 pub mod pallet {
 	use crate::{
 		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus, UnconfirmedSwitchInfo},
-		traits::{QueryIdProvider, SwitchHooks},
+		traits::SwitchHooks,
 		WeightInfo, LOG_TARGET,
 	};
 
@@ -107,9 +107,6 @@ pub mod pallet {
 		type LocalCurrency: MutateFungible<Self::AccountId>;
 		/// The origin that can pause switches in both directions.
 		type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
-		/// The type responsible for generating query IDs and ensure they are
-		/// unique across all pallets consuming them.
-		type QueryIdProvider: QueryIdProvider;
 		/// The aggregate event type.
 		type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The origin that can request a switch of some local tokens for some
@@ -238,6 +235,11 @@ pub mod pallet {
 	#[pallet::getter(fn pending_switch_confirmations)]
 	pub(crate) type PendingSwitchConfirmations<T: Config<I>, I: 'static = ()> =
 		CountedStorageMap<_, Twox64Concat, QueryId, UnconfirmedSwitchInfoOf<T>, OptionQuery>;
+
+	/// Stores the next query ID to use for queries.
+	#[pallet::storage]
+	#[pallet::getter(fn next_query_id)]
+	pub(crate) type NextQueryId<T: Config<I>, I: 'static = ()> = StorageValue<_, QueryId, ValueQuery>;
 
 	#[pallet::call]
 	impl<T: Config<I>, I: 'static> Pallet<T, I>
@@ -528,7 +530,7 @@ pub mod pallet {
 				})?;
 
 			// 7. Compose and validate XCM message
-			let query_id = T::QueryIdProvider::next_id();
+			let query_id = NextQueryId::<T, I>::get();
 			let universal_location = T::UniversalLocation::get();
 			let our_location_for_destination = universal_location.invert_target(&destination_v4).map_err(|e| {
 				log::error!(
@@ -711,6 +713,11 @@ pub mod pallet {
 					}
 				}
 			})?;
+			// 12.3 Update the query ID storage entry. wrapping around the max value since
+			// it's safe to do so, assuming by the time we wrap the previously pending transfers have all been processed.
+			NextQueryId::<T, I>::mutate(|entry| {
+				*entry = entry.wrapping_add(1);
+			});
 
 			// 13. Call into hook post-switch checks
 			T::SwitchHooks::post_local_to_remote_switch_dispatch(&submitter, &beneficiary, local_asset_amount)
