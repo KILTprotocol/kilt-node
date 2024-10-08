@@ -1628,12 +1628,12 @@ impl_runtime_apis! {
 				return Err(AssetSwitchApiError::SwitchPoolNotSet);
 			};
 
-			let from_v4 = AccountId32ToAccountId32JunctionConverter::try_convert(from).map_err(|e| AssetSwitchApiError::Other(e.to_string()))?;
-			let to_v4 = Location::try_from(to.clone()).map_err(|_| AssetSwitchApiError::Other(format!("Failed to convert provided location {:?} to a `v4` variant.", to)))?;
+			let from_v4 = AccountId32ToAccountId32JunctionConverter::try_convert(from).map_err(|_| AssetSwitchApiError::Internal)?;
+			let to_v4 = Location::try_from(to.clone()).map_err(|_| AssetSwitchApiError::Internal)?;
 			let our_location_for_destination = {
 				let universal_location = UniversalLocation::get();
 				universal_location.invert_target(&to_v4)
-			}.map_err(|_| AssetSwitchApiError::Other(format!("Failed to invert target for target destination {:?}", to)))?;
+			}.map_err(|_| AssetSwitchApiError::Internal)?;
 			let asset_id_v4 = AssetId::try_from(switch_pair.remote_asset_id).map_err(|_| AssetSwitchApiError::Internal)?;
 			let remote_asset_fee_v4 = Asset::try_from(switch_pair.remote_xcm_fee).map_err(|_| AssetSwitchApiError::Internal)?;
 
