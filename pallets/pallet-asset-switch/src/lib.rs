@@ -768,17 +768,17 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	/// 2. Buy execution
 	/// 3. Set the appendix, executed regardless of the outcome of the transfer:
 	///
-	///		3.1 Report back to our chain the assets in the holding registry. This
-	/// will contain either only the XCM fee token in case of successful
+	///     3.1 Report back to our chain the assets in the holding registry.
+	/// This will contain either only the XCM fee token in case of successful
 	/// transfer, or the XCM fee token + the amount of funds supposed to be
 	/// transferred.
 	///
-	/// 	3.2 Deposit the un-transferred asset (only if the transfer
+	///     3.2 Deposit the un-transferred asset (only if the transfer
 	/// failed) back into our account.
 	///
-	/// 	3.3 Refund any surplus weight.
+	///     3.3 Refund any surplus weight.
 	///
-	///		3.4 Deposit the remaining XCM fee assets in the user's account.
+	///     3.4 Deposit the remaining XCM fee assets in the user's account.
 	///
 	/// 4. Withdraw the requested asset (this operation should be infallible
 	///    since we have full control of this balance)
