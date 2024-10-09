@@ -756,6 +756,34 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		})
 	}
 
+	/// Compose the XCM message for a local -> remote switch to be sent to the
+	/// switch pair configured remote location.
+	///
+	/// The message includes an appendix which reports back to this chain the
+	/// result of the operation by the means of sending the content of the
+	/// holding registry after the transfer is supposed to have happened.
+	///
+	/// The XCM program is so composed:
+	/// 1. Withdraw XCM fees from our SA
+	/// 2. Buy execution
+	/// 3. Set the appendix, executed regardless of the outcome of the transfer:
+	///
+	///		3.1 Report back to our chain the assets in the holding registry. This
+	/// will contain either only the XCM fee token in case of successful
+	/// transfer, or the XCM fee token + the amount of funds supposed to be
+	/// transferred.
+	///
+	/// 	3.2 Deposit the un-transferred asset (only if the transfer
+	/// failed) back into our account.
+	///
+	/// 	3.3 Refund any surplus weight.
+	///
+	///		3.4 Deposit the remaining XCM fee assets in the user's account.
+	///
+	/// 4. Withdraw the requested asset (this operation should be infallible
+	///    since we have full control of this balance)
+	/// 5. Try to deposit the withdrawn asset into the user's account. This
+	///    operation could fail and the error is handled in the appendix.
 	pub fn compute_xcm_for_switch(
 		inverted_universal_location: &Location,
 		from: &Location,
@@ -799,21 +827,6 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			},
 		]
 		.into();
-		// Steps performed:
-		// 1. Withdraw XCM fees from our SA
-		// 2. Buy execution
-		// 3. Set the appendix, executed regardless of the outcome of the transfer:
-		// 		3.1 Report back to our chain the assets in the holding registry. This will
-		// 			contain either only the XCM fee token in case of successful transfer, or the
-		//	 		XCM fee token + the amount of funds supposed to be transferred.
-		// 		3.2 Deposit the un-transferred asset (only if the transfer failed) back into
-		// our account.
-		//		3.3 Refund any surplus weight.
-		//		3.4 Deposit the remaining XCM fee assets in the user's account.
-		// 4. Withdraw the requested asset (this operation should be infallible since we
-		//    have full control of this balance)
-		// 5. Try to deposit the withdrawn asset into the user's account. This operation
-		//    could fail and the error is handled in the appendix.
 		vec![
 			WithdrawAsset(remote_asset_fee.clone().into()),
 			BuyExecution {
