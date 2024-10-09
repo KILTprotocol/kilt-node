@@ -273,9 +273,9 @@ mod benchmarks {
 		let account_id = <T as Config<I>>::SubmitterOrigin::ensure_origin(origin.clone()).unwrap();
 		let pool_account = Pallet::<T, I>::pool_account_id_for_remote_asset(&remote_asset_id).unwrap();
 		let minimum_balance = <T as Config<I>>::LocalCurrency::minimum_balance();
-		// Set submitter balance to ED + 1_000 and pool balance to ED
+		// Set submitter balance to 2 * ED and pool balance to ED
 		{
-			<T as Config<I>>::LocalCurrency::set_balance(&account_id, minimum_balance + 1_000u32.into());
+			<T as Config<I>>::LocalCurrency::set_balance(&account_id, minimum_balance + minimum_balance);
 			<T as Config<I>>::LocalCurrency::set_balance(&pool_account, minimum_balance);
 		}
 		// Set submitter's fungible balance to the XCM fee
@@ -297,14 +297,15 @@ mod benchmarks {
 				.unwrap()
 				.into(),
 		);
-		let amount = 1_000u32.into();
+		// We can't switch less than ED.
+		let amount = minimum_balance;
 
 		#[extrinsic_call]
 		Pallet::<T, I>::switch(origin as T::RuntimeOrigin, amount, beneficiary);
 
 		assert_eq!(
 			<T as Config<I>>::LocalCurrency::balance(&pool_account),
-			minimum_balance + 1_000u32.into()
+			minimum_balance + minimum_balance
 		);
 	}
 
