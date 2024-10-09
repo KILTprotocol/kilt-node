@@ -11,7 +11,9 @@
     "/dns/kilt.boot.stake.plus/tcp/30332/wss/p2p/12D3KooWHZ6ftYNVQDm5gbHvtGgkPStaBBQBje8rrtxdH1jJonkW",
     "/dns/kilt.boot.stake.plus/tcp/31332/wss/p2p/12D3KooWMgyhbAKBkEqvKP5bPGTCJZ4nYziJhQep9aHRAkZW8xyy",
     "/dns4/boot.helikon.io/tcp/8570/p2p/12D3KooWGaE81VE2rzD5TbeRqpTgQwh2sWXMVfMJLBMHQH8AfoXu",
-    "/dns4/boot.helikon.io/tcp/8572/wss/p2p/12D3KooWGaE81VE2rzD5TbeRqpTgQwh2sWXMVfMJLBMHQH8AfoXu"
+    "/dns4/boot.helikon.io/tcp/8572/wss/p2p/12D3KooWGaE81VE2rzD5TbeRqpTgQwh2sWXMVfMJLBMHQH8AfoXu",
+    "/dns/kilt-bootnode.radiumblock.com/tcp/30333/p2p/12D3KooWDjWPL4sMV92dXb55sbvQkHjZzG3jzF2XePGEHqYtdo3j",
+    "/dns/kilt-bootnode.radiumblock.com/tcp/30336/wss/p2p/12D3KooWDjWPL4sMV92dXb55sbvQkHjZzG3jzF2XePGEHqYtdo3j"
   ],
   "telemetryEndpoints": [
     [
