@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # Runs all benchmarks for all pallets, for a given runtime, provided by $1
 # Should be run on a reference machine to gain accurate benchmarks
@@ -64,7 +65,7 @@ if [ $profile == "dev" ]; then
 	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored --no-verify"
 else
     target_folder=$profile
-	additional_args="--header=\"HEADER-GPL\" --template=\".maintain/runtime-weight-template.hbs\" --output=\"./runtimes/${runtime}/src/weights/\""
+	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
 fi
 
 for pallet in "${pallets[@]}"; do
