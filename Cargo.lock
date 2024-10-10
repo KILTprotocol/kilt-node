@@ -770,7 +770,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "attestation"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -1976,7 +1976,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -2695,7 +2695,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "attestation",
  "bitflags 1.3.2",
@@ -2798,7 +2798,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "ctype",
  "env_logger 0.10.2",
@@ -2858,7 +2858,7 @@ dependencies = [
 
 [[package]]
 name = "dip-consumer-node-template"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -2912,7 +2912,7 @@ dependencies = [
 
 [[package]]
 name = "dip-consumer-runtime-template"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
@@ -2966,7 +2966,7 @@ dependencies = [
 
 [[package]]
 name = "dip-provider-node-template"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -3020,7 +3020,7 @@ dependencies = [
 
 [[package]]
 name = "dip-provider-runtime-template"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
@@ -5125,7 +5125,7 @@ dependencies = [
 
 [[package]]
 name = "kestrel-runtime"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "attestation",
  "ctype",
@@ -5185,7 +5185,7 @@ checksum = "c33070833c9ee02266356de0c43f723152bd38bd96ddf52c82b3af10c9138b28"
 
 [[package]]
 name = "kilt-asset-dids"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "base58",
  "frame-support",
@@ -5200,7 +5200,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-dip-primitives"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -5232,7 +5232,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-parachain"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -5299,7 +5299,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-did"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "did",
  "frame-system",
@@ -5312,7 +5312,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-dip-provider"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -5320,7 +5320,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-public-credentials"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "kilt-support",
  "parity-scale-codec",
@@ -5330,7 +5330,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-staking"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -5340,7 +5340,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6895,7 +6895,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-asset-switch"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "env_logger 0.10.2",
  "frame-benchmarking",
@@ -6917,7 +6917,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-asset-switch-runtime-api"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -7286,7 +7286,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-configuration"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "frame-benchmarking",
@@ -7340,7 +7340,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-deposit-storage"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -7359,7 +7359,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-did-lookup"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "base58",
  "blake2 0.10.6",
@@ -7386,7 +7386,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dip-consumer"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "cfg-if",
  "frame-benchmarking",
@@ -7406,7 +7406,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dip-provider"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "did",
  "frame-benchmarking",
@@ -7576,7 +7576,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-inflation"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -7629,7 +7629,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-migration"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "attestation",
  "ctype",
@@ -7848,7 +7848,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-postit"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -7945,7 +7945,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-relay-store"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -8289,7 +8289,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-web3-names"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -8384,7 +8384,7 @@ dependencies = [
 
 [[package]]
 name = "parachain-staking"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -8671,7 +8671,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "attestation",
  "cfg-if",
@@ -10300,7 +10300,7 @@ dependencies = [
 
 [[package]]
 name = "public-credentials"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -10876,7 +10876,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-common"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "attestation",
  "cfg-if",
@@ -13726,7 +13726,7 @@ dependencies = [
 
 [[package]]
 name = "spiritnet-runtime"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "attestation",
  "cfg-if",
@@ -13946,7 +13946,7 @@ dependencies = [
 
 [[package]]
 name = "standalone-node"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "clap",
  "frame-benchmarking",
@@ -16093,7 +16093,7 @@ dependencies = [
 
 [[package]]
 name = "xcm-integration-tests"
-version = "1.15.0-dev"
+version = "1.14.5"
 dependencies = [
  "asset-hub-rococo-emulated-chain",
  "asset-hub-rococo-runtime",
