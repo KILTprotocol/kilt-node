@@ -1,8 +1,15 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::{ArithmeticError, FixedPointNumber};
+use sp_runtime::ArithmeticError;
+use substrate_fixed::{
+	traits::{FixedSigned, ToFixed},
+	types::I9F23,
+};
 
-use crate::curves_parameters::{self, BondingFunction, RationalBondingFunctionParameters, SquareRoot};
+use crate::{
+	curves_parameters::{self, BondingFunction},
+	Config, CurveParameterTypeOf,
+};
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub struct Locks {
@@ -102,23 +109,6 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 	pub min_balance: Balance,
 }
 
-pub struct PolynomialFunctionParametersInput<F> {
-	pub m: F,
-	pub n: F,
-	pub o: F,
-}
-
-pub struct SquareRootBondingFunctionParametersInput<F> {
-	pub m: F,
-	pub n: F,
-}
-
-pub enum CurveInput<F> {
-	PolynomialFunction(PolynomialFunctionParametersInput<F>),
-	SquareRootBondingFunction(SquareRootBondingFunctionParametersInput<F>),
-	RationalBondingFunction,
-}
-
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<F> {
 	PolynomialFunction(curves_parameters::PolynomialFunctionParameters<F>),
@@ -133,7 +123,7 @@ pub enum DiffKind {
 
 impl<F> Curve<F>
 where
-	F: FixedPointNumber + SquareRoot,
+	F: FixedSigned + PartialOrd<I9F23> + From<I9F23>,
 {
 	pub fn calculate_cost(
 		&self,
@@ -141,7 +131,7 @@ where
 		active_issuance_post: F,
 		passive_issuance: F,
 		kind: DiffKind,
-	) -> Result<F, ArithmeticError> {
+	) -> Result<u128, ArithmeticError> {
 		let (low, high) = match kind {
 			DiffKind::Burn => (
 				active_issuance_post.saturating_add(passive_issuance),
@@ -153,14 +143,23 @@ where
 			),
 		};
 
-		match self {
+		let _costs = match self {
 			Curve::PolynomialFunction(params) => params.calculate_costs(low, high),
-			Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
-			// TODO: This is probably a bug.
-			Curve::RationalBondingFunction => RationalBondingFunctionParameters::<F>::calculate_costs(
-				(active_issuance_pre, passive_issuance),
-				(active_issuance_post, passive_issuance),
-			),
-		}
+			// Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
+			// // TODO: This is probably a bug.
+			// Curve::RationalBondingFunction => RationalBondingFunctionParameters::<F>::calculate_costs(
+			// 	(active_issuance_pre, passive_issuance),
+			// 	(active_issuance_post, passive_issuance),
+			// ),
+			_ => todo!(),
+		}?;
+
+		Ok(0)
 	}
+}
+
+pub fn convert_balance_to_curve_parameter_internal<T: Config>(
+	x: u128,
+) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
+	x.checked_to_fixed().ok_or(ArithmeticError::Overflow)
 }

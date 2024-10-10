@@ -20,7 +20,6 @@ mod curves_parameters;
 #[frame_support::pallet]
 pub mod pallet {
 
-	use fixed::traits::Fixed;
 	use frame_support::{
 		dispatch::DispatchResult,
 		ensure,
@@ -40,16 +39,18 @@ pub mod pallet {
 	use frame_system::{ensure_root, pallet_prelude::*};
 	use parity_scale_codec::FullCodec;
 	use scale_info::TypeInfo;
-	use sp_arithmetic::FixedPointNumber;
 	use sp_runtime::{
-		traits::{CheckedAdd, CheckedSub, One, Saturating, StaticLookup, Zero},
+		traits::{One, Saturating, StaticLookup, Zero},
 		ArithmeticError, BoundedVec, SaturatedConversion,
 	};
 	use sp_std::{default::Default, iter::Iterator, vec::Vec};
+	use substrate_fixed::{
+		traits::{Fixed, FixedSigned},
+		types::I9F23,
+	};
 
-	use crate::{
-		curves_parameters::{convert_balance_to_curve_parameter, SquareRoot},
-		types::{Curve, CurveInput, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta},
+	use crate::types::{
+		convert_balance_to_curve_parameter_internal, Curve, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta,
 	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -69,7 +70,7 @@ pub mod pallet {
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type PoolDetailsOf<T> =
-		PoolDetails<<T as frame_system::Config>::AccountId, Curve, BoundedCurrencyVec<T>>;
+		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterTypeOf<T>>, BoundedCurrencyVec<T>>;
 
 	type CollateralAssetIdOf<T> =
 		<<T as Config>::CollateralCurrency as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
@@ -130,14 +131,7 @@ pub mod pallet {
 		type RuntimeHoldReason: From<HoldReason>;
 
 		/// The type used for the curve parameters.
-		type CurveParameterType: Parameter
-			+ Member
-			+ Fixed
-			+ MaxEncodedLen
-			+ SquareRoot
-			+ Zero
-			+ CheckedAdd
-			+ CheckedSub;
+		type CurveParameterType: Parameter + Member + FixedSigned + MaxEncodedLen + PartialOrd<I9F23> + From<I9F23>;
 	}
 
 	#[pallet::pallet]
@@ -202,7 +196,7 @@ pub mod pallet {
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn create_pool(
 			origin: OriginFor<T>,
-			curve: CurveInput,
+			curve: Curve<CurveParameterTypeOf<T>>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			tradable: bool, // Todo: make it useful.
 			state: PoolStatus<Locks>,
@@ -558,37 +552,34 @@ pub mod pallet {
 		/// save usage of currency_ids.
 		pub fn get_collateral_diff(
 			kind: DiffKind,
-			curve: &Curve,
+			curve: &Curve<CurveParameterTypeOf<T>>,
 			amount: &FungiblesBalanceOf<T>,
 			total_issuances: Vec<FungiblesBalanceOf<T>>,
 			currency_idx: usize,
 		) -> Result<CollateralCurrencyBalanceOf<T>, DispatchError> {
-			let normalized_total_issuances = total_issuances
+			let converted_total_issuances = total_issuances
 				.clone()
 				.into_iter()
-				.map(|x| convert_balance_to_curve_parameter::<T>(x.saturated_into::<u128>()))
+				.map(|x| convert_balance_to_curve_parameter_internal::<T>(x.saturated_into::<u128>()))
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
 			// normalize the amount to mint
-			let normalized_amount = convert_balance_to_curve_parameter::<T>(amount.clone().saturated_into())?;
+			let converted_amount = convert_balance_to_curve_parameter_internal::<T>(amount.clone().saturated_into())?;
 
-			let (active_issuance_pre, active_issuance_post) = Self::calculate_pre_post_issuances(
-				&kind,
-				&normalized_amount,
-				&normalized_total_issuances,
-				currency_idx,
-			)?;
+			let (active_issuance_pre, active_issuance_post) =
+				Self::calculate_pre_post_issuances(&kind, &converted_amount, &converted_total_issuances, currency_idx)?;
 
-			let passive_issuance = normalized_total_issuances
+			let passive_issuance = converted_total_issuances
 				.iter()
 				.enumerate()
 				.filter(|&(idx, _)| idx != currency_idx)
-				.fold(CurveParameterTypeOf::<T>::zero(), |sum, (_, x)| sum.saturating_add(*x));
+				.fold(CurveParameterTypeOf::<T>::from_num(0), |sum, (_, x)| {
+					sum.saturating_add(*x)
+				});
 
-			let normalize_cost =
-				curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance, kind)?;
+			let costs = curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance, kind)?;
 
-			Ok(normalize_cost.to_num::<u128>().saturated_into())
+			Ok(costs.saturated_into())
 		}
 
 		fn calculate_pre_post_issuances(
@@ -600,10 +591,10 @@ pub mod pallet {
 			let active_issuance_pre = total_issuances.get(currency_idx).ok_or(Error::<T>::IndexOutOfBounds)?;
 			let active_issuance_post = match kind {
 				DiffKind::Mint => active_issuance_pre
-					.checked_add(amount)
+					.checked_add(*amount)
 					.ok_or(ArithmeticError::Overflow)?,
 				DiffKind::Burn => active_issuance_pre
-					.checked_sub(amount)
+					.checked_sub(*amount)
 					.ok_or(ArithmeticError::Underflow)?,
 			};
 			Ok((*active_issuance_pre, active_issuance_post))
@@ -655,13 +646,13 @@ pub mod pallet {
 				.get(currency_idx)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let currencies_metadata = Self::get_currencies_issuance(pool_details);
+			let currencies_issuance = Self::get_currencies_issuance(pool_details);
 
 			let cost = Self::get_collateral_diff(
 				DiffKind::Mint,
 				&pool_details.curve,
 				&amount,
-				currencies_metadata,
+				currencies_issuance,
 				currency_idx,
 			)?;
 

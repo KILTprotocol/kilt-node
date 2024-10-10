@@ -5,14 +5,14 @@ use frame_support::{
 	Hashable,
 };
 use frame_system::{EnsureRoot, EnsureSigned};
-use sp_arithmetic::FixedU128;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, FixedI128, MultiSignature,
+	BoundedVec, BuildStorage, MultiSignature,
 };
+use substrate_fixed::types::I10F118;
 
 use crate::{
-	curves_parameters::{PolynomialFunctionParameters, SquareRoot},
+	curves_parameters::PolynomialFunctionParameters,
 	types::{Curve, Locks, PoolStatus},
 	Config, DepositCurrencyBalanceOf, PoolDetailsOf,
 };
@@ -23,6 +23,7 @@ pub type AssetId = u32;
 pub type Signature = MultiSignature;
 pub type AccountPublic = <Signature as Verify>::Signer;
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+pub type Float = I10F118;
 
 // accounts
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
@@ -39,10 +40,10 @@ pub const UNIT_NATIVE: Balance = 10u128.pow(15);
 
 // helper functions
 
-pub(crate) fn get_linear_bonding_curve() -> Curve<FixedU128> {
-	let m = FixedU128::from_u32(0);
-	let n = FixedU128::from_u32(2);
-	let o = FixedU128::from_u32(3);
+pub(crate) fn get_linear_bonding_curve() -> Curve<Float> {
+	let m = Float::from_num(0);
+	let n = Float::from_num(2);
+	let o = Float::from_num(3);
 	Curve::PolynomialFunction(PolynomialFunctionParameters { m, n, o })
 }
 
@@ -52,18 +53,6 @@ pub(crate) fn calculate_pool_id(currencies: Vec<AssetId>) -> AccountId {
 
 pub(crate) fn get_currency_unit(denomination: u8) -> Balance {
 	10u128.pow(denomination as u32)
-}
-
-// trait implementations
-
-impl SquareRoot for FixedI128 {
-	fn sqrt(self) -> Self {
-		self.sqrt()
-	}
-
-	fn try_sqrt(self) -> Option<Self> {
-		self.try_sqrt()
-	}
 }
 
 #[cfg(test)]
@@ -77,7 +66,7 @@ pub mod runtime {
 		currencies: Vec<AssetId>,
 		manager: AccountId,
 		transferable: bool,
-		curve: Curve<FixedU128>,
+		curve: Curve<Float>,
 		state: PoolStatus<Locks>,
 	) -> PoolDetailsOf<Test> {
 		let bonded_currencies = BoundedVec::truncate_from(currencies);
@@ -216,7 +205,7 @@ pub mod runtime {
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
-		type CurveParameterType = FixedU128;
+		type CurveParameterType = Float;
 	}
 
 	#[derive(Clone, Default)]

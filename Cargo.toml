@@ -34,7 +34,6 @@ cfg-if             = { version = "1.0" }
 clap               = { version = "4.1.6" }
 enum-iterator      = { version = "2.0.0" }
 env_logger         = { version = "0.10.0" }
-fixed              = { version = "1.27.0" }
 fluent-uri         = { version = "0.1.4", default-features = false }
 futures            = { version = "0.3.21", default-features = false }
 hash-db            = { version = "0.16.0", default-features = false }
@@ -49,6 +48,7 @@ serde              = { version = "1.0.144", default-features = false }
 serde_json         = { version = "1.0.85" }
 sha3               = { version = "0.10.0", default-features = false }
 smallvec           = { version = "1.8.0" }
+substrate-fixed    = { version = "0.5.9" }
 
 #tests
 xcm-integration-tests = { path = "integration-tests/emulated", default-features = false }
