@@ -19,13 +19,7 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
-use sp_std::marker::PhantomData;
-use xcm::{
-	v4::{Asset, AssetId, Location},
-	VersionedAsset, VersionedAssetId, VersionedLocation,
-};
-
-use crate::{Config, Error, LOG_TARGET};
+use xcm::{VersionedAsset, VersionedAssetId, VersionedLocation};
 
 /// Input information used to generate a `SwitchPairInfo`.
 #[derive(Encode, Decode, TypeInfo, RuntimeDebug, Clone)]
@@ -178,66 +172,4 @@ pub struct UnconfirmedSwitchInfo<Source, Destination, Amount> {
 	pub(crate) from: Source,
 	pub(crate) to: Destination,
 	pub(crate) amount: Amount,
-}
-
-#[allow(dead_code)]
-pub(crate) struct SwitchPairInfoV4<AccountId, T, I> {
-	pub(crate) pool_account: AccountId,
-	pub(crate) remote_asset_circulating_supply: u128,
-	pub(crate) remote_asset_ed: u128,
-	pub(crate) remote_asset_id: AssetId,
-	pub(crate) remote_asset_total_supply: u128,
-	pub(crate) remote_reserve_location: Location,
-	pub(crate) remote_xcm_fee: Asset,
-	pub(crate) status: SwitchPairStatus,
-	pub(crate) remote_asset_sovereign_total_balance: u128,
-	_phantom_data: PhantomData<(T, I)>,
-}
-
-impl<T, I> TryFrom<SwitchPairInfo<T::AccountId>> for SwitchPairInfoV4<T::AccountId, T, I>
-where
-	T: Config<I>,
-	I: 'static,
-{
-	type Error = Error<T, I>;
-
-	fn try_from(value: SwitchPairInfo<T::AccountId>) -> Result<Self, Self::Error> {
-		let value_v4 = Self {
-			pool_account: value.pool_account,
-			remote_asset_circulating_supply: value.remote_asset_circulating_supply,
-			remote_asset_ed: value.remote_asset_ed,
-			remote_asset_sovereign_total_balance: value.remote_asset_sovereign_total_balance,
-			remote_asset_total_supply: value.remote_asset_total_supply,
-			status: value.status,
-			remote_asset_id: value.remote_asset_id.clone().try_into().map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert asset ID {:?} into v4 `AssetId` with error {:?}",
-					value.remote_asset_id,
-					e
-				);
-				Error::<T, I>::Internal
-			})?,
-			remote_reserve_location: value.remote_reserve_location.clone().try_into().map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert remote reserve location {:?} into v4 `Location` with error {:?}",
-					value.remote_reserve_location,
-					e
-				);
-				Error::<T, I>::Internal
-			})?,
-			remote_xcm_fee: value.remote_xcm_fee.clone().try_into().map_err(|e| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert remote XCM asset fee {:?} into v4 `Asset` with error {:?}",
-					value.remote_xcm_fee,
-					e
-				);
-				Error::<T, I>::Xcm
-			})?,
-			_phantom_data: Default::default(),
-		};
-		Ok(value_v4)
-	}
 }
