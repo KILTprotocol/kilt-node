@@ -189,10 +189,6 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
-			// ensure that we are not at the genesis block. Events are not registered for
-			// the genesis block.
-			System::set_block_number(System::block_number() + 1);
-
 			for (sender, did, account) in self.connections {
 				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
 					.expect("Should create connection");
