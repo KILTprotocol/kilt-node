@@ -197,7 +197,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		reserve_deposit::<AccountId, Self::Currency>(who, amount, &reason.into())
 	}
 
-	/// Change the deposit owner and returns the old owner.
+	/// Change the deposit owner.
 	///
 	/// The deposit balance of the current owner will be freed, while the
 	/// deposit balance of the new owner will get reserved. The deposit amount
@@ -205,7 +205,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 	fn change_deposit_owner<DepositBalanceMigrationManager>(
 		key: &Key,
 		new_owner: AccountId,
-	) -> Result<AccountId, DispatchError>
+	) -> Result<(), DispatchError>
 	where
 		DepositBalanceMigrationManager:
 			BalanceMigrationManager<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
@@ -222,8 +222,6 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);
 		}
 
-		let old_deposit_owner = deposit.owner;
-
 		let deposit = Deposit {
 			owner: new_owner,
 			..deposit
@@ -233,7 +231,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 
 		Self::store_deposit(key, deposit)?;
 
-		Ok(old_deposit_owner)
+		Ok(())
 	}
 
 	/// Update the deposit amount.
