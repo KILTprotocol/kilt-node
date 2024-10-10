@@ -23,6 +23,5 @@ use scale_info::TypeInfo;
 pub enum Error {
 	InvalidInput,
 	SwitchPoolNotFound,
-	SwitchPoolNotSet,
 	Internal,
 }
