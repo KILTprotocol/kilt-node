@@ -18,8 +18,7 @@
 
 use frame_benchmarking::{account, benchmarks};
 use frame_support::traits::{fungible::Mutate, Get};
-use frame_system::pallet_prelude::BlockNumberFor;
-use frame_system::RawOrigin;
+use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use sp_runtime::traits::Hash;
 
 use ctype::CtypeEntryOf;
