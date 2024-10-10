@@ -9,7 +9,7 @@ profile=${2-"release"}
 
 chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 # Dev profile is the debug target
-standard_args="--profile $2 --locked --features=runtime-benchmarks --bin=kilt-parachain"
+standard_args="--profile $profile --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
 pallets=(
 	pallet-migration
