@@ -366,8 +366,7 @@ jobs:
     name: Trigger GitLab CI
     runs-on: ubuntu-latest
     env:
-      # Change this in case of file renamings
-      TARGET_WORKFLOW_FILE: trigger-gitlab-pipeline.yml
+      TARGET_WORKFLOW_FILE: trigger-gitlab-pipeline.yml # Change this in case of file renamings
 
     needs:
       - cargo-doc
