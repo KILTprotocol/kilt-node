@@ -158,8 +158,6 @@ where
 	}
 }
 
-pub fn convert_balance_to_curve_parameter_internal<T: Config>(
-	x: u128,
-) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
+pub fn convert_balance_to_parameter<T: Config>(x: u128) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
 	x.checked_to_fixed().ok_or(ArithmeticError::Overflow)
 }

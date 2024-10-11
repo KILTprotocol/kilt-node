@@ -1,2 +1,2 @@
 // mod transactions;
-// mod types;
+mod types;

@@ -9,7 +9,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	BoundedVec, BuildStorage, MultiSignature,
 };
-use substrate_fixed::types::I10F118;
+use substrate_fixed::types::I100F28;
 
 use crate::{
 	curves_parameters::PolynomialFunctionParameters,
@@ -23,7 +23,7 @@ pub type AssetId = u32;
 pub type Signature = MultiSignature;
 pub type AccountPublic = <Signature as Verify>::Signer;
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-pub type Float = I10F118;
+pub type Float = I100F28;
 
 // accounts
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);

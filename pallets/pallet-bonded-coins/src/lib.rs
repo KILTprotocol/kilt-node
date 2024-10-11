@@ -49,9 +49,7 @@ pub mod pallet {
 		types::I9F23,
 	};
 
-	use crate::types::{
-		convert_balance_to_curve_parameter_internal, Curve, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta,
-	};
+	use crate::types::{convert_balance_to_parameter, Curve, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
@@ -560,11 +558,11 @@ pub mod pallet {
 			let converted_total_issuances = total_issuances
 				.clone()
 				.into_iter()
-				.map(|x| convert_balance_to_curve_parameter_internal::<T>(x.saturated_into::<u128>()))
+				.map(|x| convert_balance_to_parameter::<T>(x.saturated_into::<u128>()))
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
 			// normalize the amount to mint
-			let converted_amount = convert_balance_to_curve_parameter_internal::<T>(amount.clone().saturated_into())?;
+			let converted_amount = convert_balance_to_parameter::<T>(amount.clone().saturated_into())?;
 
 			let (active_issuance_pre, active_issuance_post) =
 				Self::calculate_pre_post_issuances(&kind, &converted_amount, &converted_total_issuances, currency_idx)?;
