@@ -361,3 +361,28 @@ jobs:
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "bash -x scripts/run_benches_for_runtime.sh ${{ matrix.runtime }} dev"
+
+  trigger-gitlab:
+    name: Trigger GitLab CI
+    runs-on: ubuntu-latest
+    env:
+      TARGET_WORKFLOW_FILE: trigger-gitlab-pipeline.yml # Change this in case of file renamings
+
+    needs:
+      - cargo-doc
+      - cargo-test
+      - try-runtime
+      # This is only triggered on pushes, which means pushes on `master`, `develop` or of tags.
+      - test-runtime-benchmarks
+
+    steps:
+      - name: Trigger "GitLab trigger" workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: '${{ env.TARGET_WORKFLOW_FILE }}',
+              ref: '${{ github.ref }}',
+            })
