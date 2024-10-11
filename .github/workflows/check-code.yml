@@ -6,7 +6,8 @@ on:
     branches:
       - develop
       - master
-      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
