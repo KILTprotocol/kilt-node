@@ -21,8 +21,7 @@ pub trait BondingFunction<F: FixedSigned + PartialOrd> {
 	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError> {
 		let high_val = self.get_value(high)?;
 		let low_val = self.get_value(low)?;
-		let result = high_val.checked_sub(low_val).ok_or(ArithmeticError::Underflow)?;
-		Ok(result)
+		high_val.checked_sub(low_val).ok_or(ArithmeticError::Underflow)
 	}
 }
 
@@ -74,7 +73,7 @@ where
 		let x2 = x.checked_mul(x).ok_or(ArithmeticError::Overflow)?;
 		let x3 = x2.checked_mul(x).ok_or(ArithmeticError::Overflow)?;
 
-		let sqrt_x3 = sqrt(x3).map_err(|_| ArithmeticError::Overflow)?;
+		let sqrt_x3 = sqrt(x3).map_err(|_| ArithmeticError::Underflow)?;
 		let mx3 = self.m.clone().checked_mul(sqrt_x3).ok_or(ArithmeticError::Overflow)?;
 		let nx = self.n.clone().checked_mul(x).ok_or(ArithmeticError::Overflow)?;
 

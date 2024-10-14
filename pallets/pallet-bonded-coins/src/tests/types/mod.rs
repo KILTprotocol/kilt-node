@@ -1,3 +1,2 @@
-// mod curve_parameters;
-
+mod curve_parameters;
 mod curves;

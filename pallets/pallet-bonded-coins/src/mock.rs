@@ -9,7 +9,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	BoundedVec, BuildStorage, MultiSignature,
 };
-use substrate_fixed::types::I100F28;
+use substrate_fixed::types::I75F53;
 
 use crate::{
 	curves_parameters::PolynomialFunctionParameters,
@@ -23,7 +23,7 @@ pub type AssetId = u32;
 pub type Signature = MultiSignature;
 pub type AccountPublic = <Signature as Verify>::Signer;
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-pub type Float = I100F28;
+pub type Float = I75F53;
 
 // accounts
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
@@ -68,6 +68,7 @@ pub mod runtime {
 		transferable: bool,
 		curve: Curve<Float>,
 		state: PoolStatus<Locks>,
+		denomination: u8,
 	) -> PoolDetailsOf<Test> {
 		let bonded_currencies = BoundedVec::truncate_from(currencies);
 		PoolDetailsOf::<Test> {
@@ -76,6 +77,7 @@ pub mod runtime {
 			transferable,
 			bonded_currencies,
 			state,
+			denomination,
 		}
 	}
 

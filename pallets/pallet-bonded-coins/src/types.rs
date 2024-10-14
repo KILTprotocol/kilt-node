@@ -50,6 +50,7 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
 	pub bonded_currencies: Currencies,
 	pub state: PoolStatus<Locks>,
 	pub transferable: bool,
+	pub denomination: u8,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies> PoolDetails<AccountId, ParametrizedCurve, Currencies>
@@ -62,6 +63,7 @@ where
 		bonded_currencies: Currencies,
 		transferable: bool,
 		state: PoolStatus<Locks>,
+		denomination: u8,
 	) -> Self {
 		Self {
 			manager,
@@ -69,6 +71,7 @@ where
 			bonded_currencies,
 			transferable,
 			state,
+			denomination,
 		}
 	}
 
@@ -105,7 +108,6 @@ where
 pub struct TokenMeta<Balance, Symbol, Name> {
 	pub name: Name,
 	pub symbol: Symbol,
-	pub decimals: u8,
 	pub min_balance: Balance,
 }
 
@@ -131,7 +133,7 @@ where
 		active_issuance_post: F,
 		passive_issuance: F,
 		kind: DiffKind,
-	) -> Result<u128, ArithmeticError> {
+	) -> Result<F, ArithmeticError> {
 		let (low, high) = match kind {
 			DiffKind::Burn => (
 				active_issuance_post.saturating_add(passive_issuance),
@@ -143,7 +145,7 @@ where
 			),
 		};
 
-		let _costs = match self {
+		match self {
 			Curve::PolynomialFunction(params) => params.calculate_costs(low, high),
 			// Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
 			// // TODO: This is probably a bug.
@@ -152,12 +154,17 @@ where
 			// 	(active_issuance_post, passive_issuance),
 			// ),
 			_ => todo!(),
-		}?;
-
-		Ok(0)
+		}
 	}
 }
 
-pub fn convert_balance_to_parameter<T: Config>(x: u128) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
-	x.checked_to_fixed().ok_or(ArithmeticError::Overflow)
+pub fn convert_balance_to_parameter<T: Config>(
+	x: u128,
+	denomination: &u8,
+) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
+	let decimals = 10u128
+		.checked_pow(u32::from(*denomination))
+		.ok_or(ArithmeticError::Overflow)?;
+	let scaled_x = x.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
+	scaled_x.checked_to_fixed().ok_or(ArithmeticError::Overflow)
 }

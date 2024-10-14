@@ -19,11 +19,11 @@ fn test_create_pool() {
 	let state = PoolStatus::Active;
 
 	let token_meta = TokenMeta {
-		decimals: 10,
 		name: BoundedVec::try_from("BTC".as_bytes().to_vec()).expect("creating name should not fail"),
 		symbol: BoundedVec::try_from("BTC".as_bytes().to_vec()).expect("creating symbol should not fail"),
 		min_balance: 1,
 	};
+	let denomination = 10;
 
 	let currencies = BoundedVec::try_from(vec![token_meta.clone()]).expect("creating currencies should not fail");
 
@@ -41,6 +41,7 @@ fn test_create_pool() {
 				currencies,
 				false,
 				state.clone(),
+				denomination,
 				ACCOUNT_00
 			));
 
@@ -72,7 +73,7 @@ fn test_create_pool() {
 			let name = <Assets as InspectMetaData<AccountId>>::name(currency_id);
 			let symbol = <Assets as InspectMetaData<AccountId>>::symbol(currency_id);
 
-			assert_eq!(decimals, token_meta.decimals);
+			assert_eq!(decimals, denomination);
 			assert_eq!(name, token_meta.name.into_inner());
 			assert_eq!(symbol, token_meta.symbol.into_inner());
 

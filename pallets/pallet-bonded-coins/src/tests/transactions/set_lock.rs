@@ -13,7 +13,7 @@ fn test_set_lock() {
 
 	let curve = get_linear_bonding_curve();
 
-	let pool = calculate_pool_details(currencies, ACCOUNT_01, false, curve.clone(), PoolStatus::Active);
+	let pool = calculate_pool_details(currencies, ACCOUNT_01, false, curve.clone(), PoolStatus::Active, 10);
 
 	let target_lock: Locks = Default::default();
 

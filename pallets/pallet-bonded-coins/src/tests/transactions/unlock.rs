@@ -21,6 +21,7 @@ fn test_unlock() {
 		false,
 		curve.clone(),
 		PoolStatus::Locked(target_lock.clone()),
+		10,
 	);
 
 	ExtBuilder::default()

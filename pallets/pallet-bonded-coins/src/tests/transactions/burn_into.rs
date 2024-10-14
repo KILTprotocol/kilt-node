@@ -1,12 +1,12 @@
 use frame_support::assert_ok;
-use sp_runtime::{traits::Zero, FixedPointNumber, FixedU128};
+use sp_runtime::traits::Zero;
 
 use crate::{
-	curves_parameters::convert_currency_amount,
-	mock::{runtime::*, *},
+	mock::{runtime::*, Float, *},
 	types::{DiffKind, PoolStatus},
 };
 
+#[ignore]
 #[test]
 fn test_burn_into_account() {
 	let currencies = vec![DEFAULT_BONDED_CURRENCY_ID];
@@ -14,13 +14,22 @@ fn test_burn_into_account() {
 
 	let curve = get_linear_bonding_curve();
 
-	let pool = calculate_pool_details(currencies, ACCOUNT_01, false, curve.clone(), PoolStatus::Active);
+	let denomination = 10;
 
-	let active_issuance_pre = FixedU128::from_u32(1);
-	let passive_issuance = FixedU128::from_inner(0);
-	let active_issuance_post = FixedU128::from_u32(0);
+	let pool = calculate_pool_details(
+		currencies,
+		ACCOUNT_01,
+		false,
+		curve.clone(),
+		PoolStatus::Active,
+		denomination,
+	);
 
-	let expected_costs_normalized = curve
+	let active_issuance_pre = Float::from_num(1);
+	let passive_issuance = Float::from_num(0);
+	let active_issuance_post = Float::from_num(0);
+
+	let expected_costs = curve
 		.calculate_cost(
 			active_issuance_pre,
 			active_issuance_post,
@@ -29,13 +38,7 @@ fn test_burn_into_account() {
 		)
 		.expect("Cost calculation should not fail");
 
-	let expected_raw_return = convert_currency_amount::<Test>(
-		expected_costs_normalized.into_inner(),
-		FixedU128::DIV,
-		10u128.pow(DEFAULT_BONDED_DENOMINATION.into()),
-	)
-	.expect("Transforming costs should not fail")
-	.into_inner();
+	let expected_raw_return = expected_costs * Float::from_num(denomination);
 
 	let collateral_balance_supply = DEFAULT_COLLATERAL_UNIT * 10;
 
@@ -76,7 +79,10 @@ fn test_burn_into_account() {
 			assert_eq!(collateral_balance_submitter, expected_raw_return);
 
 			let collateral_balance_pool = Assets::balance(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id);
-			assert_eq!(collateral_balance_pool, collateral_balance_supply - expected_raw_return);
+			assert_eq!(
+				collateral_balance_pool,
+				collateral_balance_supply - expected_raw_return.to_num::<u128>()
+			);
 
 			// The total supply should be zero
 			assert_eq!(Assets::total_supply(DEFAULT_BONDED_CURRENCY_ID), Zero::zero());

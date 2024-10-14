@@ -198,6 +198,7 @@ pub mod pallet {
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			tradable: bool, // Todo: make it useful.
 			state: PoolStatus<Locks>,
+			denomination: u8,
 			pool_manager: AccountIdOf<T>,
 		) -> DispatchResult {
 			// ensure origin is PoolCreateOrigin
@@ -246,7 +247,7 @@ pub mod pallet {
 					&pool_id.clone().into(),
 					entry.name.clone().into(),
 					entry.symbol.clone().into(),
-					entry.decimals,
+					denomination,
 				)?;
 
 				// TODO: reset team account
@@ -257,7 +258,14 @@ pub mod pallet {
 
 			Pools::<T>::set(
 				&pool_id,
-				Some(PoolDetails::new(pool_manager, curve, currency_ids, tradable, state)),
+				Some(PoolDetails::new(
+					pool_manager,
+					curve,
+					currency_ids,
+					tradable,
+					state,
+					denomination,
+				)),
 			);
 
 			Self::deposit_event(Event::PoolCreated(pool_id));
@@ -554,15 +562,16 @@ pub mod pallet {
 			amount: &FungiblesBalanceOf<T>,
 			total_issuances: Vec<FungiblesBalanceOf<T>>,
 			currency_idx: usize,
+			denomination: &u8,
 		) -> Result<CollateralCurrencyBalanceOf<T>, DispatchError> {
 			let converted_total_issuances = total_issuances
 				.clone()
 				.into_iter()
-				.map(|x| convert_balance_to_parameter::<T>(x.saturated_into::<u128>()))
+				.map(|x| convert_balance_to_parameter::<T>(x.saturated_into::<u128>(), denomination))
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
 			// normalize the amount to mint
-			let converted_amount = convert_balance_to_parameter::<T>(amount.clone().saturated_into())?;
+			let converted_amount = convert_balance_to_parameter::<T>(amount.clone().saturated_into(), denomination)?;
 
 			let (active_issuance_pre, active_issuance_post) =
 				Self::calculate_pre_post_issuances(&kind, &converted_amount, &converted_total_issuances, currency_idx)?;
@@ -575,9 +584,20 @@ pub mod pallet {
 					sum.saturating_add(*x)
 				});
 
-			let costs = curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance, kind)?;
+			let converted_costs =
+				curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance, kind)?;
 
-			Ok(costs.saturated_into())
+			let costs = converted_costs
+				.checked_mul(CurveParameterTypeOf::<T>::from_num(T::CollateralCurrency::decimals(
+					T::CollateralAssetId::get(),
+				)))
+				.ok_or(ArithmeticError::Overflow)?;
+
+			let b = costs
+				.to_num::<u128>()
+				.saturated_into::<CollateralCurrencyBalanceOf<T>>();
+
+			Ok(b)
 		}
 
 		fn calculate_pre_post_issuances(
@@ -626,6 +646,7 @@ pub mod pallet {
 				&amount,
 				currencies_metadata,
 				currency_idx,
+				&pool_details.denomination,
 			)?;
 
 			Ok(returns)
@@ -652,6 +673,7 @@ pub mod pallet {
 				&amount,
 				currencies_issuance,
 				currency_idx,
+				&pool_details.denomination,
 			)?;
 
 			T::Fungibles::mint_into(mint_currency_id.clone(), &beneficiary, amount)?;
