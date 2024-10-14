@@ -1,5 +1,4 @@
 use frame_support::assert_ok;
-use sp_runtime::traits::Zero;
 
 use crate::{
 	mock::{runtime::*, *},
@@ -58,7 +57,7 @@ fn test_swap_into_non_ratio_function() {
 
 			// Bonded should have not change.
 			let funds_bonded_coin_after_tx = Assets::balance(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00);
-			assert_eq!(funds_bonded_coin_after_tx, Zero::zero());
+			assert_eq!(funds_bonded_coin_after_tx, 0);
 
 			let funds_target_bonded_coin_after_tx = Assets::balance(second_currency_id, ACCOUNT_00);
 			assert_eq!(funds_target_bonded_coin_after_tx, one_bonded_currency);

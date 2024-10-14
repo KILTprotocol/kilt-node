@@ -1,5 +1,4 @@
 use frame_support::assert_ok;
-use sp_runtime::traits::Zero;
 
 use crate::{
 	mock::{runtime::*, Float, *},
@@ -72,7 +71,7 @@ fn test_burn_into_account() {
 
 			// User should have no bonded coins
 			let supply_bonded_coins_user = Assets::balance(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00);
-			assert_eq!(supply_bonded_coins_user, Zero::zero());
+			assert_eq!(supply_bonded_coins_user, 0);
 
 			// user should have some collateral
 			let collateral_balance_submitter = Assets::balance(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00);
@@ -85,6 +84,6 @@ fn test_burn_into_account() {
 			);
 
 			// The total supply should be zero
-			assert_eq!(Assets::total_supply(DEFAULT_BONDED_CURRENCY_ID), Zero::zero());
+			assert_eq!(Assets::total_supply(DEFAULT_BONDED_CURRENCY_ID), 0);
 		});
 }
