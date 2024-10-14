@@ -386,30 +386,8 @@ pub mod pallet {
 			let to_idx_usize: usize = to_idx.saturated_into();
 
 			match &pool_details.curve {
-				Curve::RationalBondingFunction => {
-					let _collateral = Self::burn_pool_currency_and_calculate_collateral(
-						&pool_details,
-						from_idx_usize,
-						who,
-						amount_to_swap,
-					)?;
-
-					let _currencies_metadata = Self::get_currencies_issuance(&pool_details);
-
-					// let raw_supply = RationalBondingFunctionParameters::<T::CurveParameterType>::process_swap::<T>(
-					// 	currencies_metadata,
-					// 	(collateral, collateral_denomination),
-					// 	to_idx_usize,
-					// )?;
-
-					// Self::mint_pool_currency_and_calculate_collateral(
-					// 	&pool_details,
-					// 	to_idx_usize,
-					// 	beneficiary,
-					// 	raw_supply,
-					// )?;
-				}
 				// The price for burning and minting in the pool is the same, if the bonding curve is not [RationalBondingFunction].
+				// TODO: add cases for other bonding functions
 				_ => {
 					Self::burn_pool_currency_and_calculate_collateral(
 						&pool_details,

@@ -114,8 +114,7 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<F> {
 	PolynomialFunction(curves_parameters::PolynomialFunctionParameters<F>),
-	//SquareRootBondingFunction(curves_parameters::SquareRootBondingFunctionParameters<F>),
-	RationalBondingFunction,
+	SquareRootBondingFunction(curves_parameters::SquareRootBondingFunctionParameters<F>),
 }
 
 pub enum DiffKind {
@@ -147,12 +146,7 @@ where
 
 		match self {
 			Curve::PolynomialFunction(params) => params.calculate_costs(low, high),
-			// Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
-			// // TODO: This is probably a bug.
-			// Curve::RationalBondingFunction => RationalBondingFunctionParameters::<F>::calculate_costs(
-			// 	(active_issuance_pre, passive_issuance),
-			// 	(active_issuance_post, passive_issuance),
-			// ),
+			Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
 			_ => todo!(),
 		}
 	}
