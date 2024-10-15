@@ -12,27 +12,27 @@ pub struct Locks {
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
-pub enum PoolStatus<LockType> {
+pub enum PoolStatus<LockType, CurrencyIndex> {
 	Active,
 	Locked(LockType),
-	Destroying,
+	Destroying(CurrencyIndex),
 }
 
-impl<LockType> PoolStatus<LockType> {
+impl<LockType, CurrencyIndex> PoolStatus<LockType, CurrencyIndex> {
 	pub fn is_active(&self) -> bool {
 		matches!(self, Self::Active)
 	}
 
 	pub fn is_destroying(&self) -> bool {
-		matches!(self, Self::Destroying)
+		matches!(self, Self::Destroying(_))
 	}
 
-	pub fn freeze(&mut self, lock: LockType) {
+	pub fn set_frozen(&mut self, lock: LockType) {
 		*self = Self::Locked(lock);
 	}
 
-	pub fn destroy(&mut self) {
-		*self = Self::Destroying;
+	pub fn set_destroying(&mut self, at_currency: CurrencyIndex) {
+		*self = Self::Destroying(at_currency);
 	}
 }
 
@@ -41,7 +41,7 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
 	pub manager: AccountId,
 	pub curve: ParametrizedCurve,
 	pub bonded_currencies: Currencies,
-	pub state: PoolStatus<Locks>,
+	pub state: PoolStatus<Locks, u32>,
 	pub transferable: bool,
 }
 
@@ -54,7 +54,7 @@ where
 		curve: ParametrizedCurve,
 		bonded_currencies: Currencies,
 		transferable: bool,
-		state: PoolStatus<Locks>,
+		state: PoolStatus<Locks, u32>,
 	) -> Self {
 		Self {
 			manager,
