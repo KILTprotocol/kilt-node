@@ -9,7 +9,7 @@ use sp_runtime::BoundedVec;
 
 use crate::{
 	mock::{runtime::*, *},
-	types::{PoolStatus, TokenMeta},
+	pool_details::{PoolStatus, TokenMeta},
 	NextAssetId, Pools,
 };
 

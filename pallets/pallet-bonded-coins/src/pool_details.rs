@@ -1,15 +1,15 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::ArithmeticError;
-use substrate_fixed::{
-	traits::{FixedSigned, ToFixed},
-	types::I9F23,
-};
 
-use crate::{
-	curves_parameters::{self, BondingFunction},
-	Config, CurveParameterTypeOf,
-};
+#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
+	pub manager: AccountId,
+	pub curve: ParametrizedCurve,
+	pub bonded_currencies: Currencies,
+	pub state: PoolStatus<Locks>,
+	pub transferable: bool,
+	pub denomination: u8,
+}
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub struct Locks {
@@ -41,16 +41,6 @@ impl<LockType> PoolStatus<LockType> {
 	pub fn destroy(&mut self) {
 		*self = Self::Destroying;
 	}
-}
-
-#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
-	pub manager: AccountId,
-	pub curve: ParametrizedCurve,
-	pub bonded_currencies: Currencies,
-	pub state: PoolStatus<Locks>,
-	pub transferable: bool,
-	pub denomination: u8,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies> PoolDetails<AccountId, ParametrizedCurve, Currencies>
@@ -109,56 +99,4 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 	pub name: Name,
 	pub symbol: Symbol,
 	pub min_balance: Balance,
-}
-
-#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum Curve<F> {
-	PolynomialFunction(curves_parameters::PolynomialFunctionParameters<F>),
-	SquareRootBondingFunction(curves_parameters::SquareRootBondingFunctionParameters<F>),
-}
-
-pub enum DiffKind {
-	Mint,
-	Burn,
-}
-
-impl<F> Curve<F>
-where
-	F: FixedSigned + PartialOrd<I9F23> + From<I9F23>,
-{
-	pub fn calculate_cost(
-		&self,
-		active_issuance_pre: F,
-		active_issuance_post: F,
-		passive_issuance: F,
-		kind: DiffKind,
-	) -> Result<F, ArithmeticError> {
-		let (low, high) = match kind {
-			DiffKind::Burn => (
-				active_issuance_post.saturating_add(passive_issuance),
-				active_issuance_pre.saturating_add(passive_issuance),
-			),
-			DiffKind::Mint => (
-				active_issuance_pre.saturating_add(passive_issuance),
-				active_issuance_post.saturating_add(passive_issuance),
-			),
-		};
-
-		match self {
-			Curve::PolynomialFunction(params) => params.calculate_costs(low, high),
-			Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
-			_ => todo!(),
-		}
-	}
-}
-
-pub fn convert_balance_to_parameter<T: Config>(
-	x: u128,
-	denomination: &u8,
-) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
-	let decimals = 10u128
-		.checked_pow(u32::from(*denomination))
-		.ok_or(ArithmeticError::Overflow)?;
-	let scaled_x = x.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
-	scaled_x.checked_to_fixed().ok_or(ArithmeticError::Overflow)
 }

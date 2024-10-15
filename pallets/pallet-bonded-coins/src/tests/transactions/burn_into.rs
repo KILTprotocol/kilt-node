@@ -1,8 +1,9 @@
 use frame_support::assert_ok;
 
 use crate::{
+	curves::DiffKind,
 	mock::{runtime::*, Float, *},
-	types::{DiffKind, PoolStatus},
+	pool_details::PoolStatus,
 };
 
 #[ignore]

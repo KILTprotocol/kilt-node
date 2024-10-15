@@ -1,7 +1,6 @@
 use crate::{
-	curves_parameters::PolynomialFunctionParameters,
+	curves::{Curve, DiffKind, PolynomialFunctionParameters},
 	mock::Float,
-	types::{Curve, DiffKind},
 };
 
 #[test]

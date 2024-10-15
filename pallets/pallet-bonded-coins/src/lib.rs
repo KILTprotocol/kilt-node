@@ -5,18 +5,16 @@
 /// <https://docs.substrate.io/v3/runtime/frame>
 pub use pallet::*;
 
-#[cfg(test)]
-mod mock;
-
-#[cfg(test)]
-mod tests;
+mod curves;
+mod pool_details;
+mod utils;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-
-mod types;
-
-mod curves_parameters;
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -49,7 +47,11 @@ pub mod pallet {
 		types::I9F23,
 	};
 
-	use crate::types::{convert_balance_to_parameter, Curve, DiffKind, Locks, PoolDetails, PoolStatus, TokenMeta};
+	use crate::{
+		curves::{Curve, DiffKind},
+		pool_details::{Locks, PoolDetails, PoolStatus, TokenMeta},
+		utils::convert_balance_to_parameter,
+	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 

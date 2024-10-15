@@ -12,8 +12,8 @@ use sp_runtime::{
 use substrate_fixed::types::I75F53;
 
 use crate::{
-	curves_parameters::PolynomialFunctionParameters,
-	types::{Curve, Locks, PoolStatus},
+	curves::{Curve, PolynomialFunctionParameters},
+	pool_details::{Locks, PoolStatus},
 	Config, DepositCurrencyBalanceOf, PoolDetailsOf,
 };
 
@@ -39,7 +39,6 @@ pub(crate) const DEFAULT_BONDED_UNIT: Balance = 10u128.pow(10);
 pub const UNIT_NATIVE: Balance = 10u128.pow(15);
 
 // helper functions
-
 pub(crate) fn get_linear_bonding_curve() -> Curve<Float> {
 	let m = Float::from_num(0);
 	let n = Float::from_num(2);
@@ -53,6 +52,15 @@ pub(crate) fn calculate_pool_id(currencies: Vec<AssetId>) -> AccountId {
 
 pub(crate) fn get_currency_unit(denomination: u8) -> Balance {
 	10u128.pow(denomination as u32)
+}
+
+pub fn assert_relative_eq(target: Float, expected: Float, epsilon: Float) {
+	assert!(
+		(target - expected).abs() <= epsilon,
+		"Expected {:?} but got {:?}",
+		expected,
+		target
+	);
 }
 
 #[cfg(test)]

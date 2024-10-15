@@ -2,7 +2,7 @@ use frame_support::assert_ok;
 
 use crate::{
 	mock::{runtime::*, *},
-	types::PoolStatus,
+	pool_details::PoolStatus,
 };
 
 #[ignore]
