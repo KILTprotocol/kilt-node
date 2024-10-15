@@ -22,6 +22,7 @@ pub use deposit::Deposit;
 pub mod migration;
 pub mod signature;
 pub mod traits;
+pub mod xcm;
 
 #[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
 pub mod mock;

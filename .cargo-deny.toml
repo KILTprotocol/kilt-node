@@ -1,0 +1,53 @@
+# Config file reference can be found at https://embarkstudios.github.io/cargo-deny/checks/cfg.html.
+
+[graph]
+all-features        = false
+exclude-dev         = true
+features            = ["std"]
+no-default-features = true
+
+[advisories]
+ignore = [
+  { id = "RUSTSEC-2020-0168", reason = "`mach` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2021-0139", reason = "`ansi_term` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2022-0061", reason = "`parity-wasm` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2022-0080", reason = "`parity-util-mem` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2024-0336", reason = "`rustls` vulnerability. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2024-0344", reason = "`curve25519-dalek` vulnerability. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2024-0370", reason = "`proc-macro-error` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+]
+yanked = "deny"
+
+[bans]
+allow-wildcard-paths = true
+multiple-versions    = "allow"
+
+[licenses]
+allow = [
+  "Apache-2.0 WITH LLVM-exception",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "CC0-1.0",
+  "GPL-3.0 WITH Classpath-exception-2.0",
+  "GPL-3.0",
+  "ISC",
+  "MIT",
+  "MPL-2.0",
+  "OpenSSL",
+  "SSPL-1.0",
+  "Unicode-DFS-2016",
+  "Zlib",
+]
+private = { ignore = false }
+unused-allowed-license = "deny"
+
+[[licenses.clarify]]
+expression    = "MIT AND ISC AND OpenSSL"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+name          = "ring"
+
+[sources]
+allow-git        = ["https://github.com/paritytech/polkadot-sdk"]
+unknown-git      = "deny"
+unknown-registry = "deny"

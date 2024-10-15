@@ -18,10 +18,11 @@
 
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
-use sp_runtime::DispatchError;
+use sp_runtime::{AccountId32, DispatchError};
 
 use crate::{
 	mock::{get_asset_hub_location, get_remote_erc20_asset_id, ExtBuilder, MockRuntime, System, XCM_ASSET_FEE},
+	switch::UnconfirmedSwitchInfo,
 	Event, NewSwitchPairInfoOf, Pallet, SwitchPair,
 };
 
@@ -58,6 +59,58 @@ fn successful() {
 			}
 			.into()));
 	});
+}
+
+#[test]
+fn success_with_pending_switches() {
+	// Deletes and generates an event if there is a pool
+	ExtBuilder::default()
+		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
+			pool_account: [0u8; 32].into(),
+			remote_asset_circulating_supply: 0,
+			remote_asset_ed: 0,
+			remote_asset_id: get_remote_erc20_asset_id().into(),
+			remote_asset_total_supply: 1_000,
+			remote_reserve_location: get_asset_hub_location().into(),
+			remote_xcm_fee: XCM_ASSET_FEE.into(),
+			status: Default::default(),
+		})
+		.with_pending_switches(vec![(
+			0,
+			UnconfirmedSwitchInfo {
+				amount: 10,
+				from: AccountId32::new([100; 32]),
+				to: get_asset_hub_location().into_versioned(),
+			},
+		)])
+		.build_and_execute_with_sanity_tests(|| {
+			assert_ok!(Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::Root.into()));
+			assert!(SwitchPair::<MockRuntime>::get().is_none());
+			assert!(System::events().into_iter().map(|e| e.event).any(|e| e
+				== Event::<MockRuntime>::SwitchPairRemoved {
+					remote_asset_id: get_remote_erc20_asset_id().into(),
+				}
+				.into()));
+		});
+	// Deletes and generates no event if there is no pool
+	ExtBuilder::default()
+		.with_pending_switches(vec![(
+			0,
+			UnconfirmedSwitchInfo {
+				amount: 10,
+				from: AccountId32::new([100; 32]),
+				to: get_asset_hub_location().into_versioned(),
+			},
+		)])
+		.build_and_execute_with_sanity_tests(|| {
+			assert_ok!(Pallet::<MockRuntime>::force_unset_switch_pair(RawOrigin::Root.into()));
+			assert!(SwitchPair::<MockRuntime>::get().is_none());
+			assert!(System::events().into_iter().map(|e| e.event).all(|e| e
+				!= Event::<MockRuntime>::SwitchPairRemoved {
+					remote_asset_id: get_remote_erc20_asset_id().into(),
+				}
+				.into()));
+		});
 }
 
 #[test]
