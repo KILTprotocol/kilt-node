@@ -204,6 +204,7 @@ pub mod pallet {
 			curve: Curve<CurveParameterTypeOf<T>>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			tradable: bool, // Todo: make it useful.
+			state: PoolStatus<Locks>,
 			pool_manager: AccountIdOf<T>,
 		) -> DispatchResult {
 			// ensure origin is PoolCreateOrigin
@@ -263,13 +264,7 @@ pub mod pallet {
 
 			Pools::<T>::set(
 				&pool_id,
-				Some(PoolDetails::new(
-					pool_manager,
-					curve,
-					currency_ids,
-					tradable,
-					PoolStatus::Locked(Locks::default()),
-				)),
+				Some(PoolDetails::new(pool_manager, curve, currency_ids, tradable, state)),
 			);
 
 			Self::deposit_event(Event::PoolCreated(pool_id));
@@ -508,14 +503,9 @@ pub mod pallet {
 		pub fn refund_accounts(origin: OriginFor<T>, pool_id: T::PoolId, max_accounts: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 
-			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			let last_completed_currency: usize = match pool_details.state {
-				PoolStatus::Destroying(last_index) => Ok(last_index.saturated_into()),
-				_ => Err(Error::<T>::Destroying), // TODO: incorrect error
-			}?;
-
-			let currencies_todo = &pool_details.bonded_currencies[last_completed_currency..];
+			ensure!(pool_details.state.is_destroying(), Error::<T>::Destroying); // TODO: incorrect error
 
 			let pool_account = pool_id.clone().into();
 
@@ -523,9 +513,10 @@ pub mod pallet {
 
 			let total_issuances: Vec<FungiblesBalanceOf<T>> = if total_collateral_issuance.is_zero() {
 				// nothing to distribute
-				vec![Zero::zero(); currencies_todo.len()]
+				vec![Zero::zero(); pool_details.bonded_currencies.len()]
 			} else {
-				currencies_todo
+				pool_details
+					.bonded_currencies
 					.iter()
 					.map(|id| T::Fungibles::total_issuance(id.clone()))
 					.collect()
@@ -540,7 +531,7 @@ pub mod pallet {
 
 			let mut remaining_max_accounts = max_accounts.clone();
 
-			for (idx, currency_id) in currencies_todo.iter().enumerate() {
+			for (idx, currency_id) in pool_details.bonded_currencies.clone().iter().enumerate() {
 				if !total_issuances[idx].is_zero() {
 					let refunded_accounts = Self::do_refund_accounts(
 						currency_id.clone(),
@@ -556,11 +547,7 @@ pub mod pallet {
 					}
 				}
 				// issuance is zero or no more accounts; currency can be destroyed
-				T::Fungibles::start_destroy(currency_id.clone(), None)?;
-				let this_currency_idx = idx
-					.checked_add(last_completed_currency)
-					.ok_or(ArithmeticError::Overflow)?;
-				pool_details.state.set_destroying(this_currency_idx.saturated_into());
+				T::Fungibles::start_destroy(currency_id.clone(), None)?; // TODO: can be called multiple times, but can we somehow avoid it?
 			}
 
 			Ok(())
@@ -736,7 +723,7 @@ pub mod pallet {
 		fn do_start_destroy_pool(pool_details: &mut PoolDetailsOf<T>) -> DispatchResult {
 			ensure!(!pool_details.state.is_destroying(), Error::<T>::Destroying);
 
-			pool_details.state.set_destroying(0);
+			pool_details.state.destroy();
 
 			Ok(())
 		}
