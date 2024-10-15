@@ -17,17 +17,18 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet, MessageQueue,
-	ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury,
-	WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, AssetSwitchPool1, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet,
+	MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
+	Treasury, WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
 use frame_support::{
 	parameter_types,
-	traits::{Contains, EnqueueWithOrigin, Everything, Nothing, TransformOrigin},
+	traits::{Contains, Everything, Nothing, TransformOrigin},
 };
 use frame_system::EnsureRoot;
+use kilt_support::xcm::EitherOr;
 use pallet_asset_switch::xcm::{
 	IsSwitchPairRemoteAsset, IsSwitchPairXcmFeeAsset, MatchesSwitchPairXcmFeeFungibleAsset,
 	SwitchPairRemoteAssetTransactor, UsingComponentsForSwitchPairRemoteAsset, UsingComponentsForXcmFeeAsset,
@@ -100,7 +101,7 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 			// since local accounts don't have a computed origin (the message isn't send by any router etc.)
 			TakeWeightCredit,
 			// If we request a response we should also allow it to execute.
-			AllowKnownQueryResponses<PolkadotXcm>,
+			AllowKnownQueryResponses<EitherOr<PolkadotXcm, AssetSwitchPool1>>,
 			WithComputedOrigin<
 				(
 					// Allow unpaid execution from the relay chain
@@ -227,7 +228,7 @@ impl xcm_executor::Config for XcmConfig {
 		// Can pay with the fungible that matches the "Here" location.
 		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, SendDustAndFeesToTreasury<Runtime>>,
 	);
-	type ResponseHandler = PolkadotXcm;
+	type ResponseHandler = EitherOr<PolkadotXcm, AssetSwitchPool1>;
 	// What happens with assets that are left in the register after the XCM message
 	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset
 	// location, amount, version, etc.
@@ -323,15 +324,4 @@ impl pallet_message_queue::Config for Runtime {
 	type HeapSize = HeapSize;
 	type MaxStale = MaxStale;
 	type ServiceWeight = ServiceWeight;
-}
-
-// Remove me in 1.15.0
-parameter_types! {
-	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
-}
-
-impl cumulus_pallet_dmp_queue::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type DmpSink = EnqueueWithOrigin<MessageQueue, RelayOrigin>;
-	type WeightInfo = crate::weights::cumulus_pallet_dmp_queue::WeightInfo<Runtime>;
 }

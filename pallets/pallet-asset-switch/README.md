@@ -18,7 +18,7 @@ The pallet makes the following assumptions:
 * The switch ratio is pre-defined to be 1:1, i.e., one unit of local currency for one unit of remote asset.
 * The pallet only exposes calls to allow local -> remote switches. The reverse is assumed to happen via XCM reserve transfer from the configured remote location, for which the pallet crate provides all the XCM components that are dynamically configured based on the switch pair information stored within each instance of this pallet.
 * The sovereign account of the source chain at destination owns the remote assets in the amount that is specified when the switch pair is created. The validation of this requirement is delegated to the source chain governance in the act leading to the creation of the switch pair, as the source chain itself has currently no means of doing that.
-* Similarly, the pallet has currently no way to verify that a transfer of remote tokens from the chain sovereign account to the **specified** beneficiary has been completed successfully on the remote location, hence it takes an optimistic approach given that all the verifiable preconditions for the switch are verified on the source chain, i.e., the chain from which the switch originates. Any unexpected issues in the transfer on the remote location will most likely require intervention of the source chain governance to re-balance the state and make it consistent again.
+* To account for failure on the remote destination, the pallet stores unconfirmed operations in a storage map. The remote chain then sends `Report` messages back to either confirm or revert a transfer. In the meanwhile, the source chain (where this pallet is deployed) assumes the transfer will be successful and updates all related counters tracking the destination state, to then revert them in case of failures.
 
 ## Add the pallet to the runtime
 
@@ -69,6 +69,7 @@ As the pallet is generic over the runtime specifics, the `Config` trait requires
 - `type SubmitterOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>`: The origin that can call the `switch` extrinsic and perform the switch.
 - `type SwitchHooks: SwitchHooks<Self, I>`: Any additional runtime-specific logic that can be injected both before and after local tokens are exchanged for the remote assets, and before and after the remote assets are converted into local tokens.
 - `type SwitchOrigin: EnsureOrigin<Self::RuntimeOrigin>`: The origin that can set, resume, and delete a switch pair.
+- `type UniversalLocation: Get<InteriorLocation>`: The location of the parachain relative to the global consensus space.
 - `type WeightInfo: WeightInfo`: The computed weights of the pallet after benchmarking it.
 - `type XcmRouter: SendXcm`: The component responsible for routing XCM messages to the switch pair remote location to perform the remote asset transfer from the chain's sovereign account to the specified beneficiary.
 
@@ -82,6 +83,11 @@ The pallet has a single `SwitchPair` storage value that contains a `Option<Switc
 If unset, no switch pair is configured hence no switch can happen.
 When set and its status is `Running`, switches are enabled in both directions.
 
+Two more storage components, `PendingSwitchConfirmations` and `NextQueryId`, are used for error recovery.
+Specifically, the former stores information about transfers executed locally but that have not been confirmed on the remote destination.
+Once a transfer either succeeds or fails, the entry is removed from the storage and additional actions are taken as needed, e.g., reverting the transfer locally as well.Th
+The latter stores an ever-increasing counter, which wraps around itself when it would overflow, and provides the value the `PendingSwitchConfirmations` storage map uses to keep track of pending confirmations.
+
 ## Events
 
 The pallet generates the following events:
@@ -93,6 +99,8 @@ The pallet generates the following events:
 - `SwitchPairFeeUpdated`: when the XCM fee for the switch transfer has been updated.
 - `LocalToRemoteSwitchExecuted`: when a switch of some local tokens for the remote asset has taken place.
 - `RemoteToLocalSwitchExecuted`: when a switch of some remote assets for the local tokens has taken place.
+- `LocalToRemoteSwitchReverted`: when a switch fails on the remote destination and is reverted on the source chain as well.
+- `LocalToRemoteSwitchFinalized`: when a switch is confirmed to have successfully taken place at the remote destination.
 
 ## Calls
 
@@ -130,6 +138,9 @@ Because the switch functionality relies on XCM, the pallet provides a few XCM co
 * `IsSwitchPairXcmFeeAsset` in [xcm::transfer][xcm-transfer]: provides an implementation of `ContainsPair<Asset, Location>` that returns `true` if the given asset and sender match the stored switch pair XCM fee asset and reserve location respectively. It can be used for the `IsReserve` property of the [XcmExecutor::Config][XcmExecutor::Config].
 * `IsSwitchPairRemoteAsset` in [xcm::transfer][xcm-transfer]: provides an implementation of `ContainsPair<Asset, Location>` that returns `true` if the given asset and sender match the stored switch pair remote asset and reserve location respectively. It can be used for the `IsReserve` property of the [XcmExecutor::Config][XcmExecutor::Config].
 
+The pallet itself implements the [OnResponse trait][on-response-trait], that must be added to runtimes that deploy this pallet to allow for the error-recovery process to take place.
+The trait implementation validates the received query response message based on the state of the switch pair, and then performs the required action on the pending transfer info accordingly.
+
 [asset-switch-runtime-api]: ../../runtime-api/asset-switch/
 [xcm-convert]: ./src/xcm/convert.rs
 [xcm-match]: ./src/xcm/match.rs
@@ -139,3 +150,4 @@ Because the switch functionality relies on XCM, the pallet provides a few XCM co
 [Error::AssetNotFound]: https://github.com/paritytech/polkadot-sdk/blob/e5791a56dcc35e308a80985cc3b6b7f2ed1eb6ec/polkadot/xcm/src/v3/traits.rs#L68
 [xcm-transact]: ./src/xcm/transact.rs
 [xcm-transfer]: ./src/xcm/transfer.rs
+[on-response-trait]: https://github.com/paritytech/polkadot-sdk/blob/33324fe01c5b1f341687cef2aa6e767f6acf40f3/polkadot/xcm/xcm-executor/src/traits/on_response.rs#L29

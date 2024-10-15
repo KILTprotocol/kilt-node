@@ -75,12 +75,17 @@ where
 	}
 
 	// We don't need to take any actions after the switch is executed
-	fn post_local_to_remote_switch(
+	fn post_local_to_remote_switch_dispatch(
 		_from: &AccountIdOf<R>,
 		_to: &VersionedLocation,
 		_amount: BalanceOf<R, I>,
 	) -> Result<(), Self::Error> {
 		Ok(())
+	}
+
+	fn post_local_to_remote_finalized(_from: &<R>::AccountId, _to: &VersionedLocation, _amount: BalanceOf<R, I>) {}
+
+	fn post_local_to_remote_transfer_revert(_from: &<R>::AccountId, _to: &VersionedLocation, _amount: BalanceOf<R, I>) {
 	}
 
 	fn pre_remote_to_local_switch(_to: &AccountIdOf<R>, _amount: u128) -> Result<(), Self::Error> {

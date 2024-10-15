@@ -166,3 +166,10 @@ impl<AccountId> SwitchPairInfo<AccountId> {
 		Ok(())
 	}
 }
+
+#[derive(Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, Clone)]
+pub struct UnconfirmedSwitchInfo<Source, Destination, Amount> {
+	pub(crate) from: Source,
+	pub(crate) to: Destination,
+	pub(crate) amount: Amount,
+}

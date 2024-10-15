@@ -2,20 +2,11 @@ name: Trigger GitLab Deploy Pipeline
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Check codebase"]
-    branches:
-      - develop
-      - master
-      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
-    types:
-      - completed
 
 jobs:
   trigger-gitlab:
     name: Trigger GitLab CI
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
 
     steps:
       - name: Checkout repository

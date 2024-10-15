@@ -1,0 +1,4 @@
+endpoint:
+    - wss://sys.ibp.network/asset-hub-paseo
+    - wss://asset-hub-paseo.dotters.network
+db: db/peregrine/ah/db.sqlite

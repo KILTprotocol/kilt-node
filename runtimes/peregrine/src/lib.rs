@@ -77,7 +77,7 @@ use runtime_common::{
 	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
-use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
+use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -110,10 +110,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 11401,
+	spec_version: 11405,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 9,
+	transaction_version: 10,
 	state_version: 0,
 };
 
@@ -998,6 +998,7 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type SubmitterOrigin = EnsureSigned<AccountId>;
 	type SwitchHooks = runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf;
 	type SwitchOrigin = EnsureRoot<AccountId>;
+	type UniversalLocation = UniversalLocation;
 	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
 	type XcmRouter = XcmRouter;
 
@@ -1111,8 +1112,7 @@ construct_runtime! {
 		PolkadotXcm: pallet_xcm = 83,
 		// Does nothing cool, just provides an origin.
 		CumulusXcm: cumulus_pallet_xcm exclude_parts { Call } = 84,
-		// delete after lazy runtime Migration
-		DmpQueue: cumulus_pallet_dmp_queue = 85,
+		// DmpQueue: cumulus_pallet_dmp_queue = 85,
 		// Queue and pass DMP messages on to be executed.
 		MessageQueue: pallet_message_queue = 86,
 	}
@@ -1201,12 +1201,12 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(
-		runtime_common::migrations::BumpStorageVersion<Runtime>,
-		cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
-		pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	),
+	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>,
 >;
+
+parameter_types! {
+	pub const DmpPalletName: &'static str = "DmpQueue";
+}
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
@@ -1258,7 +1258,6 @@ mod benches {
 		[pallet_assets, Fungibles]
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
-		[cumulus_pallet_dmp_queue, DmpQueue]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 
