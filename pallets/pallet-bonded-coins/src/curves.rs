@@ -7,12 +7,25 @@ use substrate_fixed::{
 	types::I9F23,
 };
 
+/// An enumeration representing different types of bonding curves.
+///
+/// This enum is generic over the type `F`, which represents the type of the coefficients used in the bonding functions.
+///
+/// # Variants
+/// - `PolynomialFunction`: Represents a polynomial bonding function with parameters of type `PolynomialFunctionParameters<F>`.
+/// - `SquareRootBondingFunction`: Represents a square root bonding function with parameters of type `SquareRootBondingFunctionParameters<F>`.
+///
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<F> {
 	PolynomialFunction(PolynomialFunctionParameters<F>),
 	SquareRootBondingFunction(SquareRootBondingFunctionParameters<F>),
 }
 
+/// An enumeration representing the type of operation on the bonding curve.
+///
+/// # Variants
+/// - `Mint`: Represents a minting operation, where new tokens are created.
+/// - `Burn`: Represents a burning operation, where existing tokens are destroyed.
 pub enum DiffKind {
 	Mint,
 	Burn,
@@ -22,6 +35,23 @@ impl<F> Curve<F>
 where
 	F: FixedSigned + PartialOrd<I9F23> + From<I9F23>,
 {
+	/// Calculates the cost of a bonding curve operation.
+	///
+	/// This method computes the cost based on the type of bonding curve
+	/// and the difference in active issuance before and after the operation, adjusted by passive issuance.
+	///
+	/// # Parameters
+	/// - `active_issuance_pre`: The active issuance before the operation.
+	/// - `active_issuance_post`: The active issuance after the operation.
+	/// - `passive_issuance`: The passive issuance.
+	/// - `kind`: The type of operation, either `DiffKind::Burn` or `DiffKind::Mint`.
+	///
+	/// # Returns
+	/// - `Result<F, ArithmeticError>`: The calculated cost or an arithmetic error if an overflow or underflow occurs.
+	///
+	/// # Errors
+	/// - `ArithmeticError::Underflow`: If subtraction results in an underflow.
+	/// - `ArithmeticError::Overflow`: If any arithmetic operation results in an overflow.
 	pub fn calculate_cost(
 		&self,
 		active_issuance_pre: F,
@@ -102,6 +132,9 @@ where
 	/// - `ArithmeticError::Underflow`: If subtraction results in an underflow.
 	/// - `ArithmeticError::Overflow`: If any arithmetic operation results in an overflow.
 	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError> {
+		if low == high {
+			return Ok(F::from_num(0));
+		}
 		// Calculate high - low
 		let delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
 
@@ -129,7 +162,7 @@ where
 		let result = term1
 			.checked_add(term2)
 			.ok_or(ArithmeticError::Overflow)?
-			.checked_add(self.o.clone())
+			.checked_add(self.o)
 			.ok_or(ArithmeticError::Overflow)?;
 
 		result.checked_mul(delta_x).ok_or(ArithmeticError::Overflow)

@@ -61,7 +61,7 @@ fn test_create_pool() {
 			// we have created only one currency
 			assert_eq!(details.bonded_currencies.len(), 1);
 			assert_eq!(details.bonded_currencies[0], 0);
-			assert_eq!(details.transferable, false);
+			assert!(!details.transferable);
 
 			// The next possible asset id should be 1
 			assert_eq!(NextAssetId::<Test>::get(), 1);

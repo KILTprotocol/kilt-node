@@ -551,7 +551,7 @@ pub mod pallet {
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
 			// normalize the amount to mint
-			let converted_amount = convert_balance_to_parameter::<T>(amount.clone().saturated_into(), denomination)?;
+			let converted_amount = convert_balance_to_parameter::<T>((*amount).saturated_into(), denomination)?;
 
 			let (active_issuance_pre, active_issuance_post) =
 				Self::calculate_pre_post_issuances(&kind, &converted_amount, &converted_total_issuances, currency_idx)?;

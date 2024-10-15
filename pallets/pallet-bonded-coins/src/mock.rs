@@ -276,13 +276,12 @@ pub mod runtime {
 				assets: self
 					.currencies
 					.into_iter()
-					.map(|x| {
+					.flat_map(|x| {
 						let admin = calculate_pool_id(x.clone());
 						x.into_iter()
 							.map(|id| (id, admin.clone(), false, 1u128))
 							.collect::<Vec<(u32, AccountId, bool, u128)>>()
 					})
-					.flatten()
 					.collect(),
 
 				accounts: self.bonded_balance,
