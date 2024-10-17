@@ -49,8 +49,10 @@ jobs:
         cargo-flags:
           # Generic clippy checks for all features
           - --all-targets --all-features
-          # Clippy lints specifically for the deployable runtime code
-          - --target wasm32-unknown-unknown --no-default-features
+          # Generic clippy checks for no features (catches some missing `no_std`-only lints)
+          - --all-targets
+          # Clippy lints specifically for all runtime code, excluding all test and binary crates
+          - --target wasm32-unknown-unknown --no-default-features --workspace --exclude kilt-parachain --exclude standalone-node --exclude xcm-integration-tests --exclude 'dip-provider*' --exclude 'dip-consumer*'
       fail-fast: false
 
     steps:
