@@ -1,2 +1,3 @@
-mod polynomial_curve;
-mod square_root;
+mod square_root_parameters;
+
+mod polynomial_parameters;

@@ -13,12 +13,12 @@ use substrate_fixed::{
 ///
 /// # Variants
 /// - `PolynomialFunction`: Represents a polynomial bonding function with parameters of type `PolynomialFunctionParameters<F>`.
-/// - `SquareRootBondingFunction`: Represents a square root bonding function with parameters of type `SquareRootBondingFunctionParameters<F>`.
+/// - `SquareRootBondingFunction`: Represents a square root bonding function with parameters of type `SquareRootFunctionParameters<F>`.
 ///
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<F> {
 	PolynomialFunction(PolynomialFunctionParameters<F>),
-	SquareRootBondingFunction(SquareRootBondingFunctionParameters<F>),
+	SquareRootBondingFunction(SquareRootFunctionParameters<F>),
 }
 
 /// An enumeration representing the type of operation on the bonding curve.
@@ -132,20 +132,18 @@ where
 	/// - `ArithmeticError::Underflow`: If subtraction results in an underflow.
 	/// - `ArithmeticError::Overflow`: If any arithmetic operation results in an overflow.
 	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError> {
-		if low == high {
+		if high == F::from_num(0) && low == F::from_num(0) {
 			return Ok(F::from_num(0));
 		}
+
 		// Calculate high - low
 		let delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
 
-		// Calculate factored terms to reduce overflow risk
-		let high_plus_low = high.checked_add(low).ok_or(ArithmeticError::Overflow)?;
 		let high_low_mul = high.checked_mul(low).ok_or(ArithmeticError::Overflow)?;
-
 		let high2 = high.checked_mul(high).ok_or(ArithmeticError::Overflow)?;
 		let low2 = low.checked_mul(low).ok_or(ArithmeticError::Overflow)?;
 
-		// Factorized cubic term
+		// Factorized cubic term:  (high^2 + high * low + low^2)
 		let cubic_term = high2
 			.checked_add(high_low_mul)
 			.ok_or(ArithmeticError::Overflow)?
@@ -155,6 +153,8 @@ where
 		// Calculate m * (high^2 + high * low + low^2)
 		let term1 = self.m.checked_mul(cubic_term).ok_or(ArithmeticError::Overflow)?;
 
+		let high_plus_low = high.checked_add(low).ok_or(ArithmeticError::Overflow)?;
+
 		// Calculate n * (high + low)
 		let term2 = self.n.checked_mul(high_plus_low).ok_or(ArithmeticError::Overflow)?;
 
@@ -162,10 +162,12 @@ where
 		let result = term1
 			.checked_add(term2)
 			.ok_or(ArithmeticError::Overflow)?
-			.checked_add(self.o)
+			.checked_add(self.o) // Add constant term o
 			.ok_or(ArithmeticError::Overflow)?;
 
-		result.checked_mul(delta_x).ok_or(ArithmeticError::Overflow)
+		result
+			.checked_mul(delta_x) // Multiply by (high - low)
+			.ok_or(ArithmeticError::Overflow)
 	}
 }
 
@@ -178,12 +180,12 @@ where
 /// - `n`: The constant term.
 ///
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct SquareRootBondingFunctionParameters<F> {
+pub struct SquareRootFunctionParameters<F> {
 	pub m: F,
 	pub n: F,
 }
 
-impl<F> BondingFunction<F> for SquareRootBondingFunctionParameters<F>
+impl<F> BondingFunction<F> for SquareRootFunctionParameters<F>
 where
 	F: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
 {
