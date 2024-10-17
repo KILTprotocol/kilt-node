@@ -135,6 +135,10 @@ use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 use frame_system::RawOrigin;
 
 #[frame_support::pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 	use super::*;
 	use did_details::DidCreationDetails;

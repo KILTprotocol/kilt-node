@@ -187,6 +187,7 @@ impl<
 				if input.len() < 2 {
 					return None;
 				}
+				#[allow(clippy::indexing_slicing)]
 				let mut trimmed_input = &input[2..];
 				ProviderHeader::decode(&mut trimmed_input).ok()
 			},

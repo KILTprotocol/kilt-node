@@ -173,8 +173,11 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
+#[allow(clippy::integer_division)]
+const MINIMUM_PERIOD: u64 = constants::SLOT_DURATION / 2;
+
 parameter_types! {
-	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
+	pub const MinimumPeriod: u64 = MINIMUM_PERIOD;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -343,8 +346,14 @@ impl pallet_preimage::Config for Runtime {
 	>;
 }
 
+#[allow(clippy::arithmetic_side_effects)]
+#[inline]
+fn maximum_scheduler_weight() -> Weight {
+	Perbill::from_percent(80) * BlockWeights::get().max_block
+}
+
 parameter_types! {
-	pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) * BlockWeights::get().max_block;
+	pub MaximumSchedulerWeight: Weight = maximum_scheduler_weight();
 	pub const MaxScheduledPerBlock: u32 = 50;
 	pub const NoPreimagePostponement: Option<BlockNumber> = Some(10);
 }
@@ -370,7 +379,7 @@ impl PrivilegeCmp<OriginCaller> for OriginPrivilegeCmp {
 			(
 				OriginCaller::Council(pallet_collective::RawOrigin::Members(l_yes_votes, l_count)),
 				OriginCaller::Council(pallet_collective::RawOrigin::Members(r_yes_votes, r_count)),
-			) => Some((l_yes_votes * r_count).cmp(&(r_yes_votes * l_count))),
+			) => Some((l_yes_votes.saturating_mul(*r_count)).cmp(&(r_yes_votes.saturating_mul(*l_count)))),
 			// For every other origin we don't care, as they are not used for `ScheduleOrigin`.
 			_ => None,
 		}
@@ -448,13 +457,19 @@ impl pallet_democracy::Config for Runtime {
 	type SubmitOrigin = EnsureSigned<AccountId>;
 }
 
+#[allow(clippy::arithmetic_side_effects)]
+#[inline]
+fn maximum_proposal_weight() -> Weight {
+	Perbill::from_percent(50) * BlockWeights::get().max_block
+}
+
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
 	pub const ProposalBondMinimum: Balance = 20 * KILT;
 	pub const SpendPeriod: BlockNumber = constants::governance::SPEND_PERIOD;
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
-	pub MaxProposalWeight: Weight = Perbill::from_percent(50) * BlockWeights::get().max_block;
+	pub MaxProposalWeight: Weight = maximum_proposal_weight();
 	pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 

@@ -47,7 +47,7 @@ jobs:
     strategy:
       matrix:
         cargo-flags:
-          # Generic clippy checks
+          # Generic clippy checks for all features
           - --all-targets --all-features
           # Clippy lints specifically for the deployable runtime code
           - --target wasm32-unknown-unknown --no-default-features
