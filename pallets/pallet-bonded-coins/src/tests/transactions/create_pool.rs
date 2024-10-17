@@ -9,7 +9,7 @@ use sp_runtime::BoundedVec;
 
 use crate::{
 	mock::{runtime::*, *},
-	types::{PoolStatus, TokenMeta},
+	pool_details::{PoolStatus, TokenMeta},
 	NextAssetId, Pools,
 };
 
@@ -19,11 +19,11 @@ fn test_create_pool() {
 	let state = PoolStatus::Active;
 
 	let token_meta = TokenMeta {
-		decimals: 10,
 		name: BoundedVec::try_from("BTC".as_bytes().to_vec()).expect("creating name should not fail"),
 		symbol: BoundedVec::try_from("BTC".as_bytes().to_vec()).expect("creating symbol should not fail"),
 		min_balance: 1,
 	};
+	let denomination = 10;
 
 	let currencies = BoundedVec::try_from(vec![token_meta.clone()]).expect("creating currencies should not fail");
 
@@ -41,6 +41,7 @@ fn test_create_pool() {
 				currencies,
 				false,
 				state.clone(),
+				denomination,
 				ACCOUNT_00
 			));
 
@@ -60,7 +61,7 @@ fn test_create_pool() {
 			// we have created only one currency
 			assert_eq!(details.bonded_currencies.len(), 1);
 			assert_eq!(details.bonded_currencies[0], 0);
-			assert_eq!(details.transferable, false);
+			assert!(!details.transferable);
 
 			// The next possible asset id should be 1
 			assert_eq!(NextAssetId::<Test>::get(), 1);
@@ -72,7 +73,7 @@ fn test_create_pool() {
 			let name = <Assets as InspectMetaData<AccountId>>::name(currency_id);
 			let symbol = <Assets as InspectMetaData<AccountId>>::symbol(currency_id);
 
-			assert_eq!(decimals, token_meta.decimals);
+			assert_eq!(decimals, denomination);
 			assert_eq!(name, token_meta.name.into_inner());
 			assert_eq!(symbol, token_meta.symbol.into_inner());
 
