@@ -44,6 +44,8 @@ const LOG_TARGET: &str = "pallet_relay_store";
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+#[allow(clippy::shadow_reuse)]
+#[allow(clippy::ref_patterns)]
 pub mod pallet {
 	use super::*;
 
