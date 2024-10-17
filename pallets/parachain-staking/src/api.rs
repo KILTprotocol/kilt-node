@@ -70,6 +70,7 @@ impl<T: Config> Pallet<T> {
 	/// delegators.
 	///
 	/// At least used in Runtime API.
+	#[allow(clippy::arithmetic_side_effects)]
 	pub fn get_staking_rates() -> kilt_runtime_api_staking::StakingRates {
 		let total_issuance = T::Currency::total_issuance();
 		let total_stake = TotalCollatorStake::<T>::get();

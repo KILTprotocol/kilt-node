@@ -78,7 +78,6 @@
 //!   time has elapsed, the operation is considered invalid.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unused_unit)]
 #![recursion_limit = "256"]
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -136,6 +135,10 @@ use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 use frame_system::RawOrigin;
 
 #[frame_support::pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 	use super::*;
 	use did_details::DidCreationDetails;

@@ -40,6 +40,10 @@ mod benchmarking;
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
@@ -484,6 +488,7 @@ pub mod pallet {
 		/// `check_releasing_preconditions` as it does not verify all the
 		/// preconditions again.
 		fn unregister_name(name: &Web3NameOf<T>) -> Result<Web3OwnershipOf<T>, DispatchError> {
+			#[allow(clippy::unwrap_used)]
 			let name_ownership = Owner::<T>::take(name).unwrap();
 			Names::<T>::remove(&name_ownership.owner);
 

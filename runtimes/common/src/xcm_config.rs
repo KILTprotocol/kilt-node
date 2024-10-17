@@ -27,6 +27,12 @@ use xcm_executor::traits::{Properties, ShouldExecute};
 
 use crate::{AccountId, BlockWeights};
 
+#[allow(clippy::arithmetic_side_effects)]
+#[inline]
+fn service_weight() -> Weight {
+	Perbill::from_percent(35) * BlockWeights::get().max_block
+}
+
 parameter_types! {
 	// One XCM operation is 200_000_000 weight, cross-chain transfer ~= 2x of transfer.
 	pub UnitWeightCost: Weight = Weight::from_parts(200_000_000, 0);
@@ -34,7 +40,7 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 	pub const MaxStale: u32 = 8;
 	pub const HeapSize: u32 = 64 * 1024;
-	pub ServiceWeight: Weight = Perbill::from_percent(35) * BlockWeights::get().max_block;
+	pub ServiceWeight: Weight = service_weight();
 	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 

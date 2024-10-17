@@ -53,6 +53,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		let mut v = bv.into_inner();
 		v.sort_by(|a, b| b.cmp(a));
 		v.dedup();
+		#[allow(clippy::expect_used)]
 		Self::from_sorted_set(v.try_into().map_err(|_| ()).expect("No values were added"))
 	}
 
@@ -74,6 +75,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		let mut i: usize = 0;
 		let mut next = i.saturating_add(1);
 		while next < self.len() {
+			#[allow(clippy::indexing_slicing)]
 			if self[i] == self[next] {
 				self.0.remove(next);
 			} else {
@@ -124,6 +126,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 				// accessing by index wont panic since we checked the index, inserting the item
 				// at the end of the list to ensure last-in-least-priority-rule for collators.
 				// sorting algorithm must be stable!
+				#[allow(clippy::indexing_slicing)]
 				let old = sp_std::mem::replace(&mut self.0[last_idx], value);
 				self.sort_greatest_to_lowest();
 				Ok(Some(old))
@@ -144,6 +147,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	pub fn try_upsert(&mut self, value: T) -> Result<Option<T>, ()> {
 		match self.linear_search(&value) {
 			Ok(i) => {
+				#[allow(clippy::indexing_slicing)]
 				let old = sp_std::mem::replace(&mut self.0[i], value);
 				self.sort_greatest_to_lowest();
 				Ok(Some(old))
@@ -243,6 +247,7 @@ impl<T: Ord + Clone, S: Get<u32>> From<BoundedVec<T, S>> for OrderedSet<T, S> {
 impl<T: Ord + Clone, S: Get<u32>> Index<usize> for OrderedSet<T, S> {
 	type Output = T;
 
+	#[allow(clippy::indexing_slicing)]
 	fn index(&self, index: usize) -> &Self::Output {
 		&self.0[index]
 	}
@@ -251,6 +256,7 @@ impl<T: Ord + Clone, S: Get<u32>> Index<usize> for OrderedSet<T, S> {
 impl<T: Ord + Clone, S: Get<u32>> Index<Range<usize>> for OrderedSet<T, S> {
 	type Output = [T];
 
+	#[allow(clippy::indexing_slicing)]
 	fn index(&self, range: Range<usize>) -> &Self::Output {
 		&self.0[range]
 	}
@@ -259,6 +265,7 @@ impl<T: Ord + Clone, S: Get<u32>> Index<Range<usize>> for OrderedSet<T, S> {
 impl<T: Ord + Clone, S: Get<u32>> Index<RangeFull> for OrderedSet<T, S> {
 	type Output = [T];
 
+	#[allow(clippy::indexing_slicing)]
 	fn index(&self, range: RangeFull) -> &Self::Output {
 		&self.0[range]
 	}

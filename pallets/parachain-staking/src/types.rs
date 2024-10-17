@@ -128,6 +128,8 @@ where
 	pub status: CandidateStatus,
 }
 
+// We access indices only after making sure they are properly verified.
+#[allow(clippy::indexing_slicing)]
 impl<A, B, S> Candidate<A, B, S>
 where
 	A: Ord + Clone + Debug,

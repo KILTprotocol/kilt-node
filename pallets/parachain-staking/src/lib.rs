@@ -137,6 +137,12 @@ use frame_support::pallet;
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
+// We do plain arithmetic operations only after we've made sure they will go through.
+#[allow(clippy::arithmetic_side_effects)]
 pub mod pallet {
 	use super::*;
 	pub use crate::inflation::{InflationInfo, RewardRate, StakingInfo};

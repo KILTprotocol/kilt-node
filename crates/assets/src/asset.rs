@@ -44,16 +44,19 @@ pub mod v1 {
 	pub const MINIMUM_ASSET_NAMESPACE_LENGTH: usize = 3;
 	/// The maximum length of a valid asset ID namespace.
 	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_ASSET_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
 	/// The minimum length of a valid asset ID reference.
 	pub const MINIMUM_ASSET_REFERENCE_LENGTH: usize = 1;
 	/// The maximum length of a valid asset ID reference.
 	pub const MAXIMUM_ASSET_REFERENCE_LENGTH: usize = 128;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_ASSET_REFERENCE_LENGTH_U32: u32 = MAXIMUM_ASSET_REFERENCE_LENGTH as u32;
 	/// The minimum length of a valid asset ID identifier.
 	pub const MINIMUM_ASSET_IDENTIFIER_LENGTH: usize = 1;
 	/// The maximum length of a valid asset ID reference.
 	pub const MAXIMUM_ASSET_IDENTIFIER_LENGTH: usize = 78;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_ASSET_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_ASSET_IDENTIFIER_LENGTH as u32;
 
 	/// Separator between asset namespace and asset reference.
@@ -168,6 +171,7 @@ pub mod v1 {
 	}
 
 	impl Display for AssetId {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			match self {
 				Self::Slip44(reference) => {
@@ -335,6 +339,7 @@ pub mod v1 {
 			// TODO: This could be enforced at compilation time once constraints on generics
 			// will be available.
 			// https://rust-lang.github.io/rfcs/2000-const-generics.html
+			#[allow(clippy::expect_used)]
 			if value
 				<= U256::from_str_radix("9999999999999999999999999999999999999999999999999999999999999999", 10)
 					.expect("Casting the maximum value for a Slip44 reference into a U256 should never fail.")
@@ -480,6 +485,7 @@ pub mod v1 {
 	}
 
 	impl Display for EvmSmartContractNonFungibleIdentifier {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid digits.
 			write!(
@@ -578,6 +584,7 @@ pub mod v1 {
 	}
 
 	impl Display for GenericAssetNamespace {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
@@ -627,6 +634,7 @@ pub mod v1 {
 	}
 
 	impl Display for GenericAssetReference {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
@@ -676,6 +684,7 @@ pub mod v1 {
 	}
 
 	impl Display for GenericAssetIdentifier {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
