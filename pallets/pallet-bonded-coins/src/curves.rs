@@ -1,9 +1,10 @@
+use core::ops::{AddAssign, BitOrAssign, ShlAssign};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use substrate_fixed::{
-	traits::{FixedSigned, ToFixed},
-	transcendental::sqrt,
+	traits::{Fixed, FixedSigned, ToFixed},
+	transcendental::{exp, ln, sqrt},
 	types::I9F23,
 };
 
@@ -19,6 +20,7 @@ use substrate_fixed::{
 pub enum Curve<F> {
 	PolynomialFunction(PolynomialFunctionParameters<F>),
 	SquareRootBondingFunction(SquareRootFunctionParameters<F>),
+	LSMR(LSMRFunctionParameters<F>),
 }
 
 /// An enumeration representing the type of operation on the bonding curve.
@@ -73,13 +75,24 @@ where
 		match self {
 			Curve::PolynomialFunction(params) => params.calculate_costs(low, high),
 			Curve::SquareRootBondingFunction(params) => params.calculate_costs(low, high),
+			_ => todo!(),
 		}
 	}
 }
 
-// BondingFunction trait
 pub trait BondingFunction<F: FixedSigned + PartialOrd> {
-	/// calculates the cost of the curve between low and high
+	/// Calculates the cost of the curve between two points.
+	///
+	/// # Parameters
+	/// - `low`: The lower bound of the range for which the cost is to be calculated.
+	/// - `high`: The upper bound of the range for which the cost is to be calculated.
+	///
+	/// # Returns
+	/// - `Ok(F)`: The calculated cost if the operation is successful.
+	/// - `Err(ArithmeticError)`: An error if the calculation fails due to arithmetic issues.
+	///
+	/// # Errors
+	/// This function will return an `ArithmeticError` if the calculation cannot be performed.
 	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError>;
 }
 
@@ -245,5 +258,58 @@ where
 
 		// Calculate the final result (sqrt + linear terms)
 		term1.checked_add(term2).ok_or(ArithmeticError::Overflow)
+	}
+}
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub struct LSMRFunctionParameters<F> {
+	pub m: F,
+}
+
+pub struct LSMRCalculation<F> {
+	pub m: F,
+	pub passive_issuance: F,
+}
+
+impl<F> BondingFunction<F> for LSMRCalculation<F>
+where
+	F: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
+	<F as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+{
+	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError> {
+		let exponent_numerator = self
+			.passive_issuance
+			.checked_sub(high)
+			.ok_or(ArithmeticError::Underflow)?
+			.checked_div(self.m)
+			.ok_or(ArithmeticError::DivisionByZero)?;
+
+		let exponent_denominator = self
+			.passive_issuance
+			.checked_sub(low)
+			.ok_or(ArithmeticError::Underflow)?
+			.checked_div(self.m)
+			.ok_or(ArithmeticError::DivisionByZero)?;
+
+		let e_term_numerator = F::from_num(1)
+			.checked_add(exp::<F, F>(exponent_numerator).map_err(|_| ArithmeticError::Overflow)?)
+			.ok_or(ArithmeticError::Overflow)?;
+
+		let e_term_denominator = F::from_num(1)
+			.checked_add(exp::<F, F>(exponent_denominator).map_err(|_| ArithmeticError::Overflow)?)
+			.ok_or(ArithmeticError::Overflow)?;
+
+		let e_term = e_term_numerator
+			.checked_div(e_term_denominator)
+			.ok_or(ArithmeticError::DivisionByZero)?;
+
+		let term1 = self
+			.m
+			.checked_mul(ln::<F, F>(e_term).map_err(|_| ArithmeticError::Overflow)?)
+			.ok_or(ArithmeticError::Underflow)?;
+
+		let high_low_diff = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
+
+		high_low_diff.checked_add(term1).ok_or(ArithmeticError::Overflow)
 	}
 }
