@@ -507,7 +507,7 @@ pub(crate) mod runtime {
 				// the genesis block.
 				System::set_block_number(System::block_number() + 1);
 
-				for (ctype_hash, owner) in self.ctypes.iter() {
+				for (&ctype_hash, &owner) in self.ctypes.iter() {
 					ctype::Ctypes::<Test>::insert(
 						ctype_hash,
 						CtypeEntryOf::<Test> {

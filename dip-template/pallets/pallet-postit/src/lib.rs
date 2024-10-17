@@ -28,6 +28,8 @@ pub use pallet::*;
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+#[allow(clippy::shadow_reuse)]
+#[allow(clippy::ref_patterns)]
 pub mod pallet {
 
 	use super::*;
@@ -120,8 +122,9 @@ pub mod pallet {
 					.as_slice(),
 			);
 			Posts::<T>::try_mutate(resource_id, |post| {
-				if let Some(post) = post {
-					post.comments
+				if let Some(ref mut existing_post) = *post {
+					existing_post
+						.comments
 						.try_push(comment_id)
 						.expect("Failed to add comment to post.");
 					Ok(())
@@ -131,8 +134,8 @@ pub mod pallet {
 			})
 			.or_else(|_| {
 				Comments::<T>::try_mutate(resource_id, |comment| {
-					if let Some(comment) = comment {
-						comment
+					if let Some(ref mut existing_comment) = *comment {
+						existing_comment
 							.details
 							.comments
 							.try_push(comment_id)
@@ -160,8 +163,11 @@ pub mod pallet {
 			let success_origin = T::OriginCheck::ensure_origin(origin)?;
 			let liker = success_origin.username().map_err(DispatchError::Other)?;
 			Posts::<T>::try_mutate(resource_id, |post| {
-				if let Some(post) = post {
-					post.likes.try_push(liker.clone()).expect("Failed to add like to post.");
+				if let Some(ref mut existing_post) = *post {
+					existing_post
+						.likes
+						.try_push(liker.clone())
+						.expect("Failed to add like to post.");
 					Ok(())
 				} else {
 					Err(())
@@ -169,8 +175,8 @@ pub mod pallet {
 			})
 			.or_else(|_| {
 				Comments::<T>::try_mutate(resource_id, |comment| {
-					if let Some(comment) = comment {
-						comment
+					if let Some(ref mut existing_comment) = comment {
+						existing_comment
 							.details
 							.likes
 							.try_push(liker.clone())
