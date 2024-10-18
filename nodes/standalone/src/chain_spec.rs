@@ -44,7 +44,7 @@ type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 fn generate_dev_chain_spec() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
 	let properties = Properties::from_iter([
-		("tokenDecimals".into(), 15.into()),
+		("tokenDecimals".into(), 15u8.into()),
 		("tokenSymbol".into(), "DILT".into()),
 	]);
 	let genesis_state = to_value(generate_genesis_state()).expect("Creating genesis state failed");
@@ -75,7 +75,7 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 	RuntimeGenesisConfig {
 		system: SystemConfig { ..Default::default() },
 		balances: BalancesConfig {
-			balances: endowed_accounts.into_iter().map(|a| (a, 1u128 << 90)).collect(),
+			balances: endowed_accounts.into_iter().map(|a| (a, 1u128 << 90u8)).collect(),
 		},
 		session: SessionConfig {
 			keys: initial_authorities

@@ -84,16 +84,16 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 
 	let executor = sc_service::new_native_or_wasm_executor(config);
 
-	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
+	let (client_part, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
 		config,
-		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+		telemetry.as_ref().map(|(_, t)| t.handle()),
 		executor,
 	)?;
-	let client = Arc::new(client);
+	let client = Arc::new(client_part);
 
-	let telemetry = telemetry.map(|(worker, telemetry)| {
+	let telemetry_task = telemetry.map(|(worker, t)| {
 		task_manager.spawn_handle().spawn("telemetry", None, worker.run());
-		telemetry
+		t
 	});
 
 	let select_chain = sc_consensus::LongestChain::new(backend.clone());
@@ -111,7 +111,7 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 		GRANDPA_JUSTIFICATION_PERIOD,
 		&(Arc::clone(&client) as Arc<_>),
 		select_chain.clone(),
-		telemetry.as_ref().map(|x| x.handle()),
+		telemetry_task.as_ref().map(|x| x.handle()),
 	)?;
 
 	let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
@@ -133,7 +133,7 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 		spawner: &task_manager.spawn_essential_handle(),
 		registry: config.prometheus_registry(),
 		check_for_equivocation: Default::default(),
-		telemetry: telemetry.as_ref().map(|x| x.handle()),
+		telemetry: telemetry_task.as_ref().map(|x| x.handle()),
 		compatibility_mode: Default::default(),
 	})?;
 
@@ -145,7 +145,7 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 		keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (grandpa_block_import, grandpa_link, telemetry),
+		other: (grandpa_block_import, grandpa_link, telemetry_task),
 	})
 }
 
@@ -219,13 +219,13 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 	let prometheus_registry = config.prometheus_registry().cloned();
 
 	let rpc_extensions_builder = {
-		let client = client.clone();
-		let pool = transaction_pool.clone();
+		let rpc_client = client.clone();
+		let rpc_pool = transaction_pool.clone();
 
 		Box::new(move |deny_unsafe, _| {
 			let deps = crate::rpc::FullDeps {
-				client: Arc::clone(&client),
-				pool: Arc::clone(&pool),
+				client: Arc::clone(&rpc_client),
+				pool: Arc::clone(&rpc_pool),
 				deny_unsafe,
 			};
 			crate::rpc::create_full(deps).map_err(Into::into)
@@ -316,7 +316,7 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		// and vote data availability than the observer. The observer has not
 		// been tested extensively yet and having most nodes in a network run it
 		// could lead to finality stalls.
-		let grandpa_config = sc_consensus_grandpa::GrandpaParams {
+		let grandpa_params = sc_consensus_grandpa::GrandpaParams {
 			config: grandpa_config,
 			link: grandpa_link,
 			sync,
@@ -334,7 +334,7 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		task_manager.spawn_essential_handle().spawn_blocking(
 			"grandpa-voter",
 			None,
-			sc_consensus_grandpa::run_grandpa_voter(grandpa_config)?,
+			sc_consensus_grandpa::run_grandpa_voter(grandpa_params)?,
 		);
 	}
 
