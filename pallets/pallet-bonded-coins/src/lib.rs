@@ -51,7 +51,7 @@ pub mod pallet {
 	use crate::{
 		curves::{Curve, DiffKind, ParameterValidation},
 		pool_details::{Locks, PoolDetails, PoolStatus, TokenMeta},
-		traits::Freeze,
+		traits::{Freeze, ResetTeam},
 		utils::convert_balance_to_parameter,
 	};
 
@@ -85,7 +85,7 @@ pub mod pallet {
 
 	pub(crate) type CurrencySymbolOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
 
-	type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, CurrencySymbolOf<T>, CurrencyNameOf<T>>;
+	type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, CurrencySymbolOf<T>, CurrencyNameOf<T>, AccountIdOf<T>>;
 
 	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
 
@@ -138,6 +138,8 @@ pub mod pallet {
 		type CurveParameterType: Parameter + Member + FixedSigned + MaxEncodedLen + PartialOrd<I9F23> + From<I9F23>;
 
 		type FreezeManager: Freeze<Self>;
+
+		type TeamManager: ResetTeam<Self::AccountId, AssetId = Self::AssetId>;
 	}
 
 	#[pallet::pallet]
@@ -208,7 +210,6 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			curve: Curve<CurveParameterTypeOf<T>>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
-			tradable: bool,
 			state: PoolStatus<Locks>,
 			denomination: u8,
 			pool_manager: AccountIdOf<T>,
@@ -268,11 +269,17 @@ pub mod pallet {
 					denomination,
 				)?;
 
-				if !tradable {
+				T::TeamManager::reset_team(
+					asset_id.clone(),
+					pool_id.clone().into(),
+					entry.team.admin.clone(),
+					entry.team.issuer.clone(),
+					entry.team.freezer.clone(),
+				)?;
+
+				if !entry.tradable {
 					T::FreezeManager::freeze_asset(pool_id.clone().into(), asset_id.clone())?;
 				}
-
-				// TODO: reset team account
 			}
 
 			// Touch the pool account in order to be able to transfer the collateral currency to it
@@ -280,14 +287,7 @@ pub mod pallet {
 
 			Pools::<T>::set(
 				&pool_id,
-				Some(PoolDetails::new(
-					pool_manager,
-					curve,
-					currency_ids,
-					tradable,
-					state,
-					denomination,
-				)),
+				Some(PoolDetails::new(pool_manager, curve, currency_ids, state, denomination)),
 			);
 
 			Self::deposit_event(Event::PoolCreated(pool_id));

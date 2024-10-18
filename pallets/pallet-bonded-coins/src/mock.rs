@@ -17,7 +17,7 @@ use substrate_fixed::types::I75F53;
 use crate::{
 	curves::{Curve, PolynomialFunctionParameters},
 	pool_details::{Locks, PoolStatus},
-	traits::Freeze,
+	traits::{Freeze, ResetTeam},
 	AccountIdOf, Config, DepositCurrencyBalanceOf, FungiblesAssetIdOf, PoolDetailsOf,
 };
 
@@ -87,7 +87,6 @@ pub mod runtime {
 	pub fn calculate_pool_details(
 		currencies: Vec<AssetId>,
 		manager: AccountId,
-		transferable: bool,
 		curve: Curve<Float>,
 		state: PoolStatus<Locks>,
 		denomination: u8,
@@ -96,7 +95,6 @@ pub mod runtime {
 		PoolDetailsOf::<Test> {
 			curve,
 			manager,
-			transferable,
 			bonded_currencies,
 			state,
 			denomination,
@@ -120,6 +118,18 @@ pub mod runtime {
 	impl Freeze<Test> for pallet_assets::Pallet<Test> {
 		fn freeze_asset(who: AccountIdOf<Test>, asset_id: FungiblesAssetIdOf<Test>) -> DispatchResult {
 			pallet_assets::Pallet::<Test>::freeze_asset(RawOrigin::Signed(who).into(), asset_id)
+		}
+	}
+
+	impl ResetTeam<AccountIdOf<Test>> for pallet_assets::Pallet<Test> {
+		fn reset_team(
+			id: Self::AssetId,
+			owner: AccountIdOf<Test>,
+			admin: AccountIdOf<Test>,
+			issuer: AccountIdOf<Test>,
+			freezer: AccountIdOf<Test>,
+		) -> DispatchResult {
+			pallet_assets::Pallet::<Test>::set_team(RawOrigin::Signed(owner).into(), id, issuer, admin, freezer)
 		}
 	}
 	frame_support::construct_runtime!(
@@ -236,6 +246,7 @@ pub mod runtime {
 		type BaseDeposit = ExistentialDeposit;
 		type CurveParameterType = Float;
 		type FreezeManager = Assets;
+		type TeamManager = Assets;
 	}
 
 	#[derive(Clone, Default)]

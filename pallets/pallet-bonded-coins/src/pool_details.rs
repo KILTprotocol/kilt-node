@@ -7,7 +7,6 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
 	pub curve: ParametrizedCurve,
 	pub bonded_currencies: Currencies,
 	pub state: PoolStatus<Locks>,
-	pub transferable: bool,
 	pub denomination: u8,
 }
 
@@ -51,7 +50,6 @@ where
 		manager: AccountId,
 		curve: ParametrizedCurve,
 		bonded_currencies: Currencies,
-		transferable: bool,
 		state: PoolStatus<Locks>,
 		denomination: u8,
 	) -> Self {
@@ -59,7 +57,6 @@ where
 			manager,
 			curve,
 			bonded_currencies,
-			transferable,
 			state,
 			denomination,
 		}
@@ -95,8 +92,17 @@ where
 }
 
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
-pub struct TokenMeta<Balance, Symbol, Name> {
+pub struct TokenMeta<Balance, Symbol, Name, AccountId> {
 	pub name: Name,
 	pub symbol: Symbol,
 	pub min_balance: Balance,
+	pub tradable: bool,
+	pub team: Team<AccountId>,
+}
+
+#[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
+pub struct Team<AccountId> {
+	pub admin: AccountId,
+	pub issuer: AccountId,
+	pub freezer: AccountId,
 }
