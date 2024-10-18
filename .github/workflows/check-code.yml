@@ -73,7 +73,7 @@ jobs:
       - name: debug
         run: ls -la && pwd
       - name: Run `cargo clippy`
-        run: ./scripts/clippy/${{ matrix.clippy-script-name }}
+        run: ./${{ matrix.clippy-script-name }}
 
   cargo-fmt:
     name: Check formatting
