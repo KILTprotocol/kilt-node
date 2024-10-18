@@ -71,7 +71,7 @@ jobs:
           save-always: true
 
       - name: Run `cargo clippy`
-        run: cargo clippy --locked ${{ matrix.cargo-flags }}
+        run: cargo clippy --quiet --locked ${{ matrix.cargo-flags }}
 
   cargo-fmt:
     name: Check formatting
