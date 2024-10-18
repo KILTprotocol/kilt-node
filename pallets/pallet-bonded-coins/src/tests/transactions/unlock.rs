@@ -18,7 +18,6 @@ fn test_unlock() {
 	let pool = calculate_pool_details(
 		currencies,
 		ACCOUNT_01,
-		false,
 		curve.clone(),
 		PoolStatus::Locked(target_lock.clone()),
 		10,

@@ -1,10 +1,13 @@
 use frame_support::{
-	parameter_types,
+	dispatch::DispatchResult,
+	parameter_types, storage_alias,
+	traits::Currency,
 	traits::{ConstU128, ConstU32},
 	weights::constants::RocksDbWeight,
-	Hashable,
+	Blake2_128Concat, Hashable,
 };
-use frame_system::{EnsureRoot, EnsureSigned};
+use frame_system::{EnsureRoot, EnsureSigned, RawOrigin};
+use pallet_assets::AssetDetails;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	BoundedVec, BuildStorage, MultiSignature,
@@ -14,7 +17,8 @@ use substrate_fixed::types::I75F53;
 use crate::{
 	curves::{Curve, PolynomialFunctionParameters},
 	pool_details::{Locks, PoolStatus},
-	Config, DepositCurrencyBalanceOf, PoolDetailsOf,
+	traits::{Freeze, ResetTeam},
+	AccountIdOf, Config, DepositCurrencyBalanceOf, FungiblesAssetIdOf, PoolDetailsOf,
 };
 
 pub type Hash = sp_core::H256;
@@ -69,11 +73,20 @@ pub mod runtime {
 	use super::*;
 
 	pub type Block = frame_system::mocking::MockBlock<Test>;
+	pub type BalanceOf<T> = <T as pallet_assets::Config>::Balance;
+	pub type DepositBalanceOf<T> = <<T as pallet_assets::Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+
+	#[storage_alias]
+	pub(crate) type Asset = StorageMap<
+		Assets,
+		Blake2_128Concat,
+		<Test as pallet_assets::Config>::AssetId,
+		AssetDetails<BalanceOf<Test>, AccountIdOf<Test>, DepositBalanceOf<Test>>,
+	>;
 
 	pub fn calculate_pool_details(
 		currencies: Vec<AssetId>,
 		manager: AccountId,
-		transferable: bool,
 		curve: Curve<Float>,
 		state: PoolStatus<Locks>,
 		denomination: u8,
@@ -82,7 +95,6 @@ pub mod runtime {
 		PoolDetailsOf::<Test> {
 			curve,
 			manager,
-			transferable,
 			bonded_currencies,
 			state,
 			denomination,
@@ -103,6 +115,23 @@ pub mod runtime {
 			.collect::<Vec<_>>()
 	}
 
+	impl Freeze<Test> for pallet_assets::Pallet<Test> {
+		fn freeze_asset(who: AccountIdOf<Test>, asset_id: FungiblesAssetIdOf<Test>) -> DispatchResult {
+			pallet_assets::Pallet::<Test>::freeze_asset(RawOrigin::Signed(who).into(), asset_id)
+		}
+	}
+
+	impl ResetTeam<AccountIdOf<Test>> for pallet_assets::Pallet<Test> {
+		fn reset_team(
+			id: Self::AssetId,
+			owner: AccountIdOf<Test>,
+			admin: AccountIdOf<Test>,
+			issuer: AccountIdOf<Test>,
+			freezer: AccountIdOf<Test>,
+		) -> DispatchResult {
+			pallet_assets::Pallet::<Test>::set_team(RawOrigin::Signed(owner).into(), id, issuer, admin, freezer)
+		}
+	}
 	frame_support::construct_runtime!(
 		pub enum Test
 		{
@@ -216,6 +245,8 @@ pub mod runtime {
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
 		type CurveParameterType = Float;
+		type FreezeManager = Assets;
+		type TeamManager = Assets;
 	}
 
 	#[derive(Clone, Default)]

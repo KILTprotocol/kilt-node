@@ -16,14 +16,7 @@ fn test_mint_into_account() {
 
 	let denomination = 10;
 
-	let pool = calculate_pool_details(
-		currencies,
-		ACCOUNT_01,
-		false,
-		curve.clone(),
-		PoolStatus::Active,
-		denomination,
-	);
+	let pool = calculate_pool_details(currencies, ACCOUNT_01, curve.clone(), PoolStatus::Active, denomination);
 
 	let active_issuance_pre = Float::from_num(0);
 	let passive_issuance = Float::from_num(0);
