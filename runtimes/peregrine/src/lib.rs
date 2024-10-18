@@ -1711,7 +1711,7 @@ impl_runtime_apis! {
 					// Make account free to pay the fee
 					let who = frame_benchmarking::whitelisted_caller();
 					let balance = fee_amount + ExistentialDeposit::get() * 1000;
-					let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
+					<Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
 						&who, balance,
 					);
 

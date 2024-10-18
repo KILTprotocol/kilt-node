@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::{fs::create_dir_all, net::SocketAddr};
+use std::{fs::create_dir_all, net::SocketAddr, sync::Arc};
 
 use cumulus_primitives_core::ParaId;
 use dip_consumer_runtime_template::Block;
@@ -77,7 +77,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn copyright_start_year() -> i32 {
-		2024
+		2024i32
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -113,7 +113,7 @@ impl SubstrateCli for RelayChainCli {
 	}
 
 	fn copyright_start_year() -> i32 {
-		2024
+		2024i32
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -220,7 +220,7 @@ pub fn run() -> Result<()> {
 					let partials = new_partial(&config)?;
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, Arc::clone(&partials.client), db, storage)
 				}),
 				BenchmarkCmd::Machine(cmd) => {
 					runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
@@ -236,6 +236,8 @@ pub fn run() -> Result<()> {
 			runner.run_node_until_exit(|config| async move {
 				let hwbench = (!cli.no_hardware_benchmarks)
 					.then_some(config.database.path().map(|database_path| {
+						#[allow(clippy::let_underscore_must_use)]
+						#[allow(clippy::let_underscore_untyped)]
 						let _ = create_dir_all(database_path);
 						gather_hwbench(Some(database_path))
 					}))

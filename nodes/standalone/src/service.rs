@@ -233,7 +233,8 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 	};
 
 	let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-		network: Arc::clone(&network),
+		#[allow(clippy::clone_on_ref_ptr)]
+		network: network.clone(),
 		client: Arc::clone(&client),
 		sync_service: Arc::clone(&sync),
 		keystore: keystore_container.keystore(),

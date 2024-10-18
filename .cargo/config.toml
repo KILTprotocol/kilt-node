@@ -1,29 +1,22 @@
 # TODO: Re-evaluate these lints once we bump up rustc versions as new lints are added with each version.
 
-# Generic lints for non-test code.
-[target.'cfg(not(test))']
+# Generic lints.
+[build]
 rustflags = [
   "-Wclippy::alloc_instead_of_core",
-  "-Wclippy::as_underscore",
-  "-Wclippy::clone_on_ref_ptr",
-  "-Wclippy::decimal_literal_representation",
-  "-Wclippy::default_numeric_fallback",
   "-Wclippy::else_if_without_else",
   "-Wclippy::empty_drop",
   "-Wclippy::empty_structs_with_brackets",
-  "-Wclippy::error_impl_error",
   "-Wclippy::if_then_some_else_none",
   "-Wclippy::impl_trait_in_params",
-  "-Wclippy::let_underscore_must_use",
-  "-Wclippy::let_underscore_untyped",
   "-Wclippy::mixed_read_write_in_expression",
   "-Wclippy::negative_feature_names",
-  # "-Wclippy::pattern_type_mismatch",
+  "-Wclippy::pattern_type_mismatch",
   "-Wclippy::pub_without_shorthand",
   "-Wclippy::redundant_type_annotations",
   "-Wclippy::ref_patterns",
   "-Wclippy::rest_pat_in_fully_bound_structs",
-  # "-Wclippy::shadow_reuse",
+  "-Wclippy::shadow_reuse",
   "-Wclippy::shadow_same",
   "-Wclippy::shadow_unrelated",
   "-Wclippy::str_to_string",
@@ -40,6 +33,18 @@ rustflags = [
   #"-Wclippy::cfg_not_test",
   # TODO: Add after upgrading to 1.83
   #"-Wclippy::unused_trait_names",
+]
+
+# Lints for non-test code only.
+[target.'cfg(not(test))']
+rustflags = [
+  "-Wclippy::as_underscore",
+  "-Wclippy::clone_on_ref_ptr",
+  "-Wclippy::decimal_literal_representation",
+  "-Wclippy::default_numeric_fallback",
+  "-Wclippy::error_impl_error",
+  "-Wclippy::let_underscore_must_use",
+  "-Wclippy::let_underscore_untyped",
 ]
 
 # Deployment runtime lints

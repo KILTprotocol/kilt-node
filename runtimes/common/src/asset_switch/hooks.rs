@@ -65,6 +65,7 @@ where
 		cfg_if::cfg_if! {
 			if #[cfg(feature = "runtime-benchmarks")] {
 				// Clippy complaints the variable is not used with this feature on, otherwise.
+				#[allow(clippy::let_underscore_untyped)]
 				let _ = is_beneficiary_self;
 				Ok(())
 			} else {

@@ -306,13 +306,13 @@ fn check_excluded_keys_attestation() {
 	// attestaion
 	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
-	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
-	attestation.deposit.amount = MICRO_KILT;
+	let mut input_attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	input_attestation.deposit.amount = MICRO_KILT;
 	let ctype = get_ctype_hash::<Test>(true);
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, KILT)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_ctypes(vec![(input_attestation.ctype_hash, attester.clone())])
 		.build()
 		.execute_with(|| {
 			let hashed_key = Attestations::<Test>::hashed_key_for(claim_hash);
@@ -329,7 +329,7 @@ fn check_excluded_keys_attestation() {
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
 			let attestation =
-				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
+				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestations");
 
 			let requested_migrations = EntriesToMigrate {
 				attestation,

@@ -245,7 +245,7 @@ mod tests {
 	pub const TREASURY_ACC: AccountId = crate::AccountId::new([1u8; 32]);
 	const AUTHOR_ACC: AccountId = AccountId::new([2; 32]);
 
-	pub struct ToBeneficiary();
+	pub struct ToBeneficiary;
 	impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
 		fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 			// Must resolve into existing but better to be safe.
