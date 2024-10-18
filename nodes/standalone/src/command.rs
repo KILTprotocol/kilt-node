@@ -28,23 +28,23 @@ use crate::{
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"KILT Node".to_string()
+		"KILT Node".to_owned()
 	}
 
 	fn impl_version() -> String {
-		env!("CARGO_PKG_VERSION").to_string()
+		env!("CARGO_PKG_VERSION").to_owned()
 	}
 
 	fn description() -> String {
-		env!("CARGO_PKG_DESCRIPTION").to_string()
+		env!("CARGO_PKG_DESCRIPTION").to_owned()
 	}
 
 	fn author() -> String {
-		env!("CARGO_PKG_AUTHORS").to_string()
+		env!("CARGO_PKG_AUTHORS").to_owned()
 	}
 
 	fn support_url() -> String {
-		"https://github.com/KILTprotocol/kilt-node/issues/new".to_string()
+		"https://github.com/KILTprotocol/kilt-node/issues/new".to_owned()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -52,7 +52,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn executable_name() -> String {
-		env!("CARGO_PKG_NAME").to_string()
+		env!("CARGO_PKG_NAME").to_owned()
 	}
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
@@ -122,8 +122,8 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					backend,
 					..
 				} = new_partial(&config)?;
-				let aux_revert = Box::new(move |client, _, blocks| {
-					sc_consensus_grandpa::revert(client, blocks)?;
+				let aux_revert = Box::new(move |c, _, blocks| {
+					sc_consensus_grandpa::revert(c, blocks)?;
 					Ok(())
 				});
 				Ok((cmd.run(client, backend, Some(aux_revert)), task_manager))

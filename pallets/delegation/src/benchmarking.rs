@@ -488,14 +488,9 @@ benchmarks! {
 		let origin = RawOrigin::Signed(deposit_owner);
 	}: _(origin, hierarchy_id)
 
-	#[cfg(test)]
-	mod tests {
-		use super::*;
-
-		impl_benchmark_test_suite!(
-			Pallet,
-			crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
-			crate::mock::runtime::Test
-		)
-	}
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+		crate::mock::runtime::Test
+	)
 }

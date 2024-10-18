@@ -55,21 +55,21 @@ impl AssetDid {
 	pub fn ether_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: Slip44Reference(60.into()).into(),
+			asset_id: Slip44Reference(60u8.into()).into(),
 		}
 	}
 
 	pub fn bitcoin_currency() -> Self {
 		Self {
 			chain_id: ChainId::Bip122(GenesisHexHash32Reference::bitcoin_mainnet()),
-			asset_id: Slip44Reference(0.into()).into(),
+			asset_id: Slip44Reference(0u8.into()).into(),
 		}
 	}
 
 	pub fn litecoin_currency() -> Self {
 		Self {
 			chain_id: ChainId::Bip122(GenesisHexHash32Reference::litecoin_mainnet()),
-			asset_id: Slip44Reference(2.into()).into(),
+			asset_id: Slip44Reference(2u8.into()).into(),
 		}
 	}
 
@@ -137,8 +137,8 @@ impl AssetDid {
 
 		if let (Some(chain), Some(asset)) = (chain, asset) {
 			let chain_id = ChainId::from_utf8_encoded(chain).map_err(AssetDidError::ChainId)?;
-			let asset_id = AssetId::from_utf8_encoded(asset).map_err(AssetDidError::AssetId)?;
-			Ok(Self { chain_id, asset_id })
+			let parsed_asset_id = AssetId::from_utf8_encoded(asset).map_err(AssetDidError::AssetId)?;
+			Ok(Self { chain_id, asset_id: parsed_asset_id })
 		} else {
 			Err(AssetDidError::InvalidFormat)?
 		}

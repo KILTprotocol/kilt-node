@@ -210,7 +210,7 @@ impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 		// So far, either the raw Ed25519/Sr25519 public key or the Blake2-256 hashed
 		// ECDSA public key.
 		let raw_public_key: &[u8; 32] = self.as_ref();
-		match *signature {
+		match signature {
 			DidSignature::Ed25519(_) => {
 				// from_raw simply converts a byte array into a public key with no particular
 				// validations
@@ -225,7 +225,7 @@ impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 					.verify_signature(payload, signature)
 					.map(|_| sr25519_did_key)
 			}
-			DidSignature::Ecdsa(ref signature) => {
+			DidSignature::Ecdsa(signature) => {
 				let ecdsa_signature: [u8; 65] = signature
 					.encode()
 					.try_into()

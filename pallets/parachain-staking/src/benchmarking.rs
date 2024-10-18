@@ -241,8 +241,8 @@ benchmarks! {
 		let unlookup_candidate = T::Lookup::unlookup(candidate.clone());
 	}: _(RawOrigin::Root, unlookup_candidate)
 	verify {
-		let candidates = TopCandidates::<T>::get();
-		assert!(!candidates.into_iter().any(|other| other.owner == candidate));
+		let stored_candidates = TopCandidates::<T>::get();
+		assert!(!stored_candidates.into_iter().any(|other| other.owner == candidate));
 	}
 
 	join_candidates {
@@ -261,8 +261,8 @@ benchmarks! {
 		let origin = RawOrigin::Signed(new_candidate.clone());
 	}: _(origin, min_candidate_stake)
 	verify {
-		let candidates = TopCandidates::<T>::get();
-		assert!(candidates.into_iter().any(|other| other.owner == new_candidate));
+		let stored_candidates = TopCandidates::<T>::get();
+		assert!(stored_candidates.into_iter().any(|other| other.owner == new_candidate));
 	}
 
 	init_leave_candidates {
@@ -280,8 +280,8 @@ benchmarks! {
 		let origin = RawOrigin::Signed(candidate.clone());
 	}: _(origin)
 	verify {
-		let candidates = TopCandidates::<T>::get();
-		assert!(!candidates.into_iter().any(|other| other.owner == candidate));
+		let stored_candidates = TopCandidates::<T>::get();
+		assert!(!stored_candidates.into_iter().any(|other| other.owner == candidate));
 		let unlocking_at = now.saturating_add(T::ExitQueueDelay::get());
 		assert!(CandidatePool::<T>::get(candidate).unwrap().can_exit(unlocking_at));
 	}
@@ -301,8 +301,8 @@ benchmarks! {
 		let origin = RawOrigin::Signed(candidate.clone());
 	}: _(origin)
 	verify {
-		let candidates = TopCandidates::<T>::get();
-		assert!(candidates.into_iter().any(|other| other.owner == candidate));
+		let stored_candidates = TopCandidates::<T>::get();
+		assert!(stored_candidates.into_iter().any(|other| other.owner == candidate));
 	}
 
 	execute_leave_candidates {
@@ -394,8 +394,8 @@ benchmarks! {
 		let origin = RawOrigin::Signed(candidate.clone());
 	}: _(origin, more_stake)
 	verify {
-		let new_stake = CandidatePool::<T>::get(&candidate).unwrap().stake;
-		assert_eq!(new_stake, old_stake);
+		let stored_new_stake = CandidatePool::<T>::get(&candidate).unwrap().stake;
+		assert_eq!(stored_new_stake, old_stake);
 	}
 
 	join_delegators {
@@ -451,8 +451,8 @@ benchmarks! {
 		let origin = RawOrigin::Signed(delegator.clone());
 	}: _(origin, amount)
 	verify {
-		let state = CandidatePool::<T>::get(&collator).unwrap();
-		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
+		let stored_state = CandidatePool::<T>::get(&collator).unwrap();
+		assert!(stored_state.delegators.into_iter().any(|x| x.owner == delegator));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, amount + amount);
 		assert!(Unstaking::<T>::get(&delegator).is_empty());
 	}
@@ -488,8 +488,8 @@ benchmarks! {
 		let origin = RawOrigin::Signed(delegator.clone());
 	}: _(origin, amount)
 	verify {
-		let state = CandidatePool::<T>::get(&collator).unwrap();
-		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
+		let stored_state = CandidatePool::<T>::get(&collator).unwrap();
+		assert!(stored_state.delegators.into_iter().any(|x| x.owner == delegator));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get());
 		assert_eq!(Unstaking::<T>::get(&delegator).len(), 2);
 	}
@@ -525,8 +525,8 @@ benchmarks! {
 		let origin = RawOrigin::Signed(delegator.clone());
 	}: _(origin)
 	verify {
-		let state = CandidatePool::<T>::get(&collator).unwrap();
-		assert!(!state.delegators.into_iter().any(|x| x.owner == delegator));
+		let stored_state = CandidatePool::<T>::get(&collator).unwrap();
+		assert!(!stored_state.delegators.into_iter().any(|x| x.owner == delegator));
 		assert!(DelegatorState::<T>::get(&delegator).is_none());
 		assert_eq!(Unstaking::<T>::get(&delegator).len(), 2);
 	}

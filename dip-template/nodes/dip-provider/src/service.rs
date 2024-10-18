@@ -101,16 +101,16 @@ pub fn new_partial(
 
 	let (client, backend, keystore_container, task_manager) = new_full_parts::<Block, RuntimeApi, _>(
 		config,
-		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+		telemetry.as_ref().map(|(_, t)| t.handle()),
 		executor,
 	)?;
 	let client = Arc::new(client);
 
 	let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
 
-	let telemetry = telemetry.map(|(worker, telemetry)| {
+	let telemetry = telemetry.map(|(worker, t)| {
 		task_manager.spawn_handle().spawn("telemetry", None, worker.run());
-		telemetry
+		t
 	});
 
 	let transaction_pool = BasicPool::new_full(
@@ -118,16 +118,16 @@ pub fn new_partial(
 		config.role.is_authority().into(),
 		config.prometheus_registry(),
 		task_manager.spawn_essential_handle(),
-		client.clone(),
+		Arc::clone(&client),
 	);
 
-	let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
+	let block_import = ParachainBlockImport::new(Arc::clone(&client), Arc::clone(&backend));
 
 	let import_queue = build_import_queue(
-		client.clone(),
+		Arc::clone(&client),
 		block_import.clone(),
 		config,
-		telemetry.as_ref().map(|telemetry| telemetry.handle()),
+		telemetry.as_ref().map(|t| t.handle()),
 		&task_manager,
 	)?;
 
@@ -156,8 +156,8 @@ async fn start_node_impl(
 	let params = new_partial(&parachain_config)?;
 	let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
-	let client = params.client.clone();
-	let backend = params.backend.clone();
+	let client = Arc::clone(&params.client);
+	let backend = Arc::clone(&params.backend);
 	let mut task_manager = params.task_manager;
 
 	let (relay_chain_interface, collator_key) = build_relay_chain_interface(
@@ -173,19 +173,19 @@ async fn start_node_impl(
 
 	let validator = parachain_config.role.is_authority();
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
-	let transaction_pool = params.transaction_pool.clone();
+	let transaction_pool = Arc::clone(&params.transaction_pool);
 	let import_queue_service = params.import_queue.service();
 	let net_config = sc_network::config::FullNetworkConfiguration::new(&parachain_config.network);
 
 	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
 		build_network(BuildNetworkParams {
 			parachain_config: &parachain_config,
-			client: client.clone(),
-			transaction_pool: transaction_pool.clone(),
+			client: Arc::clone(&client),
+			transaction_pool: Arc::clone(&transaction_pool),
 			para_id,
 			net_config,
 			spawn_handle: task_manager.spawn_handle(),
-			relay_chain_interface: relay_chain_interface.clone(),
+			relay_chain_interface: Arc::clone(&relay_chain_interface),
 			import_queue: params.import_queue,
 			sybil_resistance_level: CollatorSybilResistance::Resistant, // because of Aura
 		})
@@ -198,27 +198,27 @@ async fn start_node_impl(
 			"offchain-workers-runner",
 			"offchain-work",
 			sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
-				runtime_api_provider: client.clone(),
+				runtime_api_provider: Arc::clone(&client),
 				keystore: Some(params.keystore_container.keystore()),
 				offchain_db: backend.offchain_storage(),
-				transaction_pool: Some(OffchainTransactionPoolFactory::new(transaction_pool.clone())),
-				network_provider: network.clone(),
+				transaction_pool: Some(OffchainTransactionPoolFactory::new(Arc::clone(&transaction_pool))),
+				network_provider: Arc::clone(&network),
 				is_validator: parachain_config.role.is_authority(),
 				enable_http_requests: false,
 				custom_extensions: move |_| vec![],
 			})
-			.run(client.clone(), task_manager.spawn_handle())
+			.run(Arc::clone(&client), task_manager.spawn_handle())
 			.boxed(),
 		);
 	}
 
 	let rpc_builder = {
-		let client = client.clone();
-		let transaction_pool = transaction_pool.clone();
+		let client = Arc::clone(&client);
+		let transaction_pool = Arc::clone(&transaction_pool);
 
 		Box::new(move |deny_unsafe, _| {
 			let deps = FullDeps {
-				client: client.clone(),
+				client: Arc::clone(&client),
 				pool: transaction_pool.clone(),
 				deny_unsafe,
 			};

@@ -81,7 +81,7 @@ fn testnet_genesis(
 			key: Some(endowed_accounts.first().unwrap().clone()),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60u8)).collect(),
 		},
 		collator_selection: CollatorSelectionConfig {
 			invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
@@ -102,7 +102,7 @@ pub fn development_config() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("WASM binary was not build, please build it!");
 	let mut properties = Properties::new();
 	properties.insert("tokenSymbol".into(), "SEILT".into());
-	properties.insert("tokenDecimals".into(), 12.into());
+	properties.insert("tokenDecimals".into(), 12u8.into());
 	properties.insert("ss58Format".into(), SS58_PREFIX.into());
 
 	let genesis_state = testnet_genesis(

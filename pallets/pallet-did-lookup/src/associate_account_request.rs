@@ -91,10 +91,10 @@ fn to_ss58(public_key: &[u8], prefix: u16) -> String {
 		0..=63 => vec![ident as u8],
 		64..=16_383 => {
 			// upper six bits of the lower byte(!)
-			let first = ((ident & 0b0000_0000_1111_1100) as u8) >> 2;
+			let first = ((ident & 0b0000_0000_1111_1100) as u8) >> 2u8;
 			// lower two bits of the lower byte in the high pos,
 			// lower bits of the upper byte in the low pos
-			let second = ((ident >> 8) as u8) | ((ident & 0b0000_0000_0000_0011) as u8) << 6;
+			let second = ((ident >> 8u8) as u8) | ((ident & 0b0000_0000_0000_0011) as u8) << 6u8;
 			vec![first | 0b01000000, second]
 		}
 		#[allow(clippy::unreachable)]
@@ -123,7 +123,7 @@ mod tests {
 	#[test]
 	fn test_get_challenge() {
 		assert_eq!(
-			get_challenge(&[1u8; 32], 5),
+			get_challenge(&[1u8; 32], 5u64),
 			"Publicly link the signing address to did:kilt:4nwPAmtsK5toZfBM9WvmAe4Fa3LyZ3X3JHt7EUFfrcPPAZAm before block number 5"
 		);
 	}

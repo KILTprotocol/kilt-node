@@ -171,13 +171,11 @@ where
 	// Returns None if underflow or less == self.stake (in which case collator
 	// should leave).
 	pub fn stake_less(&mut self, less: B) -> Option<B> {
-		if self.stake > less {
+		(self.stake > less).then(|| {
 			self.stake = self.stake.saturating_sub(less);
 			self.total = self.total.saturating_sub(less);
-			Some(self.stake)
-		} else {
-			None
-		}
+			self.stake
+		})
 	}
 
 	pub fn inc_delegator(&mut self, delegator: A, more: B) {

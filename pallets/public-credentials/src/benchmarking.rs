@@ -204,9 +204,9 @@ benchmarks! {
 			created_at: 0u64.into()
 		});
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
-		let origin = RawOrigin::Signed(sender);
+		let signed_origin = RawOrigin::Signed(sender);
 		let credential_id_clone = credential_id.clone();
-	}: _(origin, credential_id_clone)
+	}: _(signed_origin, credential_id_clone)
 	verify {
 		assert!(!Credentials::<T>::contains_key(subject_id, &credential_id));
 		assert!(!CredentialSubjects::<T>::contains_key(credential_id));
@@ -237,8 +237,8 @@ benchmarks! {
 		});
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
-		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester);
-	}: _<T::RuntimeOrigin>(origin, credential_id_clone)
+		let generate_origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester);
+	}: _<T::RuntimeOrigin>(generate_origin, credential_id_clone)
 	verify {
 		assert_eq!(
 			Credentials::<T>::get(subject_id, &credential_id)
@@ -280,8 +280,8 @@ benchmarks! {
 		);
 		let credential_id_clone = credential_id.clone();
 
-		let origin = RawOrigin::Signed(deposit_owner);
-	}: _(origin, credential_id_clone)
+		let signed_origin = RawOrigin::Signed(deposit_owner);
+	}: _(signed_origin, credential_id_clone)
 	verify {
 		assert_eq!(
 			Credentials::<T>::get(subject_id, &credential_id)

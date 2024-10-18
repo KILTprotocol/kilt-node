@@ -294,8 +294,8 @@ pub mod pallet {
 			let Credential {
 				ctype_hash,
 				subject,
-				claims: _,
 				authorization,
+				..
 			} = *credential.clone();
 
 			ensure!(

@@ -109,8 +109,8 @@ benchmarks! {
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
-	}: _<T::RuntimeOrigin>(origin, claim_hash, None)
+		let generate_origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
+	}: _<T::RuntimeOrigin>(generate_origin, claim_hash, None)
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
 	}
@@ -129,8 +129,8 @@ benchmarks! {
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester);
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
-		let origin = RawOrigin::Signed(sender);
-	}: _(origin, claim_hash)
+		let signed_origin = RawOrigin::Signed(sender);
+	}: _(signed_origin, claim_hash)
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
 	}
@@ -151,8 +151,8 @@ benchmarks! {
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_old, attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
-		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester.clone());
-	}: _<T::RuntimeOrigin>(origin, claim_hash)
+		let generate_origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester.clone());
+	}: _<T::RuntimeOrigin>(generate_origin, claim_hash)
 	verify {
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
 			ctype_hash,
@@ -181,8 +181,8 @@ benchmarks! {
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None).expect("claim should be added");
 
-		let origin = RawOrigin::Signed(deposit_owner.clone());
-	}: _(origin, claim_hash)
+		let signed_origin = RawOrigin::Signed(deposit_owner.clone());
+	}: _(signed_origin, claim_hash)
 	verify {
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
 			ctype_hash,

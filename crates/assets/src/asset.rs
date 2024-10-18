@@ -146,22 +146,22 @@ pub mod v1 {
 				}
 				// "erc721:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md
 				(Some(ERC721_NAMESPACE), Some(erc721_reference), identifier) => {
-					let reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc721_reference)?;
+					let fungible_reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc721_reference)?;
 					let identifier = identifier.map_or(Ok(None), |id| {
 						EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(Some)
 					})?;
 					Ok(Self::Erc721(EvmSmartContractNonFungibleReference(
-						reference, identifier,
+						fungible_reference, identifier,
 					)))
 				}
 				// "erc1155:" assets-> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md
 				(Some(ERC1155_NAMESPACE), Some(erc1155_reference), identifier) => {
-					let reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc1155_reference)?;
+					let fungible_reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc1155_reference)?;
 					let identifier = identifier.map_or(Ok(None), |id| {
 						EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(Some)
 					})?;
 					Ok(Self::Erc1155(EvmSmartContractNonFungibleReference(
-						reference, identifier,
+						fungible_reference, identifier,
 					)))
 				}
 				// Generic yet valid asset IDs
@@ -276,8 +276,8 @@ pub mod v1 {
 	/// Split the given input into its components, i.e., namespace, reference,
 	/// and identifier, if the proper separators are found.
 	fn split_components(input: &[u8]) -> AssetComponents {
-		let mut split = input.splitn(2, |c| *c == ASSET_NAMESPACE_REFERENCE_SEPARATOR);
-		let (namespace, reference) = (split.next(), split.next());
+		let mut input_split = input.splitn(2, |c| *c == ASSET_NAMESPACE_REFERENCE_SEPARATOR);
+		let (namespace, reference) = (input_split.next(), input_split.next());
 
 		// Split the remaining reference to extract the identifier, if present
 		let (reference, identifier) = if let Some(r) = reference {

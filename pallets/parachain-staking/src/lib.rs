@@ -143,6 +143,8 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 #[allow(clippy::unreachable)]
 // We do plain arithmetic operations only after we've made sure they will go through.
 #[allow(clippy::arithmetic_side_effects)]
+// Somehow the pallet uses the `ref` construct internally in the `pallet::call` macro expansions.
+#[allow(clippy::ref_patterns)]
 pub mod pallet {
 	use super::*;
 	pub use crate::inflation::{InflationInfo, RewardRate, StakingInfo};
@@ -704,21 +706,21 @@ pub mod pallet {
 			MaxCollatorCandidateStake::<T>::put(self.max_candidate_stake);
 
 			// Setup delegate & collators
-			for &(ref actor, ref opt_val, balance) in &self.stakers {
+			for (actor, opt_val, balance) in &self.stakers {
 				assert!(
-					T::Currency::reducible_balance(actor, Preservation::Expendable, Fortitude::Polite) >= balance,
+					T::Currency::reducible_balance(actor, Preservation::Expendable, Fortitude::Polite) >= *balance,
 					"Account does not have enough balance to stake."
 				);
 				if let Some(delegated_val) = opt_val {
 					frame_support::assert_ok!(Pallet::<T>::join_delegators(
 						T::RuntimeOrigin::from(Some(actor.clone()).into()),
 						T::Lookup::unlookup(delegated_val.clone()),
-						balance,
+						*balance,
 					));
 				} else {
 					frame_support::assert_ok!(Pallet::<T>::join_candidates(
 						T::RuntimeOrigin::from(Some(actor.clone()).into()),
-						balance
+						*balance
 					));
 				}
 			}
@@ -1912,10 +1914,10 @@ pub mod pallet {
 			};
 
 			// update storage for TotalCollatorStake and TopCandidates
-			if let Some((maybe_old_idx, top_candidates)) = maybe_top_candidate_update {
+			if let Some((maybe_old_idx, stored_top_candidates)) = maybe_top_candidate_update {
 				let max_selected_candidates = MaxSelectedCandidates::<T>::get().saturated_into::<usize>();
 				let was_collating = maybe_old_idx.map(|i| i < max_selected_candidates).unwrap_or(false);
-				let is_collating = top_candidates
+				let is_collating = stored_top_candidates
 					.linear_search(&new_stake)
 					.map(|i| i < max_selected_candidates)
 					.unwrap_or(false);
@@ -1928,27 +1930,27 @@ pub mod pallet {
 					(true, false) => {
 						// candidate left the collator set because they staked less and have been
 						// replaced by the next candidate in the queue at position
-						// min(max_selected_candidates, top_candidates) - 1 in TopCandidates
-						let new_col_idx = max_selected_candidates.min(top_candidates.len()).saturating_sub(1);
+						// min(max_selected_candidates, stored_top_candidates) - 1 in TopCandidates
+						let new_col_idx = max_selected_candidates.min(stored_top_candidates.len()).saturating_sub(1);
 
 						// get displacer
 						let (add_collators, add_delegators) =
-							Self::get_top_candidate_stake_at(&top_candidates, new_col_idx)
+							Self::get_top_candidate_stake_at(&stored_top_candidates, new_col_idx)
 								// shouldn't be possible to fail, but we handle it gracefully
 								.unwrap_or((new_self, new_delegators));
 						Self::update_total_stake_by(add_collators, add_delegators, old_self, old_delegators);
 					}
 					(false, true) => {
 						// candidate pushed out the least staked collator which is now at position
-						let (drop_self, drop_delegators) = match max_selected_candidates.cmp(&top_candidates.len()) {
+						let (drop_self, drop_delegators) = match max_selected_candidates.cmp(&stored_top_candidates.len()) {
 							// top candidates are not full
 							Ordering::Greater => (BalanceOf::<T>::zero(), BalanceOf::<T>::zero()),
 							// top candidates are full. the collator with the lowest stake is at index old_col_idx
 							_ => {
 								// we can unwrap here without problems, since we compared
-								// [max_selected_candidates] with [top_candidates] length, but lets be
+								// [max_selected_candidates] with [stored_top_candidates] length, but lets be
 								// safe.
-								Self::get_top_candidate_stake_at(&top_candidates, max_selected_candidates)
+								Self::get_top_candidate_stake_at(&stored_top_candidates, max_selected_candidates)
 									.unwrap_or((BalanceOf::<T>::zero(), BalanceOf::<T>::zero()))
 							}
 						};
@@ -1960,7 +1962,7 @@ pub mod pallet {
 				}
 
 				// update TopCandidates storage
-				TopCandidates::<T>::put(top_candidates);
+				TopCandidates::<T>::put(stored_top_candidates);
 			}
 
 			num_top_candidates
@@ -2297,13 +2299,7 @@ pub mod pallet {
 			pallet_session::Pallet::<T>::validators()
 				.into_iter()
 				.enumerate()
-				.find_map(|(i, id)| {
-					if <T as pallet_session::Config>::ValidatorIdOf::convert(collator.clone()) == Some(id) {
-						Some(i)
-					} else {
-						None
-					}
-				})
+				.find_map(|(i, id)| (<T as pallet_session::Config>::ValidatorIdOf::convert(collator.clone()) == Some(id)).then(|| i))
 				.map(u32::saturated_from::<usize>)
 				// FIXME: Does not prevent the collator from being able to author a block in this (or potentially the next) session. See https://github.com/paritytech/substrate/issues/8004
 				.map(pallet_session::Pallet::<T>::disable_index);

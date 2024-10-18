@@ -99,15 +99,15 @@ fn add_successful_without_authorization() {
 				Box::new(new_credential_2.clone())
 			));
 
-			let stored_public_credential_details = Credentials::<Test>::get(subject_id, credential_id_2)
+			let stored_public_credential_details_again = Credentials::<Test>::get(subject_id, credential_id_2)
 				.expect("Public credential #2 details should be present on chain.");
 
 			// Test this pallet logic
-			assert_eq!(stored_public_credential_details.attester, attester);
-			assert!(!stored_public_credential_details.revoked);
-			assert_eq!(stored_public_credential_details.block_number, 1);
-			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash_2);
-			assert_eq!(stored_public_credential_details.authorization_id, None);
+			assert_eq!(stored_public_credential_details_again.attester, attester);
+			assert!(!stored_public_credential_details_again.revoked);
+			assert_eq!(stored_public_credential_details_again.block_number, 1);
+			assert_eq!(stored_public_credential_details_again.ctype_hash, ctype_hash_2);
+			assert_eq!(stored_public_credential_details_again.authorization_id, None);
 			assert_eq!(CredentialSubjects::<Test>::get(credential_id_2), Some(subject_id));
 
 			// Deposit is 2x now

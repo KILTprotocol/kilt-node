@@ -224,8 +224,8 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 
 		Box::new(move |deny_unsafe, _| {
 			let deps = crate::rpc::FullDeps {
-				client: client.clone(),
-				pool: pool.clone(),
+				client: Arc::clone(&client),
+				pool: Arc::clone(&pool),
 				deny_unsafe,
 			};
 			crate::rpc::create_full(deps).map_err(Into::into)
@@ -233,12 +233,12 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 	};
 
 	let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-		network: network.clone(),
-		client: client.clone(),
-		sync_service: sync.clone(),
+		network: Arc::clone(&network),
+		client: Arc::clone(&client),
+		sync_service: Arc::clone(&sync),
 		keystore: keystore_container.keystore(),
 		task_manager: &mut task_manager,
-		transaction_pool: transaction_pool.clone(),
+		transaction_pool: Arc::clone(&transaction_pool),
 		rpc_builder: rpc_extensions_builder,
 		backend,
 		system_rpc_tx,
@@ -250,8 +250,8 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 	if role.is_authority() {
 		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
-			client.clone(),
-			transaction_pool.clone(),
+			Arc::clone(&client),
+			Arc::clone(&transaction_pool),
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|x| x.handle()),
 		);
@@ -277,8 +277,8 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 			force_authoring,
 			backoff_authoring_blocks,
 			keystore: keystore_container.keystore(),
-			sync_oracle: sync.clone(),
-			justification_sync_link: sync.clone(),
+			sync_oracle: Arc::clone(&sync),
+			justification_sync_link: Arc::clone(&sync),
 			block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
 			max_block_proposal_slot_portion: None,
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
@@ -295,11 +295,7 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 	if enable_grandpa {
 		// if the node isn't actively participating in consensus then it doesn't
 		// need a keystore, regardless of which protocol we use below.
-		let keystore = if role.is_authority() {
-			Some(keystore_container.keystore())
-		} else {
-			None
-		};
+		let keystore = role.is_authority().then(|| keystore_container.keystore());
 
 		let grandpa_config = sc_consensus_grandpa::Config {
 			// FIXME #1578 make this available through chainspec

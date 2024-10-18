@@ -41,7 +41,7 @@ fn commit_identity_multiple_commitments_for_same_subject() {
 			DID,
 			Some(1),
 		));
-		let expected_identity_commitment = get_expected_commitment_for(&DID, 1);
+		let expected_other_identity_commitment = get_expected_commitment_for(&DID, 1);
 		assert_eq!(
 			crate::pallet::IdentityCommitments::<TestRuntime>::iter_key_prefix(&DID).count(),
 			2
@@ -50,7 +50,7 @@ fn commit_identity_multiple_commitments_for_same_subject() {
 		// the future. This test should catch that.
 		assert_eq!(
 			DipProvider::identity_commitments(&DID, 1),
-			Some(expected_identity_commitment)
+			Some(expected_other_identity_commitment)
 		);
 	});
 }

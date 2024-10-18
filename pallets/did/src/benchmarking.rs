@@ -631,10 +631,10 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: remove_delegation_key(origin)
 	verify {
-		let did_details = Did::<T>::get(&did_subject).unwrap();
+		let stored_did_details = Did::<T>::get(&did_subject).unwrap();
 		let delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_delegation_key)));
-		assert!(did_details.delegation_key.is_none());
-		assert!(!did_details.public_keys.contains_key(&delegation_key_id));
+		assert!(stored_did_details.delegation_key.is_none());
+		assert!(!stored_did_details.public_keys.contains_key(&delegation_key_id));
 	}
 
 	remove_sr25519_delegation_key {
@@ -655,10 +655,10 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: remove_delegation_key(origin)
 	verify {
-		let did_details = Did::<T>::get(&did_subject).unwrap();
+		let stored_did_details = Did::<T>::get(&did_subject).unwrap();
 		let delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_delegation_key)));
-		assert!(did_details.delegation_key.is_none());
-		assert!(!did_details.public_keys.contains_key(&delegation_key_id));
+		assert!(stored_did_details.delegation_key.is_none());
+		assert!(!stored_did_details.public_keys.contains_key(&delegation_key_id));
 	}
 
 	remove_ecdsa_delegation_key {
@@ -679,10 +679,10 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: remove_delegation_key(origin)
 	verify {
-		let did_details = Did::<T>::get(&did_subject).unwrap();
+		let stored_did_details = Did::<T>::get(&did_subject).unwrap();
 		let delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_delegation_key)));
-		assert!(did_details.delegation_key.is_none());
-		assert!(!did_details.public_keys.contains_key(&delegation_key_id));
+		assert!(stored_did_details.delegation_key.is_none());
+		assert!(!stored_did_details.public_keys.contains_key(&delegation_key_id));
 	}
 
 	/* set_attestation_key extrinsic */
@@ -777,10 +777,10 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: remove_attestation_key(origin)
 	verify {
-		let did_details = Did::<T>::get(&did_subject).unwrap();
+		let stored_did_details = Did::<T>::get(&did_subject).unwrap();
 		let attestation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_attestation_key)));
-		assert!(did_details.attestation_key.is_none());
-		assert!(!did_details.public_keys.contains_key(&attestation_key_id));
+		assert!(stored_did_details.attestation_key.is_none());
+		assert!(!stored_did_details.public_keys.contains_key(&attestation_key_id));
 	}
 
 	remove_sr25519_attestation_key {
@@ -801,10 +801,10 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: remove_attestation_key(origin)
 	verify {
-		let did_details = Did::<T>::get(&did_subject).unwrap();
+		let stored_did_details = Did::<T>::get(&did_subject).unwrap();
 		let attestation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_attestation_key)));
-		assert!(did_details.attestation_key.is_none());
-		assert!(!did_details.public_keys.contains_key(&attestation_key_id));
+		assert!(stored_did_details.attestation_key.is_none());
+		assert!(!stored_did_details.public_keys.contains_key(&attestation_key_id));
 	}
 
 	remove_ecdsa_attestation_key {
@@ -825,10 +825,10 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: remove_attestation_key(origin)
 	verify {
-		let did_details = Did::<T>::get(&did_subject).unwrap();
+		let stored_did_details = Did::<T>::get(&did_subject).unwrap();
 		let attestation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_attestation_key)));
-		assert!(did_details.attestation_key.is_none());
-		assert!(!did_details.public_keys.contains_key(&attestation_key_id));
+		assert!(stored_did_details.attestation_key.is_none());
+		assert!(!stored_did_details.public_keys.contains_key(&attestation_key_id));
 	}
 
 	/* add_key_agreement_keys extrinsic */

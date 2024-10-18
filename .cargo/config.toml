@@ -1,5 +1,7 @@
-# Generic lints
-[build]
+# TODO: Re-evaluate these lints once we bump up rustc versions as new lints are added with each version.
+
+# Generic lints for non-test code.
+[target.'cfg(not(test))']
 rustflags = [
   "-Wclippy::alloc_instead_of_core",
   "-Wclippy::as_underscore",
@@ -16,21 +18,20 @@ rustflags = [
   "-Wclippy::let_underscore_untyped",
   "-Wclippy::mixed_read_write_in_expression",
   "-Wclippy::negative_feature_names",
-  "-Wclippy::pattern_type_mismatch",
+  # "-Wclippy::pattern_type_mismatch",
   "-Wclippy::pub_without_shorthand",
   "-Wclippy::redundant_type_annotations",
   "-Wclippy::ref_patterns",
   "-Wclippy::rest_pat_in_fully_bound_structs",
-  "-Wclippy::shadow_reuse",
+  # "-Wclippy::shadow_reuse",
   "-Wclippy::shadow_same",
   "-Wclippy::shadow_unrelated",
   "-Wclippy::str_to_string",
   "-Wclippy::string_slice",
   "-Wclippy::string_to_string",
-  "-Wclippy::tests_outside_test_module",
   "-Wclippy::unnecessary_self_imports",
   "-Wclippy::unneeded_field_pattern",
-  '-Wclippy::wildcard_dependencies',
+  "-Wclippy::wildcard_dependencies",
   # TODO: Add after upgrading to 1.77
   #"-Wclippy::empty_enum_variants_with_brackets",
   # TODO: Add after upgrading to 1.80

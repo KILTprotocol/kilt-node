@@ -176,11 +176,11 @@ pub mod pallet {
 
 			match Self::delete_identity_commitment_storage_entry(&identifier, &dispatcher, commitment_version) {
 				// Ignore if there was no previous commitment.
-				Ok(commitment) => {
+				Ok(previous_commitment) => {
 					log::trace!(
 						target: LOG_TARGET,
 						"Previous commitment {:#?} for subject {:#?} deleted.",
-						commitment,
+						previous_commitment,
 						identifier
 					);
 				}
