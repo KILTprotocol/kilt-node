@@ -37,6 +37,7 @@ bitflags! {
 
 impl Permissions {
 	/// Encode permission bitflags into u8 array.
+	#[allow(clippy::as_conversions)]
 	pub fn as_u8(self) -> [u8; 4] {
 		let x: u32 = self.bits;
 		let b1: u8 = ((x >> 24) & 0xff) as u8;

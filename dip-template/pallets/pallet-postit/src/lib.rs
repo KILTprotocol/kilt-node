@@ -24,6 +24,10 @@ pub mod traits;
 pub use pallet::*;
 
 #[frame_support::pallet(dev_mode)]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 
 	use super::*;

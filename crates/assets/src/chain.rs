@@ -45,11 +45,13 @@ mod v1 {
 	pub const MINIMUM_CHAIN_NAMESPACE_LENGTH: usize = 3;
 	/// The maximum length of a valid chain ID namespace.
 	pub const MAXIMUM_CHAIN_NAMESPACE_LENGTH: usize = 8;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_CHAIN_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_CHAIN_NAMESPACE_LENGTH as u32;
 	/// The minimum length of a valid chain ID reference.
 	pub const MINIMUM_CHAIN_REFERENCE_LENGTH: usize = 1;
 	/// The maximum length of a valid chain ID reference.
 	pub const MAXIMUM_CHAIN_REFERENCE_LENGTH: usize = 32;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_CHAIN_REFERENCE_LENGTH_U32: u32 = MAXIMUM_CHAIN_REFERENCE_LENGTH as u32;
 
 	/// Separator between chain namespace and chain reference.
@@ -192,6 +194,7 @@ mod v1 {
 	}
 
 	impl Display for ChainId {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			match self {
 				Self::Bip122(reference) => {
@@ -438,6 +441,7 @@ mod v1 {
 
 	impl GenesisBase58Hash32Reference {
 		/// The CAIP-2 reference for the Solana mainnet.
+		#[allow(clippy::expect_used)]
 		pub fn solana_mainnet() -> Self {
 			// Base58 decoding of Solana genesis hash 4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ
 			Self(
@@ -565,6 +569,7 @@ mod v1 {
 	}
 
 	impl Display for GenericChainNamespace {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
@@ -614,6 +619,7 @@ mod v1 {
 	}
 
 	impl Display for GenericChainReference {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.

@@ -32,6 +32,8 @@ impl<DidOriginError> From<DipParachainStateProofVerifierError<DidOriginError>> f
 where
 	DidOriginError: Into<u8>,
 {
+	#[allow(clippy::as_conversions)]
+	#[allow(clippy::arithmetic_side_effects)]
 	fn from(value: DipParachainStateProofVerifierError<DidOriginError>) -> Self {
 		match value {
 			// DO NOT USE 0
