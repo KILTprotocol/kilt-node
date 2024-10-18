@@ -7,6 +7,7 @@ pub use pallet::*;
 
 mod curves;
 mod pool_details;
+mod traits;
 mod utils;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -48,14 +49,17 @@ pub mod pallet {
 	};
 
 	use crate::{
-		curves::{Curve, DiffKind},
+		curves::{Curve, DiffKind, ParameterValidation},
 		pool_details::{Locks, PoolDetails, PoolStatus, TokenMeta},
+		traits::Freeze,
 		utils::convert_balance_to_parameter,
 	};
 
+	pub(crate) const LOG_TARGET: &str = "pallet_bonded_coins";
+
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
-	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	pub(crate) type DepositCurrencyBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
@@ -66,7 +70,7 @@ pub mod pallet {
 	pub(crate) type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
 
-	type FungiblesAssetIdOf<T> =
+	pub type FungiblesAssetIdOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type PoolDetailsOf<T> =
@@ -132,6 +136,8 @@ pub mod pallet {
 
 		/// The type used for the curve parameters.
 		type CurveParameterType: Parameter + Member + FixedSigned + MaxEncodedLen + PartialOrd<I9F23> + From<I9F23>;
+
+		type FreezeManager: Freeze<Self>;
 	}
 
 	#[pallet::pallet]
@@ -180,6 +186,10 @@ pub mod pallet {
 		Destroying,
 		/// The user is not privileged to perform the requested operation.
 		Unauthorized,
+		/// The curve parameters are invalid because one or more values are negative.
+		NegativeCurveParameters,
+		/// An unexpected Internal error occurred.
+		Internal,
 	}
 
 	#[pallet::composite_enum]
@@ -198,7 +208,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			curve: Curve<CurveParameterTypeOf<T>>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
-			tradable: bool, // Todo: make it useful.
+			tradable: bool,
 			state: PoolStatus<Locks>,
 			denomination: u8,
 			pool_manager: AccountIdOf<T>,
@@ -213,6 +223,8 @@ pub mod pallet {
 				Error::<T>::CurrenciesNumber
 			);
 
+			ensure!(curve.are_parameters_valid(), Error::<T>::NegativeCurveParameters);
+
 			let current_asset_id = NextAssetId::<T>::get();
 
 			let (currency_ids_vec, next_asset_id) =
@@ -222,9 +234,13 @@ pub mod pallet {
 			NextAssetId::<T>::set(next_asset_id);
 
 			// Should never fail.
-			let currency_ids =
-				BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(currency_ids_vec.clone())
-					.map_err(|_| Error::<T>::CurrenciesNumber)?;
+			let currency_ids = BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(
+				currency_ids_vec.clone(),
+			)
+			.map_err(|_| {
+				log::error!(target: LOG_TARGET, "Failed to convert currency ids: {:?} to bounded vec.", currency_ids_vec);
+				Error::<T>::Internal
+			})?;
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
@@ -252,10 +268,14 @@ pub mod pallet {
 					denomination,
 				)?;
 
+				if !tradable {
+					T::FreezeManager::freeze_asset(pool_id.clone().into(), asset_id.clone())?;
+				}
+
 				// TODO: reset team account
 			}
 
-			// Touch the pool account in order to able to transfer the collateral currency to it
+			// Touch the pool account in order to be able to transfer the collateral currency to it
 			T::CollateralCurrency::touch(T::CollateralAssetId::get(), &pool_id.clone().into(), &who)?;
 
 			Pools::<T>::set(

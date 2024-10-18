@@ -8,6 +8,26 @@ use substrate_fixed::{
 	types::I9F23,
 };
 
+pub trait ParameterValidation {
+	fn are_parameters_valid(&self) -> bool;
+}
+
+pub trait BondingFunction<F: FixedSigned + PartialOrd> {
+	/// Calculates the cost of the curve between two points.
+	///
+	/// # Parameters
+	/// - `low`: The lower bound of the range for which the cost is to be calculated.
+	/// - `high`: The upper bound of the range for which the cost is to be calculated.
+	///
+	/// # Returns
+	/// - `Ok(F)`: The calculated cost if the operation is successful.
+	/// - `Err(ArithmeticError)`: An error if the calculation fails due to arithmetic issues.
+	///
+	/// # Errors
+	/// This function will return an `ArithmeticError` if the calculation cannot be performed.
+	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError>;
+}
+
 /// An enumeration representing different types of bonding curves.
 ///
 /// This enum is generic over the type `F`, which represents the type of the coefficients used in the bonding functions.
@@ -21,6 +41,16 @@ pub enum Curve<F> {
 	PolynomialFunction(PolynomialFunctionParameters<F>),
 	SquareRootBondingFunction(SquareRootFunctionParameters<F>),
 	LSMR(LSMRFunctionParameters<F>),
+}
+
+impl<F: FixedSigned> ParameterValidation for Curve<F> {
+	fn are_parameters_valid(&self) -> bool {
+		match self {
+			Curve::PolynomialFunction(params) => params.are_parameters_valid(),
+			Curve::SquareRootBondingFunction(params) => params.are_parameters_valid(),
+			Curve::LSMR(params) => params.are_parameters_valid(),
+		}
+	}
 }
 
 /// An enumeration representing the type of operation on the bonding curve.
@@ -78,22 +108,6 @@ where
 			_ => todo!(),
 		}
 	}
-}
-
-pub trait BondingFunction<F: FixedSigned + PartialOrd> {
-	/// Calculates the cost of the curve between two points.
-	///
-	/// # Parameters
-	/// - `low`: The lower bound of the range for which the cost is to be calculated.
-	/// - `high`: The upper bound of the range for which the cost is to be calculated.
-	///
-	/// # Returns
-	/// - `Ok(F)`: The calculated cost if the operation is successful.
-	/// - `Err(ArithmeticError)`: An error if the calculation fails due to arithmetic issues.
-	///
-	/// # Errors
-	/// This function will return an `ArithmeticError` if the calculation cannot be performed.
-	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError>;
 }
 
 /// A struct representing the parameters of a polynomial function F(x) = mx³ + nx² + ox.
@@ -184,6 +198,12 @@ where
 	}
 }
 
+impl<F: FixedSigned> ParameterValidation for PolynomialFunctionParameters<F> {
+	fn are_parameters_valid(&self) -> bool {
+		self.m >= 0 && self.n >= 0 && self.o >= 0
+	}
+}
+
 /// A struct representing the parameters of a square root bonding function.
 ///
 /// This struct is generic over the type `F`, which represents the type of the coefficients.
@@ -261,9 +281,21 @@ where
 	}
 }
 
+impl<F: FixedSigned> ParameterValidation for SquareRootFunctionParameters<F> {
+	fn are_parameters_valid(&self) -> bool {
+		self.m >= 0 && self.n >= 0
+	}
+}
+
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LSMRFunctionParameters<F> {
 	pub m: F,
+}
+
+impl<F: FixedSigned> ParameterValidation for LSMRFunctionParameters<F> {
+	fn are_parameters_valid(&self) -> bool {
+		self.m >= 0
+	}
 }
 
 pub struct LSMRCalculation<F> {

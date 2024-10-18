@@ -5,6 +5,7 @@ use frame_support::{
 		ContainsPair,
 	},
 };
+use parity_scale_codec::Encode;
 use sp_runtime::BoundedVec;
 
 use crate::{
@@ -64,7 +65,8 @@ fn test_create_pool() {
 			assert!(!details.transferable);
 
 			// The next possible asset id should be 1
-			assert_eq!(NextAssetId::<Test>::get(), 1);
+			let next_asset_id = NextAssetId::<Test>::get();
+			assert_eq!(next_asset_id, 1);
 
 			let currency_id = details.bonded_currencies[0];
 
@@ -96,7 +98,13 @@ fn test_create_pool() {
 			assert!(Assets::contains(&DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id));
 
 			// check events
+			assert_eq!(events(), vec![crate::Event::<Test>::PoolCreated(pool_id)]);
 
-			assert_eq!(events(), vec![crate::Event::<Test>::PoolCreated(pool_id)])
+			// check trade status
+			// All properties in [AssetDetails] are private. Luckily, the last property is the status. To get the status,
+			// scale encode the struct and compare the last element. According to the [AssetStatus] Enum: 0 = Live, 1 = Frozen, 2 = Destroying.
+			let asset_status = Asset::get(next_asset_id - 1).unwrap().encode().last().unwrap();
+
+			assert_eq!(asset_status, &0);
 		});
 }
