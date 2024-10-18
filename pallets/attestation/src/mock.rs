@@ -211,8 +211,8 @@ pub(crate) mod runtime {
 			.into_iter()
 			.map(|r| r.event)
 			.filter_map(|e| {
-				if let RuntimeEvent::Attestation(e) = e {
-					Some(e)
+				if let RuntimeEvent::Attestation(attestation_event) = e {
+					Some(attestation_event)
 				} else {
 					None
 				}
