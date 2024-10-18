@@ -49,10 +49,10 @@ mod benchmarks {
 
 		assert!(IdentityEntries::<T>::get(&subject).is_none());
 
-		let origin = RawOrigin::Signed(submitter);
+		let signed_origin = RawOrigin::Signed(submitter);
 		let boxed_call = Box::from(call);
 
-		let origin = <T as frame_system::Config>::RuntimeOrigin::from(origin);
+		let origin = <T as frame_system::Config>::RuntimeOrigin::from(signed_origin);
 
 		#[extrinsic_call]
 		Pallet::<T>::dispatch_as(
