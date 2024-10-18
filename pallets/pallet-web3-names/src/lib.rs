@@ -488,8 +488,7 @@ pub mod pallet {
 		/// `check_releasing_preconditions` as it does not verify all the
 		/// preconditions again.
 		fn unregister_name(name: &Web3NameOf<T>) -> Result<Web3OwnershipOf<T>, DispatchError> {
-			#[allow(clippy::unwrap_used)]
-			let name_ownership = Owner::<T>::take(name).unwrap();
+			let name_ownership = Owner::<T>::take(name).ok_or(Error::<T>::OwnerNotFound)?;
 			Names::<T>::remove(&name_ownership.owner);
 
 			let is_key_migrated =
