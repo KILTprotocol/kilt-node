@@ -164,10 +164,10 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			let runner = cli.create_runner(cmd)?;
 
 			match (cmd, runtime) {
-				(BenchmarkCmd::Pallet(cmd), ParachainRuntime::Spiritnet(_)) => {
+				(BenchmarkCmd::Pallet(pallet_benchmark_cmd), ParachainRuntime::Spiritnet(_)) => {
 					if cfg!(feature = "runtime-benchmarks") {
 						runner.sync_run(|config| {
-							cmd.run::<Block, <SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
+							pallet_benchmark_cmd.run::<Block, <SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
 						})
 					} else {
 						Err("Benchmarking wasn't enabled when building the node. \
@@ -175,10 +175,10 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 							.into())
 					}
 				}
-				(BenchmarkCmd::Pallet(cmd), ParachainRuntime::Peregrine(_)) => {
+				(BenchmarkCmd::Pallet(pallet_benchmark_cmd), ParachainRuntime::Peregrine(_)) => {
 					if cfg!(feature = "runtime-benchmarks") {
 						runner.sync_run(|config| {
-							cmd.run::<Block, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
+							pallet_benchmark_cmd.run::<Block, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
 						})
 					} else {
 						Err("Benchmarking wasn't enabled when building the node. \
@@ -186,19 +186,19 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 							.into())
 					}
 				}
-				(BenchmarkCmd::Block(cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
+				(BenchmarkCmd::Block(block_benchmark_cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
-					cmd.run(partials.client)
+					block_benchmark_cmd.run(partials.client)
 				}),
-				(BenchmarkCmd::Block(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
+				(BenchmarkCmd::Block(block_benchmark_cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
 					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
-					cmd.run(partials.client)
+					block_benchmark_cmd.run(partials.client)
 				}),
 				#[cfg(not(feature = "runtime-benchmarks"))]
 				(BenchmarkCmd::Storage(_), _) => Err(sc_cli::Error::Input(
@@ -207,7 +207,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 						.into(),
 				)),
 				#[cfg(feature = "runtime-benchmarks")]
-				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
+				(BenchmarkCmd::Storage(storage_benchmark_cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
@@ -216,10 +216,10 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					storage_benchmark_cmd.run(config, partials.client.clone(), db, storage)
 				}),
 				#[cfg(feature = "runtime-benchmarks")]
-				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
+				(BenchmarkCmd::Storage(storage_benchmark_cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
 					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
@@ -228,11 +228,11 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					storage_benchmark_cmd.run(config, partials.client.clone(), db, storage)
 				}),
 				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
-				(BenchmarkCmd::Machine(cmd), _) => {
-					runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
+				(BenchmarkCmd::Machine(machine_benchmark_cmd), _) => {
+					runner.sync_run(|config| machine_benchmark_cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
 				}
 				// NOTE: this allows the Client to leniently implement
 				// new benchmark commands without requiring a companion MR.
@@ -249,6 +249,8 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			runner.run_node_until_exit(|config| async move {
 				let hwbench = (!cli.no_hardware_benchmarks)
 					.then_some(config.database.path().map(|database_path| {
+						#[allow(clippy::let_underscore_must_use)]
+						#[allow(clippy::let_underscore_untyped)]
 						let _ = std::fs::create_dir_all(database_path);
 						sc_sysinfo::gather_hwbench(Some(database_path))
 					}))

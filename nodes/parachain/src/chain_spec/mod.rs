@@ -123,7 +123,9 @@ impl FromStr for ParachainRuntime {
 			"rilt" => Ok(Self::Peregrine(PeregrineRuntime::Rilt)),
 			"rilt-new" => Ok(Self::Peregrine(PeregrineRuntime::RiltNew)),
 			// Any other Peregrine-based chainspec
-			s if s.contains("peregrine") => Ok(Self::Peregrine(PeregrineRuntime::Other(s.to_string()))),
+			generic if generic.contains("peregrine") => {
+				Ok(Self::Peregrine(PeregrineRuntime::Other(generic.to_string())))
+			}
 
 			// Spiritnet development
 			"spiritnet-dev" => Ok(Self::Spiritnet(SpiritnetRuntime::Dev)),
@@ -132,7 +134,9 @@ impl FromStr for ParachainRuntime {
 			// Spiritnet chainspec
 			"spiritnet" => Ok(Self::Spiritnet(SpiritnetRuntime::Spiritnet)),
 			// Any other Spiritnet-based chainspec
-			s if s.contains("spiritnet") => Ok(Self::Spiritnet(SpiritnetRuntime::Other(s.to_string()))),
+			generic if generic.contains("spiritnet") => {
+				Ok(Self::Spiritnet(SpiritnetRuntime::Other(generic.to_string())))
+			}
 
 			// Instead of panicking, we use the Peregrine runtime, since we don't expect Spiritnet to ever be used in
 			// this way

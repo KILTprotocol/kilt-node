@@ -151,18 +151,19 @@ where
 
 	let executor = sc_service::new_native_or_wasm_executor(config);
 
-	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
-		config,
-		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-		executor,
-	)?;
-	let client = Arc::new(client);
+	let (client_from_service, backend, keystore_container, task_manager) =
+		sc_service::new_full_parts::<Block, RuntimeApi, _>(
+			config,
+			telemetry.as_ref().map(|(_, t)| t.handle()),
+			executor,
+		)?;
+	let client = Arc::new(client_from_service);
 
 	let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
 
-	let telemetry = telemetry.map(|(worker, telemetry)| {
+	let telemetry_task = telemetry.map(|(worker, t)| {
 		task_manager.spawn_handle().spawn("telemetry", None, worker.run());
-		telemetry
+		t
 	});
 
 	let transaction_pool = sc_transaction_pool::BasicPool::new_full(
@@ -179,7 +180,7 @@ where
 		client.clone(),
 		block_import.clone(),
 		config,
-		telemetry.as_ref().map(|telemetry| telemetry.handle()),
+		telemetry_task.as_ref().map(|t| t.handle()),
 		&task_manager,
 	)?;
 
@@ -191,7 +192,7 @@ where
 		task_manager,
 		transaction_pool,
 		select_chain: (),
-		other: (block_import, telemetry, telemetry_worker_handle),
+		other: (block_import, telemetry_task, telemetry_worker_handle),
 	})
 }
 
@@ -203,13 +204,13 @@ where
 #[allow(clippy::too_many_arguments)]
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
 async fn start_node_impl<RuntimeApi, Executor, RB, BIQ>(
-	parachain_config: Configuration,
+	input_parachain_config: Configuration,
 	polkadot_config: Configuration,
 	collator_options: CollatorOptions,
 	id: ParaId,
 	_rpc_ext_builder: RB,
 	build_import_queue: BIQ,
-	hwbench: Option<sc_sysinfo::HwBench>,
+	hwbench_flag: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(
 	TaskManager,
 	Arc<TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
@@ -245,7 +246,7 @@ where
 		&TaskManager,
 	) -> Result<sc_consensus::DefaultImportQueue<Block>, sc_service::Error>,
 {
-	let parachain_config = prepare_node_config(parachain_config);
+	let parachain_config = prepare_node_config(input_parachain_config);
 
 	let params = new_partial::<RuntimeApi, Executor, BIQ>(&parachain_config, build_import_queue)?;
 	let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
@@ -260,7 +261,7 @@ where
 		telemetry_worker_handle,
 		&mut task_manager,
 		collator_options.clone(),
-		hwbench.clone(),
+		hwbench_flag.clone(),
 	)
 	.await
 	.map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
@@ -285,13 +286,13 @@ where
 		.await?;
 
 	let rpc_builder = {
-		let client = client.clone();
-		let transaction_pool = transaction_pool.clone();
+		let rpc_client = client.clone();
+		let rpc_transaction_pool = transaction_pool.clone();
 
 		Box::new(move |deny_unsafe, _| {
 			let deps = crate::rpc::FullDeps {
-				client: client.clone(),
-				pool: transaction_pool.clone(),
+				client: rpc_client.clone(),
+				pool: rpc_transaction_pool.clone(),
 				deny_unsafe,
 			};
 
@@ -314,11 +315,11 @@ where
 		telemetry: telemetry.as_mut(),
 	})?;
 
-	if let Some(hwbench) = hwbench {
+	if let Some(hwbench) = hwbench_flag {
 		sc_sysinfo::print_hwbench(&hwbench);
 
-		if let Some(ref mut telemetry) = telemetry {
-			let telemetry_handle = telemetry.handle();
+		if let Some(ref mut mut_telemetry) = telemetry {
+			let telemetry_handle = mut_telemetry.handle();
 			task_manager.spawn_handle().spawn(
 				"telemetry_hwbench",
 				None,

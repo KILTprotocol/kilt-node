@@ -4,6 +4,8 @@
 [build]
 rustflags = [
   "-Wclippy::alloc_instead_of_core",
+  "-Wclippy::clone_on_ref_ptr",
+  "-Wclippy::decimal_literal_representation",
   "-Wclippy::else_if_without_else",
   "-Wclippy::empty_drop",
   "-Wclippy::empty_structs_with_brackets",
@@ -16,9 +18,6 @@ rustflags = [
   "-Wclippy::redundant_type_annotations",
   "-Wclippy::ref_patterns",
   "-Wclippy::rest_pat_in_fully_bound_structs",
-  "-Wclippy::shadow_reuse",
-  "-Wclippy::shadow_same",
-  "-Wclippy::shadow_unrelated",
   "-Wclippy::str_to_string",
   "-Wclippy::string_slice",
   "-Wclippy::string_to_string",
@@ -39,12 +38,13 @@ rustflags = [
 [target.'cfg(not(test))']
 rustflags = [
   "-Wclippy::as_underscore",
-  "-Wclippy::clone_on_ref_ptr",
-  "-Wclippy::decimal_literal_representation",
   "-Wclippy::default_numeric_fallback",
   "-Wclippy::error_impl_error",
   "-Wclippy::let_underscore_must_use",
   "-Wclippy::let_underscore_untyped",
+  "-Wclippy::shadow_reuse",
+  "-Wclippy::shadow_same",
+  "-Wclippy::shadow_unrelated",
 ]
 
 # Deployment runtime lints
