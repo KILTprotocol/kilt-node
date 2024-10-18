@@ -407,15 +407,14 @@ benchmarks! {
 
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let (root_acc, _, leaf_acc, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE | Permissions::ATTEST)?;
-		let root_acc: T::DelegationEntityId = root_acc.into();
-		let leaf_acc: T::DelegationEntityId = leaf_acc.into();
+		let leaf_acc_id: T::DelegationEntityId = leaf_acc.into();
 
 		let ac = DelegationAc::<T>{
 			subject_node_id: leaf_id,
 			max_checks: c
 		};
 
-	}: { ac.can_attest(&leaf_acc, &ctype, &claim).expect("Should be allowed") }
+	}: { ac.can_attest(&leaf_acc_id, &ctype, &claim).expect("Should be allowed") }
 
 	can_revoke {
 		let c in 1 .. T::MaxParentChecks::get();
@@ -425,14 +424,14 @@ benchmarks! {
 
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let (root_acc, root_id, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-		let root_acc: T::DelegationEntityId = root_acc.into();
+		let root_acc_id: T::DelegationEntityId = root_acc.into();
 
 		let ac = DelegationAc::<T>{
 			subject_node_id: leaf_id,
 			max_checks: c
 		};
 
-	}: { ac.can_revoke(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
+	}: { ac.can_revoke(&root_acc_id, &ctype, &claim, &leaf_id).expect("Should be allowed") }
 
 	can_remove {
 		let c in 1 .. T::MaxParentChecks::get();
@@ -442,14 +441,14 @@ benchmarks! {
 
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let (root_acc, root_id, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-		let root_acc: T::DelegationEntityId = root_acc.into();
+		let root_acc_id: T::DelegationEntityId = root_acc.into();
 
 		let ac = DelegationAc::<T>{
 			subject_node_id: leaf_id,
 			max_checks: c
 		};
 
-	}: { ac.can_remove(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
+	}: { ac.can_remove(&root_acc_id, &ctype, &claim, &leaf_id).expect("Should be allowed") }
 
 	change_deposit_owner {
 		let deposit_owner_old: T::AccountId = account("sender", 0, SEED);

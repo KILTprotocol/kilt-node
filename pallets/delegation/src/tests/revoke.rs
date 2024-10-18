@@ -52,12 +52,13 @@ fn create_delegation_direct_root_revoked_error() {
 		)])
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
 		.build_and_execute_with_sanity_tests(|| {
-			let _ = Delegation::revoke_delegation(
+			Delegation::revoke_delegation(
 				DoubleOrigin(ACCOUNT_00, creator.clone()).into(),
 				operation.hierarchy_id,
 				0u32,
 				MaxRevocations::get(),
-			);
+			)
+			.unwrap();
 			assert_noop!(
 				Delegation::add_delegation(
 					DoubleOrigin(ACCOUNT_00, creator.clone()).into(),
@@ -113,12 +114,13 @@ fn create_delegation_with_parent_revoked_error() {
 			(ACCOUNT_01, <Test as Config>::Deposit::get()),
 		])
 		.build_and_execute_with_sanity_tests(|| {
-			let _ = Delegation::revoke_delegation(
+			Delegation::revoke_delegation(
 				DoubleOrigin(ACCOUNT_00, creator.clone()).into(),
 				operation.parent_id,
 				MaxRevocations::get(),
 				MaxParentChecks::get(),
-			);
+			)
+			.unwrap();
 			assert_noop!(
 				Delegation::add_delegation(
 					DoubleOrigin(ACCOUNT_00, creator.clone()).into(),
@@ -239,12 +241,13 @@ fn is_delegating_root_owner_revoked() {
 		])
 		.build_and_execute_with_sanity_tests(|| {
 			// First revoke the hierarchy, then test is_delegating.
-			let _ = Delegation::revoke_delegation(
+			Delegation::revoke_delegation(
 				DoubleOrigin(ACCOUNT_00, user_1.clone()).into(),
 				hierarchy_root_id,
 				0u32,
 				2,
-			);
+			)
+			.unwrap();
 
 			assert_eq!(
 				Delegation::is_delegating(&user_1, &delegation_id, max_parent_checks),
