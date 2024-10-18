@@ -138,9 +138,9 @@ pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,
 	did_identifier: DidIdentifierOf<T>,
 	account: LinkableAccountId,
-	deposit: BalanceOf<T>,
+	deposit_amount: BalanceOf<T>,
 ) {
-	let deposit = LinkableAccountDepositCollector::<T>::create_deposit(sender, deposit)
+	let deposit = LinkableAccountDepositCollector::<T>::create_deposit(sender, deposit_amount)
 		.expect("Account should have enough balance");
 
 	let record = ConnectionRecord {

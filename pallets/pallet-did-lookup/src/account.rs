@@ -114,9 +114,9 @@ impl From<[u8; 20]> for EthereumSigner {
 
 impl TryFrom<ecdsa::Public> for EthereumSigner {
 	type Error = &'static str;
-	fn try_from(x: ecdsa::Public) -> Result<Self, Self::Error> {
-		match x.to_eth_address() {
-			Ok(x) => Ok(Self(x)),
+	fn try_from(public_key: ecdsa::Public) -> Result<Self, Self::Error> {
+		match public_key.to_eth_address() {
+			Ok(eth_address) => Ok(Self(eth_address)),
 			Err(_) => Err("invalid public key"),
 		}
 	}
