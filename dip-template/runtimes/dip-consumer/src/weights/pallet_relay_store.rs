@@ -39,7 +39,6 @@
 // --output=./dip-template/runtimes/dip-consumer/src/weights/pallet_relay_store.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
-#![allow(unused_parens)]
 #![allow(unused_imports)]
 #![allow(clippy::as_conversions)]
 

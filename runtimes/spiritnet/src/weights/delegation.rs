@@ -40,7 +40,6 @@
 // --output=./runtimes/spiritnet/src/weights/delegation.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
-#![allow(unused_parens)]
 #![allow(unused_imports)]
 #![allow(clippy::as_conversions)]
 
