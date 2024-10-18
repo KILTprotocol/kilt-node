@@ -68,8 +68,7 @@ jobs:
           save-always: true
 
       - name: Run `cargo clippy`
-        working-directory: scripts/clippy
-        run: ${{ matrix.clippy-script-name }}
+        run: ./scripts/clippy/${{ matrix.clippy-script-name }}
 
   cargo-fmt:
     name: Check formatting
