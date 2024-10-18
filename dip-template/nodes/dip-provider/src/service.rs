@@ -99,11 +99,8 @@ pub fn new_partial(
 
 	let executor = sc_service::new_native_or_wasm_executor(config);
 
-	let (client, backend, keystore_container, task_manager) = new_full_parts::<Block, RuntimeApi, _>(
-		config,
-		telemetry.as_ref().map(|(_, t)| t.handle()),
-		executor,
-	)?;
+	let (client, backend, keystore_container, task_manager) =
+		new_full_parts::<Block, RuntimeApi, _>(config, telemetry.as_ref().map(|(_, t)| t.handle()), executor)?;
 	let client = Arc::new(client);
 
 	let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
@@ -202,7 +199,8 @@ async fn start_node_impl(
 				keystore: Some(params.keystore_container.keystore()),
 				offchain_db: backend.offchain_storage(),
 				transaction_pool: Some(OffchainTransactionPoolFactory::new(Arc::clone(&transaction_pool))),
-				network_provider: Arc::clone(&network),
+				#[allow(clippy::clone_on_ref_ptr)]
+				network_provider: network.clone(),
 				is_validator: parachain_config.role.is_authority(),
 				enable_http_requests: false,
 				custom_extensions: move |_| vec![],
@@ -219,7 +217,7 @@ async fn start_node_impl(
 		Box::new(move |deny_unsafe, _| {
 			let deps = FullDeps {
 				client: Arc::clone(&client),
-				pool: transaction_pool.clone(),
+				pool: Arc::clone(&transaction_pool),
 				deny_unsafe,
 			};
 
@@ -229,13 +227,13 @@ async fn start_node_impl(
 
 	spawn_tasks(SpawnTasksParams {
 		rpc_builder,
-		sync_service: sync_service.clone(),
-		client: client.clone(),
-		transaction_pool: transaction_pool.clone(),
+		sync_service: Arc::clone(&sync_service),
+		client: Arc::clone(&client),
+		transaction_pool: Arc::clone(&transaction_pool),
 		task_manager: &mut task_manager,
 		config: parachain_config,
 		keystore: params.keystore_container.keystore(),
-		backend: backend.clone(),
+		backend: Arc::clone(&backend),
 		network,
 		system_rpc_tx,
 		tx_handler_controller,
@@ -265,7 +263,7 @@ async fn start_node_impl(
 	}
 
 	let announce_block = {
-		let sync = sync_service.clone();
+		let sync = Arc::clone(&sync_service);
 		Arc::new(move |hash, data| sync.announce_block(hash, data))
 	};
 
@@ -275,10 +273,11 @@ async fn start_node_impl(
 		.map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
 	start_relay_chain_tasks(StartRelayChainTasksParams {
-		client: client.clone(),
+		client: Arc::clone(&client),
+		#[allow(clippy::clone_on_ref_ptr)]
 		announce_block: announce_block.clone(),
 		para_id,
-		relay_chain_interface: relay_chain_interface.clone(),
+		relay_chain_interface: Arc::clone(&relay_chain_interface),
 		task_manager: &mut task_manager,
 		da_recovery_profile: if validator {
 			DARecoveryProfile::Collator
@@ -288,18 +287,18 @@ async fn start_node_impl(
 		import_queue: import_queue_service,
 		relay_chain_slot_duration,
 		recovery_handle: Box::new(overseer_handle.clone()),
-		sync_service: sync_service.clone(),
+		sync_service: Arc::clone(&sync_service),
 	})?;
 
 	if validator {
 		start_consensus(
-			client.clone(),
-			backend.clone(),
+			Arc::clone(&client),
+			Arc::clone(&backend),
 			block_import,
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|t| t.handle()),
 			&task_manager,
-			relay_chain_interface.clone(),
+			Arc::clone(&relay_chain_interface),
 			transaction_pool,
 			sync_service,
 			params.keystore_container.keystore(),
@@ -369,7 +368,7 @@ fn start_consensus(
 
 	let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
 		task_manager.spawn_handle(),
-		client.clone(),
+		Arc::clone(&client),
 		transaction_pool,
 		prometheus_registry,
 		telemetry,
@@ -378,16 +377,16 @@ fn start_consensus(
 	let proposer = Proposer::new(proposer_factory);
 
 	let collator_service = CollatorService::new(
-		client.clone(),
+		Arc::clone(&client),
 		Arc::new(task_manager.spawn_handle()),
 		announce_block,
-		client.clone(),
+		Arc::clone(&client),
 	);
 
 	let params = AuraParams {
 		create_inherent_data_providers: move |_, ()| async move { Ok(()) },
 		block_import,
-		para_client: client.clone(),
+		para_client: Arc::clone(&client),
 		para_backend: backend,
 		relay_client: relay_chain_interface,
 		code_hash_provider: move |block_hash| client.code_at(block_hash).ok().map(|c| ValidationCode::from(c).hash()),
