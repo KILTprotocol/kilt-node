@@ -5,15 +5,15 @@ use frame_support::{
 	Hashable,
 };
 use frame_system::{EnsureRoot, EnsureSigned};
-use sp_arithmetic::FixedU128;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, FixedI128, MultiSignature,
+	BoundedVec, BuildStorage, MultiSignature,
 };
+use substrate_fixed::types::I75F53;
 
 use crate::{
-	curves_parameters::{PolynomialFunctionParameters, SquareRoot},
-	types::{Curve, Locks, PoolStatus},
+	curves::{Curve, PolynomialFunctionParameters},
+	pool_details::{Locks, PoolStatus},
 	Config, DepositCurrencyBalanceOf, PoolDetailsOf,
 };
 
@@ -23,6 +23,7 @@ pub type AssetId = u32;
 pub type Signature = MultiSignature;
 pub type AccountPublic = <Signature as Verify>::Signer;
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+pub type Float = I75F53;
 
 // accounts
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
@@ -38,11 +39,10 @@ pub(crate) const DEFAULT_BONDED_UNIT: Balance = 10u128.pow(10);
 pub const UNIT_NATIVE: Balance = 10u128.pow(15);
 
 // helper functions
-
-pub(crate) fn get_linear_bonding_curve() -> Curve<FixedU128> {
-	let m = FixedU128::from_u32(0);
-	let n = FixedU128::from_u32(2);
-	let o = FixedU128::from_u32(3);
+pub(crate) fn get_linear_bonding_curve() -> Curve<Float> {
+	let m = Float::from_num(0);
+	let n = Float::from_num(2);
+	let o = Float::from_num(3);
 	Curve::PolynomialFunction(PolynomialFunctionParameters { m, n, o })
 }
 
@@ -54,16 +54,13 @@ pub(crate) fn get_currency_unit(denomination: u8) -> Balance {
 	10u128.pow(denomination as u32)
 }
 
-// trait implementations
-
-impl SquareRoot for FixedI128 {
-	fn sqrt(self) -> Self {
-		self.sqrt()
-	}
-
-	fn try_sqrt(self) -> Option<Self> {
-		self.try_sqrt()
-	}
+pub fn assert_relative_eq(target: Float, expected: Float, epsilon: Float) {
+	assert!(
+		(target - expected).abs() <= epsilon,
+		"Expected {:?} but got {:?}",
+		expected,
+		target
+	);
 }
 
 #[cfg(test)]
@@ -77,8 +74,9 @@ pub mod runtime {
 		currencies: Vec<AssetId>,
 		manager: AccountId,
 		transferable: bool,
-		curve: Curve<FixedU128>,
+		curve: Curve<Float>,
 		state: PoolStatus<Locks>,
+		denomination: u8,
 	) -> PoolDetailsOf<Test> {
 		let bonded_currencies = BoundedVec::truncate_from(currencies);
 		PoolDetailsOf::<Test> {
@@ -87,6 +85,7 @@ pub mod runtime {
 			transferable,
 			bonded_currencies,
 			state,
+			denomination,
 		}
 	}
 
@@ -216,7 +215,7 @@ pub mod runtime {
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
-		type CurveParameterType = FixedU128;
+		type CurveParameterType = Float;
 	}
 
 	#[derive(Clone, Default)]
@@ -277,13 +276,12 @@ pub mod runtime {
 				assets: self
 					.currencies
 					.into_iter()
-					.map(|x| {
+					.flat_map(|x| {
 						let admin = calculate_pool_id(x.clone());
 						x.into_iter()
 							.map(|id| (id, admin.clone(), false, 1u128))
 							.collect::<Vec<(u32, AccountId, bool, u128)>>()
 					})
-					.flatten()
 					.collect(),
 
 				accounts: self.bonded_balance,
