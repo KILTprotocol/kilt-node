@@ -195,8 +195,8 @@ benchmarks! {
 			..Default::default()
 		};
 
-		let origin= RawOrigin::Signed(sender);
-	}: update_balance(origin, entries_to_migrate)
+		let signed_origin = RawOrigin::Signed(sender);
+	}: update_balance(signed_origin, entries_to_migrate)
 	verify {}
 
 	public_credentials_migration_weight {

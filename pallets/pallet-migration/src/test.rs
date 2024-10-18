@@ -58,11 +58,11 @@ use crate::{mock::*, EntriesToMigrate, MigratedKeys, Pallet};
 
 #[test]
 fn check_succesful_migration() {
-	// attestaion
+	// attestation
 	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
-	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
-	attestation.deposit.amount = MICRO_KILT;
+	let mut new_attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	new_attestation.deposit.amount = MICRO_KILT;
 
 	// delegation
 	let creator = sr25519_did_from_public_key(&BOB_SEED);
@@ -93,15 +93,15 @@ fn check_succesful_migration() {
 		ACCOUNT_00,
 		0,
 		attester.clone(),
-		Some(attestation.ctype_hash),
+		Some(new_attestation.ctype_hash),
 		Some(deposit),
 	);
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, KILT)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester)])
-		.with_attestations(vec![(claim_hash, attestation)])
+		.with_ctypes(vec![(new_attestation.ctype_hash, attester)])
+		.with_attestations(vec![(claim_hash, new_attestation)])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator, ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -129,7 +129,7 @@ fn check_succesful_migration() {
 			assert!(free_balance_pre_migration < KILT);
 
 			let attestation =
-				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
+				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestations");
 
 			let delegation =
 				BoundedVec::try_from([parent_id].to_vec()).expect("Vec init should not fail for delegations");
@@ -175,7 +175,7 @@ fn check_succesful_migration() {
 
 			// The deposits should be holds now
 
-			let attestaion_deposit =
+			let attestation_deposit =
 				pallet_balances::Pallet::<Test>::balance_on_hold(&attestation::HoldReason::Deposit.into(), &ACCOUNT_00);
 
 			let did_deposit =
@@ -199,7 +199,7 @@ fn check_succesful_migration() {
 				&ACCOUNT_00,
 			);
 
-			assert_eq!(attestaion_deposit, MICRO_KILT);
+			assert_eq!(attestation_deposit, MICRO_KILT);
 			assert_eq!(did_deposit, MICRO_KILT);
 			assert_eq!(delegation_deposit, MICRO_KILT);
 			assert_eq!(w3n_deposit, MICRO_KILT);
@@ -210,11 +210,11 @@ fn check_succesful_migration() {
 
 #[test]
 fn check_attempt_to_migrate_already_migrated_keys() {
-	// attestaion
+	// attestation
 	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
-	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
-	attestation.deposit.amount = MICRO_KILT;
+	let mut new_attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	new_attestation.deposit.amount = MICRO_KILT;
 
 	// delegation
 	let creator = sr25519_did_from_public_key(&BOB_SEED);
@@ -245,15 +245,15 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 		ACCOUNT_00,
 		0,
 		attester.clone(),
-		Some(attestation.ctype_hash),
+		Some(new_attestation.ctype_hash),
 		Some(deposit),
 	);
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, KILT)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester)])
-		.with_attestations(vec![(claim_hash, attestation)])
+		.with_ctypes(vec![(new_attestation.ctype_hash, attester)])
+		.with_attestations(vec![(claim_hash, new_attestation)])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator, ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -263,7 +263,7 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 		.build()
 		.execute_with(|| {
 			let attestation =
-				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
+				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestations");
 
 			let delegation =
 				BoundedVec::try_from([parent_id].to_vec()).expect("Vec init should not fail for delegations");
@@ -303,7 +303,7 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 
 #[test]
 fn check_excluded_keys_attestation() {
-	// attestaion
+	// attestation
 	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
 	let mut input_attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
@@ -395,7 +395,7 @@ fn check_excluded_keys_delegation() {
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
 			let delegation =
-				BoundedVec::try_from([delegation_id].to_vec()).expect("Vec init should not fail for attestaions");
+				BoundedVec::try_from([delegation_id].to_vec()).expect("Vec init should not fail for attestations");
 
 			let requested_migrations = EntriesToMigrate {
 				delegation,
@@ -765,7 +765,7 @@ fn migrate_key_by_update_deposit_public_credentials() {
 
 #[test]
 fn migrate_key_by_update_deposit_attestation() {
-	// attestaion
+	// attestation
 	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
 	let mut attestation = generate_base_attestation::<Test>(attester, ACCOUNT_00);
