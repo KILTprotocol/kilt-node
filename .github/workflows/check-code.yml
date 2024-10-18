@@ -36,6 +36,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
+    defaults:
+      run:
+        working-directory: ./scripts/clippy
     env:
       # Configured by the Docker image. We can't change this unless the image does it.
       CARGO_HOME: /usr/local/cargo
@@ -67,6 +70,8 @@ jobs:
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.clippy-script-name }}-${{ hashFiles('**/Cargo.lock') }}
           save-always: true
 
+      - name: debug
+        run: ls -la && pwd
       - name: Run `cargo clippy`
         run: ./scripts/clippy/${{ matrix.clippy-script-name }}
 
