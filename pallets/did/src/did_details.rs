@@ -183,9 +183,9 @@ impl From<ecdsa::Signature> for DidSignature {
 impl From<MultiSignature> for DidSignature {
 	fn from(sig: MultiSignature) -> Self {
 		match sig {
-			MultiSignature::Ed25519(sig) => Self::Ed25519(sig),
-			MultiSignature::Sr25519(sig) => Self::Sr25519(sig),
-			MultiSignature::Ecdsa(sig) => Self::Ecdsa(sig),
+			MultiSignature::Ed25519(ed25519_sig) => Self::Ed25519(ed25519_sig),
+			MultiSignature::Sr25519(sr25519_sig) => Self::Sr25519(sr25519_sig),
+			MultiSignature::Ecdsa(ecdsa_sig) => Self::Ecdsa(ecdsa_sig),
 		}
 	}
 }
@@ -225,8 +225,8 @@ impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 					.verify_signature(payload, signature)
 					.map(|_| sr25519_did_key)
 			}
-			DidSignature::Ecdsa(signature) => {
-				let ecdsa_signature: [u8; 65] = signature
+			DidSignature::Ecdsa(ecdsa_signature) => {
+				let encoded_ecdsa_signature: [u8; 65] = ecdsa_signature
 					.encode()
 					.try_into()
 					.map_err(|_| errors::SignatureError::InvalidData)?;
@@ -234,7 +234,7 @@ impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 				// message to recover the public key.
 				let hashed_message = sp_io::hashing::blake2_256(payload);
 				let recovered_pk: [u8; 33] =
-					sp_io::crypto::secp256k1_ecdsa_recover_compressed(&ecdsa_signature, &hashed_message)
+					sp_io::crypto::secp256k1_ecdsa_recover_compressed(&encoded_ecdsa_signature, &hashed_message)
 						.map_err(|_| errors::SignatureError::InvalidData)?;
 				let hashed_recovered_pk = sp_io::hashing::blake2_256(&recovered_pk);
 				// The hashed recovered public key must be equal to the AccountId32 value, which
@@ -353,8 +353,8 @@ impl<T: Config> DidDetails<T> {
 	pub fn calculate_deposit(&self, endpoint_count: u32) -> BalanceOf<T> {
 		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
 
-		let endpoint_count: BalanceOf<T> = endpoint_count.into();
-		deposit = deposit.saturating_add(endpoint_count.saturating_mul(T::ServiceEndpointDeposit::get()));
+		let endpoint_count_as_balance: BalanceOf<T> = endpoint_count.into();
+		deposit = deposit.saturating_add(endpoint_count_as_balance.saturating_mul(T::ServiceEndpointDeposit::get()));
 
 		let key_agreement_count: BalanceOf<T> = self.key_agreement_keys.len().saturated_into();
 		deposit = deposit.saturating_add(key_agreement_count.saturating_mul(T::KeyDeposit::get()));

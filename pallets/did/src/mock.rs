@@ -137,6 +137,8 @@ where
 	<R as frame_system::Config>::AccountId: From<AccountId>,
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
+		#[allow(clippy::let_underscore_must_use)]
+		#[allow(clippy::let_underscore_untyped)]
 		let _ = pallet_balances::Pallet::<R>::resolve(&ACCOUNT_FEE.into(), amount);
 	}
 }
@@ -451,9 +453,9 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = if let Some(ext) = ext {
-			ext
+	pub fn build(self, existing_ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
+		let mut ext = if let Some(input_ext) = existing_ext {
+			input_ext
 		} else {
 			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {

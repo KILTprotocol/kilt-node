@@ -65,10 +65,10 @@ fn blueprint_failed_dispatch<F: FnOnce()>(
 	before: F,
 	error: Error<Test>,
 ) {
-	let (balances, dids) = if let Some(did_details) = did_details {
+	let (balances, dids) = if let Some(existing_did_details) = did_details {
 		(
-			vec![(did_details.deposit.owner.clone(), DEFAULT_BALANCE)],
-			vec![(did_identifier.clone(), did_details)],
+			vec![(existing_did_details.deposit.owner.clone(), DEFAULT_BALANCE)],
+			vec![(did_identifier.clone(), existing_did_details)],
 		)
 	} else {
 		(Vec::new(), Vec::new())
