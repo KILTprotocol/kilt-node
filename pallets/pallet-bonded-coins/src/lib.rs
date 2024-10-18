@@ -70,7 +70,7 @@ pub mod pallet {
 	pub(crate) type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
 
-	pub type FungiblesAssetIdOf<T> =
+	pub(crate) type FungiblesAssetIdOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type PoolDetailsOf<T> =
