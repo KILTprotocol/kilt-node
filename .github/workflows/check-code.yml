@@ -46,13 +46,10 @@ jobs:
 
     strategy:
       matrix:
-        cargo-flags:
-          # Generic clippy checks for all features
-          - --all-targets --all-features
-          # Generic clippy checks for no features (catches some missing `no_std`-only lints)
-          - --all-targets
-          # Clippy lints specifically for all runtime code, excluding all test and binary crates
-          - --target wasm32-unknown-unknown --no-default-features --workspace --exclude kilt-parachain --exclude standalone-node --exclude xcm-integration-tests --exclude 'dip-provider*' --exclude 'dip-consumer*'
+        clippy-script-name:
+          - no_tests.sh
+          - only_runtime.sh
+          - whole_codebase.sh
       fail-fast: false
 
     steps:
@@ -67,11 +64,12 @@ jobs:
             ${{ env.CARGO_HOME }}/registry/index/
             ${{ env.CARGO_HOME }}/registry/cache/
             ${{ env.CARGO_HOME }}/git/db/
-          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.cargo-flags }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.clippy-script-name }}-${{ hashFiles('**/Cargo.lock') }}
           save-always: true
 
       - name: Run `cargo clippy`
-        run: cargo clippy --locked ${{ matrix.cargo-flags }}
+        working-directory: scripts/clippy
+        run: ${{ matrix.clippy-script-name }}
 
   cargo-fmt:
     name: Check formatting
