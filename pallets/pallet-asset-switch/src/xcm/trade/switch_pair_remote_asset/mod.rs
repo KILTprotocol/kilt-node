@@ -247,11 +247,11 @@ where
 
 				// No error should ever be thrown from inside this block.
 				SwitchPair::<T, I>::mutate(|entry| {
-					let Some(entry) = entry.as_mut() else {
+					let Some(existing_entry) = entry.as_mut() else {
 						log::error!(target: LOG_TARGET, "Stored switch pair should not be None but it is.");
 						return;
 					};
-					entry
+					existing_entry
 						.try_process_incoming_switch(self.remaining_fungible_balance)
 						.unwrap_or_else(|_| {
 							log::error!(

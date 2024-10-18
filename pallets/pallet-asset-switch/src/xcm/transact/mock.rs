@@ -156,6 +156,8 @@ impl ExtBuilder {
 	}
 
 	pub(super) fn build(self) -> sp_io::TestExternalities {
+		#[allow(clippy::let_underscore_must_use)]
+		#[allow(clippy::let_underscore_untyped)]
 		let _ = env_logger::try_init();
 		let mut ext = sp_io::TestExternalities::default();
 
@@ -163,8 +165,9 @@ impl ExtBuilder {
 			System::set_block_number(1);
 
 			let local_ed = <Balances as InspectFungible<AccountId32>>::minimum_balance();
-			if let Some(switch_pair_info) = &self.0 {
-				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info.clone());
+			if let Some(provided_switch_pair_info) = &self.0 {
+				let switch_pair_info =
+					SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(provided_switch_pair_info.clone());
 
 				// Set pool balance to local ED + circulating supply, to maintain
 				// invariants and make them verifiable.
@@ -202,16 +205,16 @@ impl ExtBuilder {
 					// the ED.
 					let freezes_more_than_ed = frozen.saturating_sub(local_ed);
 					SwitchPair::<MockRuntime, _>::mutate(|switch_pair| {
-						if let Some(switch_pair) = switch_pair.as_mut() {
+						if let Some(existing_switch_pair) = switch_pair.as_mut() {
 							// Calculate all held tokens as not available in the pool, hence not available
 							// as circulating supply at destination.
-							switch_pair.remote_asset_circulating_supply = switch_pair
+							existing_switch_pair.remote_asset_circulating_supply = existing_switch_pair
 								.remote_asset_circulating_supply
 								.checked_sub(held as u128)
 								.unwrap();
 							// Calculate frozen tokens beyond the Ed as not available in the pool, hence not
 							// available as circulating supply at destination.
-							switch_pair.remote_asset_circulating_supply = switch_pair
+							existing_switch_pair.remote_asset_circulating_supply = existing_switch_pair
 								.remote_asset_circulating_supply
 								.checked_sub(freezes_more_than_ed as u128)
 								.unwrap();

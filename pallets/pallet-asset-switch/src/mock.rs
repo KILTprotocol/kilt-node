@@ -240,6 +240,8 @@ impl ExtBuilder {
 	}
 
 	pub(super) fn build(self) -> sp_io::TestExternalities {
+		#[allow(clippy::let_underscore_must_use)]
+		#[allow(clippy::let_underscore_untyped)]
 		let _ = env_logger::try_init();
 		let mut ext = sp_io::TestExternalities::default();
 

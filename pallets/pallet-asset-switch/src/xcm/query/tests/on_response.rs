@@ -110,7 +110,7 @@ fn successful_storage_clean_up_on_transfer_successful_and_running_pair() {
 				Response::Assets(
 					Asset {
 						id: Junctions::Here.into(),
-						fun: 10.into(),
+						fun: 10u8.into(),
 					}
 					.into(),
 				),
@@ -215,7 +215,7 @@ fn successful_storage_clean_up_on_transfer_successful_and_paused_pair() {
 				Response::Assets(
 					Asset {
 						id: Junctions::Here.into(),
-						fun: 10.into(),
+						fun: 10u8.into(),
 					}
 					.into(),
 				),
@@ -277,7 +277,7 @@ fn successful_revert_on_transfer_revert_and_running_pair() {
 					// We put only the recognized asset in here.
 					Asset {
 						id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
-						fun: 10.into(),
+						fun: 10u8.into(),
 					}
 					.into(),
 				),
@@ -334,11 +334,11 @@ fn successful_revert_on_transfer_revert_and_running_pair() {
 					vec![
 						Asset {
 							id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
-							fun: 10.into(),
+							fun: 10u8.into(),
 						},
 						Asset {
 							id: Junctions::Here.into(),
-							fun: 10.into(),
+							fun: 10u8.into(),
 						},
 					]
 					.into(),
@@ -408,7 +408,7 @@ fn successful_revert_on_transfer_revert_and_paused_pair() {
 					// We put only the recognized asset in here.
 					Asset {
 						id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
-						fun: 10.into(),
+						fun: 10u8.into(),
 					}
 					.into(),
 				),
@@ -465,11 +465,11 @@ fn successful_revert_on_transfer_revert_and_paused_pair() {
 					vec![
 						Asset {
 							id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
-							fun: 10.into(),
+							fun: 10u8.into(),
 						},
 						Asset {
 							id: Junctions::Here.into(),
-							fun: 10.into(),
+							fun: 10u8.into(),
 						},
 					]
 					.into(),
@@ -538,7 +538,7 @@ fn fail_on_invalid_origin() {
 				Response::Assets(
 					Asset {
 						id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
-						fun: 10.into(),
+						fun: 10u8.into(),
 					}
 					.into(),
 				),
@@ -578,7 +578,7 @@ fn fail_on_query_id_not_found() {
 				Response::Assets(
 					Asset {
 						id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
-						fun: 10.into(),
+						fun: 10u8.into(),
 					}
 					.into(),
 				),
@@ -618,7 +618,7 @@ fn fail_on_invalid_querier() {
 				Response::Assets(
 					Asset {
 						id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
-						fun: 10.into(),
+						fun: 10u8.into(),
 					}
 					.into(),
 				),
@@ -693,7 +693,7 @@ fn fail_on_invalid_assets() {
 				Response::Assets(
 					Asset {
 						id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
-						fun: 9.into(),
+						fun: 9u8.into(),
 					}
 					.into(),
 				),
@@ -721,7 +721,7 @@ fn fail_on_invalid_assets() {
 				Response::Assets(
 					Asset {
 						id: new_switch_pair_info.clone().remote_asset_id.try_into().unwrap(),
-						fun: 11.into(),
+						fun: 11u8.into(),
 					}
 					.into(),
 				),

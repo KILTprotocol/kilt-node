@@ -130,14 +130,16 @@ impl ExtBuilder {
 	}
 
 	pub(super) fn build(self) -> sp_io::TestExternalities {
+		#[allow(clippy::let_underscore_must_use)]
+		#[allow(clippy::let_underscore_untyped)]
 		let _ = env_logger::try_init();
 		let mut ext = sp_io::TestExternalities::default();
 
 		ext.execute_with(|| {
 			System::set_block_number(1);
 
-			if let Some(switch_pair_info) = self.0 {
-				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(switch_pair_info);
+			if let Some(provided_switch_pair_info) = self.0 {
+				let switch_pair_info = SwitchPairInfoOf::<MockRuntime>::from_input_unchecked(provided_switch_pair_info);
 
 				// Set pool balance to local ED + circulating supply, to maintain
 				// invariants and make them verifiable.

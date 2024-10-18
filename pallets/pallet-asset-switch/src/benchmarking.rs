@@ -100,15 +100,17 @@ mod benchmarks {
 	fn fill_with_defaults(benchmark_info: Option<PartialBenchmarkInfo>) -> BenchmarkInfo {
 		let default = default_info();
 
-		let Some(benchmark_info) = benchmark_info else {
+		let Some(provided_benchmark_info) = benchmark_info else {
 			return default;
 		};
 
 		BenchmarkInfo {
-			beneficiary: benchmark_info.beneficiary.unwrap_or(default.beneficiary),
-			destination: benchmark_info.destination.unwrap_or(default.destination),
-			remote_asset_id: benchmark_info.remote_asset_id.unwrap_or(default.remote_asset_id),
-			remote_xcm_fee: benchmark_info.remote_xcm_fee.unwrap_or(default.remote_xcm_fee),
+			beneficiary: provided_benchmark_info.beneficiary.unwrap_or(default.beneficiary),
+			destination: provided_benchmark_info.destination.unwrap_or(default.destination),
+			remote_asset_id: provided_benchmark_info
+				.remote_asset_id
+				.unwrap_or(default.remote_asset_id),
+			remote_xcm_fee: provided_benchmark_info.remote_xcm_fee.unwrap_or(default.remote_xcm_fee),
 		}
 	}
 
@@ -250,8 +252,11 @@ mod benchmarks {
 	#[benchmark]
 	fn update_remote_xcm_fee() {
 		let origin = <T as Config<I>>::FeeOrigin::try_successful_origin().unwrap();
-		let BenchmarkInfo { remote_xcm_fee, .. } = configure_switch_pair::<T, I>();
-		let remote_xcm_fee = Box::new(remote_xcm_fee);
+		let BenchmarkInfo {
+			remote_xcm_fee: provided_remote_xcm_fee,
+			..
+		} = configure_switch_pair::<T, I>();
+		let remote_xcm_fee = Box::new(provided_remote_xcm_fee);
 		let remote_xcm_fee_2 = remote_xcm_fee.clone();
 
 		#[extrinsic_call]
@@ -264,7 +269,7 @@ mod benchmarks {
 	fn switch() {
 		let origin = <T as Config<I>>::SubmitterOrigin::try_successful_origin().unwrap();
 		let BenchmarkInfo {
-			beneficiary,
+			beneficiary: provided_beneficiary,
 			destination,
 			remote_xcm_fee,
 			remote_asset_id,
@@ -293,7 +298,7 @@ mod benchmarks {
 		let beneficiary = Box::new(
 			Location::try_from(destination)
 				.unwrap()
-				.appended_with(Junctions::try_from(beneficiary).unwrap())
+				.appended_with(Junctions::try_from(provided_beneficiary).unwrap())
 				.unwrap()
 				.into(),
 		);
