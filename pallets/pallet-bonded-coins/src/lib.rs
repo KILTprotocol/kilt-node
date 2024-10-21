@@ -520,22 +520,20 @@ pub mod pallet {
 
 			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::ZeroAmount);
 
-			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+			let total_issuances: Vec<(FungiblesAssetIdOf<T>, FungiblesBalanceOf<T>)> = pool_details
 				.bonded_currencies
 				.iter()
-				.map(|id| T::Fungibles::total_issuance(id.clone()))
+				.map(|id| (id.clone(), T::Fungibles::total_issuance(id.clone())))
+				.filter(|(_, iss)| iss.gt(&Zero::zero()))
 				.collect();
 
 			let mut sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
 				.iter()
-				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
+				.fold(Zero::zero(), |sum, (_, x)| sum.saturating_add(*x));
 
 			ensure!(!sum_of_issuances.is_zero(), Error::<T>::ZeroAmount);
 
-			for (idx, currency_id) in pool_details.bonded_currencies.iter().enumerate() {
-				if total_issuances[idx].is_zero() {
-					continue;
-				}
+			for (currency_id, token_issuance) in total_issuances {
 				let burnt = T::Fungibles::decrease_balance(
 					currency_id.clone(),
 					&who,
@@ -561,6 +559,11 @@ pub mod pallet {
 
 				total_collateral_issuance -= amount;
 				sum_of_issuances -= burnt;
+
+				// if the total issuance drops to 0 due to this burn, kill the currency
+				if token_issuance <= burnt {
+					T::Fungibles::start_destroy(currency_id.clone(), None)?;
+				}
 			}
 
 			// destroy currencies if the total issuance or collateral has dropped to 0
@@ -747,24 +750,17 @@ pub mod pallet {
 
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
 
-			if !total_collateral_issuance.is_zero() {
-				let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
-					.bonded_currencies
-					.iter()
-					.map(|id| T::Fungibles::total_issuance(id.clone()))
-					.collect();
-
-				let sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
-					.iter()
-					.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
-
-				if !sum_of_issuances.is_zero() {
-					return Ok(());
-				};
+			if total_collateral_issuance.is_zero() {
+				for currency_id in pool_details.bonded_currencies.iter() {
+					T::Fungibles::start_destroy(currency_id.clone(), None)?;
+				}
+				return Ok(());
 			}
 
 			for currency_id in pool_details.bonded_currencies.iter() {
-				T::Fungibles::start_destroy(currency_id.clone(), None)?;
+				if T::Fungibles::total_issuance(currency_id.clone()).is_zero() {
+					T::Fungibles::start_destroy(currency_id.clone(), None)?;
+				}
 			}
 
 			Ok(())
