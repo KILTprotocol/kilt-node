@@ -84,6 +84,10 @@ pub use crate::{
 };
 
 #[frame_support::pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 	use super::*;
 
@@ -235,6 +239,15 @@ pub mod pallet {
 			/// The claim hash of the credential for which the attestation entry
 			/// was deleted.
 			claim_hash: ClaimHashOf<T>,
+		},
+		/// The deposit for an attestation has changed owner.
+		DepositOwnerChanged {
+			/// The claim hash of the credential whose deposit owner changed.
+			id: ClaimHashOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
 		},
 	}
 
@@ -475,10 +488,15 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&claim_hash,
-				sender,
-			)?;
+			let old_deposit_owner = AttestationStorageDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&claim_hash, sender.clone())?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				id: claim_hash,
+				from: old_deposit_owner,
+				to: sender,
+			});
 
 			Ok(())
 		}

@@ -78,7 +78,6 @@
 //!   time has elapsed, the operation is considered invalid.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unused_unit)]
 #![recursion_limit = "256"]
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -136,6 +135,10 @@ use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 use frame_system::RawOrigin;
 
 #[frame_support::pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 	use super::*;
 	use did_details::DidCreationDetails;
@@ -369,6 +372,15 @@ pub mod pallet {
 		/// A DID-authorised call has been executed.
 		/// \[DID caller, dispatch result\]
 		DidCallDispatched(DidIdentifierOf<T>, DispatchResult),
+		/// The deposit for a DID has changed owner.
+		DepositOwnerChanged {
+			/// The DID whose deposit owner changed.
+			id: DidIdentifierOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -1105,7 +1117,15 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidDepositCollector::<T>::change_deposit_owner::<<T as Config>::BalanceMigrationManager>(&subject, sender)?;
+			let old_deposit_owner = DidDepositCollector::<T>::change_deposit_owner::<
+				<T as Config>::BalanceMigrationManager,
+			>(&subject, sender.clone())?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				id: subject,
+				from: old_deposit_owner,
+				to: sender,
+			});
 
 			Ok(())
 		}

@@ -1,0 +1,4 @@
+endpoint:
+    - wss://rpc.ibp.network/paseo
+    - wss://paseo.dotters.network
+db: db/peregrine/relay/db.sqlite

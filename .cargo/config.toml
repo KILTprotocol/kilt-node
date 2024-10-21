@@ -1,0 +1,26 @@
+# Deployment runtime lints
+[target.'cfg(all(target_arch = "wasm32", not(test)))']
+rustflags = [
+  "-Dclippy::arithmetic_side_effects",
+  "-Dclippy::as_conversions",
+  "-Dclippy::assertions_on_result_states",
+  "-Dclippy::cast_possible_wrap",
+  "-Dclippy::dbg_macro",
+  "-Dclippy::expect_used",
+  "-Dclippy::float_arithmetic",
+  "-Dclippy::float_cmp_const",
+  "-Dclippy::index_refutable_slice",
+  "-Dclippy::indexing_slicing",
+  "-Dclippy::lossy_float_literal",
+  "-Dclippy::panic",
+  "-Dclippy::string_slice",
+  "-Dclippy::todo",
+  "-Dclippy::unimplemented",
+  "-Dclippy::unreachable",
+  "-Dclippy::unwrap_used",
+  "-Funsafe_code",
+  "-Wclippy::integer_division",
+  "-Wclippy::modulo_arithmetic",
+  "-Wclippy::print_stderr",
+  "-Wclippy::print_stdout",
+]

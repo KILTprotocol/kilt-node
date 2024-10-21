@@ -12,7 +12,7 @@ version       = { workspace = true }
 
 [dependencies]
 asset-hub-rococo-emulated-chain   = { workspace = true, default-features = true }
-asset-hub-rococo-runtime          = { workspace = true, default-features = true, features = ["experimental"] }
+asset-hub-rococo-runtime          = { workspace = true, default-features = true }
 attestation                       = { workspace = true, default-features = true }
 ctype                             = { workspace = true, default-features = true }
 cumulus-primitives-core           = { workspace = true, default-features = true }

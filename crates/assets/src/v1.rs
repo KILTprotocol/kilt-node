@@ -146,6 +146,7 @@ impl AssetDid {
 }
 
 impl Display for AssetDid {
+	#[allow(clippy::expect_used)]
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		write!(
 			f,

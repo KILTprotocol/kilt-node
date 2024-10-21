@@ -47,10 +47,13 @@ pub const MILLISECS_PER_BLOCK: u64 = 12_000;
 pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 
 // Time is measured by number of blocks.
+#[allow(clippy::integer_division)]
+#[allow(clippy::as_conversions)]
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 // Julian year as Substrate handles it
+#[allow(clippy::integer_division)]
 pub const BLOCKS_PER_YEAR: BlockNumber = DAYS * 36525 / 100;
 
 pub const MAX_COLLATOR_STAKE: Balance = 200_000 * KILT;
@@ -82,6 +85,7 @@ pub const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// used by  Operational  extrinsics.
 pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 0.5 seconds of compute with a 12 second average block time.
+#[allow(clippy::as_conversions)]
 pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
 	WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
 	cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
@@ -115,6 +119,8 @@ pub fn kilt_inflation_config() -> InflationInfo {
 
 /// Calculate the storage deposit based on the number of storage items and the
 /// combined byte size of those items.
+#[allow(clippy::as_conversions)]
+#[allow(clippy::arithmetic_side_effects)]
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
 	items as Balance * DEPOSIT_STORAGE_ITEM + (bytes as Balance) * DEPOSIT_STORAGE_BYTE
 }
@@ -458,6 +464,8 @@ pub mod treasury {
 
 	pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
 	const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
+	#[allow(clippy::as_conversions)]
+	#[allow(clippy::integer_division)]
 	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
 
 	parameter_types! {
@@ -529,6 +537,9 @@ pub mod fee {
 	}
 }
 
+#[allow(clippy::as_conversions)]
+const MAX_SUBJECT_ID_LENGTH: u32 = kilt_asset_dids::MAXIMUM_ASSET_DID_LENGTH as u32;
+
 pub mod public_credentials {
 	use super::*;
 
@@ -540,7 +551,7 @@ pub mod public_credentials {
 	parameter_types! {
 		pub const Deposit: Balance = PUBLIC_CREDENTIAL_DEPOSIT;
 		pub const MaxEncodedClaimsLength: u32 = 100_000;	// 100 Kb
-		pub const MaxSubjectIdLength: u32 = kilt_asset_dids::MAXIMUM_ASSET_DID_LENGTH as u32;
+		pub const MaxSubjectIdLength: u32 = MAX_SUBJECT_ID_LENGTH;
 	}
 }
 

@@ -40,6 +40,10 @@ mod benchmarking;
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
@@ -162,6 +166,15 @@ pub mod pallet {
 		Web3NameBanned { name: Web3NameOf<T> },
 		/// A name has been unbanned.
 		Web3NameUnbanned { name: Web3NameOf<T> },
+		/// The deposit for a web3name has changed owner.
+		DepositOwnerChanged {
+			/// The web3name whose deposit owner changed.
+			id: Web3NameOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -353,11 +366,18 @@ pub mod pallet {
 		pub fn change_deposit_owner(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
+			let sender = source.sender();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::NotFound)?;
-			Web3NameStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&name,
-				source.sender(),
-			)?;
+
+			let old_deposit_owner = Web3NameStorageDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&name, sender.clone())?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				id: name,
+				from: old_deposit_owner,
+				to: sender,
+			});
 
 			Ok(())
 		}
@@ -468,7 +488,7 @@ pub mod pallet {
 		/// `check_releasing_preconditions` as it does not verify all the
 		/// preconditions again.
 		fn unregister_name(name: &Web3NameOf<T>) -> Result<Web3OwnershipOf<T>, DispatchError> {
-			let name_ownership = Owner::<T>::take(name).unwrap();
+			let name_ownership = Owner::<T>::take(name).ok_or(Error::<T>::OwnerNotFound)?;
 			Names::<T>::remove(&name_ownership.owner);
 
 			let is_key_migrated =

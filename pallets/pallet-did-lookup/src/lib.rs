@@ -48,6 +48,10 @@ mod benchmarking;
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 	use crate::{
 		associate_account_request::AssociateAccountRequest, default_weights::WeightInfo,
@@ -153,6 +157,15 @@ pub mod pallet {
 
 		/// All AccountIds have been migrated to LinkableAccountId.
 		MigrationCompleted,
+		/// The deposit for an linked account has changed owner.
+		DepositOwnerChanged {
+			/// The tuple of (DID, linked account) whose deposit owner changed.
+			id: (DidIdentifierOf<T>, LinkableAccountId),
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -374,14 +387,22 @@ pub mod pallet {
 		pub fn change_deposit_owner(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let subject = source.subject();
+			let sender = source.sender();
 
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.did == subject, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&account,
-				source.sender(),
-			)
+			let old_deposit_owner = LinkableAccountDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&account, sender.clone())?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				id: (subject, account),
+				from: old_deposit_owner,
+				to: sender,
+			});
+
+			Ok(())
 		}
 
 		/// Updates the deposit amount to the current deposit rate.

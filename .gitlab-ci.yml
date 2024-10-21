@@ -6,7 +6,7 @@ workflow:
 stages:
   - build
 
-build-wasm:
+build-production-wasm:
   image:
     name: paritytech/srtool:1.75.0
     entrypoint: [""]
@@ -20,6 +20,7 @@ build-wasm:
     - export PARACHAIN_PALLET_ID=0x50
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - export AUTHORIZE_UPGRADE_CHECK_VERSION=true
+    - export VERBOSE=true
     - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/${RUNTIME}_runtime.compact.wasm > /out/${RUNTIME}-metadata.json
@@ -32,6 +33,37 @@ build-wasm:
       - out/*.wasm
       - out/*.json
       - out/*.txt
+    expire_in: 12 week
+
+build-try-state-wasm:
+  image:
+    name: paritytech/ci-unified:bullseye-1.74.0
+  stage: build
+  parallel:
+    matrix:
+      - RUNTIME: ["peregrine", "spiritnet"]
+  variables:
+    # Move cargo data INSIDE the project dir so it can be cached
+    CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
+  cache:
+    when: always
+    key:
+      # E.g., `build-try-state-wasm-develop-peregrine` and `build-try-state-wasm-develop-spiritnet`
+      prefix: "$CI_JOB_NAME:$CI_COMMIT_REF_NAME:${RUNTIME}"
+      files:
+        - Cargo.lock
+    paths:
+      - $CARGO_HOME/bin/
+      - $CARGO_HOME/registry/index/
+      - $CARGO_HOME/registry/cache/
+      - $CARGO_HOME/git/db/
+  script:
+    - cargo build --release --locked -p ${RUNTIME}-runtime --features try-runtime
+    - mkdir -p out
+    - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm out/**UNSAFE**${RUNTIME}_runtime_try_runtime.compact.compressed.wasm
+  artifacts:
+    paths:
+      - out
     expire_in: 12 week
 
 build-docker-images:

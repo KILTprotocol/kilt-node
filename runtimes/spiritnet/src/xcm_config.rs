@@ -17,16 +17,22 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balances, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-	RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, AssetSwitchPool1, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet,
+	MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
+	Treasury, WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
 use frame_support::{
 	parameter_types,
-	traits::{Contains, EnqueueWithOrigin, Everything, Nothing, TransformOrigin},
+	traits::{Contains, Everything, Nothing, TransformOrigin},
 };
 use frame_system::EnsureRoot;
+use kilt_support::xcm::EitherOr;
+use pallet_asset_switch::xcm::{
+	IsSwitchPairRemoteAsset, IsSwitchPairXcmFeeAsset, MatchesSwitchPairXcmFeeFungibleAsset,
+	SwitchPairRemoteAssetTransactor, UsingComponentsForSwitchPairRemoteAsset, UsingComponentsForXcmFeeAsset,
+};
 use pallet_xcm::XcmPassthrough;
 use parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling};
 use polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery;
@@ -35,9 +41,9 @@ use sp_std::prelude::ToOwned;
 use xcm::v4::prelude::*;
 use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
-	EnsureXcmOrigin, FixedWeightBounds, FrameTransactionalProcessor, NativeAsset, RelayChainAsNative,
-	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-	TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
+	EnsureXcmOrigin, FixedWeightBounds, FrameTransactionalProcessor, FungiblesAdapter, NativeAsset, NoChecking,
+	RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32,
+	SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -95,7 +101,7 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 			// since local accounts don't have a computed origin (the message isn't send by any router etc.)
 			TakeWeightCredit,
 			// If we request a response we should also allow it to execute.
-			AllowKnownQueryResponses<PolkadotXcm>,
+			AllowKnownQueryResponses<EitherOr<PolkadotXcm, AssetSwitchPool1>>,
 			WithComputedOrigin<
 				(
 					// Allow unpaid execution from the relay chain
@@ -163,15 +169,40 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 	}
 }
 
+parameter_types! {
+	pub TreasuryAccountId: AccountId = Treasury::account_id();
+}
+
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
 	// How we send Xcm messages.
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
-	type AssetTransactor = LocalAssetTransactor<Balances, RelayNetworkId>;
+	// Until fixed, `LocalAssetTransactor` must be last since it returns an error if
+	// the operation does not go through, i.e., it cannot be chained with other
+	// transactors.
+	type AssetTransactor = (
+		// Allow the asset from the other side of the pool to be "deposited" into the current system.
+		SwitchPairRemoteAssetTransactor<LocationToAccountIdConverter, Runtime, KiltToEKiltSwitchPallet>,
+		// Allow the asset to pay for remote XCM fees to be deposited into the current system.
+		FungiblesAdapter<
+			Fungibles,
+			MatchesSwitchPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwitchPallet>,
+			LocationToAccountIdConverter,
+			AccountId,
+			NoChecking,
+			CheckingAccount,
+		>,
+		// Transactor for fungibles matching the "Here" location.
+		LocalAssetTransactor<Balances, RelayNetworkId>,
+	);
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	type IsReserve = NativeAsset;
+	type IsReserve = (
+		NativeAsset,
+		IsSwitchPairRemoteAsset<Runtime, KiltToEKiltSwitchPallet>,
+		IsSwitchPairXcmFeeAsset<Runtime, KiltToEKiltSwitchPallet>,
+	);
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	type UniversalLocation = UniversalLocation;
@@ -183,9 +214,21 @@ impl xcm_executor::Config for XcmConfig {
 	// How weight is transformed into fees. The fees are not taken out of the
 	// Balances pallet here. Balances is only used if fees are dropped without being
 	// used. In that case they are put into the treasury.
-	type Trader =
-		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, SendDustAndFeesToTreasury<Runtime>>;
-	type ResponseHandler = PolkadotXcm;
+
+	type Trader = (
+		// Can pay for fees with the remote XCM asset fee (when sending it into this system).
+		UsingComponentsForXcmFeeAsset<Runtime, KiltToEKiltSwitchPallet, WeightToFee<Runtime>>,
+		// Can pay for the remote asset of the switch pair (when "depositing" it into this system).
+		UsingComponentsForSwitchPairRemoteAsset<
+			Runtime,
+			KiltToEKiltSwitchPallet,
+			WeightToFee<Runtime>,
+			TreasuryAccountId,
+		>,
+		// Can pay with the fungible that matches the "Here" location.
+		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, SendDustAndFeesToTreasury<Runtime>>,
+	);
+	type ResponseHandler = EitherOr<PolkadotXcm, AssetSwitchPool1>;
 	// What happens with assets that are left in the register after the XCM message
 	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset
 	// location, amount, version, etc.
@@ -281,15 +324,4 @@ impl pallet_message_queue::Config for Runtime {
 	type HeapSize = HeapSize;
 	type MaxStale = MaxStale;
 	type ServiceWeight = ServiceWeight;
-}
-
-// Remove me in 1.15.0
-parameter_types! {
-	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
-}
-
-impl cumulus_pallet_dmp_queue::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type DmpSink = EnqueueWithOrigin<MessageQueue, RelayOrigin>;
-	type WeightInfo = crate::weights::cumulus_pallet_dmp_queue::WeightInfo<Runtime>;
 }

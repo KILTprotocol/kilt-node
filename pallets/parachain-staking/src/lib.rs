@@ -137,6 +137,12 @@ use frame_support::pallet;
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
+// We do plain arithmetic operations only after we've made sure they will go through.
+#[allow(clippy::arithmetic_side_effects)]
 pub mod pallet {
 	use super::*;
 	pub use crate::inflation::{InflationInfo, RewardRate, StakingInfo};
@@ -297,7 +303,7 @@ pub mod pallet {
 		/// NOTE: To protect against irremovability of a candidate or delegator,
 		/// we only allow for MaxUnstakeRequests - 1 many manual unstake
 		/// requests. The last one serves as a placeholder for the cases of
-		/// calling either `kick_delegator`, force_remove_candidate` or
+		/// calling either `kick_delegator`, `force_remove_candidate` or
 		/// `execute_leave_candidates`. Otherwise, a user could max out their
 		/// unstake requests and prevent themselves from being kicked from the
 		/// set of candidates/delegators until they unlock their funds.
@@ -417,6 +423,9 @@ pub mod pallet {
 		UnstakingIsEmpty,
 		/// Cannot claim rewards if empty.
 		RewardsNotFound,
+		/// Invalid input provided. The meaning of this error is
+		/// extrinsic-dependent.
+		InvalidInput,
 	}
 
 	#[pallet::event]
@@ -762,15 +771,21 @@ pub mod pallet {
 		///
 		/// Emits `RoundInflationSet`.
 		#[pallet::call_index(1)]
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation(*current_collator_candidate_pool_size, T::MaxDelegatorsPerCollator::get()))]
 		pub fn set_inflation(
 			origin: OriginFor<T>,
 			collator_max_rate_percentage: Perquintill,
 			collator_annual_reward_rate_percentage: Perquintill,
 			delegator_max_rate_percentage: Perquintill,
 			delegator_annual_reward_rate_percentage: Perquintill,
+			current_collator_candidate_pool_size: u32,
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
+
+			ensure!(
+				current_collator_candidate_pool_size >= CandidatePool::<T>::count(),
+				Error::<T>::InvalidInput
+			);
 
 			// Update inflation and increment rewards
 			let (num_col, num_del) = Self::do_set_inflation(
@@ -1725,9 +1740,17 @@ pub mod pallet {
 		///
 		/// Emits `RoundInflationSet`.
 		#[pallet::call_index(20)]
-		#[pallet::weight(<T as Config>::WeightInfo::execute_scheduled_reward_change(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
-		pub fn execute_scheduled_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+		#[pallet::weight(<T as Config>::WeightInfo::execute_scheduled_reward_change(*current_collator_candidate_pool_size, T::MaxDelegatorsPerCollator::get()))]
+		pub fn execute_scheduled_reward_change(
+			origin: OriginFor<T>,
+			current_collator_candidate_pool_size: u32,
+		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
+
+			ensure!(
+				current_collator_candidate_pool_size >= CandidatePool::<T>::count(),
+				Error::<T>::InvalidInput
+			);
 
 			let now = frame_system::Pallet::<T>::block_number();
 			let year = now / T::BLOCKS_PER_YEAR;

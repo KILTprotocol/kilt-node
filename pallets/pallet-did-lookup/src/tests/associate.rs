@@ -132,9 +132,6 @@ fn test_add_association_account() {
 				AssociateAccountRequest::Polkadot(account_hash_alice.clone(), sig_alice_1.clone()),
 				expire_at,
 			);
-			if let Err(err) = res {
-				println!("Error overwriting association: {:?}", err);
-			}
 			assert!(res.is_ok());
 			assert_eq!(
 				ConnectedDids::<Test>::get(LinkableAccountId::from(account_hash_alice.clone())),

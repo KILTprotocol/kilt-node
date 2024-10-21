@@ -52,6 +52,10 @@ pub use crate::{
 };
 
 #[frame_support::pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 	use super::*;
 
@@ -223,6 +227,15 @@ pub mod pallet {
 		CredentialUnrevoked {
 			/// The id of the unrevoked credential.
 			credential_id: CredentialIdOf<T>,
+		},
+		/// The deposit for a public credential has changed owner.
+		DepositOwnerChanged {
+			/// The claim hash of the credential whose deposit owner changed.
+			id: CredentialIdOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
 		},
 	}
 
@@ -524,15 +537,21 @@ pub mod pallet {
 		pub fn change_deposit_owner(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let subject = source.subject();
+			let sender = source.sender();
 
 			let (_, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
 			ensure!(subject == credential_entry.attester, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&credential_id,
-				source.sender(),
-			)?;
+			let old_deposit_owner = PublicCredentialDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&credential_id, sender.clone())?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				id: credential_id,
+				from: old_deposit_owner,
+				to: sender,
+			});
 
 			Ok(())
 		}

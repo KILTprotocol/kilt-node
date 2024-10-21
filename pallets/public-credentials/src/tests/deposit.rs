@@ -25,7 +25,7 @@ use sp_runtime::traits::Zero;
 use ctype::mock::get_ctype_hash;
 use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
 
-use crate::{mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, HoldReason};
+use crate::{mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, Event, HoldReason};
 
 #[test]
 fn reclaim_deposit_successful() {
@@ -147,6 +147,13 @@ fn test_change_deposit_owner() {
 				<Test as Config>::Deposit::get()
 			);
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(System::events().iter().any(|e| e.event
+				== Event::<Test>::DepositOwnerChanged {
+					id: credential_id,
+					from: ACCOUNT_00,
+					to: ACCOUNT_01
+				}
+				.into()));
 		});
 }
 

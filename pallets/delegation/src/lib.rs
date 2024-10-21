@@ -88,6 +88,10 @@ use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
 
 #[frame_support::pallet]
+// `.expect()` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::expect_used)]
+// `unreachable` is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::unreachable)]
 pub mod pallet {
 
 	use super::*;
@@ -248,6 +252,15 @@ pub mod pallet {
 		/// A delegation has been removed.
 		/// \[remover ID, delegation node ID\]
 		DelegationRemoved(AccountIdOf<T>, DelegationNodeIdOf<T>),
+		/// The deposit for a delegation has changed owner.
+		DepositOwnerChanged {
+			/// The ID of the delegation whose deposit owner changed.
+			id: DelegationNodeIdOf<T>,
+			/// The old deposit owner.
+			from: AccountIdOf<T>,
+			/// The new deposit owner.
+			to: AccountIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -683,6 +696,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let sender = source.sender();
 
 			let delegation = DelegationNodes::<T>::get(delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
@@ -690,10 +704,17 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
-				&delegation_id,
-				source.sender(),
-			)
+			let old_deposit_owner = DelegationDepositCollector::<T>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T>,
+			>(&delegation_id, sender.clone())?;
+
+			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+				id: delegation_id,
+				from: old_deposit_owner,
+				to: sender,
+			});
+
+			Ok(())
 		}
 
 		/// Updates the deposit amount to the current deposit rate.

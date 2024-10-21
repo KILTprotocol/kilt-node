@@ -115,6 +115,8 @@ where
 	u128: From<<<R as pallet_transaction_payment::Config>::OnChargeTransaction as OnChargeTransaction<R>>::Balance>,
 {
 	type Balance = Balance;
+	#[allow(clippy::integer_division)]
+	#[allow(clippy::arithmetic_side_effects)]
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
 		// The should be fee
 		let wanted_fee: Balance = 10 * MILLI_KILT;
