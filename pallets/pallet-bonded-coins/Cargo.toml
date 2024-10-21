@@ -20,6 +20,9 @@ frame-benchmarking =  { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 
+# External 
+substrate-fixed = { workspace = true }
+
 [dev-dependencies]
 serde = { workspace = true}
 
