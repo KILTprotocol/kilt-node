@@ -5,13 +5,14 @@
   "bootNodes": [
     "/dns4/hetzner-1.kilt.io/tcp/30333/p2p/12D3KooWKU8ehzuKAzHEMCy4i4kpJtgCFBCYYhqcub4Y1HR8FRoT",
     "/dns4/hetzner-2.kilt.io/tcp/30333/p2p/12D3KooWDJzJ7TRNKvE2DWXMSSsoKR5TgxsnNy3W1eCBPveX6g9i",
-    "/dns4/node-6840569230186737664-0.p2p.onfinality.io/tcp/11578/ws/p2p/12D3KooWQapPfoSDxLBnsVZmpRA1yNApXEAEuhexPcFa7fECqpHa",
-    "/dns4/node-6840781141641752576-0.p2p.onfinality.io/tcp/28779/ws/p2p/12D3KooWKMCaxjsvaNkYkdQGnPQnkYFouHFdJ3S36aBhV6QTXzaE",
-    "/dns4/node-6840781099853901824-0.p2p.onfinality.io/tcp/15360/ws/p2p/12D3KooWLWSE85c5PSsgo62Dy5UM68Sx8p3vnJvtvDVC8QHXFpRw",
     "/dns/kilt.boot.stake.plus/tcp/30332/wss/p2p/12D3KooWHZ6ftYNVQDm5gbHvtGgkPStaBBQBje8rrtxdH1jJonkW",
     "/dns/kilt.boot.stake.plus/tcp/31332/wss/p2p/12D3KooWMgyhbAKBkEqvKP5bPGTCJZ4nYziJhQep9aHRAkZW8xyy",
     "/dns4/boot.helikon.io/tcp/8570/p2p/12D3KooWGaE81VE2rzD5TbeRqpTgQwh2sWXMVfMJLBMHQH8AfoXu",
-    "/dns4/boot.helikon.io/tcp/8572/wss/p2p/12D3KooWGaE81VE2rzD5TbeRqpTgQwh2sWXMVfMJLBMHQH8AfoXu"
+    "/dns4/boot.helikon.io/tcp/8572/wss/p2p/12D3KooWGaE81VE2rzD5TbeRqpTgQwh2sWXMVfMJLBMHQH8AfoXu",
+    "/dns/kilt-polkadot-boot-ng.dwellir.com/tcp/443/wss/p2p/12D3KooWRLyHNCYbYMpQWWESNqyW925VP6vMesotaAXSVB3Efhv4",
+    "/dns/kilt-polkadot-boot-ng.dwellir.com/tcp/30368/p2p/12D3KooWRLyHNCYbYMpQWWESNqyW925VP6vMesotaAXSVB3Efhv4",
+    "/dns/kilt-bootnode.radiumblock.com/tcp/30333/p2p/12D3KooWDjWPL4sMV92dXb55sbvQkHjZzG3jzF2XePGEHqYtdo3j",
+    "/dns/kilt-bootnode.radiumblock.com/tcp/30336/wss/p2p/12D3KooWDjWPL4sMV92dXb55sbvQkHjZzG3jzF2XePGEHqYtdo3j"
   ],
   "telemetryEndpoints": [
     [

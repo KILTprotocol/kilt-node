@@ -40,8 +40,8 @@
 // --template=.maintain/runtime-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
-#![allow(unused_parens)]
 #![allow(unused_imports)]
+#![allow(clippy::as_conversions)]
 
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
@@ -50,7 +50,18 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_sudo::WeightInfo for WeightInfo<T> {
 
-	fn remove_key() -> cumulus_primitives_core::Weight { todo!() }
+	/// Storage: `Sudo::Key` (r:1 w:1)
+	/// Proof: `Sudo::Key` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	fn remove_key() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `165`
+		//  Estimated: `1517`
+		// Minimum execution time: 9_474_000 picoseconds.
+		Weight::from_parts(10_034_000, 0)
+			.saturating_add(Weight::from_parts(0, 1517))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
 	/// Storage: Sudo Key (r:1 w:1)
 	/// Proof: Sudo Key (max_values: Some(1), max_size: Some(32), added: 527, mode: MaxEncodedLen)
 	fn set_key() -> Weight {

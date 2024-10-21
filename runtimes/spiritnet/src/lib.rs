@@ -51,7 +51,7 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
-use xcm::{v4::Location, VersionedAssetId};
+use xcm::{v4::Location, VersionedAssetId, VersionedLocation, VersionedXcm};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use delegation::DelegationAc;
@@ -77,7 +77,7 @@ use runtime_common::{
 	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
-use crate::xcm_config::{LocationToAccountIdConverter, XcmRouter};
+use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -173,8 +173,11 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
+#[allow(clippy::integer_division)]
+const MINIMUM_PERIOD: u64 = constants::SLOT_DURATION / 2;
+
 parameter_types! {
-	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
+	pub const MinimumPeriod: u64 = MINIMUM_PERIOD;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -343,8 +346,14 @@ impl pallet_preimage::Config for Runtime {
 	>;
 }
 
+#[allow(clippy::arithmetic_side_effects)]
+#[inline]
+fn maximum_scheduler_weight() -> Weight {
+	Perbill::from_percent(80) * BlockWeights::get().max_block
+}
+
 parameter_types! {
-	pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) * BlockWeights::get().max_block;
+	pub MaximumSchedulerWeight: Weight = maximum_scheduler_weight();
 	pub const MaxScheduledPerBlock: u32 = 50;
 	pub const NoPreimagePostponement: Option<BlockNumber> = Some(10);
 }
@@ -370,7 +379,7 @@ impl PrivilegeCmp<OriginCaller> for OriginPrivilegeCmp {
 			(
 				OriginCaller::Council(pallet_collective::RawOrigin::Members(l_yes_votes, l_count)),
 				OriginCaller::Council(pallet_collective::RawOrigin::Members(r_yes_votes, r_count)),
-			) => Some((l_yes_votes * r_count).cmp(&(r_yes_votes * l_count))),
+			) => Some((l_yes_votes.saturating_mul(*r_count)).cmp(&(r_yes_votes.saturating_mul(*l_count)))),
 			// For every other origin we don't care, as they are not used for `ScheduleOrigin`.
 			_ => None,
 		}
@@ -448,13 +457,19 @@ impl pallet_democracy::Config for Runtime {
 	type SubmitOrigin = EnsureSigned<AccountId>;
 }
 
+#[allow(clippy::arithmetic_side_effects)]
+#[inline]
+fn maximum_proposal_weight() -> Weight {
+	Perbill::from_percent(50) * BlockWeights::get().max_block
+}
+
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
 	pub const ProposalBondMinimum: Balance = 20 * KILT;
 	pub const SpendPeriod: BlockNumber = constants::governance::SPEND_PERIOD;
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
-	pub MaxProposalWeight: Weight = Perbill::from_percent(50) * BlockWeights::get().max_block;
+	pub MaxProposalWeight: Weight = maximum_proposal_weight();
 	pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
@@ -990,6 +1005,7 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type SubmitterOrigin = EnsureSigned<AccountId>;
 	type SwitchHooks = runtime_common::asset_switch::hooks::RestrictSwitchDestinationToSelf;
 	type SwitchOrigin = EnsureRoot<AccountId>;
+	type UniversalLocation = UniversalLocation;
 	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
 	type XcmRouter = XcmRouter;
 
@@ -1577,7 +1593,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId, AssetSwitchApiError> for Runtime {
+	impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId, u128, VersionedLocation, AssetSwitchApiError, VersionedXcm<()>> for Runtime {
 		fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> Result<AccountId, AssetSwitchApiError> {
 			use core::str;
 			use frame_support::traits::PalletInfoAccess;
@@ -1594,6 +1610,36 @@ impl_runtime_apis! {
 				},
 				_ => Err(AssetSwitchApiError::SwitchPoolNotFound)
 			}
+		}
+
+		fn xcm_for_switch(pair_id: Vec<u8>, from: AccountId, to: VersionedLocation, amount: u128) -> Result<VersionedXcm<()>, AssetSwitchApiError> {
+			use core::str;
+			use frame_support::traits::PalletInfoAccess;
+			use sp_runtime::traits::TryConvert;
+			use xcm::v4::{AssetId, Asset};
+
+			let Ok(pair_id_as_string) = str::from_utf8(pair_id.as_slice()) else {
+				return Err(AssetSwitchApiError::InvalidInput);
+			};
+
+			if pair_id_as_string != AssetSwitchPool1::name() {
+				return Err(AssetSwitchApiError::SwitchPoolNotFound);
+			}
+
+			let Some(switch_pair) = AssetSwitchPool1::switch_pair() else {
+				return Err(AssetSwitchApiError::SwitchPoolNotSet);
+			};
+
+			let from_v4 = AccountId32ToAccountId32JunctionConverter::try_convert(from).map_err(|_| AssetSwitchApiError::Internal)?;
+			let to_v4 = Location::try_from(to.clone()).map_err(|_| AssetSwitchApiError::Internal)?;
+			let our_location_for_destination = {
+				let universal_location = UniversalLocation::get();
+				universal_location.invert_target(&to_v4)
+			}.map_err(|_| AssetSwitchApiError::Internal)?;
+			let asset_id_v4 = AssetId::try_from(switch_pair.remote_asset_id).map_err(|_| AssetSwitchApiError::Internal)?;
+			let remote_asset_fee_v4 = Asset::try_from(switch_pair.remote_xcm_fee).map_err(|_| AssetSwitchApiError::Internal)?;
+
+			Ok(VersionedXcm::V4(AssetSwitchPool1::compute_xcm_for_switch(&our_location_for_destination, &from_v4.into(), &to_v4, amount, &asset_id_v4, &remote_asset_fee_v4)))
 		}
 	}
 

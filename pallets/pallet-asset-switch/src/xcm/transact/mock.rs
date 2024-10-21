@@ -19,6 +19,7 @@
 use frame_support::{
 	construct_runtime,
 	pallet_prelude::TypeInfo,
+	parameter_types,
 	traits::{
 		fungible::{
 			freeze::Mutate as MutateFreeze, hold::Mutate as MutateHold, Inspect as InspectFungible,
@@ -35,7 +36,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, CheckedConversion, IdentityLookup},
 	AccountId32,
 };
-use xcm::v4::Location;
+use xcm::v4::{InteriorLocation, Junctions::Here, Location};
 use xcm_executor::traits::ConvertLocation;
 
 use crate::{NewSwitchPairInfoOf, Pallet, SwitchPair, SwitchPairInfoOf};
@@ -98,6 +99,10 @@ impl pallet_balances::Config for MockRuntime {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const UniversalLocation: InteriorLocation = Here;
+}
+
 impl crate::Config for MockRuntime {
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
@@ -108,6 +113,7 @@ impl crate::Config for MockRuntime {
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();
 	type SwitchOrigin = EnsureRoot<Self::AccountId>;
+	type UniversalLocation = UniversalLocation;
 	type XcmRouter = ();
 	type WeightInfo = ();
 

@@ -165,6 +165,7 @@ impl<
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>;
 
+	#[allow(clippy::as_conversions)]
 	fn verify_proof_for_call_against_details(
 		call: &RuntimeCallOf<ConsumerRuntime>,
 		subject: &<ConsumerRuntime as pallet_dip_consumer::Config>::Identifier,
