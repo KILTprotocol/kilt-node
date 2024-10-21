@@ -1,6 +1,7 @@
 # Unfortunately we cannot add any lints based on `cfg(test)` nor `cfg(feature = "feat")`: https://github.com/rust-lang/cargo/issues/8170.
 # Hence, we can only define lints that are applied codebase-wide (including tests), and lints that are applied only to runtime code.
 
+# Codebase-wide lints.
 [target.'cfg(all())']
 rustflags = [
   "-Wclippy::as_underscore",
@@ -29,7 +30,6 @@ rustflags = [
   "-Wclippy::ref_patterns",
   "-Wclippy::rest_pat_in_fully_bound_structs",
   "-Wclippy::suspicious_operation_groupings",
-  "-Wclippy::trait_duplication_in_bounds",
   "-Wclippy::type_repetition_in_bounds",
   "-Wclippy::unnecessary_self_imports",
   "-Wclippy::unnecessary_struct_initialization",

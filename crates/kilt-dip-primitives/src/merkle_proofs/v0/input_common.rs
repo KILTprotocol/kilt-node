@@ -148,7 +148,7 @@ pub struct TimeBoundDidSignature<BlockNumber> {
 }
 
 impl<BlockNumber> TimeBoundDidSignature<BlockNumber> {
-	pub fn new(signature: DidSignature, valid_until: BlockNumber) -> Self {
+	pub const fn new(signature: DidSignature, valid_until: BlockNumber) -> Self {
 		Self { signature, valid_until }
 	}
 }
