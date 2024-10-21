@@ -729,29 +729,6 @@ impl pallet_assets::Config<BondedCoinsAssets> for Runtime {
 	type BenchmarkHelper = ();
 }
 
-parameter_types! {
-	pub MaxCurrenciesLength: u32 = 100;
-	pub MaxNameLength: u32 = 100;
-	pub MaxSymbolLength: u32 = 100;
-	pub AssetLocation: Location = xcm::v4::Junctions::Here.into();
-
-}
-
-impl pallet_bonded_coins::Config for Runtime {
-	type CollateralCurrency = Fungibles;
-	type DepositCurrency = Balances;
-	type DepositPerCurrency = runtime_common::constants::assets::MetaDepositBase;
-	type Fungibles = BondedFungibles;
-	type MaxCurrencies = MaxCurrenciesLength;
-	type PoolCreateOrigin = EnsureSigned<AccountId>;
-	type PoolId = AccountId;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type CollateralAssetId = AssetLocation;
-	type MaxStringLength = runtime_common::constants::assets::StringLimit;
-	type AssetId = u32;
-}
-
 impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;
 	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
@@ -1134,8 +1111,6 @@ construct_runtime! {
 		Fungibles: pallet_assets = 49,
 
 		BondedFungibles: pallet_assets::<Instance2> = 50,
-		BondingCurvesPallet: pallet_bonded_coins = 51,
-
 
 
 		// KILT Pallets. Start indices 60 to leave room
