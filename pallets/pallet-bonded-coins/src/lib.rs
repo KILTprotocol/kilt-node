@@ -220,7 +220,7 @@ pub mod pallet {
 
 			ensure!(pool_details.is_manager(&who), Error::<T>::Unauthorized);
 
-			Self::do_start_destroy_pool(&mut pool_details)?;
+			Self::do_start_destroy_pool(&mut pool_details, &pool_id.clone().into())?;
 
 			Self::deposit_event(Event::DestructionStarted(pool_id));
 			Ok(())
@@ -233,7 +233,7 @@ pub mod pallet {
 
 			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			Self::do_start_destroy_pool(&mut pool_details)?;
+			Self::do_start_destroy_pool(&mut pool_details, &pool_id.clone().into())?;
 
 			Self::deposit_event(Event::DestructionStarted(pool_id));
 			Ok(())
@@ -255,7 +255,7 @@ pub mod pallet {
 
 			let pool_account = pool_id.clone().into();
 
-			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
+			let mut total_collateral_issuance = Self::get_pool_collateral(&pool_account);
 
 			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::ZeroAmount);
 
@@ -265,36 +265,47 @@ pub mod pallet {
 				.map(|id| T::Fungibles::total_issuance(id.clone()))
 				.collect();
 
-			let sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
+			let mut sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
 				.iter()
 				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
 
 			ensure!(!sum_of_issuances.is_zero(), Error::<T>::ZeroAmount);
 
 			for (idx, currency_id) in pool_details.bonded_currencies.iter().enumerate() {
-				if !total_issuances[idx].is_zero() {
-					let burnt = T::Fungibles::decrease_balance(
-						currency_id.clone(),
-						&who,
-						Bounded::max_value(),
-						Precision::BestEffort,
-						Preservation::Expendable,
-						Fortitude::Force,
-					)?;
+				if total_issuances[idx].is_zero() {
+					continue;
+				}
+				let burnt = T::Fungibles::decrease_balance(
+					currency_id.clone(),
+					&who,
+					Bounded::max_value(),
+					Precision::BestEffort,
+					Preservation::Expendable,
+					Fortitude::Force,
+				)?;
 
-					let amount = burnt
-						.checked_mul(&total_collateral_issuance)
-						.ok_or(ArithmeticError::Overflow)? // TODO: do we need a fallback if this fails?
-						.checked_div(&sum_of_issuances)
-						.unwrap_or(Zero::zero());
+				let amount = burnt
+					.checked_mul(&total_collateral_issuance)
+					.ok_or(ArithmeticError::Overflow)? // TODO: do we need a fallback if this fails?
+					.checked_div(&sum_of_issuances)
+					.unwrap_or(Zero::zero());
 
-					T::CollateralCurrency::transfer(
-						T::CollateralAssetId::get(),
-						&pool_account,
-						&who,
-						amount,
-						Preservation::Expendable,
-					)?;
+				T::CollateralCurrency::transfer(
+					T::CollateralAssetId::get(),
+					&pool_account,
+					&who,
+					amount,
+					Preservation::Expendable,
+				)?;
+
+				total_collateral_issuance -= amount;
+				sum_of_issuances -= burnt;
+			}
+
+			// destroy currencies if the total issuance or collateral has dropped to 0
+			if total_collateral_issuance.is_zero() || sum_of_issuances.is_zero() {
+				for currency_id in pool_details.bonded_currencies.iter() {
+					T::Fungibles::start_destroy(currency_id.clone(), None)?;
 				}
 			}
 
@@ -302,40 +313,6 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(9)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn start_destroy_currencies(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
-			ensure_signed(origin)?;
-
-			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
-
-			ensure!(pool_details.state.is_destroying(), Error::<T>::InUse);
-
-			let pool_account = pool_id.clone().into();
-
-			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
-
-			if !total_collateral_issuance.is_zero() {
-				let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
-					.bonded_currencies
-					.iter()
-					.map(|id| T::Fungibles::total_issuance(id.clone()))
-					.collect();
-
-				let sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
-					.iter()
-					.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
-
-				ensure!(!sum_of_issuances.is_zero(), Error::<T>::InUse);
-			}
-
-			for currency_id in pool_details.bonded_currencies.iter() {
-				T::Fungibles::start_destroy(currency_id.clone(), None)?;
-			}
-
-			Ok(())
-		}
-
-		#[pallet::call_index(10)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			ensure_signed(origin)?;
@@ -371,10 +348,32 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn do_start_destroy_pool(pool_details: &mut PoolDetailsOf<T>) -> DispatchResult {
+		fn do_start_destroy_pool(pool_details: &mut PoolDetailsOf<T>, pool_account: &AccountIdOf<T>) -> DispatchResult {
 			ensure!(!pool_details.state.is_destroying(), Error::<T>::Destroying);
 
 			pool_details.state.destroy();
+
+			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
+
+			if !total_collateral_issuance.is_zero() {
+				let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+					.bonded_currencies
+					.iter()
+					.map(|id| T::Fungibles::total_issuance(id.clone()))
+					.collect();
+
+				let sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
+					.iter()
+					.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
+
+				if !sum_of_issuances.is_zero() {
+					return Ok(());
+				};
+			}
+
+			for currency_id in pool_details.bonded_currencies.iter() {
+				T::Fungibles::start_destroy(currency_id.clone(), None)?;
+			}
 
 			Ok(())
 		}
