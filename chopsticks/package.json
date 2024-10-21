@@ -24,6 +24,5 @@
     "pre:spiritnet:spawn": "yarn internal:spiritnet:relay-setup && yarn internal:spiritnet:kilt-setup && yarn internal:spiritnet:ah-setup",
     "spiritnet:spawn": "bash -c 'trap \"echo \"\"Cleaning up temporary resources. Please wait a few seconds...\"\" && yarn spiritnet:cleanup\" SIGINT; yarn pre:spiritnet:spawn && yarn chopsticks xcm -r runtimes/spiritnet/relay/.tmp.yaml -p runtimes/spiritnet/kilt/.tmp.yaml -p runtimes/spiritnet/ah/.tmp.yaml'",
     "spiritnet:cleanup": "yarn internal:spiritnet:relay-teardown && yarn internal:spiritnet:kilt-teardown && yarn internal:spiritnet:ah-teardown"
-  },
-  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+  }
 }
