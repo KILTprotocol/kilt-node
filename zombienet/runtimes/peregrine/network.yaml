@@ -1,0 +1,33 @@
+settings:
+    node_verifier: "None"
+    provider: "kubernetes"
+    # 18000 seconds -> 300 minutes -> 5 hours
+    timeout: 18000
+
+# Env variables:
+# * RELAY_IMAGE: Docker image for relaychain nodes
+# * RELAY_RPC: RPC port for one relaychain node
+# * PARA_IMAGE: Docker image for the parachain nodes
+# * PARA_RPC: RPC port for one parachain node
+
+relaychain:
+    chain: paseo-local
+    chain_spec_path: runtimes/peregrine/paseo-local-fast-v1.3.1-e1fd37c.json
+    default_image: "{{RELAY_IMAGE}}"
+    nodes:
+        - name: "relay-alice"
+          rpc_port: "{{RELAY_RPC}}"
+        - name: "relay-bob"
+
+parachains:
+    - id: 2086
+      chain: peregrine-dev
+
+      collators:
+          - command: "node-executable"
+            image: "{{PARA_IMAGE}}"
+            name: "para-alice"
+            rpc_port: "{{PARA_RPC}}"
+          - command: "node-executable"
+            image: "{{PARA_IMAGE}}"
+            name: "para-bob"

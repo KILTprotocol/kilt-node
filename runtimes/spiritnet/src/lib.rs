@@ -42,7 +42,7 @@ use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use sp_api::impl_runtime_apis;
-use sp_core::{ConstBool, ConstU64, OpaqueMetadata};
+use sp_core::{ConstBool, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
@@ -288,7 +288,6 @@ impl pallet_aura::Config for Runtime {
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxAuthorities;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type SlotDuration = ConstU64<SLOT_DURATION>;
 }
 
 parameter_types! {
@@ -1102,8 +1101,7 @@ construct_runtime! {
 		PolkadotXcm: pallet_xcm = 83,
 		// Does nothing cool, just provides an origin.
 		CumulusXcm: cumulus_pallet_xcm exclude_parts { Call } = 84,
-		// Fix: delete this pallet in the next release
-		DmpQueue: cumulus_pallet_dmp_queue = 85,
+		// DmpQueue: cumulus_pallet_dmp_queue = 85,
 		// Queue and pass DMP messages on to be executed.
 		MessageQueue: pallet_message_queue = 86,
 	}
@@ -1192,12 +1190,12 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(
-		runtime_common::migrations::BumpStorageVersion<Runtime>,
-		cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
-		pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	),
+	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>,
 >;
+
+parameter_types! {
+	pub const DmpPalletName: &'static str = "DmpQueue";
+}
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
@@ -1248,7 +1246,6 @@ mod benches {
 		[pallet_assets, Fungibles]
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
-		[cumulus_pallet_dmp_queue, DmpQueue]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 

@@ -1,0 +1,3 @@
+endpoint:
+    - wss://spiritnet.kilt.io
+db: db/spiritnet/kilt/db.sqlite

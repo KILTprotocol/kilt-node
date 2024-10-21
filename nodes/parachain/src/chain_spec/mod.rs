@@ -134,7 +134,9 @@ impl FromStr for ParachainRuntime {
 			// Any other Spiritnet-based chainspec
 			s if s.contains("spiritnet") => Ok(Self::Spiritnet(SpiritnetRuntime::Other(s.to_string()))),
 
-			_ => Err(format!("Unknown chainspec id provided: {s}")),
+			// Instead of panicking, we use the Peregrine runtime, since we don't expect Spiritnet to ever be used in
+			// this way
+			path => Ok(Self::Peregrine(PeregrineRuntime::Other(path.to_string()))),
 		}
 	}
 }

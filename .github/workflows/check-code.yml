@@ -33,6 +33,13 @@ jobs:
   cargo-clippy:
     name: Run Clippy checks
     runs-on: ubuntu-latest
+    container:
+      image: paritytech/ci-unified:bullseye-1.74.0
+    env:
+      # Configured by the Docker image. We can't change this unless the image does it.
+      CARGO_HOME: /usr/local/cargo
+      RUSTFLAGS: -D warnings
+      SKIP_WASM_BUILD: 1
     needs: get-commit-head
     if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
@@ -47,30 +54,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
-
       - name: Set up Cargo cache
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
+            ${{ env.CARGO_HOME }}/bin/
+            ${{ env.CARGO_HOME }}/registry/index/
+            ${{ env.CARGO_HOME }}/registry/cache/
+            ${{ env.CARGO_HOME }}/git/db/
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+          save-always: true
 
       - name: Run `cargo clippy`
-        run: |
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -v "${HOME}/.cargo:/root/.cargo" \
-            -w /workspace \
-            -e SKIP_WASM_BUILD=1 \
-            paritytech/ci-unified:bullseye-1.74.0 \
-            bash -c "cargo clippy --all-targets --locked ${{ matrix.features }} -- -D warnings"
+        run: cargo clippy --all-targets --locked ${{ matrix.features }}
 
   cargo-fmt:
     name: Check formatting
@@ -78,6 +74,9 @@ jobs:
     container:
       image: paritytech/ci-unified:bullseye-1.74.0
     env:
+      # Configured by the Docker image. We can't change this unless the image does it.
+      CARGO_HOME: /usr/local/cargo
+      # Latest nightly version matching the base rustc version (1.74.0).
       RUSTUP_NIGHTLY_VERSION: nightly-2023-10-02
     needs: get-commit-head
     if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
@@ -86,15 +85,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.CARGO_HOME }}/bin/
+            ${{ env.CARGO_HOME }}/registry/index/
+            ${{ env.CARGO_HOME }}/registry/cache/
+            ${{ env.CARGO_HOME }}/git/db/
+          key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
+          save-always: true
+
       - name: Install nightly toolchain
         run: rustup toolchain add ${{ env.RUSTUP_NIGHTLY_VERSION }}
 
       - name: Run `cargo fmt`
-        # Latest nightly version matching the base rustc version (1.74.0)
         run: cargo +${{ env.RUSTUP_NIGHTLY_VERSION }} fmt -- --check
 
       - name: Run `taplo`
         run: taplo fmt --check
+
+  cargo-deny:
+    name: Check cargo-deny rules
+    runs-on: ubuntu-latest
+    needs: get-commit-head
+    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run `cargo deny`
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          # All is set in the config file
+          arguments:
+          command-arguments: "--hide-inclusion-graph -c .cargo-deny.toml --show-stats -D warnings"
 
   integration-tests:
     name: Run Chopsticks tests
@@ -106,8 +132,7 @@ jobs:
     defaults:
       run:
         working-directory: ${{ env.working-dir }}
-    needs:
-      - get-commit-head
+    needs: get-commit-head
     if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
 
     steps:
@@ -136,12 +161,14 @@ jobs:
       - name: Set up Cargo cache
         uses: actions/cache@v4
         with:
+          # Not executed in a container, so we cache the local paths as on the GH worker.
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
+            ${HOME}/.cargo/bin/
+            ${HOME}/.cargo/registry/index/
+            ${HOME}/.cargo/registry/cache/
+            ${HOME}/.cargo/git/db/
           key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
+          save-always: true
 
       - name: Build Peregrine runtime
         run: cargo build -p peregrine-runtime
@@ -152,6 +179,9 @@ jobs:
   cargo-test:
     name: Run Cargo tests
     runs-on: ubuntu-latest
+    env:
+      # Configured by the Docker image. We can't change this unless the image does it.
+      CARGO_HOME: /usr/local/cargo
     needs: cargo-clippy
 
     strategy:
@@ -173,18 +203,24 @@ jobs:
       - name: Set up Cargo cache
         uses: actions/cache@v4
         with:
+          # These paths are mounted inside the Docker container.
+          # We cannot mount the `.cargo/bin` folder since the container already contains binaries, and overriding with an empty one breaks compilation.
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+          save-always: true
 
       - name: Run `cargo test`
+        # We cannot use the default `container:` component because it runs out of memory, so we resort to using this solution instead.
+        # Maybe re-evaluate this job if anything changes GH side.
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
-            -v "${HOME}/.cargo:/root/.cargo" \
+            -v "${HOME}/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
+            -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
+            -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "cargo test --all-targets --locked ${{ matrix.features }}"
@@ -192,6 +228,13 @@ jobs:
   cargo-doc:
     name: Check Rustdoc
     runs-on: ubuntu-latest
+    container:
+      image: paritytech/ci-unified:bullseye-1.74.0
+    env:
+      # Configured by the Docker image. We can't change this unless the image does it.
+      CARGO_HOME: /usr/local/cargo
+      SKIP_WASM_BUILD: 1
+      RUSTDOCFLAGS: -D warnings
     needs: cargo-clippy
 
     strategy:
@@ -205,40 +248,80 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
+      - name: Set up Cargo cache
+        uses: actions/cache@v4
         with:
-          tool-cache: true
+          path: |
+            ${{ env.CARGO_HOME }}/bin/
+            ${{ env.CARGO_HOME }}/registry/index/
+            ${{ env.CARGO_HOME }}/registry/cache/
+            ${{ env.CARGO_HOME }}/git/db/
+          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+          save-always: true
+
+      - name: Run `cargo doc`
+        run: cargo doc --no-deps --locked ${{ matrix.features }}
+
+  try-runtime:
+    name: Run try-runtime
+    runs-on: ubuntu-latest
+    container:
+      image: paritytech/ci-unified:bullseye-1.74.0
+    env:
+      # Configured by the Docker image. We can't change this unless the image does it.
+      CARGO_HOME: /usr/local/cargo
+      TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0
+    needs: cargo-clippy
+
+    strategy:
+      matrix:
+        runtime:
+          - peregrine
+          - spiritnet
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Cargo cache
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-          key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
+            ${{ env.CARGO_HOME }}/bin/
+            ${{ env.CARGO_HOME }}/registry/index/
+            ${{ env.CARGO_HOME }}/registry/cache/
+            ${{ env.CARGO_HOME }}/git/db/
+          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
+          save-always: true
 
-      - name: Run `cargo doc`
+      - name: Install try-runtime
         run: |
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -v "${HOME}/.cargo:/root/.cargo" \
-            -w /workspace \
-            -e RUSTDOCFLAGS='-D warnings' \
-            -e SKIP_WASM_BUILD=1 \
-            paritytech/ci-unified:bullseye-1.74.0 \
-            bash -c "cargo doc --no-deps --locked ${{ matrix.features }}"
+          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${{ env.TRY_RUNTIME_CLI_VERSION_TAG }}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
+          chmod +x ./try-runtime
+          ./try-runtime --version
 
-  try-runtime:
-    name: Run try-runtime
+      - name: Build runtime
+        run: cargo build --release --locked -p ${{ matrix.runtime }}-runtime --features try-runtime
+
+      - name: Run `try-runtime`
+        run: |
+          ./try-runtime \
+          --runtime=./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm \
+          on-runtime-upgrade \
+            --disable-spec-version-check \
+            --checks=all \
+          live \
+            --uri=wss://${{ matrix.runtime }}.kilt.io
+
+  test-runtime-benchmarks:
+    name: Test runtime benchmarks
     runs-on: ubuntu-latest
-    needs: cargo-clippy
     env:
-      TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0
-    container:
-      image: paritytech/ci-unified:bullseye-1.74.0
+      # Configured by the Docker image. We can't change this unless the image does it.
+      CARGO_HOME: /usr/local/cargo
+    needs: cargo-clippy
+    if: ${{ github.event_name == 'push'}}
 
     strategy:
       matrix:
@@ -256,31 +339,24 @@ jobs:
         with:
           tool-cache: true
 
-      - name: Install try-runtime
-        run: |
-          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${{ env.TRY_RUNTIME_CLI_VERSION_TAG }}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
-          chmod +x ./try-runtime
-          ./try-runtime --version
-
       - name: Set up Cargo cache
         uses: actions/cache@v4
         with:
+          # These paths are mounted inside the Docker container.
+          # We cannot mount the `.cargo/bin` folder since the container already contains binaries, and overriding with an empty one breaks compilation.
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build runtime
-        run: cargo build --release --locked -p ${{ matrix.runtime }}-runtime --features try-runtime
-
-      - name: Run `try-runtime`
+      - name: Run runtime benchmarks
         run: |
-          ./try-runtime \
-          --runtime=./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm \
-          on-runtime-upgrade \
-            --disable-spec-version-check \
-            --checks=all \
-          live \
-            --uri=wss://${{ matrix.runtime }}.kilt.io
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
+            -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
+            -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
+            -w /workspace \
+            paritytech/ci-unified:bullseye-1.74.0 \
+            bash -c "bash -x scripts/run_benches_for_runtime.sh ${{ matrix.runtime }} dev"

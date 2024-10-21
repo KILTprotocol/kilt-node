@@ -1,10 +1,29 @@
 {
-    "name": "kilt-chopsticks",
-    "private": "true",
-    "devDependencies": {
-        "@acala-network/chopsticks": "^0.14.1"
-    },
-    "scripts": {
-        "spawn": "cargo build -p peregrine-runtime && yarn chopsticks -c chain.yaml"
-    }
+  "name": "@kiltprotocol/chopsticks-networks",
+  "license": "MIT",
+  "devDependencies": {
+    "@acala-network/chopsticks": "^0.15.0",
+    "@alexlafroscia/yaml-merge": "^4.1.0"
+  },
+  "scripts": {
+    "internal:peregrine:relay-setup": "yarn yaml-merge runtimes/peregrine/relay/config.yaml runtimes/peregrine/relay/extra.yaml > runtimes/peregrine/relay/.tmp.yaml",
+    "internal:peregrine:relay-teardown": "rm runtimes/peregrine/relay/.tmp.yaml",
+    "internal:peregrine:kilt-setup": "yarn yaml-merge runtimes/peregrine/kilt/config.yaml runtimes/peregrine/kilt/extra.yaml > runtimes/peregrine/kilt/.tmp.yaml",
+    "internal:peregrine:kilt-teardown": "rm runtimes/peregrine/kilt/.tmp.yaml",
+    "internal:peregrine:ah-setup": "yarn yaml-merge runtimes/peregrine/ah/config.yaml runtimes/peregrine/ah/extra.yaml > runtimes/peregrine/ah/.tmp.yaml",
+    "internal:peregrine:ah-teardown": "rm runtimes/peregrine/ah/.tmp.yaml",
+    "internal:spiritnet:relay-setup": "yarn yaml-merge runtimes/spiritnet/relay/config.yaml runtimes/spiritnet/relay/extra.yaml > runtimes/spiritnet/relay/.tmp.yaml",
+    "internal:spiritnet:relay-teardown": "rm runtimes/spiritnet/relay/.tmp.yaml",
+    "internal:spiritnet:kilt-setup": "yarn yaml-merge runtimes/spiritnet/kilt/config.yaml runtimes/spiritnet/kilt/extra.yaml > runtimes/spiritnet/kilt/.tmp.yaml",
+    "internal:spiritnet:kilt-teardown": "rm runtimes/spiritnet/kilt/.tmp.yaml",
+    "internal:spiritnet:ah-setup": "yarn yaml-merge runtimes/spiritnet/ah/config.yaml runtimes/spiritnet/ah/extra.yaml > runtimes/spiritnet/ah/.tmp.yaml",
+    "internal:spiritnet:ah-teardown": "rm runtimes/spiritnet/ah/.tmp.yaml",
+    "pre:peregrine:spawn": "yarn internal:peregrine:relay-setup && yarn internal:peregrine:kilt-setup && yarn internal:peregrine:ah-setup",
+    "peregrine:spawn": "bash -c 'trap \"echo \"\"Cleaning up temporary resources. Please wait a few seconds...\"\" && yarn peregrine:cleanup\" SIGINT; yarn pre:peregrine:spawn && yarn chopsticks xcm -r runtimes/peregrine/relay/.tmp.yaml -p runtimes/peregrine/kilt/.tmp.yaml -p runtimes/peregrine/ah/.tmp.yaml'",
+    "peregrine:cleanup": "yarn internal:peregrine:relay-teardown && yarn internal:peregrine:kilt-teardown && yarn internal:peregrine:ah-teardown",
+    "pre:spiritnet:spawn": "yarn internal:spiritnet:relay-setup && yarn internal:spiritnet:kilt-setup && yarn internal:spiritnet:ah-setup",
+    "spiritnet:spawn": "bash -c 'trap \"echo \"\"Cleaning up temporary resources. Please wait a few seconds...\"\" && yarn spiritnet:cleanup\" SIGINT; yarn pre:spiritnet:spawn && yarn chopsticks xcm -r runtimes/spiritnet/relay/.tmp.yaml -p runtimes/spiritnet/kilt/.tmp.yaml -p runtimes/spiritnet/ah/.tmp.yaml'",
+    "spiritnet:cleanup": "yarn internal:spiritnet:relay-teardown && yarn internal:spiritnet:kilt-teardown && yarn internal:spiritnet:ah-teardown"
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }
