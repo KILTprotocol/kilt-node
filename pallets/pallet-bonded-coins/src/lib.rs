@@ -216,14 +216,8 @@ pub mod pallet {
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.is_manager(&who), Error::<T>::Unauthorized);
-
-			Self::do_start_destroy_pool(&mut pool_details, &pool_id.clone().into())?;
-
-			Self::deposit_event(Event::DestructionStarted(pool_id));
-			Ok(())
+			Self::do_start_destroy_pool(pool_id, Some(who))
 		}
 
 		#[pallet::call_index(7)]
@@ -231,12 +225,7 @@ pub mod pallet {
 		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			ensure_root(origin)?;
 
-			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
-
-			Self::do_start_destroy_pool(&mut pool_details, &pool_id.clone().into())?;
-
-			Self::deposit_event(Event::DestructionStarted(pool_id));
-			Ok(())
+			Self::do_start_destroy_pool(pool_id, None)
 		}
 
 		#[pallet::call_index(8)]
@@ -358,12 +347,20 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn do_start_destroy_pool(pool_details: &mut PoolDetailsOf<T>, pool_account: &AccountIdOf<T>) -> DispatchResult {
+		fn do_start_destroy_pool(pool_id: T::PoolId, maybe_check_owner: Option<AccountIdOf<T>>) -> DispatchResult {
+			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
 			ensure!(!pool_details.state.is_destroying(), Error::<T>::Destroying);
+
+			if let Some(caller) = maybe_check_owner {
+				ensure!(pool_details.is_manager(&caller), Error::<T>::Unauthorized);
+			}
 
 			pool_details.state.destroy();
 
-			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
+			Self::deposit_event(Event::DestructionStarted(pool_id.clone()));
+
+			let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
 
 			if total_collateral_issuance.is_zero() {
 				for currency_id in pool_details.bonded_currencies.iter() {
