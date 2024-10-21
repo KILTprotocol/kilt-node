@@ -43,6 +43,8 @@ pub mod pallet {
 	};
 	use sp_std::default::Default;
 
+	use crate::types::PoolDetails;
+
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
@@ -69,6 +71,10 @@ pub mod pallet {
 	pub(crate) type CurrencySymbolOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
 
 	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
+
+	// TODO: change CurveParameterTypeOf.
+	pub(crate) type PoolDetailsOf<T> =
+		PoolDetails<<T as frame_system::Config>::AccountId, CurveParameterTypeOf<T>, BoundedCurrencyVec<T>>;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -128,6 +134,15 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
+
+	/// Bonded Currency Swapping Pools
+	#[pallet::storage]
+	#[pallet::getter(fn pools)]
+	pub(crate) type Pools<T: Config> = StorageMap<_, Twox64Concat, T::PoolId, PoolDetailsOf<T>, OptionQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn nex_asset_id)]
+	pub(crate) type NextAssetId<T: Config> = StorageValue<_, FungiblesAssetIdOf<T>, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
