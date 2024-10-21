@@ -39,8 +39,8 @@ pub mod pallet {
 	use parity_scale_codec::FullCodec;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
-		traits::{Bounded, CheckedAdd, CheckedDiv, CheckedSub, One, SaturatedConversion, Saturating, Zero},
-		BoundedVec, FixedPointNumber,
+		traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Saturating, StaticLookup, Zero},
+		ArithmeticError, BoundedVec, FixedPointNumber,
 	};
 	use sp_std::default::Default;
 
@@ -159,10 +159,14 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// The pool id is not currently registered.
 		PoolUnknown,
+		/// The amount to mint, burn, or swap is zero.
+		ZeroAmount,
 		/// The pool is already in the process of being destroyed.
 		Destroying,
 		/// The user is not privileged to perform the requested operation.
 		Unauthorized,
+		/// The pool is in use and cannot be destroyed at this point.
+		InUse,
 	}
 
 	#[pallet::composite_enum]
@@ -237,54 +241,61 @@ pub mod pallet {
 
 		#[pallet::call_index(8)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn refund_accounts(origin: OriginFor<T>, pool_id: T::PoolId, max_accounts: u32) -> DispatchResult {
+		pub fn refund_account(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			account: AccountIdLookupOf<T>,
+		) -> DispatchResult {
 			ensure_signed(origin)?;
+			let who = T::Lookup::lookup(account)?;
 
 			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.state.is_destroying(), Error::<T>::Destroying); // TODO: incorrect error
+			ensure!(pool_details.state.is_destroying(), Error::<T>::InUse);
 
 			let pool_account = pool_id.clone().into();
 
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
 
-			let total_issuances: Vec<FungiblesBalanceOf<T>> = if total_collateral_issuance.is_zero() {
-				// nothing to distribute
-				vec![Zero::zero(); pool_details.bonded_currencies.len()]
-			} else {
-				pool_details
-					.bonded_currencies
-					.iter()
-					.map(|id| T::Fungibles::total_issuance(id.clone()))
-					.collect()
-			};
+			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::ZeroAmount);
+
+			let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+				.bonded_currencies
+				.iter()
+				.map(|id| T::Fungibles::total_issuance(id.clone()))
+				.collect();
 
 			let sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
 				.iter()
 				.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
-			let collateral_per_token = total_collateral_issuance
-				.checked_div(&sum_of_issuances)
-				.unwrap_or(Zero::zero());
 
-			let mut remaining_max_accounts = max_accounts.clone();
+			ensure!(!sum_of_issuances.is_zero(), Error::<T>::ZeroAmount);
 
-			for (idx, currency_id) in pool_details.bonded_currencies.clone().iter().enumerate() {
+			for (idx, currency_id) in pool_details.bonded_currencies.iter().enumerate() {
 				if !total_issuances[idx].is_zero() {
-					let refunded_accounts = Self::do_refund_accounts(
+					let burnt = T::Fungibles::decrease_balance(
 						currency_id.clone(),
-						collateral_per_token,
-						remaining_max_accounts,
-						&pool_account,
+						&who,
+						Bounded::max_value(),
+						Precision::BestEffort,
+						Preservation::Expendable,
+						Fortitude::Force,
 					)?;
-					if remaining_max_accounts > refunded_accounts {
-						remaining_max_accounts -= refunded_accounts;
-					} else {
-						// max_accounts reached; stop execution
-						return Ok(());
-					}
+
+					let amount = burnt
+						.checked_mul(&total_collateral_issuance)
+						.ok_or(ArithmeticError::Overflow)? // TODO: do we need a fallback if this fails?
+						.checked_div(&sum_of_issuances)
+						.unwrap_or(Zero::zero());
+
+					T::CollateralCurrency::transfer(
+						T::CollateralAssetId::get(),
+						&pool_account,
+						&who,
+						amount,
+						Preservation::Expendable,
+					)?;
 				}
-				// issuance is zero or no more accounts; currency can be destroyed
-				T::Fungibles::start_destroy(currency_id.clone(), None)?; // TODO: can be called multiple times, but can we somehow avoid it?
 			}
 
 			Ok(())
@@ -292,12 +303,46 @@ pub mod pallet {
 
 		#[pallet::call_index(9)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		pub fn start_destroy_currencies(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+			ensure_signed(origin)?;
+
+			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(pool_details.state.is_destroying(), Error::<T>::InUse);
+
+			let pool_account = pool_id.clone().into();
+
+			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
+
+			if !total_collateral_issuance.is_zero() {
+				let total_issuances: Vec<FungiblesBalanceOf<T>> = pool_details
+					.bonded_currencies
+					.iter()
+					.map(|id| T::Fungibles::total_issuance(id.clone()))
+					.collect();
+
+				let sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
+					.iter()
+					.fold(Zero::zero(), |sum, x| sum.saturating_add(*x));
+
+				ensure!(!sum_of_issuances.is_zero(), Error::<T>::InUse);
+			}
+
+			for currency_id in pool_details.bonded_currencies.iter() {
+				T::Fungibles::start_destroy(currency_id.clone(), None)?;
+			}
+
+			Ok(())
+		}
+
+		#[pallet::call_index(10)]
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			ensure_signed(origin)?;
 
 			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.state.is_destroying(), Error::<T>::Destroying);
+			ensure!(pool_details.state.is_destroying(), Error::<T>::InUse);
 
 			for currency_id in pool_details.bonded_currencies {
 				if T::Fungibles::asset_exists(currency_id.clone()) {
@@ -332,37 +377,6 @@ pub mod pallet {
 			pool_details.state.destroy();
 
 			Ok(())
-		}
-
-		fn do_refund_accounts(
-			currency_id: FungiblesAssetIdOf<T>,
-			collateral_per_token: CollateralCurrencyBalanceOf<T>,
-			remaining_max_accounts: u32,
-			collateral_account: &AccountIdOf<T>,
-		) -> Result<u32, DispatchError> {
-			// TODO: how do we get the accounts?
-			let accounts = vec![];
-
-			for who in accounts.iter() {
-				let burnt = T::Fungibles::decrease_balance(
-					currency_id.clone(),
-					who,
-					Bounded::max_value(),
-					Precision::BestEffort,
-					Preservation::Expendable,
-					Fortitude::Force,
-				)?;
-
-				T::CollateralCurrency::transfer(
-					T::CollateralAssetId::get(),
-					collateral_account,
-					who,
-					burnt.saturating_mul(collateral_per_token.clone()),
-					Preservation::Expendable,
-				)?;
-			}
-
-			Ok(accounts.len().saturated_into())
 		}
 
 		fn get_pool_collateral(pool_account: &AccountIdOf<T>) -> CollateralCurrencyBalanceOf<T> {
