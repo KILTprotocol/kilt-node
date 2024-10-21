@@ -3,7 +3,6 @@
 
 [target.'cfg(all())']
 rustflags = [
-  "-Wclippy::absolute_paths",
   "-Wclippy::as_underscore",
   "-Wclippy::branches_sharing_code",
   "-Wclippy::clear_with_drain",
@@ -16,7 +15,6 @@ rustflags = [
   "-Wclippy::equatable_if_let",
   "-Wclippy::if_then_some_else_none",
   "-Wclippy::impl_trait_in_params",
-  "-Wclippy::infinite_loop",
   "-Wclippy::iter_on_empty_collections",
   "-Wclippy::iter_on_single_items",
   "-Wclippy::iter_with_drain",
@@ -39,6 +37,8 @@ rustflags = [
   "-Wclippy::unused_peekable",
   "-Wclippy::useless_let_if_seq",
   "-Wclippy::wildcard_dependencies",
+  # TODO: Add after upgrading to 1.76
+  # "-Wclippy::infinite_loop",
   # TODO: Add after upgrading to 1.77
   #"-Wclippy::empty_enum_variants_with_brackets"
   # TODO: Add after upgrading to 1.80
@@ -80,7 +80,6 @@ rustflags = [
   "-Wclippy::let_underscore_untyped",
   "-Wclippy::missing_const_for_fn",
   "-Wclippy::mixed_read_write_in_expression",
-  "-Wclippy::pattern_type_mismatch",
   "-Wclippy::print_stderr",
   "-Wclippy::print_stdout",
   "-Wclippy::shadow_reuse",
