@@ -33,3 +33,23 @@ To spin up a deployment using the defaults provided in the relative `.env` file,
 If values are explicitly set in the env, then run either `yarn spawn:peregrine` or `yarn spawn:spiritnet`, which will assume those values have already been set elsewhere.
 
 After spawning the network, you can connect to the relaychain Alice node on `ws://localhost:<RELAY_RPC>` and to the KILT Alice node on `ws://localhost:<PARA_RPC>`.
+
+## How to update chainspecs
+
+In case the relaychain version should be updated to reflect what is deployed on production, a new chainspec must be generated and added to this folder to replace the current one.
+
+### Spiritnet/Polkadot
+
+1. Head to the [polkadot-fellows/runtimes repo](https://github.com/polkadot-fellows/runtimes)
+2. Checkout the right tag corresponding to the new version to deploy in the Zombienet environment, e.g., [`v1.3.3`](https://github.com/polkadot-fellows/runtimes/tree/v1.3.3)
+3. Run `cargo run --release --features fast-runtime -p chain-spec-generator -- polkadot-local > out.json`, which saves the new chainspec into a temporary `out.json` file
+4. Move the file into `runtimes/spiritnet` and rename it to `polkadot-local-fast-<version_tag>-<commit_sha>.json`, e.g., `polkadot-local-fast-v1.3.3-55bd514`
+5. Update the `spiritnet/.env` file to set the right Docker image tag for the `RELAY_IMAGE` variable
+
+### Peregrine/Paseo
+
+1. Head to the [paseo-network/runtimes repo](https://github.com/paseo-network/runtimes)
+2. Checkout the right tag corresponding to the new version to deploy in the Zombienet environment, e.g., [`v1.3.1`](https://github.com/paseo-network/runtimes/tree/v1.3.1)
+3. Run `cargo run --release --features fast-runtime -p chain-spec-generator -- paseo-local > out.json`, which saves the new chainspec into a temporary `out.json` file
+4. Move the file into `runtimes/peregrine` and rename it to `paseo-local-fast-<version_tag>-<commit_sha>.json`, e.g., `polkadot-local-fast-v1.3.1-e1fd37c`
+5. Update the `peregrine/.env` file to set the right Docker image tag for the `RELAY_IMAGE` variable

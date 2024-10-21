@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	construct_runtime, storage_alias,
+	construct_runtime, parameter_types, storage_alias,
 	traits::{
 		fungible::{Mutate, MutateFreeze, MutateHold},
 		Everything, VariantCount,
@@ -34,14 +34,17 @@ use sp_runtime::{
 };
 use sp_std::sync::Arc;
 use xcm::v4::{
-	Asset, AssetId, Error as XcmError, Fungibility,
+	Asset, AssetId, Error as XcmError, Fungibility, InteriorLocation,
 	Junction::{AccountId32 as AccountId32Junction, AccountKey20, GlobalConsensus, Parachain},
 	Junctions::{Here, X1, X2},
-	Location, NetworkId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
+	Location, NetworkId, QueryId, SendError, SendResult, SendXcm, Xcm, XcmContext, XcmHash,
 };
 use xcm_executor::{traits::TransactAsset, AssetsInHolding};
 
-use crate::{xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, Pallet};
+use crate::{
+	xcm::convert::AccountId32ToAccountId32JunctionConverter, Config, NewSwitchPairInfoOf, NextQueryId, Pallet,
+	PendingSwitchConfirmations, UnconfirmedSwitchInfoOf,
+};
 
 construct_runtime!(
 	pub enum MockRuntime {
@@ -173,6 +176,10 @@ impl SendXcm for AlwaysSuccessfulXcmRouter {
 	}
 }
 
+parameter_types! {
+	pub const UniversalLocation: InteriorLocation = Here;
+}
+
 impl crate::Config for MockRuntime {
 	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = MockFungibleAssetTransactor;
@@ -183,6 +190,7 @@ impl crate::Config for MockRuntime {
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;
 	type SwitchHooks = ();
 	type SwitchOrigin = EnsureRoot<Self::AccountId>;
+	type UniversalLocation = UniversalLocation;
 	type WeightInfo = ();
 	type XcmRouter = AlwaysSuccessfulXcmRouter;
 
@@ -195,6 +203,8 @@ pub(super) struct ExtBuilder(
 	Option<NewSwitchPairInfoOf<MockRuntime>>,
 	Vec<(AccountId32, u64, u64, u64)>,
 	Vec<(AccountId32, Asset)>,
+	Vec<(QueryId, UnconfirmedSwitchInfoOf<MockRuntime>)>,
+	QueryId,
 );
 
 pub(super) const FREEZE_REASON: [u8; 1] = *b"1";
@@ -213,6 +223,19 @@ impl ExtBuilder {
 
 	pub(super) fn with_fungibles(mut self, fungibles: Vec<(AccountId32, Asset)>) -> Self {
 		self.2 = fungibles;
+		self
+	}
+
+	pub(super) fn with_pending_switches(
+		mut self,
+		switches: Vec<(QueryId, UnconfirmedSwitchInfoOf<MockRuntime>)>,
+	) -> Self {
+		self.3 = switches;
+		self
+	}
+
+	pub(super) fn with_next_query_id_value(mut self, value: QueryId) -> Self {
+		self.4 = value;
 		self
 	}
 
@@ -263,6 +286,12 @@ impl ExtBuilder {
 					)
 				});
 			}
+
+			for (query_id, pending_switch) in self.3 {
+				PendingSwitchConfirmations::<MockRuntime>::insert(query_id, pending_switch.clone());
+			}
+
+			NextQueryId::<MockRuntime>::set(self.4);
 
 			// Some setup operations generate events which interfere with our assertions.
 			System::reset_events()

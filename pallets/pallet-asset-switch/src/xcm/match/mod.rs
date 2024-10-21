@@ -47,10 +47,7 @@ where
 		// 1. Retrieve switch pair from storage.
 		let switch_pair = SwitchPair::<T, I>::get().ok_or(XcmExecutorError::AssetNotHandled)?;
 
-		// 2. Ensure switch pair is enabled
-		ensure!(switch_pair.is_enabled(), XcmExecutorError::AssetNotHandled);
-
-		// 3. Match stored asset ID with input asset ID.
+		// 2. Match stored asset ID with input asset ID.
 		let Asset { id, fun } = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 			log::error!(
 				target: LOG_TARGET,
@@ -61,7 +58,7 @@ where
 			XcmExecutorError::AssetNotHandled
 		})?;
 		ensure!(id == a.id, XcmExecutorError::AssetNotHandled);
-		// 4. Verify the stored asset is a fungible one.
+		// 3. Verify the stored asset is a fungible one.
 		let Fungibility::Fungible(_) = fun else {
 			log::info!(target: LOG_TARGET, "Stored remote fee asset {:?} is not a fungible one.", switch_pair.remote_xcm_fee);
 			return Err(XcmExecutorError::AssetNotHandled);
@@ -71,7 +68,7 @@ where
 		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
 		let AssetId(location) = id;
-		// 5. Force input asset as a fungible one and return its amount.
+		// 4. Force input asset as a fungible one and return its amount.
 		let Fungibility::Fungible(amount) = a.fun else {
 			log::info!(target: LOG_TARGET, "Input asset {:?} is supposed to be fungible but it is not.", a);
 			return Err(XcmExecutorError::AmountToBalanceConversionFailed);

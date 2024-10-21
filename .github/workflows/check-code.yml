@@ -6,7 +6,8 @@ on:
     branches:
       - develop
       - master
-      - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -45,9 +46,13 @@ jobs:
 
     strategy:
       matrix:
-        features:
-          -
-          - --all-features
+        cargo-flags:
+          # Generic clippy checks for all features
+          - --all-targets --all-features
+          # Generic clippy checks for no features (catches some missing `no_std`-only lints)
+          - --all-targets
+          # Clippy lints specifically for all runtime code, excluding all test and binary crates
+          - --target wasm32-unknown-unknown --no-default-features --workspace --exclude kilt-parachain --exclude standalone-node --exclude xcm-integration-tests --exclude 'dip-provider*' --exclude 'dip-consumer*'
       fail-fast: false
 
     steps:
@@ -62,11 +67,11 @@ jobs:
             ${{ env.CARGO_HOME }}/registry/index/
             ${{ env.CARGO_HOME }}/registry/cache/
             ${{ env.CARGO_HOME }}/git/db/
-          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.cargo-flags }}-${{ hashFiles('**/Cargo.lock') }}
           save-always: true
 
       - name: Run `cargo clippy`
-        run: cargo clippy --all-targets --locked ${{ matrix.features }}
+        run: cargo clippy --locked ${{ matrix.cargo-flags }}
 
   cargo-fmt:
     name: Check formatting
@@ -360,3 +365,28 @@ jobs:
             -w /workspace \
             paritytech/ci-unified:bullseye-1.74.0 \
             bash -c "bash -x scripts/run_benches_for_runtime.sh ${{ matrix.runtime }} dev"
+
+  trigger-gitlab:
+    name: Trigger GitLab CI
+    runs-on: ubuntu-latest
+    env:
+      TARGET_WORKFLOW_FILE: trigger-gitlab-pipeline.yml # Change this in case of file renamings
+
+    needs:
+      - cargo-doc
+      - cargo-test
+      - try-runtime
+      # This is only triggered on pushes, which means pushes on `master`, `develop` or of tags.
+      - test-runtime-benchmarks
+
+    steps:
+      - name: Trigger "GitLab trigger" workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: '${{ env.TARGET_WORKFLOW_FILE }}',
+              ref: '${{ github.ref }}',
+            })

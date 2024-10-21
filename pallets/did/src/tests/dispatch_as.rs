@@ -29,7 +29,7 @@ mod authentication;
 mod delegation;
 mod error_cases;
 
-fn blueprint_successful_dispatch<FB: FnOnce() -> (), FA: FnOnce() -> ()>(
+fn blueprint_successful_dispatch<FB: FnOnce(), FA: FnOnce()>(
 	did_identifier: DidIdentifierOf<Test>,
 	caller: AccountIdOf<Test>,
 	did_details: DidDetails<Test>,
@@ -57,7 +57,7 @@ fn blueprint_successful_dispatch<FB: FnOnce() -> (), FA: FnOnce() -> ()>(
 		});
 }
 
-fn blueprint_failed_dispatch<F: FnOnce() -> ()>(
+fn blueprint_failed_dispatch<F: FnOnce()>(
 	did_identifier: DidIdentifierOf<Test>,
 	caller: AccountIdOf<Test>,
 	did_details: Option<DidDetails<Test>>,

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # Runs all benchmarks for all pallets, for a given runtime, provided by $1
 # Should be run on a reference machine to gain accurate benchmarks
@@ -9,7 +10,7 @@ profile=${2-"release"}
 
 chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 # Dev profile is the debug target
-standard_args="--profile $2 --locked --features=runtime-benchmarks --bin=kilt-parachain"
+standard_args="--profile $profile --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
 pallets=(
 	pallet-migration
@@ -64,7 +65,7 @@ if [ $profile == "dev" ]; then
 	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored --no-verify"
 else
     target_folder=$profile
-	additional_args="--header=\"HEADER-GPL\" --template=\".maintain/runtime-weight-template.hbs\" --output=\"./runtimes/${runtime}/src/weights/\""
+	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
 fi
 
 for pallet in "${pallets[@]}"; do
