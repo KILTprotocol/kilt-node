@@ -105,7 +105,9 @@ pub mod pallet {
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
-			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>;
+			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>
+			+ ResetTeam<Self::AccountId, AssetId = Self::AssetId>
+			+ Freeze<Self>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
 		type MaxCurrencies: Get<u32>;
@@ -136,10 +138,6 @@ pub mod pallet {
 
 		/// The type used for the curve parameters.
 		type CurveParameterType: Parameter + Member + FixedSigned + MaxEncodedLen + PartialOrd<I9F23> + From<I9F23>;
-
-		type FreezeManager: Freeze<Self>;
-
-		type TeamManager: ResetTeam<Self::AccountId, AssetId = Self::AssetId>;
 	}
 
 	#[pallet::pallet]
@@ -269,7 +267,7 @@ pub mod pallet {
 					denomination,
 				)?;
 
-				T::TeamManager::reset_team(
+				T::Fungibles::reset_team(
 					asset_id.clone(),
 					pool_id.clone().into(),
 					entry.team.admin.clone(),
@@ -278,7 +276,7 @@ pub mod pallet {
 				)?;
 
 				if !entry.tradable {
-					T::FreezeManager::freeze_asset(pool_id.clone().into(), asset_id.clone())?;
+					T::Fungibles::freeze_asset(pool_id.clone().into(), asset_id.clone())?;
 				}
 			}
 

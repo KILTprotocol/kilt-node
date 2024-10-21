@@ -245,8 +245,6 @@ pub mod runtime {
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
 		type CurveParameterType = Float;
-		type FreezeManager = Assets;
-		type TeamManager = Assets;
 	}
 
 	#[derive(Clone, Default)]
