@@ -4,6 +4,8 @@
 # Codebase-wide lints.
 [target.'cfg(all())']
 rustflags = [
+  # We need to block warnings here instead of with the `RUSTFLAGS` env since the env variable would completely override these settings -> https://github.com/rust-lang/cargo/issues/5376.
+  "-Dwwarnings",
   "-Wclippy::as_underscore",
   "-Wclippy::branches_sharing_code",
   "-Wclippy::clear_with_drain",

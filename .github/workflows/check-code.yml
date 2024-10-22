@@ -39,7 +39,6 @@ jobs:
     env:
       # Configured by the Docker image. We can't change this unless the image does it.
       CARGO_HOME: /usr/local/cargo
-      RUSTFLAGS: -D warnings
       SKIP_WASM_BUILD: 1
     needs: get-commit-head
     if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
