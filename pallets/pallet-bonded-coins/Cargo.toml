@@ -51,5 +51,6 @@ std = [
 	"frame-system/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
+	"substrate-fixed/std",
 ]
 try-runtime = ["frame-support/try-runtime", "frame-system/try-runtime"]

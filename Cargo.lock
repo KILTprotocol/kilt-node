@@ -14132,6 +14132,7 @@ checksum = "2e83ba2b4f68f12ec6b0f55bac0a23a5bcaaf2676f1109c7a5ead6121c7f0622"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
+ "serde",
  "substrate-typenum",
 ]
 
