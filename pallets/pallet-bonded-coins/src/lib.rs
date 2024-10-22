@@ -43,7 +43,7 @@ pub mod pallet {
 	};
 	use sp_std::default::Default;
 
-	use crate::types::PoolDetails;
+	use crate::{curves::Curve, types::PoolDetails};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
@@ -72,9 +72,8 @@ pub mod pallet {
 
 	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
 
-	// TODO: change CurveParameterTypeOf.
 	pub(crate) type PoolDetailsOf<T> =
-		PoolDetails<<T as frame_system::Config>::AccountId, CurveParameterTypeOf<T>, BoundedCurrencyVec<T>>;
+		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterTypeOf<T>>, BoundedCurrencyVec<T>>;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
