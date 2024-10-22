@@ -1,7 +1,7 @@
-use core::ops::{AddAssign, BitOrAssign, ShlAssign};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
+use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::{
 	traits::{Fixed, FixedSigned, ToFixed},
 	transcendental::{exp, ln, sqrt},
