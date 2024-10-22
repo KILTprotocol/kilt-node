@@ -28,7 +28,7 @@ pub mod pallet {
 			fungibles::{
 				metadata::{Inspect as FungiblesInspect, Mutate as FungiblesMetadata},
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
-				Mutate as MutateFungibles, Unbalanced,
+				Mutate as MutateFungibles,
 			},
 			tokens::{Fortitude, Precision, Preservation},
 			AccountTouch,
@@ -252,7 +252,7 @@ pub mod pallet {
 				.bonded_currencies
 				.iter()
 				.map(|id| (id.clone(), T::Fungibles::total_issuance(id.clone())))
-				.filter(|(_, iss)| iss.gt(&Zero::zero()))
+				.filter(|(_, iss)| !iss.is_zero())
 				.collect();
 
 			let mut sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
@@ -263,12 +263,14 @@ pub mod pallet {
 
 			let mut dead_currencies = Vec::with_capacity(total_issuances.len());
 			for (currency_id, token_issuance) in total_issuances.iter() {
-				let burnt = T::Fungibles::decrease_balance(
+				// TODO: remove any existing locks on the account prior to burning
+
+				// With amount = max_value(), this trait implementation burns the reducible balance on the account and returns the actual amount burnt
+				let burnt = T::Fungibles::burn_from(
 					currency_id.clone(),
 					&who,
 					Bounded::max_value(),
 					Precision::BestEffort,
-					Preservation::Expendable,
 					Fortitude::Force,
 				)?;
 
@@ -278,16 +280,18 @@ pub mod pallet {
 					.checked_div(&sum_of_issuances)
 					.unwrap_or(Zero::zero());
 
-				T::CollateralCurrency::transfer(
-					T::CollateralAssetId::get(),
-					&pool_account,
-					&who,
-					amount,
-					Preservation::Expendable,
-				)?;
+				if !amount.is_zero() {
+					T::CollateralCurrency::transfer(
+						T::CollateralAssetId::get(),
+						&pool_account,
+						&who,
+						amount,
+						Preservation::Expendable,
+					)?;
+					total_collateral_issuance.saturating_reduce(amount);
+				}
 
-				total_collateral_issuance -= amount;
-				sum_of_issuances -= burnt;
+				sum_of_issuances.saturating_reduce(burnt);
 
 				// if the total issuance drops to 0 due to this burn, kill the currency
 				if token_issuance <= &burnt {
@@ -322,6 +326,7 @@ pub mod pallet {
 
 			for currency_id in pool_details.bonded_currencies {
 				if T::Fungibles::asset_exists(currency_id.clone()) {
+					// This would fail with an InUse error if there are any accounts left on any currency
 					T::Fungibles::finish_destroy(currency_id.clone())?;
 				}
 			}
@@ -330,15 +335,19 @@ pub mod pallet {
 
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
 
-			T::CollateralCurrency::transfer(
-				T::CollateralAssetId::get(),
-				&pool_account,
-				&pool_details.manager,
-				total_collateral_issuance,
-				Preservation::Expendable,
-			)?;
+			if !total_collateral_issuance.is_zero() {
+				T::CollateralCurrency::transfer(
+					T::CollateralAssetId::get(),
+					&pool_account,
+					&pool_details.manager,
+					total_collateral_issuance,
+					Preservation::Expendable,
+				)?;
+			}
 
 			Pools::<T>::remove(&pool_id);
+
+			// TODO: refund deposit
 
 			Self::deposit_event(Event::Destroyed(pool_id));
 
