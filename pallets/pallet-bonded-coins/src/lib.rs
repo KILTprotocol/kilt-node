@@ -5,18 +5,16 @@
 /// <https://docs.substrate.io/v3/runtime/frame>
 pub use pallet::*;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 #[cfg(test)]
 mod mock;
-
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
-
-mod types;
-
 mod curves_parameters;
+mod traits;
+mod types;
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -32,18 +30,21 @@ pub mod pallet {
 			},
 			AccountTouch,
 		},
-		Parameter,
+		Hashable, Parameter,
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
 		traits::{CheckedAdd, CheckedSub, One, Saturating, Zero},
-		BoundedVec, FixedPointNumber,
+		BoundedVec, FixedPointNumber, SaturatedConversion,
 	};
 	use sp_std::default::Default;
 
-	use crate::types::PoolDetails;
+	use crate::{
+		traits::ResetTeam,
+		types::{Locks, PoolDetails, PoolStatus, Team, TokenMeta},
+	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
@@ -76,6 +77,8 @@ pub mod pallet {
 	pub(crate) type PoolDetailsOf<T> =
 		PoolDetails<<T as frame_system::Config>::AccountId, CurveParameterTypeOf<T>, BoundedCurrencyVec<T>>;
 
+	pub(crate) type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, CurrencyNameOf<T>, CurrencySymbolOf<T>>;
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -92,7 +95,8 @@ pub mod pallet {
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
-			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>;
+			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>
+			+ ResetTeam<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
 		type MaxCurrencies: Get<u32>;
@@ -147,13 +151,15 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		Todo,
+		PoolCreated(T::PoolId),
 	}
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		Todo,
+		CurrenciesNumber,
+		NegativeCurveParameters,
+		Internal,
 	}
 
 	#[pallet::composite_enum]
@@ -165,8 +171,91 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn create_pool(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
+		pub fn create_pool(
+			origin: OriginFor<T>,
+			curve: Curve<CurveParameterTypeOf<T>>,
+			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
+			state: PoolStatus<Locks>,
+			denomination: u8,
+			pool_manager: AccountIdOf<T>,
+			transferable: bool,
+			team: Team<AccountIdOf<T>>,
+		) -> DispatchResult {
+			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+
+			let currency_length = currencies.len();
+
+			ensure!(
+				(1..=(T::MaxCurrencies::get()).saturated_into()).contains(&currency_length),
+				Error::<T>::CurrenciesNumber
+			);
+
+			ensure!(curve.are_parameters_valid(), Error::<T>::NegativeCurveParameters);
+
+			let current_asset_id = NextAssetId::<T>::get();
+
+			let (currency_ids_vec, next_asset_id) =
+				Self::generate_sequential_asset_ids(current_asset_id, currency_length);
+
+			// update the storage for the next tx.
+			NextAssetId::<T>::set(next_asset_id);
+
+			// Should never fail.
+			let currency_ids =
+				BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(currency_ids_vec.clone())
+					.map_err(|_| Error::<T>::Internal)?;
+
+			let pool_id = T::PoolId::from(currency_ids.blake2_256());
+
+			// Todo: change that.
+			T::DepositCurrency::hold(
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
+				&who,
+				T::BaseDeposit::get().saturating_add(
+					T::DepositPerCurrency::get()
+						.saturating_mul(currency_length.saturated_into())
+						.saturated_into(),
+				),
+			)?;
+
+			currencies
+				.iter()
+				.enumerate()
+				.for_each(|(idx, entry)| -> DispatchResult {
+					let asset_id: &T::AssetId = currency_ids_vec.get(idx).ok_or(Error::<T>::CurrenciesNumber)?;
+					T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, entry.min_balance)?;
+
+					// set metadata for new asset class
+					T::Fungibles::set(
+						asset_id.clone(),
+						&pool_id.clone().into(),
+						entry.name.clone().into(),
+						entry.symbol.clone().into(),
+						denomination,
+					)?;
+
+					T::Fungibles::reset_team(
+						asset_id.clone(),
+						pool_id.clone().into(),
+						team.admin.clone(),
+						team.issuer.clone(),
+						team.freezer.clone(),
+					)?;
+
+					Ok(())
+				});
+
+			// Touch the pool account in order to be able to transfer the collateral currency to it
+			T::CollateralCurrency::touch(T::CollateralAssetId::get(), &pool_id.clone().into(), &who)?;
+
+			Pools::<T>::set(
+				&pool_id,
+				Some(PoolDetails::new(pool_manager, curve, currency_ids, transferable, state)),
+			);
+
+			Self::deposit_event(Event::PoolCreated(pool_id));
+
+			Ok(())
 		}
 
 		#[pallet::call_index(1)]
@@ -226,5 +315,14 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Pallet<T> {}
+	impl<T: Config> Pallet<T> {
+		fn generate_sequential_asset_ids(mut start_id: T::AssetId, count: usize) -> (Vec<T::AssetId>, T::AssetId) {
+			let mut currency_ids_vec = Vec::new();
+			for _ in 0..count {
+				currency_ids_vec.push(start_id.clone());
+				start_id = start_id.saturating_plus_one();
+			}
+			(currency_ids_vec, start_id)
+		}
+	}
 }

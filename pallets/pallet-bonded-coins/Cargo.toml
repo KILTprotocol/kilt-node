@@ -25,6 +25,9 @@ sp-core            = { workspace = true }
 sp-runtime         = { workspace = true }
 sp-std             = { workspace = true }
 
+# External 
+log = { workspace = true }
+
 [dev-dependencies]
 pallet-assets   = { workspace = true, features = ["std"] }
 pallet-balances = { workspace = true, features = ["std"] }
