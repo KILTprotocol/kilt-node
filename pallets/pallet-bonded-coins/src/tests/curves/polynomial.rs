@@ -1,5 +1,5 @@
 use crate::{
-	curves::{BondingFunction, PolynomialFunctionParameters},
+	curves::{BondingFunction, PolynomialParameters},
 	mock::Float,
 };
 
@@ -10,7 +10,7 @@ fn mint_first_coin_linear_function() {
 	let m = Float::from_num(0);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
-	let curve = PolynomialFunctionParameters { m, n, o };
+	let curve = PolynomialParameters { m, n, o };
 
 	let low = Float::from_num(0);
 	let high = Float::from_num(1);
@@ -29,7 +29,7 @@ fn high_supply_linear_function() {
 	let m = Float::from_num(0);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
-	let curve = PolynomialFunctionParameters { m, n, o };
+	let curve = PolynomialParameters { m, n, o };
 
 	let low = Float::from_num(10_000_000_000u128);
 	let high = Float::from_num(10_000_100_000u128);
@@ -48,7 +48,7 @@ fn mint_coin_with_existing_supply_linear_function() {
 	let m = Float::from_num(0);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
-	let curve = PolynomialFunctionParameters { m, n, o };
+	let curve = PolynomialParameters { m, n, o };
 
 	let low = Float::from_num(1000);
 	let high = Float::from_num(1010);
@@ -67,7 +67,7 @@ fn mint_first_coin_frac_bonding_linear_function() {
 	let m = Float::from_num(0);
 	let n = Float::from_num(0.5);
 	let o = Float::from_num(3);
-	let curve = PolynomialFunctionParameters { m, n, o };
+	let curve = PolynomialParameters { m, n, o };
 
 	let low = Float::from_num(0);
 	let high = Float::from_num(1);
@@ -88,7 +88,7 @@ fn mint_first_coin_quadratic_function() {
 	let m = Float::from_num(1);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
-	let curve = PolynomialFunctionParameters { m, n, o };
+	let curve = PolynomialParameters { m, n, o };
 
 	let low = Float::from_num(0);
 	let high = Float::from_num(1);
@@ -107,7 +107,7 @@ fn high_supply_quadratic_function() {
 	let m = Float::from_num(1);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
-	let curve = PolynomialFunctionParameters { m, n, o };
+	let curve = PolynomialParameters { m, n, o };
 
 	let low = Float::from_num(100_000_000);
 	let high = Float::from_num(100_100_000);
@@ -125,7 +125,7 @@ fn mint_coin_with_existing_supply_quadratic_function() {
 	let m = Float::from_num(1);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
-	let curve = PolynomialFunctionParameters { m, n, o };
+	let curve = PolynomialParameters { m, n, o };
 
 	let low = Float::from_num(1000);
 	let high = Float::from_num(1010);
@@ -144,7 +144,7 @@ fn mint_first_coin_frac_bonding_quadratic_function() {
 	let m = Float::from_num(0.5);
 	let n = Float::from_num(0.5);
 	let o = Float::from_num(3);
-	let curve = PolynomialFunctionParameters { m, n, o };
+	let curve = PolynomialParameters { m, n, o };
 
 	let low = Float::from_num(0);
 	let high = Float::from_num(1);
@@ -162,7 +162,7 @@ fn zero_coefficients() {
 	let m = Float::from_num(0);
 	let n = Float::from_num(0);
 	let o = Float::from_num(0);
-	let curve = PolynomialFunctionParameters { m, n, o };
+	let curve = PolynomialParameters { m, n, o };
 
 	let low = Float::from_num(0);
 	let high = Float::from_num(1);

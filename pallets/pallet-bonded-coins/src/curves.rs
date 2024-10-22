@@ -102,7 +102,7 @@ where
 	}
 }
 
-pub trait BondingFunction<Parameter: FixedSigned + PartialOrd> {
+pub trait BondingFunction<Parameter: Fixed> {
 	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError>;
 
 	fn square(x: Parameter) -> Result<Parameter, ArithmeticError> {

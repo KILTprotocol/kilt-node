@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-	curves::{BondingFunction, SquareRootFunctionParameters},
+	curves::{BondingFunction, SquareRootParameters},
 	mock::{assert_relative_eq, Float},
 };
 
@@ -10,7 +10,7 @@ fn mint_first_coin() {
 	// Create curve with shape f(x) = 2x^1/2 + 2, resulting into integral function F(x) = x^3/2 + 2x
 	let m = Float::from_num(1);
 	let n = Float::from_num(2);
-	let curve = SquareRootFunctionParameters { m, n };
+	let curve = SquareRootParameters { m, n };
 
 	let low = Float::from_num(0);
 	let high = Float::from_num(1);
@@ -28,7 +28,7 @@ fn high_supply() {
 	// Create curve with shape f(x) = 2x^1/2 + 2, resulting into integral function F(x) = x^3/2 + 2x
 	let m = Float::from_num(1);
 	let n = Float::from_num(2);
-	let curve = SquareRootFunctionParameters { m, n };
+	let curve = SquareRootParameters { m, n };
 
 	let low = Float::from_num(100_000_000_000_000u128);
 	let high = Float::from_num(100_000_000_100_000u128);
@@ -48,7 +48,7 @@ fn mint_coin_with_existing_supply() {
 	// Create curve with shape f(x) = 2x^1/2 + 2, resulting into integral function F(x) = x^3/2 + 2x
 	let m = Float::from_num(1);
 	let n = Float::from_num(2);
-	let curve = SquareRootFunctionParameters { m, n };
+	let curve = SquareRootParameters { m, n };
 
 	let low = Float::from_num(100);
 	let high = Float::from_num(110);
@@ -68,7 +68,7 @@ fn mint_first_coin_frac_bonding_curve() {
 	// Create curve with shape f(x) = x^1/2 + 2, resulting into integral function F(x) = 2/3 x^3/2 + 2x
 	let m = Float::from_num(0.6666);
 	let n = Float::from_num(2);
-	let curve = SquareRootFunctionParameters { m, n };
+	let curve = SquareRootParameters { m, n };
 
 	// single coin in pool. Passive issuance is zero.
 	let low = Float::from_num(0);
@@ -89,7 +89,7 @@ fn zero_coefficients() {
 	// Create curve with shape f(x) = x^1/2 + 2, resulting into integral function F(x) = 2/3 x^3/2 + 2x
 	let m = Float::from_num(0);
 	let n = Float::from_num(0);
-	let curve = SquareRootFunctionParameters { m, n };
+	let curve = SquareRootParameters { m, n };
 
 	// single coin in pool. Passive issuance is zero.
 	let low = Float::from_num(100);
