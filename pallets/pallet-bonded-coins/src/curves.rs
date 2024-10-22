@@ -35,13 +35,13 @@ where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn calculate_accumulated_passive_issuance(passive_issuance: &[Parameter]) -> Parameter {
+	fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Balance]) -> Balance {
 		passive_issuance
 			.iter()
-			.fold(Parameter::from_num(0), |sum, x| sum.saturating_add(*x))
+			.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
 	}
 
-	fn calculate_low_high(
+	fn calculate_integral_bounds(
 		op: Operation<PassiveSupply<Parameter>>,
 		active_issuance_pre: Parameter,
 		active_issuance_post: Parameter,
@@ -71,12 +71,12 @@ where
 	) -> Result<Parameter, ArithmeticError> {
 		match self {
 			Curve::Polynomial(params) => {
-				let (low, high) = Self::calculate_low_high(op, active_issuance_pre, active_issuance_post);
+				let (low, high) = Self::calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
 
 				params.calculate_costs(low, high)
 			}
 			Curve::SquareRoot(params) => {
-				let (low, high) = Self::calculate_low_high(op, active_issuance_pre, active_issuance_post);
+				let (low, high) = Self::calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
 				params.calculate_costs(low, high)
 			}
 			Curve::LMSR(params) => {
