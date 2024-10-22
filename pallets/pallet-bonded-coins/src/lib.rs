@@ -219,7 +219,7 @@ pub mod pallet {
 		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, Some(who))
+			Self::do_start_destroy_pool(&pool_id, Some(&who))
 		}
 
 		#[pallet::call_index(7)]
@@ -227,7 +227,7 @@ pub mod pallet {
 		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			ensure_root(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, None)
+			Self::do_start_destroy_pool(&pool_id, None)
 		}
 
 		#[pallet::call_index(8)]
@@ -359,13 +359,13 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn do_start_destroy_pool(pool_id: T::PoolId, maybe_check_owner: Option<AccountIdOf<T>>) -> DispatchResult {
+		fn do_start_destroy_pool(pool_id: &T::PoolId, maybe_check_manager: Option<&AccountIdOf<T>>) -> DispatchResult {
 			let mut pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(!pool_details.state.is_destroying(), Error::<T>::Destroying);
 
-			if let Some(caller) = maybe_check_owner {
-				ensure!(pool_details.is_manager(&caller), Error::<T>::Unauthorized);
+			if let Some(caller) = maybe_check_manager {
+				ensure!(pool_details.is_manager(caller), Error::<T>::Unauthorized);
 			}
 
 			pool_details.state.destroy();
@@ -375,7 +375,7 @@ pub mod pallet {
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
 
 			if total_collateral_issuance.is_zero() {
-				// deactivate all currencies and emit RefundCompleted
+				// no collateral to refund; deactivate all currencies and emit RefundCompleted
 				for currency_id in pool_details.bonded_currencies.iter() {
 					T::Fungibles::start_destroy(currency_id.clone(), None)?;
 				}
@@ -385,16 +385,20 @@ pub mod pallet {
 				return Ok(());
 			}
 
-			let mut destroyed: usize = 0; 
+			// retrieve total supply of linked bonded currencies and deactivate those where supply is 0
+			let mut non_zero_supply = false;
 			for currency_id in pool_details.bonded_currencies.iter() {
 				if T::Fungibles::total_issuance(currency_id.clone()).is_zero() {
+					// supply is 0, currency can be deactivated
 					T::Fungibles::start_destroy(currency_id.clone(), None)?;
-					destroyed.saturating_inc();
+				} else {
+					// if at least one currency has a non-zero supply, we must call refund_account next -> do not emit event
+					non_zero_supply = true;
 				}
 			}
 
-			// check if all currencies have been deactivated -> emit RefundCompleted
-			if destroyed == pool_details.bonded_currencies.len() {
+			// if all currencies have a 0 supply and have been deactivated, refund_account can be skipped -> emit RefundCompleted
+			if !non_zero_supply {
 				Self::deposit_event(Event::RefundCompleted(pool_id.clone()));
 			}
 
