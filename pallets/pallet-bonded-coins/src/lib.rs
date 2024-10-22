@@ -150,6 +150,8 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A bonded token pool has been moved to destroying state. [pool_id]
 		DestructionStarted(T::PoolId),
+		/// Collateral distribution to bonded token holders has been completed for this pool - no more tokens or no more collateral to distribute. [pool_id]   
+		RefundCompleted(T::PoolId),
 		/// A bonded token pool has been fully destroyed and all collateral and deposits have been refunded. [pool_id]
 		Destroyed(T::PoolId),
 	}
@@ -305,6 +307,7 @@ pub mod pallet {
 				for (currency_id, _) in total_issuances {
 					T::Fungibles::start_destroy(currency_id, None)?;
 				}
+				Self::deposit_event(Event::RefundCompleted(pool_id.clone()));
 			} else {
 				// deactivate all currencies whose issuance dropped to 0 in this step
 				for currency_id in dead_currencies {
@@ -372,16 +375,27 @@ pub mod pallet {
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
 
 			if total_collateral_issuance.is_zero() {
+				// deactivate all currencies and emit RefundCompleted
 				for currency_id in pool_details.bonded_currencies.iter() {
 					T::Fungibles::start_destroy(currency_id.clone(), None)?;
 				}
+
+				Self::deposit_event(Event::RefundCompleted(pool_id.clone()));
+
 				return Ok(());
 			}
 
+			let mut destroyed: usize = 0; 
 			for currency_id in pool_details.bonded_currencies.iter() {
 				if T::Fungibles::total_issuance(currency_id.clone()).is_zero() {
 					T::Fungibles::start_destroy(currency_id.clone(), None)?;
+					destroyed.saturating_inc();
 				}
+			}
+
+			// check if all currencies have been deactivated -> emit RefundCompleted
+			if destroyed == pool_details.bonded_currencies.len() {
+				Self::deposit_event(Event::RefundCompleted(pool_id.clone()));
 			}
 
 			Ok(())
