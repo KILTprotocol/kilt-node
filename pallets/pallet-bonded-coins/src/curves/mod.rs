@@ -1,0 +1,120 @@
+pub(crate) mod lmsr;
+pub(crate) mod polynomial;
+pub(crate) mod square_root;
+
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
+use sp_arithmetic::ArithmeticError;
+use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
+use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
+
+use crate::{
+	curves::{
+		lmsr::{LMSRCalculation, LMSRFunctionParameters},
+		polynomial::PolynomialParameters,
+		square_root::SquareRootParameters,
+	},
+	PassiveSupply, Precision,
+};
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub enum Curve<Parameter> {
+	Polynomial(PolynomialParameters<Parameter>),
+	SquareRoot(SquareRootParameters<Parameter>),
+	LMSR(LMSRFunctionParameters<Parameter>),
+}
+
+pub enum Operation<PassiveSupply> {
+	Mint(PassiveSupply),
+	Burn(PassiveSupply),
+}
+
+impl<Balance> Operation<PassiveSupply<Balance>> {
+	pub fn inner_value(&self) -> &PassiveSupply<Balance> {
+		match self {
+			Operation::Mint(x) => x,
+			Operation::Burn(x) => x,
+		}
+	}
+}
+
+impl<Parameter> Curve<Parameter>
+where
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
+	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+{
+	pub fn calculate_cost(
+		&self,
+		active_issuance_pre: Parameter,
+		active_issuance_post: Parameter,
+		op: Operation<PassiveSupply<Parameter>>,
+	) -> Result<Parameter, ArithmeticError> {
+		match self {
+			Curve::Polynomial(params) => {
+				let (low, high) = calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
+
+				params.calculate_costs(low, high)
+			}
+			Curve::SquareRoot(params) => {
+				let (low, high) = calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
+				params.calculate_costs(low, high)
+			}
+			Curve::LMSR(params) => {
+				let passive_issuance_over_e = op
+					.inner_value()
+					.iter()
+					.map(|x| params.calculate_passive_issuance(*x))
+					.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
+
+				let passive_issuance = passive_issuance_over_e
+					.iter()
+					.try_fold(Parameter::from_num(0), |acc, x| {
+						acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
+					})?;
+
+				let lmsr_calc = LMSRCalculation {
+					m: params.m,
+					passive_issuance,
+				};
+				lmsr_calc.calculate_costs(active_issuance_pre, active_issuance_post)
+			}
+		}
+	}
+}
+
+pub trait BondingFunction<Parameter: Fixed> {
+	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError>;
+
+	fn square(x: Parameter) -> Result<Parameter, ArithmeticError> {
+		x.checked_mul(x).ok_or(ArithmeticError::Overflow)
+	}
+}
+
+fn calculate_integral_bounds<FixedType: Fixed>(
+	op: Operation<PassiveSupply<FixedType>>,
+	active_issuance_pre: FixedType,
+	active_issuance_post: FixedType,
+) -> (FixedType, FixedType) {
+	match op {
+		Operation::Burn(passive) => {
+			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive);
+			(
+				active_issuance_post.saturating_add(accumulated_passive_issuance),
+				active_issuance_pre.saturating_add(accumulated_passive_issuance),
+			)
+		}
+		Operation::Mint(passive) => {
+			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive);
+			(
+				active_issuance_pre.saturating_add(accumulated_passive_issuance),
+				active_issuance_post.saturating_add(accumulated_passive_issuance),
+			)
+		}
+	}
+}
+
+fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Balance]) -> Balance {
+	passive_issuance
+		.iter()
+		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
+}

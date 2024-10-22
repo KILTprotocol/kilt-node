@@ -1,5 +1,5 @@
 use crate::{
-	curves::{BondingFunction, PolynomialParameters},
+	curves::{polynomial::PolynomialParameters, BondingFunction},
 	mock::Float,
 };
 

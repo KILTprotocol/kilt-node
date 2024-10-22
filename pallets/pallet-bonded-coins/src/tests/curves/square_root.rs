@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-	curves::{BondingFunction, SquareRootParameters},
+	curves::{square_root::SquareRootParameters, BondingFunction},
 	mock::{assert_relative_eq, Float},
 };
 

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-	curves::{BondingFunction, LMSRCalculation},
+	curves::{lmsr::LMSRCalculation, BondingFunction},
 	mock::{assert_relative_eq, Float},
 };
 
