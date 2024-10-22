@@ -78,6 +78,8 @@ pub mod pallet {
 
 	pub(crate) type Precision = I9F23;
 
+	pub(crate) type PassiveSupply<T> = Vec<T>;
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {

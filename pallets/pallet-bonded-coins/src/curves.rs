@@ -7,7 +7,7 @@ use substrate_fixed::{
 	transcendental::{exp, ln, sqrt},
 };
 
-use crate::Precision;
+use crate::{PassiveSupply, Precision};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<Parameter> {
@@ -16,13 +16,13 @@ pub enum Curve<Parameter> {
 	LMSR(LMSRFunctionParameters<Parameter>),
 }
 
-pub enum Operation<Parameter> {
-	Mint(Vec<Parameter>),
-	Burn(Vec<Parameter>),
+pub enum Operation<PassiveSupply> {
+	Mint(PassiveSupply),
+	Burn(PassiveSupply),
 }
 
-impl<Parameter> Operation<Parameter> {
-	pub fn inner_value(&self) -> &[Parameter] {
+impl<Balance> Operation<PassiveSupply<Balance>> {
+	pub fn inner_value(&self) -> &PassiveSupply<Balance> {
 		match self {
 			Operation::Mint(x) => x,
 			Operation::Burn(x) => x,
@@ -42,7 +42,7 @@ where
 	}
 
 	fn calculate_low_high(
-		op: Operation<Parameter>,
+		op: Operation<PassiveSupply<Parameter>>,
 		active_issuance_pre: Parameter,
 		active_issuance_post: Parameter,
 	) -> (Parameter, Parameter) {
@@ -67,7 +67,7 @@ where
 		&self,
 		active_issuance_pre: Parameter,
 		active_issuance_post: Parameter,
-		op: Operation<Parameter>,
+		op: Operation<PassiveSupply<Parameter>>,
 	) -> Result<Parameter, ArithmeticError> {
 		match self {
 			Curve::Polynomial(params) => {
