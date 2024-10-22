@@ -153,7 +153,7 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		Todo,
+		IndexOutOfBounds,
 	}
 
 	#[pallet::composite_enum]
@@ -171,8 +171,47 @@ pub mod pallet {
 
 		#[pallet::call_index(1)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn mint_into(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
+		pub fn mint_into(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_idx: u32,
+			amount_to_mint: FungiblesBalanceOf<T>,
+			max_cost: CollateralCurrencyBalanceOf<T>,
+			beneficiary: AccountIdLookupOf<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let beneficiary = T::Lookup::lookup(beneficiary)?;
+
+			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::Locked);
+
+			ensure!(!amount_to_mint.is_zero(), Error::<T>::ZeroAmount);
+
+			let currency_idx_usize: usize = currency_idx.saturated_into();
+
+			let cost = Self::mint_pool_currency_and_calculate_collateral(
+				&pool_details,
+				currency_idx_usize,
+				beneficiary,
+				amount_to_mint,
+			)?;
+
+			// withdraw the collateral and put it in the deposit account
+			T::CollateralCurrency::transfer(
+				T::CollateralAssetId::get(),
+				&who,
+				&pool_id.into(),
+				cost,
+				Preservation::Preserve,
+			)?;
+
+			// fail if cost > max_cost
+			ensure!(cost <= max_cost, Error::<T>::Slippage);
+
+			// TODO: apply lock if pool_details.transferable != true
+
+			Ok(())
 		}
 
 		#[pallet::call_index(2)]
@@ -226,5 +265,85 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Pallet<T> {}
+	impl<T: Config> Pallet<T> {
+		fn mint_pool_currency_and_calculate_collateral(
+			pool_details: &PoolDetailsOf<T>,
+			currency_idx: usize,
+			beneficiary: AccountIdOf<T>,
+			amount: FungiblesBalanceOf<T>,
+		) -> Result<CollateralCurrencyBalanceOf<T>, DispatchError> {
+			// get id of the currency we want to mint
+			// this also serves as a validation of the currency_idx parameter
+			let mint_currency_id = pool_details
+				.bonded_currencies
+				.get(currency_idx)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			let currencies_metadata = Self::get_currencies_metadata(pool_details)?;
+
+			let cost = Self::get_collateral_diff(
+				DiffKind::Mint,
+				&pool_details.curve,
+				&amount,
+				currencies_metadata,
+				currency_idx,
+			)?;
+
+			T::Fungibles::mint_into(mint_currency_id.clone(), &beneficiary, amount)?;
+
+			Ok(cost)
+		}
+
+		/// save usage of currency_ids.
+		pub fn get_collateral_diff(
+			kind: DiffKind,
+			curve: &Curve<CurveParameterTypeOf<T>>,
+			amount: &FungiblesBalanceOf<T>,
+			total_issuances: Vec<(FungiblesBalanceOf<T>, u128)>,
+			currency_idx: usize,
+		) -> Result<CollateralCurrencyBalanceOf<T>, DispatchError> {
+			let denomination_normalization = CurveParameterTypeOf::<T>::DIV;
+			let denomination_collateral_currency = Self::get_collateral_denomination()?;
+
+			let denomination_bonded_currency = total_issuances.get(currency_idx).ok_or(Error::<T>::IndexOutOfBounds)?.1;
+
+			let normalized_total_issuances = total_issuances
+				.clone()
+				.into_iter()
+				.map(|(x, d)| convert_currency_amount::<T>(x.saturated_into::<u128>(), d, denomination_normalization))
+				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
+
+			// normalize the amount to mint
+			let normalized_amount = convert_currency_amount::<T>(
+				amount.clone().saturated_into(),
+				denomination_bonded_currency,
+				denomination_normalization,
+			)?;
+
+			let (active_issuance_pre, active_issuance_post) = Self::calculate_pre_post_issuances(
+				&kind,
+				&normalized_amount,
+				&normalized_total_issuances,
+				currency_idx,
+			)?;
+
+			let passive_issuance = normalized_total_issuances
+				.iter()
+				.enumerate()
+				.filter(|&(idx, _)| idx != currency_idx)
+				.fold(CurveParameterTypeOf::<T>::zero(), |sum, (_, x)| sum.saturating_add(*x));
+
+			let normalize_cost =
+				curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance, kind)?;
+
+			// transform the cost back to the target denomination of the collateral currency
+			let collateral = convert_currency_amount::<T>(
+				normalize_cost.into_inner(),
+				denomination_normalization,
+				denomination_collateral_currency,
+			)?;
+
+			Ok(collateral.into_inner().saturated_into())
+		}
+	}
 }
