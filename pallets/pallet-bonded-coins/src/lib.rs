@@ -194,16 +194,10 @@ pub mod pallet {
 
 			let current_asset_id = NextAssetId::<T>::get();
 
-			let (currency_ids_vec, next_asset_id) =
-				Self::generate_sequential_asset_ids(current_asset_id, currency_length);
+			let (currency_ids, next_asset_id) = Self::generate_sequential_asset_ids(current_asset_id, currency_length)?;
 
 			// update the storage for the next tx.
 			NextAssetId::<T>::set(next_asset_id);
-
-			// Should never fail.
-			let currency_ids =
-				BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(currency_ids_vec.clone())
-					.map_err(|_| Error::<T>::Internal)?;
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
@@ -222,7 +216,7 @@ pub mod pallet {
 				.iter()
 				.enumerate()
 				.for_each(|(idx, entry)| -> DispatchResult {
-					let asset_id: &T::AssetId = currency_ids_vec.get(idx).ok_or(Error::<T>::CurrenciesNumber)?;
+					let asset_id: &T::AssetId = currency_ids.get(idx).ok_or(Error::<T>::CurrenciesNumber)?;
 					T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, entry.min_balance)?;
 
 					// set metadata for new asset class
@@ -316,13 +310,21 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn generate_sequential_asset_ids(mut start_id: T::AssetId, count: usize) -> (Vec<T::AssetId>, T::AssetId) {
+		fn generate_sequential_asset_ids(
+			mut start_id: T::AssetId,
+			count: usize,
+		) -> Result<(BoundedCurrencyVec<T>, T::AssetId), Error<T>> {
 			let mut currency_ids_vec = Vec::new();
 			for _ in 0..count {
 				currency_ids_vec.push(start_id.clone());
 				start_id = start_id.saturating_plus_one();
 			}
-			(currency_ids_vec, start_id)
+
+			let currency_array =
+				BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(currency_ids_vec.clone())
+					.map_err(|_| Error::<T>::Internal)?;
+
+			Ok((currency_array, start_id))
 		}
 	}
 }
