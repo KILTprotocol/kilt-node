@@ -9,19 +9,19 @@ use substrate_fixed::{
 };
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum Curve<F> {
-	PolynomialFunction(PolynomialFunctionParameters<F>),
-	SquareRootBondingFunction(SquareRootFunctionParameters<F>),
-	LMSR(LMSRFunctionParameters<F>),
+pub enum Curve<Parameter> {
+	Polynomial(PolynomialParameters<Parameter>),
+	SquareRoot(SquareRootParameters<Parameter>),
+	LMSR(LMSRFunctionParameters<Parameter>),
 }
 
-pub enum Operation<F> {
-	Mint(Vec<F>),
-	Burn(Vec<F>),
+pub enum Operation<Parameter> {
+	Mint(Vec<Parameter>),
+	Burn(Vec<Parameter>),
 }
 
-impl<F> Operation<F> {
-	pub fn inner_value(&self) -> &[F] {
+impl<Parameter> Operation<Parameter> {
+	pub fn inner_value(&self) -> &[Parameter] {
 		match self {
 			Operation::Mint(x) => x,
 			Operation::Burn(x) => x,
@@ -29,18 +29,22 @@ impl<F> Operation<F> {
 	}
 }
 
-impl<F> Curve<F>
+impl<Parameter> Curve<Parameter>
 where
-	F: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
-	<F as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	Parameter: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
+	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn calculate_accumulated_passive_issuance(passive_issuance: &[F]) -> F {
+	fn calculate_accumulated_passive_issuance(passive_issuance: &[Parameter]) -> Parameter {
 		passive_issuance
 			.iter()
-			.fold(F::from_num(0), |sum, x| sum.saturating_add(*x))
+			.fold(Parameter::from_num(0), |sum, x| sum.saturating_add(*x))
 	}
 
-	fn calculate_low_high(op: Operation<F>, active_issuance_pre: F, active_issuance_post: F) -> (F, F) {
+	fn calculate_low_high(
+		op: Operation<Parameter>,
+		active_issuance_pre: Parameter,
+		active_issuance_post: Parameter,
+	) -> (Parameter, Parameter) {
 		match op {
 			Operation::Burn(passive) => {
 				let accumulated_passive_issuance = Self::calculate_accumulated_passive_issuance(&passive);
@@ -60,17 +64,17 @@ where
 	}
 	pub fn calculate_cost(
 		&self,
-		active_issuance_pre: F,
-		active_issuance_post: F,
-		op: Operation<F>,
-	) -> Result<F, ArithmeticError> {
+		active_issuance_pre: Parameter,
+		active_issuance_post: Parameter,
+		op: Operation<Parameter>,
+	) -> Result<Parameter, ArithmeticError> {
 		match self {
-			Curve::PolynomialFunction(params) => {
+			Curve::Polynomial(params) => {
 				let (low, high) = Self::calculate_low_high(op, active_issuance_pre, active_issuance_post);
 
 				params.calculate_costs(low, high)
 			}
-			Curve::SquareRootBondingFunction(params) => {
+			Curve::SquareRoot(params) => {
 				let (low, high) = Self::calculate_low_high(op, active_issuance_pre, active_issuance_post);
 				params.calculate_costs(low, high)
 			}
@@ -79,11 +83,13 @@ where
 					.inner_value()
 					.iter()
 					.map(|x| params.calculate_passive_issuance(*x))
-					.collect::<Result<Vec<F>, ArithmeticError>>()?;
+					.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
 
-				let passive_issuance = passive_issuance_over_e.iter().try_fold(F::from_num(0), |acc, x| {
-					acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
-				})?;
+				let passive_issuance = passive_issuance_over_e
+					.iter()
+					.try_fold(Parameter::from_num(0), |acc, x| {
+						acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
+					})?;
 
 				let lmsr_calc = LMSRCalculation {
 					m: params.m,
@@ -95,26 +101,26 @@ where
 	}
 }
 
-pub trait BondingFunction<F: FixedSigned + PartialOrd> {
-	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError>;
+pub trait BondingFunction<Parameter: FixedSigned + PartialOrd> {
+	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError>;
 
-	fn square(x: F) -> Result<F, ArithmeticError> {
+	fn square(x: Parameter) -> Result<Parameter, ArithmeticError> {
 		x.checked_mul(x).ok_or(ArithmeticError::Overflow)
 	}
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct PolynomialFunctionParameters<F> {
-	pub m: F,
-	pub n: F,
-	pub o: F,
+pub struct PolynomialParameters<Parameter> {
+	pub m: Parameter,
+	pub n: Parameter,
+	pub o: Parameter,
 }
 
-impl<F> BondingFunction<F> for PolynomialFunctionParameters<F>
+impl<Parameter> BondingFunction<Parameter> for PolynomialParameters<Parameter>
 where
-	F: FixedSigned,
+	Parameter: FixedSigned,
 {
-	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError> {
+	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError> {
 		// Calculate high - low
 		let delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
 
@@ -149,25 +155,25 @@ where
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct SquareRootFunctionParameters<F> {
-	pub m: F,
-	pub n: F,
+pub struct SquareRootParameters<Parameter> {
+	pub m: Parameter,
+	pub n: Parameter,
 }
 
-impl<F> BondingFunction<F> for SquareRootFunctionParameters<F>
+impl<Parameter> BondingFunction<Parameter> for SquareRootParameters<Parameter>
 where
-	F: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
 {
-	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError> {
+	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError> {
 		// Ensure that high and low are positive (logarithms of negative numbers are undefined)
 
 		// Calculate sqrt(high^3) and sqrt(low^3)
-		let sqrt_x3_high: F = sqrt::<F, F>(high)
+		let sqrt_x3_high: Parameter = sqrt::<Parameter, Parameter>(high)
 			.map_err(|_| ArithmeticError::Underflow)?
 			.checked_mul(high)
 			.ok_or(ArithmeticError::Overflow)?;
 
-		let sqrt_x3_low: F = sqrt::<F, F>(low)
+		let sqrt_x3_low: Parameter = sqrt::<Parameter, Parameter>(low)
 			.map_err(|_| ArithmeticError::Underflow)?
 			.checked_mul(low)
 			.ok_or(ArithmeticError::Overflow)?;
@@ -188,33 +194,33 @@ where
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct LMSRFunctionParameters<F> {
-	pub m: F,
+pub struct LMSRFunctionParameters<Parameter> {
+	pub m: Parameter,
 }
 
-impl<F> LMSRFunctionParameters<F>
+impl<Parameter> LMSRFunctionParameters<Parameter>
 where
-	F: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
-	<F as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	Parameter: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
+	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn calculate_passive_issuance(&self, x: F) -> Result<F, ArithmeticError> {
+	fn calculate_passive_issuance(&self, x: Parameter) -> Result<Parameter, ArithmeticError> {
 		x.checked_div(self.m)
 			.ok_or(ArithmeticError::DivisionByZero)
-			.and_then(|x| exp::<F, F>(x).map_err(|_| ArithmeticError::Overflow))
+			.and_then(|x| exp::<Parameter, Parameter>(x).map_err(|_| ArithmeticError::Overflow))
 	}
 }
 
-pub struct LMSRCalculation<F> {
-	pub m: F,
-	pub passive_issuance: F,
+pub struct LMSRCalculation<Parameter> {
+	pub m: Parameter,
+	pub passive_issuance: Parameter,
 }
 
-impl<F> BondingFunction<F> for LMSRCalculation<F>
+impl<Parameter> BondingFunction<Parameter> for LMSRCalculation<Parameter>
 where
-	F: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
-	<F as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	Parameter: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
+	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn calculate_costs(&self, low: F, high: F) -> Result<F, ArithmeticError> {
+	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError> {
 		let exponent_numerator = self
 			.passive_issuance
 			.checked_sub(high)
@@ -229,13 +235,13 @@ where
 			.checked_div(self.m)
 			.ok_or(ArithmeticError::DivisionByZero)?;
 
-		let e_term_numerator = exp::<F, F>(exponent_numerator)
+		let e_term_numerator = exp::<Parameter, Parameter>(exponent_numerator)
 			.map_err(|_| ArithmeticError::Overflow)
-			.and_then(|x| x.checked_add(F::from_num(1)).ok_or(ArithmeticError::Overflow))?;
+			.and_then(|x| x.checked_add(Parameter::from_num(1)).ok_or(ArithmeticError::Overflow))?;
 
-		let e_term_denominator = exp::<F, F>(exponent_denominator)
+		let e_term_denominator = exp::<Parameter, Parameter>(exponent_denominator)
 			.map_err(|_| ArithmeticError::Overflow)
-			.and_then(|x| x.checked_add(F::from_num(1)).ok_or(ArithmeticError::Overflow))?;
+			.and_then(|x| x.checked_add(Parameter::from_num(1)).ok_or(ArithmeticError::Overflow))?;
 
 		let e_term = e_term_numerator
 			.checked_div(e_term_denominator)
@@ -243,7 +249,7 @@ where
 
 		let term1 = self
 			.m
-			.checked_mul(ln::<F, F>(e_term).map_err(|_| ArithmeticError::Overflow)?)
+			.checked_mul(ln::<Parameter, Parameter>(e_term).map_err(|_| ArithmeticError::Overflow)?)
 			.ok_or(ArithmeticError::Underflow)?;
 
 		let high_low_diff = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
