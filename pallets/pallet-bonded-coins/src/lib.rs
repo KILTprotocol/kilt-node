@@ -42,6 +42,7 @@ pub mod pallet {
 		BoundedVec, FixedPointNumber,
 	};
 	use sp_std::default::Default;
+	use substrate_fixed::types::I9F23;
 
 	use crate::{curves::Curve, types::PoolDetails};
 
@@ -74,6 +75,8 @@ pub mod pallet {
 
 	pub(crate) type PoolDetailsOf<T> =
 		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterTypeOf<T>>, BoundedCurrencyVec<T>>;
+
+	pub(crate) type Precision = I9F23;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]

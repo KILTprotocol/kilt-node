@@ -5,8 +5,9 @@ use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::{
 	traits::{Fixed, FixedSigned, ToFixed},
 	transcendental::{exp, ln, sqrt},
-	types::I9F23,
 };
+
+use crate::Precision;
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<Parameter> {
@@ -31,7 +32,7 @@ impl<Parameter> Operation<Parameter> {
 
 impl<Parameter> Curve<Parameter>
 where
-	Parameter: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	fn calculate_accumulated_passive_issuance(passive_issuance: &[Parameter]) -> Parameter {
@@ -162,7 +163,7 @@ pub struct SquareRootParameters<Parameter> {
 
 impl<Parameter> BondingFunction<Parameter> for SquareRootParameters<Parameter>
 where
-	Parameter: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 {
 	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError> {
 		// Ensure that high and low are positive (logarithms of negative numbers are undefined)
@@ -200,7 +201,7 @@ pub struct LMSRFunctionParameters<Parameter> {
 
 impl<Parameter> LMSRFunctionParameters<Parameter>
 where
-	Parameter: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	fn calculate_passive_issuance(&self, x: Parameter) -> Result<Parameter, ArithmeticError> {
@@ -217,7 +218,7 @@ pub struct LMSRCalculation<Parameter> {
 
 impl<Parameter> BondingFunction<Parameter> for LMSRCalculation<Parameter>
 where
-	Parameter: FixedSigned + PartialOrd<I9F23> + From<I9F23> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError> {
