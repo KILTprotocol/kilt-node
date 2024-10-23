@@ -143,11 +143,11 @@ where
 		self.status == CandidateStatus::Active
 	}
 
-	pub fn is_leaving(&self) -> bool {
+	pub const fn is_leaving(&self) -> bool {
 		matches!(self.status, CandidateStatus::Leaving(_))
 	}
 
-	pub fn can_exit(&self, when: u32) -> bool {
+	pub const fn can_exit(&self, when: u32) -> bool {
 		matches!(self.status, CandidateStatus::Leaving(at) if at <= when )
 	}
 
@@ -256,7 +256,7 @@ impl<B> RoundInfo<B>
 where
 	B: Copy + Saturating + From<u32> + PartialOrd,
 {
-	pub fn new(current: SessionIndex, first: B, length: B) -> RoundInfo<B> {
+	pub const fn new(current: SessionIndex, first: B, length: B) -> RoundInfo<B> {
 		RoundInfo { current, first, length }
 	}
 

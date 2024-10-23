@@ -220,8 +220,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			T::OverarchingOrigin::ensure_origin(origin)?;
 			Ctypes::<T>::try_mutate(ctype_hash, |ctype_entry| {
-				if let Some(ctype_entry) = ctype_entry {
-					ctype_entry.created_at = block_number;
+				if let Some(existing_ctype) = ctype_entry {
+					existing_ctype.created_at = block_number;
 					Ok(())
 				} else {
 					Err(Error::<T>::NotFound)

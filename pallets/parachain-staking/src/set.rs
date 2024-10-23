@@ -61,7 +61,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	///
 	/// Assumes that `v` is sorted reversely (from greatest to lowest) and only
 	/// contains unique elements.
-	pub fn from_sorted_set(bv: BoundedVec<T, S>) -> Self {
+	pub const fn from_sorted_set(bv: BoundedVec<T, S>) -> Self {
 		Self(bv)
 	}
 

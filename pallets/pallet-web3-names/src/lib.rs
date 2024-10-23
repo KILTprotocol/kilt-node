@@ -236,9 +236,9 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		#[pallet::weight(<T as Config>::WeightInfo::claim(name.len().saturated_into()))]
 		pub fn claim(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
-			let origin = T::OwnerOrigin::ensure_origin(origin)?;
-			let payer = origin.sender();
-			let owner = origin.subject();
+			let runtime_origin = T::OwnerOrigin::ensure_origin(origin)?;
+			let payer = runtime_origin.sender();
+			let owner = runtime_origin.subject();
 
 			let decoded_name = Self::check_claiming_preconditions(name, &owner, &payer)?;
 
@@ -262,8 +262,8 @@ pub mod pallet {
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::release_by_owner())]
 		pub fn release_by_owner(origin: OriginFor<T>) -> DispatchResult {
-			let origin = T::OwnerOrigin::ensure_origin(origin)?;
-			let owner = origin.subject();
+			let runtime_origin = T::OwnerOrigin::ensure_origin(origin)?;
+			let owner = runtime_origin.subject();
 
 			let owned_name = Self::check_releasing_preconditions(&owner)?;
 

@@ -709,9 +709,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		let switch_pair = SwitchPair::<T, I>::take();
 		NextQueryId::<T, I>::kill();
 
-		if let Some(switch_pair) = switch_pair {
+		if let Some(existing_switch_pair) = switch_pair {
 			Self::deposit_event(Event::<T, I>::SwitchPairRemoved {
-				remote_asset_id: switch_pair.remote_asset_id,
+				remote_asset_id: existing_switch_pair.remote_asset_id,
 			});
 		};
 	}
