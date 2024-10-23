@@ -20,6 +20,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
+// Triggered by `impl_runtime_apis` macro
+#![allow(clippy::empty_structs_with_brackets)]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -1641,7 +1643,7 @@ impl_runtime_apis! {
 			};
 
 			let from_v4 = AccountId32ToAccountId32JunctionConverter::try_convert(from).map_err(|_| AssetSwitchApiError::Internal)?;
-			let to_v4 = Location::try_from(to.clone()).map_err(|_| AssetSwitchApiError::Internal)?;
+			let to_v4 = Location::try_from(to).map_err(|_| AssetSwitchApiError::Internal)?;
 			let our_location_for_destination = {
 				let universal_location = UniversalLocation::get();
 				universal_location.invert_target(&to_v4)
