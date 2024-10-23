@@ -225,8 +225,7 @@ pub struct SendDustAndFeesToTreasury<T>(sp_std::marker::PhantomData<T>);
 
 impl<T> OnUnbalanced<CreditOf<T>> for SendDustAndFeesToTreasury<T>
 where
-	T: pallet_balances::Config,
-	T: pallet_treasury::Config,
+	T: pallet_balances::Config + pallet_treasury::Config,
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<T>) {
 		let treasury_account_id = pallet_treasury::Pallet::<T>::account_id();

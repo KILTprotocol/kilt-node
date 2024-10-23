@@ -24,7 +24,7 @@ use kilt_dip_primitives::{
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::{traits::IdentityProvider, IdentityOf};
 use pallet_web3_names::Web3NameOf;
-use sp_std::{prelude::ToOwned, vec, vec::Vec};
+use sp_std::{iter::once, prelude::ToOwned, vec, vec::Vec};
 use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
 use crate::dip::{
@@ -58,12 +58,11 @@ where
 			);
 			DidMerkleProofError::Internal
 		})?;
-	Ok([RevealedDidKey {
+	Ok(once(RevealedDidKey {
 		id: did_details.authentication_key,
 		relationship: DidVerificationKeyRelationship::Authentication.into(),
 		details: auth_key_details.clone(),
-	}]
-	.into_iter())
+	}))
 }
 
 fn get_att_leaves<Runtime>(
