@@ -25,6 +25,9 @@ sp-core            = { workspace = true }
 sp-runtime         = { workspace = true }
 sp-std             = { workspace = true }
 
+#External 
+substrate-fixed = { workspace = true }
+
 [dev-dependencies]
 pallet-assets   = { workspace = true, features = ["std"] }
 pallet-balances = { workspace = true, features = ["std"] }
@@ -48,5 +51,6 @@ std = [
 	"frame-system/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
+	"substrate-fixed/std",
 ]
 try-runtime = ["frame-support/try-runtime", "frame-system/try-runtime"]

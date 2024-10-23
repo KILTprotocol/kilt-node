@@ -7,12 +7,14 @@ pub use pallet::*;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod tests;
 
-mod curves_parameters;
+mod curves;
 mod traits;
 mod types;
 #[frame_support::pallet]
@@ -40,9 +42,12 @@ pub mod pallet {
 		BoundedVec, FixedPointNumber, SaturatedConversion,
 	};
 	use sp_std::default::Default;
+	use substrate_fixed::types::I9F23;
 
 	use crate::{
+		curves::Curve,
 		traits::ResetTeam,
+		types::PoolDetails,
 		types::{Locks, PoolDetails, PoolStatus, Team, TokenMeta},
 	};
 
@@ -73,9 +78,12 @@ pub mod pallet {
 
 	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
 
-	// TODO: change CurveParameterTypeOf.
 	pub(crate) type PoolDetailsOf<T> =
-		PoolDetails<<T as frame_system::Config>::AccountId, CurveParameterTypeOf<T>, BoundedCurrencyVec<T>>;
+		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterTypeOf<T>>, BoundedCurrencyVec<T>>;
+
+	pub(crate) type Precision = I9F23;
+
+	pub(crate) type PassiveSupply<T> = Vec<T>;
 
 	pub(crate) type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, CurrencyNameOf<T>, CurrencySymbolOf<T>>;
 
