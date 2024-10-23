@@ -1482,8 +1482,8 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
-			pallet_web3_names::Owner::<Runtime>::get(&name)
+			let parsed_name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			pallet_web3_names::Owner::<Runtime>::get(&parsed_name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
@@ -1495,7 +1495,7 @@ impl_runtime_apis! {
 
 					kilt_runtime_api_did::RawDidLinkedInfo{
 						identifier: owner_info.owner,
-						w3n: Some(name.into()),
+						w3n: Some(parsed_name.into()),
 						accounts,
 						service_endpoints,
 						details: details.into(),
@@ -1566,8 +1566,8 @@ impl_runtime_apis! {
 		fn get_by_subject(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
 			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
 			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(asset_did);
-			if let Some(filter) = filter {
-				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(entry)).collect())
+			if let Some(credentials_filter) = filter {
+				Ok(credentials_prefix.filter(|(_, entry)| credentials_filter.should_include(entry)).collect())
 			} else {
 				Ok(credentials_prefix.collect())
 			}

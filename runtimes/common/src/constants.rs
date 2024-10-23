@@ -514,11 +514,14 @@ pub mod preimage {
 	}
 }
 
+#[allow(clippy::decimal_literal_representation)]
+const MAXIMUM_REASON_LENGTH: u32 = 16384;
+
 pub mod tips {
 	use super::*;
 
 	parameter_types! {
-		pub const MaximumReasonLength: u32 = 16384;
+		pub const MaximumReasonLength: u32 = MAXIMUM_REASON_LENGTH;
 		pub const TipCountdown: BlockNumber = DAYS;
 		pub const TipFindersFee: Percent = Percent::from_percent(0);
 		pub const TipReportDepositBase: Balance = deposit(1, 1);
