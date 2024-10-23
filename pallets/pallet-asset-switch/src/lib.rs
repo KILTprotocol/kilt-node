@@ -65,6 +65,8 @@ const LOG_TARGET: &str = "runtime::pallet-asset-switch";
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+// `ref` keyword is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::ref_patterns)]
 pub mod pallet {
 	use crate::{
 		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairInfoV4, SwitchPairStatus, UnconfirmedSwitchInfo},
@@ -450,7 +452,7 @@ pub mod pallet {
 
 			// 2. Retrieve switch pair info from storage, else fail.
 			let switch_pair =
-				SwitchPair::<T, I>::get().ok_or(DispatchError::from(Error::<T, I>::SwitchPairNotFound))?;
+				SwitchPair::<T, I>::get().ok_or_else(|| DispatchError::from(Error::<T, I>::SwitchPairNotFound))?;
 
 			// 3. Check if switches are enabled.
 			ensure!(
