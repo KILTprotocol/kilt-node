@@ -21,7 +21,6 @@ pub struct PolynomialParameters<Parameter> {
 }
 
 impl<I: FixedUnsigned, C: FixedSigned> TryFrom<PolynomialParametersInput<I>> for PolynomialParameters<C> {
-	// Todo error handling.
 	type Error = ();
 	fn try_from(value: PolynomialParametersInput<I>) -> Result<Self, Self::Error> {
 		Ok(PolynomialParameters {
