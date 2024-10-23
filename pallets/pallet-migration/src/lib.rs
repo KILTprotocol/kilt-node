@@ -34,6 +34,8 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+// `ref` keyword is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::ref_patterns)]
 pub mod pallet {
 	use super::*;
 
@@ -59,15 +61,15 @@ pub mod pallet {
 
 	pub type HashOf<T> = <T as frame_system::Config>::Hash;
 
-	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq)]
+	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq, Eq)]
 	pub struct EntriesToMigrate<T>
 	where
-		T: did::Config,
-		T: delegation::Config,
-		T: frame_system::Config,
-		T: pallet_web3_names::Config,
-		T: public_credentials::Config,
-		T: Config,
+		T: Config
+			+ did::Config
+			+ delegation::Config
+			+ frame_system::Config
+			+ pallet_web3_names::Config
+			+ public_credentials::Config,
 	{
 		pub attestation: BoundedVec<ClaimHashOf<T>, <T as Config>::MaxMigrationsPerPallet>,
 		pub delegation: BoundedVec<DelegationNodeIdOf<T>, <T as Config>::MaxMigrationsPerPallet>,
