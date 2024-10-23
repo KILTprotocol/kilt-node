@@ -1,16 +1,35 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
-use substrate_fixed::traits::FixedSigned;
+use substrate_fixed::traits::{FixedSigned, FixedUnsigned};
 
 use super::{square, BondingFunction, Operation};
 use crate::{curves::calculate_integral_bounds, PassiveSupply};
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub struct PolynomialParametersInput<Parameter> {
+	pub m: Parameter,
+	pub n: Parameter,
+	pub o: Parameter,
+}
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PolynomialParameters<Parameter> {
 	pub m: Parameter,
 	pub n: Parameter,
 	pub o: Parameter,
+}
+
+impl<I: FixedUnsigned, C: FixedSigned> TryFrom<PolynomialParametersInput<I>> for PolynomialParameters<C> {
+	// Todo error handling.
+	type Error = ();
+	fn try_from(value: PolynomialParametersInput<I>) -> Result<Self, Self::Error> {
+		Ok(PolynomialParameters {
+			m: C::checked_from_fixed(value.m).ok_or(())?,
+			n: C::checked_from_fixed(value.n).ok_or(())?,
+			o: C::checked_from_fixed(value.o).ok_or(())?,
+		})
+	}
 }
 
 impl<Parameter> BondingFunction<Parameter> for PolynomialParameters<Parameter>

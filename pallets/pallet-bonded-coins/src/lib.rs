@@ -7,8 +7,6 @@ pub use pallet::*;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
@@ -38,16 +36,18 @@ pub mod pallet {
 	use parity_scale_codec::FullCodec;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
-		traits::{CheckedAdd, CheckedSub, One, Saturating, Zero},
-		BoundedVec, FixedPointNumber, SaturatedConversion,
+		traits::{One, Saturating},
+		BoundedVec, SaturatedConversion,
 	};
 	use sp_std::default::Default;
-	use substrate_fixed::types::I9F23;
+	use substrate_fixed::{
+		traits::{FixedSigned, FixedUnsigned},
+		types::I9F23,
+	};
 
 	use crate::{
-		curves::Curve,
+		curves::{Curve, CurveInput},
 		traits::ResetTeam,
-		types::PoolDetails,
 		types::{Locks, PoolDetails, PoolStatus, Team, TokenMeta},
 	};
 
@@ -77,6 +77,8 @@ pub mod pallet {
 	pub(crate) type CurrencySymbolOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
 
 	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
+
+	pub(crate) type CurveParameterInputOf<T> = <T as Config>::CurveParameterInput;
 
 	pub(crate) type PoolDetailsOf<T> =
 		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterTypeOf<T>>, BoundedCurrencyVec<T>>;
@@ -136,18 +138,17 @@ pub mod pallet {
 		/// The type used for the curve parameters.
 		type CurveParameterType: Parameter
 			+ Member
-			+ FixedPointNumber<Inner = u128>
+			+ FixedSigned
 			+ TypeInfo
 			+ MaxEncodedLen
-			+ Zero
-			+ CheckedAdd
-			+ CheckedSub;
+			+ TryFrom<Self::CurveParameterInput>;
+
+		type CurveParameterInput: Parameter + FixedUnsigned + TypeInfo + MaxEncodedLen;
 	}
 
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
 
-	/// Bonded Currency Swapping Pools
 	#[pallet::storage]
 	#[pallet::getter(fn pools)]
 	pub(crate) type Pools<T: Config> = StorageMap<_, Twox64Concat, T::PoolId, PoolDetailsOf<T>, OptionQuery>;
@@ -162,11 +163,10 @@ pub mod pallet {
 		PoolCreated(T::PoolId),
 	}
 
-	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
 		CurrenciesNumber,
-		NegativeCurveParameters,
+		InvalidCoefficients,
 		Internal,
 	}
 
@@ -181,7 +181,7 @@ pub mod pallet {
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn create_pool(
 			origin: OriginFor<T>,
-			curve: Curve<CurveParameterTypeOf<T>>,
+			curve: CurveInput<CurveParameterInputOf<T>>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			state: PoolStatus<Locks>,
 			denomination: u8,
@@ -198,7 +198,7 @@ pub mod pallet {
 				Error::<T>::CurrenciesNumber
 			);
 
-			ensure!(curve.are_parameters_valid(), Error::<T>::NegativeCurveParameters);
+			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidCoefficients)?;
 
 			let current_asset_id = NextAssetId::<T>::get();
 
@@ -223,7 +223,7 @@ pub mod pallet {
 			currencies
 				.iter()
 				.enumerate()
-				.for_each(|(idx, entry)| -> DispatchResult {
+				.try_for_each(|(idx, entry)| -> DispatchResult {
 					let asset_id: &T::AssetId = currency_ids.get(idx).ok_or(Error::<T>::CurrenciesNumber)?;
 					T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, entry.min_balance)?;
 
@@ -243,16 +243,21 @@ pub mod pallet {
 						team.issuer.clone(),
 						team.freezer.clone(),
 					)?;
-
 					Ok(())
-				});
+				})?;
 
 			// Touch the pool account in order to be able to transfer the collateral currency to it
 			T::CollateralCurrency::touch(T::CollateralAssetId::get(), &pool_id.clone().into(), &who)?;
 
 			Pools::<T>::set(
 				&pool_id,
-				Some(PoolDetails::new(pool_manager, curve, currency_ids, transferable, state)),
+				Some(PoolDetails::new(
+					pool_manager,
+					checked_curve,
+					currency_ids,
+					transferable,
+					state,
+				)),
 			);
 
 			Self::deposit_event(Event::PoolCreated(pool_id));
