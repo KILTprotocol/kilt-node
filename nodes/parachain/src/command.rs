@@ -215,7 +215,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, Arc::clone(&partials.client), db, storage)
+					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
 				}),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
@@ -227,7 +227,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, Arc::clone(&partials.client), db, storage)
+					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
 				}),
 				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
 				(BenchmarkCmd::Machine(cmd), _) => {

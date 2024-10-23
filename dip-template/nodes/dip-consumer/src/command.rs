@@ -218,7 +218,7 @@ pub fn run() -> Result<()> {
 					let partials = new_partial(&config)?;
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
-					cmd.run(config, Arc::clone(&partials.client), db, storage)
+					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
 				}),
 				BenchmarkCmd::Machine(cmd) => {
 					runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
