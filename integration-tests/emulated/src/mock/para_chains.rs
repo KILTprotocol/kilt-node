@@ -44,11 +44,10 @@ pub mod spiritnet {
 				..Default::default()
 			},
 			session: SessionConfig {
-				keys: [(
+				keys: std::iter::once(&(
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_from_seed::<AuthorityId>("Alice"),
-				)]
-				.iter()
+				))
 				.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
 				.collect::<Vec<_>>(),
 			},
@@ -86,11 +85,10 @@ pub mod peregrine {
 				..Default::default()
 			},
 			session: SessionConfig {
-				keys: [(
+				keys: std::iter::once(&(
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_from_seed::<AuthorityId>("Alice"),
-				)]
-				.iter()
+				))
 				.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
 				.collect::<Vec<_>>(),
 			},

@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::{fs::create_dir_all, net::SocketAddr, sync::Arc};
+use std::{fs::create_dir_all, net::SocketAddr};
 
 use cumulus_primitives_core::ParaId;
 use dip_consumer_runtime_template::Block;

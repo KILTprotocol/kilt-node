@@ -93,7 +93,7 @@ fn test_claim_w3n_from_asset_hub_successful() {
 					account: account == &asset_hub_sovereign_account,
 					result: result.is_ok(),
 				},
-				PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed{owner, name: _}) => {
+				PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed{owner, ..}) => {
 					owner: owner == &asset_hub_sovereign_account,
 				},
 			]
@@ -148,10 +148,7 @@ fn test_claim_w3n_from_asset_hub_unsuccessful() {
 				matches!(
 					event,
 					PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
-						| PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed {
-							owner: _,
-							name: _
-						})
+						| PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed { .. })
 				)
 			});
 
