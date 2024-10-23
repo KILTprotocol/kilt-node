@@ -9,7 +9,7 @@ use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
 
 use crate::{
-	curves::{lmsr::LMSRFunctionParameters, polynomial::PolynomialParameters, square_root::SquareRootParameters},
+	curves::{lmsr::LMSRParameters, polynomial::PolynomialParameters, square_root::SquareRootParameters},
 	PassiveSupply, Precision,
 };
 
@@ -17,7 +17,7 @@ use crate::{
 pub enum Curve<Parameter> {
 	Polynomial(PolynomialParameters<Parameter>),
 	SquareRoot(SquareRootParameters<Parameter>),
-	LMSR(LMSRFunctionParameters<Parameter>),
+	LMSR(LMSRParameters<Parameter>),
 }
 
 pub enum Operation<PassiveSupply> {
@@ -34,12 +34,12 @@ impl<Balance> Operation<PassiveSupply<Balance>> {
 	}
 }
 
-impl<Parameter> Curve<Parameter>
+impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	pub fn calculate_cost(
+	fn calculate_costs(
 		&self,
 		active_issuance_pre: Parameter,
 		active_issuance_post: Parameter,

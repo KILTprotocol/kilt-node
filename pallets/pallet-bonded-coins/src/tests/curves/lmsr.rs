@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-	curves::{lmsr::LMSRFunctionParameters, BondingFunction, Operation},
+	curves::{lmsr::LMSRParameters, BondingFunction, Operation},
 	mock::{assert_relative_eq, Float},
 };
 
@@ -10,7 +10,7 @@ fn mint_first_coin() {
 	// Create curve with liquidity parameter b=100_000_000, and passive issuance=0
 	let m = Float::from_num(100_000_000);
 
-	let curve = LMSRFunctionParameters { m };
+	let curve = LMSRParameters { m };
 
 	let low = Float::from_num(0);
 	let high = Float::from_num(1);
@@ -32,7 +32,7 @@ fn mint_first_coin() {
 fn high_supply_with_no_passive_issuance() {
 	// Create curve with liquidity parameter b=100_000_000, and passive issuance=0
 	let m = Float::from_num(100_000_000);
-	let curve = LMSRFunctionParameters { m };
+	let curve = LMSRParameters { m };
 
 	// we mint 100 coins.
 	let low = Float::from_num(100_000_000u128);
@@ -55,7 +55,7 @@ fn high_supply_with_no_passive_issuance() {
 fn high_supply_with_passive_issuance() {
 	// Create curve with liquidity parameter b=100_000_000, and passive issuance=1_000_000_000
 	let m = Float::from_num(100_000_000);
-	let curve = LMSRFunctionParameters { m };
+	let curve = LMSRParameters { m };
 
 	// we mint 100 coins.
 	let low = Float::from_num(100_000_000u128);
@@ -79,7 +79,7 @@ fn high_supply_with_passive_issuance() {
 fn low_liquidity_parameter() {
 	// Create curve with liquidity parameter b=100, and passive issuance=0
 	let m = Float::from_num(100);
-	let curve = LMSRFunctionParameters { m };
+	let curve = LMSRParameters { m };
 
 	// we mint 100 coins.
 	let low = Float::from_num(1_000u128);
@@ -103,7 +103,7 @@ fn mint_coin_with_existing_supply_and_no_passive_issuance() {
 	// Create curve with liquidity parameter b=100_000_000, and passive issuance=0
 	let m = Float::from_num(100_000_000);
 
-	let curve = LMSRFunctionParameters { m };
+	let curve = LMSRParameters { m };
 
 	// we mint 100 coins.
 	let low = Float::from_num(100u128);
@@ -127,7 +127,7 @@ fn mint_coin_with_existing_supply_and_passive_issuance() {
 	// Create curve with liquidity parameter b=100_000_000, and passive issuance=100
 	let m = Float::from_num(100_000_000);
 
-	let curve = LMSRFunctionParameters { m };
+	let curve = LMSRParameters { m };
 
 	// we mint 100 coins.
 	let low = Float::from_num(100u128);

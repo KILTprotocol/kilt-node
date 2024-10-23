@@ -11,76 +11,74 @@ use super::BondingFunction;
 use crate::{curves::Operation, PassiveSupply, Precision};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct LMSRFunctionParameters<Parameter> {
+pub struct LMSRParameters<Parameter> {
 	pub m: Parameter,
 }
 
-impl<Parameter> LMSRFunctionParameters<Parameter>
+impl<Parameter> LMSRParameters<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn calculate_passive_issuance(&self, x: Parameter) -> Result<Parameter, ArithmeticError> {
-		x.checked_div(self.m)
+	fn calculate_exp_term(&self, supply: Parameter, x: Parameter) -> Result<Parameter, ArithmeticError> {
+		supply
+			.checked_sub(x)
+			.ok_or(ArithmeticError::Underflow)?
+			.checked_div(self.m)
 			.ok_or(ArithmeticError::DivisionByZero)
-			.and_then(|x| exp::<Parameter, Parameter>(x).map_err(|_| ArithmeticError::Overflow))
+			.and_then(|exponent| exp::<Parameter, Parameter>(exponent).map_err(|_| ArithmeticError::Overflow))
 	}
 }
 
-impl<Parameter> BondingFunction<Parameter> for LMSRFunctionParameters<Parameter>
+impl<Parameter> BondingFunction<Parameter> for LMSRParameters<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
+	// c(a, c) = (a - c) + b * ln((1 + SUM_i e^((q_i - a)/b)) / (1 + SUM_i e^((q_i - c)/b)))
 	fn calculate_costs(
 		&self,
 		low: Parameter,
 		high: Parameter,
 		op: Operation<PassiveSupply<Parameter>>,
 	) -> Result<Parameter, ArithmeticError> {
-		let passive_issuance_over_e = op
+		let e_term_numerator = op
 			.inner_value()
 			.iter()
-			.map(|x| self.calculate_passive_issuance(*x))
+			.map(|x| self.calculate_exp_term(*x, high))
 			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
 
-		let passive_issuance = passive_issuance_over_e
+		let term1 = e_term_numerator.iter().try_fold(Parameter::from_num(0), |acc, x| {
+			acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
+		})?;
+
+		let numerator = Parameter::from_num(1)
+			.checked_add(term1)
+			.ok_or(ArithmeticError::Overflow)?;
+
+		let e_term_denominator = op
+			.inner_value()
 			.iter()
-			.try_fold(Parameter::from_num(0), |acc, x| {
-				acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
-			})?;
+			.map(|x| self.calculate_exp_term(*x, low))
+			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
 
-		let exponent_numerator = passive_issuance
-			.checked_sub(high)
-			.ok_or(ArithmeticError::Underflow)?
-			.checked_div(self.m)
-			.ok_or(ArithmeticError::DivisionByZero)?;
+		let term2 = e_term_denominator.iter().try_fold(Parameter::from_num(0), |acc, x| {
+			acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
+		})?;
 
-		let exponent_denominator = passive_issuance
-			.checked_sub(low)
-			.ok_or(ArithmeticError::Underflow)?
-			.checked_div(self.m)
-			.ok_or(ArithmeticError::DivisionByZero)?;
+		let denominator = Parameter::from_num(1)
+			.checked_add(term2)
+			.ok_or(ArithmeticError::Overflow)?;
 
-		let e_term_numerator = exp::<Parameter, Parameter>(exponent_numerator)
-			.map_err(|_| ArithmeticError::Overflow)
-			.and_then(|x| x.checked_add(Parameter::from_num(1)).ok_or(ArithmeticError::Overflow))?;
-
-		let e_term_denominator = exp::<Parameter, Parameter>(exponent_denominator)
-			.map_err(|_| ArithmeticError::Overflow)
-			.and_then(|x| x.checked_add(Parameter::from_num(1)).ok_or(ArithmeticError::Overflow))?;
-
-		let e_term = e_term_numerator
-			.checked_div(e_term_denominator)
-			.ok_or(ArithmeticError::DivisionByZero)?;
-
-		let term1 = self
-			.m
-			.checked_mul(ln::<Parameter, Parameter>(e_term).map_err(|_| ArithmeticError::Overflow)?)
-			.ok_or(ArithmeticError::Underflow)?;
+		let log_value = numerator
+			.checked_div(denominator)
+			.ok_or(ArithmeticError::DivisionByZero)
+			.and_then(|x| ln::<Parameter, Parameter>(x).map_err(|_| ArithmeticError::Overflow))?;
 
 		let high_low_diff = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
 
-		high_low_diff.checked_add(term1).ok_or(ArithmeticError::Overflow)
+		let m_log_value = self.m.checked_mul(log_value).ok_or(ArithmeticError::Overflow)?;
+
+		high_low_diff.checked_add(m_log_value).ok_or(ArithmeticError::Overflow)
 	}
 }
