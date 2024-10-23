@@ -47,6 +47,8 @@ const LOG_TARGET: &str = "pallet_deposit_storage";
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+// `ref` keyword is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::ref_patterns)]
 pub mod pallet {
 	use crate::{
 		default_weights::WeightInfo,
