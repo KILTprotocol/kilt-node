@@ -52,6 +52,8 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+// `ref` keyword is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::ref_patterns)]
 pub mod pallet {
 	use crate::{
 		associate_account_request::AssociateAccountRequest, default_weights::WeightInfo,
@@ -224,9 +226,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		T::AccountId: Into<LinkableAccountId>,
-		T::AccountId: From<sp_runtime::AccountId32>,
-		T::AccountId: Into<sp_runtime::AccountId32>,
+		T::AccountId: Into<LinkableAccountId> + From<sp_runtime::AccountId32> + Into<sp_runtime::AccountId32>,
 	{
 		/// Associate the given account to the DID that authorized this call.
 		///
