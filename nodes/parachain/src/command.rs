@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::sync::Arc;
+
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
@@ -104,8 +106,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			runner.sync_run(|config| {
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					[RelayChainCli::executable_name()]
-						.iter()
+					std::iter::once(&RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 
@@ -216,7 +217,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, Arc::clone(&partials.client), db, storage)
 				}),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
@@ -228,7 +229,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, Arc::clone(&partials.client), db, storage)
 				}),
 				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
 				(BenchmarkCmd::Machine(cmd), _) => {
@@ -260,8 +261,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					[RelayChainCli::executable_name()]
-						.iter()
+					std::iter::once(&RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 
