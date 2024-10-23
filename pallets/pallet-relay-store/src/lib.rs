@@ -44,6 +44,11 @@ const LOG_TARGET: &str = "pallet_relay_store";
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+// `ref` keyword is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::ref_patterns)]
+// We use additional trait bounds for some hooks implementation, which collide with the expected format polkadot-sdk
+// expects, hence we need to allow this lint.
+#[allow(clippy::type_repetition_in_bounds)]
 pub mod pallet {
 	use super::*;
 
