@@ -141,6 +141,8 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+// `ref` keyword is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::ref_patterns)]
 // We do plain arithmetic operations only after we've made sure they will go through.
 #[allow(clippy::arithmetic_side_effects)]
 pub mod pallet {
@@ -704,23 +706,26 @@ pub mod pallet {
 			MaxCollatorCandidateStake::<T>::put(self.max_candidate_stake);
 
 			// Setup delegate & collators
-			for &(ref actor, ref opt_val, balance) in &self.stakers {
+			for (actor, opt_val, balance) in &self.stakers {
 				assert!(
-					T::Currency::reducible_balance(actor, Preservation::Expendable, Fortitude::Polite) >= balance,
+					T::Currency::reducible_balance(actor, Preservation::Expendable, Fortitude::Polite) >= *balance,
 					"Account does not have enough balance to stake."
 				);
-				if let Some(delegated_val) = opt_val {
-					frame_support::assert_ok!(Pallet::<T>::join_delegators(
-						T::RuntimeOrigin::from(Some(actor.clone()).into()),
-						T::Lookup::unlookup(delegated_val.clone()),
-						balance,
-					));
-				} else {
-					frame_support::assert_ok!(Pallet::<T>::join_candidates(
-						T::RuntimeOrigin::from(Some(actor.clone()).into()),
-						balance
-					));
-				}
+				opt_val.as_ref().map_or_else(
+					|| {
+						frame_support::assert_ok!(Pallet::<T>::join_candidates(
+							T::RuntimeOrigin::from(Some(actor.clone()).into()),
+							*balance
+						));
+					},
+					|delegated_val| {
+						frame_support::assert_ok!(Pallet::<T>::join_delegators(
+							T::RuntimeOrigin::from(Some(actor.clone()).into()),
+							T::Lookup::unlookup(delegated_val.clone()),
+							*balance,
+						));
+					},
+				);
 			}
 			// Set total selected candidates to minimum config
 			MaxSelectedCandidates::<T>::put(T::MinCollators::get());
@@ -2298,11 +2303,7 @@ pub mod pallet {
 				.into_iter()
 				.enumerate()
 				.find_map(|(i, id)| {
-					if <T as pallet_session::Config>::ValidatorIdOf::convert(collator.clone()) == Some(id) {
-						Some(i)
-					} else {
-						None
-					}
+					(<T as pallet_session::Config>::ValidatorIdOf::convert(collator.clone()) == Some(id)).then_some(i)
 				})
 				.map(u32::saturated_from::<usize>)
 				// FIXME: Does not prevent the collator from being able to author a block in this (or potentially the next) session. See https://github.com/paritytech/substrate/issues/8004

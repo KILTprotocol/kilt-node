@@ -40,12 +40,7 @@ use crate::{set::OrderedSet, Config};
 /// The stake has a destination account (to which the stake is directed) and an
 /// amount of funds staked.
 #[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-#[codec(mel_bound(AccountId: MaxEncodedLen, Balance: MaxEncodedLen))]
-pub struct Stake<AccountId, Balance>
-where
-	AccountId: Eq + Ord,
-	Balance: Eq + Ord,
-{
+pub struct Stake<AccountId, Balance> {
 	/// The account that is backed by the stake.
 	pub owner: AccountId,
 
@@ -101,12 +96,9 @@ pub enum CandidateStatus {
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(MaxDelegatorsPerCandidate))]
-#[codec(mel_bound(AccountId: MaxEncodedLen, Balance: MaxEncodedLen))]
 /// Global collator state with commission fee, staked funds, and delegations
 pub struct Candidate<AccountId, Balance, MaxDelegatorsPerCandidate>
 where
-	AccountId: Eq + Ord + Debug,
-	Balance: Eq + Ord + Debug,
 	MaxDelegatorsPerCandidate: Get<u32> + Debug + PartialEq,
 {
 	/// Account id of the candidate.
@@ -171,13 +163,11 @@ where
 	// Returns None if underflow or less == self.stake (in which case collator
 	// should leave).
 	pub fn stake_less(&mut self, less: B) -> Option<B> {
-		if self.stake > less {
+		(self.stake > less).then(|| {
 			self.stake = self.stake.saturating_sub(less);
 			self.total = self.total.saturating_sub(less);
-			Some(self.stake)
-		} else {
-			None
-		}
+			self.stake
+		})
 	}
 
 	pub fn inc_delegator(&mut self, delegator: A, more: B) {
