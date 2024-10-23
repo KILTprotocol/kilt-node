@@ -22,6 +22,8 @@
 #![recursion_limit = "256"]
 // The `from_over_into` warning originates from `construct_runtime` macro.
 #![allow(clippy::from_over_into)]
+// Triggered by `impl_runtime_apis` macro
+#![allow(clippy::empty_structs_with_brackets)]
 
 // Make the WASM binary available
 #[cfg(feature = "std")]
