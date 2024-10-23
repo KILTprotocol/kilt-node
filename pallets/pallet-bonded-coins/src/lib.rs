@@ -15,6 +15,7 @@ mod tests;
 mod curves;
 mod traits;
 mod types;
+
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -34,7 +35,6 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
-	use scale_info::TypeInfo;
 	use sp_runtime::{
 		traits::{One, Saturating},
 		BoundedVec, SaturatedConversion,
