@@ -9,11 +9,7 @@ use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
 
 use crate::{
-	curves::{
-		lmsr::{LMSRCalculation, LMSRFunctionParameters},
-		polynomial::PolynomialParameters,
-		square_root::SquareRootParameters,
-	},
+	curves::{lmsr::LMSRFunctionParameters, polynomial::PolynomialParameters, square_root::SquareRootParameters},
 	PassiveSupply, Precision,
 };
 
@@ -50,40 +46,20 @@ where
 		op: Operation<PassiveSupply<Parameter>>,
 	) -> Result<Parameter, ArithmeticError> {
 		match self {
-			Curve::Polynomial(params) => {
-				let (low, high) = calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
-
-				params.calculate_costs(low, high)
-			}
-			Curve::SquareRoot(params) => {
-				let (low, high) = calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
-				params.calculate_costs(low, high)
-			}
-			Curve::LMSR(params) => {
-				let passive_issuance_over_e = op
-					.inner_value()
-					.iter()
-					.map(|x| params.calculate_passive_issuance(*x))
-					.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
-
-				let passive_issuance = passive_issuance_over_e
-					.iter()
-					.try_fold(Parameter::from_num(0), |acc, x| {
-						acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
-					})?;
-
-				let lmsr_calc = LMSRCalculation {
-					m: params.m,
-					passive_issuance,
-				};
-				lmsr_calc.calculate_costs(active_issuance_pre, active_issuance_post)
-			}
+			Curve::Polynomial(params) => params.calculate_costs(active_issuance_pre, active_issuance_post, op),
+			Curve::SquareRoot(params) => params.calculate_costs(active_issuance_pre, active_issuance_post, op),
+			Curve::LMSR(params) => params.calculate_costs(active_issuance_pre, active_issuance_post, op),
 		}
 	}
 }
 
-pub trait BondingFunction<Parameter> {
-	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError>;
+pub trait BondingFunction<Balance> {
+	fn calculate_costs(
+		&self,
+		active_issuance_pre: Balance,
+		active_issuance_post: Balance,
+		op: Operation<PassiveSupply<Balance>>,
+	) -> Result<Balance, ArithmeticError>;
 }
 
 fn square<FixedType: Fixed>(x: FixedType) -> Result<FixedType, ArithmeticError> {

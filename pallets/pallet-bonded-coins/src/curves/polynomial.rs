@@ -3,7 +3,8 @@ use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use substrate_fixed::traits::FixedSigned;
 
-use super::{square, BondingFunction};
+use super::{square, BondingFunction, Operation};
+use crate::{curves::calculate_integral_bounds, PassiveSupply};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PolynomialParameters<Parameter> {
@@ -16,7 +17,13 @@ impl<Parameter> BondingFunction<Parameter> for PolynomialParameters<Parameter>
 where
 	Parameter: FixedSigned,
 {
-	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError> {
+	fn calculate_costs(
+		&self,
+		active_issuance_pre: Parameter,
+		active_issuance_post: Parameter,
+		op: Operation<PassiveSupply<Parameter>>,
+	) -> Result<Parameter, ArithmeticError> {
+		let (low, high) = calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
 		// Calculate high - low
 		let delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
 

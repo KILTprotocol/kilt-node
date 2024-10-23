@@ -6,8 +6,8 @@ use substrate_fixed::{
 	transcendental::sqrt,
 };
 
-use super::BondingFunction;
-use crate::Precision;
+use super::{BondingFunction, Operation};
+use crate::{curves::calculate_integral_bounds, PassiveSupply, Precision};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct SquareRootParameters<Parameter> {
@@ -19,8 +19,13 @@ impl<Parameter> BondingFunction<Parameter> for SquareRootParameters<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 {
-	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError> {
-		// Ensure that high and low are positive (logarithms of negative numbers are undefined)
+	fn calculate_costs(
+		&self,
+		active_issuance_pre: Parameter,
+		active_issuance_post: Parameter,
+		op: Operation<PassiveSupply<Parameter>>,
+	) -> Result<Parameter, ArithmeticError> {
+		let (low, high) = calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
 
 		// Calculate sqrt(high^3) and sqrt(low^3)
 		let sqrt_x3_high: Parameter = sqrt::<Parameter, Parameter>(high)

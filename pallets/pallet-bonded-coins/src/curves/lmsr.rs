@@ -8,7 +8,7 @@ use substrate_fixed::{
 };
 
 use super::BondingFunction;
-use crate::Precision;
+use crate::{curves::Operation, PassiveSupply, Precision};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRFunctionParameters<Parameter> {
@@ -20,33 +20,43 @@ where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	pub(crate) fn calculate_passive_issuance(&self, x: Parameter) -> Result<Parameter, ArithmeticError> {
+	fn calculate_passive_issuance(&self, x: Parameter) -> Result<Parameter, ArithmeticError> {
 		x.checked_div(self.m)
 			.ok_or(ArithmeticError::DivisionByZero)
 			.and_then(|x| exp::<Parameter, Parameter>(x).map_err(|_| ArithmeticError::Overflow))
 	}
 }
 
-pub struct LMSRCalculation<Parameter> {
-	pub m: Parameter,
-	pub passive_issuance: Parameter,
-}
-
-impl<Parameter> BondingFunction<Parameter> for LMSRCalculation<Parameter>
+impl<Parameter> BondingFunction<Parameter> for LMSRFunctionParameters<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError> {
-		let exponent_numerator = self
-			.passive_issuance
+	fn calculate_costs(
+		&self,
+		low: Parameter,
+		high: Parameter,
+		op: Operation<PassiveSupply<Parameter>>,
+	) -> Result<Parameter, ArithmeticError> {
+		let passive_issuance_over_e = op
+			.inner_value()
+			.iter()
+			.map(|x| self.calculate_passive_issuance(*x))
+			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
+
+		let passive_issuance = passive_issuance_over_e
+			.iter()
+			.try_fold(Parameter::from_num(0), |acc, x| {
+				acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
+			})?;
+
+		let exponent_numerator = passive_issuance
 			.checked_sub(high)
 			.ok_or(ArithmeticError::Underflow)?
 			.checked_div(self.m)
 			.ok_or(ArithmeticError::DivisionByZero)?;
 
-		let exponent_denominator = self
-			.passive_issuance
+		let exponent_denominator = passive_issuance
 			.checked_sub(low)
 			.ok_or(ArithmeticError::Underflow)?
 			.checked_div(self.m)
