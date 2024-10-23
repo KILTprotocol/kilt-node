@@ -82,12 +82,12 @@ where
 	}
 }
 
-pub trait BondingFunction<Parameter: Fixed> {
+pub trait BondingFunction<Parameter> {
 	fn calculate_costs(&self, low: Parameter, high: Parameter) -> Result<Parameter, ArithmeticError>;
+}
 
-	fn square(x: Parameter) -> Result<Parameter, ArithmeticError> {
-		x.checked_mul(x).ok_or(ArithmeticError::Overflow)
-	}
+fn square<FixedType: Fixed>(x: FixedType) -> Result<FixedType, ArithmeticError> {
+	x.checked_mul(x).ok_or(ArithmeticError::Overflow)
 }
 
 fn calculate_integral_bounds<FixedType: Fixed>(

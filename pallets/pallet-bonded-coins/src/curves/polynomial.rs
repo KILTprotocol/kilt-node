@@ -3,7 +3,7 @@ use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use substrate_fixed::traits::FixedSigned;
 
-use super::BondingFunction;
+use super::{square, BondingFunction};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PolynomialParameters<Parameter> {
@@ -21,8 +21,8 @@ where
 		let delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
 
 		let high_low_mul = high.checked_mul(low).ok_or(ArithmeticError::Overflow)?;
-		let high_square = Self::square(high)?;
-		let low_square = Self::square(low)?;
+		let high_square = square(high)?;
+		let low_square = square(low)?;
 
 		// Factorized cubic term:  (high^2 + high * low + low^2)
 		let cubic_term = high_square
