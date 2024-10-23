@@ -643,7 +643,7 @@ impl<ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId> DipCallOriginFilt
 	// Accepts only a DipOrigin for the DidLookup pallet calls.
 	fn check_call_origin_info(call: &RuntimeCall, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error> {
 		let expected_key_relationship =
-			single_key_relationship([call].into_iter()).map_err(|_| DipCallFilterError::BadOrigin)?;
+			single_key_relationship(sp_std::iter::once(call)).map_err(|_| DipCallFilterError::BadOrigin)?;
 		// If any of the keys revealed is of the right relationship, it's ok.
 		if info
 			.iter()
