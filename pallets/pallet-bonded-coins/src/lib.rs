@@ -131,19 +131,14 @@ pub mod pallet {
 		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
 
 		/// The type used for asset ids. This is the type of the bonded currencies.
-		type AssetId: Parameter + Member + FullCodec + TypeInfo + MaxEncodedLen + Saturating + One + Default;
+		type AssetId: Parameter + Member + FullCodec + MaxEncodedLen + Saturating + One + Default;
 
 		type RuntimeHoldReason: From<HoldReason>;
 
 		/// The type used for the curve parameters.
-		type CurveParameterType: Parameter
-			+ Member
-			+ FixedSigned
-			+ TypeInfo
-			+ MaxEncodedLen
-			+ TryFrom<Self::CurveParameterInput>;
+		type CurveParameterType: Parameter + Member + FixedSigned + MaxEncodedLen;
 
-		type CurveParameterInput: Parameter + FixedUnsigned + TypeInfo + MaxEncodedLen;
+		type CurveParameterInput: Parameter + FixedUnsigned + MaxEncodedLen;
 	}
 
 	#[pallet::pallet]
