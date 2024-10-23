@@ -56,6 +56,8 @@ pub use crate::{
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+// `ref` keyword is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::ref_patterns)]
 pub mod pallet {
 	use super::*;
 
@@ -292,8 +294,8 @@ pub mod pallet {
 			let Credential {
 				ctype_hash,
 				subject,
-				claims: _,
 				authorization,
+				..
 			} = *credential.clone();
 
 			ensure!(
