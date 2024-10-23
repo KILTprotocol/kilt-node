@@ -199,9 +199,6 @@ pub mod pallet {
 
 			let (currency_ids, next_asset_id) = Self::generate_sequential_asset_ids(current_asset_id, currency_length)?;
 
-			// update the storage for the next tx.
-			NextAssetId::<T>::set(next_asset_id);
-
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
 			// Todo: change that.
@@ -231,6 +228,7 @@ pub mod pallet {
 						denomination,
 					)?;
 
+					// reset the team for the new asset class
 					T::Fungibles::reset_team(
 						asset_id.clone(),
 						pool_id.clone().into(),
@@ -254,6 +252,9 @@ pub mod pallet {
 					state,
 				)),
 			);
+
+			// update the storage for the next tx.
+			NextAssetId::<T>::set(next_asset_id);
 
 			Self::deposit_event(Event::PoolCreated(pool_id));
 
