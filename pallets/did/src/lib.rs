@@ -139,6 +139,8 @@ use frame_system::RawOrigin;
 #[allow(clippy::expect_used)]
 // `unreachable` is used in the macro-generated code, and we have to ignore it.
 #[allow(clippy::unreachable)]
+// `ref` keyword is used in the macro-generated code, and we have to ignore it.
+#[allow(clippy::ref_patterns)]
 pub mod pallet {
 	use super::*;
 	use did_details::DidCreationDetails;
@@ -1553,14 +1555,14 @@ pub mod pallet {
 
 		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			let did_entry = Did::<T>::get(key);
-			match did_entry {
-				Some(entry) => {
+			did_entry.map_or_else(
+				// If there is no entry return 0
+				Zero::zero,
+				|entry| {
 					let endpoint_count = DidEndpointsCount::<T>::get(key);
 					entry.calculate_deposit(endpoint_count)
-				}
-				// If there is no entry return 0
-				_ => Zero::zero(),
-			}
+				},
+			)
 		}
 
 		fn store_deposit(

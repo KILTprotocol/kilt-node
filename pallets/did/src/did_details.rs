@@ -210,7 +210,7 @@ impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 		// So far, either the raw Ed25519/Sr25519 public key or the Blake2-256 hashed
 		// ECDSA public key.
 		let raw_public_key: &[u8; 32] = self.as_ref();
-		match *signature {
+		match signature {
 			DidSignature::Ed25519(_) => {
 				// from_raw simply converts a byte array into a public key with no particular
 				// validations
@@ -225,7 +225,7 @@ impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 					.verify_signature(payload, signature)
 					.map(|_| sr25519_did_key)
 			}
-			DidSignature::Ecdsa(ref signature) => {
+			DidSignature::Ecdsa(signature) => {
 				let ecdsa_signature: [u8; 65] = signature
 					.encode()
 					.try_into()
@@ -623,7 +623,7 @@ pub(crate) type DidPublicKeyMapOf<T> = BoundedBTreeMap<
 >;
 
 /// The details of a new DID to create.
-#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo)]
 pub struct DidCreationDetails<DidIdentifier, AccountId, MaxNewKeyAgreementKeys, DidEndpoint>
 where
 	MaxNewKeyAgreementKeys: Get<u32> + Clone,
@@ -675,7 +675,7 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 /// A DID operation that wraps other extrinsic calls, allowing those
 /// extrinsic to have a DID origin and perform DID-based authorization upon
 /// their invocation.
-#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo)]
 
 pub struct DidAuthorizedCallOperation<DidIdentifier, DidCallable, BlockNumber, AccountId, TxCounter> {
 	/// The DID identifier.
