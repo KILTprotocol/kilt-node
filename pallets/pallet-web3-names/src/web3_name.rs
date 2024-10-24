@@ -140,9 +140,10 @@ pub struct Web3NameOwnership<Owner, Deposit: MaxEncodedLen, BlockNumber> {
 
 #[cfg(test)]
 mod tests {
+	use frame_support::{assert_err, assert_ok};
 	use sp_runtime::SaturatedConversion;
 
-	use crate::{mock::Test, web3_name::AsciiWeb3Name, Config};
+	use crate::{mock::Test, web3_name::AsciiWeb3Name, Config, Error};
 
 	const MIN_LENGTH: u32 = <Test as Config>::MinNameLength::get();
 	const MAX_LENGTH: u32 = <Test as Config>::MaxNameLength::get();
@@ -163,23 +164,32 @@ mod tests {
 
 		let invalid_inputs = vec![
 			// Empty string
-			b"".to_vec(),
+			(b"".to_vec(), Error::<Test>::TooShort),
 			// One less than minimum length allowed
-			vec![b'a'; MIN_LENGTH.saturated_into::<usize>() - 1usize],
+			(
+				vec![b'a'; MIN_LENGTH.saturated_into::<usize>() - 1usize],
+				Error::<Test>::TooShort,
+			),
 			// One more than maximum length allowed
-			vec![b'a'; MAX_LENGTH.saturated_into::<usize>() + 1usize],
+			(
+				vec![b'a'; MAX_LENGTH.saturated_into::<usize>() + 1usize],
+				Error::<Test>::TooLong,
+			),
 			// Invalid ASCII symbol
-			b"almostavalidweb3_name!".to_vec(),
+			(b"almostavalidweb3_name!".to_vec(), Error::<Test>::InvalidCharacter),
 			// Non-ASCII character
-			String::from("almostavalidweb3_name😂").as_bytes().to_owned(),
+			(
+				String::from("almostavalidweb3_name😂").as_bytes().to_owned(),
+				Error::<Test>::InvalidCharacter,
+			),
 		];
 
 		for valid in valid_inputs {
-			assert!(AsciiWeb3Name::<Test>::try_from(valid).is_ok());
+			assert_ok!(AsciiWeb3Name::<Test>::try_from(valid));
 		}
 
-		for invalid in invalid_inputs {
-			assert!(AsciiWeb3Name::<Test>::try_from(invalid).is_err());
+		for (input, expected_error) in invalid_inputs {
+			assert_err!(AsciiWeb3Name::<Test>::try_from(input), expected_error);
 		}
 	}
 }

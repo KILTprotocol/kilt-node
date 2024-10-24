@@ -224,14 +224,18 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 
 		let old_deposit_owner = deposit.owner;
 
-		let deposit = Deposit {
+		let deposit_with_new_owner = Deposit {
 			owner: new_owner,
 			..deposit
 		};
 
-		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
+		Self::Currency::hold(
+			&reason.into(),
+			&deposit_with_new_owner.owner,
+			deposit_with_new_owner.amount,
+		)?;
 
-		Self::store_deposit(key, deposit)?;
+		Self::store_deposit(key, deposit_with_new_owner)?;
 
 		Ok(old_deposit_owner)
 	}
@@ -259,13 +263,17 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);
 		}
 
-		let deposit = Deposit {
+		let deposit_with_new_amount = Deposit {
 			amount: Self::deposit_amount(key),
 			..deposit
 		};
-		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
+		Self::Currency::hold(
+			&reason.into(),
+			&deposit_with_new_amount.owner,
+			deposit_with_new_amount.amount,
+		)?;
 
-		Self::store_deposit(key, deposit)?;
+		Self::store_deposit(key, deposit_with_new_amount)?;
 
 		Ok(())
 	}

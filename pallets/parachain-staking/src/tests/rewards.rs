@@ -169,7 +169,7 @@ fn delegator_should_not_receive_rewards_after_revoking() {
 }
 #[test]
 fn coinbase_rewards_many_blocks_simple_check() {
-	let num_of_years: Perquintill = Perquintill::from_perthousand(2);
+	let num_of_years = Perquintill::from_perthousand(2);
 	ExtBuilder::default()
 		.with_balances(vec![
 			(1, 40_000_000 * DECIMALS),

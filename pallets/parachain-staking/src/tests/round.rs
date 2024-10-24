@@ -185,9 +185,7 @@ fn authorities_per_round() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2]);
 			// reward 1 once per round
-			let authors: Vec<Option<AccountId>> = (0u64..=100)
-				.map(|i| if i % 5 == 2 { Some(1u64) } else { None })
-				.collect();
+			let authors: Vec<Option<AccountId>> = (0u64..=100).map(|i| (i % 5 == 2).then_some(1u64)).collect();
 			let inflation = StakePallet::inflation_config();
 
 			// roll to last block of round 0

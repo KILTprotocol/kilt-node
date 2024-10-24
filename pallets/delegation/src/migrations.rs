@@ -40,7 +40,7 @@ where
 #[cfg(test)]
 pub mod test {
 	use frame_support::{
-		assert_noop,
+		assert_noop, assert_ok,
 		traits::{fungible::InspectHold, ReservableCurrency},
 	};
 	use sp_runtime::traits::Zero;
@@ -137,7 +137,7 @@ pub mod test {
 					delegation_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				assert!(update_balance_for_delegation::<Test>(&delegation_id).is_ok());
+				assert_ok!(update_balance_for_delegation::<Test>(&delegation_id));
 
 				let delegation_post_migration = DelegationNodes::<Test>::get(delegation_id);
 

@@ -19,6 +19,7 @@ use frame_support::traits::OnInitialize;
 use runtime_common::{constants::KILT, AuthorityId};
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
+use std::iter::once;
 use xcm_emulator::decl_test_parachains;
 
 use crate::utils::{get_account_id_from_seed, get_from_seed};
@@ -44,11 +45,10 @@ pub mod spiritnet {
 				..Default::default()
 			},
 			session: SessionConfig {
-				keys: [(
+				keys: once(&(
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_from_seed::<AuthorityId>("Alice"),
-				)]
-				.iter()
+				))
 				.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
 				.collect::<Vec<_>>(),
 			},
@@ -86,11 +86,10 @@ pub mod peregrine {
 				..Default::default()
 			},
 			session: SessionConfig {
-				keys: [(
+				keys: once(&(
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_from_seed::<AuthorityId>("Alice"),
-				)]
-				.iter()
+				))
 				.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
 				.collect::<Vec<_>>(),
 			},

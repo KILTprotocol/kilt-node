@@ -31,7 +31,7 @@ pub struct DidRawOrigin<DidIdentifier, AccountId> {
 }
 
 impl<DidIdentifier, AccountId> DidRawOrigin<DidIdentifier, AccountId> {
-	pub fn new(id: DidIdentifier, submitter: AccountId) -> Self {
+	pub const fn new(id: DidIdentifier, submitter: AccountId) -> Self {
 		Self { id, submitter }
 	}
 }

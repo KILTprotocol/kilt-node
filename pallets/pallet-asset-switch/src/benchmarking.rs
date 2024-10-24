@@ -74,12 +74,12 @@ mod benchmarks {
 			parents: 1,
 			interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 		};
-		let default_remote_asset_id: AssetId = AssetId(default_reserve_location.clone());
+		let default_remote_asset_id = AssetId(default_reserve_location.clone());
 		let default_remote_xcm_fee: Asset = Asset {
 			id: default_remote_asset_id.clone(),
 			fun: Fungibility::Fungible(100_000),
 		};
-		let default_beneficiary: Junctions = Junctions::X1(
+		let default_beneficiary = Junctions::X1(
 			[Junction::AccountId32 {
 				network: None,
 				id: [0; 32],

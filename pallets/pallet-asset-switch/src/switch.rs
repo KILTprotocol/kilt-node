@@ -130,7 +130,7 @@ impl<AccountId> SwitchPairInfo<AccountId> {
 
 // Access impls
 impl<AccountId> SwitchPairInfo<AccountId> {
-	pub(crate) fn is_enabled(&self) -> bool {
+	pub(crate) const fn is_enabled(&self) -> bool {
 		matches!(self.status, SwitchPairStatus::Running)
 	}
 
@@ -138,7 +138,7 @@ impl<AccountId> SwitchPairInfo<AccountId> {
 	/// on destination. This keeps into account the ED of the remote asset on
 	/// the remote reserve location. This is the only way that the remote
 	/// balance should be inspected.
-	pub(crate) fn reducible_remote_balance(&self) -> u128 {
+	pub(crate) const fn reducible_remote_balance(&self) -> u128 {
 		self.remote_asset_sovereign_total_balance
 			.saturating_sub(self.remote_asset_ed)
 	}

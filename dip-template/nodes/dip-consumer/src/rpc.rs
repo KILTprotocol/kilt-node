@@ -49,9 +49,8 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	C::Api: TransactionPaymentRuntimeApi<Block, Balance>,
-	C::Api: AccountNonceApi<Block, AccountId, Nonce>,
-	C::Api: BlockBuilder<Block>,
+	C::Api:
+		TransactionPaymentRuntimeApi<Block, Balance> + AccountNonceApi<Block, AccountId, Nonce> + BlockBuilder<Block>,
 	P: TransactionPool + Sync + Send + 'static,
 {
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
@@ -64,7 +63,7 @@ where
 		deny_unsafe,
 	} = deps;
 
-	module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
+	module.merge(System::new(Arc::clone(&client), pool, deny_unsafe).into_rpc())?;
 	module.merge(TransactionPayment::new(client).into_rpc())?;
 	Ok(module)
 }

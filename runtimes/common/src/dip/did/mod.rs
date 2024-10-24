@@ -175,8 +175,8 @@ where
 		+ pallet_did_lookup::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
 		+ pallet_dip_provider::Config
 		+ pallet_balances::Config,
-	<Runtime as frame_system::Config>::AccountId: Into<LinkableAccountId> + From<sp_core::sr25519::Public>,
-	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+	<Runtime as frame_system::Config>::AccountId:
+		Into<LinkableAccountId> + From<sp_core::sr25519::Public> + AsRef<[u8; 32]> + From<[u8; 32]>,
 {
 	type Output = Self;
 

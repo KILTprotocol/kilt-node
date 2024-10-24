@@ -123,7 +123,7 @@ pub mod runtime {
 	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 
 	#[derive(Clone, Default)]
-	pub(crate) struct ExtBuilder {}
+	pub(crate) struct ExtBuilder;
 
 	impl ExtBuilder {
 		pub(crate) fn build(self) -> sp_io::TestExternalities {

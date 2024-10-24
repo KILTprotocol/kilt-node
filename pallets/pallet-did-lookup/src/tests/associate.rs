@@ -45,7 +45,9 @@ fn test_add_association_sender() {
 		])
 		.build_and_execute_with_sanity_tests(|| {
 			// new association. No overwrite
-			assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()).is_ok());
+			assert_ok!(DidLookup::associate_sender(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()
+			));
 			assert_eq!(
 				ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00),
 				Some(ConnectionRecord {
@@ -63,7 +65,9 @@ fn test_add_association_sender() {
 			);
 
 			// overwrite existing association
-			assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()).is_ok());
+			assert_ok!(DidLookup::associate_sender(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()
+			));
 			assert_eq!(
 				ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00),
 				Some(ConnectionRecord {
@@ -102,12 +106,11 @@ fn test_add_association_account() {
 			);
 
 			// new association. No overwrite
-			assert!(DidLookup::associate_account(
+			assert_ok!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 				AssociateAccountRequest::Polkadot(account_hash_alice.clone(), sig_alice_0),
 				expire_at,
-			)
-			.is_ok());
+			));
 			assert_eq!(
 				ConnectedDids::<Test>::get(LinkableAccountId::from(account_hash_alice.clone())),
 				Some(ConnectionRecord {
@@ -127,12 +130,11 @@ fn test_add_association_account() {
 			);
 
 			// overwrite existing association
-			let res = DidLookup::associate_account(
+			assert_ok!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 				AssociateAccountRequest::Polkadot(account_hash_alice.clone(), sig_alice_1.clone()),
 				expire_at,
-			);
-			assert!(res.is_ok());
+			));
 			assert_eq!(
 				ConnectedDids::<Test>::get(LinkableAccountId::from(account_hash_alice.clone())),
 				Some(ConnectionRecord {
@@ -155,12 +157,11 @@ fn test_add_association_account() {
 			);
 
 			// overwrite existing deposit
-			assert!(DidLookup::associate_account(
+			assert_ok!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
 				AssociateAccountRequest::Polkadot(account_hash_alice.clone(), sig_alice_1),
 				expire_at,
-			)
-			.is_ok());
+			));
 			assert_eq!(
 				ConnectedDids::<Test>::get(LinkableAccountId::from(account_hash_alice.clone())),
 				Some(ConnectionRecord {
@@ -203,12 +204,11 @@ fn test_add_eth_association() {
 			let sig = eth_pair.sign_prehashed(&Keccak256::digest(wrapped_payload).try_into().unwrap());
 
 			// new association. No overwrite
-			let res = DidLookup::associate_account(
+			assert_ok!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 				AssociateAccountRequest::Ethereum(eth_account, EthereumSignature::from(sig)),
 				expire_at,
-			);
-			assert_ok!(res);
+			));
 			assert_eq!(
 				ConnectedDids::<Test>::get(LinkableAccountId::from(eth_account)),
 				Some(ConnectionRecord {
@@ -289,7 +289,7 @@ fn test_remove_association_sender() {
 		.with_connections(vec![(ACCOUNT_00, DID_01, LINKABLE_ACCOUNT_00)])
 		.build_and_execute_with_sanity_tests(|| {
 			// remove association
-			assert!(DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)).is_ok());
+			assert_ok!(DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)));
 			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
 			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(ACCOUNT_00)).is_none());
 			assert_eq!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00), 0);
@@ -320,11 +320,10 @@ fn test_remove_association_account() {
 		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
 		.build_and_execute_with_sanity_tests(|| {
-			assert!(DidLookup::remove_account_association(
+			assert_ok!(DidLookup::remove_account_association(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 				LinkableAccountId::from(ACCOUNT_00.clone())
-			)
-			.is_ok());
+			));
 			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
 			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(ACCOUNT_00)).is_none());
 			assert_eq!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01), 0);

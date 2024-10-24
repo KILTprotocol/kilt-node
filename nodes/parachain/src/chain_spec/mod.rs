@@ -18,6 +18,10 @@
 
 //! KILT chain specification
 
+// Triggered by the `ChainSpecGroup` derive macro used for the custom chainspec
+// extension.
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use std::str::FromStr;
 
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};

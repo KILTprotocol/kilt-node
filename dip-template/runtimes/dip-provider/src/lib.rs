@@ -24,6 +24,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
+// Triggered by `impl_runtime_apis` macro
+#![allow(clippy::empty_structs_with_brackets)]
 
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));

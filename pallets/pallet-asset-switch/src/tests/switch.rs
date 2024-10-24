@@ -270,7 +270,7 @@ fn successful_on_max_query_id_value() {
 		.with_balances(vec![(user.clone(), 100_000, 1, 0), (pool_account.clone(), 1, 0, 0)])
 		.with_fungibles(vec![(user.clone(), XCM_ASSET_FEE)])
 		.with_switch_pair_info(NewSwitchPairInfoOf::<MockRuntime> {
-			pool_account: pool_account.clone(),
+			pool_account,
 			remote_asset_circulating_supply: 0,
 			remote_asset_ed: 0,
 			remote_asset_id: get_remote_erc20_asset_id().into(),

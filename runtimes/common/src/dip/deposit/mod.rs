@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+// The `RuntimeDebug` macro uses these internally.
+#![allow(clippy::ref_patterns)]
+
 use frame_support::traits::Get;
 use pallet_deposit_storage::{
 	traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet,

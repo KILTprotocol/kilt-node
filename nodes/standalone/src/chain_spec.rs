@@ -19,7 +19,7 @@
 //! KILT chain specification
 
 use kestrel_runtime::{
-	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, WASM_BINARY,
 };
 use runtime_common::{AccountId, AccountPublic};
 
@@ -73,7 +73,7 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 	let root_key = get_account_id_from_secret::<ed25519::Public>("//Alice");
 
 	RuntimeGenesisConfig {
-		system: SystemConfig { ..Default::default() },
+		system: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts.into_iter().map(|a| (a, 1u128 << 90)).collect(),
 		},

@@ -106,7 +106,7 @@ fn test_attestation_creation_from_asset_hub_successful() {
 			Spiritnet,
 			vec![
 				SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
-				SpiritnetRuntimeEvent::Attestation(attestation::Event::AttestationCreated { attester, claim_hash, authorization: _ , ctype_hash }) => {
+				SpiritnetRuntimeEvent::Attestation(attestation::Event::AttestationCreated { attester, claim_hash, ctype_hash, .. }) => {
 					attester: attester == &asset_hub_sovereign_account,
 					claim_hash: claim_hash == &claim_hash_value,
 					ctype_hash: ctype_hash == &ctype_hash_value,

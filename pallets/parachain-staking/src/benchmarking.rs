@@ -106,17 +106,20 @@ where
 	let who = delegator.unwrap_or(collator);
 	assert_eq!(Unstaking::<T>::get(who).len(), 0);
 	while System::<T>::block_number() < unstaked.into() {
-		if let Some(delegator) = delegator {
-			assert_ok!(Pallet::<T>::delegator_stake_less(
-				RawOrigin::Signed(delegator.clone()).into(),
-				T::CurrencyBalance::one()
-			));
-		} else {
-			assert_ok!(Pallet::<T>::candidate_stake_less(
-				RawOrigin::Signed(collator.clone()).into(),
-				T::CurrencyBalance::one()
-			));
-		}
+		delegator.map_or_else(
+			|| {
+				assert_ok!(Pallet::<T>::candidate_stake_less(
+					RawOrigin::Signed(collator.clone()).into(),
+					T::CurrencyBalance::one()
+				));
+			},
+			|delegator| {
+				assert_ok!(Pallet::<T>::delegator_stake_less(
+					RawOrigin::Signed(delegator.clone()).into(),
+					T::CurrencyBalance::one()
+				));
+			},
+		);
 		System::<T>::set_block_number(System::<T>::block_number() + BlockNumberFor::<T>::one());
 	}
 	assert_eq!(Unstaking::<T>::get(who).len() as u64, unstaked);

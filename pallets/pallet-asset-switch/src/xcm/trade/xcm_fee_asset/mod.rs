@@ -168,7 +168,7 @@ where
 			return None;
 		};
 
-		let weight_to_refund: Weight = weight.min(self.remaining_weight);
+		let weight_to_refund = weight.min(self.remaining_weight);
 		let amount_for_weight_to_refund = WeightToFee::weight_to_fee(&weight_to_refund);
 		// We can only refund up to the remaining balance of this weigher.
 		let amount_to_refund = amount_for_weight_to_refund.min(self.remaining_fungible_balance);

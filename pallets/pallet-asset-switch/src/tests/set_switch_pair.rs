@@ -314,7 +314,7 @@ fn fails_on_pending_switches() {
 	let pool_account_address =
 		Pallet::<MockRuntime>::pool_account_id_for_remote_asset(&get_remote_erc20_asset_id().into()).unwrap();
 	ExtBuilder::default()
-		.with_balances(vec![(pool_account_address.clone(), 1, 0, 0)])
+		.with_balances(vec![(pool_account_address, 1, 0, 0)])
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {

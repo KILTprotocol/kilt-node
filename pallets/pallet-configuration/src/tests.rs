@@ -25,7 +25,7 @@ use crate::{mock::runtime::*, Configuration, ConfigurationStore, Pallet};
 #[test]
 #[should_panic(expected = "Relay chain block number needs to strictly increase between Parachain blocks!")]
 fn test_set_strict_blocknumber_check() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder.build().execute_with(|| {
 		assert_eq!(ConfigurationStore::<Test>::try_get(), Err(()));
 
 		assert_ok!(Pallet::<Test>::set_configuration(
@@ -46,7 +46,7 @@ fn test_set_strict_blocknumber_check() {
 
 #[test]
 fn test_set_no_blocknumber_check() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder.build().execute_with(|| {
 		assert_eq!(ConfigurationStore::<Test>::try_get(), Err(()));
 
 		assert_ok!(Pallet::<Test>::set_configuration(
@@ -67,7 +67,7 @@ fn test_set_no_blocknumber_check() {
 
 #[test]
 fn test_set_config_unauthorized() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder.build().execute_with(|| {
 		assert_noop!(
 			Pallet::<Test>::set_configuration(
 				RuntimeOrigin::signed(ACCOUNT_01),

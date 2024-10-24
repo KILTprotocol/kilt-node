@@ -57,6 +57,9 @@ runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
   "pallet-dip-provider/runtime-benchmarks",
+  "peregrine-runtime/runtime-benchmarks",
+  "rococo-runtime/runtime-benchmarks",
+  "spiritnet-runtime/runtime-benchmarks",
 ]
 std = [
   "cumulus-primitives-core/std",

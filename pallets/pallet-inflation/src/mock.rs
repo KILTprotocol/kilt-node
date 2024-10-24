@@ -107,7 +107,7 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-pub struct ToBeneficiary();
+pub struct ToBeneficiary;
 impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
 	fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 		// Must resolve into existing but better to be safe.
