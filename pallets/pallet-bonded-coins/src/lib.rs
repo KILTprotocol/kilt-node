@@ -38,14 +38,24 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
 	use scale_info::TypeInfo;
+	use sp_arithmetic::ArithmeticError;
 	use sp_runtime::{
-		traits::{CheckedAdd, CheckedSub, One, Saturating, StaticLookup, Zero},
-		BoundedVec, FixedPointNumber, SaturatedConversion,
+		traits::{One, Saturating, StaticLookup, Zero},
+		BoundedVec, SaturatedConversion,
 	};
-	use sp_std::default::Default;
-	use substrate_fixed::types::I9F23;
+	use sp_std::{
+		default::Default,
+		ops::{AddAssign, BitOrAssign, ShlAssign},
+	};
+	use substrate_fixed::{
+		traits::{Fixed, FixedSigned, ToFixed},
+		types::I9F23,
+	};
 
-	use crate::{curves::Curve, types::PoolDetails};
+	use crate::{
+		curves::{convert_to_fixed, BondingFunction, Curve, Operation},
+		types::PoolDetails,
+	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
@@ -129,12 +139,12 @@ pub mod pallet {
 		/// The type used for the curve parameters.
 		type CurveParameterType: Parameter
 			+ Member
-			+ FixedPointNumber<Inner = u128>
+			+ FixedSigned
 			+ TypeInfo
 			+ MaxEncodedLen
 			+ Zero
-			+ CheckedAdd
-			+ CheckedSub;
+			+ PartialOrd<Precision>
+			+ From<Precision>;
 	}
 
 	#[pallet::pallet]
@@ -171,7 +181,10 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn create_pool(_origin: OriginFor<T>) -> DispatchResult {
@@ -201,9 +214,28 @@ pub mod pallet {
 
 			let currency_idx: usize = currency_idx.saturated_into();
 
-			ensure!(bonded_currencies.len() > currency_idx, Error::<T>::IndexOutOfBounds);
+			let target_currency_id = bonded_currencies
+				.get(currency_idx)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let cost = Self::calculate_collateral(&pool_details, currency_idx, beneficiary, amount_to_mint)?;
+			let (active_pre, passive) = Self::calculate_normalized_passive_issuance(
+				&bonded_currencies,
+				pool_details.denomination,
+				currency_idx,
+			)?;
+
+			let normalized_amount_to_mint =
+				convert_to_fixed::<T>(amount_to_mint.saturated_into::<u128>(), pool_details.denomination)?;
+
+			let cost = Self::calculate_collateral(
+				Operation::Mint(passive),
+				&pool_details.curve,
+				&normalized_amount_to_mint,
+				&active_pre,
+			)?;
+
+			// fail if cost > max_cost
+			ensure!(cost <= max_cost, Error::<T>::Slippage);
 
 			T::CollateralCurrency::transfer(
 				T::CollateralAssetId::get(),
@@ -213,10 +245,9 @@ pub mod pallet {
 				Preservation::Preserve,
 			)?;
 
-			// fail if cost > max_cost
-			ensure!(cost <= max_cost, Error::<T>::Slippage);
-
 			// TODO: apply lock if pool_details.transferable != true
+
+			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
 
 			Ok(())
 		}
@@ -272,93 +303,94 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	{
 		fn calculate_collateral(
-			bonded_currencies: &[T::AssetId],
-			currency_idx: usize,
+			operation: Operation<PassiveSupply<CurveParameterTypeOf<T>>>,
 			curve: &Curve<CurveParameterTypeOf<T>>,
-			beneficiary: AccountIdOf<T>,
-			amount: FungiblesBalanceOf<T>,
-		) -> Result<CollateralCurrencyBalanceOf<T>, DispatchError> {
-			// get id of the currency we want to mint
-			// this also serves as a validation of the currency_idx parameter
-			let mint_currency_id = bonded_currencies
-				.get(currency_idx)
-				// should never happen but better safe than sorry
-				.ok_or(Error::<T>::IndexOutOfBounds)?;
+			amount_to_mint: &CurveParameterTypeOf<T>,
+			active_issuance_pre: &CurveParameterTypeOf<T>,
+		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
+			let normalized_costs = Self::get_collateral_diff(operation, curve, amount_to_mint, active_issuance_pre)?;
 
-			let currencies_metadata = Self::get_currencies_metadata(pool_details)?;
+			let collateral_denomination = 10u128
+				.checked_pow(T::CollateralCurrency::decimals(T::CollateralAssetId::get()).into())
+				.ok_or(ArithmeticError::Overflow)?;
 
-			let cost = Self::get_collateral_diff(DiffKind::Mint, curve, &amount, currencies_metadata, currency_idx)?;
+			let real_costs = normalized_costs
+				.checked_mul(CurveParameterTypeOf::<T>::from_num(collateral_denomination))
+				.ok_or(ArithmeticError::Overflow)?
+				// should never fail
+				.checked_to_num::<u128>()
+				.ok_or(ArithmeticError::Overflow)?
+				.saturated_into();
 
-			T::Fungibles::mint_into(mint_currency_id.clone(), &beneficiary, amount)?;
-
-			Ok(cost)
+			Ok(real_costs)
 		}
 
-		/// save usage of currency_ids.
 		pub fn get_collateral_diff(
-			kind: DiffKind,
+			operation: Operation<PassiveSupply<CurveParameterTypeOf<T>>>,
 			curve: &Curve<CurveParameterTypeOf<T>>,
-			amount: &FungiblesBalanceOf<T>,
-			total_issuances: Vec<(FungiblesBalanceOf<T>, u128)>,
+			amount_to_mint: &CurveParameterTypeOf<T>,
+			active_issuance_pre: &CurveParameterTypeOf<T>,
+		) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
+			let (active_issuance_pre, active_issuance_post) =
+				Self::calculate_pre_post_issuances(&operation, amount_to_mint, active_issuance_pre)?;
+
+			curve.calculate_costs(active_issuance_pre, active_issuance_post, operation)
+		}
+
+		fn calculate_normalized_passive_issuance(
+			bonded_currencies: &[FungiblesAssetIdOf<T>],
+			denomination: u8,
 			currency_idx: usize,
-		) -> Result<CollateralCurrencyBalanceOf<T>, DispatchError> {
-			let denomination_normalization = CurveParameterTypeOf::<T>::DIV;
-			let denomination_collateral_currency = Self::get_collateral_denomination()?;
+		) -> Result<(CurveParameterTypeOf<T>, PassiveSupply<CurveParameterTypeOf<T>>), DispatchError> {
+			let currencies_total_supply = bonded_currencies
+				.iter()
+				.map(|currency_id| Self::get_fungible_supply::<T::AssetId, T::Fungibles>(currency_id.to_owned()))
+				.collect::<Vec<_>>();
 
-			let denomination_bonded_currency = total_issuances.get(currency_idx).ok_or(Error::<T>::IndexOutOfBounds)?.1;
-
-			let normalized_total_issuances = total_issuances
-				.clone()
-				.into_iter()
-				.map(|(x, d)| convert_currency_amount::<T>(x.saturated_into::<u128>(), d, denomination_normalization))
+			let normalized_total_issuances = currencies_total_supply
+				.iter()
+				.map(|x| convert_to_fixed::<T>(x.to_owned().saturated_into::<u128>(), denomination))
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
-			// normalize the amount to mint
-			let normalized_amount = convert_currency_amount::<T>(
-				amount.clone().saturated_into(),
-				denomination_bonded_currency,
-				denomination_normalization,
-			)?;
-
-			let (active_issuance_pre, active_issuance_post) = Self::calculate_pre_post_issuances(
-				&kind,
-				&normalized_amount,
-				&normalized_total_issuances,
-				currency_idx,
-			)?;
+			let active_issuance = normalized_total_issuances
+				.get(currency_idx)
+				.ok_or(Error::<T>::IndexOutOfBounds)?
+				.to_owned();
 
 			let passive_issuance = normalized_total_issuances
 				.iter()
 				.enumerate()
-				.filter(|&(idx, _)| idx != currency_idx)
-				.fold(CurveParameterTypeOf::<T>::zero(), |sum, (_, x)| sum.saturating_add(*x));
+				.filter_map(|(idx, x)| if idx != currency_idx { Some(x.to_owned()) } else { None })
+				.collect();
 
-			let normalize_cost =
-				curve.calculate_cost(active_issuance_pre, active_issuance_post, passive_issuance, kind)?;
-
-			// transform the cost back to the target denomination of the collateral currency
-			let collateral = convert_currency_amount::<T>(
-				normalize_cost.into_inner(),
-				denomination_normalization,
-				denomination_collateral_currency,
-			)?;
-
-			Ok(collateral.into_inner().saturated_into())
+			Ok((active_issuance, passive_issuance))
 		}
 
-		fn get_fungible_supply<Fungible: FungiblesInspect<AccountIdOf<T>, AssetId = T::AssetId>>(
-			asset_id: &T::AssetId,
-			who: &AccountIdOf<T>,
+		fn calculate_pre_post_issuances(
+			operation: &Operation<PassiveSupply<CurveParameterTypeOf<T>>>,
+			amount: &CurveParameterTypeOf<T>,
+			active_issuance_pre: &CurveParameterTypeOf<T>,
+		) -> Result<(CurveParameterTypeOf<T>, CurveParameterTypeOf<T>), ArithmeticError> {
+			let active_issuance_post = match operation {
+				Operation::Mint(_) => active_issuance_pre
+					.checked_add(*amount)
+					.ok_or(ArithmeticError::Overflow)?,
+				Operation::Burn(_) => active_issuance_pre
+					.checked_sub(*amount)
+					.ok_or(ArithmeticError::Underflow)?,
+			};
+			Ok((*active_issuance_pre, active_issuance_post))
+		}
+
+		fn get_fungible_supply<AssetId, Fungible: FungiblesInspect<AccountIdOf<T>, AssetId = AssetId>>(
+			asset_id: AssetId,
 		) -> Fungible::Balance {
-			Fungible::total_balance(asset_id.to_owned(), who)
-		}
-
-		fn get_fungible_denomination<Fungible: FungiblesMetadata<AccountIdOf<T>, AssetId = T::AssetId>>(
-			asset_id: &T::AssetId,
-		) -> u8 {
-			Fungible::decimals(asset_id.to_owned())
+			Fungible::total_issuance(asset_id)
 		}
 	}
 }

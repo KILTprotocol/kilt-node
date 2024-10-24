@@ -41,6 +41,7 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
 	pub bonded_currencies: Currencies,
 	pub state: PoolStatus<Locks>,
 	pub transferable: bool,
+	pub denomination: u8,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies> PoolDetails<AccountId, ParametrizedCurve, Currencies>
@@ -53,6 +54,7 @@ where
 		bonded_currencies: Currencies,
 		transferable: bool,
 		state: PoolStatus<Locks>,
+		denomination: u8,
 	) -> Self {
 		Self {
 			manager,
@@ -60,6 +62,7 @@ where
 			bonded_currencies,
 			transferable,
 			state,
+			denomination,
 		}
 	}
 

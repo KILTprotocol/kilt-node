@@ -10,7 +10,7 @@ use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
 
 use crate::{
 	curves::{lmsr::LMSRParameters, polynomial::PolynomialParameters, square_root::SquareRootParameters},
-	PassiveSupply, Precision,
+	Config, CurveParameterTypeOf, PassiveSupply, Precision,
 };
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
@@ -93,4 +93,15 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 	passive_issuance
 		.iter()
 		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
+}
+
+pub(crate) fn convert_to_fixed<T: Config>(
+	x: u128,
+	denomination: u8,
+) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
+	let decimals = 10u128
+		.checked_pow(u32::from(denomination))
+		.ok_or(ArithmeticError::Overflow)?;
+	let scaled_x = x.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
+	scaled_x.checked_to_fixed().ok_or(ArithmeticError::Overflow)
 }
