@@ -7,6 +7,7 @@ rustflags = [
   # We need to deny warnings here instead of with the `RUSTFLAGS` env since the env variable would completely override these settings -> https://github.com/rust-lang/cargo/issues/5376.
   "-Dwarnings",
   "-Wclippy::as_underscore",
+  "-Wclippy::assertions_on_result_states",
   "-Wclippy::branches_sharing_code",
   "-Wclippy::clear_with_drain",
   "-Wclippy::clone_on_ref_ptr",
@@ -36,7 +37,6 @@ rustflags = [
   "-Wclippy::unnecessary_self_imports",
   "-Wclippy::unnecessary_struct_initialization",
   "-Wclippy::unneeded_field_pattern",
-  "-Wclippy::assertions_on_result_states",
   "-Wclippy::unused_peekable",
   "-Wclippy::useless_let_if_seq",
   "-Wclippy::wildcard_dependencies",
