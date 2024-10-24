@@ -47,6 +47,8 @@ rustflags = [
   #"-Wclippy::renamed_function_params"
   # TODO: Add after upgrading to 1.81
   #"-Wclippy::cfg_not_test"
+  #"-Wclippy::allow_attributes",
+  # "-Wclippy::allow_attributes_without_reason",
   # TODO: Add after upgrading to 1.83
   #"-Wclippy::unused_trait_names"
 ]
