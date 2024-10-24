@@ -36,6 +36,7 @@ rustflags = [
   "-Wclippy::unnecessary_self_imports",
   "-Wclippy::unnecessary_struct_initialization",
   "-Wclippy::unneeded_field_pattern",
+  "-Wclippy::assertions_on_result_states",
   "-Wclippy::unused_peekable",
   "-Wclippy::useless_let_if_seq",
   "-Wclippy::wildcard_dependencies",

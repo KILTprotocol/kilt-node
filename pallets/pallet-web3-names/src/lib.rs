@@ -185,6 +185,7 @@ pub mod pallet {
 	}
 
 	#[pallet::error]
+	#[derive(PartialEq, Eq)]
 	pub enum Error<T> {
 		/// The tx submitter does not have enough funds to pay for the deposit.
 		InsufficientFunds,

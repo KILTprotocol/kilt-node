@@ -289,7 +289,7 @@ impl<T: Ord + Clone, S: Get<u32>> From<OrderedSet<T, S>> for BoundedVec<T, S> {
 #[cfg(test)]
 mod tests {
 	use crate::{mock::Test, types::StakeOf};
-	use frame_support::parameter_types;
+	use frame_support::{assert_err, parameter_types};
 	use sp_runtime::RuntimeDebug;
 
 	use super::*;
@@ -395,7 +395,7 @@ mod tests {
 
 		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7]);
 		assert_eq!(set.try_insert_replace(5), Ok(None));
-		assert!(set.try_insert(11).is_err());
+		assert_err!(set.try_insert(11), 0usize);
 
 		assert_eq!(set.try_insert_replace(6), Ok(Some(5)));
 		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7, 6]);
@@ -465,7 +465,8 @@ mod tests {
 		let mut set: OrderedSet<i32, Five> = OrderedSet::from(vec![1, 2, 3, 4, 5].try_into().unwrap());
 		let inserted = set.try_insert(6);
 
-		assert!(inserted.is_err());
+		// Position `0` since the set is sorted from largest to smallest.
+		assert_err!(inserted, 0usize);
 	}
 
 	#[test]

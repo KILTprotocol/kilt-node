@@ -40,7 +40,7 @@ where
 #[cfg(test)]
 pub mod test {
 	use frame_support::{
-		assert_noop,
+		assert_noop, assert_ok,
 		traits::{fungible::InspectHold, ReservableCurrency},
 	};
 	use sp_runtime::traits::Zero;
@@ -103,7 +103,7 @@ pub mod test {
 					w3n_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				assert!(update_balance_for_w3n::<Test>(&web3_name_00.clone()).is_ok());
+				assert_ok!(update_balance_for_w3n::<Test>(&web3_name_00.clone()));
 
 				let w3n_post_migration = Owner::<Test>::get(web3_name_00.clone());
 
