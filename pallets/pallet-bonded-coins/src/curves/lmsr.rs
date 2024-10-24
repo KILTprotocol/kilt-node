@@ -40,10 +40,10 @@ where
 		&self,
 		low: Parameter,
 		high: Parameter,
-		op: Operation<PassiveSupply<Parameter>>,
+		passive_supply: PassiveSupply<Parameter>,
+		_op: Operation,
 	) -> Result<Parameter, ArithmeticError> {
-		let e_term_numerator = op
-			.inner_value()
+		let e_term_numerator = passive_supply
 			.iter()
 			.map(|x| self.calculate_exp_term(*x, high))
 			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
@@ -56,8 +56,7 @@ where
 			.checked_add(term1)
 			.ok_or(ArithmeticError::Overflow)?;
 
-		let e_term_denominator = op
-			.inner_value()
+		let e_term_denominator = passive_supply
 			.iter()
 			.map(|x| self.calculate_exp_term(*x, low))
 			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;

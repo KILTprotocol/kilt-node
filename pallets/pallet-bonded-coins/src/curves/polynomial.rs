@@ -21,9 +21,10 @@ where
 		&self,
 		active_issuance_pre: Parameter,
 		active_issuance_post: Parameter,
-		op: Operation<PassiveSupply<Parameter>>,
+		passive_supply: PassiveSupply<Parameter>,
+		op: Operation,
 	) -> Result<Parameter, ArithmeticError> {
-		let (low, high) = calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
+		let (low, high) = calculate_integral_bounds(op, passive_supply, active_issuance_pre, active_issuance_post);
 		// Calculate high - low
 		let delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
 

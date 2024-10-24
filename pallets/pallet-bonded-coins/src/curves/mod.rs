@@ -20,18 +20,9 @@ pub enum Curve<Parameter> {
 	LMSR(LMSRParameters<Parameter>),
 }
 
-pub enum Operation<PassiveSupply> {
-	Mint(PassiveSupply),
-	Burn(PassiveSupply),
-}
-
-impl<Balance> Operation<PassiveSupply<Balance>> {
-	pub fn inner_value(&self) -> &PassiveSupply<Balance> {
-		match self {
-			Operation::Mint(x) => x,
-			Operation::Burn(x) => x,
-		}
-	}
+pub enum Operation {
+	Mint,
+	Burn,
 }
 
 impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
@@ -43,12 +34,19 @@ where
 		&self,
 		active_issuance_pre: Parameter,
 		active_issuance_post: Parameter,
-		op: Operation<PassiveSupply<Parameter>>,
+		passive_supply: PassiveSupply<Parameter>,
+		op: Operation,
 	) -> Result<Parameter, ArithmeticError> {
 		match self {
-			Curve::Polynomial(params) => params.calculate_costs(active_issuance_pre, active_issuance_post, op),
-			Curve::SquareRoot(params) => params.calculate_costs(active_issuance_pre, active_issuance_post, op),
-			Curve::LMSR(params) => params.calculate_costs(active_issuance_pre, active_issuance_post, op),
+			Curve::Polynomial(params) => {
+				params.calculate_costs(active_issuance_pre, active_issuance_post, passive_supply, op)
+			}
+			Curve::SquareRoot(params) => {
+				params.calculate_costs(active_issuance_pre, active_issuance_post, passive_supply, op)
+			}
+			Curve::LMSR(params) => {
+				params.calculate_costs(active_issuance_pre, active_issuance_post, passive_supply, op)
+			}
 		}
 	}
 }
@@ -58,7 +56,8 @@ pub trait BondingFunction<Balance> {
 		&self,
 		active_issuance_pre: Balance,
 		active_issuance_post: Balance,
-		op: Operation<PassiveSupply<Balance>>,
+		passive_supply: PassiveSupply<Balance>,
+		op: Operation,
 	) -> Result<Balance, ArithmeticError>;
 }
 
@@ -67,20 +66,21 @@ fn square<FixedType: Fixed>(x: FixedType) -> Result<FixedType, ArithmeticError> 
 }
 
 fn calculate_integral_bounds<FixedType: Fixed>(
-	op: Operation<PassiveSupply<FixedType>>,
+	op: Operation,
+	passive_supply: PassiveSupply<FixedType>,
 	active_issuance_pre: FixedType,
 	active_issuance_post: FixedType,
 ) -> (FixedType, FixedType) {
 	match op {
-		Operation::Burn(passive) => {
-			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive);
+		Operation::Burn => {
+			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
 			(
 				active_issuance_post.saturating_add(accumulated_passive_issuance),
 				active_issuance_pre.saturating_add(accumulated_passive_issuance),
 			)
 		}
-		Operation::Mint(passive) => {
-			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive);
+		Operation::Mint => {
+			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
 			(
 				active_issuance_pre.saturating_add(accumulated_passive_issuance),
 				active_issuance_post.saturating_add(accumulated_passive_issuance),

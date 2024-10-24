@@ -228,10 +228,11 @@ pub mod pallet {
 				convert_to_fixed::<T>(amount_to_mint.saturated_into::<u128>(), pool_details.denomination)?;
 
 			let cost = Self::calculate_collateral(
-				Operation::Mint(passive),
+				Operation::Mint,
 				&pool_details.curve,
 				&normalized_amount_to_mint,
 				&active_pre,
+				passive,
 			)?;
 
 			// fail if cost > max_cost
@@ -308,12 +309,14 @@ pub mod pallet {
 		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 	{
 		fn calculate_collateral(
-			operation: Operation<PassiveSupply<CurveParameterTypeOf<T>>>,
+			operation: Operation,
 			curve: &Curve<CurveParameterTypeOf<T>>,
 			amount_to_mint: &CurveParameterTypeOf<T>,
 			active_issuance_pre: &CurveParameterTypeOf<T>,
+			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
-			let normalized_costs = Self::get_collateral_diff(operation, curve, amount_to_mint, active_issuance_pre)?;
+			let normalized_costs =
+				Self::get_collateral_diff(operation, curve, amount_to_mint, active_issuance_pre, passive_supply)?;
 
 			let collateral_denomination = 10u128
 				.checked_pow(T::CollateralCurrency::decimals(T::CollateralAssetId::get()).into())
@@ -331,15 +334,16 @@ pub mod pallet {
 		}
 
 		pub fn get_collateral_diff(
-			operation: Operation<PassiveSupply<CurveParameterTypeOf<T>>>,
+			operation: Operation,
 			curve: &Curve<CurveParameterTypeOf<T>>,
 			amount_to_mint: &CurveParameterTypeOf<T>,
 			active_issuance_pre: &CurveParameterTypeOf<T>,
+			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
 		) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
 			let (active_issuance_pre, active_issuance_post) =
 				Self::calculate_pre_post_issuances(&operation, amount_to_mint, active_issuance_pre)?;
 
-			curve.calculate_costs(active_issuance_pre, active_issuance_post, operation)
+			curve.calculate_costs(active_issuance_pre, active_issuance_post, passive_supply, operation)
 		}
 
 		fn calculate_normalized_passive_issuance(
@@ -372,15 +376,15 @@ pub mod pallet {
 		}
 
 		fn calculate_pre_post_issuances(
-			operation: &Operation<PassiveSupply<CurveParameterTypeOf<T>>>,
+			operation: &Operation,
 			amount: &CurveParameterTypeOf<T>,
 			active_issuance_pre: &CurveParameterTypeOf<T>,
 		) -> Result<(CurveParameterTypeOf<T>, CurveParameterTypeOf<T>), ArithmeticError> {
 			let active_issuance_post = match operation {
-				Operation::Mint(_) => active_issuance_pre
+				Operation::Mint => active_issuance_pre
 					.checked_add(*amount)
 					.ok_or(ArithmeticError::Overflow)?,
-				Operation::Burn(_) => active_issuance_pre
+				Operation::Burn => active_issuance_pre
 					.checked_sub(*amount)
 					.ok_or(ArithmeticError::Underflow)?,
 			};
