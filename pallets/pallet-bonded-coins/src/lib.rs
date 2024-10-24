@@ -30,6 +30,7 @@ pub mod pallet {
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
+			tokens::Preservation,
 			AccountTouch,
 		},
 		Parameter,
@@ -38,8 +39,8 @@ pub mod pallet {
 	use parity_scale_codec::FullCodec;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
-		traits::{CheckedAdd, CheckedSub, One, Saturating, Zero},
-		BoundedVec, FixedPointNumber,
+		traits::{CheckedAdd, CheckedSub, One, Saturating, StaticLookup, Zero},
+		BoundedVec, FixedPointNumber, SaturatedConversion,
 	};
 	use sp_std::default::Default;
 
@@ -154,6 +155,10 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		IndexOutOfBounds,
+		PoolUnknown,
+		Locked,
+		ZeroAmount,
+		Slippage,
 	}
 
 	#[pallet::composite_enum]
@@ -188,16 +193,14 @@ pub mod pallet {
 
 			ensure!(!amount_to_mint.is_zero(), Error::<T>::ZeroAmount);
 
-			let currency_idx_usize: usize = currency_idx.saturated_into();
+			let bonded_currencies = pool_details.bonded_currencies;
 
-			let cost = Self::mint_pool_currency_and_calculate_collateral(
-				&pool_details,
-				currency_idx_usize,
-				beneficiary,
-				amount_to_mint,
-			)?;
+			let currency_idx: usize = currency_idx.saturated_into();
 
-			// withdraw the collateral and put it in the deposit account
+			ensure!(bonded_currencies.len() > currency_idx, Error::<T>::IndexOutOfBounds);
+
+			let cost = Self::calculate_collateral(&pool_details, currency_idx, beneficiary, amount_to_mint)?;
+
 			T::CollateralCurrency::transfer(
 				T::CollateralAssetId::get(),
 				&who,
@@ -266,28 +269,23 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn mint_pool_currency_and_calculate_collateral(
-			pool_details: &PoolDetailsOf<T>,
+		fn calculate_collateral(
+			bonded_currencies: &[T::AssetId],
 			currency_idx: usize,
+			curve: &Curve<CurveParameterTypeOf<T>>,
 			beneficiary: AccountIdOf<T>,
 			amount: FungiblesBalanceOf<T>,
 		) -> Result<CollateralCurrencyBalanceOf<T>, DispatchError> {
 			// get id of the currency we want to mint
 			// this also serves as a validation of the currency_idx parameter
-			let mint_currency_id = pool_details
-				.bonded_currencies
+			let mint_currency_id = bonded_currencies
 				.get(currency_idx)
+				// should never happen but better safe than sorry
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
 			let currencies_metadata = Self::get_currencies_metadata(pool_details)?;
 
-			let cost = Self::get_collateral_diff(
-				DiffKind::Mint,
-				&pool_details.curve,
-				&amount,
-				currencies_metadata,
-				currency_idx,
-			)?;
+			let cost = Self::get_collateral_diff(DiffKind::Mint, curve, &amount, currencies_metadata, currency_idx)?;
 
 			T::Fungibles::mint_into(mint_currency_id.clone(), &beneficiary, amount)?;
 
@@ -344,6 +342,19 @@ pub mod pallet {
 			)?;
 
 			Ok(collateral.into_inner().saturated_into())
+		}
+
+		fn get_fungible_supply<Fungible: FungiblesInspect<AccountIdOf<T>, AssetId = T::AssetId>>(
+			asset_id: &T::AssetId,
+			who: &AccountIdOf<T>,
+		) -> Fungible::Balance {
+			Fungible::total_balance(asset_id.to_owned(), who)
+		}
+
+		fn get_fungible_denomination<Fungible: FungiblesMetadata<AccountIdOf<T>, AssetId = T::AssetId>>(
+			asset_id: &T::AssetId,
+		) -> u8 {
+			Fungible::decimals(asset_id.to_owned())
 		}
 	}
 }
