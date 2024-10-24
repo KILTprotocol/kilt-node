@@ -33,6 +33,7 @@ rustflags = [
   "-Wclippy::ref_patterns",
   "-Wclippy::rest_pat_in_fully_bound_structs",
   "-Wclippy::suspicious_operation_groupings",
+  "-Wclippy::tests_outside_test_module",
   "-Wclippy::type_repetition_in_bounds",
   "-Wclippy::unnecessary_self_imports",
   "-Wclippy::unnecessary_struct_initialization",
