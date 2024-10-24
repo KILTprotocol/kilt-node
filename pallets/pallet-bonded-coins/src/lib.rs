@@ -447,7 +447,10 @@ pub mod pallet {
 
 				// deactivate all currencies
 				for asset_id in pool_details.bonded_currencies.iter() {
-					T::Fungibles::start_destroy(asset_id.clone(), None)?;
+					// Governance or other pallets using the fungibles trait can in theory destroy an asset without this pallet knowing, so we check if it's still around
+					if T::Fungibles::asset_exists(asset_id.clone()) {
+						T::Fungibles::start_destroy(asset_id.clone(), None)?;
+					}
 				}
 
 				Ok(())
