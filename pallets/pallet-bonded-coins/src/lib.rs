@@ -30,7 +30,7 @@ pub mod pallet {
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
-			tokens::{Fortitude, Precision, Preservation},
+			tokens::{Fortitude, Precision, Preservation, Provenance},
 			AccountTouch,
 		},
 		Parameter,
@@ -39,7 +39,10 @@ pub mod pallet {
 	use parity_scale_codec::FullCodec;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
-		traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, Saturating, StaticLookup, Zero},
+		traits::{
+			Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, One, SaturatedConversion, Saturating,
+			StaticLookup, Zero,
+		},
 		ArithmeticError, BoundedVec, FixedPointNumber,
 	};
 	use sp_std::default::Default;
@@ -148,10 +151,12 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// A bonded token pool has been moved to refunding state. [pool_id]
+		RefundingStarted(T::PoolId),
 		/// A bonded token pool has been moved to destroying state. [pool_id]
 		DestructionStarted(T::PoolId),
 		/// Collateral distribution to bonded token holders has been completed for this pool - no more tokens or no more collateral to distribute. [pool_id]   
-		RefundCompleted(T::PoolId),
+		RefundComplete(T::PoolId),
 		/// A bonded token pool has been fully destroyed and all collateral and deposits have been refunded. [pool_id]
 		Destroyed(T::PoolId),
 	}
@@ -161,14 +166,18 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// The pool id is not currently registered.
 		PoolUnknown,
+		/// The pool has no associated bonded currency with the given index.
+		IndexOutOfBounds,
 		/// The amount to mint, burn, or swap is zero.
 		ZeroAmount,
-		/// The pool is already in the process of being destroyed.
-		Destroying,
 		/// The user is not privileged to perform the requested operation.
 		Unauthorized,
-		/// The pool is in use and cannot be destroyed at this point.
-		InUse,
+		/// The pool is deactivated (i.e., in destroying or refunding state) and not available for use.
+		PoolNotLive,
+		/// There are active accounts associated with this pool and thus it cannot be destroyed at this point.
+		LivePool,
+		/// This operation can only be made when the pool is in refunding state.
+		NotRefunding,
 	}
 
 	#[pallet::composite_enum]
@@ -216,18 +225,18 @@ pub mod pallet {
 
 		#[pallet::call_index(6)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+		pub fn start_refund(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_start_destroy_pool(&pool_id, Some(&who))
+			Self::do_start_refund(&pool_id, Some(&who))
 		}
 
 		#[pallet::call_index(7)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+		pub fn force_start_refund(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			ensure_root(origin)?;
 
-			Self::do_start_destroy_pool(&pool_id, None)
+			Self::do_start_refund(&pool_id, None)
 		}
 
 		#[pallet::call_index(8)]
@@ -236,101 +245,112 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			account: AccountIdLookupOf<T>,
+			asset_idx: u32,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			let who = T::Lookup::lookup(account)?;
 
-			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+			Pools::<T>::try_mutate(&pool_id, |maybe_pool_details| -> DispatchResult {
+				let pool_details = maybe_pool_details.as_mut().ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.state.is_destroying(), Error::<T>::InUse);
+				ensure!(pool_details.state.is_refunding(), Error::<T>::NotRefunding);
 
-			let pool_account = pool_id.clone().into();
+				// get asset id from linked assets vector
+				let asset_id: &FungiblesAssetIdOf<T> = pool_details
+					.bonded_currencies
+					.get(asset_idx.saturated_into::<usize>())
+					.ok_or(Error::<T>::IndexOutOfBounds)?;
 
-			let mut total_collateral_issuance = Self::get_pool_collateral(&pool_account);
+				let pool_account = pool_id.clone().into();
 
-			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::ZeroAmount);
+				let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
 
-			let total_issuances: Vec<(FungiblesAssetIdOf<T>, FungiblesBalanceOf<T>)> = pool_details
-				.bonded_currencies
-				.iter()
-				.map(|id| (id.clone(), T::Fungibles::total_issuance(id.clone())))
-				.filter(|(_, iss)| !iss.is_zero())
-				.collect();
+				// nothing to distribute; refunding is complete, user should call start_destroy
+				ensure!(!total_collateral_issuance.is_zero(), Error::<T>::ZeroAmount);
 
-			let mut sum_of_issuances: FungiblesBalanceOf<T> = total_issuances
-				.iter()
-				.fold(Zero::zero(), |sum, (_, x)| sum.saturating_add(*x));
-
-			ensure!(!sum_of_issuances.is_zero(), Error::<T>::ZeroAmount);
-
-			let mut dead_currencies = Vec::with_capacity(total_issuances.len());
-			for (currency_id, token_issuance) in total_issuances.iter() {
 				// TODO: remove any existing locks on the account prior to burning
 
 				// With amount = max_value(), this trait implementation burns the reducible balance on the account and returns the actual amount burnt
 				let burnt = T::Fungibles::burn_from(
-					currency_id.clone(),
+					asset_id.clone(),
 					&who,
 					Bounded::max_value(),
 					Precision::BestEffort,
 					Fortitude::Force,
 				)?;
 
+				// no funds available to be burnt on account; nothing to do here
+				ensure!(!burnt.is_zero(), Error::<T>::ZeroAmount); // TODO: fail or return?
+
+				let sum_of_issuances = pool_details
+					.bonded_currencies
+					.iter()
+					.fold(FungiblesBalanceOf::<T>::zero(), |sum, id| {
+						sum.saturating_add(T::Fungibles::total_issuance(id.clone()))
+					});
+
 				let amount = burnt
 					.checked_mul(&total_collateral_issuance)
 					.ok_or(ArithmeticError::Overflow)? // TODO: do we need a fallback if this fails?
 					.checked_div(&sum_of_issuances)
-					.unwrap_or(Zero::zero());
+					.ok_or(Error::<T>::ZeroAmount)?; // should be impossible - how would we be able to burn funds if the sum of total supplies is 0?
 
-				if !amount.is_zero() {
-					T::CollateralCurrency::transfer(
-						T::CollateralAssetId::get(),
-						&pool_account,
-						&who,
-						amount,
-						Preservation::Expendable,
-					)?;
-					total_collateral_issuance.saturating_reduce(amount);
+				if amount.is_zero()
+					|| T::CollateralCurrency::can_deposit(T::CollateralAssetId::get(), &who, amount, Provenance::Extant)
+						.into_result()
+						.is_err()
+				{
+					// funds are burnt but the collateral received is not sufficient to be deposited to the account
+					// this is tolerated as otherwise we could have edge cases where it's impossible to refund at least some accounts
+					return Ok(());
 				}
 
-				sum_of_issuances.saturating_reduce(burnt);
+				let transferred = T::CollateralCurrency::transfer(
+					T::CollateralAssetId::get(),
+					&pool_account,
+					&who,
+					amount,
+					Preservation::Expendable,
+				)?; // TODO: check edge cases around existential deposit
 
-				// if the total issuance drops to 0 due to this burn, kill the currency
-				if token_issuance <= &burnt {
-					dead_currencies.push(currency_id);
+				// if collateral or total supply drops to zero, refunding is complete -> emit event
+				if sum_of_issuances <= burnt || total_collateral_issuance <= transferred {
+					Self::deposit_event(Event::RefundComplete(pool_id.clone()));
 				}
-			}
 
-			// destroy all active currencies if the collateral locked in the pool has dropped to 0
-			if total_collateral_issuance.is_zero() || sum_of_issuances.is_zero() {
-				// we assume all currencies that already had their total issuance at 0 have already been deactivated in a previous step
-				for (currency_id, _) in total_issuances {
-					T::Fungibles::start_destroy(currency_id, None)?;
-				}
-				Self::deposit_event(Event::RefundCompleted(pool_id.clone()));
-			} else {
-				// deactivate all currencies whose issuance dropped to 0 in this step
-				for currency_id in dead_currencies {
-					T::Fungibles::start_destroy(currency_id.clone(), None)?;
-				}
-			}
-
-			Ok(())
+				Ok(())
+			})
 		}
 
 		#[pallet::call_index(9)]
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			Self::do_start_destroy_pool(&pool_id, Some(&who), Fortitude::Polite)
+		}
+
+		#[pallet::call_index(10)]
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+			ensure_root(origin)?;
+
+			Self::do_start_destroy_pool(&pool_id, None, Fortitude::Force)
+		}
+
+		#[pallet::call_index(11)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			ensure_signed(origin)?;
 
 			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.state.is_destroying(), Error::<T>::InUse);
+			ensure!(pool_details.state.is_destroying(), Error::<T>::LivePool);
 
-			for currency_id in pool_details.bonded_currencies {
-				if T::Fungibles::asset_exists(currency_id.clone()) {
-					// This would fail with an InUse error if there are any accounts left on any currency
-					T::Fungibles::finish_destroy(currency_id.clone())?;
+			for asset_id in pool_details.bonded_currencies {
+				if T::Fungibles::asset_exists(asset_id.clone()) {
+					// This would fail with an LiveAsset error if there are any accounts left on any currency
+					T::Fungibles::finish_destroy(asset_id.clone())?;
 				}
 			}
 
@@ -359,48 +379,75 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn do_start_destroy_pool(pool_id: &T::PoolId, maybe_check_manager: Option<&AccountIdOf<T>>) -> DispatchResult {
+		fn do_start_refund(pool_id: &T::PoolId, maybe_check_manager: Option<&AccountIdOf<T>>) -> DispatchResult {
 			Pools::<T>::try_mutate(pool_id, |maybe_pool_details| -> DispatchResult {
 				let pool_details = maybe_pool_details.as_mut().ok_or(Error::<T>::PoolUnknown)?;
 
-				ensure!(!pool_details.state.is_destroying(), Error::<T>::Destroying);
+				// refunding can only be triggered on a live pool
+				ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
 				if let Some(caller) = maybe_check_manager {
 					ensure!(pool_details.is_manager(caller), Error::<T>::Unauthorized);
 				}
 
+				let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
+				// nothing to distribute
+				ensure!(!total_collateral_issuance.is_zero(), Error::<T>::ZeroAmount);
+
+				let has_holders = pool_details
+					.bonded_currencies
+					.iter()
+					.any(|asset_id| !T::Fungibles::total_issuance(asset_id.clone()).is_zero());
+				// no token holders to refund
+				ensure!(has_holders, Error::<T>::ZeroAmount);
+
+				// move pool state to refunding
+				pool_details.state.refunding();
+
+				Self::deposit_event(Event::RefundingStarted(pool_id.clone()));
+
+				Ok(())
+			})
+		}
+
+		fn do_start_destroy_pool(
+			pool_id: &T::PoolId,
+			maybe_check_manager: Option<&AccountIdOf<T>>,
+			force_skip_refund: Fortitude, // TODO: enum or boolean flag?
+		) -> DispatchResult {
+			Pools::<T>::try_mutate(pool_id, |maybe_pool_details| -> DispatchResult {
+				let pool_details = maybe_pool_details.as_mut().ok_or(Error::<T>::PoolUnknown)?;
+
+				ensure!(
+					pool_details.state.is_live() || pool_details.state.is_refunding(),
+					Error::<T>::PoolNotLive
+				);
+
+				if let Some(caller) = maybe_check_manager {
+					ensure!(pool_details.is_manager(caller), Error::<T>::Unauthorized); // TODO: should this be permissionless if the pool is in refunding state?
+				}
+
+				if force_skip_refund != Fortitude::Force {
+					let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
+					if !total_collateral_issuance.is_zero() {
+						let has_holders = pool_details
+							.bonded_currencies
+							.iter()
+							.any(|asset_id| !T::Fungibles::total_issuance(asset_id.clone()).is_zero());
+						// destruction is only allowed when there are no holders or no collateral to distribute
+						ensure!(!has_holders, Error::<T>::LivePool);
+					}
+				}
+
+				// move to destroying state
 				pool_details.state.destroy();
 
+				// emit this event before the destruction started events are emitted by assets deactivation
 				Self::deposit_event(Event::DestructionStarted(pool_id.clone()));
 
-				let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
-
-				if total_collateral_issuance.is_zero() {
-					// no collateral to refund; deactivate all currencies and emit RefundCompleted
-					for currency_id in pool_details.bonded_currencies.iter() {
-						T::Fungibles::start_destroy(currency_id.clone(), None)?;
-					}
-
-					Self::deposit_event(Event::RefundCompleted(pool_id.clone()));
-
-					return Ok(());
-				}
-
-				// retrieve total supply of linked bonded currencies and deactivate those where supply is 0
-				let mut non_zero_supply = false;
-				for currency_id in pool_details.bonded_currencies.iter() {
-					if T::Fungibles::total_issuance(currency_id.clone()).is_zero() {
-						// supply is 0, currency can be deactivated
-						T::Fungibles::start_destroy(currency_id.clone(), None)?;
-					} else {
-						// if at least one currency has a non-zero supply, we must call refund_account next -> do not emit event
-						non_zero_supply = true;
-					}
-				}
-
-				// if all currencies have a 0 supply and have been deactivated, refund_account can be skipped -> emit RefundCompleted
-				if !non_zero_supply {
-					Self::deposit_event(Event::RefundCompleted(pool_id.clone()));
+				// deactivate all currencies
+				for asset_id in pool_details.bonded_currencies.iter() {
+					T::Fungibles::start_destroy(asset_id.clone(), None)?;
 				}
 
 				Ok(())

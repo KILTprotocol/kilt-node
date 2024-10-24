@@ -13,16 +13,21 @@ pub struct Locks {
 pub enum PoolStatus<LockType> {
 	Active,
 	Locked(LockType),
+	Refunding,
 	Destroying,
 }
 
 impl<LockType> PoolStatus<LockType> {
-	pub fn is_active(&self) -> bool {
-		matches!(self, Self::Active)
+	pub fn is_live(&self) -> bool {
+		matches!(self, Self::Active | Self::Locked(_))
 	}
 
 	pub fn is_destroying(&self) -> bool {
 		matches!(self, Self::Destroying)
+	}
+
+	pub fn is_refunding(&self) -> bool {
+		matches!(self, Self::Refunding)
 	}
 
 	pub fn freeze(&mut self, lock: LockType) {
@@ -31,6 +36,10 @@ impl<LockType> PoolStatus<LockType> {
 
 	pub fn destroy(&mut self) {
 		*self = Self::Destroying;
+	}
+
+	pub fn refunding(&mut self) {
+		*self = Self::Refunding;
 	}
 }
 
@@ -69,7 +78,7 @@ where
 
 	pub fn is_minting_authorized(&self, who: &AccountId) -> bool {
 		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(&who),
+			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}
@@ -77,7 +86,7 @@ where
 
 	pub fn is_swapping_authorized(&self, who: &AccountId) -> bool {
 		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(&who),
+			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}
@@ -85,7 +94,7 @@ where
 
 	pub fn is_burning_authorized(&self, who: &AccountId) -> bool {
 		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(&who),
+			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}
