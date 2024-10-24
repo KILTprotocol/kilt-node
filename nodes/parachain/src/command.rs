@@ -22,6 +22,7 @@ use runtime_common::Block;
 use sc_cli::SubstrateCli;
 use sc_executor::NativeExecutionDispatch;
 use sp_runtime::traits::AccountIdConversion;
+use std::iter::once;
 
 use crate::{
 	chain_spec::{self, ParachainRuntime},
@@ -104,7 +105,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			runner.sync_run(|config| {
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					std::iter::once(&RelayChainCli::executable_name())
+					once(&RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 
@@ -259,7 +260,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					std::iter::once(&RelayChainCli::executable_name())
+					once(&RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 

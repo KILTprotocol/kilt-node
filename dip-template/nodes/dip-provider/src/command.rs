@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::{fs::create_dir_all, net::SocketAddr};
+use std::{fs::create_dir_all, iter::once, net::SocketAddr};
 
 use cumulus_primitives_core::ParaId;
 use dip_provider_runtime_template::Block;
@@ -117,7 +117,7 @@ impl SubstrateCli for RelayChainCli {
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
-		polkadot_cli::Cli::from_iter(std::iter::once(&RelayChainCli::executable_name())).load_spec(id)
+		polkadot_cli::Cli::from_iter(once(&RelayChainCli::executable_name())).load_spec(id)
 	}
 }
 
@@ -167,7 +167,7 @@ pub fn run() -> Result<()> {
 			runner.sync_run(|config| {
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					std::iter::once(&RelayChainCli::executable_name()).chain(cli.relay_chain_args.iter()),
+					once(&RelayChainCli::executable_name()).chain(cli.relay_chain_args.iter()),
 				);
 
 				let polkadot_config =
@@ -245,7 +245,7 @@ pub fn run() -> Result<()> {
 
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					std::iter::once(&RelayChainCli::executable_name()).chain(cli.relay_chain_args.iter()),
+					once(&RelayChainCli::executable_name()).chain(cli.relay_chain_args.iter()),
 				);
 
 				let id = ParaId::from(para_id);
