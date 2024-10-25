@@ -100,7 +100,7 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 }
 
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
-pub struct Team<AccountId> {
+pub struct PoolManagingTeam<AccountId> {
 	pub admin: AccountId,
 	pub issuer: AccountId,
 	pub freezer: AccountId,

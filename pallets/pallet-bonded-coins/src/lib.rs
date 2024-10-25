@@ -48,7 +48,7 @@ pub mod pallet {
 	use crate::{
 		curves::{Curve, CurveInput},
 		traits::ResetTeam,
-		types::{Locks, PoolDetails, PoolStatus, Team, TokenMeta},
+		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, TokenMeta},
 	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -182,7 +182,7 @@ pub mod pallet {
 			denomination: u8,
 			pool_manager: AccountIdOf<T>,
 			transferable: bool,
-			team: Team<AccountIdOf<T>>,
+			team: PoolManagingTeam<AccountIdOf<T>>,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
