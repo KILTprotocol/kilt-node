@@ -53,7 +53,7 @@ pub mod pallet {
 	};
 
 	use crate::{
-		curves::{convert_to_fixed, BondingFunction, Curve, Operation},
+		curves::{convert_to_fixed, BondingFunction, Curve},
 		types::PoolDetails,
 	};
 
@@ -227,13 +227,11 @@ pub mod pallet {
 			let normalized_amount_to_mint =
 				convert_to_fixed::<T>(amount_to_mint.saturated_into::<u128>(), pool_details.denomination)?;
 
-			let cost = Self::calculate_collateral(
-				Operation::Mint,
-				&pool_details.curve,
-				&normalized_amount_to_mint,
-				&active_pre,
-				passive,
-			)?;
+			let active_post = active_pre
+				.checked_add(normalized_amount_to_mint)
+				.ok_or(ArithmeticError::Overflow)?;
+
+			let cost = Self::calculate_collateral(active_pre, active_post, passive, &pool_details.curve)?;
 
 			// fail if cost > max_cost
 			ensure!(cost <= max_cost, Error::<T>::Slippage);
@@ -309,14 +307,12 @@ pub mod pallet {
 		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 	{
 		fn calculate_collateral(
-			operation: Operation,
-			curve: &Curve<CurveParameterTypeOf<T>>,
-			amount_to_mint: &CurveParameterTypeOf<T>,
-			active_issuance_pre: &CurveParameterTypeOf<T>,
+			low: CurveParameterTypeOf<T>,
+			high: CurveParameterTypeOf<T>,
 			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
+			curve: &Curve<CurveParameterTypeOf<T>>,
 		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
-			let normalized_costs =
-				Self::get_collateral_diff(operation, curve, amount_to_mint, active_issuance_pre, passive_supply)?;
+			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
 			let collateral_denomination = 10u128
 				.checked_pow(T::CollateralCurrency::decimals(T::CollateralAssetId::get()).into())
@@ -331,19 +327,6 @@ pub mod pallet {
 				.saturated_into();
 
 			Ok(real_costs)
-		}
-
-		pub fn get_collateral_diff(
-			operation: Operation,
-			curve: &Curve<CurveParameterTypeOf<T>>,
-			amount_to_mint: &CurveParameterTypeOf<T>,
-			active_issuance_pre: &CurveParameterTypeOf<T>,
-			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
-		) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
-			let (active_issuance_pre, active_issuance_post) =
-				Self::calculate_pre_post_issuances(&operation, amount_to_mint, active_issuance_pre)?;
-
-			curve.calculate_costs(active_issuance_pre, active_issuance_post, passive_supply, operation)
 		}
 
 		fn calculate_normalized_passive_issuance(
@@ -373,22 +356,6 @@ pub mod pallet {
 				.collect();
 
 			Ok((active_issuance, passive_issuance))
-		}
-
-		fn calculate_pre_post_issuances(
-			operation: &Operation,
-			amount: &CurveParameterTypeOf<T>,
-			active_issuance_pre: &CurveParameterTypeOf<T>,
-		) -> Result<(CurveParameterTypeOf<T>, CurveParameterTypeOf<T>), ArithmeticError> {
-			let active_issuance_post = match operation {
-				Operation::Mint => active_issuance_pre
-					.checked_add(*amount)
-					.ok_or(ArithmeticError::Overflow)?,
-				Operation::Burn => active_issuance_pre
-					.checked_sub(*amount)
-					.ok_or(ArithmeticError::Underflow)?,
-			};
-			Ok((*active_issuance_pre, active_issuance_post))
 		}
 
 		fn get_fungible_supply<AssetId, Fungible: FungiblesInspect<AccountIdOf<T>, AssetId = AssetId>>(

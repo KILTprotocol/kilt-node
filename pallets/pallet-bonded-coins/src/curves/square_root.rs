@@ -35,6 +35,7 @@ where
 		let low = low
 			.checked_add(accumulated_passive_issuance)
 			.ok_or(ArithmeticError::Overflow)?;
+
 		// Calculate sqrt(high^3) and sqrt(low^3)
 		let sqrt_x3_high: Parameter = sqrt::<Parameter, Parameter>(high)
 			.map_err(|_| ArithmeticError::Underflow)?
