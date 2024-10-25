@@ -31,7 +31,7 @@ pub mod pallet {
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
-			tokens::Preservation,
+			tokens::{Fortitude, Precision as TokenPrecision, Preservation},
 			AccountTouch,
 		},
 		Parameter,
@@ -274,8 +274,64 @@ pub mod pallet {
 
 		#[pallet::call_index(2)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn burn_into(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
+		pub fn burn_into(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_idx: u32,
+			amount_to_burn: FungiblesBalanceOf<T>,
+			min_return: CollateralCurrencyBalanceOf<T>,
+			beneficiary: AccountIdLookupOf<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let beneficiary = T::Lookup::lookup(beneficiary)?;
+
+			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::Locked);
+
+			let bonded_currencies = pool_details.bonded_currencies;
+
+			let currency_idx: usize = currency_idx.saturated_into();
+
+			let target_currency_id = bonded_currencies
+				.get(currency_idx)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			let (high, passive) = Self::calculate_normalized_passive_issuance(
+				&bonded_currencies,
+				pool_details.denomination,
+				currency_idx,
+			)?;
+
+			let normalized_amount_to_burn =
+				convert_to_fixed::<T>(amount_to_burn.saturated_into::<u128>(), pool_details.denomination)?;
+
+			let low = high
+				.checked_sub(normalized_amount_to_burn)
+				.ok_or(ArithmeticError::Overflow)?;
+
+			let collateral_return = Self::calculate_collateral(low, high, passive, &pool_details.curve)?;
+
+			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
+
+			// withdraw collateral from deposit and transfer to beneficiary account; deposit account may be drained
+			T::CollateralCurrency::transfer(
+				T::CollateralAssetId::get(),
+				&pool_id.into(),
+				&beneficiary,
+				collateral_return,
+				Preservation::Expendable,
+			)?;
+
+			T::Fungibles::burn_from(
+				target_currency_id.clone(),
+				&beneficiary,
+				amount_to_burn,
+				TokenPrecision::Exact,
+				Fortitude::Polite,
+			)?;
+
+			Ok(())
 		}
 
 		#[pallet::call_index(3)]
