@@ -180,7 +180,6 @@ pub mod pallet {
 		ZeroAmount,
 		Slippage,
 		Internal,
-		FreezeAccount(u8),
 	}
 
 	#[pallet::composite_enum]
@@ -267,7 +266,7 @@ pub mod pallet {
 						Error::<T>::Internal
 					})?;
 				T::Fungibles::freeze(&freezer, &beneficiary, target_currency_id)
-					.map_err(|freeze_error| Error::<T>::FreezeAccount(freeze_error.into()))?;
+					.map_err(|freeze_error| freeze_error.into())?;
 			}
 
 			Ok(())
