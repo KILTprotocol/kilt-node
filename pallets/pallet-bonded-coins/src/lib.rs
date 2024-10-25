@@ -256,7 +256,7 @@ pub mod pallet {
 				let freezer = T::Fungibles::freezer(target_currency_id.clone())
 					// Should never fail. Either the freezer has been updated or it is the pool id.
 					.ok_or(Error::<T>::Internal)?;
-				T::Fungibles::freeze(freezer, beneficiary, target_currency_id.to_owned())?;
+				T::Fungibles::freeze(&freezer, &beneficiary, target_currency_id)?;
 			}
 
 			Ok(())
