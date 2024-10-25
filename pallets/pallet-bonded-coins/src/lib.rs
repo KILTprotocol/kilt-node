@@ -15,7 +15,7 @@ mod tests;
 mod benchmarking;
 
 mod curves;
-mod traits;
+pub mod traits;
 mod types;
 #[frame_support::pallet]
 pub mod pallet {
