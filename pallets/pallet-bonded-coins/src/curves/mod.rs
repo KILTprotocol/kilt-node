@@ -20,11 +20,6 @@ pub enum Curve<Parameter> {
 	LMSR(LMSRParameters<Parameter>),
 }
 
-pub enum Operation {
-	Mint,
-	Burn,
-}
-
 impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
@@ -32,21 +27,14 @@ where
 {
 	fn calculate_costs(
 		&self,
-		active_issuance_pre: Parameter,
-		active_issuance_post: Parameter,
+		low: Parameter,
+		high: Parameter,
 		passive_supply: PassiveSupply<Parameter>,
-		op: Operation,
 	) -> Result<Parameter, ArithmeticError> {
 		match self {
-			Curve::Polynomial(params) => {
-				params.calculate_costs(active_issuance_pre, active_issuance_post, passive_supply, op)
-			}
-			Curve::SquareRoot(params) => {
-				params.calculate_costs(active_issuance_pre, active_issuance_post, passive_supply, op)
-			}
-			Curve::LMSR(params) => {
-				params.calculate_costs(active_issuance_pre, active_issuance_post, passive_supply, op)
-			}
+			Curve::Polynomial(params) => params.calculate_costs(low, high, passive_supply),
+			Curve::SquareRoot(params) => params.calculate_costs(low, high, passive_supply),
+			Curve::LMSR(params) => params.calculate_costs(low, high, passive_supply),
 		}
 	}
 }
@@ -54,39 +42,14 @@ where
 pub trait BondingFunction<Balance> {
 	fn calculate_costs(
 		&self,
-		active_issuance_pre: Balance,
-		active_issuance_post: Balance,
+		low: Balance,
+		high: Balance,
 		passive_supply: PassiveSupply<Balance>,
-		op: Operation,
 	) -> Result<Balance, ArithmeticError>;
 }
 
 fn square<FixedType: Fixed>(x: FixedType) -> Result<FixedType, ArithmeticError> {
 	x.checked_mul(x).ok_or(ArithmeticError::Overflow)
-}
-
-fn calculate_integral_bounds<FixedType: Fixed>(
-	op: Operation,
-	passive_supply: PassiveSupply<FixedType>,
-	active_issuance_pre: FixedType,
-	active_issuance_post: FixedType,
-) -> (FixedType, FixedType) {
-	match op {
-		Operation::Burn => {
-			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
-			(
-				active_issuance_post.saturating_add(accumulated_passive_issuance),
-				active_issuance_pre.saturating_add(accumulated_passive_issuance),
-			)
-		}
-		Operation::Mint => {
-			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
-			(
-				active_issuance_pre.saturating_add(accumulated_passive_issuance),
-				active_issuance_post.saturating_add(accumulated_passive_issuance),
-			)
-		}
-	}
 }
 
 fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Balance]) -> Balance {

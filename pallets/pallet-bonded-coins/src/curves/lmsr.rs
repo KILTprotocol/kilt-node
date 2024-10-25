@@ -8,7 +8,7 @@ use substrate_fixed::{
 };
 
 use super::BondingFunction;
-use crate::{curves::Operation, PassiveSupply, Precision};
+use crate::{PassiveSupply, Precision};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParameters<Parameter> {
@@ -41,7 +41,6 @@ where
 		low: Parameter,
 		high: Parameter,
 		passive_supply: PassiveSupply<Parameter>,
-		_op: Operation,
 	) -> Result<Parameter, ArithmeticError> {
 		let e_term_numerator = passive_supply
 			.iter()
