@@ -14,5 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// These tests are kinda messed up.
+#![allow(clippy::tests_outside_test_module)]
+
 mod peregrine;
 mod spiritnet;
