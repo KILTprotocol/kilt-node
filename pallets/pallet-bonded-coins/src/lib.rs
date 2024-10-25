@@ -174,7 +174,7 @@ pub mod pallet {
 	pub enum Error<T> {
 		IndexOutOfBounds,
 		PoolUnknown,
-		Locked,
+		NoPermission,
 		Slippage,
 		Internal,
 		CurrencyCount,
@@ -212,7 +212,7 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::Locked);
+			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::NoPermission);
 
 			let bonded_currencies = pool_details.bonded_currencies;
 
@@ -281,15 +281,21 @@ pub mod pallet {
 			amount_to_burn: FungiblesBalanceOf<T>,
 			min_return: CollateralCurrencyBalanceOf<T>,
 			beneficiary: AccountIdLookupOf<T>,
+			currency_count: u32,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
 			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::Locked);
+			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::NoPermission);
 
 			let bonded_currencies = pool_details.bonded_currencies;
+
+			ensure!(
+				bonded_currencies.len() <= currency_count.saturated_into::<usize>(),
+				Error::<T>::CurrencyCount
+			);
 
 			let currency_idx: usize = currency_idx.saturated_into();
 
@@ -308,7 +314,7 @@ pub mod pallet {
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
-				.ok_or(ArithmeticError::Overflow)?;
+				.ok_or(ArithmeticError::Underflow)?;
 
 			let collateral_return = Self::calculate_collateral(low, high, passive, &pool_details.curve)?;
 
@@ -323,6 +329,22 @@ pub mod pallet {
 				Preservation::Expendable,
 			)?;
 
+			// we act on behalf of the freezer.
+			let freezer = T::Fungibles::freezer(target_currency_id.clone())
+				// Should never fail. Either the freezer has been updated or it is the pool id.
+				.ok_or_else(|| {
+					log::error!(
+						target: LOG_TARGET,
+						"Freezer not found for currency id: {:?}",
+						target_currency_id
+					);
+					Error::<T>::Internal
+				})?;
+
+			// just remove any locks, if existing.
+			T::Fungibles::thaw(&freezer, &beneficiary, target_currency_id)
+				.map_err(|freeze_error| freeze_error.into())?;
+
 			T::Fungibles::burn_from(
 				target_currency_id.clone(),
 				&beneficiary,
@@ -330,6 +352,11 @@ pub mod pallet {
 				TokenPrecision::Exact,
 				Fortitude::Polite,
 			)?;
+
+			if !pool_details.transferable {
+				T::Fungibles::freeze(&freezer, &beneficiary, target_currency_id)
+					.map_err(|freeze_error| freeze_error.into())?;
+			}
 
 			Ok(())
 		}
