@@ -9,8 +9,9 @@ pub struct Locks {
 	pub allow_swap: bool,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug, Default)]
 pub enum PoolStatus<LockType> {
+	#[default]
 	Active,
 	Locked(LockType),
 	Destroying,
@@ -52,14 +53,13 @@ where
 		curve: ParametrizedCurve,
 		bonded_currencies: Currencies,
 		transferable: bool,
-		state: PoolStatus<Locks>,
 	) -> Self {
 		Self {
 			manager,
 			curve,
 			bonded_currencies,
 			transferable,
-			state,
+			state: PoolStatus::default(),
 		}
 	}
 

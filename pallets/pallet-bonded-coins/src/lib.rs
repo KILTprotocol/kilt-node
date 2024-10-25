@@ -48,7 +48,7 @@ pub mod pallet {
 	use crate::{
 		curves::{Curve, CurveInput},
 		traits::ResetTeam,
-		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, TokenMeta},
+		types::{PoolDetails, PoolManagingTeam, TokenMeta},
 	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -180,7 +180,6 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			curve: CurveInput<CurveParameterInputOf<T>>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
-			state: PoolStatus<Locks>,
 			denomination: u8,
 			pool_manager: AccountIdOf<T>,
 			transferable: bool,
@@ -237,7 +236,6 @@ pub mod pallet {
 					checked_curve,
 					currency_ids,
 					transferable,
-					state,
 				)),
 			);
 
