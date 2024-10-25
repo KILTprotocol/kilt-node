@@ -298,7 +298,6 @@ pub mod pallet {
 
 			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
 
-			// withdraw collateral from deposit and transfer to beneficiary account; deposit account may be drained
 			T::CollateralCurrency::transfer(
 				T::CollateralAssetId::get(),
 				&pool_id.into(),
