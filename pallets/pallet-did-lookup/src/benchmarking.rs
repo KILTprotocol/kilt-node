@@ -15,9 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg(feature = "runtime-benchmarks")]
 
-//! Benchmarking
+// Old benchmarking macros are a mess.
+#![allow(clippy::tests_outside_test_module)]
 
 use frame_benchmarking::{account, benchmarks_instance_pallet, impl_benchmark_test_suite};
 use frame_support::{
