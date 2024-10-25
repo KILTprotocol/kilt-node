@@ -188,11 +188,6 @@ pub mod pallet {
 
 			let currency_length = currencies.len();
 
-			ensure!(
-				(1..=(T::MaxCurrencies::get()).saturated_into()).contains(&currency_length),
-				Error::<T>::CurrenciesNumber
-			);
-
 			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let current_asset_id = NextAssetId::<T>::get();
