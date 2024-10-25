@@ -33,10 +33,10 @@ pub mod migrations;
 mod connection_record;
 mod signature;
 
-#[cfg(all(test, feature = "std"))]
+#[cfg(test)]
 mod tests;
 
-#[cfg(all(test, feature = "std"))]
+#[cfg(test)]
 mod mock;
 
 #[cfg(any(feature = "try-runtime", test))]

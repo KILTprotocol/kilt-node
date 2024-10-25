@@ -112,18 +112,23 @@ impl From<Error> for u8 {
 	}
 }
 
-#[test]
-fn error_value_not_duplicated() {
-	enum_iterator::all::<Error>().fold(
-		sp_std::collections::btree_set::BTreeSet::<u8>::new(),
-		|mut values, new_value| {
-			let new_encoded_value = u8::from(new_value);
-			assert!(
-				values.insert(new_encoded_value),
-				"Failed to add unique value {:#?} for error variant",
-				new_encoded_value
-			);
-			values
-		},
-	);
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn error_value_not_duplicated() {
+		enum_iterator::all::<Error>().fold(
+			sp_std::collections::btree_set::BTreeSet::<u8>::new(),
+			|mut values, new_value| {
+				let new_encoded_value = u8::from(new_value);
+				assert!(
+					values.insert(new_encoded_value),
+					"Failed to add unique value {:#?} for error variant",
+					new_encoded_value
+				);
+				values
+			},
+		);
+	}
 }
