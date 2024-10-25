@@ -255,6 +255,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			team: PoolManagingTeam<AccountIdOf<T>>,
+			currency_idx: u32,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -262,18 +263,18 @@ pub mod pallet {
 
 			ensure!(pool_details.is_manager(&who), Error::<T>::UnAuthorized);
 
-			pool_details
+			let asset_id = pool_details
 				.bonded_currencies
-				.iter()
-				.try_for_each(|asset_id| -> DispatchResult {
-					T::Fungibles::reset_team(
-						asset_id.clone(),
-						pool_id.clone().into(),
-						team.admin.clone(),
-						team.issuer.clone(),
-						team.freezer.clone(),
-					)
-				})
+				.get(currency_idx as usize)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			T::Fungibles::reset_team(
+				asset_id.to_owned(),
+				pool_id.into(),
+				team.admin,
+				team.issuer,
+				team.freezer,
+			)
 		}
 
 		#[pallet::call_index(3)]
