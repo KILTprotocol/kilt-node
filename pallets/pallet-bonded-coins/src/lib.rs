@@ -163,6 +163,8 @@ pub mod pallet {
 		CurrenciesNumber,
 		InvalidInput,
 		Internal,
+		UnknownPool,
+		UnAuthorized,
 	}
 
 	#[pallet::composite_enum]
@@ -182,7 +184,6 @@ pub mod pallet {
 			denomination: u8,
 			pool_manager: AccountIdOf<T>,
 			transferable: bool,
-			team: PoolManagingTeam<AccountIdOf<T>>,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
@@ -223,14 +224,6 @@ pub mod pallet {
 						denomination,
 					)?;
 
-					// reset the team for the new asset class
-					T::Fungibles::reset_team(
-						asset_id.clone(),
-						pool_id.clone().into(),
-						team.admin.clone(),
-						team.issuer.clone(),
-						team.freezer.clone(),
-					)?;
 					Ok(())
 				})?;
 
@@ -256,57 +249,84 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(1)]
+		#[pallet::call_index(2)]
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		pub fn reset_team(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			team: PoolManagingTeam<AccountIdOf<T>>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::UnknownPool)?;
+
+			ensure!(pool_details.is_manager(&who), Error::<T>::UnAuthorized);
+
+			pool_details
+				.bonded_currencies
+				.iter()
+				.try_for_each(|asset_id| -> DispatchResult {
+					T::Fungibles::reset_team(
+						asset_id.clone(),
+						pool_id.clone().into(),
+						team.admin.clone(),
+						team.issuer.clone(),
+						team.freezer.clone(),
+					)
+				})
+		}
+
+		#[pallet::call_index(3)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn mint_into(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
 		}
 
-		#[pallet::call_index(2)]
+		#[pallet::call_index(4)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn burn_into(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
 		}
 
-		#[pallet::call_index(3)]
+		#[pallet::call_index(5)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn swap_into(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
 		}
 
-		#[pallet::call_index(4)]
+		#[pallet::call_index(6)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn set_lock(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
 		}
 
-		#[pallet::call_index(5)]
+		#[pallet::call_index(7)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn unlock(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
 		}
 
 		// TODO: not sure if we really need that. Check that out with Raphael.
-		#[pallet::call_index(6)]
+		#[pallet::call_index(8)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn start_destroy(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
 		}
 
-		#[pallet::call_index(7)]
+		#[pallet::call_index(9)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn force_start_destroy(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
 		}
 
 		// todo: check if we really need that tx.
-		#[pallet::call_index(8)]
+		#[pallet::call_index(10)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn destroy_accounts(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
 		}
 
-		#[pallet::call_index(9)]
+		#[pallet::call_index(11)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn finish_destroy(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
