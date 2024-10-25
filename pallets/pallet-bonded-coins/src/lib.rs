@@ -161,7 +161,7 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		CurrenciesNumber,
-		InvalidCoefficients,
+		InvalidInput,
 		Internal,
 	}
 
@@ -193,7 +193,7 @@ pub mod pallet {
 				Error::<T>::CurrenciesNumber
 			);
 
-			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidCoefficients)?;
+			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let current_asset_id = NextAssetId::<T>::get();
 
