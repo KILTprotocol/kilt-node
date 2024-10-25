@@ -253,22 +253,6 @@ pub mod pallet {
 
 			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
 
-			if !pool_details.transferable {
-				// we act on behalf of the freezer.
-				let freezer = T::Fungibles::freezer(target_currency_id.clone())
-					// Should never fail. Either the freezer has been updated or it is the pool id.
-					.ok_or_else(|| {
-						log::error!(
-							target: LOG_TARGET,
-							"Freezer not found for currency id: {:?}",
-							target_currency_id
-						);
-						Error::<T>::Internal
-					})?;
-				T::Fungibles::freeze(&freezer, &beneficiary, target_currency_id)
-					.map_err(|freeze_error| freeze_error.into())?;
-			}
-
 			Ok(())
 		}
 
@@ -323,6 +307,22 @@ pub mod pallet {
 				Preservation::Expendable,
 			)?;
 
+			// we act on behalf of the freezer.
+			let freezer = T::Fungibles::freezer(target_currency_id.clone())
+				// Should never fail. Either the freezer has been updated or it is the pool id.
+				.ok_or_else(|| {
+					log::error!(
+						target: LOG_TARGET,
+						"Freezer not found for currency id: {:?}",
+						target_currency_id
+					);
+					Error::<T>::Internal
+				})?;
+
+			// just remove any locks, if existing.
+			T::Fungibles::thaw(&freezer, &beneficiary, target_currency_id)
+				.map_err(|freeze_error| freeze_error.into())?;
+
 			T::Fungibles::burn_from(
 				target_currency_id.clone(),
 				&beneficiary,
@@ -330,6 +330,11 @@ pub mod pallet {
 				TokenPrecision::Exact,
 				Fortitude::Polite,
 			)?;
+
+			if !pool_details.transferable {
+				T::Fungibles::freeze(&freezer, &beneficiary, target_currency_id)
+					.map_err(|freeze_error| freeze_error.into())?;
+			}
 
 			Ok(())
 		}
