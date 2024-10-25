@@ -160,7 +160,7 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		CurrenciesNumber,
+		IndexOutOfBounds,
 		InvalidInput,
 		Internal,
 		UnknownPool,
@@ -212,7 +212,7 @@ pub mod pallet {
 				.iter()
 				.enumerate()
 				.try_for_each(|(idx, entry)| -> DispatchResult {
-					let asset_id: &T::AssetId = currency_ids.get(idx).ok_or(Error::<T>::CurrenciesNumber)?;
+					let asset_id: &T::AssetId = currency_ids.get(idx).ok_or(Error::<T>::IndexOutOfBounds)?;
 					T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, entry.min_balance)?;
 
 					// set metadata for new asset class
