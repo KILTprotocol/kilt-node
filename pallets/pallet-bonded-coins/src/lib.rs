@@ -59,6 +59,8 @@ pub mod pallet {
 		types::PoolDetails,
 	};
 
+	const LOG_TARGET: &'static str = "pallet-bonded-coins";
+
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
@@ -255,7 +257,14 @@ pub mod pallet {
 				// we act on behalf of the freezer.
 				let freezer = T::Fungibles::freezer(target_currency_id.clone())
 					// Should never fail. Either the freezer has been updated or it is the pool id.
-					.ok_or(Error::<T>::Internal)?;
+					.ok_or_else(|| {
+						log::error!(
+							target: LOG_TARGET,
+							"Freezer not found for currency id: {:?}",
+							target_currency_id
+						);
+						Error::<T>::Internal
+					})?;
 				T::Fungibles::freeze(&freezer, &beneficiary, target_currency_id)?;
 			}
 
