@@ -14,9 +14,9 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-mod types;
-
 mod curves;
+mod traits;
+mod types;
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -27,6 +27,7 @@ pub mod pallet {
 			fungible::{Inspect as InspectFungible, MutateHold},
 			fungibles::{
 				metadata::{Inspect as FungiblesInspect, Mutate as FungiblesMetadata},
+				roles::Inspect as FungiblesRoles,
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
@@ -54,6 +55,7 @@ pub mod pallet {
 
 	use crate::{
 		curves::{convert_to_fixed, BondingFunction, Curve},
+		traits::FreezeAccounts,
 		types::PoolDetails,
 	};
 
@@ -107,7 +109,9 @@ pub mod pallet {
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
-			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>;
+			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>
+			+ FreezeAccounts<Self::AccountId, Self::AssetId>
+			+ FungiblesRoles<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
 		type MaxCurrencies: Get<u32>;
@@ -173,6 +177,7 @@ pub mod pallet {
 		Locked,
 		ZeroAmount,
 		Slippage,
+		Internal,
 	}
 
 	#[pallet::composite_enum]
@@ -244,9 +249,15 @@ pub mod pallet {
 				Preservation::Preserve,
 			)?;
 
-			// TODO: apply lock if pool_details.transferable != true
-
 			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
+
+			if !pool_details.transferable {
+				// we act on behalf of the freezer.
+				let freezer = T::Fungibles::freezer(target_currency_id.clone())
+					// Should never fail. Either the freezer has been updated or it is the pool id.
+					.ok_or(Error::<T>::Internal)?;
+				T::Fungibles::freeze(freezer, beneficiary, target_currency_id.to_owned())?;
+			}
 
 			Ok(())
 		}
