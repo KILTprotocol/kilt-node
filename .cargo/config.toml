@@ -1,5 +1,61 @@
-# Deployment runtime lints
-[target.'cfg(all(target_arch = "wasm32", not(test)))']
+# Unfortunately we cannot add any lints based on `cfg(test)` nor `cfg(feature = "feat")`: https://github.com/rust-lang/cargo/issues/8170.
+# Hence, we can only define lints that are applied codebase-wide (including tests), and lints that are applied only to runtime code.
+
+# Codebase-wide lints.
+[target.'cfg(all())']
+rustflags = [
+  # We need to deny warnings here instead of with the `RUSTFLAGS` env since the env variable would completely override these settings -> https://github.com/rust-lang/cargo/issues/5376.
+  "-Dwarnings",
+  "-Wclippy::as_underscore",
+  "-Wclippy::assertions_on_result_states",
+  "-Wclippy::branches_sharing_code",
+  "-Wclippy::clear_with_drain",
+  "-Wclippy::clone_on_ref_ptr",
+  "-Wclippy::collection_is_never_read",
+  "-Wclippy::derive_partial_eq_without_eq",
+  "-Wclippy::else_if_without_else",
+  "-Wclippy::empty_drop",
+  "-Wclippy::empty_structs_with_brackets",
+  "-Wclippy::equatable_if_let",
+  "-Wclippy::if_then_some_else_none",
+  "-Wclippy::impl_trait_in_params",
+  "-Wclippy::iter_on_empty_collections",
+  "-Wclippy::iter_on_single_items",
+  "-Wclippy::iter_with_drain",
+  "-Wclippy::needless_collect",
+  "-Wclippy::needless_pass_by_ref_mut",
+  "-Wclippy::negative_feature_names",
+  "-Wclippy::option_if_let_else",
+  "-Wclippy::or_fun_call",
+  "-Wclippy::pub_without_shorthand",
+  "-Wclippy::redundant_clone",
+  "-Wclippy::redundant_type_annotations",
+  "-Wclippy::ref_patterns",
+  "-Wclippy::rest_pat_in_fully_bound_structs",
+  "-Wclippy::suspicious_operation_groupings",
+  "-Wclippy::type_repetition_in_bounds",
+  "-Wclippy::unnecessary_self_imports",
+  "-Wclippy::unnecessary_struct_initialization",
+  "-Wclippy::unneeded_field_pattern",
+  "-Wclippy::unused_peekable",
+  "-Wclippy::useless_let_if_seq",
+  "-Wclippy::wildcard_dependencies",
+  # TODO: Add after upgrading to 1.76
+  # "-Wclippy::infinite_loop",
+  # TODO: Add after upgrading to 1.77
+  #"-Wclippy::empty_enum_variants_with_brackets"
+  # TODO: Add after upgrading to 1.80
+  #"-Wclippy::renamed_function_params"
+  # TODO: Add after upgrading to 1.81
+  #"-Wclippy::cfg_not_test"
+  #"-Wclippy::allow_attributes",
+  # "-Wclippy::allow_attributes_without_reason",
+  # TODO: Add after upgrading to 1.83
+  #"-Wclippy::unused_trait_names"
+]
+
+# Deployment runtime lints.
+[target.'cfg(target_arch = "wasm32")']
 rustflags = [
   "-Dclippy::arithmetic_side_effects",
   "-Dclippy::as_conversions",
@@ -12,6 +68,7 @@ rustflags = [
   "-Dclippy::index_refutable_slice",
   "-Dclippy::indexing_slicing",
   "-Dclippy::lossy_float_literal",
+  "-Dclippy::modulo_arithmetic",
   "-Dclippy::panic",
   "-Dclippy::string_slice",
   "-Dclippy::todo",
@@ -19,8 +76,21 @@ rustflags = [
   "-Dclippy::unreachable",
   "-Dclippy::unwrap_used",
   "-Funsafe_code",
+  "-Wclippy::alloc_instead_of_core",
+  "-Wclippy::decimal_literal_representation",
+  "-Wclippy::default_numeric_fallback",
+  "-Wclippy::error_impl_error",
   "-Wclippy::integer_division",
-  "-Wclippy::modulo_arithmetic",
+  "-Wclippy::let_underscore_must_use",
+  "-Wclippy::let_underscore_untyped",
+  "-Wclippy::missing_const_for_fn",
+  "-Wclippy::mixed_read_write_in_expression",
   "-Wclippy::print_stderr",
   "-Wclippy::print_stdout",
+  "-Wclippy::shadow_reuse",
+  "-Wclippy::shadow_same",
+  "-Wclippy::shadow_unrelated",
+  "-Wclippy::str_to_string",
+  "-Wclippy::string_slice",
+  "-Wclippy::string_to_string",
 ]

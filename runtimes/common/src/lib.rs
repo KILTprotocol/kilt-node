@@ -144,11 +144,11 @@ parameter_types! {
 	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
 	/// The adjustment variable of the runtime. Higher values will cause `TargetBlockFullness` to
 	/// change the fees more rapidly.
-	pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(3, 100_000);
+	pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(3u8, 100_000u32);
 	/// Minimum amount of the multiplier. This value cannot be too low. A test case should ensure
 	/// that combined with `AdjustmentVariable`, we can recover from the minimum.
 	/// See `multiplier_can_grow_from_zero`.
-	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000u128);
+	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1u8, 1_000_000u32);
 	/// The maximum amount of the multiplier.
 	pub MaximumMultiplier: Multiplier = Bounded::max_value();
 	/// Maximum length of block. Up to 5MB.
@@ -225,8 +225,7 @@ pub struct SendDustAndFeesToTreasury<T>(sp_std::marker::PhantomData<T>);
 
 impl<T> OnUnbalanced<CreditOf<T>> for SendDustAndFeesToTreasury<T>
 where
-	T: pallet_balances::Config,
-	T: pallet_treasury::Config,
+	T: pallet_balances::Config + pallet_treasury::Config,
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<T>) {
 		let treasury_account_id = pallet_treasury::Pallet::<T>::account_id();

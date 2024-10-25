@@ -150,7 +150,7 @@ where
 			return None;
 		};
 
-		let Some(ref switch_pair) = self.switch_pair else {
+		let Some(switch_pair) = &self.switch_pair else {
 			log::error!(target: LOG_TARGET, "Stored switch pair should not be None, but it is.");
 			return None;
 		};
@@ -173,7 +173,7 @@ where
 			})
 			.ok()?;
 
-		let weight_to_refund: Weight = weight.min(self.remaining_weight);
+		let weight_to_refund = weight.min(self.remaining_weight);
 		let amount_for_weight_to_refund = WeightToFee::weight_to_fee(&weight_to_refund);
 		// We can only refund up to the remaining balance of this weigher.
 		let amount_to_refund = amount_for_weight_to_refund.min(self.remaining_fungible_balance);
@@ -247,11 +247,11 @@ where
 
 				// No error should ever be thrown from inside this block.
 				SwitchPair::<T, I>::mutate(|entry| {
-					let Some(entry) = entry.as_mut() else {
+					let Some(existing_switch_pair) = entry.as_mut() else {
 						log::error!(target: LOG_TARGET, "Stored switch pair should not be None but it is.");
 						return;
 					};
-					entry
+					existing_switch_pair
 						.try_process_incoming_switch(self.remaining_fungible_balance)
 						.unwrap_or_else(|_| {
 							log::error!(

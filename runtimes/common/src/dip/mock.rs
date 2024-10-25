@@ -213,15 +213,13 @@ pub(crate) fn create_linked_info(
 		});
 		details
 	};
-	let web3_name = if let Some(web3_name) = web3_name {
+	let web3_name = web3_name.map(|web3_name| {
 		let claimed_at = BlockNumberFor::<TestRuntime>::default();
-		Some(RevealedWeb3Name {
+		RevealedWeb3Name {
 			web3_name: web3_name.as_ref().to_vec().try_into().unwrap(),
 			claimed_at,
-		})
-	} else {
-		None
-	};
+		}
+	});
 	let linked_accounts_iter = (0..linked_accounts).map(|i| {
 		let bytes = i.to_be_bytes();
 		if i % 2 == 0 {

@@ -102,7 +102,7 @@ fn origin_checks_with_running_pair() {
 		});
 	// Different location does not work.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {
@@ -193,7 +193,7 @@ fn origin_checks_with_paused_pair() {
 		});
 	// Different location does not work.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {
@@ -301,7 +301,7 @@ fn querier_checks_with_running_pair() {
 		});
 	// Different querier does not work.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {
@@ -409,7 +409,7 @@ fn querier_checks_with_paused_pair() {
 		});
 	// Different querier does not work.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {
@@ -460,7 +460,7 @@ fn query_id_not_found() {
 	);
 
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {

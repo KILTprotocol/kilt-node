@@ -127,7 +127,9 @@ impl IdentityProofVerifier<TestRuntime> for BooleanProofVerifier {
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		if proof {
-			*identity_details = identity_details.map(|d| Some(d + 1)).unwrap_or(Some(u128::default()));
+			*identity_details = identity_details
+				.map(|d| Some(d + 1))
+				.unwrap_or_else(|| Some(u128::default()));
 			Ok(())
 		} else {
 			Err(1)
