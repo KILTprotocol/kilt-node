@@ -155,7 +155,7 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		PoolCreated(T::PoolId),
+		PoolCreated { id: T::PoolId },
 	}
 
 	#[pallet::error]
@@ -244,7 +244,7 @@ pub mod pallet {
 			// update the storage for the next tx.
 			NextAssetId::<T>::set(next_asset_id);
 
-			Self::deposit_event(Event::PoolCreated(pool_id));
+			Self::deposit_event(Event::PoolCreated { id: pool_id });
 
 			Ok(())
 		}
