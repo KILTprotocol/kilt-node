@@ -177,7 +177,6 @@ pub mod pallet {
 		IndexOutOfBounds,
 		PoolUnknown,
 		Locked,
-		ZeroAmount,
 		Slippage,
 		Internal,
 	}
@@ -214,8 +213,6 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::Locked);
-
-			ensure!(!amount_to_mint.is_zero(), Error::<T>::ZeroAmount);
 
 			let bonded_currencies = pool_details.bonded_currencies;
 
