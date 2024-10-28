@@ -59,7 +59,7 @@ pub mod pallet {
 		types::PoolDetails,
 	};
 
-	const LOG_TARGET: &'static str = "pallet-bonded-coins";
+	const LOG_TARGET: &'static str = "runtime::pallet-bonded-coins";
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
