@@ -327,7 +327,7 @@ pub mod pallet {
 		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, Some(&who), Fortitude::Polite)
+			Self::do_start_destroy_pool(pool_id, Some(&who), false)
 		}
 
 		#[pallet::call_index(10)]
@@ -335,7 +335,7 @@ pub mod pallet {
 		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			ensure_root(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, None, Fortitude::Force)
+			Self::do_start_destroy_pool(pool_id, None, true)
 		}
 
 		#[pallet::call_index(11)]
@@ -412,7 +412,7 @@ pub mod pallet {
 		fn do_start_destroy_pool(
 			pool_id: T::PoolId,
 			maybe_check_manager: Option<&AccountIdOf<T>>,
-			force_skip_refund: Fortitude, // TODO: enum or boolean flag?
+			force_skip_refund: bool,
 		) -> DispatchResult {
 			let mut pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
@@ -425,7 +425,7 @@ pub mod pallet {
 				ensure!(pool_details.is_manager(caller), Error::<T>::Unauthorized); // TODO: should this be permissionless if the pool is in refunding state?
 			}
 
-			if force_skip_refund != Fortitude::Force {
+			if !force_skip_refund {
 				let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
 				if !total_collateral_issuance.is_zero() {
 					let has_holders = pool_details
