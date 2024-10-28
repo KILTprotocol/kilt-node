@@ -34,11 +34,11 @@ impl<LockType> PoolStatus<LockType> {
 		*self = Self::Locked(lock);
 	}
 
-	pub fn destroy(&mut self) {
+	pub fn start_destroy(&mut self) {
 		*self = Self::Destroying;
 	}
 
-	pub fn refunding(&mut self) {
+	pub fn start_refund(&mut self) {
 		*self = Self::Refunding;
 	}
 }

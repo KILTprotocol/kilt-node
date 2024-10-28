@@ -401,7 +401,7 @@ pub mod pallet {
 			ensure!(has_holders, Error::<T>::NothingToRefund);
 
 			// move pool state to refunding
-			pool_details.state.refunding();
+			pool_details.state.start_refund();
 			Pools::<T>::set(&pool_id, Some(pool_details));
 
 			Self::deposit_event(Event::RefundingStarted { id: pool_id });
@@ -438,7 +438,7 @@ pub mod pallet {
 			}
 
 			// move to destroying state
-			pool_details.state.destroy();
+			pool_details.state.start_destroy();
 			Pools::<T>::set(&pool_id, Some(pool_details.clone()));
 
 			// emit this event before the destruction started events are emitted by assets deactivation
