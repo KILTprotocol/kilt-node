@@ -168,8 +168,8 @@ pub mod pallet {
 		PoolUnknown,
 		/// The pool has no associated bonded currency with the given index.
 		IndexOutOfBounds,
-		/// The amount to mint, burn, or swap is zero.
-		ZeroAmount,
+		/// The pool does not hold collateral to be refunded, or has no remaining supply of tokens to exchange. Call start_destroy to intiate teardown.
+		NothingToRefund,
 		/// The user is not privileged to perform the requested operation.
 		Unauthorized,
 		/// The pool is deactivated (i.e., in destroying or refunding state) and not available for use.
@@ -265,7 +265,7 @@ pub mod pallet {
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
 
 			// nothing to distribute; refunding is complete, user should call start_destroy
-			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::ZeroAmount);
+			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::NothingToRefund);
 
 			// TODO: remove any existing locks on the account prior to burning
 
@@ -278,8 +278,10 @@ pub mod pallet {
 				Fortitude::Force,
 			)?;
 
-			// no funds available to be burnt on account; nothing to do here
-			ensure!(!burnt.is_zero(), Error::<T>::ZeroAmount); // TODO: fail or return?
+			if burnt.is_zero() {
+				// no funds available to be burnt on account; nothing to do here
+				return Ok(());
+			}
 
 			let sum_of_issuances = pool_details
 				.bonded_currencies
@@ -292,7 +294,7 @@ pub mod pallet {
 				.checked_mul(&total_collateral_issuance)
 				.ok_or(ArithmeticError::Overflow)? // TODO: do we need a fallback if this fails?
 				.checked_div(&sum_of_issuances)
-				.ok_or(Error::<T>::ZeroAmount)?; // should be impossible - how would we be able to burn funds if the sum of total supplies is 0?
+				.ok_or(Error::<T>::NothingToRefund)?; // should be impossible - how would we be able to burn funds if the sum of total supplies is 0?
 
 			if amount.is_zero()
 				|| T::CollateralCurrency::can_deposit(T::CollateralAssetId::get(), &who, amount, Provenance::Extant)
@@ -389,14 +391,14 @@ pub mod pallet {
 
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
 			// nothing to distribute
-			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::ZeroAmount);
+			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::NothingToRefund);
 
 			let has_holders = pool_details
 				.bonded_currencies
 				.iter()
 				.any(|asset_id| !T::Fungibles::total_issuance(asset_id.clone()).is_zero());
 			// no token holders to refund
-			ensure!(has_holders, Error::<T>::ZeroAmount);
+			ensure!(has_holders, Error::<T>::NothingToRefund);
 
 			// move pool state to refunding
 			pool_details.state.refunding();
