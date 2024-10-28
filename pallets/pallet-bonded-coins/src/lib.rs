@@ -179,6 +179,7 @@ pub mod pallet {
 		Locked,
 		Slippage,
 		Internal,
+		CurrencyCountMismatch,
 	}
 
 	#[pallet::composite_enum]
@@ -206,6 +207,7 @@ pub mod pallet {
 			amount_to_mint: FungiblesBalanceOf<T>,
 			max_cost: CollateralCurrencyBalanceOf<T>,
 			beneficiary: AccountIdLookupOf<T>,
+			currency_count: u32,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
@@ -215,6 +217,11 @@ pub mod pallet {
 			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::Locked);
 
 			let bonded_currencies = pool_details.bonded_currencies;
+
+			ensure!(
+				bonded_currencies.len() == currency_count.saturated_into::<usize>(),
+				Error::<T>::CurrencyCountMismatch
+			);
 
 			let currency_idx: usize = currency_idx.saturated_into();
 
@@ -354,7 +361,7 @@ pub mod pallet {
 		) -> Result<(CurveParameterTypeOf<T>, PassiveSupply<CurveParameterTypeOf<T>>), DispatchError> {
 			let currencies_total_supply = bonded_currencies
 				.iter()
-				.map(|currency_id| Self::get_fungible_supply::<T::AssetId, T::Fungibles>(currency_id.to_owned()))
+				.map(|currency_id| T::Fungibles::total_issuance(currency_id.to_owned()))
 				.collect::<Vec<_>>();
 
 			let normalized_total_issuances = currencies_total_supply
@@ -374,12 +381,6 @@ pub mod pallet {
 				.collect();
 
 			Ok((active_issuance, passive_issuance))
-		}
-
-		fn get_fungible_supply<AssetId, Fungible: FungiblesInspect<AccountIdOf<T>, AssetId = AssetId>>(
-			asset_id: AssetId,
-		) -> Fungible::Balance {
-			Fungible::total_issuance(asset_id)
 		}
 	}
 }
