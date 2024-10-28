@@ -178,6 +178,8 @@ pub mod pallet {
 		LivePool,
 		/// This operation can only be made when the pool is in refunding state.
 		NotRefunding,
+		/// The number of currencies linked to a pool exceeds the maximum. Thrown either during pool creation, or by transactions that take the (expected maximum) number of a pool's currencies as input.
+		TooManyCurrencies,
 	}
 
 	#[pallet::composite_enum]
@@ -225,18 +227,22 @@ pub mod pallet {
 
 		#[pallet::call_index(6)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn start_refund(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+		pub fn start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_start_refund(pool_id, Some(&who))
+			Self::do_start_refund(pool_id, Some(&who), currency_count)?;
+
+			Ok(())
 		}
 
 		#[pallet::call_index(7)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn force_start_refund(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+		pub fn force_start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			ensure_root(origin)?;
 
-			Self::do_start_refund(pool_id, None)
+			Self::do_start_refund(pool_id, None, currency_count)?;
+
+			Ok(())
 		}
 
 		#[pallet::call_index(8)]
@@ -246,11 +252,17 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			account: AccountIdLookupOf<T>,
 			asset_idx: u32,
+			currency_count: u32,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 			let who = T::Lookup::lookup(account)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(
+				pool_details.bonded_currencies.len() <= currency_count.saturated_into(),
+				Error::<T>::TooManyCurrencies
+			);
 
 			ensure!(pool_details.state.is_refunding(), Error::<T>::NotRefunding);
 
@@ -324,26 +336,35 @@ pub mod pallet {
 
 		#[pallet::call_index(9)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, Some(&who), false)
+			Self::do_start_destroy_pool(pool_id, Some(&who), false, currency_count)?;
+
+			Ok(())
 		}
 
 		#[pallet::call_index(10)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			ensure_root(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, None, true)
+			Self::do_start_destroy_pool(pool_id, None, true, currency_count)?;
+
+			Ok(())
 		}
 
 		#[pallet::call_index(11)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 
 			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(
+				pool_details.bonded_currencies.len() <= currency_count.saturated_into(),
+				Error::<T>::TooManyCurrencies
+			);
 
 			ensure!(pool_details.state.is_destroying(), Error::<T>::LivePool);
 
@@ -379,8 +400,17 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn do_start_refund(pool_id: T::PoolId, maybe_check_manager: Option<&AccountIdOf<T>>) -> DispatchResult {
+		fn do_start_refund(
+			pool_id: T::PoolId,
+			maybe_check_manager: Option<&AccountIdOf<T>>,
+			max_currencies: u32,
+		) -> Result<u32, DispatchError> {
 			let mut pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(
+				pool_details.bonded_currencies.len() <= max_currencies.saturated_into(),
+				Error::<T>::TooManyCurrencies
+			);
 
 			// refunding can only be triggered on a live pool
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
@@ -402,19 +432,25 @@ pub mod pallet {
 
 			// move pool state to refunding
 			pool_details.state.start_refund();
-			Pools::<T>::set(&pool_id, Some(pool_details));
+			Pools::<T>::set(&pool_id, Some(pool_details.clone()));
 
 			Self::deposit_event(Event::RefundingStarted { id: pool_id });
 
-			Ok(())
+			Ok(pool_details.bonded_currencies.len().saturated_into())
 		}
 
 		fn do_start_destroy_pool(
 			pool_id: T::PoolId,
 			maybe_check_manager: Option<&AccountIdOf<T>>,
 			force_skip_refund: bool,
-		) -> DispatchResult {
+			max_currencies: u32,
+		) -> Result<u32, DispatchError> {
 			let mut pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(
+				pool_details.bonded_currencies.len() <= max_currencies.saturated_into(),
+				Error::<T>::TooManyCurrencies
+			);
 
 			ensure!(
 				pool_details.state.is_live() || pool_details.state.is_refunding(),
@@ -452,7 +488,7 @@ pub mod pallet {
 				}
 			}
 
-			Ok(())
+			Ok(pool_details.bonded_currencies.len().saturated_into())
 		}
 
 		fn get_pool_collateral(pool_account: &AccountIdOf<T>) -> CollateralCurrencyBalanceOf<T> {
