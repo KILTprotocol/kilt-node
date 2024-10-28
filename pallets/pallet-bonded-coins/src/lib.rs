@@ -151,14 +151,14 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// A bonded token pool has been moved to refunding state. [pool_id]
-		RefundingStarted(T::PoolId),
-		/// A bonded token pool has been moved to destroying state. [pool_id]
-		DestructionStarted(T::PoolId),
-		/// Collateral distribution to bonded token holders has been completed for this pool - no more tokens or no more collateral to distribute. [pool_id]   
-		RefundComplete(T::PoolId),
-		/// A bonded token pool has been fully destroyed and all collateral and deposits have been refunded. [pool_id]
-		Destroyed(T::PoolId),
+		/// A bonded token pool has been moved to refunding state.
+		RefundingStarted { id: T::PoolId },
+		/// A bonded token pool has been moved to destroying state.
+		DestructionStarted { id: T::PoolId },
+		/// Collateral distribution to bonded token holders has been completed for this pool - no more tokens or no more collateral to distribute.   
+		RefundComplete { id: T::PoolId },
+		/// A bonded token pool has been fully destroyed and all collateral and deposits have been refunded.
+		Destroyed { id: T::PoolId },
 	}
 
 	// Errors inform users that something went wrong.
@@ -314,7 +314,7 @@ pub mod pallet {
 
 			// if collateral or total supply drops to zero, refunding is complete -> emit event
 			if sum_of_issuances <= burnt || total_collateral_issuance <= transferred {
-				Self::deposit_event(Event::RefundComplete(pool_id));
+				Self::deposit_event(Event::RefundComplete { id: pool_id });
 			}
 
 			Ok(())
@@ -370,7 +370,7 @@ pub mod pallet {
 
 			// TODO: refund deposit
 
-			Self::deposit_event(Event::Destroyed(pool_id));
+			Self::deposit_event(Event::Destroyed { id: pool_id });
 
 			Ok(())
 		}
@@ -402,7 +402,7 @@ pub mod pallet {
 			pool_details.state.refunding();
 			Pools::<T>::set(&pool_id, Some(pool_details));
 
-			Self::deposit_event(Event::RefundingStarted(pool_id));
+			Self::deposit_event(Event::RefundingStarted { id: pool_id });
 
 			Ok(())
 		}
@@ -440,7 +440,7 @@ pub mod pallet {
 			Pools::<T>::set(&pool_id, Some(pool_details.clone()));
 
 			// emit this event before the destruction started events are emitted by assets deactivation
-			Self::deposit_event(Event::DestructionStarted(pool_id));
+			Self::deposit_event(Event::DestructionStarted { id: pool_id });
 
 			// deactivate all currencies
 			for asset_id in pool_details.bonded_currencies.iter() {
