@@ -328,21 +328,20 @@ pub mod pallet {
 				Preservation::Expendable,
 			)?;
 
-			// we act on behalf of the freezer.
-			let freezer = T::Fungibles::freezer(target_currency_id.clone())
-				// Should never fail. Either the freezer has been updated or it is the pool id.
+			// we act on behalf of the admin.
+			let admin = T::Fungibles::admin(target_currency_id.clone())
+				// Should never fail. Either the admin has been updated or it is the pool id.
 				.ok_or_else(|| {
 					log::error!(
 						target: LOG_TARGET,
-						"Freezer not found for currency id: {:?}",
+						"Admin not found for currency id: {:?}",
 						target_currency_id
 					);
 					Error::<T>::Internal
 				})?;
 
 			// just remove any locks, if existing.
-			T::Fungibles::thaw(&freezer, &beneficiary, target_currency_id)
-				.map_err(|freeze_error| freeze_error.into())?;
+			T::Fungibles::thaw(&admin, &beneficiary, target_currency_id).map_err(|freeze_error| freeze_error.into())?;
 
 			T::Fungibles::burn_from(
 				target_currency_id.clone(),
@@ -353,6 +352,18 @@ pub mod pallet {
 			)?;
 
 			if !pool_details.transferable {
+				// Restore locks. Act on behalf of the freezer.
+				let freezer = T::Fungibles::freezer(target_currency_id.clone())
+					// Should never fail. Either the freezer has been updated or it is the pool id.
+					.ok_or_else(|| {
+						log::error!(
+							target: LOG_TARGET,
+							"Freezer not found for currency id: {:?}",
+							target_currency_id
+						);
+						Error::<T>::Internal
+					})?;
+
 				T::Fungibles::freeze(&freezer, &beneficiary, target_currency_id)
 					.map_err(|freeze_error| freeze_error.into())?;
 			}
