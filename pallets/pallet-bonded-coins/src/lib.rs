@@ -359,7 +359,7 @@ pub mod pallet {
 		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 
-			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(
 				pool_details.bonded_currencies.len() <= currency_count.saturated_into(),
