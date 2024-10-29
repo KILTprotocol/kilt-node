@@ -69,7 +69,7 @@ where
 
 	pub fn is_minting_authorized(&self, who: &AccountId) -> bool {
 		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(&who),
+			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}
@@ -77,7 +77,7 @@ where
 
 	pub fn is_swapping_authorized(&self, who: &AccountId) -> bool {
 		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(&who),
+			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}
@@ -85,7 +85,7 @@ where
 
 	pub fn is_burning_authorized(&self, who: &AccountId) -> bool {
 		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(&who),
+			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}
