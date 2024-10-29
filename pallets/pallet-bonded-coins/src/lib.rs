@@ -118,7 +118,7 @@ pub mod pallet {
 		/// Who can create new bonded currency pools.
 		type PoolCreateOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The type used for pool ids
-		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
+		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<[u8; 32]>;
 
 		/// The type used for asset ids. This is the type of the bonded currencies.
 		type AssetId: Parameter + Member + FullCodec + TypeInfo + MaxEncodedLen + Saturating + One + Default;
