@@ -117,6 +117,8 @@ pub mod pallet {
 		type CollateralAssetId: Get<CollateralAssetIdOf<Self>>;
 		/// Who can create new bonded currency pools.
 		type PoolCreateOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
+		/// Who can call force_* extrinsics, e.g., force_destroy.
+		type ForceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		/// The type used for pool ids
 		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
 
@@ -238,7 +240,7 @@ pub mod pallet {
 		#[pallet::call_index(7)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn force_start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
-			ensure_root(origin)?;
+			T::ForceOrigin::ensure_origin(origin)?;
 
 			Self::do_start_refund(pool_id, None, currency_count)?;
 
@@ -347,7 +349,7 @@ pub mod pallet {
 		#[pallet::call_index(10)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
-			ensure_root(origin)?;
+			T::ForceOrigin::ensure_origin(origin)?;
 
 			Self::do_start_destroy_pool(pool_id, None, true, currency_count)?;
 
