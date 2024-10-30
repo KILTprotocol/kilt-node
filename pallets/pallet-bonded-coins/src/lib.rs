@@ -219,7 +219,7 @@ pub mod pallet {
 			let bonded_currencies = pool_details.bonded_currencies;
 
 			ensure!(
-				bonded_currencies.len() == currency_count.saturated_into::<usize>(),
+				bonded_currencies.len() <= currency_count.saturated_into::<usize>(),
 				Error::<T>::CurrencyCount
 			);
 
