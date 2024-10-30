@@ -261,7 +261,7 @@ pub mod pallet {
 					// set metadata for new asset class
 					T::Fungibles::set(
 						asset_id.to_owned(),
-						&pool_account,
+						pool_account,
 						name.into_inner(),
 						symbol.into_inner(),
 						denomination,
@@ -549,15 +549,16 @@ pub mod pallet {
 		) -> Result<u32, DispatchError> {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(
-				pool_details.bonded_currencies.len() <= max_currencies.saturated_into::<usize>(),
-				Error::<T>::TooManyCurrencies
-			);
+			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is a u32; conversion to u32 must thus be lossless.
+			let n_currencies: u32 = pool_details.bonded_currencies.len().saturated_into();
+
+			ensure!(n_currencies <= max_currencies, Error::<T>::TooManyCurrencies);
 
 			// refunding can only be triggered on a live pool
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
 			if let Some(caller) = maybe_check_manager {
+				// TODO: should the owner be authorized as well?
 				ensure!(pool_details.is_manager(caller), Error::<T>::NoPermission);
 			}
 
@@ -576,13 +577,13 @@ pub mod pallet {
 			ensure!(has_holders, Error::<T>::NothingToRefund);
 
 			// switch pool state to refunding
-			let mut new_pool_details = pool_details.clone();
+			let mut new_pool_details = pool_details;
 			new_pool_details.state.start_refund();
 			Pools::<T>::set(&pool_id, Some(new_pool_details));
 
 			Self::deposit_event(Event::RefundingStarted { id: pool_id });
 
-			Ok(pool_details.bonded_currencies.len().saturated_into())
+			Ok(n_currencies)
 		}
 
 		fn do_start_destroy_pool(
@@ -593,10 +594,10 @@ pub mod pallet {
 		) -> Result<u32, DispatchError> {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(
-				pool_details.bonded_currencies.len() <= max_currencies.saturated_into::<usize>(),
-				Error::<T>::TooManyCurrencies
-			);
+			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is a u32; conversion to u32 must thus be lossless.
+			let n_currencies: u32 = pool_details.bonded_currencies.len().saturated_into();
+
+			ensure!(n_currencies <= max_currencies, Error::<T>::TooManyCurrencies);
 
 			ensure!(
 				pool_details.state.is_live() || pool_details.state.is_refunding(),
@@ -604,7 +605,9 @@ pub mod pallet {
 			);
 
 			if let Some(caller) = maybe_check_manager {
-				ensure!(pool_details.is_manager(caller), Error::<T>::NoPermission); // TODO: should this be permissionless if the pool is in refunding state?
+				// TODO: should the owner be authorized as well?
+				// TODO: should this be permissionless if the pool is in refunding state?
+				ensure!(pool_details.is_manager(caller), Error::<T>::NoPermission);
 			}
 
 			if !force_skip_refund {
@@ -618,8 +621,11 @@ pub mod pallet {
 				}
 			}
 
+			// cloning the currency ids now lets us avoid cloning the entire pool_details
+			let bonded_currencies = pool_details.bonded_currencies.clone();
+
 			// switch pool state to destroying
-			let mut new_pool_details = pool_details.clone();
+			let mut new_pool_details = pool_details;
 			new_pool_details.state.start_destroy();
 			Pools::<T>::set(&pool_id, Some(new_pool_details));
 
@@ -627,14 +633,14 @@ pub mod pallet {
 			Self::deposit_event(Event::DestructionStarted { id: pool_id });
 
 			// deactivate all currencies
-			for asset_id in pool_details.bonded_currencies.iter() {
+			for asset_id in bonded_currencies {
 				// Governance or other pallets using the fungibles trait can in theory destroy an asset without this pallet knowing, so we check if it's still around
 				if T::Fungibles::asset_exists(asset_id.clone()) {
-					T::Fungibles::start_destroy(asset_id.clone(), None)?;
+					T::Fungibles::start_destroy(asset_id, None)?;
 				}
 			}
 
-			Ok(pool_details.bonded_currencies.len().saturated_into())
+			Ok(n_currencies)
 		}
 
 		fn get_pool_collateral(pool_account: &AccountIdOf<T>) -> CollateralCurrencyBalanceOf<T> {
