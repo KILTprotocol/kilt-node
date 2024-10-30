@@ -87,8 +87,12 @@ pub mod pallet {
 
 	pub(crate) type CurveParameterInputOf<T> = <T as Config>::CurveParameterInput;
 
-	pub(crate) type PoolDetailsOf<T> =
-		PoolDetails<<T as frame_system::Config>::AccountId, Curve<CurveParameterTypeOf<T>>, BoundedCurrencyVec<T>>;
+	pub(crate) type PoolDetailsOf<T> = PoolDetails<
+		<T as frame_system::Config>::AccountId,
+		Curve<CurveParameterTypeOf<T>>,
+		BoundedCurrencyVec<T>,
+		CollateralAssetIdOf<T>,
+	>;
 
 	pub(crate) type Precision = I9F23;
 
@@ -133,8 +137,6 @@ pub mod pallet {
 		#[pallet::constant]
 		type BaseDeposit: Get<DepositCurrencyBalanceOf<Self>>;
 
-		/// The asset id of the collateral currency.
-		type CollateralAssetId: Get<CollateralAssetIdOf<Self>>;
 		/// The origin for most permissionless and priviledged operations.
 		type DefaultOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The dedicated origin for creating new bonded currency pools (typically permissionless).
