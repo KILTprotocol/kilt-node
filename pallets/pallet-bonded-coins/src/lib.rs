@@ -164,7 +164,7 @@ pub mod pallet {
 		InvalidInput,
 		Internal,
 		UnknownPool,
-		UnAuthorized,
+		NoPermission,
 	}
 
 	#[pallet::composite_enum]
@@ -259,18 +259,20 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::UnknownPool)?;
 
-			ensure!(pool_details.is_manager(&who), Error::<T>::UnAuthorized);
+			ensure!(pool_details.is_manager(&who), Error::<T>::NoPermission);
 
 			let asset_id = pool_details
 				.bonded_currencies
 				.get(currency_idx as usize)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
+			let pool_id_account = pool_id.into();
+
 			T::Fungibles::reset_team(
 				asset_id.to_owned(),
-				pool_id.into(),
+				pool_id_account.clone(),
 				team.admin,
-				team.issuer,
+				pool_id_account,
 				team.freezer,
 			)
 		}
