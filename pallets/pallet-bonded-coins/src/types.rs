@@ -17,6 +17,12 @@ pub enum PoolStatus<LockType> {
 	Destroying,
 }
 
+impl<LockType: Default> Default for PoolStatus<LockType> {
+	fn default() -> Self {
+		Self::Locked(LockType::default())
+	}
+}
+
 impl<LockType> PoolStatus<LockType> {
 	pub fn is_active(&self) -> bool {
 		matches!(self, Self::Active)
@@ -37,7 +43,8 @@ impl<LockType> PoolStatus<LockType> {
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
-	pub manager: AccountId,
+	pub owner: AccountId,
+	pub manager: Option<AccountId>,
 	pub curve: ParametrizedCurve,
 	pub bonded_currencies: Currencies,
 	pub state: PoolStatus<Locks>,
@@ -46,16 +53,12 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
 
 impl<AccountId, ParametrizedCurve, Currencies> PoolDetails<AccountId, ParametrizedCurve, Currencies>
 where
-	AccountId: PartialEq,
+	AccountId: PartialEq + Clone,
 {
-	pub fn new(
-		manager: AccountId,
-		curve: ParametrizedCurve,
-		bonded_currencies: Currencies,
-		transferable: bool,
-	) -> Self {
+	pub fn new(owner: AccountId, curve: ParametrizedCurve, bonded_currencies: Currencies, transferable: bool) -> Self {
 		Self {
-			manager,
+			manager: Some(owner.clone()),
+			owner,
 			curve,
 			bonded_currencies,
 			transferable,
@@ -63,13 +66,17 @@ where
 		}
 	}
 
+	pub fn is_owner(&self, who: &AccountId) -> bool {
+		who == &self.owner
+	}
+
 	pub fn is_manager(&self, who: &AccountId) -> bool {
-		who == &self.manager
+		Some(who) == self.manager.as_ref()
 	}
 
 	pub fn is_minting_authorized(&self, who: &AccountId) -> bool {
 		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(&who),
+			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}
@@ -77,7 +84,7 @@ where
 
 	pub fn is_swapping_authorized(&self, who: &AccountId) -> bool {
 		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(&who),
+			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}
@@ -85,7 +92,7 @@ where
 
 	pub fn is_burning_authorized(&self, who: &AccountId) -> bool {
 		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(&who),
+			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}
