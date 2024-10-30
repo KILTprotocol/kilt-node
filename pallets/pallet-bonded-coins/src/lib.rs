@@ -399,7 +399,7 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(
-				pool_details.bonded_currencies.len() <= currency_count.saturated_into(),
+				pool_details.bonded_currencies.len() <= currency_count.saturated_into::<usize>(),
 				Error::<T>::TooManyCurrencies
 			);
 
@@ -504,7 +504,7 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(
-				pool_details.bonded_currencies.len() <= currency_count.saturated_into(),
+				pool_details.bonded_currencies.len() <= currency_count.saturated_into::<usize>(),
 				Error::<T>::TooManyCurrencies
 			);
 
@@ -550,7 +550,7 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(
-				pool_details.bonded_currencies.len() <= max_currencies.saturated_into(),
+				pool_details.bonded_currencies.len() <= max_currencies.saturated_into::<usize>(),
 				Error::<T>::TooManyCurrencies
 			);
 
@@ -594,7 +594,7 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(
-				pool_details.bonded_currencies.len() <= max_currencies.saturated_into(),
+				pool_details.bonded_currencies.len() <= max_currencies.saturated_into::<usize>(),
 				Error::<T>::TooManyCurrencies
 			);
 
