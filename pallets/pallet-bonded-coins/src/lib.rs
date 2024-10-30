@@ -210,7 +210,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
-			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::NoPermission);
 
