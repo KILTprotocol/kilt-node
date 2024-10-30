@@ -279,12 +279,16 @@ pub mod pallet {
 
 		#[pallet::call_index(3)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn reset_manager(origin: OriginFor<T>, pool_id: T::PoolId, manager: AccountIdOf<T>) -> DispatchResult {
+		pub fn reset_manager(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			manager: Option<AccountIdOf<T>>,
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Pools::<T>::try_mutate(pool_id, |maybe_entry| -> DispatchResult {
 				if let Some(entry) = maybe_entry {
 					ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
-					entry.manager = Some(manager.clone());
+					entry.manager = manager;
 					Ok(())
 				} else {
 					Err(Error::<T>::UnknownPool.into())
