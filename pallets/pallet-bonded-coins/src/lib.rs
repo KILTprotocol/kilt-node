@@ -232,7 +232,7 @@ pub mod pallet {
 		pub fn start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_start_refund(pool_id, Some(&who), currency_count)?;
+			Self::do_start_refund(pool_id, currency_count, Some(&who))?;
 
 			Ok(())
 		}
@@ -242,7 +242,7 @@ pub mod pallet {
 		pub fn force_start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
 
-			Self::do_start_refund(pool_id, None, currency_count)?;
+			Self::do_start_refund(pool_id, currency_count, None)?;
 
 			Ok(())
 		}
@@ -344,7 +344,7 @@ pub mod pallet {
 		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, Some(&who), false, currency_count)?;
+			Self::do_start_destroy_pool(pool_id, currency_count, false, Some(&who))?;
 
 			Ok(())
 		}
@@ -354,7 +354,7 @@ pub mod pallet {
 		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, None, true, currency_count)?;
+			Self::do_start_destroy_pool(pool_id, currency_count, true, None)?;
 
 			Ok(())
 		}
@@ -407,8 +407,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		fn do_start_refund(
 			pool_id: T::PoolId,
-			maybe_check_manager: Option<&AccountIdOf<T>>,
 			max_currencies: u32,
+			maybe_check_manager: Option<&AccountIdOf<T>>,
 		) -> Result<u32, DispatchError> {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
@@ -450,9 +450,9 @@ pub mod pallet {
 
 		fn do_start_destroy_pool(
 			pool_id: T::PoolId,
-			maybe_check_manager: Option<&AccountIdOf<T>>,
-			force_skip_refund: bool,
 			max_currencies: u32,
+			force_skip_refund: bool,
+			maybe_check_manager: Option<&AccountIdOf<T>>,
 		) -> Result<u32, DispatchError> {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
