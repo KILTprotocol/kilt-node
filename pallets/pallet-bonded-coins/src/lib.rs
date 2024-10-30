@@ -348,7 +348,7 @@ pub mod pallet {
 				&beneficiary,
 				amount_to_burn,
 				TokenPrecision::Exact,
-				Fortitude::Polite,
+				Fortitude::Force,
 			)?;
 
 			if !pool_details.transferable {
