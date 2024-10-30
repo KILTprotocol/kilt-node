@@ -245,6 +245,7 @@ pub mod pallet {
 			// fail if cost > max_cost
 			ensure!(cost <= max_cost, Error::<T>::Slippage);
 
+			// Transfer the collateral. We do not want to kill the minter, so this operation can fail if the account is being reaped.
 			T::CollateralCurrency::transfer(
 				T::CollateralAssetId::get(),
 				&who,
