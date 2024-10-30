@@ -297,16 +297,43 @@ pub mod pallet {
 
 		#[pallet::call_index(6)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn set_lock(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
+		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
+				if let Some(pool) = pool {
+					ensure!(pool.is_manager(&who), Error::<T>::Unauthorized);
+					pool.state = PoolStatus::Locked(lock);
+					Ok(())
+				} else {
+					Err(Error::<T>::PoolUnknown.into())
+				}
+			})?;
+
+			Self::deposit_event(Event::LockSet(pool_id));
+
+			Ok(())
 		}
 
 		#[pallet::call_index(7)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn unlock(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
-		}
+		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+			let who = ensure_signed(origin)?;
 
+			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
+				if let Some(pool) = pool {
+					ensure!(pool.is_manager(&who), Error::<T>::Unauthorized);
+					pool.state = PoolStatus::Active;
+					Ok(())
+				} else {
+					Err(Error::<T>::PoolUnknown.into())
+				}
+			})?;
+
+			Self::deposit_event(Event::Unlocked(pool_id));
+
+			Ok(())
+		}
 		// TODO: not sure if we really need that. Check that out with Raphael.
 		#[pallet::call_index(8)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
