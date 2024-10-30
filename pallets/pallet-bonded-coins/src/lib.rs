@@ -367,7 +367,7 @@ pub mod pallet {
 		#[pallet::call_index(9)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			Self::do_start_refund(pool_id, currency_count, Some(&who))?;
 
@@ -393,7 +393,7 @@ pub mod pallet {
 			asset_idx: u32,
 			currency_count: u32,
 		) -> DispatchResult {
-			ensure_signed(origin)?;
+			T::DefaultOrigin::ensure_origin(origin)?;
 			let who = T::Lookup::lookup(account)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
@@ -479,7 +479,7 @@ pub mod pallet {
 		#[pallet::call_index(12)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			Self::do_start_destroy_pool(pool_id, currency_count, false, Some(&who))?;
 
@@ -499,7 +499,7 @@ pub mod pallet {
 		#[pallet::call_index(14)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
-			ensure_signed(origin)?;
+			T::DefaultOrigin::ensure_origin(origin)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
