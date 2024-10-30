@@ -179,7 +179,7 @@ pub mod pallet {
 		Locked,
 		Slippage,
 		Internal,
-		CurrencyCountMismatch,
+		CurrencyCount,
 	}
 
 	#[pallet::composite_enum]
@@ -220,7 +220,7 @@ pub mod pallet {
 
 			ensure!(
 				bonded_currencies.len() == currency_count.saturated_into::<usize>(),
-				Error::<T>::CurrencyCountMismatch
+				Error::<T>::CurrencyCount
 			);
 
 			let currency_idx: usize = currency_idx.saturated_into();
