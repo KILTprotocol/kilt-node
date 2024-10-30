@@ -29,10 +29,11 @@ where
 			.and_then(|exponent| exp::<Parameter, Parameter>(exponent).map_err(|_| ArithmeticError::Overflow))
 	}
 
-	fn calculate_shares_from_collateral(
+	pub(crate) fn calculate_shares_from_collateral(
 		&self,
 		collateral: Parameter,
 		passive_issuance: PassiveSupply<Parameter>,
+		to_index: usize,
 	) -> Result<Parameter, ArithmeticError> {
 		let e_term = passive_issuance
 			.iter()

@@ -370,8 +370,40 @@ pub mod pallet {
 			let to_idx: usize = to_idx.saturated_into();
 
 			match &pool_details.curve {
-				Curve::LMSR(_) => {
-					todo!()
+				Curve::LMSR(params) => {
+					let (high, passive) = Self::calculate_normalized_passive_issuance(
+						&pool_details.bonded_currencies,
+						pool_details.denomination,
+						from_idx,
+					)?;
+
+					let normalized_amount_to_burn =
+						convert_to_fixed::<T>(amount_to_swap.saturated_into::<u128>(), pool_details.denomination)?;
+
+					let low = high
+						.checked_sub(normalized_amount_to_burn)
+						.ok_or(ArithmeticError::Overflow)?;
+
+					let collateral_return =
+						Self::calculate_collateral(low, high, passive.clone(), &pool_details.curve)?;
+
+					let from_currency_id = pool_details
+						.bonded_currencies
+						.get(from_idx)
+						.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+					T::Fungibles::burn_from(
+						from_currency_id.to_owned(),
+						&beneficiary,
+						amount_to_swap,
+						TokenPrecision::Exact,
+						Fortitude::Polite,
+					)?;
+
+					let normalized_collateral =
+						convert_to_fixed::<T>(collateral_return.saturated_into::<u128>(), pool_details.denomination)?;
+
+					let share_to_mint = params.calculate_shares_from_collateral(normalized_collateral, passive, to_idx);
 				}
 				// The price for burning and minting in the pool is the same, if the bonding curve is not [LMSR].
 				_ => {
