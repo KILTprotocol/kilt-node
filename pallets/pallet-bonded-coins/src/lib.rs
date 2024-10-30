@@ -80,6 +80,8 @@ pub mod pallet {
 
 	pub(crate) type PassiveSupply<T> = Vec<T>;
 
+	const LOG_TARGET: &str = "runtime::pallet-bonded-coins";
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
