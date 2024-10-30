@@ -80,6 +80,8 @@ pub mod pallet {
 
 	pub(crate) type PassiveSupply<T> = Vec<T>;
 
+	const LOG_TARGET: &str = "runtime::pallet-bonded-coins";
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -115,10 +117,14 @@ pub mod pallet {
 
 		/// The asset id of the collateral currency.
 		type CollateralAssetId: Get<CollateralAssetIdOf<Self>>;
-		/// Who can create new bonded currency pools.
+		/// The origin for most permissionless and priviledged operations.
+		type DefaultOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
+		/// The dedicated origin for creating new bonded currency pools (typically permissionless).
 		type PoolCreateOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
+		/// The origin for permissioned operations (force_* transactions).
+		type ForceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		/// The type used for pool ids
-		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
+		type PoolId: Parameter + MaxEncodedLen + Into<[u8; 32]>;
 
 		/// The type used for asset ids. This is the type of the bonded currencies.
 		type AssetId: Parameter + Member + FullCodec + TypeInfo + MaxEncodedLen + Saturating + One + Default;
