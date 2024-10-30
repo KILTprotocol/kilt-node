@@ -48,7 +48,7 @@ pub mod pallet {
 	use crate::{
 		curves::{Curve, CurveInput},
 		traits::ResetTeam,
-		types::{PoolDetails, PoolManagingTeam, TokenMeta},
+		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, TokenMeta},
 	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -156,6 +156,8 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		PoolCreated { id: T::PoolId },
+		LockSet { id: T::PoolId, lock: Locks },
+		Unlocked { id: T::PoolId },
 	}
 
 	#[pallet::error]
@@ -302,15 +304,15 @@ pub mod pallet {
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				if let Some(pool) = pool {
-					ensure!(pool.is_manager(&who), Error::<T>::Unauthorized);
-					pool.state = PoolStatus::Locked(lock);
+					ensure!(pool.is_manager(&who), Error::<T>::NoPermission);
+					pool.state = PoolStatus::Locked(lock.clone());
 					Ok(())
 				} else {
-					Err(Error::<T>::PoolUnknown.into())
+					Err(Error::<T>::UnknownPool.into())
 				}
 			})?;
 
-			Self::deposit_event(Event::LockSet(pool_id));
+			Self::deposit_event(Event::LockSet { id: pool_id, lock });
 
 			Ok(())
 		}
@@ -322,15 +324,15 @@ pub mod pallet {
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				if let Some(pool) = pool {
-					ensure!(pool.is_manager(&who), Error::<T>::Unauthorized);
+					ensure!(pool.is_manager(&who), Error::<T>::NoPermission);
 					pool.state = PoolStatus::Active;
 					Ok(())
 				} else {
-					Err(Error::<T>::PoolUnknown.into())
+					Err(Error::<T>::UnknownPool.into())
 				}
 			})?;
 
-			Self::deposit_event(Event::Unlocked(pool_id));
+			Self::deposit_event(Event::Unlocked { id: pool_id });
 
 			Ok(())
 		}
