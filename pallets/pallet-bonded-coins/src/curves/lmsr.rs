@@ -28,6 +28,25 @@ where
 			.ok_or(ArithmeticError::DivisionByZero)
 			.and_then(|exponent| exp::<Parameter, Parameter>(exponent).map_err(|_| ArithmeticError::Overflow))
 	}
+
+	fn calculate_shares_from_collateral(
+		&self,
+		collateral: Parameter,
+		passive_issuance: PassiveSupply<Parameter>,
+	) -> Result<Parameter, ArithmeticError> {
+		let e_term = passive_issuance
+			.iter()
+			.map(|x| self.calculate_exp_term(*x, collateral))
+			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
+
+		let term1 = e_term.iter().try_fold(Parameter::from_num(0), |acc, x| {
+			acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
+		})?;
+
+		let term2 = term1.checked_mul(self.m).ok_or(ArithmeticError::Overflow)?;
+
+		collateral.checked_add(term2).ok_or(ArithmeticError::Overflow)
+	}
 }
 
 impl<Parameter> BondingFunction<Parameter> for LMSRParameters<Parameter>

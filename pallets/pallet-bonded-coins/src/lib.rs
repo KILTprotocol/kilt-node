@@ -351,8 +351,52 @@ pub mod pallet {
 
 		#[pallet::call_index(3)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn swap_into(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
+		pub fn swap_into(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			from_idx: u32,
+			to_idx: u32,
+			amount_to_swap: FungiblesBalanceOf<T>,
+			beneficiary: AccountIdLookupOf<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let beneficiary = T::Lookup::lookup(beneficiary)?;
+
+			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(pool_details.is_swapping_authorized(&who), Error::<T>::Locked);
+
+			let from_idx: usize = from_idx.saturated_into();
+			let to_idx: usize = to_idx.saturated_into();
+
+			match &pool_details.curve {
+				Curve::LMSR(_) => {
+					todo!()
+				}
+				// The price for burning and minting in the pool is the same, if the bonding curve is not [LMSR].
+				_ => {
+					let from_currency_id = pool_details
+						.bonded_currencies
+						.get(from_idx)
+						.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+					let to_currency_id = pool_details
+						.bonded_currencies
+						.get(to_idx)
+						.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+					T::Fungibles::burn_from(
+						from_currency_id.clone(),
+						&beneficiary,
+						amount_to_swap,
+						TokenPrecision::Exact,
+						Fortitude::Polite,
+					)?;
+					T::Fungibles::mint_into(to_currency_id.clone(), &beneficiary, amount_to_swap)?;
+				}
+			};
+
+			Ok(())
 		}
 
 		#[pallet::call_index(4)]
