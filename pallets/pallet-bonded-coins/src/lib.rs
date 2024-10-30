@@ -279,7 +279,10 @@ pub mod pallet {
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
 
 			// nothing to distribute; refunding is complete, user should call start_destroy
-			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::NothingToRefund);
+			ensure!(
+				total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero(),
+				Error::<T>::NothingToRefund
+			);
 
 			// TODO: remove any existing locks on the account prior to burning
 
@@ -381,7 +384,7 @@ pub mod pallet {
 
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
 
-			if !total_collateral_issuance.is_zero() {
+			if total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero() {
 				T::CollateralCurrency::transfer(
 					T::CollateralAssetId::get(),
 					&pool_account,
@@ -423,12 +426,15 @@ pub mod pallet {
 
 			let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
 			// nothing to distribute
-			ensure!(!total_collateral_issuance.is_zero(), Error::<T>::NothingToRefund);
+			ensure!(
+				total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero(),
+				Error::<T>::NothingToRefund
+			);
 
 			let has_holders = pool_details
 				.bonded_currencies
 				.iter()
-				.any(|asset_id| !T::Fungibles::total_issuance(asset_id.clone()).is_zero());
+				.any(|asset_id| T::Fungibles::total_issuance(asset_id.clone()) > FungiblesBalanceOf::<T>::zero());
 			// no token holders to refund
 			ensure!(has_holders, Error::<T>::NothingToRefund);
 
@@ -465,11 +471,10 @@ pub mod pallet {
 
 			if !force_skip_refund {
 				let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
-				if !total_collateral_issuance.is_zero() {
-					let has_holders = pool_details
-						.bonded_currencies
-						.iter()
-						.any(|asset_id| !T::Fungibles::total_issuance(asset_id.clone()).is_zero());
+				if total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero() {
+					let has_holders = pool_details.bonded_currencies.iter().any(|asset_id| {
+						T::Fungibles::total_issuance(asset_id.clone()) > FungiblesBalanceOf::<T>::zero()
+					});
 					// destruction is only allowed when there are no holders or no collateral to distribute
 					ensure!(!has_holders, Error::<T>::LivePool);
 				}
