@@ -410,7 +410,7 @@ pub mod pallet {
 			maybe_check_manager: Option<&AccountIdOf<T>>,
 			max_currencies: u32,
 		) -> Result<u32, DispatchError> {
-			let mut pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
+			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(
 				pool_details.bonded_currencies.len() <= max_currencies.saturated_into(),
@@ -438,9 +438,10 @@ pub mod pallet {
 			// no token holders to refund
 			ensure!(has_holders, Error::<T>::NothingToRefund);
 
-			// move pool state to refunding
-			pool_details.state.start_refund();
-			Pools::<T>::set(&pool_id, Some(pool_details.clone()));
+			// switch pool state to refunding
+			let mut new_pool_details = pool_details.clone();
+			new_pool_details.state.start_refund();
+			Pools::<T>::set(&pool_id, Some(new_pool_details));
 
 			Self::deposit_event(Event::RefundingStarted { id: pool_id });
 
@@ -453,7 +454,7 @@ pub mod pallet {
 			force_skip_refund: bool,
 			max_currencies: u32,
 		) -> Result<u32, DispatchError> {
-			let mut pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
+			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(
 				pool_details.bonded_currencies.len() <= max_currencies.saturated_into(),
@@ -480,9 +481,10 @@ pub mod pallet {
 				}
 			}
 
-			// move to destroying state
-			pool_details.state.start_destroy();
-			Pools::<T>::set(&pool_id, Some(pool_details.clone()));
+			// switch pool state to destroying
+			let mut new_pool_details = pool_details.clone();
+			new_pool_details.state.start_destroy();
+			Pools::<T>::set(&pool_id, Some(new_pool_details));
 
 			// emit this event before the destruction started events are emitted by assets deactivation
 			Self::deposit_event(Event::DestructionStarted { id: pool_id });
