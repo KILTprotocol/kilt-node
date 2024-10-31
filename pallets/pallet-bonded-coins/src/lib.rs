@@ -212,19 +212,27 @@ pub mod pallet {
 				),
 			)?;
 
+			let pool_account = &pool_id.clone().into();
+
 			currencies
-				.iter()
-				.enumerate()
-				.try_for_each(|(idx, entry)| -> DispatchResult {
-					let asset_id: &T::AssetId = currency_ids.get(idx).ok_or(Error::<T>::IndexOutOfBounds)?;
-					T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, entry.min_balance)?;
+				.clone()
+				.into_iter()
+				.zip(currency_ids.clone().into_iter())
+				.try_for_each(|(entry, asset_id)| -> DispatchResult {
+					let TokenMeta {
+						min_balance,
+						name,
+						symbol,
+					} = entry;
+
+					T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, min_balance)?;
 
 					// set metadata for new asset class
 					T::Fungibles::set(
-						asset_id.clone(),
-						&pool_id.clone().into(),
-						entry.name.clone().into(),
-						entry.symbol.clone().into(),
+						asset_id,
+						&pool_account,
+						name.into_inner(),
+						symbol.into_inner(),
 						denomination,
 					)?;
 
@@ -255,7 +263,7 @@ pub mod pallet {
 			team: PoolManagingTeam<AccountIdOf<T>>,
 			currency_idx: u32,
 		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::UnknownPool)?;
 
@@ -268,12 +276,14 @@ pub mod pallet {
 
 			let pool_id_account = pool_id.into();
 
+			let PoolManagingTeam { freezer, admin } = team;
+
 			T::Fungibles::reset_team(
 				asset_id.to_owned(),
 				pool_id_account.clone(),
-				team.admin,
+				admin,
 				pool_id_account,
-				team.freezer,
+				freezer,
 			)
 		}
 
@@ -284,7 +294,7 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			manager: Option<AccountIdOf<T>>,
 		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			Pools::<T>::try_mutate(pool_id, |maybe_entry| -> DispatchResult {
 				let entry = maybe_entry.as_mut().ok_or(Error::<T>::UnknownPool)?;
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
