@@ -421,8 +421,77 @@ pub mod pallet {
 
 		#[pallet::call_index(5)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn burn_into(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
+		pub fn burn_into(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_idx: u32,
+			beneficiary: AccountIdLookupOf<T>,
+			amount_to_burn: FungiblesBalanceOf<T>,
+			min_return: CollateralCurrencyBalanceOf<T>,
+			currency_count: u32,
+		) -> DispatchResult {
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
+			let beneficiary = T::Lookup::lookup(beneficiary)?;
+
+			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::NoPermission);
+
+			ensure!(
+				Self::get_currencies_number(&pool_details) <= currency_count,
+				Error::<T>::CurrencyCount
+			);
+
+			let bonded_currencies = pool_details.bonded_currencies;
+
+			let currency_idx: usize = currency_idx.saturated_into();
+
+			let target_currency_id = bonded_currencies
+				.get(currency_idx)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			let (high, passive) = Self::calculate_normalized_passive_issuance(
+				&bonded_currencies,
+				pool_details.denomination,
+				currency_idx,
+			)?;
+
+			let normalized_amount_to_burn =
+				convert_to_fixed::<T>(amount_to_burn.saturated_into::<u128>(), pool_details.denomination)?;
+
+			let low = high
+				.checked_sub(normalized_amount_to_burn)
+				.ok_or(ArithmeticError::Underflow)?;
+
+			let collateral_return = Self::calculate_collateral(low, high, passive, &pool_details.curve)?;
+
+			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
+
+			T::CollateralCurrency::transfer(
+				T::CollateralAssetId::get(),
+				&pool_id.into(),
+				&beneficiary,
+				collateral_return,
+				Preservation::Expendable,
+			)?;
+
+			// just remove any locks, if existing.
+			T::Fungibles::thaw(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
+
+			T::Fungibles::burn_from(
+				target_currency_id.clone(),
+				&beneficiary,
+				amount_to_burn,
+				WithdrawalPrecision::Exact,
+				Fortitude::Force,
+			)?;
+
+			if !pool_details.transferable {
+				// Restore locks.
+				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
+			}
+
+			Ok(())
 		}
 
 		#[pallet::call_index(6)]
@@ -504,7 +573,8 @@ pub mod pallet {
 				Error::<T>::NothingToRefund
 			);
 
-			// TODO: remove any existing locks on the account prior to burning
+			//  remove any existing locks on the account prior to burning
+			T::Fungibles::thaw(asset_id, &who).map_err(|freeze_error| freeze_error.into())?;
 
 			// With amount = max_value(), this trait implementation burns the reducible balance on the account and returns the actual amount burnt
 			let burnt = T::Fungibles::burn_from(
@@ -655,7 +725,6 @@ pub mod pallet {
 
 			Ok(real_costs)
 		}
-
 		fn calculate_normalized_passive_issuance(
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
@@ -769,7 +838,6 @@ pub mod pallet {
 			// emit this event before the destruction started events are emitted by assets deactivation
 			Self::deposit_event(Event::DestructionStarted { id: pool_id });
 
-			// deactivate all currencies
 			for asset_id in bonded_currencies {
 				// Governance or other pallets using the fungibles trait can in theory destroy an asset without this pallet knowing, so we check if it's still around
 				if T::Fungibles::asset_exists(asset_id.clone()) {
