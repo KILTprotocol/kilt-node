@@ -2,7 +2,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use substrate_fixed::{
-	traits::{FixedSigned, ToFixed},
+	traits::{FixedSigned, FixedUnsigned, ToFixed},
 	transcendental::sqrt,
 };
 
@@ -10,9 +10,25 @@ use super::{calculate_accumulated_passive_issuance, BondingFunction};
 use crate::{PassiveSupply, Precision};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub struct SquareRootParametersInput<Parameter> {
+	pub m: Parameter,
+	pub n: Parameter,
+}
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct SquareRootParameters<Parameter> {
 	pub m: Parameter,
 	pub n: Parameter,
+}
+
+impl<I: FixedUnsigned, C: FixedSigned> TryFrom<SquareRootParametersInput<I>> for SquareRootParameters<C> {
+	type Error = ();
+	fn try_from(value: SquareRootParametersInput<I>) -> Result<Self, Self::Error> {
+		Ok(SquareRootParameters {
+			m: C::checked_from_fixed(value.m).ok_or(())?,
+			n: C::checked_from_fixed(value.n).ok_or(())?,
+		})
+	}
 }
 
 impl<Parameter> BondingFunction<Parameter> for SquareRootParameters<Parameter>

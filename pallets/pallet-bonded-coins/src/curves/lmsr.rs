@@ -3,7 +3,7 @@ use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::{
-	traits::{Fixed, FixedSigned, ToFixed},
+	traits::{Fixed, FixedSigned, FixedUnsigned, ToFixed},
 	transcendental::{exp, ln},
 };
 
@@ -11,8 +11,22 @@ use super::BondingFunction;
 use crate::{PassiveSupply, Precision};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub struct LMSRParametersInput<Parameter> {
+	pub m: Parameter,
+}
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParameters<Parameter> {
 	pub m: Parameter,
+}
+
+impl<I: FixedUnsigned, C: FixedSigned> TryFrom<LMSRParametersInput<I>> for LMSRParameters<C> {
+	type Error = ();
+	fn try_from(value: LMSRParametersInput<I>) -> Result<Self, Self::Error> {
+		Ok(LMSRParameters {
+			m: C::checked_from_fixed(value.m).ok_or(())?,
+		})
+	}
 }
 
 impl<Parameter> LMSRParameters<Parameter>
