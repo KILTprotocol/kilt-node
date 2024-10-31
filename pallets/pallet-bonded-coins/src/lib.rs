@@ -286,13 +286,10 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Pools::<T>::try_mutate(pool_id, |maybe_entry| -> DispatchResult {
-				if let Some(entry) = maybe_entry {
-					ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
-					entry.manager = manager;
-					Ok(())
-				} else {
-					Err(Error::<T>::UnknownPool.into())
-				}
+				let entry = maybe_entry.as_mut().ok_or(Error::<T>::UnknownPool)?;
+				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
+				entry.manager = manager;
+				Ok(())
 			})
 		}
 
