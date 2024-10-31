@@ -200,6 +200,11 @@ pub mod pallet {
 		Destroyed {
 			id: T::PoolId,
 		},
+		/// The manager of a pool has been updated.
+		ManagerUpdate {
+			id: T::PoolId,
+			manager: Option<T::AccountId>,
+		},
 	}
 
 	#[pallet::error]
@@ -351,10 +356,16 @@ pub mod pallet {
 			manager: Option<AccountIdOf<T>>,
 		) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
-			Pools::<T>::try_mutate(pool_id, |maybe_entry| -> DispatchResult {
+			Pools::<T>::try_mutate(&pool_id, |maybe_entry| -> DispatchResult {
 				let entry = maybe_entry.as_mut().ok_or(Error::<T>::PoolUnknown)?;
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
-				entry.manager = manager;
+				entry.manager = manager.clone();
+
+				Self::deposit_event(Event::ManagerUpdate {
+					id: pool_id.clone(),
+					manager,
+				});
+
 				Ok(())
 			})
 		}
@@ -365,18 +376,18 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
-				if let Some(pool) = pool {
-					ensure!(pool.is_manager(&who), Error::<T>::NoPermission);
-					pool.state = PoolStatus::Locked(lock.clone());
-					Ok(())
-				} else {
-					Err(Error::<T>::PoolUnknown.into())
-				}
-			})?;
+				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
+				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 
-			Self::deposit_event(Event::LockSet { id: pool_id, lock });
+				entry.state = PoolStatus::Locked(lock.clone());
 
-			Ok(())
+				Self::deposit_event(Event::LockSet {
+					id: pool_id.clone(),
+					lock,
+				});
+
+				Ok(())
+			})
 		}
 
 		#[pallet::call_index(4)]
@@ -385,18 +396,14 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
-				if let Some(pool) = pool {
-					ensure!(pool.is_manager(&who), Error::<T>::NoPermission);
-					pool.state = PoolStatus::Active;
-					Ok(())
-				} else {
-					Err(Error::<T>::PoolUnknown.into())
-				}
-			})?;
+				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
+				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
+				entry.state = PoolStatus::Active;
 
-			Self::deposit_event(Event::Unlocked { id: pool_id });
+				Self::deposit_event(Event::Unlocked { id: pool_id.clone() });
 
-			Ok(())
+				Ok(())
+			})
 		}
 
 		#[pallet::call_index(5)]
