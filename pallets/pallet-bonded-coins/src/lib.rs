@@ -25,7 +25,6 @@ pub mod pallet {
 			fungible::{Inspect as InspectFungible, MutateHold},
 			fungibles::{
 				metadata::{Inspect as FungiblesInspect, Mutate as FungiblesMetadata},
-				roles::Inspect as FungiblesRoles,
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
@@ -117,7 +116,6 @@ pub mod pallet {
 			+ FungiblesInspect<Self::AccountId>
 			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>
 			+ FreezeAccounts<Self::AccountId, Self::AssetId>
-			+ FungiblesRoles<Self::AccountId>
 			+ ResetTeam<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
