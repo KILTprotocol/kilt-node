@@ -17,6 +17,12 @@ pub enum PoolStatus<LockType> {
 	Destroying,
 }
 
+impl<LockType: Default> Default for PoolStatus<LockType> {
+	fn default() -> Self {
+		Self::Locked(LockType::default())
+	}
+}
+
 impl<LockType> PoolStatus<LockType> {
 	pub fn is_live(&self) -> bool {
 		matches!(self, Self::Active | Self::Locked(_))
@@ -45,7 +51,8 @@ impl<LockType> PoolStatus<LockType> {
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
-	pub manager: AccountId,
+	pub owner: AccountId,
+	pub manager: Option<AccountId>,
 	pub curve: ParametrizedCurve,
 	pub bonded_currencies: Currencies,
 	pub state: PoolStatus<Locks>,
@@ -54,26 +61,25 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
 
 impl<AccountId, ParametrizedCurve, Currencies> PoolDetails<AccountId, ParametrizedCurve, Currencies>
 where
-	AccountId: PartialEq,
+	AccountId: PartialEq + Clone,
 {
-	pub fn new(
-		manager: AccountId,
-		curve: ParametrizedCurve,
-		bonded_currencies: Currencies,
-		transferable: bool,
-		state: PoolStatus<Locks>,
-	) -> Self {
+	pub fn new(owner: AccountId, curve: ParametrizedCurve, bonded_currencies: Currencies, transferable: bool) -> Self {
 		Self {
-			manager,
+			manager: Some(owner.clone()),
+			owner,
 			curve,
 			bonded_currencies,
 			transferable,
-			state,
+			state: PoolStatus::default(),
 		}
 	}
 
+	pub fn is_owner(&self, who: &AccountId) -> bool {
+		who == &self.owner
+	}
+
 	pub fn is_manager(&self, who: &AccountId) -> bool {
-		who == &self.manager
+		Some(who) == self.manager.as_ref()
 	}
 
 	pub fn is_minting_authorized(&self, who: &AccountId) -> bool {
@@ -106,4 +112,10 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 	pub name: Name,
 	pub symbol: Symbol,
 	pub min_balance: Balance,
+}
+
+#[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
+pub struct PoolManagingTeam<AccountId> {
+	pub admin: AccountId,
+	pub freezer: AccountId,
 }
