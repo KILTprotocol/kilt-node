@@ -9,9 +9,8 @@ pub struct Locks {
 	pub allow_swap: bool,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug, Default)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub enum PoolStatus<LockType> {
-	#[default]
 	Active,
 	Locked(LockType),
 	Destroying,
