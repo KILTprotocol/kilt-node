@@ -224,7 +224,7 @@ pub mod pallet {
 						symbol,
 					} = entry;
 
-					T::Fungibles::create(asset_id.clone(), pool_id.clone().into(), false, min_balance)?;
+					T::Fungibles::create(asset_id.clone(), pool_account.to_owned(), false, min_balance)?;
 
 					// set metadata for new asset class
 					T::Fungibles::set(
@@ -239,7 +239,7 @@ pub mod pallet {
 				})?;
 
 			// Touch the pool account in order to be able to transfer the collateral currency to it
-			T::CollateralCurrency::touch(T::CollateralAssetId::get(), &pool_id.clone().into(), &who)?;
+			T::CollateralCurrency::touch(T::CollateralAssetId::get(), pool_account, &who)?;
 
 			Pools::<T>::set(
 				&pool_id,
