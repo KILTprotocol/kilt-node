@@ -412,7 +412,11 @@ pub mod pallet {
 
 			let pool_account = pool_id.clone().into();
 
-			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
+			// Choosing total_balance over reducible_balance to ensure that all funds are distributed fairly;
+			// in case of any locks present on the pool account, this could lead to refunds failing to execute though.
+			// This case would have to be resolved by governance, either by removing locks or force_destroying the pool.
+			let total_collateral_issuance =
+				T::CollateralCurrency::total_balance(T::CollateralAssetId::get(), &pool_account);
 
 			// nothing to distribute; refunding is complete, user should call start_destroy
 			ensure!(
@@ -517,7 +521,8 @@ pub mod pallet {
 
 			let pool_account = pool_id.clone().into();
 
-			let total_collateral_issuance = Self::get_pool_collateral(&pool_account);
+			let total_collateral_issuance =
+				T::CollateralCurrency::total_balance(T::CollateralAssetId::get(), &pool_account);
 
 			if total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero() {
 				T::CollateralCurrency::transfer(
@@ -564,7 +569,8 @@ pub mod pallet {
 				ensure!(pool_details.is_manager(caller), Error::<T>::NoPermission);
 			}
 
-			let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
+			let total_collateral_issuance =
+				T::CollateralCurrency::total_balance(T::CollateralAssetId::get(), &pool_id.clone().into());
 			// nothing to distribute
 			ensure!(
 				total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero(),
@@ -614,7 +620,9 @@ pub mod pallet {
 			}
 
 			if !force_skip_refund {
-				let total_collateral_issuance = Self::get_pool_collateral(&pool_id.clone().into());
+				let total_collateral_issuance =
+					T::CollateralCurrency::total_balance(T::CollateralAssetId::get(), &pool_id.clone().into());
+
 				if total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero() {
 					let has_holders = pool_details.bonded_currencies.iter().any(|asset_id| {
 						T::Fungibles::total_issuance(asset_id.clone()) > FungiblesBalanceOf::<T>::zero()
@@ -644,10 +652,6 @@ pub mod pallet {
 			}
 
 			Ok(n_currencies)
-		}
-
-		fn get_pool_collateral(pool_account: &AccountIdOf<T>) -> CollateralCurrencyBalanceOf<T> {
-			T::CollateralCurrency::total_balance(T::CollateralAssetId::get(), pool_account)
 		}
 
 		fn generate_sequential_asset_ids(
