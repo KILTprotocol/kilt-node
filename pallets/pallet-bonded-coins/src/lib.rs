@@ -37,7 +37,10 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
 	use sp_runtime::{
-		traits::{Bounded, CheckedDiv, CheckedMul, One, SaturatedConversion, Saturating, StaticLookup, Zero},
+		traits::{
+			Bounded, CheckedDiv, CheckedMul, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto,
+			Zero,
+		},
 		ArithmeticError, BoundedVec,
 	};
 	use sp_std::default::Default;
@@ -237,11 +240,7 @@ pub mod pallet {
 			T::DepositCurrency::hold(
 				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&who,
-				T::BaseDeposit::get().saturating_add(
-					T::DepositPerCurrency::get()
-						.saturating_mul(currency_length.saturated_into())
-						.saturated_into(),
-				),
+				Self::calculate_pool_deposit(currency_length),
 			)?;
 
 			let pool_account = &pool_id.clone().into();
@@ -399,7 +398,7 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(
-				pool_details.bonded_currencies.len() <= currency_count.saturated_into::<usize>(),
+				Self::get_currencies_number(&pool_details) <= currency_count,
 				Error::<T>::TooManyCurrencies
 			);
 
@@ -503,10 +502,9 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(
-				pool_details.bonded_currencies.len() <= currency_count.saturated_into::<usize>(),
-				Error::<T>::TooManyCurrencies
-			);
+			let n_currencies = Self::get_currencies_number(&pool_details);
+
+			ensure!(n_currencies <= currency_count, Error::<T>::TooManyCurrencies);
 
 			ensure!(pool_details.state.is_destroying(), Error::<T>::LivePool);
 
@@ -533,7 +531,12 @@ pub mod pallet {
 
 			Pools::<T>::remove(&pool_id);
 
-			// TODO: refund deposit
+			T::DepositCurrency::release(
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
+				&pool_details.owner,
+				Self::calculate_pool_deposit(n_currencies),
+				WithdrawalPrecision::Exact,
+			)?;
 
 			Self::deposit_event(Event::Destroyed { id: pool_id });
 
@@ -549,8 +552,7 @@ pub mod pallet {
 		) -> Result<u32, DispatchError> {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is a u32; conversion to u32 must thus be lossless.
-			let n_currencies: u32 = pool_details.bonded_currencies.len().saturated_into();
+			let n_currencies = Self::get_currencies_number(&pool_details);
 
 			ensure!(n_currencies <= max_currencies, Error::<T>::TooManyCurrencies);
 
@@ -594,8 +596,7 @@ pub mod pallet {
 		) -> Result<u32, DispatchError> {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is a u32; conversion to u32 must thus be lossless.
-			let n_currencies: u32 = pool_details.bonded_currencies.len().saturated_into();
+			let n_currencies = Self::get_currencies_number(&pool_details);
 
 			ensure!(n_currencies <= max_currencies, Error::<T>::TooManyCurrencies);
 
@@ -663,6 +664,18 @@ pub mod pallet {
 				.map_err(|_| Error::<T>::Internal)?;
 
 			Ok((currency_array, start_id))
+		}
+
+		fn get_currencies_number(pool_details: &PoolDetailsOf<T>) -> u32 {
+			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is a u32; conversion to u32 must thus be lossless.
+			pool_details.bonded_currencies.len().saturated_into()
+		}
+
+		fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
+			n_currencies: N,
+		) -> DepositCurrencyBalanceOf<T> {
+			T::BaseDeposit::get()
+				.saturating_add(T::DepositPerCurrency::get().saturating_mul(n_currencies.saturated_into()))
 		}
 	}
 }
