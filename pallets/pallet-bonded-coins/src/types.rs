@@ -13,6 +13,7 @@ pub struct Locks {
 pub enum PoolStatus<LockType> {
 	Active,
 	Locked(LockType),
+	Refunding,
 	Destroying,
 }
 
@@ -23,20 +24,28 @@ impl<LockType: Default> Default for PoolStatus<LockType> {
 }
 
 impl<LockType> PoolStatus<LockType> {
-	pub fn is_active(&self) -> bool {
-		matches!(self, Self::Active)
+	pub fn is_live(&self) -> bool {
+		matches!(self, Self::Active | Self::Locked(_))
 	}
 
 	pub fn is_destroying(&self) -> bool {
 		matches!(self, Self::Destroying)
 	}
 
+	pub fn is_refunding(&self) -> bool {
+		matches!(self, Self::Refunding)
+	}
+
 	pub fn freeze(&mut self, lock: LockType) {
 		*self = Self::Locked(lock);
 	}
 
-	pub fn destroy(&mut self) {
+	pub fn start_destroy(&mut self) {
 		*self = Self::Destroying;
+	}
+
+	pub fn start_refund(&mut self) {
+		*self = Self::Refunding;
 	}
 }
 
