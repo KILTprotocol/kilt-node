@@ -605,9 +605,11 @@ pub mod pallet {
 			);
 
 			if let Some(caller) = maybe_check_manager {
-				// TODO: should the owner be authorized as well?
 				// TODO: should this be permissionless if the pool is in refunding state?
-				ensure!(pool_details.is_manager(caller), Error::<T>::NoPermission);
+				ensure!(
+					pool_details.is_owner(caller) || pool_details.is_manager(caller),
+					Error::<T>::NoPermission
+				);
 			}
 
 			if !force_skip_refund {
