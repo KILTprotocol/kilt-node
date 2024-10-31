@@ -215,9 +215,8 @@ pub mod pallet {
 			let pool_account = &pool_id.clone().into();
 
 			currencies
-				.clone()
 				.into_iter()
-				.zip(currency_ids.clone().into_iter())
+				.zip(currency_ids.iter())
 				.try_for_each(|(entry, asset_id)| -> DispatchResult {
 					let TokenMeta {
 						min_balance,
@@ -229,7 +228,7 @@ pub mod pallet {
 
 					// set metadata for new asset class
 					T::Fungibles::set(
-						asset_id,
+						asset_id.to_owned(),
 						&pool_account,
 						name.into_inner(),
 						symbol.into_inner(),
