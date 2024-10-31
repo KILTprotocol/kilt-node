@@ -57,13 +57,20 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
 	pub bonded_currencies: Currencies,
 	pub state: PoolStatus<Locks>,
 	pub transferable: bool,
+	pub denomination: u8,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies> PoolDetails<AccountId, ParametrizedCurve, Currencies>
 where
 	AccountId: PartialEq + Clone,
 {
-	pub fn new(owner: AccountId, curve: ParametrizedCurve, bonded_currencies: Currencies, transferable: bool) -> Self {
+	pub fn new(
+		owner: AccountId,
+		curve: ParametrizedCurve,
+		bonded_currencies: Currencies,
+		transferable: bool,
+		denomination: u8,
+	) -> Self {
 		Self {
 			manager: Some(owner.clone()),
 			owner,
@@ -71,6 +78,7 @@ where
 			bonded_currencies,
 			transferable,
 			state: PoolStatus::default(),
+			denomination,
 		}
 	}
 

@@ -14,7 +14,7 @@ use crate::{
 		polynomial::{PolynomialParameters, PolynomialParametersInput},
 		square_root::{SquareRootParameters, SquareRootParametersInput},
 	},
-	PassiveSupply, Precision,
+	Config, CurveParameterTypeOf, PassiveSupply, Precision,
 };
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
@@ -56,20 +56,6 @@ where
 	}
 }
 
-pub enum Operation<PassiveSupply> {
-	Mint(PassiveSupply),
-	Burn(PassiveSupply),
-}
-
-impl<Balance> Operation<PassiveSupply<Balance>> {
-	pub fn inner_value(&self) -> &PassiveSupply<Balance> {
-		match self {
-			Operation::Mint(x) => x,
-			Operation::Burn(x) => x,
-		}
-	}
-}
-
 impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
@@ -77,14 +63,14 @@ where
 {
 	fn calculate_costs(
 		&self,
-		active_issuance_pre: Parameter,
-		active_issuance_post: Parameter,
-		op: Operation<PassiveSupply<Parameter>>,
+		low: Parameter,
+		high: Parameter,
+		passive_supply: PassiveSupply<Parameter>,
 	) -> Result<Parameter, ArithmeticError> {
 		match self {
-			Curve::Polynomial(params) => params.calculate_costs(active_issuance_pre, active_issuance_post, op),
-			Curve::SquareRoot(params) => params.calculate_costs(active_issuance_pre, active_issuance_post, op),
-			Curve::LMSR(params) => params.calculate_costs(active_issuance_pre, active_issuance_post, op),
+			Curve::Polynomial(params) => params.calculate_costs(low, high, passive_supply),
+			Curve::SquareRoot(params) => params.calculate_costs(low, high, passive_supply),
+			Curve::LMSR(params) => params.calculate_costs(low, high, passive_supply),
 		}
 	}
 }
@@ -92,9 +78,9 @@ where
 pub trait BondingFunction<Balance> {
 	fn calculate_costs(
 		&self,
-		active_issuance_pre: Balance,
-		active_issuance_post: Balance,
-		op: Operation<PassiveSupply<Balance>>,
+		low: Balance,
+		high: Balance,
+		passive_supply: PassiveSupply<Balance>,
 	) -> Result<Balance, ArithmeticError>;
 }
 
@@ -102,31 +88,19 @@ fn square<FixedType: Fixed>(x: FixedType) -> Result<FixedType, ArithmeticError> 
 	x.checked_mul(x).ok_or(ArithmeticError::Overflow)
 }
 
-fn calculate_integral_bounds<FixedType: Fixed>(
-	op: Operation<PassiveSupply<FixedType>>,
-	active_issuance_pre: FixedType,
-	active_issuance_post: FixedType,
-) -> (FixedType, FixedType) {
-	match op {
-		Operation::Burn(passive) => {
-			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive);
-			(
-				active_issuance_post.saturating_add(accumulated_passive_issuance),
-				active_issuance_pre.saturating_add(accumulated_passive_issuance),
-			)
-		}
-		Operation::Mint(passive) => {
-			let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive);
-			(
-				active_issuance_pre.saturating_add(accumulated_passive_issuance),
-				active_issuance_post.saturating_add(accumulated_passive_issuance),
-			)
-		}
-	}
-}
-
 fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Balance]) -> Balance {
 	passive_issuance
 		.iter()
 		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
+}
+
+pub(crate) fn convert_to_fixed<T: Config>(
+	x: u128,
+	denomination: u8,
+) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
+	let decimals = 10u128
+		.checked_pow(u32::from(denomination))
+		.ok_or(ArithmeticError::Overflow)?;
+	let scaled_x = x.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
+	scaled_x.checked_to_fixed().ok_or(ArithmeticError::Overflow)
 }

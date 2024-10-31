@@ -3,8 +3,8 @@ use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use substrate_fixed::traits::{FixedSigned, FixedUnsigned};
 
-use super::{square, BondingFunction, Operation};
-use crate::{curves::calculate_integral_bounds, PassiveSupply};
+use super::{calculate_accumulated_passive_issuance, square, BondingFunction};
+use crate::PassiveSupply;
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PolynomialParametersInput<Parameter> {
@@ -37,11 +37,21 @@ where
 {
 	fn calculate_costs(
 		&self,
-		active_issuance_pre: Parameter,
-		active_issuance_post: Parameter,
-		op: Operation<PassiveSupply<Parameter>>,
+		low: Parameter,
+		high: Parameter,
+		passive_supply: PassiveSupply<Parameter>,
 	) -> Result<Parameter, ArithmeticError> {
-		let (low, high) = calculate_integral_bounds(op, active_issuance_pre, active_issuance_post);
+		let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
+
+		// reassign high and low to include the accumulated passive issuance
+		let high = high
+			.checked_add(accumulated_passive_issuance)
+			.ok_or(ArithmeticError::Overflow)?;
+
+		let low = low
+			.checked_add(accumulated_passive_issuance)
+			.ok_or(ArithmeticError::Overflow)?;
+
 		// Calculate high - low
 		let delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
 

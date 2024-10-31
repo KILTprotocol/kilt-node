@@ -8,7 +8,7 @@ use substrate_fixed::{
 };
 
 use super::BondingFunction;
-use crate::{curves::Operation, PassiveSupply, Precision};
+use crate::{PassiveSupply, Precision};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParametersInput<Parameter> {
@@ -54,10 +54,9 @@ where
 		&self,
 		low: Parameter,
 		high: Parameter,
-		op: Operation<PassiveSupply<Parameter>>,
+		passive_supply: PassiveSupply<Parameter>,
 	) -> Result<Parameter, ArithmeticError> {
-		let e_term_numerator = op
-			.inner_value()
+		let e_term_numerator = passive_supply
 			.iter()
 			.map(|x| self.calculate_exp_term(*x, high))
 			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
@@ -70,8 +69,7 @@ where
 			.checked_add(term1)
 			.ok_or(ArithmeticError::Overflow)?;
 
-		let e_term_denominator = op
-			.inner_value()
+		let e_term_denominator = passive_supply
 			.iter()
 			.map(|x| self.calculate_exp_term(*x, low))
 			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;

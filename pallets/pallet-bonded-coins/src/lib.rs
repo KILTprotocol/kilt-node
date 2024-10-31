@@ -13,9 +13,8 @@ mod mock;
 mod tests;
 
 mod curves;
-mod traits;
+pub mod traits;
 mod types;
-
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -36,22 +35,26 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
+	use sp_arithmetic::ArithmeticError;
 	use sp_runtime::{
 		traits::{
 			Bounded, CheckedDiv, CheckedMul, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto,
 			Zero,
 		},
-		ArithmeticError, BoundedVec,
+		BoundedVec,
 	};
-	use sp_std::default::Default;
+	use sp_std::{
+		default::Default,
+		ops::{AddAssign, BitOrAssign, ShlAssign},
+	};
 	use substrate_fixed::{
-		traits::{FixedSigned, FixedUnsigned},
+		traits::{Fixed, FixedSigned, FixedUnsigned, ToFixed},
 		types::I9F23,
 	};
 
 	use crate::{
-		curves::{Curve, CurveInput},
-		traits::ResetTeam,
+		curves::{convert_to_fixed, BondingFunction, Curve, CurveInput},
+		traits::{FreezeAccounts, ResetTeam},
 		types::{PoolDetails, PoolManagingTeam, TokenMeta},
 	};
 
@@ -112,6 +115,7 @@ pub mod pallet {
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
 			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>
+			+ FreezeAccounts<Self::AccountId, Self::AssetId>
 			+ ResetTeam<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
@@ -146,7 +150,12 @@ pub mod pallet {
 		type RuntimeHoldReason: From<HoldReason>;
 
 		/// The type used for the curve parameters.
-		type CurveParameterType: Parameter + Member + FixedSigned + MaxEncodedLen;
+		type CurveParameterType: Parameter
+			+ Member
+			+ FixedSigned
+			+ MaxEncodedLen
+			+ PartialOrd<Precision>
+			+ From<Precision>;
 
 		type CurveParameterInput: Parameter + FixedUnsigned + MaxEncodedLen;
 	}
@@ -206,6 +215,7 @@ pub mod pallet {
 		CurrencyCount,
 		InvalidInput,
 		Internal,
+		Slippage,
 	}
 
 	#[pallet::composite_enum]
@@ -214,7 +224,10 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn create_pool(
@@ -274,7 +287,13 @@ pub mod pallet {
 
 			Pools::<T>::set(
 				&pool_id,
-				Some(PoolDetails::new(who, checked_curve, currency_ids, transferable)),
+				Some(PoolDetails::new(
+					who,
+					checked_curve,
+					currency_ids,
+					transferable,
+					denomination,
+				)),
 			);
 
 			// update the storage for the next tx.
@@ -335,8 +354,69 @@ pub mod pallet {
 
 		#[pallet::call_index(4)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn mint_into(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
+		pub fn mint_into(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_idx: u32,
+			beneficiary: AccountIdLookupOf<T>,
+			amount_to_mint: FungiblesBalanceOf<T>,
+			max_cost: CollateralCurrencyBalanceOf<T>,
+			currency_count: u32,
+		) -> DispatchResult {
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
+			let beneficiary = T::Lookup::lookup(beneficiary)?;
+
+			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
+
+			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::NoPermission);
+
+			ensure!(
+				Self::get_currencies_number(&pool_details) <= currency_count,
+				Error::<T>::CurrencyCount
+			);
+
+			let bonded_currencies = pool_details.bonded_currencies;
+
+			let currency_idx: usize = currency_idx.saturated_into();
+
+			let target_currency_id = bonded_currencies
+				.get(currency_idx)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			let (active_pre, passive) = Self::calculate_normalized_passive_issuance(
+				&bonded_currencies,
+				pool_details.denomination,
+				currency_idx,
+			)?;
+
+			let normalized_amount_to_mint =
+				convert_to_fixed::<T>(amount_to_mint.saturated_into::<u128>(), pool_details.denomination)?;
+
+			let active_post = active_pre
+				.checked_add(normalized_amount_to_mint)
+				.ok_or(ArithmeticError::Overflow)?;
+
+			let cost = Self::calculate_collateral(active_pre, active_post, passive, &pool_details.curve)?;
+
+			// fail if cost > max_cost
+			ensure!(cost <= max_cost, Error::<T>::Slippage);
+
+			// Transfer the collateral. We do not want to kill the minter, so this operation can fail if the account is being reaped.
+			T::CollateralCurrency::transfer(
+				T::CollateralAssetId::get(),
+				&who,
+				&pool_id.into(),
+				cost,
+				Preservation::Preserve,
+			)?;
+
+			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
+
+			if !pool_details.transferable {
+				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
+			}
+
+			Ok(())
 		}
 
 		#[pallet::call_index(5)]
@@ -549,7 +629,53 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	{
+		fn calculate_collateral(
+			low: CurveParameterTypeOf<T>,
+			high: CurveParameterTypeOf<T>,
+			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
+			curve: &Curve<CurveParameterTypeOf<T>>,
+		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
+			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
+
+			let collateral_denomination = 10u128
+				.checked_pow(T::CollateralCurrency::decimals(T::CollateralAssetId::get()).into())
+				.ok_or(ArithmeticError::Overflow)?;
+
+			let real_costs = normalized_costs
+				.checked_mul(CurveParameterTypeOf::<T>::from_num(collateral_denomination))
+				.ok_or(ArithmeticError::Overflow)?
+				// should never fail
+				.checked_to_num::<u128>()
+				.ok_or(ArithmeticError::Overflow)?
+				.saturated_into();
+
+			Ok(real_costs)
+		}
+
+		fn calculate_normalized_passive_issuance(
+			bonded_currencies: &[FungiblesAssetIdOf<T>],
+			denomination: u8,
+			currency_idx: usize,
+		) -> Result<(CurveParameterTypeOf<T>, PassiveSupply<CurveParameterTypeOf<T>>), DispatchError> {
+			let currencies_total_supply = bonded_currencies
+				.iter()
+				.map(|currency_id| T::Fungibles::total_issuance(currency_id.to_owned()))
+				.collect::<Vec<_>>();
+
+			let mut normalized_total_issuances = currencies_total_supply
+				.into_iter()
+				.map(|x| convert_to_fixed::<T>(x.saturated_into::<u128>(), denomination))
+				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
+
+			let active_issuance = normalized_total_issuances.swap_remove(currency_idx);
+
+			Ok((active_issuance, normalized_total_issuances))
+		}
+
 		fn do_start_refund(
 			pool_id: T::PoolId,
 			max_currencies: u32,
