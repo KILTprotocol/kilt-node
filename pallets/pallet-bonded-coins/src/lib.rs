@@ -368,7 +368,7 @@ pub mod pallet {
 			let mut currency_ids_vec = Vec::new();
 			for _ in 0..count {
 				currency_ids_vec.push(start_id.clone());
-				start_id = start_id.saturating_plus_one();
+				start_id.saturating_inc();
 			}
 
 			let currency_array =
