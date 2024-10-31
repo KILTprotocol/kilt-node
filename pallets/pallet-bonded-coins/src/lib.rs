@@ -202,8 +202,8 @@ pub mod pallet {
 		LivePool,
 		/// This operation can only be made when the pool is in refunding state.
 		NotRefunding,
-		/// The number of currencies linked to a pool exceeds the maximum. Thrown either during pool creation, or by transactions that take the (expected maximum) number of a pool's currencies as input.
-		TooManyCurrencies,
+		/// The number of currencies linked to a pool exceeds the limit parameter. Thrown by transactions that require specifying the number of a pool's currencies in order to determine weight limits upfront.
+		CurrencyCount,
 		InvalidInput,
 		Internal,
 	}
@@ -399,7 +399,7 @@ pub mod pallet {
 
 			ensure!(
 				Self::get_currencies_number(&pool_details) <= currency_count,
-				Error::<T>::TooManyCurrencies
+				Error::<T>::CurrencyCount
 			);
 
 			ensure!(pool_details.state.is_refunding(), Error::<T>::NotRefunding);
@@ -504,7 +504,7 @@ pub mod pallet {
 
 			let n_currencies = Self::get_currencies_number(&pool_details);
 
-			ensure!(n_currencies <= currency_count, Error::<T>::TooManyCurrencies);
+			ensure!(n_currencies <= currency_count, Error::<T>::CurrencyCount);
 
 			ensure!(pool_details.state.is_destroying(), Error::<T>::LivePool);
 
@@ -554,7 +554,7 @@ pub mod pallet {
 
 			let n_currencies = Self::get_currencies_number(&pool_details);
 
-			ensure!(n_currencies <= max_currencies, Error::<T>::TooManyCurrencies);
+			ensure!(n_currencies <= max_currencies, Error::<T>::CurrencyCount);
 
 			// refunding can only be triggered on a live pool
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
@@ -598,7 +598,7 @@ pub mod pallet {
 
 			let n_currencies = Self::get_currencies_number(&pool_details);
 
-			ensure!(n_currencies <= max_currencies, Error::<T>::TooManyCurrencies);
+			ensure!(n_currencies <= max_currencies, Error::<T>::CurrencyCount);
 
 			ensure!(
 				pool_details.state.is_live() || pool_details.state.is_refunding(),
