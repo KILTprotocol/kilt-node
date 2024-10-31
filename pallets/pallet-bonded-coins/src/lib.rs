@@ -667,8 +667,8 @@ pub mod pallet {
 				.collect::<Vec<_>>();
 
 			let normalized_total_issuances = currencies_total_supply
-				.iter()
-				.map(|x| convert_to_fixed::<T>(x.to_owned().saturated_into::<u128>(), denomination))
+				.into_iter()
+				.map(|x| convert_to_fixed::<T>(x.saturated_into::<u128>(), denomination))
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
 			let active_issuance = normalized_total_issuances
@@ -677,9 +677,9 @@ pub mod pallet {
 				.to_owned();
 
 			let passive_issuance = normalized_total_issuances
-				.iter()
+				.into_iter()
 				.enumerate()
-				.filter_map(|(idx, x)| if idx != currency_idx { Some(x.to_owned()) } else { None })
+				.filter_map(|(idx, x)| if idx != currency_idx { Some(x) } else { None })
 				.collect();
 
 			Ok((active_issuance, passive_issuance))
