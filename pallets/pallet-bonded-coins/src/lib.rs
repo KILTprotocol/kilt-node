@@ -371,9 +371,8 @@ pub mod pallet {
 				start_id.saturating_inc();
 			}
 
-			let currency_array =
-				BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(currency_ids_vec.clone())
-					.map_err(|_| Error::<T>::Internal)?;
+			let currency_array = BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(currency_ids_vec)
+				.map_err(|_| Error::<T>::Internal)?;
 
 			Ok((currency_array, start_id))
 		}
