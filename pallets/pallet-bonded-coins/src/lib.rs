@@ -666,23 +666,14 @@ pub mod pallet {
 				.map(|currency_id| T::Fungibles::total_issuance(currency_id.to_owned()))
 				.collect::<Vec<_>>();
 
-			let normalized_total_issuances = currencies_total_supply
+			let mut normalized_total_issuances = currencies_total_supply
 				.into_iter()
 				.map(|x| convert_to_fixed::<T>(x.saturated_into::<u128>(), denomination))
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
-			let active_issuance = normalized_total_issuances
-				.get(currency_idx)
-				.ok_or(Error::<T>::IndexOutOfBounds)?
-				.to_owned();
+			let active_issuance = normalized_total_issuances.swap_remove(currency_idx);
 
-			let passive_issuance = normalized_total_issuances
-				.into_iter()
-				.enumerate()
-				.filter_map(|(idx, x)| if idx != currency_idx { Some(x) } else { None })
-				.collect();
-
-			Ok((active_issuance, passive_issuance))
+			Ok((active_issuance, normalized_total_issuances))
 		}
 
 		fn do_start_refund(
