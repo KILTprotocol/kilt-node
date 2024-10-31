@@ -235,7 +235,7 @@ pub mod pallet {
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			curve: CurveInput<CurveParameterInputOf<T>>,
-			base_currency: CollateralAssetIdOf<T>,
+			collateral_id: CollateralAssetIdOf<T>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			denomination: u8,
 			transferable: bool,
@@ -287,14 +287,14 @@ pub mod pallet {
 
 			// Touch the pool account in order to be able to transfer the collateral currency to it
 			// This should also verify that the currency actually exists
-			T::CollateralCurrency::touch(base_currency.clone(), pool_account, &who)?;
+			T::CollateralCurrency::touch(collateral_id.clone(), pool_account, &who)?;
 
 			Pools::<T>::set(
 				&pool_id,
 				Some(PoolDetails::new(
 					who,
 					checked_curve,
-					base_currency,
+					collateral_id,
 					currency_ids,
 					transferable,
 					denomination,
@@ -406,7 +406,7 @@ pub mod pallet {
 				active_post,
 				passive,
 				&pool_details.curve,
-				pool_details.base_currency.clone(),
+				pool_details.collateral_id.clone(),
 			)?;
 
 			// fail if cost > max_cost
@@ -414,7 +414,7 @@ pub mod pallet {
 
 			// Transfer the collateral. We do not want to kill the minter, so this operation can fail if the account is being reaped.
 			T::CollateralCurrency::transfer(
-				pool_details.base_currency,
+				pool_details.collateral_id,
 				&who,
 				&pool_id.into(),
 				cost,
@@ -479,13 +479,13 @@ pub mod pallet {
 				high,
 				passive,
 				&pool_details.curve,
-				pool_details.base_currency.clone(),
+				pool_details.collateral_id.clone(),
 			)?;
 
 			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
 
 			T::CollateralCurrency::transfer(
-				pool_details.base_currency,
+				pool_details.collateral_id,
 				&pool_id.into(),
 				&beneficiary,
 				collateral_return,
@@ -582,7 +582,7 @@ pub mod pallet {
 			// in case of any locks present on the pool account, this could lead to refunds failing to execute though.
 			// This case would have to be resolved by governance, either by removing locks or force_destroying the pool.
 			let total_collateral_issuance =
-				T::CollateralCurrency::total_balance(pool_details.base_currency.clone(), &pool_account);
+				T::CollateralCurrency::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
 			// nothing to distribute; refunding is complete, user should call start_destroy
 			ensure!(
@@ -622,7 +622,7 @@ pub mod pallet {
 
 			if amount.is_zero()
 				|| T::CollateralCurrency::can_deposit(
-					pool_details.base_currency.clone(),
+					pool_details.collateral_id.clone(),
 					&who,
 					amount,
 					Provenance::Extant,
@@ -636,7 +636,7 @@ pub mod pallet {
 			}
 
 			let transferred = T::CollateralCurrency::transfer(
-				pool_details.base_currency,
+				pool_details.collateral_id,
 				&pool_account,
 				&who,
 				amount,
@@ -694,11 +694,11 @@ pub mod pallet {
 			let pool_account = pool_id.clone().into();
 
 			let total_collateral_issuance =
-				T::CollateralCurrency::total_balance(pool_details.base_currency.clone(), &pool_account);
+				T::CollateralCurrency::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
 			if total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero() {
 				T::CollateralCurrency::transfer(
-					pool_details.base_currency,
+					pool_details.collateral_id,
 					&pool_account,
 					&pool_details.owner,
 					total_collateral_issuance,
@@ -788,7 +788,7 @@ pub mod pallet {
 			}
 
 			let total_collateral_issuance =
-				T::CollateralCurrency::total_balance(pool_details.base_currency.clone(), &pool_id.clone().into());
+				T::CollateralCurrency::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 			// nothing to distribute
 			ensure!(
 				total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero(),
@@ -839,7 +839,7 @@ pub mod pallet {
 
 			if !force_skip_refund {
 				let total_collateral_issuance =
-					T::CollateralCurrency::total_balance(pool_details.base_currency.clone(), &pool_id.clone().into());
+					T::CollateralCurrency::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 
 				if total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero() {
 					let has_holders = pool_details.bonded_currencies.iter().any(|asset_id| {
