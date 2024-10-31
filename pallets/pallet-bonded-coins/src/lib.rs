@@ -425,24 +425,24 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			currency_idx: u32,
+			beneficiary: AccountIdLookupOf<T>,
 			amount_to_burn: FungiblesBalanceOf<T>,
 			min_return: CollateralCurrencyBalanceOf<T>,
-			beneficiary: AccountIdLookupOf<T>,
 			currency_count: u32,
 		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
-			let pool_details = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolUnknown)?;
+			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::NoPermission);
 
-			let bonded_currencies = pool_details.bonded_currencies;
-
 			ensure!(
-				bonded_currencies.len() <= currency_count.saturated_into::<usize>(),
+				Self::get_currencies_number(&pool_details) <= currency_count,
 				Error::<T>::CurrencyCount
 			);
+
+			let bonded_currencies = pool_details.bonded_currencies;
 
 			let currency_idx: usize = currency_idx.saturated_into();
 
