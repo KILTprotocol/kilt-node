@@ -104,3 +104,9 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 	pub symbol: Symbol,
 	pub min_balance: Balance,
 }
+
+#[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
+pub struct PoolManagingTeam<AccountId> {
+	pub admin: AccountId,
+	pub freezer: AccountId,
+}

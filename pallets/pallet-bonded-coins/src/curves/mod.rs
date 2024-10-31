@@ -9,7 +9,11 @@ use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
 
 use crate::{
-	curves::{lmsr::LMSRParameters, polynomial::PolynomialParameters, square_root::SquareRootParameters},
+	curves::{
+		lmsr::{LMSRParameters, LMSRParametersInput},
+		polynomial::{PolynomialParameters, PolynomialParametersInput},
+		square_root::{SquareRootParameters, SquareRootParametersInput},
+	},
 	PassiveSupply, Precision,
 };
 
@@ -18,6 +22,38 @@ pub enum Curve<Parameter> {
 	Polynomial(PolynomialParameters<Parameter>),
 	SquareRoot(SquareRootParameters<Parameter>),
 	LMSR(LMSRParameters<Parameter>),
+}
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub enum CurveInput<Parameter> {
+	Polynomial(PolynomialParametersInput<Parameter>),
+	SquareRoot(SquareRootParametersInput<Parameter>),
+	LMSR(LMSRParametersInput<Parameter>),
+}
+
+impl<I, C> TryFrom<CurveInput<I>> for Curve<C>
+where
+	LMSRParameters<C>: TryFrom<LMSRParametersInput<I>>,
+	PolynomialParameters<C>: TryFrom<PolynomialParametersInput<I>>,
+	SquareRootParameters<C>: TryFrom<SquareRootParametersInput<I>>,
+{
+	type Error = ();
+	fn try_from(value: CurveInput<I>) -> Result<Self, Self::Error> {
+		match value {
+			CurveInput::LMSR(params) => {
+				let checked_param = LMSRParameters::<C>::try_from(params).map_err(|_| ())?;
+				Ok(Curve::LMSR(checked_param))
+			}
+			CurveInput::Polynomial(params) => {
+				let checked_param = PolynomialParameters::<C>::try_from(params).map_err(|_| ())?;
+				Ok(Curve::Polynomial(checked_param))
+			}
+			CurveInput::SquareRoot(params) => {
+				let checked_param = SquareRootParameters::<C>::try_from(params).map_err(|_| ())?;
+				Ok(Curve::SquareRoot(checked_param))
+			}
+		}
+	}
 }
 
 pub enum Operation<PassiveSupply> {
