@@ -49,18 +49,54 @@ where
 		passive_issuance: PassiveSupply<Parameter>,
 		to_index: usize,
 	) -> Result<Parameter, ArithmeticError> {
-		let e_term = passive_issuance
+		// safe use of index, as it is checked in the calling function
+		let current_target_supply = passive_issuance[to_index];
+
+		let supply_without_to_index = passive_issuance
 			.iter()
-			.map(|x| self.calculate_exp_term(*x, collateral))
+			.enumerate()
+			.filter(|(i, _)| *i != to_index)
+			.map(|(_, x)| x)
+			.collect::<Vec<&Parameter>>();
+
+		let supply_over_e = supply_without_to_index
+			.iter()
+			.map(|x| {
+				let exponent = x.checked_div(self.m).ok_or(ArithmeticError::DivisionByZero)?;
+				exp::<Parameter, Parameter>(exponent).map_err(|_| ArithmeticError::Overflow)
+			})
 			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
 
-		let term1 = e_term.iter().try_fold(Parameter::from_num(0), |acc, x| {
+		let sum_over_e = supply_over_e.iter().try_fold(Parameter::from_num(0), |acc, x| {
 			acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
 		})?;
 
+		let e_term_collateral = collateral
+			.checked_div(self.m)
+			.ok_or(ArithmeticError::DivisionByZero)
+			.and_then(|exponent| exp::<Parameter, Parameter>(exponent).map_err(|_| ArithmeticError::Overflow))?;
+
+		let e_term_target_supply = current_target_supply
+			.checked_div(self.m)
+			.ok_or(ArithmeticError::DivisionByZero)
+			.and_then(|exponent| exp::<Parameter, Parameter>(exponent).map_err(|_| ArithmeticError::Overflow))?;
+
+		let sum_over_e_plus_e_term_supply = sum_over_e
+			.checked_add(e_term_target_supply)
+			.ok_or(ArithmeticError::Overflow)?;
+
+		let term1 = sum_over_e_plus_e_term_supply
+			.checked_mul(e_term_collateral)
+			.ok_or(ArithmeticError::Overflow)?
+			.checked_sub(sum_over_e)
+			.ok_or(ArithmeticError::Underflow)
+			.and_then(|t| ln::<Parameter, Parameter>(t).map_err(|_| ArithmeticError::Overflow))?;
+
 		let term2 = term1.checked_mul(self.m).ok_or(ArithmeticError::Overflow)?;
 
-		collateral.checked_add(term2).ok_or(ArithmeticError::Overflow)
+		term2
+			.checked_sub(current_target_supply)
+			.ok_or(ArithmeticError::Underflow)
 	}
 }
 

@@ -247,7 +247,7 @@ pub mod pallet {
 					// set metadata for new asset class
 					T::Fungibles::set(
 						asset_id.to_owned(),
-						&pool_account,
+						pool_account,
 						name.into_inner(),
 						symbol.into_inner(),
 						denomination,
@@ -483,29 +483,69 @@ pub mod pallet {
 			let from_idx: usize = from_idx.saturated_into();
 			let to_idx: usize = to_idx.saturated_into();
 
+			let from_currency_id = pool_details
+				.bonded_currencies
+				.get(from_idx)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			let to_currency_id = pool_details
+				.bonded_currencies
+				.get(from_idx)
+				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
 			match &pool_details.curve {
 				Curve::LMSR(params) => {
-					let (high, passive) = Self::calculate_normalized_passive_issuance(
+					// 1. calculate the whole total issuance of the pool
+					let normalized_total_issuance = Self::calculate_normalized_total_issuance(
 						&pool_details.bonded_currencies,
 						pool_details.denomination,
-						from_idx,
 					)?;
 
+					// 2. Current active issuance is the upper integral bound
+					let high = normalized_total_issuance
+						.get(from_idx)
+						.ok_or(Error::<T>::IndexOutOfBounds)?
+						.to_owned();
+
+					// 2.1. calculate the passive issuance of remaining currencies
+					let passive_issuance = normalized_total_issuance
+						.iter()
+						.enumerate()
+						.filter_map(|(idx, x)| if idx != from_idx { Some(x.to_owned()) } else { None })
+						.collect::<PassiveSupply<CurveParameterTypeOf<T>>>();
+
+					// 2.2. normalize the swapping amount
 					let normalized_amount_to_burn =
 						convert_to_fixed::<T>(amount_to_swap.saturated_into::<u128>(), pool_details.denomination)?;
 
+					// 2.3. calculate the new active issuance after the swap
 					let low = high
 						.checked_sub(normalized_amount_to_burn)
 						.ok_or(ArithmeticError::Overflow)?;
 
-					let collateral_return =
-						Self::calculate_collateral(low, high, passive.clone(), &pool_details.curve)?;
+					// 2.4. calculate the normalized collateral return
+					let normalized_collateral = pool_details.curve.calculate_costs(low, high, passive_issuance)?;
 
-					let from_currency_id = pool_details
-						.bonded_currencies
-						.get(from_idx)
-						.ok_or(Error::<T>::IndexOutOfBounds)?;
+					// 3. calculate the shares for minting
+					let normalized_shares_to_mint = params.calculate_shares_from_collateral(
+						normalized_collateral,
+						normalized_total_issuance,
+						to_idx,
+					)?;
 
+					// 4. transform the shares
+					let denomination = 10u128
+						.checked_pow(pool_details.denomination.into())
+						.ok_or(ArithmeticError::Overflow)?;
+
+					let real_amount = normalized_shares_to_mint
+						.checked_mul(CurveParameterTypeOf::<T>::from_num(denomination))
+						.ok_or(ArithmeticError::Overflow)?
+						.checked_to_num::<u128>()
+						.ok_or(ArithmeticError::Overflow)?
+						.saturated_into();
+
+					// 5. Burn and mint the shares
 					T::Fungibles::burn_from(
 						from_currency_id.to_owned(),
 						&beneficiary,
@@ -514,25 +554,12 @@ pub mod pallet {
 						Fortitude::Polite,
 					)?;
 
-					let normalized_collateral =
-						convert_to_fixed::<T>(collateral_return.saturated_into::<u128>(), pool_details.denomination)?;
-
-					let share_to_mint = params.calculate_shares_from_collateral(normalized_collateral, passive, to_idx);
+					T::Fungibles::mint_into(to_currency_id.clone(), &beneficiary, real_amount)?;
 				}
 				// The price for burning and minting in the pool is the same, if the bonding curve is not [LMSR].
 				_ => {
-					let from_currency_id = pool_details
-						.bonded_currencies
-						.get(from_idx)
-						.ok_or(Error::<T>::IndexOutOfBounds)?;
-
-					let to_currency_id = pool_details
-						.bonded_currencies
-						.get(to_idx)
-						.ok_or(Error::<T>::IndexOutOfBounds)?;
-
 					T::Fungibles::burn_from(
-						from_currency_id.clone(),
+						from_currency_id.to_owned(),
 						&beneficiary,
 						amount_to_swap,
 						TokenPrecision::Exact,
@@ -616,15 +643,8 @@ pub mod pallet {
 			denomination: u8,
 			currency_idx: usize,
 		) -> Result<(CurveParameterTypeOf<T>, PassiveSupply<CurveParameterTypeOf<T>>), DispatchError> {
-			let currencies_total_supply = bonded_currencies
-				.iter()
-				.map(|currency_id| T::Fungibles::total_issuance(currency_id.to_owned()))
-				.collect::<Vec<_>>();
-
-			let normalized_total_issuances = currencies_total_supply
-				.iter()
-				.map(|x| convert_to_fixed::<T>(x.to_owned().saturated_into::<u128>(), denomination))
-				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
+			let normalized_total_issuances =
+				Self::calculate_normalized_total_issuance(bonded_currencies, denomination)?;
 
 			let active_issuance = normalized_total_issuances
 				.get(currency_idx)
@@ -638,6 +658,21 @@ pub mod pallet {
 				.collect();
 
 			Ok((active_issuance, passive_issuance))
+		}
+
+		fn calculate_normalized_total_issuance(
+			bonded_currencies: &[FungiblesAssetIdOf<T>],
+			denomination: u8,
+		) -> Result<PassiveSupply<CurveParameterTypeOf<T>>, ArithmeticError> {
+			let currencies_total_supply = bonded_currencies
+				.iter()
+				.map(|currency_id| T::Fungibles::total_issuance(currency_id.to_owned()))
+				.collect::<Vec<_>>();
+
+			currencies_total_supply
+				.iter()
+				.map(|x| convert_to_fixed::<T>(x.to_owned().saturated_into::<u128>(), denomination))
+				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()
 		}
 
 		fn generate_sequential_asset_ids(
