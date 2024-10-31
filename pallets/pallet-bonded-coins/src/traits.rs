@@ -1,4 +1,13 @@
 use frame_support::{dispatch::DispatchResult, traits::fungibles::Inspect};
+use sp_runtime::DispatchError;
+
+pub trait FreezeAccounts<AccountId, AssetId> {
+	type Error: Into<DispatchError>;
+
+	fn freeze(asset_id: &AssetId, who: &AccountId) -> Result<(), Self::Error>;
+
+	fn thaw(asset_id: &AssetId, who: &AccountId) -> Result<(), Self::Error>;
+}
 
 /// Copy from the Polkadot SDK. once we are at version 1.13.0, we can remove this.
 pub trait ResetTeam<AccountId>: Inspect<AccountId> {
