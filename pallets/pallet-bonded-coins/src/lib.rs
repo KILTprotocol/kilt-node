@@ -286,6 +286,7 @@ pub mod pallet {
 				})?;
 
 			// Touch the pool account in order to be able to transfer the collateral currency to it
+			// This should also verify that the currency actually exists
 			T::CollateralCurrency::touch(base_currency.clone(), pool_account, &who)?;
 
 			Pools::<T>::set(
