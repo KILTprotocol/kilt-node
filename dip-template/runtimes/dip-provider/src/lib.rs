@@ -60,7 +60,7 @@ use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
 use pallet_dip_provider::{traits::IdentityProvider, IdentityProviderOf};
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
-use pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo};
+use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
 use runtime_common::dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
@@ -315,7 +315,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-	type OnChargeTransaction = FungibleAdapter<Balances, ()>;
+	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
 	type FeeMultiplierUpdate = ();
 	type LengthToFee = IdentityFee<Balance>;
 	type OperationalFeeMultiplier = ConstU8<1>;

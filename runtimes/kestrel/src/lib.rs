@@ -44,7 +44,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use frame_try_runtime::UpgradeCheckSelect;
 
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use pallet_transaction_payment::{FeeDetails, FungibleAdapter};
+use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
@@ -281,7 +281,7 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type OnChargeTransaction = FungibleAdapter<Balances, runtime_common::fees::ToAuthorCredit<Runtime>>;
+	type OnChargeTransaction = CurrencyAdapter<Balances, runtime_common::fees::ToAuthorCredit<Runtime>>;
 	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
 	type LengthToFee = ConstantMultiplier<Balance, constants::fee::TransactionByteFee>;
