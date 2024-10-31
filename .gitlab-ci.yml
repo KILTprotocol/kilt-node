@@ -37,7 +37,7 @@ build-production-wasm:
 
 build-try-state-wasm:
   image:
-    name: paritytech/ci-unified:bullseye-1.74.0
+    name: paritytech/ci-unified:bullseye-1.75.0
   stage: build
   parallel:
     matrix:

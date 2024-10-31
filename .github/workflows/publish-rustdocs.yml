@@ -55,7 +55,7 @@ jobs:
             -v "${HOME}/.cargo:/root/.cargo" \
             -e RUSTDOCFLAGS='-D warnings' \
             -w /workspace \
-            paritytech/ci-unified:bullseye-1.74.0 \
+            paritytech/ci-unified:bullseye-1.75.0 \
             bash -c "
               cargo doc --all-features --no-deps --locked && \
               mv $DOCS_TARGET/help.html $DOCS_TARGET/index.html && \
