@@ -373,37 +373,40 @@ pub mod pallet {
 		#[pallet::call_index(3)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
+				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
 
 				entry.state = PoolStatus::Locked(lock.clone());
 
-				Self::deposit_event(Event::LockSet {
-					id: pool_id.clone(),
-					lock,
-				});
-
 				Ok(())
-			})
+			})?;
+
+			Self::deposit_event(Event::LockSet { id: pool_id, lock });
+
+			Ok(())
 		}
 
 		#[pallet::call_index(4)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
+				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
 				entry.state = PoolStatus::Active;
 
-				Self::deposit_event(Event::Unlocked { id: pool_id.clone() });
-
 				Ok(())
-			})
+			})?;
+
+			Self::deposit_event(Event::Unlocked { id: pool_id });
+
+			Ok(())
 		}
 
 		#[pallet::call_index(5)]
