@@ -201,7 +201,7 @@ pub mod pallet {
 			id: T::PoolId,
 		},
 		/// The manager of a pool has been updated.
-		ManagerUpdate {
+		ManagerUpdated {
 			id: T::PoolId,
 			manager: Option<T::AccountId>,
 		},
