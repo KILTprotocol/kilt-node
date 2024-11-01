@@ -55,7 +55,7 @@ pub mod pallet {
 	use crate::{
 		curves::{convert_to_fixed, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, ResetTeam},
-		types::{PoolDetails, PoolManagingTeam, TokenMeta},
+		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, TokenMeta},
 	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -174,6 +174,13 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		LockSet {
+			id: T::PoolId,
+			lock: Locks,
+		},
+		Unlocked {
+			id: T::PoolId,
+		},
 		PoolCreated {
 			id: T::PoolId,
 		},
@@ -192,6 +199,11 @@ pub mod pallet {
 		/// A bonded token pool has been fully destroyed and all collateral and deposits have been refunded.
 		Destroyed {
 			id: T::PoolId,
+		},
+		/// The manager of a pool has been updated.
+		ManagerUpdated {
+			id: T::PoolId,
+			manager: Option<T::AccountId>,
 		},
 	}
 
@@ -304,7 +316,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(2)]
+		#[pallet::call_index(1)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn reset_team(
 			origin: OriginFor<T>,
@@ -336,7 +348,7 @@ pub mod pallet {
 			)
 		}
 
-		#[pallet::call_index(3)]
+		#[pallet::call_index(2)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn reset_manager(
 			origin: OriginFor<T>,
@@ -344,15 +356,60 @@ pub mod pallet {
 			manager: Option<AccountIdOf<T>>,
 		) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
-			Pools::<T>::try_mutate(pool_id, |maybe_entry| -> DispatchResult {
+			Pools::<T>::try_mutate(&pool_id, |maybe_entry| -> DispatchResult {
 				let entry = maybe_entry.as_mut().ok_or(Error::<T>::PoolUnknown)?;
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
-				entry.manager = manager;
+				entry.manager = manager.clone();
+
+				Self::deposit_event(Event::ManagerUpdate {
+					id: pool_id.clone(),
+					manager,
+				});
+
 				Ok(())
 			})
 		}
 
+		#[pallet::call_index(3)]
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
+			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+
+			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
+				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
+				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
+				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
+
+				entry.state = PoolStatus::Locked(lock.clone());
+
+				Ok(())
+			})?;
+
+			Self::deposit_event(Event::LockSet { id: pool_id, lock });
+
+			Ok(())
+		}
+
 		#[pallet::call_index(4)]
+		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
+			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+
+			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
+				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
+				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
+				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
+				entry.state = PoolStatus::Active;
+
+				Ok(())
+			})?;
+
+			Self::deposit_event(Event::Unlocked { id: pool_id });
+
+			Ok(())
+		}
+
+		#[pallet::call_index(5)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn mint_into(
 			origin: OriginFor<T>,
@@ -419,7 +476,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(5)]
+		#[pallet::call_index(6)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn burn_into(
 			origin: OriginFor<T>,
@@ -494,25 +551,13 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(6)]
+		#[pallet::call_index(7)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn swap_into(_origin: OriginFor<T>) -> DispatchResult {
 			todo!()
 		}
 
-		#[pallet::call_index(7)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn set_lock(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
-		}
-
 		#[pallet::call_index(8)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn unlock(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
-		}
-
-		#[pallet::call_index(9)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
@@ -522,7 +567,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(10)]
+		#[pallet::call_index(9)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn force_start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
@@ -532,7 +577,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(11)]
+		#[pallet::call_index(10)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn refund_account(
 			origin: OriginFor<T>,
@@ -629,7 +674,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(12)]
+		#[pallet::call_index(11)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
@@ -639,7 +684,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(13)]
+		#[pallet::call_index(12)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
@@ -649,7 +694,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::call_index(14)]
+		#[pallet::call_index(13)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
 			T::DefaultOrigin::ensure_origin(origin)?;
