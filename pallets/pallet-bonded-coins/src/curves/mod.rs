@@ -56,6 +56,20 @@ where
 	}
 }
 
+impl<Parameter> Curve<Parameter>
+where
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
+	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+{
+	fn as_inner(&self) -> &dyn BondingFunction<Parameter> {
+		match self {
+			Curve::Polynomial(params) => params,
+			Curve::SquareRoot(params) => params,
+			Curve::LMSR(params) => params,
+		}
+	}
+}
+
 impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
@@ -67,11 +81,7 @@ where
 		high: Parameter,
 		passive_supply: PassiveSupply<Parameter>,
 	) -> Result<Parameter, ArithmeticError> {
-		match self {
-			Curve::Polynomial(params) => params.calculate_costs(low, high, passive_supply),
-			Curve::SquareRoot(params) => params.calculate_costs(low, high, passive_supply),
-			Curve::LMSR(params) => params.calculate_costs(low, high, passive_supply),
-		}
+		self.as_inner().calculate_costs(low, high, passive_supply)
 	}
 }
 
