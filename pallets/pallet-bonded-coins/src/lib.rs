@@ -358,18 +358,21 @@ pub mod pallet {
 		pub fn reset_manager(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			manager: Option<AccountIdOf<T>>,
+			new_manager: Option<AccountIdOf<T>>,
 		) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			Pools::<T>::try_mutate(&pool_id, |maybe_entry| -> DispatchResult {
 				let entry = maybe_entry.as_mut().ok_or(Error::<T>::PoolUnknown)?;
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
-				entry.manager = manager.clone();
+				entry.manager = new_manager.clone();
 
 				Ok(())
 			})?;
 
-			Self::deposit_event(Event::ManagerUpdated { id: pool_id, manager });
+			Self::deposit_event(Event::ManagerUpdated {
+				id: pool_id,
+				manager: new_manager,
+			});
 
 			Ok(())
 		}
