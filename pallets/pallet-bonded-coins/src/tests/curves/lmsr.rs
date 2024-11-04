@@ -139,3 +139,32 @@ fn mint_coin_with_existing_supply_and_passive_issuance() {
 
 	assert_relative_eq(costs, expected_costs, Float::from_str("0.00000002").unwrap());
 }
+
+#[test]
+fn swap() {
+	// Create curve with liquidity parameter b=100_000_000, and passive issuance=100
+	let m = Float::from_num(100_000_000);
+
+	let curve = LMSRParameters { m };
+
+	// we mint 100 coins.
+	let low = Float::from_num(100u128);
+	let high = Float::from_num(101u128);
+
+	let passive_issuance = Float::from_num(100);
+
+	// Costs for existing supply:  100000000 * ln(e^(100/100000000) + e^(100/100000000)) = 69314818.055994530942
+	// Costs for new supply: 100000000 * ln(e^(101/100000000) + e^(100/100000000)) = 69314818.555994532192
+	// Costs to mint the first coin: 69314818.555994532192 - 69314818.055994530942 = 0.50000000125
+	let costs = curve.calculate_costs(low, high, vec![passive_issuance]).unwrap();
+
+	let expected_costs = Float::from_str("0.50000000125").unwrap();
+
+	let calculated_shares = curve
+		.calculate_shares_from_collateral(expected_costs, vec![passive_issuance, high], 1)
+		.unwrap();
+
+	assert_eq!(calculated_shares, Float::from_num(1));
+
+	assert_relative_eq(costs, expected_costs, Float::from_str("0.00000002").unwrap());
+}
