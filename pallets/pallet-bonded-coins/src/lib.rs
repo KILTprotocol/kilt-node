@@ -961,13 +961,13 @@ pub mod pallet {
 			Ok((currency_array, start_id))
 		}
 
-		fn get_currencies_number(pool_details: &PoolDetailsOf<T>) -> u32 {
+		pub(crate) fn get_currencies_number(pool_details: &PoolDetailsOf<T>) -> u32 {
 			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is
 			// a u32; conversion to u32 must thus be lossless.
 			pool_details.bonded_currencies.len().saturated_into()
 		}
 
-		fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
+		pub(crate) fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
 			n_currencies: N,
 		) -> DepositCurrencyBalanceOf<T> {
 			T::BaseDeposit::get()
