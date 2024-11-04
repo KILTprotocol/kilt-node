@@ -24,13 +24,13 @@ use kilt_support::migration::switch_reserved_to_hold;
 
 use crate::{AccountIdOf, Config, CurrencyOf, Error, HoldReason, Owner, Web3NameOf};
 
-pub fn update_balance_for_w3n<T: Config>(key: &Web3NameOf<T>) -> DispatchResult
+pub fn update_balance_for_w3n<T: Config<I>, I: 'static>(key: &Web3NameOf<T, I>) -> DispatchResult
 where
-	<T as Config>::Currency:
-		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+	<T as Config<I>>::Currency:
+		ReservableCurrency<T::AccountId, Balance = <<T as Config<I>>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
-	let details = Owner::<T>::get(key).ok_or(Error::<T>::NotFound)?;
-	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+	let details = Owner::<T, I>::get(key).ok_or(Error::<T, I>::NotFound)?;
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T, I>>(
 		&details.deposit.owner,
 		&HoldReason::Deposit.into(),
 		details.deposit.amount,
