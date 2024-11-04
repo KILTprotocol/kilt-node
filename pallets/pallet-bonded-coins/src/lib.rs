@@ -366,13 +366,12 @@ pub mod pallet {
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 				entry.manager = manager.clone();
 
-				Self::deposit_event(Event::ManagerUpdated {
-					id: pool_id.clone(),
-					manager,
-				});
-
 				Ok(())
-			})
+			})?;
+
+			Self::deposit_event(Event::ManagerUpdated { id: pool_id, manager });
+
+			Ok(())
 		}
 
 		#[pallet::call_index(3)]
