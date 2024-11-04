@@ -57,7 +57,7 @@ pub mod runtime {
 	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use public_credentials::InputSubjectIdOf;
 	use scale_info::TypeInfo;
-	use sp_core::{ed25519, ConstU128, ConstU32};
+	use sp_core::{ed25519, ConstBool, ConstU128, ConstU32};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 		AccountId32, BuildStorage, MultiSignature, MultiSigner, Perquintill, RuntimeDebug,
@@ -309,6 +309,7 @@ pub mod runtime {
 		type DidIdentifier = SubjectId;
 		type WeightInfo = ();
 		type BalanceMigrationManager = Migration;
+		type UniqueLinkingEnabled = ConstBool<false>;
 	}
 
 	pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;

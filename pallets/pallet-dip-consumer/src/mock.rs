@@ -23,7 +23,7 @@ use frame_support::{
 		traits::{BlakeTwo256, IdentityLookup},
 		AccountId32,
 	},
-	traits::{ConstU16, ConstU32, ConstU64, Contains, Currency, Everything},
+	traits::{ConstBool, ConstU16, ConstU32, ConstU64, Contains, Currency, Everything},
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
 
@@ -94,6 +94,7 @@ impl pallet_did_lookup::Config for TestRuntime {
 	type OriginSuccess = DipOrigin<AccountId32, AccountId32, ()>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type UniqueLinkingEnabled = ConstBool<false>;
 	type WeightInfo = ();
 }
 

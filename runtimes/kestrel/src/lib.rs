@@ -437,6 +437,9 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type BalanceMigrationManager = ();
 	type WeightInfo = ();
+	// Do not change the below flag to `true` without also deploying a runtime
+	// migration which removes any links that point to the same DID!
+	type UniqueLinkingEnabled = ConstBool<false>;
 }
 
 impl pallet_web3_names::Config for Runtime {

@@ -433,6 +433,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type UniqueLinkingEnabled = ConstBool<false>;
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
