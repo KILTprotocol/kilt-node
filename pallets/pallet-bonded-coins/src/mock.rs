@@ -36,9 +36,6 @@ pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 0;
 pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = AssetId::MAX;
 pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
 pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
-pub(crate) const DEFAULT_COLLATERAL_UNIT: Balance = 10u128.pow(10);
-pub(crate) const DEFAULT_BONDED_UNIT: Balance = 10u128.pow(10);
-pub const UNIT_NATIVE: Balance = 10u128.pow(15);
 
 // helper functions
 pub fn assert_relative_eq(target: Float, expected: Float, epsilon: Float) {
@@ -281,7 +278,7 @@ pub mod runtime {
 			.assimilate_storage(&mut storage)
 			.expect("assimilate should not fail");
 
-			let collateral_assets = self.collaterals.iter().map(|id| (*id, ACCOUNT_99, false, 0));
+			let collateral_assets = self.collaterals.into_iter().map(|id| (id, ACCOUNT_99, false, 0));
 
 			pallet_assets::GenesisConfig::<Test> {
 				assets: self
