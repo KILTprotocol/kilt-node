@@ -12,10 +12,11 @@ use sp_runtime::{
 use substrate_fixed::types::{I75F53, U75F53};
 
 use crate::{
+	self as pallet_bonded_coins,
 	curves::{polynomial::PolynomialParameters, Curve},
 	traits::{FreezeAccounts, ResetTeam},
 	types::{Locks, PoolStatus},
-	Config, DepositCurrencyBalanceOf, PoolDetailsOf,
+	DepositCurrencyBalanceOf, PoolDetailsOf,
 };
 
 pub type Float = I75F53;
@@ -223,7 +224,7 @@ pub mod runtime {
 		pub const CollateralAssetId: u32 = u32::MAX;
 	}
 
-	impl Config for Test {
+	impl pallet_bonded_coins::Config for Test {
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
 		type CollateralCurrency = Assets;
@@ -246,8 +247,8 @@ pub mod runtime {
 	pub(crate) struct ExtBuilder {
 		native_assets: Vec<(AccountId, DepositCurrencyBalanceOf<Test>)>,
 		bonded_balance: Vec<(AssetId, AccountId, Balance)>,
-		// denomination, pool_id, PoolDetails
-		pools: Vec<(u8, AccountId, PoolDetailsOf<Test>)>,
+		//  pool_id, PoolDetails
+		pools: Vec<(AccountId, PoolDetailsOf<Test>)>,
 		collaterals: Vec<AssetId>,
 	}
 
@@ -260,7 +261,7 @@ pub mod runtime {
 			self
 		}
 
-		pub(crate) fn with_pools(mut self, pools: Vec<(u8, AccountId, PoolDetailsOf<Test>)>) -> Self {
+		pub(crate) fn with_pools(mut self, pools: Vec<(AccountId, PoolDetailsOf<Test>)>) -> Self {
 			self.pools = pools;
 			self
 		}
@@ -284,7 +285,7 @@ pub mod runtime {
 				assets: self
 					.pools
 					.iter()
-					.map(|(_, owner, pool)| {
+					.map(|(owner, pool)| {
 						pool.bonded_currencies
 							.iter()
 							.map(|id| (*id, owner.to_owned(), false, 1u128))
@@ -298,11 +299,11 @@ pub mod runtime {
 				metadata: self
 					.pools
 					.iter()
-					.map(|(denomination, _, pool_details)| {
+					.map(|(_, pool_details)| {
 						pool_details
 							.bonded_currencies
 							.iter()
-							.map(|id| (*id, vec![], vec![], *denomination))
+							.map(|id| (*id, vec![], vec![], pool_details.denomination))
 							.collect::<Vec<(u32, Vec<u8>, Vec<u8>, u8)>>()
 					})
 					.flatten()
@@ -316,8 +317,8 @@ pub mod runtime {
 			ext.execute_with(|| {
 				System::set_block_number(System::block_number() + 1);
 
-				self.pools.iter().for_each(|(_, pool_id, pool)| {
-					crate::Pools::<Test>::insert(pool_id.clone(), pool.clone());
+				self.pools.into_iter().for_each(|(pool_id, pool)| {
+					crate::Pools::<Test>::insert(pool_id, pool);
 				});
 			});
 
