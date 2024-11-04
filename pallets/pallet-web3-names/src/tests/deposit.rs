@@ -95,7 +95,7 @@ fn test_update_deposit() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.build_and_execute_with_sanity_tests(|| {
-			insert_raw_w3n::<Test>(
+			insert_raw_w3n::<Test, _>(
 				ACCOUNT_00,
 				DID_00,
 				web3_name_00.clone(),
@@ -133,7 +133,7 @@ fn test_update_deposit_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.build_and_execute_with_sanity_tests(|| {
-			insert_raw_w3n::<Test>(
+			insert_raw_w3n::<Test, _>(
 				ACCOUNT_00,
 				DID_00,
 				web3_name_00.clone(),

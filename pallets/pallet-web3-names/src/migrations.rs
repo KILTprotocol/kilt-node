@@ -103,7 +103,7 @@ pub mod test {
 					w3n_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				assert_ok!(update_balance_for_w3n::<Test>(&web3_name_00.clone()));
+				assert_ok!(update_balance_for_w3n::<Test, _>(&web3_name_00.clone()));
 
 				let w3n_post_migration = Owner::<Test>::get(web3_name_00.clone());
 
@@ -130,7 +130,10 @@ pub mod test {
 				assert_eq!(reserved_post_migration, balance_on_hold);
 
 				// should throw error if w3n does not exist
-				assert_noop!(update_balance_for_w3n::<Test>(&web3_name_01), Error::<Test>::NotFound);
+				assert_noop!(
+					update_balance_for_w3n::<Test, _>(&web3_name_01),
+					Error::<Test>::NotFound
+				);
 			})
 	}
 }

@@ -50,7 +50,7 @@ fn claiming_successful() {
 			// Test that the ownership details match
 			assert_eq!(
 				owner_details,
-				Web3OwnershipOf::<Test> {
+				Web3OwnershipOf::<Test, _> {
 					owner: DID_00,
 					claimed_at: 1,
 					deposit: Deposit {

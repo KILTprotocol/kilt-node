@@ -220,7 +220,7 @@ pub mod pallet {
 	impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
-			crate::try_state::do_try_state::<T>()
+			crate::try_state::do_try_state::<T, I>()
 		}
 	}
 

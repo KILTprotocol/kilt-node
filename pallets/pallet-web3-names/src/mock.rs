@@ -23,20 +23,20 @@ use crate::{
 	AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf,
 };
 
-pub(crate) fn insert_raw_w3n<T: Config>(
+pub(crate) fn insert_raw_w3n<T: Config<I>, I: 'static>(
 	payer: AccountIdOf<T>,
-	owner: Web3NameOwnerOf<T>,
-	name: Web3NameOf<T>,
+	owner: Web3NameOwnerOf<T, I>,
+	name: Web3NameOf<T, I>,
 	block_number: BlockNumberFor<T>,
-	deposit: BalanceOf<T>,
+	deposit: BalanceOf<T, I>,
 ) {
-	CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &payer, deposit)
+	CurrencyOf::<T, I>::hold(&HoldReason::Deposit.into(), &payer, deposit)
 		.expect("Payer should have enough funds for deposit");
 
-	Names::<T>::insert(&owner, name.clone());
-	Owner::<T>::insert(
+	Names::<T, I>::insert(&owner, name.clone());
+	Owner::<T, I>::insert(
 		&name,
-		Web3OwnershipOf::<T> {
+		Web3OwnershipOf::<T, I> {
 			owner,
 			claimed_at: block_number,
 			deposit: Deposit {
@@ -244,7 +244,7 @@ pub(crate) mod runtime {
 		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 			self.build().execute_with(|| {
 				test();
-				crate::try_state::do_try_state::<Test>().expect("Sanity test for w3n failed.");
+				crate::try_state::do_try_state::<Test, _>().expect("Sanity test for w3n failed.");
 			})
 		}
 
