@@ -21,14 +21,14 @@ use crate::{
 pub enum Curve<Parameter> {
 	Polynomial(PolynomialParameters<Parameter>),
 	SquareRoot(SquareRootParameters<Parameter>),
-	LMSR(LMSRParameters<Parameter>),
+	Lmsr(LMSRParameters<Parameter>),
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum CurveInput<Parameter> {
 	Polynomial(PolynomialParametersInput<Parameter>),
 	SquareRoot(SquareRootParametersInput<Parameter>),
-	LMSR(LMSRParametersInput<Parameter>),
+	Lmsr(LMSRParametersInput<Parameter>),
 }
 
 impl<I, C> TryFrom<CurveInput<I>> for Curve<C>
@@ -40,9 +40,9 @@ where
 	type Error = ();
 	fn try_from(value: CurveInput<I>) -> Result<Self, Self::Error> {
 		match value {
-			CurveInput::LMSR(params) => {
+			CurveInput::Lmsr(params) => {
 				let checked_param = LMSRParameters::<C>::try_from(params).map_err(|_| ())?;
-				Ok(Curve::LMSR(checked_param))
+				Ok(Curve::Lmsr(checked_param))
 			}
 			CurveInput::Polynomial(params) => {
 				let checked_param = PolynomialParameters::<C>::try_from(params).map_err(|_| ())?;

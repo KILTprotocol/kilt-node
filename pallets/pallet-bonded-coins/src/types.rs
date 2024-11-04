@@ -50,23 +50,26 @@ impl<LockType> PoolStatus<LockType> {
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies> {
+pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId> {
 	pub owner: AccountId,
 	pub manager: Option<AccountId>,
 	pub curve: ParametrizedCurve,
+	pub collateral_id: BaseCurrencyId,
 	pub bonded_currencies: Currencies,
 	pub state: PoolStatus<Locks>,
 	pub transferable: bool,
 	pub denomination: u8,
 }
 
-impl<AccountId, ParametrizedCurve, Currencies> PoolDetails<AccountId, ParametrizedCurve, Currencies>
+impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
+	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
 where
 	AccountId: PartialEq + Clone,
 {
 	pub fn new(
 		owner: AccountId,
 		curve: ParametrizedCurve,
+		collateral_id: BaseCurrencyId,
 		bonded_currencies: Currencies,
 		transferable: bool,
 		denomination: u8,
@@ -75,6 +78,7 @@ where
 			manager: Some(owner.clone()),
 			owner,
 			curve,
+			collateral_id,
 			bonded_currencies,
 			transferable,
 			state: PoolStatus::default(),
@@ -90,7 +94,7 @@ where
 		Some(who) == self.manager.as_ref()
 	}
 
-	pub fn is_minting_authorized(&self, who: &AccountId) -> bool {
+	pub fn can_mint(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(who),
 			PoolStatus::Active => true,
@@ -98,7 +102,7 @@ where
 		}
 	}
 
-	pub fn is_swapping_authorized(&self, who: &AccountId) -> bool {
+	pub fn can_swap(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(who),
 			PoolStatus::Active => true,
@@ -106,7 +110,7 @@ where
 		}
 	}
 
-	pub fn is_burning_authorized(&self, who: &AccountId) -> bool {
+	pub fn can_burn(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(who),
 			PoolStatus::Active => true,
