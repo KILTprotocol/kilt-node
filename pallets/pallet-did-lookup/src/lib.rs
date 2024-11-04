@@ -131,6 +131,11 @@ pub mod pallet {
 
 		/// Migration manager to handle new created entries
 		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self, I>>;
+
+		// Flag specifying whether there should only ever be a single account <-> DID
+		// link, or multiple.
+		#[pallet::constant]
+		type UniqueLinkingEnabled: Get<bool>;
 	}
 
 	#[pallet::pallet]
@@ -196,6 +201,9 @@ pub mod pallet {
 		///
 		/// NOTE: this will only be returned if the storage has inconsistencies.
 		Migration,
+		/// The deployed pallet supports a single account <-> link, which has
+		/// already been previously created for the provided DID.
+		LinkExisting,
 	}
 
 	#[pallet::genesis_config]
@@ -445,6 +453,19 @@ pub mod pallet {
 				deposit,
 				did: did_identifier.clone(),
 			};
+
+			// We don't care if an account is linked to a new DID (handled below by
+			// replacing the old with the new), but we care that if the unique linking flag
+			// is on, the DID can have a single account linked.
+			let is_did_already_linked = ConnectedAccounts::<T, I>::iter_key_prefix(&did_identifier)
+				.next()
+				.is_some();
+			let is_unique_flag_enabled = <T as Config<I>>::UniqueLinkingEnabled::get();
+			// Either flag not enabled, or if it is, the DID is not already linked.
+			ensure!(
+				!is_unique_flag_enabled || !is_did_already_linked,
+				Error::<T, I>::LinkExisting
+			);
 
 			LinkableAccountDepositCollector::<T, I>::create_deposit(
 				record.clone().deposit.owner,

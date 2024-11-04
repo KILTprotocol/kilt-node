@@ -372,3 +372,44 @@ fn test_remove_association_account_not_authorized() {
 			);
 		});
 }
+
+#[test]
+fn test_add_association_with_unique_linking_enabled() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.with_unique_connections()
+		.build_and_execute_with_sanity_tests(|| {
+			// First time linking works.
+			assert_ok!(DidLookup::associate_sender(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()
+			));
+			assert!(ConnectedDids::<Test>::contains_key(LinkableAccountId::from(ACCOUNT_00)));
+			assert!(ConnectedAccounts::<Test>::contains_key(
+				DID_00,
+				LinkableAccountId::from(ACCOUNT_00)
+			));
+
+			// Changing the DID linked to an account (overriding the previous DID) works.
+			assert_ok!(DidLookup::associate_sender(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()
+			));
+			assert!(ConnectedDids::<Test>::contains_key(LinkableAccountId::from(ACCOUNT_00)));
+			assert!(ConnectedAccounts::<Test>::contains_key(
+				DID_01,
+				LinkableAccountId::from(ACCOUNT_00)
+			));
+			assert!(!ConnectedAccounts::<Test>::contains_key(
+				DID_00,
+				LinkableAccountId::from(ACCOUNT_00)
+			));
+
+			// Linking a second account to the same DID fails.
+			assert_noop!(
+				DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into()),
+				Error::<Test>::LinkExisting
+			);
+		})
+}
