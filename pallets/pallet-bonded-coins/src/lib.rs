@@ -378,7 +378,7 @@ pub mod pallet {
 		#[pallet::call_index(3)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
-			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
@@ -398,7 +398,7 @@ pub mod pallet {
 		#[pallet::call_index(4)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
-			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
