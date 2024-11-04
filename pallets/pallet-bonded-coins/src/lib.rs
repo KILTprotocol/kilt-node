@@ -430,7 +430,7 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::NoPermission);
+			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
 
 			ensure!(
 				Self::get_currencies_number(&pool_details) <= currency_count,
@@ -503,7 +503,7 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.is_burning_authorized(&who), Error::<T>::NoPermission);
+			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
 
 			ensure!(
 				Self::get_currencies_number(&pool_details) <= currency_count,
