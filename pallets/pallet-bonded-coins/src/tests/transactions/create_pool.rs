@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[test]
-fn creates_pool() {
+fn single_currency() {
 	let initial_balance = 100_000_000_000_000_000u128;
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
@@ -88,6 +88,54 @@ fn creates_pool() {
 					depositor: ACCOUNT_00,
 				}
 				.into(),
+			);
+		});
+}
+
+#[test]
+fn multi_currency() {
+	let initial_balance = 100_000_000_000_000_000u128;
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build()
+		.execute_with(|| {
+			assert!(NextAssetId::<Test>::get() == 0);
+			assert_eq!(initial_balance, Balances::free_balance(ACCOUNT_00));
+
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+			let curve = get_linear_bonding_curve_input();
+
+			let bonded_token = TokenMetaOf::<Test> {
+				name: BoundedVec::truncate_from(b"Bitcoin".to_vec()),
+				symbol: BoundedVec::truncate_from(b"btc".to_vec()),
+				min_balance: 1,
+			};
+
+			let bonded_tokens = vec![bonded_token; 3];
+
+			assert_eq!(bonded_tokens.len(), 3);
+
+			assert_ok!(BondingPallet::create_pool(
+				origin,
+				curve,
+				DEFAULT_COLLATERAL_CURRENCY_ID,
+				BoundedVec::truncate_from(bonded_tokens),
+				10,
+				true
+			));
+
+			assert!(NextAssetId::<Test>::get() == 3);
+
+			let pool_id = calculate_pool_id(vec![0, 1, 2]);
+
+			let details = Pools::<Test>::get(pool_id).unwrap();
+
+			assert_eq!(BondingPallet::get_currencies_number(&details), 3);
+			assert_eq!(details.bonded_currencies, vec![0, 1, 2]);
+
+			assert!(
+				Balances::free_balance(ACCOUNT_00) == initial_balance.sub(BondingPallet::calculate_pool_deposit(3))
 			);
 		});
 }
