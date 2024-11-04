@@ -125,7 +125,7 @@ pub mod test {
 					connected_did_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				assert_ok!(update_balance_for_did_lookup::<Test>(&LINKABLE_ACCOUNT_00));
+				assert_ok!(update_balance_for_did_lookup::<Test, _>(&LINKABLE_ACCOUNT_00));
 
 				let connected_did_post_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
 
@@ -153,7 +153,7 @@ pub mod test {
 
 				// should throw error if connected did does not exist
 				assert_noop!(
-					update_balance_for_did_lookup::<Test>(&LINKABLE_ACCOUNT_01),
+					update_balance_for_did_lookup::<Test, _>(&LINKABLE_ACCOUNT_01),
 					Error::<Test>::NotFound
 				);
 			})

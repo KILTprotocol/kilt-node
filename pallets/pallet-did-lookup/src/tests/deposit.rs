@@ -104,7 +104,7 @@ fn test_update_deposit() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.build_and_execute_with_sanity_tests(|| {
-			insert_raw_connection::<Test>(
+			insert_raw_connection::<Test, _>(
 				ACCOUNT_00,
 				DID_00,
 				ACCOUNT_00.into(),
@@ -133,7 +133,7 @@ fn test_update_deposit_unauthorized() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.build_and_execute_with_sanity_tests(|| {
-			insert_raw_connection::<Test>(
+			insert_raw_connection::<Test, _>(
 				ACCOUNT_00,
 				DID_00,
 				ACCOUNT_00.into(),
