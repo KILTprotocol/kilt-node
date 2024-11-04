@@ -90,8 +90,8 @@ fn did_lookup_storage_sizes() {
 
 #[test]
 fn web3_name_storage_sizes() {
-	let owner_size = Web3NameOf::<Runtime>::max_encoded_len();
-	let name_size = Web3OwnershipOf::<Runtime>::max_encoded_len();
+	let owner_size = Web3NameOf::<Runtime, _>::max_encoded_len();
+	let name_size = Web3OwnershipOf::<Runtime, _>::max_encoded_len();
 
 	assert_eq!(owner_size + name_size, MAX_NAME_BYTE_LENGTH as usize)
 }

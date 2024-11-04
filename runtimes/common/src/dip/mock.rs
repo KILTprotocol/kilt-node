@@ -255,7 +255,7 @@ pub(crate) struct ExtBuilder(
 	Vec<(
 		DidIdentifier,
 		DidDetails<TestRuntime>,
-		Option<Web3NameOf<TestRuntime>>,
+		Option<Web3NameOf<TestRuntime, ()>>,
 		Vec<LinkableAccountId>,
 		AccountId,
 	)>,
@@ -269,7 +269,7 @@ impl ExtBuilder {
 		dids: Vec<(
 			DidIdentifier,
 			DidDetails<TestRuntime>,
-			Option<Web3NameOf<TestRuntime>>,
+			Option<Web3NameOf<TestRuntime, ()>>,
 			Vec<LinkableAccountId>,
 			AccountId,
 		)>,

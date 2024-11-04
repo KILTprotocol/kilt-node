@@ -192,14 +192,14 @@ impl<
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
 		BlockNumberFor<KiltRuntime>,
-		Web3NameOf<KiltRuntime>,
+		Web3NameOf<KiltRuntime, ()>,
 		LinkableAccountId,
 	>;
 	type VerificationResult = DipOriginInfo<
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
 		BlockNumberFor<KiltRuntime>,
-		Web3NameOf<KiltRuntime>,
+		Web3NameOf<KiltRuntime, ()>,
 		LinkableAccountId,
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>;

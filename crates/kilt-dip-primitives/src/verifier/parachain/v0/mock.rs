@@ -200,7 +200,7 @@ pub(crate) fn cross_chain_proof_with_authentication_key_and_web3_name() -> Parac
 	KeyIdOf<PeregrineRuntime>,
 	<PeregrineRuntime as frame_system::Config>::AccountId,
 	BlockNumberFor<PeregrineRuntime>,
-	Web3NameOf<PeregrineRuntime>,
+	Web3NameOf<PeregrineRuntime, ()>,
 	LinkableAccountId,
 	BlockNumberFor<TestConsumerRuntime>,
 > {

@@ -368,7 +368,7 @@ fn generate_proof_for_complete_linked_info() {
 fn generate_proof_with_only_auth_key() {
 	let auth_key = sr25519::Pair::from_seed(&[10u8; 32]);
 	let did_auth_key = DidVerificationKey::Sr25519(auth_key.public());
-	let linked_info = create_linked_info(did_auth_key, Option::<Web3NameOf<TestRuntime>>::None, 0);
+	let linked_info = create_linked_info(did_auth_key, Option::<Web3NameOf<TestRuntime, ()>>::None, 0);
 
 	// 1. Fails to generate the proof for a key that does not exist.
 	assert_err!(
@@ -399,7 +399,7 @@ fn generate_proof_with_two_keys_with_same_id() {
 	let auth_key = ed25519::Pair::from_seed(&[10u8; 32]);
 	let did_auth_key = DidVerificationKey::Ed25519(auth_key.public());
 	let linked_info = {
-		let mut info = create_linked_info(did_auth_key.clone(), Option::<Web3NameOf<TestRuntime>>::None, 0);
+		let mut info = create_linked_info(did_auth_key.clone(), Option::<Web3NameOf<TestRuntime, ()>>::None, 0);
 		info.did_details
 			.update_attestation_key(did_auth_key, BlockNumber::default())
 			.unwrap();

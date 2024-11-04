@@ -181,14 +181,14 @@ benchmarks! {
 
 	w3n_migration_weight {
 		let sender: AccountIdOf<T> = account("caller", 0, SEED);
-		let owner: Web3NameOwnerOf<T> = account("owner", 0, SEED);
+		let owner: Web3NameOwnerOf<T, ()> = account("owner", 0, SEED);
 		let web3_name_input: BoundedVec<u8, <T as pallet_web3_names::Config>::MaxNameLength> = BoundedVec::try_from(vec![104, 101, 105, 105,111]).expect("Vector initialization should not fail.");
 		let origin = <T as pallet_web3_names::Config>::OwnerOrigin::generate_origin(sender.clone(), owner);
 
 		pallet_balances::Pallet::<T>::set_balance(&sender, KILT.saturated_into());
 		pallet_web3_names::Pallet::<T>::claim(origin, web3_name_input.clone()).expect("Should register the claimed web3 name.");
 		kilt_support::migration::translate_holds_to_reserve::<T>(pallet_web3_names::HoldReason::Deposit.into());
-		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
+		let web3_name = Web3NameOf::<T, ()>::try_from(web3_name_input.to_vec()).unwrap();
 
 		let entries_to_migrate = EntriesToMigrate {
 			w3n: BoundedVec::try_from(vec![web3_name]).expect("Vector initialization should not fail."),

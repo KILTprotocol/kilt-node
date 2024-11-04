@@ -80,7 +80,7 @@ pub mod pallet {
 		pub delegation: BoundedVec<DelegationNodeIdOf<T>, <T as Config>::MaxMigrationsPerPallet>,
 		pub did: BoundedVec<DidIdentifierOf<T>, <T as Config>::MaxMigrationsPerPallet>,
 		pub lookup: BoundedVec<LinkableAccountId, <T as Config>::MaxMigrationsPerPallet>,
-		pub w3n: BoundedVec<Web3NameOf<T>, <T as Config>::MaxMigrationsPerPallet>,
+		pub w3n: BoundedVec<Web3NameOf<T, ()>, <T as Config>::MaxMigrationsPerPallet>,
 		pub public_credentials: BoundedVec<(SubjectIdOf<T>, CredentialIdOf<T>), <T as Config>::MaxMigrationsPerPallet>,
 	}
 
@@ -228,7 +228,7 @@ pub mod pallet {
 				if !is_migrated {
 					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key);
 					MigratedKeys::<T>::insert(key_hash, ());
-					pallet_web3_names::migrations::update_balance_for_w3n::<T>(key)
+					pallet_web3_names::migrations::update_balance_for_w3n::<T, ()>(key)
 				} else {
 					Ok(())
 				}
