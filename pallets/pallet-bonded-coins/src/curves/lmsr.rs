@@ -8,7 +8,7 @@ use substrate_fixed::{
 };
 
 use super::BondingFunction;
-use crate::{PassiveSupply, Precision};
+use crate::{PassiveSupply, Precision, LOG_TARGET};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParametersInput<Parameter> {
@@ -34,9 +34,12 @@ where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn lse(&self, supply: Vec<Parameter>) -> Result<Parameter, ArithmeticError> {
+	fn lse(&self, supply: &[Parameter]) -> Result<Parameter, ArithmeticError> {
 		// Find the maximum value in the supply for numerical stability
-		let max = supply.iter().max().ok_or(ArithmeticError::Underflow)?;
+		let max = supply.iter().max().ok_or_else(|| {
+			log::error!(target: LOG_TARGET, "Supply is empty. Found pool with no currencies.");
+			ArithmeticError::Underflow
+		})?;
 
 		// Compute the sum of the exponent terms, adjusted by max for stability
 		let e_term_sum = supply.iter().try_fold(Parameter::from_num(0), |acc, x| {
@@ -52,7 +55,7 @@ where
 
 		// Compute the logarithm of the sum and scale it by `m`, then add the max term
 		ln::<Parameter, Parameter>(e_term_sum)
-			.map_err(|_| ArithmeticError::Overflow)
+			.map_err(|_| ArithmeticError::Underflow)
 			.and_then(|log_sum| log_sum.checked_mul(self.m).ok_or(ArithmeticError::Overflow))
 			.and_then(|scaled_log| scaled_log.checked_add(*max).ok_or(ArithmeticError::Overflow))
 	}
@@ -67,16 +70,17 @@ where
 		&self,
 		low: Parameter,
 		high: Parameter,
-		mut passive_supply: PassiveSupply<Parameter>,
+		passive_supply: PassiveSupply<Parameter>,
 	) -> Result<Parameter, ArithmeticError> {
 		// Clone passive_supply and add low and high to create modified supplies
-		let mut low_passive_supply = passive_supply.clone();
-		low_passive_supply.push(low);
-		passive_supply.push(high);
+		let mut low_total_supply = passive_supply.clone();
+		low_total_supply.push(low);
+		let mut high_total_supply = passive_supply.clone();
+		high_total_supply.push(high);
 
 		// Compute LSE for both modified supplies
-		let lower_bound_value = self.lse(low_passive_supply)?;
-		let high_bound_value = self.lse(passive_supply)?;
+		let lower_bound_value = self.lse(&low_total_supply)?;
+		let high_bound_value = self.lse(&high_total_supply)?;
 
 		// Return the difference between high and low LSE values
 		high_bound_value

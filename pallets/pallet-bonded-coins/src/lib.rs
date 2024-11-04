@@ -96,7 +96,7 @@ pub mod pallet {
 
 	pub(crate) type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, CurrencyNameOf<T>, CurrencySymbolOf<T>>;
 
-	const LOG_TARGET: &str = "runtime::pallet-bonded-coins";
+	pub(crate) const LOG_TARGET: &str = "runtime::pallet-bonded-coins";
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
