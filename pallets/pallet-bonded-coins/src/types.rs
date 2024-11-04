@@ -94,7 +94,7 @@ where
 		Some(who) == self.manager.as_ref()
 	}
 
-	pub fn is_minting_authorized(&self, who: &AccountId) -> bool {
+	pub fn can_mint(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(who),
 			PoolStatus::Active => true,
@@ -102,7 +102,7 @@ where
 		}
 	}
 
-	pub fn is_swapping_authorized(&self, who: &AccountId) -> bool {
+	pub fn can_swap(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(who),
 			PoolStatus::Active => true,
@@ -110,7 +110,7 @@ where
 		}
 	}
 
-	pub fn is_burning_authorized(&self, who: &AccountId) -> bool {
+	pub fn can_burn(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(who),
 			PoolStatus::Active => true,
