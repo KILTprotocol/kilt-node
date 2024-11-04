@@ -13,7 +13,10 @@ use substrate_fixed::types::{I75F53, U75F53};
 
 use crate::{
 	self as pallet_bonded_coins,
-	curves::{polynomial::PolynomialParameters, Curve},
+	curves::{
+		polynomial::{PolynomialParameters, PolynomialParametersInput},
+		Curve, CurveInput,
+	},
 	traits::{FreezeAccounts, ResetTeam},
 	types::{Locks, PoolStatus},
 	DepositCurrencyBalanceOf, PoolDetailsOf,
@@ -53,6 +56,13 @@ pub(crate) fn get_linear_bonding_curve() -> Curve<Float> {
 	let n = Float::from_num(2);
 	let o = Float::from_num(3);
 	Curve::Polynomial(PolynomialParameters { m, n, o })
+}
+
+pub(crate) fn get_linear_bonding_curve_input() -> CurveInput<FloatInput> {
+	let m = FloatInput::from_num(0);
+	let n = FloatInput::from_num(2);
+	let o = FloatInput::from_num(3);
+	CurveInput::Polynomial(PolynomialParametersInput { m, n, o })
 }
 
 pub(crate) fn calculate_pool_id(currencies: Vec<AssetId>) -> AccountId {
@@ -227,7 +237,7 @@ pub mod runtime {
 	impl pallet_bonded_coins::Config for Test {
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
-		type CollateralCurrency = Assets;
+		type CollateralCurrencies = Assets;
 		type CurveParameterInput = FloatInput;
 		type CurveParameterType = Float;
 		type DefaultOrigin = EnsureSigned<AccountId>;
@@ -261,6 +271,11 @@ pub mod runtime {
 			self
 		}
 
+		pub(crate) fn with_collaterals(mut self, collaterals: Vec<AssetId>) -> Self {
+			self.collaterals = collaterals;
+			self
+		}
+
 		pub(crate) fn with_pools(mut self, pools: Vec<(AccountId, PoolDetailsOf<Test>)>) -> Self {
 			self.pools = pools;
 			self
@@ -271,7 +286,7 @@ pub mod runtime {
 			self
 		}
 
-		pub(crate) fn build(mut self) -> sp_io::TestExternalities {
+		pub(crate) fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.native_assets.clone(),
@@ -279,19 +294,18 @@ pub mod runtime {
 			.assimilate_storage(&mut storage)
 			.expect("assimilate should not fail");
 
-			let collateral_assets = self.collaterals.into_iter().map(|id| (id, ACCOUNT_99, false, 0));
+			let collateral_assets = self.collaterals.into_iter().map(|id| (id, ACCOUNT_99, false, 1));
 
 			pallet_assets::GenesisConfig::<Test> {
 				assets: self
 					.pools
 					.iter()
-					.map(|(owner, pool)| {
+					.flat_map(|(owner, pool)| {
 						pool.bonded_currencies
 							.iter()
 							.map(|id| (*id, owner.to_owned(), false, 1u128))
 							.collect::<Vec<(AssetId, AccountId, bool, Balance)>>()
 					})
-					.flatten()
 					.chain(collateral_assets)
 					.collect(),
 
@@ -299,14 +313,13 @@ pub mod runtime {
 				metadata: self
 					.pools
 					.iter()
-					.map(|(_, pool_details)| {
+					.flat_map(|(_, pool_details)| {
 						pool_details
 							.bonded_currencies
 							.iter()
 							.map(|id| (*id, vec![], vec![], pool_details.denomination))
 							.collect::<Vec<(u32, Vec<u8>, Vec<u8>, u8)>>()
 					})
-					.flatten()
 					.collect(),
 			}
 			.assimilate_storage(&mut storage)
