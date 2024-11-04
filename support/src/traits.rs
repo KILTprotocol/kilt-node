@@ -149,10 +149,8 @@ impl<AccountId, Balance> BalanceMigrationManager<AccountId, Balance> for () {
 
 pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 	type Currency: MutateHold<AccountId, Reason = RuntimeHoldReason>;
-	// TODO: This could also be replaced with a `Borrow<RuntimeHoldReason>` or an
-	// `AsRef<RuntimeHoldReason>`, but not sure what trait the runtime composite
-	// enum implements.
-	type Reason: Into<RuntimeHoldReason> + Clone;
+
+	type Reason: Into<RuntimeHoldReason>;
 
 	/// Returns the hold reason for deposits taken by the deposit collector;
 	fn reason() -> Self::Reason;
@@ -216,7 +214,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		let reason = Self::reason();
 
 		if is_key_migrated {
-			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
+			free_deposit::<AccountId, Self::Currency>(&deposit, &Self::reason().into())?;
 		} else {
 			DepositBalanceMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
 			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);
@@ -257,7 +255,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		let is_key_migrated = DepositBalanceMigrationManager::is_key_migrated(&hashed_key);
 
 		if is_key_migrated {
-			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
+			free_deposit::<AccountId, Self::Currency>(&deposit, &Self::reason().into())?;
 		} else {
 			DepositBalanceMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
 			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);

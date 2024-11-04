@@ -111,7 +111,7 @@ pub mod pallet {
 	pub type Banned<T: Config<I>, I: 'static = ()> = StorageMap<_, Blake2_128Concat, Web3NameOf<T, I>, ()>;
 
 	#[pallet::composite_enum]
-	pub enum HoldReason {
+	pub enum HoldReason<I: 'static = ()> {
 		Deposit,
 	}
 
@@ -124,7 +124,7 @@ pub mod pallet {
 		/// The type of origin after a successful origin check.
 		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self, I>>;
 		/// Aggregated hold reason.
-		type RuntimeHoldReason: From<HoldReason>;
+		type RuntimeHoldReason: From<HoldReason<I>>;
 		/// The currency type to reserve and release deposits.
 		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 		/// The amount of KILT to deposit to claim a name.
@@ -571,11 +571,12 @@ pub mod pallet {
 	}
 
 	pub(crate) struct Web3NameStorageDepositCollector<T, I>(PhantomData<(T, I)>);
-	impl<T: Config<I>, I: 'static> StorageDepositCollector<AccountIdOf<T>, T::Web3Name, T::RuntimeHoldReason>
+	impl<T: Config<I>, I: 'static>
+		StorageDepositCollector<AccountIdOf<T>, <T as Config<I>>::Web3Name, <T as Config<I>>::RuntimeHoldReason>
 		for Web3NameStorageDepositCollector<T, I>
 	{
 		type Currency = T::Currency;
-		type Reason = HoldReason;
+		type Reason = HoldReason<I>;
 
 		fn get_hashed_key(key: &T::Web3Name) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
 			Ok(Owner::<T, I>::hashed_key_for(key))
