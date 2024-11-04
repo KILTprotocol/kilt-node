@@ -204,7 +204,7 @@ impl ExtBuilder {
 	pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 		self.build().execute_with(|| {
 			test();
-			crate::try_state::do_try_state::<Test>().expect("Sanity test for did lookup failed.");
+			crate::try_state::do_try_state::<Test, _>().expect("Sanity test for did lookup failed.");
 		})
 	}
 
