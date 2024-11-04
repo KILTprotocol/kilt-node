@@ -65,8 +65,8 @@ pub mod pallet {
 	pub(crate) type DepositCurrencyBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
-	pub(crate) type CollateralCurrencyBalanceOf<T> =
-		<<T as Config>::CollateralCurrency as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
+	pub(crate) type CollateralCurrenciesBalanceOf<T> =
+		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
 
 	pub(crate) type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
@@ -75,7 +75,7 @@ pub mod pallet {
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	type CollateralAssetIdOf<T> =
-		<<T as Config>::CollateralCurrency as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
+		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
 
@@ -109,8 +109,8 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The currency used for storage deposits.
 		type DepositCurrency: MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
-		/// The currency used as collateral for minting bonded tokens.
-		type CollateralCurrency: MutateFungibles<Self::AccountId>
+		/// A fungibles trait implementation to interact with currencies which can be used as collateral for minting bonded tokens.
+		type CollateralCurrencies: MutateFungibles<Self::AccountId>
 			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
@@ -118,7 +118,7 @@ pub mod pallet {
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
-			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrencyBalanceOf<Self>>
+			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrenciesBalanceOf<Self>>
 			+ FreezeAccounts<Self::AccountId, Self::AssetId>
 			+ ResetTeam<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
@@ -299,7 +299,7 @@ pub mod pallet {
 
 			// Touch the pool account in order to be able to transfer the collateral currency to it
 			// This should also verify that the currency actually exists
-			T::CollateralCurrency::touch(collateral_id.clone(), pool_account, &who)?;
+			T::CollateralCurrencies::touch(collateral_id.clone(), pool_account, &who)?;
 
 			Pools::<T>::set(
 				&pool_id,
@@ -358,27 +358,29 @@ pub mod pallet {
 		pub fn reset_manager(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			manager: Option<AccountIdOf<T>>,
+			new_manager: Option<AccountIdOf<T>>,
 		) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			Pools::<T>::try_mutate(&pool_id, |maybe_entry| -> DispatchResult {
 				let entry = maybe_entry.as_mut().ok_or(Error::<T>::PoolUnknown)?;
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
-				entry.manager = manager.clone();
-
-				Self::deposit_event(Event::ManagerUpdate {
-					id: pool_id.clone(),
-					manager,
-				});
+				entry.manager = new_manager.clone();
 
 				Ok(())
-			})
+			})?;
+
+			Self::deposit_event(Event::ManagerUpdated {
+				id: pool_id,
+				manager: new_manager,
+			});
+
+			Ok(())
 		}
 
 		#[pallet::call_index(3)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
-			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
@@ -398,7 +400,7 @@ pub mod pallet {
 		#[pallet::call_index(4)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
-			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
@@ -422,7 +424,7 @@ pub mod pallet {
 			currency_idx: u32,
 			beneficiary: AccountIdLookupOf<T>,
 			amount_to_mint: FungiblesBalanceOf<T>,
-			max_cost: CollateralCurrencyBalanceOf<T>,
+			max_cost: CollateralCurrenciesBalanceOf<T>,
 			currency_count: u32,
 		) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
@@ -430,7 +432,7 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::NoPermission);
+			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
 
 			ensure!(
 				Self::get_currencies_number(&pool_details) <= currency_count,
@@ -470,7 +472,7 @@ pub mod pallet {
 			ensure!(cost <= max_cost, Error::<T>::Slippage);
 
 			// Transfer the collateral. We do not want to kill the minter, so this operation can fail if the account is being reaped.
-			T::CollateralCurrency::transfer(
+			T::CollateralCurrencies::transfer(
 				pool_details.collateral_id,
 				&who,
 				&pool_id.into(),
@@ -495,7 +497,7 @@ pub mod pallet {
 			currency_idx: u32,
 			beneficiary: AccountIdLookupOf<T>,
 			amount_to_burn: FungiblesBalanceOf<T>,
-			min_return: CollateralCurrencyBalanceOf<T>,
+			min_return: CollateralCurrenciesBalanceOf<T>,
 			currency_count: u32,
 		) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
@@ -503,7 +505,7 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.is_minting_authorized(&who), Error::<T>::NoPermission);
+			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
 
 			ensure!(
 				Self::get_currencies_number(&pool_details) <= currency_count,
@@ -541,7 +543,7 @@ pub mod pallet {
 
 			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
 
-			T::CollateralCurrency::transfer(
+			T::CollateralCurrencies::transfer(
 				pool_details.collateral_id,
 				&pool_id.into(),
 				&beneficiary,
@@ -627,11 +629,11 @@ pub mod pallet {
 			// in case of any locks present on the pool account, this could lead to refunds failing to execute though.
 			// This case would have to be resolved by governance, either by removing locks or force_destroying the pool.
 			let total_collateral_issuance =
-				T::CollateralCurrency::total_balance(pool_details.collateral_id.clone(), &pool_account);
+				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
 			// nothing to distribute; refunding is complete, user should call start_destroy
 			ensure!(
-				total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero(),
+				total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero(),
 				Error::<T>::NothingToRefund
 			);
 
@@ -666,7 +668,7 @@ pub mod pallet {
 				.ok_or(Error::<T>::NothingToRefund)?; // should be impossible - how would we be able to burn funds if the sum of total supplies is 0?
 
 			if amount.is_zero()
-				|| T::CollateralCurrency::can_deposit(
+				|| T::CollateralCurrencies::can_deposit(
 					pool_details.collateral_id.clone(),
 					&who,
 					amount,
@@ -680,7 +682,7 @@ pub mod pallet {
 				return Ok(());
 			}
 
-			let transferred = T::CollateralCurrency::transfer(
+			let transferred = T::CollateralCurrencies::transfer(
 				pool_details.collateral_id,
 				&pool_account,
 				&who,
@@ -739,10 +741,10 @@ pub mod pallet {
 			let pool_account = pool_id.clone().into();
 
 			let total_collateral_issuance =
-				T::CollateralCurrency::total_balance(pool_details.collateral_id.clone(), &pool_account);
+				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
-			if total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero() {
-				T::CollateralCurrency::transfer(
+			if total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero() {
+				T::CollateralCurrencies::transfer(
 					pool_details.collateral_id,
 					&pool_account,
 					&pool_details.owner,
@@ -776,11 +778,11 @@ pub mod pallet {
 			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
 			curve: &Curve<CurveParameterTypeOf<T>>,
 			collateral_currency_id: CollateralAssetIdOf<T>,
-		) -> Result<CollateralCurrencyBalanceOf<T>, ArithmeticError> {
+		) -> Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError> {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
 			let collateral_denomination = 10u128
-				.checked_pow(T::CollateralCurrency::decimals(collateral_currency_id).into())
+				.checked_pow(T::CollateralCurrencies::decimals(collateral_currency_id).into())
 				.ok_or(ArithmeticError::Overflow)?;
 
 			let real_costs = normalized_costs
@@ -833,10 +835,10 @@ pub mod pallet {
 			}
 
 			let total_collateral_issuance =
-				T::CollateralCurrency::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
+				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 			// nothing to distribute
 			ensure!(
-				total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero(),
+				total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero(),
 				Error::<T>::NothingToRefund
 			);
 
@@ -884,9 +886,9 @@ pub mod pallet {
 
 			if !force_skip_refund {
 				let total_collateral_issuance =
-					T::CollateralCurrency::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
+					T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 
-				if total_collateral_issuance > CollateralCurrencyBalanceOf::<T>::zero() {
+				if total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero() {
 					let has_holders = pool_details.bonded_currencies.iter().any(|asset_id| {
 						T::Fungibles::total_issuance(asset_id.clone()) > FungiblesBalanceOf::<T>::zero()
 					});
