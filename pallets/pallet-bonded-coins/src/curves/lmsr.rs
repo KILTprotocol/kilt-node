@@ -38,7 +38,7 @@ where
 		// Find the maximum value in the supply for numerical stability
 		let max = supply.iter().max().ok_or_else(|| {
 			log::error!(target: LOG_TARGET, "Supply is empty. Found pool with no currencies.");
-			ArithmeticError::Underflow
+			ArithmeticError::DivisionByZero
 		})?;
 
 		// Compute the sum of the exponent terms, adjusted by max for stability
