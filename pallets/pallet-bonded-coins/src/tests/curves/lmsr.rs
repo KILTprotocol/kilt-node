@@ -68,7 +68,7 @@ fn high_supply_with_passive_issuance() {
 
 	let expected_costs = Float::from_str("0.0123394637").unwrap();
 
-	assert_relative_eq(costs, expected_costs, Float::from_str("0.00001").unwrap());
+	assert_relative_eq(costs, expected_costs, Float::from_str("0.0000001").unwrap());
 }
 
 // The main consequences of the low liquidity parameter is a lack of representable coins. e^40 goes beyond the representable range of the [Float] type.
@@ -107,12 +107,12 @@ fn mint_coin_with_existing_supply_and_no_passive_issuance() {
 
 	let passive_issuance = Float::from_num(0);
 
-	// Costs for existing supply:  100000000 * ln(e^(100/100000000) + e^(0/100000000)) = 69314768.056007030942
-	// Costs for new supply: 100000000 * ln(e^(101/100000000) + e^(0/100000000)) = 69314768.556007282192
-	// Costs to mint the first coin: 1000012340.2313117896 - 1000012340.2189723259 = 0.0123394637
+	// Costs for existing supply:  100000000 * ln(e^(100/100000000) + e^(0/100000000)) = 69314768.056007030941723211624
+	// Costs for new supply: 100000000 * ln(e^(101/100000000) + e^(0/100000000)) = 69314768.55600728219172321160383640
+	// Costs to mint the first coin: 69314768.55600728219172321160383640 - 69314768.55600728219172321160383640 = 0.5000002412499999999798364
 	let costs = curve.calculate_costs(low, high, vec![passive_issuance]).unwrap();
 
-	let expected_costs = Float::from_str("0.50000025125").unwrap();
+	let expected_costs = Float::from_str("0.50000024125").unwrap();
 
 	assert_relative_eq(costs, expected_costs, Float::from_str("0.00000001").unwrap());
 }
@@ -137,5 +137,5 @@ fn mint_coin_with_existing_supply_and_passive_issuance() {
 
 	let expected_costs = Float::from_str("0.50000000125").unwrap();
 
-	assert_relative_eq(costs, expected_costs, Float::from_str("0.00000002").unwrap());
+	assert_relative_eq(costs, expected_costs, Float::from_str("0.00000001").unwrap());
 }
