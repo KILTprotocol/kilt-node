@@ -75,7 +75,7 @@ where
 		// Clone passive_supply and add low and high to create modified supplies
 		let mut low_total_supply = passive_supply.clone();
 		low_total_supply.push(low);
-		let mut high_total_supply = passive_supply.clone();
+		let mut high_total_supply = passive_supply;
 		high_total_supply.push(high);
 
 		// Compute LSE for both modified supplies
