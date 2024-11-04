@@ -216,7 +216,7 @@ pub mod pallet {
 				if !is_migrated {
 					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key);
 					MigratedKeys::<T>::insert(key_hash, ());
-					pallet_did_lookup::migrations::update_balance_for_did_lookup::<T>(key)
+					pallet_did_lookup::migrations::update_balance_for_did_lookup::<T, ()>(key)
 				} else {
 					Ok(())
 				}
