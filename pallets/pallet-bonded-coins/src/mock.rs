@@ -195,6 +195,9 @@ impl pallet_assets::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type StringLimit = StringLimit;
 	type WeightInfo = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 parameter_types! {
 	pub const CurrencyDeposit: Balance = 500;
@@ -219,6 +222,9 @@ impl pallet_bonded_coins::Config for Test {
 	type PoolId = AccountId;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 #[derive(Clone, Default)]

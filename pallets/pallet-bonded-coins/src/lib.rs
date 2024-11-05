@@ -7,7 +7,7 @@ pub use pallet::*;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-#[cfg(any(feature = "runtime-benchmarks", test))]
+#[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod tests;
@@ -71,10 +71,10 @@ pub mod pallet {
 	pub(crate) type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
 
-	type FungiblesAssetIdOf<T> =
+	pub(crate) type FungiblesAssetIdOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
-	type CollateralAssetIdOf<T> =
+	pub(crate) type CollateralAssetIdOf<T> =
 		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
@@ -160,6 +160,9 @@ pub mod pallet {
 			+ From<Precision>;
 
 		type CurveParameterInput: Parameter + FixedUnsigned + MaxEncodedLen;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: pallet_assets::BenchmarkHelper<Self::AssetId>;
 	}
 
 	#[pallet::pallet]
