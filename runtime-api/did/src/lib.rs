@@ -66,7 +66,7 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 >;
 
 sp_api::decl_runtime_apis! {
-	#[api_version(2)]
+	#[api_version(3)]
 	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber: MaxEncodedLen> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
@@ -84,6 +84,9 @@ sp_api::decl_runtime_apis! {
 		#[changed_in(2)]
 		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		/// Allows for batching multiple `query_by_web3_name` requests into one. For each requested name, the corresponding vector entry contains either `Some` or `None` depending on the result of each query.
+		#[allow(clippy::type_complexity)]
+		fn batch_query_by_web3_name(names: Vec<Vec<u8>>) -> Vec<Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>>;
 		/// Given an account address this returns:
 		/// * the DID
 		/// * public keys stored for the did
@@ -93,6 +96,9 @@ sp_api::decl_runtime_apis! {
 		#[changed_in(2)]
 		fn query_by_account(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query_by_account(account: LinkableAccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		/// Allows for batching multiple `query_by_account` requests into one. For each requested name, the corresponding vector entry contains either `Some` or `None` depending on the result of each query.
+		#[allow(clippy::type_complexity)]
+		fn batch_query_by_account(accounts: Vec<LinkableAccountId>) -> Vec<Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>>;
 		/// Given a did this returns:
 		/// * the DID
 		/// * public keys stored for the did
@@ -102,5 +108,8 @@ sp_api::decl_runtime_apis! {
 		#[changed_in(2)]
 		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		/// Allows for batching multiple `query` requests into one. For each requested name, the corresponding vector entry contains either `Some` or `None` depending on the result of each query.
+		#[allow(clippy::type_complexity)]
+		fn batch_query(dids: Vec<DidIdentifier>) -> Vec<Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>>;
 	}
 }

@@ -1034,6 +1034,18 @@ impl_runtime_apis! {
 			})
 		}
 
+		fn batch_query_by_web3_name(names: Vec<Vec<u8>>) -> Vec<Option<kilt_runtime_api_did::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			names.into_iter().map(Self::query_by_web3_name).collect()
+		}
+
 		fn query_by_account(account: LinkableAccountId) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
@@ -1063,6 +1075,19 @@ impl_runtime_apis! {
 				})
 		}
 
+		fn batch_query_by_account(accounts: Vec<LinkableAccountId>) -> Vec<Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			accounts.into_iter().map(Self::query_by_account).collect()
+		}
+
 		fn query(did: DidIdentifier) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
@@ -1085,6 +1110,19 @@ impl_runtime_apis! {
 				service_endpoints,
 				details: details.into(),
 			})
+		}
+
+		fn batch_query(dids: Vec<DidIdentifier>) -> Vec<Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			dids.into_iter().map(Self::query).collect()
 		}
 	}
 
