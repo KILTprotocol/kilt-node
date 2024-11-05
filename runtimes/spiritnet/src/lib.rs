@@ -75,8 +75,8 @@ use runtime_common::{
 	fees::{ToAuthorCredit, WeightToFee},
 	pallet_id,
 	xcm_config::RelayOrigin,
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
-	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, DotName,
+	FeeSplit, Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
@@ -716,6 +716,24 @@ impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = Migration;
 }
 
+type DotNamesDeployment = pallet_web3_names::Instance1;
+impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
+	type BalanceMigrationManager = ();
+	type BanOrigin = EnsureRoot<AccountId>;
+	type Currency = Balances;
+	type Deposit = constants::dot_names::Web3NameDeposit;
+	type MaxNameLength = constants::dot_names::MaxNameLength;
+	type MinNameLength = constants::dot_names::MinNameLength;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type Web3Name = DotName<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
+	type Web3NameOwner = DidIdentifier;
+	// TODO: Change
+	type WeightInfo = ();
+}
+
 impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;
 	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
@@ -1110,6 +1128,7 @@ construct_runtime! {
 		Migration: pallet_migration = 70,
 		DipProvider: pallet_dip_provider = 71,
 		DepositStorage: pallet_deposit_storage = 72,
+		DotNames: pallet_web3_names::<Instance1> = 73,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
@@ -1258,6 +1277,7 @@ mod benches {
 		[pallet_inflation, Inflation]
 		[pallet_did_lookup, DidLookup]
 		[pallet_web3_names, Web3Names]
+		[pallet_web3_names, DotNames]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pallet_migration, Migration]
