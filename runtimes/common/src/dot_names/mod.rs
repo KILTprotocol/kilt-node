@@ -19,98 +19,48 @@
 use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_core::RuntimeDebug;
-use sp_runtime::{traits::Get, BoundedVec, SaturatedConversion};
+use sp_core::{ConstU32, RuntimeDebug};
+use sp_runtime::{BoundedVec, SaturatedConversion};
 
 use pallet_web3_names::{Config, Error};
 
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-#[scale_info(skip_type_params(T, I))]
-#[codec(mel_bound())]
-pub struct DotName<T, I>(pub BoundedVec<u8, <T as Config<I>>::MaxNameLength>)
-where
-	T: Config<I>,
-	I: 'static;
+#[cfg(test)]
+mod tests;
 
-impl<T, I> TryFrom<Vec<u8>> for DotName<T, I>
+pub enum DotNameValidationError {
+	TooShort,
+	TooLong,
+	InvalidCharacter,
+}
+
+impl<T, I> From<DotNameValidationError> for Error<T, I>
 where
 	T: Config<I>,
 	I: 'static,
 {
-	type Error = Error<T, I>;
+	fn from(value: DotNameValidationError) -> Self {
+		match value {
+			DotNameValidationError::TooLong => Self::TooLong,
+			DotNameValidationError::TooShort => Self::TooShort,
+			DotNameValidationError::InvalidCharacter => Self::InvalidCharacter,
+		}
+	}
+}
+
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen, PartialEq, Eq, PartialOrd, Ord, Clone)]
+pub struct DotName<const MIN_LENGTH: u32, const MAX_LENGTH: u32>(BoundedVec<u8, ConstU32<MAX_LENGTH>>);
+
+impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> TryFrom<Vec<u8>> for DotName<MIN_LENGTH, MAX_LENGTH> {
+	type Error = DotNameValidationError;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		ensure!(
-			value.len() >= T::MinNameLength::get().saturated_into(),
-			Self::Error::TooShort
-		);
-		let bounded_vec: BoundedVec<u8, T::MaxNameLength> =
+		ensure!(value.len() >= MIN_LENGTH.saturated_into(), Self::Error::TooShort);
+		let bounded_vec: BoundedVec<u8, ConstU32<MAX_LENGTH>> =
 			BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
 		ensure!(is_valid_dot_name(&bounded_vec), Self::Error::InvalidCharacter);
 		Ok(Self(bounded_vec))
 	}
 }
-
-// FIXME: did not find a way to automatically implement this. Runtime would need
-// to implement PartialEq.
-impl<T, I> PartialEq for DotName<T, I>
-where
-	T: Config<I>,
-	I: 'static,
-{
-	fn eq(&self, other: &Self) -> bool {
-		self.0 == other.0
-	}
-}
-
-// FIXME: did not find a way to automatically implement this. Runtime would need
-// to implement Eq.
-impl<T, I> Eq for DotName<T, I>
-where
-	T: Config<I>,
-	I: 'static,
-{
-	fn assert_receiver_is_total_eq(&self) {
-		self.0.assert_receiver_is_total_eq()
-	}
-}
-
-// FIXME: did not find a way to automatically implement this. Runtime would need
-// to implement PartialOrd.
-impl<T, I> PartialOrd for DotName<T, I>
-where
-	T: Config<I>,
-	I: 'static,
-{
-	fn partial_cmp(&self, other: &Self) -> Option<sp_std::cmp::Ordering> {
-		Some(self.0.as_slice().cmp(other.0.as_slice()))
-	}
-}
-
-// FIXME: did not find a way to automatically implement this. Runtime would need
-// to implement Ord.
-impl<T, I> Ord for DotName<T, I>
-where
-	T: Config<I>,
-	I: 'static,
-{
-	fn cmp(&self, other: &Self) -> sp_std::cmp::Ordering {
-		self.0.cmp(&other.0)
-	}
-}
-
-// FIXME: did not find a way to automatically implement this. Runtime would need
-// to implement Clone.
-impl<T, I> Clone for DotName<T, I>
-where
-	T: Config<I>,
-	I: 'static,
-{
-	fn clone(&self) -> Self {
-		Self(self.0.clone())
-	}
-}
-
 fn is_valid_dot_name(input: &[u8]) -> bool {
 	let Some(dot_name_without_suffix) = input.strip_suffix(b".dot") else {
 		return false;
@@ -119,19 +69,4 @@ fn is_valid_dot_name(input: &[u8]) -> bool {
 	dot_name_without_suffix
 		.iter()
 		.all(|c| c.is_ascii_digit() || c.is_ascii_lowercase())
-}
-
-#[cfg(test)]
-mod test {
-	use super::*;
-
-	const MIN_LENGTH: u32 = 4;
-	const MAX_LENGTH: u32 =
-
-	let valid_inputs = [
-		b"ntn.dot",
-		b"012.dot",
-		b"n01.dot",
-		b"
-	];
 }

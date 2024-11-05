@@ -735,7 +735,7 @@ impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type Web3Name = DotName<Runtime, DotNamesDeployment>;
+	type Web3Name = DotName<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
 	type Web3NameOwner = DidIdentifier;
 	// TODO: Change
 	type WeightInfo = ();

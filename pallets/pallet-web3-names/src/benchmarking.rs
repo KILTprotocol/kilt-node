@@ -34,7 +34,7 @@ use sp_std::{vec, vec::Vec};
 use kilt_support::{traits::GenerateBenchmarkOrigin, Deposit};
 
 use crate::{
-	mock::insert_raw_w3n, AccountIdOf, Banned, Call, Config, CurrencyOf, Names, Owner, Pallet, Web3NameOf,
+	mock::insert_raw_w3n, AccountIdOf, Banned, Call, Config, CurrencyOf, Error, Names, Owner, Pallet, Web3NameOf,
 	Web3NameOwnerOf,
 };
 
@@ -64,6 +64,7 @@ benchmarks_instance_pallet! {
 		T::Web3NameOwner: From<T::AccountId>,
 		T::OwnerOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::Web3NameOwner>,
 		T::BanOrigin: EnsureOrigin<T::RuntimeOrigin>,
+		<<T as Config<I>>::Web3Name as TryFrom<Vec<u8>>>::Error: Into<Error<T, I>>,
 		<T as Config<I>>::Currency: Mutate<T::AccountId>,
 	}
 
@@ -78,7 +79,9 @@ benchmarks_instance_pallet! {
 		make_free_for_did::<T, I>(&caller);
 	}: _<T::RuntimeOrigin>(origin, web3_name_input_clone)
 	verify {
-		let web3_name = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()).unwrap();
+		let Ok(web3_name) = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()) else {
+			panic!();
+		};
 		assert!(Names::<T, I>::get(&owner).is_some());
 		assert!(Owner::<T, I>::get(&web3_name).is_some());
 	}
@@ -93,7 +96,9 @@ benchmarks_instance_pallet! {
 		Pallet::<T, I>::claim(origin.clone(), web3_name_input.clone()).expect("Should register the claimed web3 name.");
 	}: _<T::RuntimeOrigin>(origin)
 	verify {
-		let web3_name = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()).unwrap();
+		let Ok(web3_name) = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()) else {
+			panic!();
+		};
 		assert!(Names::<T, I>::get(&owner).is_none());
 		assert!(Owner::<T, I>::get(&web3_name).is_none());
 	}
@@ -111,7 +116,9 @@ benchmarks_instance_pallet! {
 		Pallet::<T, I>::claim(did_origin, web3_name_input.clone()).expect("Should register the claimed web3 name.");
 	}: _(signed_origin, web3_name_input_clone)
 	verify {
-		let web3_name = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()).unwrap();
+		let Ok(web3_name) = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()) else {
+			panic!();
+		};
 		assert!(Names::<T, I>::get(&owner).is_none());
 		assert!(Owner::<T, I>::get(&web3_name).is_none());
 	}
@@ -129,7 +136,9 @@ benchmarks_instance_pallet! {
 		Pallet::<T, I>::claim(did_origin, web3_name_input.clone()).expect("Should register the claimed web3 name.");
 	}: _(ban_origin, web3_name_input_clone)
 	verify {
-		let web3_name = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()).unwrap();
+		let Ok(web3_name) = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()) else {
+			panic!();
+		};
 		assert!(Names::<T, I>::get(&owner).is_none());
 		assert!(Owner::<T, I>::get(&web3_name).is_none());
 		assert!(Banned::<T, I>::get(&web3_name).is_some());
@@ -147,7 +156,9 @@ benchmarks_instance_pallet! {
 		Pallet::<T, I>::ban(ban_origin.clone().into(), web3_name_input.clone()).expect("Should ban the web3 name.");
 	}: _(ban_origin, web3_name_input_clone)
 	verify {
-		let web3_name = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()).unwrap();
+		let Ok(web3_name) = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()) else {
+			panic!();
+		};
 		assert!(Names::<T, I>::get(&owner).is_none());
 		assert!(Owner::<T, I>::get(&web3_name).is_none());
 		assert!(Banned::<T, I>::get(&web3_name).is_none());
@@ -170,7 +181,9 @@ benchmarks_instance_pallet! {
 		let origin = T::OwnerOrigin::generate_origin(deposit_owner_new.clone(), owner);
 	}: _<T::RuntimeOrigin>(origin)
 	verify {
-		let web3_name = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()).unwrap();
+		let Ok(web3_name) = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()) else {
+			panic!();
+		};
 		assert_eq!(Owner::<T, I>::get(&web3_name).expect("w3n should exists").deposit, Deposit {
 			owner: deposit_owner_new,
 			amount: <T as Config<I>>::Deposit::get(),
@@ -183,7 +196,9 @@ benchmarks_instance_pallet! {
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(
 			generate_web3_name_input(T::MaxNameLength::get().saturated_into())
 		).expect("BoundedVec creation should not fail.");
-		let web3_name = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()).unwrap();
+		let Ok(web3_name) = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()) else {
+			panic!();
+		};
 
 		make_free_for_did::<T, I>(&deposit_owner);
 		insert_raw_w3n::<T, I>(

@@ -177,6 +177,8 @@ where
 		+ pallet_balances::Config,
 	<Runtime as frame_system::Config>::AccountId:
 		Into<LinkableAccountId> + From<sp_core::sr25519::Public> + AsRef<[u8; 32]> + From<[u8; 32]>,
+	<<Runtime as pallet_web3_names::Config>::Web3Name as TryFrom<Vec<u8>>>::Error:
+		Into<pallet_web3_names::Error<Runtime>>,
 {
 	type Output = Self;
 
@@ -238,11 +240,15 @@ where
 		let web3_name_input: BoundedVec<u8, <Runtime as pallet_web3_names::Config>::MaxNameLength> =
 			BoundedVec::try_from(vec![b'1'; max_name_length]).expect("BoundedVec creation should not fail.");
 
-		let web3_name = pallet_web3_names::Web3NameOf::<Runtime>::try_from(web3_name_input.to_vec())
-			.expect("Creation of w3n from w3n input should not fail.");
+		let Ok(web3_name) = pallet_web3_names::Web3NameOf::<Runtime>::try_from(web3_name_input.to_vec()) else {
+			panic!("Creation of w3n from w3n input should not fail.");
+		};
 
-		pallet_web3_names::Pallet::<Runtime>::register_name(web3_name.clone(), did.clone(), submitter.clone())
-			.expect("Inserting w3n into storage should not fail.");
+		let Ok(_) =
+			pallet_web3_names::Pallet::<Runtime>::register_name(web3_name.clone(), did.clone(), submitter.clone())
+		else {
+			panic!("Inserting w3n into storage should not fail.");
+		};
 
 		let web3_name_details = Some(RevealedWeb3Name {
 			web3_name,

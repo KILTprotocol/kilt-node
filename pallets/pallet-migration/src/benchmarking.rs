@@ -66,6 +66,7 @@ benchmarks! {
 		<T as did::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as did::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		<T as pallet_did_lookup::Config>::Currency: ReservableCurrency<AccountIdOf<T>,Balance = <<T as pallet_did_lookup::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		<T as pallet_web3_names::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as pallet_web3_names::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+		<<T as pallet_web3_names::Config>::Web3Name as TryFrom<Vec<u8>>>::Error: Into<pallet_web3_names::Error<T>>,
 		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as public_credentials::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		<T as did::Config>::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
@@ -188,7 +189,9 @@ benchmarks! {
 		pallet_balances::Pallet::<T>::set_balance(&sender, KILT.saturated_into());
 		pallet_web3_names::Pallet::<T>::claim(origin, web3_name_input.clone()).expect("Should register the claimed web3 name.");
 		kilt_support::migration::translate_holds_to_reserve::<T>(pallet_web3_names::HoldReason::Deposit.into());
-		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
+		let Ok(web3_name) = Web3NameOf::<T>::try_from(web3_name_input.to_vec()) else {
+			panic!();
+		};
 
 		let entries_to_migrate = EntriesToMigrate {
 			w3n: BoundedVec::try_from(vec![web3_name]).expect("Vector initialization should not fail."),
