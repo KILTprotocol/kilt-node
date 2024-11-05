@@ -5,10 +5,8 @@ use sp_runtime::{ArithmeticError, BoundedVec};
 use sp_std::ops::Sub;
 
 use crate::{
-	mock::{
-		calculate_pool_id, get_linear_bonding_curve, get_linear_bonding_curve_input, runtime::*, AccountId, ACCOUNT_00,
-		ACCOUNT_01, DEFAULT_COLLATERAL_CURRENCY_ID,
-	},
+	mock::runtime::*,
+	mock::*,
 	types::{PoolManagingTeam, PoolStatus},
 	Error as BondingPalletErrors, Event as BondingPalletEvents, NextAssetId, Pools, TokenMetaOf,
 };
@@ -44,7 +42,7 @@ fn single_currency() {
 				true
 			));
 
-			let pool_id = calculate_pool_id(vec![0]);
+			let pool_id = calculate_pool_id(&[0]);
 
 			let details = Pools::<Test>::get(&pool_id).unwrap();
 
@@ -132,7 +130,7 @@ fn multi_currency() {
 
 			assert_eq!(NextAssetId::<Test>::get(), 3);
 
-			let pool_id = calculate_pool_id(vec![0, 1, 2]);
+			let pool_id = calculate_pool_id(&[0, 1, 2]);
 
 			let details = Pools::<Test>::get(pool_id).unwrap();
 
@@ -185,8 +183,8 @@ fn can_create_identical_pools() {
 
 			assert_eq!(NextAssetId::<Test>::get(), 2);
 
-			let details1 = Pools::<Test>::get(calculate_pool_id(vec![0])).unwrap();
-			let details2 = Pools::<Test>::get(calculate_pool_id(vec![1])).unwrap();
+			let details1 = Pools::<Test>::get(calculate_pool_id(&[0])).unwrap();
+			let details2 = Pools::<Test>::get(calculate_pool_id(&[1])).unwrap();
 
 			assert_eq!(details1.bonded_currencies, vec![0]);
 			assert_eq!(details2.bonded_currencies, vec![1]);
@@ -264,13 +262,13 @@ fn changes_manager() {
 	let pool_details = generate_pool_details(
 		vec![0],
 		curve,
-		None,
+		false,
 		Some(PoolStatus::Active),
 		Some(ACCOUNT_00),
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(vec![0]);
+	let pool_id = calculate_pool_id(&[0]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
 		.build()
@@ -300,13 +298,13 @@ fn only_manager_can_change_manager() {
 	let pool_details = generate_pool_details(
 		vec![0],
 		curve,
-		None,
+		false,
 		Some(PoolStatus::Active),
 		Some(manager.clone()),
 		None,
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(vec![0]);
+	let pool_id = calculate_pool_id(&[0]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
 		.build()
@@ -331,7 +329,7 @@ fn only_manager_can_change_manager() {
 
 #[test]
 fn cant_change_manager_if_pool_nonexistent() {
-	let pool_id = calculate_pool_id(vec![0]);
+	let pool_id = calculate_pool_id(&[0]);
 	ExtBuilder::default().build().execute_with(|| {
 		let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
@@ -351,13 +349,13 @@ fn resets_team() {
 	let pool_details = generate_pool_details(
 		vec![0],
 		get_linear_bonding_curve(),
-		None,
+		false,
 		Some(PoolStatus::Active),
 		Some(ACCOUNT_00),
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(vec![0]);
+	let pool_id = calculate_pool_id(&[0]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -392,13 +390,13 @@ fn does_not_change_team_when_not_live() {
 	let pool_details = generate_pool_details(
 		vec![0],
 		get_linear_bonding_curve(),
-		None,
+		false,
 		Some(PoolStatus::Refunding),
 		Some(ACCOUNT_00),
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(vec![0]);
+	let pool_id = calculate_pool_id(&[0]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -429,13 +427,13 @@ fn only_manager_can_change_team() {
 	let pool_details = generate_pool_details(
 		vec![0],
 		curve,
-		None,
+		false,
 		Some(PoolStatus::Active),
 		Some(manager.clone()),
 		None,
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(vec![0]);
+	let pool_id = calculate_pool_id(&[0]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
 		.build()
@@ -479,13 +477,13 @@ fn handles_currency_idx_out_of_bounds() {
 	let pool_details = generate_pool_details(
 		vec![0],
 		get_linear_bonding_curve(),
-		None,
+		false,
 		Some(PoolStatus::Active),
 		Some(ACCOUNT_00),
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(vec![0]);
+	let pool_id = calculate_pool_id(&[0]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
