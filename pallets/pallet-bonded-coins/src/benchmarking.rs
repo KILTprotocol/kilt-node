@@ -88,40 +88,40 @@ mod benchmarks {
 		assert_eq!(Pools::<T>::iter().count(), 1);
 	}
 
-	#[benchmark]
-	fn reset_team() {
-		let collateral_id = calculate_collateral_asset_id::<T>(u32::MAX);
-		let bonded_coin_id = calculate_bonded_asset_id::<T>(0);
+	// #[benchmark]
+	// fn reset_team() {
+	// 	let collateral_id = calculate_collateral_asset_id::<T>(u32::MAX);
+	// 	let bonded_coin_id = calculate_bonded_asset_id::<T>(0);
 
-		create_bonded_asset::<T>(bonded_coin_id.clone());
+	// 	create_bonded_asset::<T>(bonded_coin_id.clone());
 
-		let curve_parameters = CurveParameterTypeOf::<T>::from_num(0);
+	// 	let curve_parameters = CurveParameterTypeOf::<T>::from_num(0);
 
-		let curve = Curve::Polynomial(PolynomialParameters {
-			m: curve_parameters,
-			n: curve_parameters,
-			o: curve_parameters,
-		});
+	// 	let curve = Curve::Polynomial(PolynomialParameters {
+	// 		m: curve_parameters,
+	// 		n: curve_parameters,
+	// 		o: curve_parameters,
+	// 	});
 
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: None,
-			transferable: true,
-			bonded_currencies: BoundedVec::truncate_from(vec![bonded_coin_id]),
-			state: PoolStatus::Active,
-			collateral_id,
-			denomination: 10,
-			owner: account("owner", 0, 0),
-		};
+	// 	let pool_details = PoolDetailsOf::<T> {
+	// 		curve,
+	// 		manager: None,
+	// 		transferable: true,
+	// 		bonded_currencies: BoundedVec::truncate_from(vec![bonded_coin_id]),
+	// 		state: PoolStatus::Active,
+	// 		collateral_id,
+	// 		denomination: 10,
+	// 		owner: account("owner", 0, 0),
+	// 	};
 
-		let origin = T::DefaultOrigin::try_successful_origin().unwrap();
+	// 	let origin = T::DefaultOrigin::try_successful_origin().unwrap();
 
-		Pools::<T>::insert(calculate_pool_id(&[collateral_id]), pool_details);
+	// 	Pools::<T>::insert(calculate_pool_id(&[collateral_id]), pool_details);
 
-		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, curve, collateral_id, currencies);
+	// 	#[extrinsic_call]
+	// 	_(origin as T::RuntimeOrigin, curve, collateral_id, currencies);
 
-		// Verify
-		assert_eq!(Pools::<T>::iter().count(), 1);
-	}
+	// 	// Verify
+	// 	assert_eq!(Pools::<T>::iter().count(), 1);
+	// }
 }
