@@ -163,7 +163,7 @@ fn get_linked_account_leaves(
 
 fn get_web3name_leaf<Runtime>(
 	web3name_details: &Web3OwnershipOf<Runtime>,
-) -> RevealedWeb3Name<Web3NameOf<Runtime, ()>, BlockNumberFor<Runtime>>
+) -> RevealedWeb3Name<Web3NameOf<Runtime>, BlockNumberFor<Runtime>>
 where
 	Runtime: pallet_web3_names::Config,
 {

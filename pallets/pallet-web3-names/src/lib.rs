@@ -77,15 +77,15 @@ pub mod pallet {
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	pub type Web3NameOwnerOf<T, I> = <T as Config<I>>::Web3NameOwner;
-	pub type Web3NameInput<T, I> = BoundedVec<u8, <T as Config<I>>::MaxNameLength>;
-	pub type Web3NameOf<T, I> = <T as Config<I>>::Web3Name;
-	pub type Web3OwnershipOf<T, I> =
+	pub type BalanceOf<T, I = ()> = <CurrencyOf<T, I> as Inspect<AccountIdOf<T>>>::Balance;
+	pub type Web3NameOwnerOf<T, I = ()> = <T as Config<I>>::Web3NameOwner;
+	pub type Web3NameInput<T, I = ()> = BoundedVec<u8, <T as Config<I>>::MaxNameLength>;
+	pub type Web3NameOf<T, I = ()> = <T as Config<I>>::Web3Name;
+	pub type Web3OwnershipOf<T, I = ()> =
 		Web3NameOwnership<Web3NameOwnerOf<T, I>, Deposit<AccountIdOf<T>, BalanceOf<T, I>>, BlockNumberFor<T>>;
 
 	pub(crate) type BalanceMigrationManagerOf<T, I> = <T as Config<I>>::BalanceMigrationManager;
 	pub(crate) type CurrencyOf<T, I> = <T as Config<I>>::Currency;
-	pub type BalanceOf<T, I> = <CurrencyOf<T, I> as Inspect<AccountIdOf<T>>>::Balance;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]

@@ -151,7 +151,7 @@ impl<
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
 		BlockNumberFor<KiltRuntime>,
-		Web3NameOf<KiltRuntime, ()>,
+		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 		BlockNumberFor<ConsumerRuntime>,
 	>;
@@ -160,7 +160,7 @@ impl<
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
 		BlockNumberFor<KiltRuntime>,
-		Web3NameOf<KiltRuntime, ()>,
+		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>;

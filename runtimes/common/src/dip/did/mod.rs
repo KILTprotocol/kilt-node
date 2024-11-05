@@ -238,7 +238,7 @@ where
 		let web3_name_input: BoundedVec<u8, <Runtime as pallet_web3_names::Config>::MaxNameLength> =
 			BoundedVec::try_from(vec![b'1'; max_name_length]).expect("BoundedVec creation should not fail.");
 
-		let web3_name = pallet_web3_names::Web3NameOf::<Runtime, ()>::try_from(web3_name_input.to_vec())
+		let web3_name = pallet_web3_names::Web3NameOf::<Runtime>::try_from(web3_name_input.to_vec())
 			.expect("Creation of w3n from w3n input should not fail.");
 
 		pallet_web3_names::Pallet::<Runtime>::register_name(web3_name.clone(), did.clone(), submitter.clone())
