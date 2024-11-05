@@ -8,7 +8,7 @@ use substrate_fixed::{
 };
 
 use super::BondingFunction;
-use crate::{PassiveSupply, Precision};
+use crate::{PassiveSupply, Precision, LOG_TARGET};
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParametersInput<Parameter> {
@@ -34,13 +34,30 @@ where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn calculate_exp_term(&self, supply: Parameter, x: Parameter) -> Result<Parameter, ArithmeticError> {
-		supply
-			.checked_sub(x)
-			.ok_or(ArithmeticError::Underflow)?
-			.checked_div(self.m)
-			.ok_or(ArithmeticError::DivisionByZero)
-			.and_then(|exponent| exp::<Parameter, Parameter>(exponent).map_err(|_| ArithmeticError::Overflow))
+	fn lse(&self, supply: &[Parameter]) -> Result<Parameter, ArithmeticError> {
+		// Find the maximum value in the supply for numerical stability
+		let max = supply.iter().max().ok_or_else(|| {
+			log::error!(target: LOG_TARGET, "Supply is empty. Found pool with no currencies.");
+			ArithmeticError::DivisionByZero
+		})?;
+
+		// Compute the sum of the exponent terms, adjusted by max for stability
+		let e_term_sum = supply.iter().try_fold(Parameter::from_num(0), |acc, x| {
+			let exponent = x
+				.checked_sub(*max)
+				.ok_or(ArithmeticError::Underflow)?
+				.checked_div(self.m)
+				.ok_or(ArithmeticError::DivisionByZero)?;
+
+			let exp_result = exp::<Parameter, Parameter>(exponent).map_err(|_| ArithmeticError::Overflow)?;
+			acc.checked_add(exp_result).ok_or(ArithmeticError::Overflow)
+		})?;
+
+		// Compute the logarithm of the sum and scale it by `m`, then add the max term
+		ln::<Parameter, Parameter>(e_term_sum)
+			.map_err(|_| ArithmeticError::Underflow)
+			.and_then(|log_sum| log_sum.checked_mul(self.m).ok_or(ArithmeticError::Overflow))
+			.and_then(|scaled_log| scaled_log.checked_add(*max).ok_or(ArithmeticError::Overflow))
 	}
 }
 
@@ -49,48 +66,25 @@ where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	// c(a, c) = (a - c) + b * ln((1 + SUM_i e^((q_i - a)/b)) / (1 + SUM_i e^((q_i - c)/b)))
 	fn calculate_costs(
 		&self,
 		low: Parameter,
 		high: Parameter,
 		passive_supply: PassiveSupply<Parameter>,
 	) -> Result<Parameter, ArithmeticError> {
-		let e_term_numerator = passive_supply
-			.iter()
-			.map(|x| self.calculate_exp_term(*x, high))
-			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
+		// Clone passive_supply and add low and high to create modified supplies
+		let mut low_total_supply = passive_supply.clone();
+		low_total_supply.push(low);
+		let mut high_total_supply = passive_supply;
+		high_total_supply.push(high);
 
-		let term1 = e_term_numerator.iter().try_fold(Parameter::from_num(0), |acc, x| {
-			acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
-		})?;
+		// Compute LSE for both modified supplies
+		let lower_bound_value = self.lse(&low_total_supply)?;
+		let high_bound_value = self.lse(&high_total_supply)?;
 
-		let numerator = Parameter::from_num(1)
-			.checked_add(term1)
-			.ok_or(ArithmeticError::Overflow)?;
-
-		let e_term_denominator = passive_supply
-			.iter()
-			.map(|x| self.calculate_exp_term(*x, low))
-			.collect::<Result<Vec<Parameter>, ArithmeticError>>()?;
-
-		let term2 = e_term_denominator.iter().try_fold(Parameter::from_num(0), |acc, x| {
-			acc.checked_add(*x).ok_or(ArithmeticError::Overflow)
-		})?;
-
-		let denominator = Parameter::from_num(1)
-			.checked_add(term2)
-			.ok_or(ArithmeticError::Overflow)?;
-
-		let log_value = numerator
-			.checked_div(denominator)
-			.ok_or(ArithmeticError::DivisionByZero)
-			.and_then(|x| ln::<Parameter, Parameter>(x).map_err(|_| ArithmeticError::Overflow))?;
-
-		let high_low_diff = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
-
-		let m_log_value = self.m.checked_mul(log_value).ok_or(ArithmeticError::Overflow)?;
-
-		high_low_diff.checked_add(m_log_value).ok_or(ArithmeticError::Overflow)
+		// Return the difference between high and low LSE values
+		high_bound_value
+			.checked_sub(lower_bound_value)
+			.ok_or(ArithmeticError::Underflow)
 	}
 }
