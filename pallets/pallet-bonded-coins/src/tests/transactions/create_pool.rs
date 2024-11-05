@@ -19,7 +19,7 @@ fn single_currency() {
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
 		.execute_with(|| {
-			assert!(NextAssetId::<Test>::get() == 0);
+			assert_eq!(NextAssetId::<Test>::get(), 0);
 			assert_eq!(initial_balance, Balances::free_balance(ACCOUNT_00));
 
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -53,10 +53,11 @@ fn single_currency() {
 			assert_eq!(details.bonded_currencies.len(), 1);
 			assert_eq!(details.bonded_currencies[0], 0);
 
-			assert!(NextAssetId::<Test>::get() == 1);
+			assert_eq!(NextAssetId::<Test>::get(), 1);
 
-			assert!(
-				Balances::free_balance(ACCOUNT_00) == initial_balance.sub(BondingPallet::calculate_pool_deposit(1))
+			assert_eq!(
+				Balances::free_balance(ACCOUNT_00),
+				initial_balance.sub(BondingPallet::calculate_pool_deposit(1))
 			);
 
 			System::assert_has_event(BondingPalletEvents::PoolCreated { id: pool_id.clone() }.into());
@@ -100,7 +101,7 @@ fn multi_currency() {
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
 		.execute_with(|| {
-			assert!(NextAssetId::<Test>::get() == 0);
+			assert_eq!(NextAssetId::<Test>::get(), 0);
 			assert_eq!(initial_balance, Balances::free_balance(ACCOUNT_00));
 
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -125,7 +126,7 @@ fn multi_currency() {
 				true
 			));
 
-			assert!(NextAssetId::<Test>::get() == 3);
+			assert_eq!(NextAssetId::<Test>::get(), 3);
 
 			let pool_id = calculate_pool_id(vec![0, 1, 2]);
 
@@ -134,8 +135,9 @@ fn multi_currency() {
 			assert_eq!(BondingPallet::get_currencies_number(&details), 3);
 			assert_eq!(details.bonded_currencies, vec![0, 1, 2]);
 
-			assert!(
-				Balances::free_balance(ACCOUNT_00) == initial_balance.sub(BondingPallet::calculate_pool_deposit(3))
+			assert_eq!(
+				Balances::free_balance(ACCOUNT_00),
+				initial_balance.sub(BondingPallet::calculate_pool_deposit(3))
 			);
 		});
 }
