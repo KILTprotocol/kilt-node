@@ -716,7 +716,7 @@ impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = Migration;
 }
 
-type DotNamesDeployment = pallet_web3_names::Instance1;
+type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
@@ -1128,7 +1128,7 @@ construct_runtime! {
 		Migration: pallet_migration = 70,
 		DipProvider: pallet_dip_provider = 71,
 		DepositStorage: pallet_deposit_storage = 72,
-		DotNames: pallet_web3_names::<Instance1> = 73,
+		DotNames: pallet_web3_names::<Instance2> = 73,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
