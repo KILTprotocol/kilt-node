@@ -65,7 +65,7 @@ where
 		match self {
 			Curve::Polynomial(params) => params,
 			Curve::SquareRoot(params) => params,
-			Curve::LMSR(params) => params,
+			Curve::Lmsr(params) => params,
 		}
 	}
 }

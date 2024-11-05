@@ -46,6 +46,8 @@ pub mod pallet {
 	use sp_std::{
 		default::Default,
 		ops::{AddAssign, BitOrAssign, ShlAssign},
+		prelude::*,
+		vec::Vec,
 	};
 	use substrate_fixed::{
 		traits::{Fixed, FixedSigned, FixedUnsigned, ToFixed},
@@ -337,7 +339,7 @@ pub mod pallet {
 
 			let asset_id = pool_details
 				.bonded_currencies
-				.get(currency_idx as usize)
+				.get(currency_idx.saturated_into::<usize>())
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
 			let pool_id_account = pool_id.into();
