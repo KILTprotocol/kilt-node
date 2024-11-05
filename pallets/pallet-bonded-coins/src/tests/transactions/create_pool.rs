@@ -1,7 +1,7 @@
 use core::ops::Sub;
 
 use frame_support::{assert_err, assert_ok};
-use frame_system::RawOrigin;
+use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use pallet_assets::{Error as AssetsPalletErrors, Event as AssetsPalletEvents};
 use sp_runtime::BoundedVec;
 
@@ -137,6 +137,53 @@ fn multi_currency() {
 			assert!(
 				Balances::free_balance(ACCOUNT_00) == initial_balance.sub(BondingPallet::calculate_pool_deposit(3))
 			);
+		});
+}
+
+#[test]
+fn can_create_identical_pools() {
+	let initial_balance = 100_000_000_000_000_000u128;
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build()
+		.execute_with(|| {
+			assert_eq!(NextAssetId::<Test>::get(), 0);
+
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
+			let curve = get_linear_bonding_curve_input();
+
+			let bonded_token = TokenMetaOf::<Test> {
+				name: BoundedVec::truncate_from(b"Bitcoin".to_vec()),
+				symbol: BoundedVec::truncate_from(b"btc".to_vec()),
+				min_balance: 1,
+			};
+
+			assert_ok!(BondingPallet::create_pool(
+				origin.clone(),
+				curve.clone(),
+				DEFAULT_COLLATERAL_CURRENCY_ID,
+				BoundedVec::truncate_from(vec![bonded_token.clone()]),
+				10,
+				true
+			));
+
+			assert_ok!(BondingPallet::create_pool(
+				origin,
+				curve,
+				DEFAULT_COLLATERAL_CURRENCY_ID,
+				BoundedVec::truncate_from(vec![bonded_token]),
+				10,
+				true
+			));
+
+			assert_eq!(NextAssetId::<Test>::get(), 2);
+
+			let details1 = Pools::<Test>::get(calculate_pool_id(vec![0])).unwrap();
+			let details2 = Pools::<Test>::get(calculate_pool_id(vec![1])).unwrap();
+
+			assert_eq!(details1.bonded_currencies, vec![0]);
+			assert_eq!(details2.bonded_currencies, vec![1]);
 		});
 }
 
