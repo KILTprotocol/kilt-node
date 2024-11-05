@@ -78,14 +78,13 @@ pub mod runtime {
 	pub fn generate_pool_details(
 		currencies: Vec<AssetId>,
 		curve: Curve<Float>,
-		transferable: Option<bool>,
+		transferable: bool,
 		state: Option<PoolStatus<Locks>>,
 		manager: Option<AccountId>,
 		collateral_id: Option<AssetId>,
 		owner: Option<AccountId>,
 	) -> PoolDetailsOf<Test> {
 		let bonded_currencies = BoundedVec::truncate_from(currencies);
-		let transferable = transferable.unwrap_or(false);
 		let state = state.unwrap_or(PoolStatus::Active);
 		let owner = owner.unwrap_or(ACCOUNT_99);
 		let collateral_id = collateral_id.unwrap_or(DEFAULT_COLLATERAL_CURRENCY_ID);
