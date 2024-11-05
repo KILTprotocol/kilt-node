@@ -18,7 +18,7 @@
 
 use crate::dot_names::DotNameValidationError;
 
-// Min is a two characters + ".dot"
+// Min is 2 characters + ".dot"
 const MIN_LENGTH: u32 = 6;
 // Max is 6 characters + ".dot"
 const MAX_LENGTH: u32 = 10;

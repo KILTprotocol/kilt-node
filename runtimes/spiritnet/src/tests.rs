@@ -35,7 +35,7 @@ use runtime_common::{
 	AccountId, BlockNumber,
 };
 
-use crate::{Runtime, RuntimeCall};
+use crate::{DotNamesDeployment, Runtime, RuntimeCall};
 
 #[test]
 fn call_size() {
@@ -94,6 +94,17 @@ fn web3_name_storage_sizes() {
 	let name_size = Web3OwnershipOf::<Runtime>::max_encoded_len();
 
 	assert_eq!(owner_size + name_size, MAX_NAME_BYTE_LENGTH as usize)
+}
+
+#[test]
+fn dot_name_storage_sizes() {
+	let owner_size = Web3NameOf::<Runtime, DotNamesDeployment>::max_encoded_len();
+	let name_size = Web3OwnershipOf::<Runtime, DotNamesDeployment>::max_encoded_len();
+
+	assert_eq!(
+		owner_size + name_size,
+		runtime_common::constants::dot_names::MAX_NAME_BYTE_LENGTH as usize
+	)
 }
 
 #[test]
