@@ -27,6 +27,7 @@ use pallet_web3_names::{Config, Error};
 #[cfg(test)]
 mod tests;
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum DotNameValidationError {
 	TooShort,
 	TooLong,
