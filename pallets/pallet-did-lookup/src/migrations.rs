@@ -24,13 +24,12 @@ use kilt_support::migration::switch_reserved_to_hold;
 
 use crate::{linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, CurrencyOf, Error, HoldReason};
 
-pub fn update_balance_for_did_lookup<T: Config<I>, I: 'static>(key: &LinkableAccountId) -> DispatchResult
+pub fn update_balance_for_did_lookup<T: Config>(key: &LinkableAccountId) -> DispatchResult
 where
-	<T as Config<I>>::Currency:
-		ReservableCurrency<T::AccountId, Balance = <<T as Config<I>>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+	T::Currency: ReservableCurrency<T::AccountId, Balance = <T::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
-	let details = ConnectedDids::<T, I>::get(key).ok_or(Error::<T, I>::NotFound)?;
-	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T, I>>(
+	let details = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T, ()>>(
 		&details.deposit.owner,
 		&HoldReason::Deposit.into(),
 		details.deposit.amount,
@@ -125,7 +124,7 @@ pub mod test {
 					connected_did_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				assert_ok!(update_balance_for_did_lookup::<Test, _>(&LINKABLE_ACCOUNT_00));
+				assert_ok!(update_balance_for_did_lookup::<Test>(&LINKABLE_ACCOUNT_00));
 
 				let connected_did_post_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
 
@@ -153,7 +152,7 @@ pub mod test {
 
 				// should throw error if connected did does not exist
 				assert_noop!(
-					update_balance_for_did_lookup::<Test, _>(&LINKABLE_ACCOUNT_01),
+					update_balance_for_did_lookup::<Test>(&LINKABLE_ACCOUNT_01),
 					Error::<Test>::NotFound
 				);
 			})

@@ -134,13 +134,13 @@ pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
 pub(crate) const LINKABLE_ACCOUNT_01: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_01);
 
-pub(crate) fn insert_raw_connection<T: Config<I>, I: 'static>(
+pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,
-	did_identifier: DidIdentifierOf<T, I>,
+	did_identifier: DidIdentifierOf<T, ()>,
 	account: LinkableAccountId,
-	deposit: BalanceOf<T, I>,
+	deposit: BalanceOf<T, ()>,
 ) {
-	let deposit = LinkableAccountDepositCollector::<T, I>::create_deposit(sender, deposit)
+	let deposit = LinkableAccountDepositCollector::<T>::create_deposit(sender, deposit)
 		.expect("Account should have enough balance");
 
 	let record = ConnectionRecord {
@@ -148,14 +148,14 @@ pub(crate) fn insert_raw_connection<T: Config<I>, I: 'static>(
 		did: did_identifier.clone(),
 	};
 
-	ConnectedDids::<T, I>::mutate(&account, |did_entry| {
+	ConnectedDids::<T>::mutate(&account, |did_entry| {
 		if let Some(old_connection) = did_entry.replace(record) {
-			ConnectedAccounts::<T, I>::remove(&old_connection.did, &account);
-			LinkableAccountDepositCollector::<T, I>::free_deposit(old_connection.deposit)
+			ConnectedAccounts::<T>::remove(&old_connection.did, &account);
+			LinkableAccountDepositCollector::<T>::free_deposit(old_connection.deposit)
 				.expect("Could not release deposit of account");
 		}
 	});
-	ConnectedAccounts::<T, I>::insert(&did_identifier, &account, ());
+	ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
 }
 
 #[derive(Clone, Default)]
