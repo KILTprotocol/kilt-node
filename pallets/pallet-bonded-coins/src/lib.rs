@@ -1428,8 +1428,10 @@ pub mod pallet {
 				Error::<T>::NothingToRefund
 			);
 
-			let has_holders = pool_details
-				.bonded_currencies
+			// cloning here lets us avoid cloning the pool details later
+			let bonded_currencies = pool_details.bonded_currencies.clone();
+
+			let has_holders = bonded_currencies
 				.iter()
 				.any(|asset_id| T::Fungibles::total_issuance(asset_id.clone()) > FungiblesBalanceOf::<T>::zero());
 			// no token holders to refund
@@ -1439,6 +1441,18 @@ pub mod pallet {
 			let mut new_pool_details = pool_details;
 			new_pool_details.state.start_refund();
 			Pools::<T>::set(&pool_id, Some(new_pool_details));
+
+			// reset team on currencies to avoid unexpected burns etc.
+			let pool_account = pool_id.clone().into();
+			for asset_id in bonded_currencies {
+				T::Fungibles::reset_team(
+					asset_id,
+					pool_account.clone(),
+					pool_account.clone(),
+					pool_account.clone(),
+					pool_account.clone(),
+				)?;
+			}
 
 			Self::deposit_event(Event::RefundingStarted { id: pool_id });
 
