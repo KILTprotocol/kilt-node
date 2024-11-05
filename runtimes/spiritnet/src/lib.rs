@@ -58,9 +58,11 @@ use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
-use pallet_did_lookup::linkable_account::LinkableAccountId;
+use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
+use pallet_web3_names::web3_name::Web3NameOwnership;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
+use unique_linking_runtime_api::{AddressResult, NameResult};
 
 use runtime_common::{
 	asset_switch::{runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury},
@@ -71,12 +73,12 @@ use runtime_common::{
 		RELAY_CHAIN_SLOT_DURATION_MILLIS, SLOT_DURATION, UNINCLUDED_SEGMENT_CAPACITY,
 	},
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
-	errors::PublicCredentialsApiError,
+	errors::{PublicCredentialsApiError, UniqueLinkingApiError},
 	fees::{ToAuthorCredit, WeightToFee},
 	pallet_id,
 	xcm_config::RelayOrigin,
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, DotName,
-	FeeSplit, Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
+	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
@@ -730,6 +732,8 @@ impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = Migration;
 }
 
+pub type DotName = runtime_common::DotName<{ constants::dot_names::MIN_LENGTH }, { constants::dot_names::MAX_LENGTH }>;
+
 type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
@@ -742,7 +746,7 @@ impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type Web3Name = DotName<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
+	type Web3Name = DotName;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names_dot_names::WeightInfo<Runtime>;
 }
@@ -1739,6 +1743,49 @@ impl_runtime_apis! {
 			let remote_asset_fee_v4 = Asset::try_from(switch_pair.remote_xcm_fee).map_err(|_| AssetSwitchApiError::Internal)?;
 
 			Ok(VersionedXcm::V4(AssetSwitchPool1::compute_xcm_for_switch(&our_location_for_destination, &from_v4.into(), &to_v4, amount, &asset_id_v4, &remote_asset_fee_v4)))
+		}
+	}
+
+	impl unique_linking_runtime_api::UniqueLookup<Block, LinkableAccountId, DotName, DidIdentifier, UniqueLinkingApiError> for Runtime {
+		fn address_for_name(name: DotName) -> Result<Option<AddressResult<LinkableAccountId, DidIdentifier>>, UniqueLinkingApiError> {
+			let Some(Web3NameOwnership { owner, .. }) = DotNames::owner(name) else {
+				return Ok(None);
+			};
+
+			let (first_account, second_account) = {
+				let mut owner_linked_accounts = pallet_did_lookup::ConnectedAccounts::<Runtime, UniqueLinkingDeployment>::iter_key_prefix(&owner);
+				(owner_linked_accounts.next(), owner_linked_accounts.next())
+			};
+			let linked_account = match (first_account, second_account) {
+				(Some(_), Some(_)) => Err(UniqueLinkingApiError::Internal),
+				(first, _) => Ok(first)
+			}?;
+
+			let Some(account) = linked_account else {
+				return Ok(None);
+			};
+
+			Ok(Some(AddressResult::new(account, Some(owner))))
+		}
+
+		fn batch_address_for_name(names: Vec<DotName>) -> Result<Vec<Option<AddressResult<LinkableAccountId, DidIdentifier>>>, UniqueLinkingApiError> {
+			names.into_iter().map(Self::address_for_name).collect::<Result<Vec<_>, _>>()
+		}
+
+		fn name_for_address(address: LinkableAccountId) -> Result<Option<NameResult<DotName, DidIdentifier>>, UniqueLinkingApiError> {
+			let Some(ConnectionRecord { did, .. }) = UniqueLinking::connected_dids(address) else {
+				return Ok(None);
+			};
+
+			let Some(name) = DotNames::names(&did) else {
+				return Ok(None);
+			};
+
+			Ok(Some(NameResult::new(name, Some(did))))
+		}
+
+		fn batch_name_for_address(addresses: Vec<LinkableAccountId>) -> Result<Vec<Option<NameResult<DotName, DidIdentifier>>>, UniqueLinkingApiError> {
+			addresses.into_iter().map(Self::name_for_address).collect::<Result<Vec<_>, _>>()
 		}
 	}
 

@@ -13,6 +13,7 @@ version       = { workspace = true }
 [dependencies]
 # External dependencies
 parity-scale-codec = { workspace = true }
+scale-info         = { workspace = true }
 
 # Substrate dependencies
 sp-api = { workspace = true }
@@ -20,4 +21,4 @@ sp-std = { workspace = true }
 
 [features]
 default = ["std"]
-std     = ["parity-scale-codec/std", "sp-api/std", "sp-std/std"]
+std     = ["parity-scale-codec/std", "scale-info/std", "sp-api/std", "sp-std/std"]

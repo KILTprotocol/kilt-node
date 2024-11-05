@@ -8759,6 +8759,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "unique-linking-runtime-api",
 ]
 
 [[package]]
@@ -13813,6 +13814,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "unique-linking-runtime-api",
 ]
 
 [[package]]
@@ -15020,6 +15022,7 @@ name = "unique-linking-runtime-api"
 version = "1.15.0-dev"
 dependencies = [
  "parity-scale-codec",
+ "scale-info",
  "sp-api",
  "sp-std",
 ]

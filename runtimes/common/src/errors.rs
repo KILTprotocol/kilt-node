@@ -23,3 +23,8 @@ use scale_info::TypeInfo;
 pub enum PublicCredentialsApiError {
 	InvalidSubjectId,
 }
+
+#[derive(Encode, Decode, TypeInfo)]
+pub enum UniqueLinkingApiError {
+	Internal,
+}
