@@ -7,14 +7,13 @@ use frame_support::{
 use frame_system::{EnsureRoot, EnsureSigned};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, DispatchError, MultiSignature,
+	BoundedVec, BuildStorage, MultiSignature,
 };
 use substrate_fixed::types::{I75F53, U75F53};
 
 use crate::{
 	self as pallet_bonded_coins,
 	curves::{polynomial::PolynomialParameters, Curve},
-	traits::{FreezeAccounts, ResetTeam},
 	types::{Locks, PoolStatus},
 	DepositCurrencyBalanceOf, PoolDetailsOf,
 };
@@ -55,8 +54,8 @@ pub(crate) fn get_linear_bonding_curve() -> Curve<Float> {
 	Curve::Polynomial(PolynomialParameters { m, n, o })
 }
 
-pub(crate) fn calculate_pool_id(currencies: Vec<AssetId>) -> AccountId {
-	AccountId::from(currencies.blake2_256())
+pub(crate) fn calculate_pool_id(currencies: &[AssetId]) -> AccountId {
+	AccountId::from(currencies.to_vec().blake2_256())
 }
 
 #[cfg(test)]
