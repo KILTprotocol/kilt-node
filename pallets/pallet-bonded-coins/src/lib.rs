@@ -104,14 +104,17 @@ pub mod pallet {
 
 	pub(crate) const LOG_TARGET: &str = "runtime::pallet-bonded-coins";
 
-	/// Configure the pallet by specifying the parameters and types on which it depends.
+	/// Configure the pallet by specifying the parameters and types on which it
+	/// depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		/// Because this pallet emits events, it depends on the runtime's definition of an event.
+		/// Because this pallet emits events, it depends on the runtime's
+		/// definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The currency used for storage deposits.
 		type DepositCurrency: MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
-		/// A fungibles trait implementation to interact with currencies which can be used as collateral for minting bonded tokens.
+		/// A fungibles trait implementation to interact with currencies which
+		/// can be used as collateral for minting bonded tokens.
 		type CollateralCurrencies: MutateFungibles<Self::AccountId>
 			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>;
@@ -135,20 +138,23 @@ pub mod pallet {
 		#[pallet::constant]
 		type DepositPerCurrency: Get<DepositCurrencyBalanceOf<Self>>;
 
-		/// The base deposit required to create a new pool, primarily to cover the ED of the pool account.
+		/// The base deposit required to create a new pool, primarily to cover
+		/// the ED of the pool account.
 		#[pallet::constant]
 		type BaseDeposit: Get<DepositCurrencyBalanceOf<Self>>;
 
 		/// The origin for most permissionless and priviledged operations.
 		type DefaultOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
-		/// The dedicated origin for creating new bonded currency pools (typically permissionless).
+		/// The dedicated origin for creating new bonded currency pools
+		/// (typically permissionless).
 		type PoolCreateOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The origin for permissioned operations (force_* transactions).
 		type ForceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		/// The type used for pool ids
 		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
 
-		/// The type used for asset ids. This is the type of the bonded currencies.
+		/// The type used for asset ids. This is the type of the bonded
+		/// currencies.
 		type AssetId: Parameter + Member + FullCodec + MaxEncodedLen + Saturating + One + Default;
 
 		type RuntimeHoldReason: From<HoldReason>;
@@ -196,11 +202,13 @@ pub mod pallet {
 		DestructionStarted {
 			id: T::PoolId,
 		},
-		/// Collateral distribution to bonded token holders has been completed for this pool - no more tokens or no more collateral to distribute.   
+		/// Collateral distribution to bonded token holders has been completed
+		/// for this pool (no more tokens or no more collateral to distribute).
 		RefundComplete {
 			id: T::PoolId,
 		},
-		/// A bonded token pool has been fully destroyed and all collateral and deposits have been refunded.
+		/// A bonded token pool has been fully destroyed and all collateral and
+		/// deposits have been refunded.
 		Destroyed {
 			id: T::PoolId,
 		},
@@ -217,17 +225,23 @@ pub mod pallet {
 		PoolUnknown,
 		/// The pool has no associated bonded currency with the given index.
 		IndexOutOfBounds,
-		/// The pool does not hold collateral to be refunded, or has no remaining supply of tokens to exchange. Call start_destroy to intiate teardown.
+		/// The pool does not hold collateral to be refunded, or has no
+		/// remaining supply of tokens to exchange. Call start_destroy to
+		/// intiate teardown.
 		NothingToRefund,
 		/// The user is not privileged to perform the requested operation.
 		NoPermission,
-		/// The pool is deactivated (i.e., in destroying or refunding state) and not available for use.
+		/// The pool is deactivated (i.e., in destroying or refunding state) and
+		/// not available for use.
 		PoolNotLive,
-		/// There are active accounts associated with this pool and thus it cannot be destroyed at this point.
+		/// There are active accounts associated with this pool and thus it
+		/// cannot be destroyed at this point.
 		LivePool,
 		/// This operation can only be made when the pool is in refunding state.
 		NotRefunding,
-		/// The number of currencies linked to a pool exceeds the limit parameter. Thrown by transactions that require specifying the number of a pool's currencies in order to determine weight limits upfront.
+		/// The number of currencies linked to a pool exceeds the limit
+		/// parameter. Thrown by transactions that require specifying the number
+		/// of a pool's currencies in order to determine weight limits upfront.
 		CurrencyCount,
 		InvalidInput,
 		Internal,
@@ -299,8 +313,8 @@ pub mod pallet {
 					Ok(())
 				})?;
 
-			// Touch the pool account in order to be able to transfer the collateral currency to it
-			// This should also verify that the currency actually exists
+			// Touch the pool account in order to be able to transfer the collateral
+			// currency to it. This should also verify that the currency actually exists.
 			T::CollateralCurrencies::touch(collateral_id.clone(), pool_account, &who)?;
 
 			Pools::<T>::set(
@@ -473,7 +487,8 @@ pub mod pallet {
 			// fail if cost > max_cost
 			ensure!(cost <= max_cost, Error::<T>::Slippage);
 
-			// Transfer the collateral. We do not want to kill the minter, so this operation can fail if the account is being reaped.
+			// Transfer the collateral. We do not want to kill the minter, so this operation
+			// can fail if the account is being reaped.
 			T::CollateralCurrencies::transfer(
 				pool_details.collateral_id,
 				&who,
@@ -627,9 +642,11 @@ pub mod pallet {
 
 			let pool_account = pool_id.clone().into();
 
-			// Choosing total_balance over reducible_balance to ensure that all funds are distributed fairly;
-			// in case of any locks present on the pool account, this could lead to refunds failing to execute though.
-			// This case would have to be resolved by governance, either by removing locks or force_destroying the pool.
+			// Choosing total_balance over reducible_balance to ensure that all funds are
+			// distributed fairly; in case of any locks present on the pool account, this
+			// could lead to refunds failing to execute. This case would have to be
+			// resolved by governance, either by removing locks or force_destroying the
+			// pool.
 			let total_collateral_issuance =
 				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
@@ -642,7 +659,8 @@ pub mod pallet {
 			//  remove any existing locks on the account prior to burning
 			T::Fungibles::thaw(asset_id, &who).map_err(|freeze_error| freeze_error.into())?;
 
-			// With amount = max_value(), this trait implementation burns the reducible balance on the account and returns the actual amount burnt
+			// With amount = max_value(), this trait implementation burns the reducible
+			// balance on the account and returns the actual amount burnt
 			let burnt = T::Fungibles::burn_from(
 				asset_id.clone(),
 				&who,
@@ -667,7 +685,8 @@ pub mod pallet {
 				.checked_mul(&total_collateral_issuance)
 				.ok_or(ArithmeticError::Overflow)? // TODO: do we need a fallback if this fails?
 				.checked_div(&sum_of_issuances)
-				.ok_or(Error::<T>::NothingToRefund)?; // should be impossible - how would we be able to burn funds if the sum of total supplies is 0?
+				.ok_or(Error::<T>::NothingToRefund)?; // should be impossible - how would we be able to burn funds if the sum of total
+									  // supplies is 0?
 
 			if amount.is_zero()
 				|| T::CollateralCurrencies::can_deposit(
@@ -679,8 +698,9 @@ pub mod pallet {
 				.into_result()
 				.is_err()
 			{
-				// funds are burnt but the collateral received is not sufficient to be deposited to the account
-				// this is tolerated as otherwise we could have edge cases where it's impossible to refund at least some accounts
+				// Funds are burnt but the collateral received is not sufficient to be deposited
+				// to the account. This is tolerated as otherwise we could have edge cases where
+				// it's impossible to refund at least some accounts.
 				return Ok(());
 			}
 
@@ -692,7 +712,8 @@ pub mod pallet {
 				Preservation::Expendable,
 			)?; // TODO: check edge cases around existential deposit
 
-			// if collateral or total supply drops to zero, refunding is complete -> emit event
+			// if collateral or total supply drops to zero, refunding is complete
+			// -> emit event
 			if sum_of_issuances <= burnt || total_collateral_issuance <= transferred {
 				Self::deposit_event(Event::RefundComplete { id: pool_id });
 			}
@@ -735,7 +756,8 @@ pub mod pallet {
 
 			for asset_id in pool_details.bonded_currencies {
 				if T::Fungibles::asset_exists(asset_id.clone()) {
-					// This would fail with an LiveAsset error if there are any accounts left on any currency
+					// This would fail with an LiveAsset error if there are any accounts left on any
+					// currency
 					T::Fungibles::finish_destroy(asset_id)?;
 				}
 			}
@@ -894,7 +916,8 @@ pub mod pallet {
 					let has_holders = pool_details.bonded_currencies.iter().any(|asset_id| {
 						T::Fungibles::total_issuance(asset_id.clone()) > FungiblesBalanceOf::<T>::zero()
 					});
-					// destruction is only allowed when there are no holders or no collateral to distribute
+					// destruction is only allowed when there are no holders or no collateral to
+					// distribute
 					ensure!(!has_holders, Error::<T>::LivePool);
 				}
 			}
@@ -907,11 +930,13 @@ pub mod pallet {
 			new_pool_details.state.start_destroy();
 			Pools::<T>::set(&pool_id, Some(new_pool_details));
 
-			// emit this event before the destruction started events are emitted by assets deactivation
+			// emit this event before the destruction started events are emitted by assets
+			// deactivation
 			Self::deposit_event(Event::DestructionStarted { id: pool_id });
 
 			for asset_id in bonded_currencies {
-				// Governance or other pallets using the fungibles trait can in theory destroy an asset without this pallet knowing, so we check if it's still around
+				// Governance or other pallets using the fungibles trait can in theory destroy
+				// an asset without this pallet knowing, so we check if it's still around
 				if T::Fungibles::asset_exists(asset_id.clone()) {
 					T::Fungibles::start_destroy(asset_id, None)?;
 				}
@@ -937,7 +962,8 @@ pub mod pallet {
 		}
 
 		fn get_currencies_number(pool_details: &PoolDetailsOf<T>) -> u32 {
-			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is a u32; conversion to u32 must thus be lossless.
+			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is
+			// a u32; conversion to u32 must thus be lossless.
 			pool_details.bonded_currencies.len().saturated_into()
 		}
 
