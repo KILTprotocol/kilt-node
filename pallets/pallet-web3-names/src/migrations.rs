@@ -24,13 +24,12 @@ use kilt_support::migration::switch_reserved_to_hold;
 
 use crate::{AccountIdOf, Config, CurrencyOf, Error, HoldReason, Owner, Web3NameOf};
 
-pub fn update_balance_for_w3n<T: Config<I>, I: 'static>(key: &Web3NameOf<T, I>) -> DispatchResult
+pub fn update_balance_for_w3n<T: Config>(key: &Web3NameOf<T>) -> DispatchResult
 where
-	<T as Config<I>>::Currency:
-		ReservableCurrency<T::AccountId, Balance = <<T as Config<I>>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+	T::Currency: ReservableCurrency<T::AccountId, Balance = <T::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
-	let details = Owner::<T, I>::get(key).ok_or(Error::<T, I>::NotFound)?;
-	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T, I>>(
+	let details = Owner::<T>::get(key).ok_or(Error::<T>::NotFound)?;
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T, _>>(
 		&details.deposit.owner,
 		&HoldReason::Deposit.into(),
 		details.deposit.amount,
@@ -103,7 +102,7 @@ pub mod test {
 					w3n_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				assert_ok!(update_balance_for_w3n::<Test, _>(&web3_name_00.clone()));
+				assert_ok!(update_balance_for_w3n::<Test>(&web3_name_00.clone()));
 
 				let w3n_post_migration = Owner::<Test>::get(web3_name_00.clone());
 
@@ -130,10 +129,7 @@ pub mod test {
 				assert_eq!(reserved_post_migration, balance_on_hold);
 
 				// should throw error if w3n does not exist
-				assert_noop!(
-					update_balance_for_w3n::<Test, _>(&web3_name_01),
-					Error::<Test>::NotFound
-				);
+				assert_noop!(update_balance_for_w3n::<Test>(&web3_name_01), Error::<Test>::NotFound);
 			})
 	}
 }
