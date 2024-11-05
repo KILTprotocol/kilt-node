@@ -19,11 +19,15 @@
 use frame_support::ensure;
 use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
-use sp_runtime::TryRuntimeError;
+use sp_runtime::{
+	traits::{Get, One},
+	TryRuntimeError,
+};
 
-use crate::{Config, ConnectedAccounts, ConnectedDids};
+use crate::{Config, ConnectedAccounts, ConnectedDids, ConnectionRecord};
 
 pub(crate) fn do_try_state<T: Config<I>, I: 'static>() -> Result<(), TryRuntimeError> {
+	// Verify DID -> account link integrity.
 	ConnectedDids::<T, I>::iter().try_for_each(|(account, record)| -> Result<(), TryRuntimeError> {
 		ensure!(
 			ConnectedAccounts::<T, I>::contains_key(&record.did, &account),
@@ -32,6 +36,7 @@ pub(crate) fn do_try_state<T: Config<I>, I: 'static>() -> Result<(), TryRuntimeE
 		Ok(())
 	})?;
 
+	// Verify account -> DID link integrity.
 	ConnectedAccounts::<T, I>::iter().try_for_each(
 		|(did_identifier, linked_account_id, _)| -> Result<(), TryRuntimeError> {
 			ensure!(
@@ -43,5 +48,24 @@ pub(crate) fn do_try_state<T: Config<I>, I: 'static>() -> Result<(), TryRuntimeE
 			);
 			Ok(())
 		},
-	)
+	)?;
+
+	// Verify account <-> DID link unicity.
+	if <T as Config<I>>::UniqueLinkingEnabled::get() {
+		let mut did_linked_to_accounts = ConnectedDids::<T, I>::iter_values().map(|ConnectionRecord { did, .. }| did);
+
+		did_linked_to_accounts.try_for_each(|did_identifier| -> Result<(), TryRuntimeError> {
+			let linked_accounts = ConnectedAccounts::<T, I>::iter_key_prefix(&did_identifier).count();
+			ensure!(
+				linked_accounts.is_one(),
+				log_and_return_error_message(format!(
+					"DID {:?} has more than a single account linked: {:?}.",
+					did_identifier, linked_accounts
+				))
+			);
+			Ok(())
+		})?;
+	}
+
+	Ok(())
 }
