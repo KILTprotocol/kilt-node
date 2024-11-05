@@ -9,7 +9,8 @@ pub trait FreezeAccounts<AccountId, AssetId> {
 	fn thaw(asset_id: &AssetId, who: &AccountId) -> Result<(), Self::Error>;
 }
 
-/// Copy from the Polkadot SDK. once we are at version 1.13.0, we can remove this.
+/// Copy from the Polkadot SDK. once we are at version 1.13.0, we can remove
+/// this.
 pub trait ResetTeam<AccountId>: Inspect<AccountId> {
 	/// Reset the team for the asset with the given `id`.
 	///
