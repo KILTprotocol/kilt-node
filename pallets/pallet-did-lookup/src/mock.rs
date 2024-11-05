@@ -199,7 +199,6 @@ impl ExtBuilder {
 		self
 	}
 
-	#[allow(dead_code)]
 	pub fn with_unique_connections(mut self) -> Self {
 		self.unique_flag = Some(());
 		self
