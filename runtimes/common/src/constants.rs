@@ -507,6 +507,27 @@ pub mod web3_names {
 	}
 }
 
+pub mod dot_names {
+	use super::*;
+
+	const MIN_NAME_LENGTH: u32 = 3;
+	const MAX_NAME_LENGTH: u32 = 28;
+	const DOT_NAME_SUFFIX: &str = ".dot";
+
+	pub const MIN_LENGTH: u32 = MIN_NAME_LENGTH + DOT_NAME_SUFFIX.len() as u32;
+	pub const MAX_LENGTH: u32 = MAX_NAME_LENGTH + DOT_NAME_SUFFIX.len() as u32;
+
+	/// The size is checked in the runtime by a test.
+	pub const MAX_NAME_BYTE_LENGTH: u32 = 121;
+	pub const DEPOSIT: Balance = deposit(2, MAX_NAME_BYTE_LENGTH);
+
+	parameter_types! {
+		pub const Web3NameDeposit: Balance = DEPOSIT;
+		pub const MinNameLength: u32 = MIN_LENGTH;
+		pub const MaxNameLength: u32 = MAX_LENGTH;
+	}
+}
+
 pub mod preimage {
 	use super::*;
 	parameter_types! {
