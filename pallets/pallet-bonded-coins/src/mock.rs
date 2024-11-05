@@ -106,30 +106,6 @@ pub mod runtime {
 			.collect::<Vec<_>>()
 	}
 
-	// trait implementations
-	impl ResetTeam<AccountId> for Assets {
-		fn reset_team(
-			_id: Self::AssetId,
-			_owner: AccountId,
-			_admin: AccountId,
-			_issuer: AccountId,
-			_freezer: AccountId,
-		) -> frame_support::dispatch::DispatchResult {
-			Ok(())
-		}
-	}
-
-	impl FreezeAccounts<AccountId, AssetId> for Assets {
-		type Error = DispatchError;
-		fn freeze(_asset_id: &AssetId, _who: &AccountId) -> Result<(), Self::Error> {
-			Ok(())
-		}
-
-		fn thaw(_asset_id: &AssetId, _who: &AccountId) -> Result<(), Self::Error> {
-			Ok(())
-		}
-	}
-
 	frame_support::construct_runtime!(
 		pub enum Test
 		{
@@ -227,7 +203,7 @@ pub mod runtime {
 	impl pallet_bonded_coins::Config for Test {
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
-		type CollateralCurrency = Assets;
+		type CollateralCurrencies = Assets;
 		type CurveParameterInput = FloatInput;
 		type CurveParameterType = Float;
 		type DefaultOrigin = EnsureSigned<AccountId>;
