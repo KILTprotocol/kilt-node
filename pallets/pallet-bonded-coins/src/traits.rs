@@ -13,7 +13,6 @@ pub trait FreezeAccounts<AccountId, AssetId> {
 	fn thaw(asset_id: &AssetId, who: &AccountId) -> Result<(), Self::Error>;
 }
 
-
 type AssetIdOf<T> = <T as AssetConfig>::AssetId;
 
 impl<T> FreezeAccounts<AccountIdOf<T>, <T as AssetConfig>::AssetId> for AssetsPallet<T>
@@ -39,9 +38,8 @@ where
 	}
 }
 
- 
 /// Copy from the Polkadot SDK. once we are at version 1.13.0, we can remove
-/// this. 
+/// this.
 pub trait ResetTeam<AccountId>: Inspect<AccountId> {
 	/// Reset the team for the asset with the given `id`.
 	///
