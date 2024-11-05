@@ -21,6 +21,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, RuntimeDebug};
 use sp_runtime::{BoundedVec, SaturatedConversion};
+use sp_std::vec::Vec;
 
 use pallet_web3_names::{Config, Error};
 
