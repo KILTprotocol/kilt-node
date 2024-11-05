@@ -1,9 +1,8 @@
-use core::ops::Sub;
-
 use frame_support::{assert_err, assert_ok};
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use pallet_assets::{Error as AssetsPalletErrors, Event as AssetsPalletEvents};
-use sp_runtime::BoundedVec;
+use sp_runtime::{ArithmeticError, BoundedVec};
+use sp_std::ops::Sub;
 
 use crate::{
 	mock::{
@@ -219,6 +218,39 @@ fn fails_if_collateral_not_exists() {
 				AssetsPalletErrors::<Test>::Unknown
 			);
 		})
+}
+
+#[test]
+fn handles_asset_id_overflow() {
+	let initial_balance = 100_000_000_000_000_000u128;
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
+		.with_collaterals(vec![0])
+		.build()
+		.execute_with(|| {
+			NextAssetId::<Test>::set(u32::MAX);
+
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+			let curve = get_linear_bonding_curve_input();
+
+			let bonded_token = TokenMetaOf::<Test> {
+				name: BoundedVec::truncate_from(b"Bitcoin".to_vec()),
+				symbol: BoundedVec::truncate_from(b"btc".to_vec()),
+				min_balance: 1,
+			};
+
+			assert_err!(
+				BondingPallet::create_pool(
+					origin,
+					curve,
+					0,
+					BoundedVec::truncate_from(vec![bonded_token; 2]),
+					10,
+					true
+				),
+				ArithmeticError::Overflow
+			);
+		});
 }
 
 #[test]
