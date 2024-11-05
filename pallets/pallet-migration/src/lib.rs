@@ -228,7 +228,7 @@ pub mod pallet {
 				if !is_migrated {
 					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key);
 					MigratedKeys::<T>::insert(key_hash, ());
-					pallet_web3_names::migrations::update_balance_for_w3n::<T, _>(key)
+					pallet_web3_names::migrations::update_balance_for_w3n::<T>(key)
 				} else {
 					Ok(())
 				}
