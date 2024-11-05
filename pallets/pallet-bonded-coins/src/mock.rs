@@ -9,7 +9,10 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	BoundedVec, BuildStorage, MultiSignature,
 };
-use substrate_fixed::types::{I75F53, U75F53};
+use substrate_fixed::{
+	traits::{FixedSigned, FixedUnsigned},
+	types::{I75F53, U75F53},
+};
 
 use crate::{
 	self as pallet_bonded_coins,
@@ -50,17 +53,17 @@ pub fn assert_relative_eq(target: Float, expected: Float, epsilon: Float) {
 	);
 }
 
-pub(crate) fn get_linear_bonding_curve() -> Curve<Float> {
+pub(crate) fn get_linear_bonding_curve<Float: FixedSigned>() -> Curve<Float> {
 	let m = Float::from_num(0);
 	let n = Float::from_num(2);
 	let o = Float::from_num(3);
 	Curve::Polynomial(PolynomialParameters { m, n, o })
 }
 
-pub(crate) fn get_linear_bonding_curve_input() -> CurveInput<FloatInput> {
-	let m = FloatInput::from_num(0);
-	let n = FloatInput::from_num(2);
-	let o = FloatInput::from_num(3);
+pub(crate) fn get_linear_bonding_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
+	let m = Float::from_num(0);
+	let n = Float::from_num(2);
+	let o = Float::from_num(3);
 	CurveInput::Polynomial(PolynomialParametersInput { m, n, o })
 }
 
@@ -201,6 +204,9 @@ pub mod runtime {
 		type RuntimeEvent = RuntimeEvent;
 		type StringLimit = StringLimit;
 		type WeightInfo = ();
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper = ();
 	}
 	parameter_types! {
 		pub const CurrencyDeposit: Balance = 500;
