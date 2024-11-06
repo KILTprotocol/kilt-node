@@ -12,7 +12,7 @@ fn changes_manager() {
 	let curve = get_linear_bonding_curve();
 
 	let pool_details = generate_pool_details(
-		vec![0],
+		vec![DEFAULT_BONDED_CURRENCY_ID],
 		curve,
 		false,
 		Some(PoolStatus::Active),
@@ -20,7 +20,7 @@ fn changes_manager() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[0]);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
 		.build()
@@ -48,7 +48,7 @@ fn only_manager_can_change_manager() {
 
 	let manager = AccountId::new([10u8; 32]);
 	let pool_details = generate_pool_details(
-		vec![0],
+		vec![DEFAULT_BONDED_CURRENCY_ID],
 		curve,
 		false,
 		Some(PoolStatus::Active),
@@ -56,7 +56,7 @@ fn only_manager_can_change_manager() {
 		None,
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[0]);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
 		.build()
@@ -81,7 +81,7 @@ fn only_manager_can_change_manager() {
 
 #[test]
 fn cant_change_manager_if_pool_nonexistent() {
-	let pool_id = calculate_pool_id(&[0]);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default().build().execute_with(|| {
 		let origin = RawOrigin::Signed(ACCOUNT_00).into();
 

@@ -11,7 +11,7 @@ use crate::{
 #[test]
 fn resets_team() {
 	let pool_details = generate_pool_details(
-		vec![0],
+		vec![DEFAULT_BONDED_CURRENCY_ID],
 		get_linear_bonding_curve(),
 		false,
 		Some(PoolStatus::Active),
@@ -19,7 +19,7 @@ fn resets_team() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[0]);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -39,7 +39,7 @@ fn resets_team() {
 
 			System::assert_has_event(
 				AssetsPalletEvents::<Test>::TeamChanged {
-					asset_id: 0,
+					asset_id: DEFAULT_BONDED_CURRENCY_ID,
 					issuer: pool_id,
 					admin: ACCOUNT_00,
 					freezer: ACCOUNT_01,
@@ -52,7 +52,7 @@ fn resets_team() {
 #[test]
 fn does_not_change_team_when_not_live() {
 	let pool_details = generate_pool_details(
-		vec![0],
+		vec![DEFAULT_BONDED_CURRENCY_ID],
 		get_linear_bonding_curve(),
 		false,
 		Some(PoolStatus::Refunding),
@@ -60,7 +60,7 @@ fn does_not_change_team_when_not_live() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[0]);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -89,7 +89,7 @@ fn only_manager_can_change_team() {
 
 	let manager = AccountId::new([10u8; 32]);
 	let pool_details = generate_pool_details(
-		vec![0],
+		vec![DEFAULT_BONDED_CURRENCY_ID],
 		curve,
 		false,
 		Some(PoolStatus::Active),
@@ -97,7 +97,7 @@ fn only_manager_can_change_team() {
 		None,
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[0]);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
 		.build()
@@ -139,7 +139,7 @@ fn only_manager_can_change_team() {
 #[test]
 fn handles_currency_idx_out_of_bounds() {
 	let pool_details = generate_pool_details(
-		vec![0],
+		vec![DEFAULT_BONDED_CURRENCY_ID],
 		get_linear_bonding_curve(),
 		false,
 		Some(PoolStatus::Active),
@@ -147,7 +147,7 @@ fn handles_currency_idx_out_of_bounds() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[0]);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
