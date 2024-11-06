@@ -1756,7 +1756,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl unique_linking_runtime_api::UniqueLookup<Block, LinkableAccountId, DotName, DidIdentifier, UniqueLinkingApiError> for Runtime {
+	impl unique_linking_runtime_api::UniqueLinking<Block, LinkableAccountId, DotName, DidIdentifier, UniqueLinkingApiError> for Runtime {
 		fn address_for_name(name: DotName) -> Result<Option<AddressResult<LinkableAccountId, DidIdentifier>>, UniqueLinkingApiError> {
 			let Some(Web3NameOwnership { owner, .. }) = DotNames::owner(name) else {
 				return Ok(None);

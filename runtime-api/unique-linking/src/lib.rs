@@ -47,7 +47,7 @@ impl<Name, Extra> NameResult<Name, Extra> {
 }
 
 sp_api::decl_runtime_apis! {
-	pub trait UniqueLookup<Address, Name, Extra, Error> where
+	pub trait UniqueLinking<Address, Name, Extra, Error> where
 		Address: Codec,
 		Name: Codec,
 		Extra: Codec,
