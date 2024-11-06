@@ -50,6 +50,8 @@ pub mod assets;
 pub mod authorization;
 pub mod constants;
 pub mod dip;
+pub mod dot_names;
+pub use dot_names::DotName;
 pub mod errors;
 pub mod fees;
 pub mod migrations;

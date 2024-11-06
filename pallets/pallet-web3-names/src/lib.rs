@@ -141,14 +141,7 @@ pub mod pallet {
 		// FIXME: Refactor the definition of AsciiWeb3Name so that we don't need to
 		// require `Ord` here
 		/// The type of a name.
-		type Web3Name: FullCodec
-			+ Debug
-			+ PartialEq
-			+ Clone
-			+ TypeInfo
-			+ TryFrom<Vec<u8>, Error = Error<Self, I>>
-			+ MaxEncodedLen
-			+ Ord;
+		type Web3Name: FullCodec + Debug + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>> + MaxEncodedLen + Ord;
 		/// The type of a name owner.
 		type Web3NameOwner: Parameter + MaxEncodedLen;
 		/// Weight information for extrinsics in this pallet.
@@ -225,7 +218,11 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T: Config<I>, I: 'static> Pallet<T, I> {
+	impl<T: Config<I>, I: 'static> Pallet<T, I>
+	where
+		// We introduce this trait bound instead of adding one more generic.
+		<<T as Config<I>>::Web3Name as TryFrom<Vec<u8>>>::Error: Into<Error<T, I>>,
+	{
 		/// Assign the specified name to the owner as specified in the
 		/// origin.
 		///
@@ -399,7 +396,8 @@ pub mod pallet {
 		#[pallet::weight(<T as Config<I>>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, name_input: Web3NameInput<T, I>) -> DispatchResult {
 			let source = ensure_signed(origin)?;
-			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let name =
+				Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(|e| DispatchError::from(e.into()))?;
 			let w3n_entry = Owner::<T, I>::get(&name).ok_or(Error::<T, I>::NotFound)?;
 			ensure!(w3n_entry.deposit.owner == source, Error::<T, I>::NotAuthorized);
 
@@ -409,7 +407,10 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config<I>, I: 'static> Pallet<T, I> {
+	impl<T: Config<I>, I: 'static> Pallet<T, I>
+	where
+		<<T as Config<I>>::Web3Name as TryFrom<Vec<u8>>>::Error: Into<Error<T, I>>,
+	{
 		/// Verify that the claiming preconditions are verified. Specifically:
 		/// - The name input data can be decoded as a valid name
 		/// - The name does not already exist
@@ -421,7 +422,8 @@ pub mod pallet {
 			owner: &Web3NameOwnerOf<T, I>,
 			deposit_payer: &AccountIdOf<T>,
 		) -> Result<Web3NameOf<T, I>, DispatchError> {
-			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let name =
+				Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(|e| DispatchError::from(e.into()))?;
 
 			ensure!(!Names::<T, I>::contains_key(owner), Error::<T, I>::OwnerAlreadyExists);
 			ensure!(!Owner::<T, I>::contains_key(&name), Error::<T, I>::AlreadyExists);
@@ -487,7 +489,8 @@ pub mod pallet {
 			name_input: Web3NameInput<T, I>,
 			caller: &AccountIdOf<T>,
 		) -> Result<Web3NameOf<T, I>, DispatchError> {
-			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let name =
+				Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(|e| DispatchError::from(e.into()))?;
 			let Web3NameOwnership { deposit, .. } = Owner::<T, I>::get(&name).ok_or(Error::<T, I>::NotFound)?;
 
 			ensure!(caller == &deposit.owner, Error::<T, I>::NotAuthorized);
@@ -534,7 +537,8 @@ pub mod pallet {
 		fn check_banning_preconditions(
 			name_input: Web3NameInput<T, I>,
 		) -> Result<(Web3NameOf<T, I>, bool), DispatchError> {
-			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let name =
+				Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(|e| DispatchError::from(e.into()))?;
 
 			ensure!(!Banned::<T, I>::contains_key(&name), Error::<T, I>::AlreadyBanned);
 
@@ -555,7 +559,8 @@ pub mod pallet {
 		/// - The name input data can be decoded as a valid name
 		/// - The name must have already been banned
 		fn check_unbanning_preconditions(name_input: Web3NameInput<T, I>) -> Result<Web3NameOf<T, I>, DispatchError> {
-			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let name =
+				Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(|e| DispatchError::from(e.into()))?;
 
 			ensure!(Banned::<T, I>::contains_key(&name), Error::<T, I>::NotBanned);
 

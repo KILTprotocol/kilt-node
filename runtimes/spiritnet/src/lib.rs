@@ -75,8 +75,8 @@ use runtime_common::{
 	fees::{ToAuthorCredit, WeightToFee},
 	pallet_id,
 	xcm_config::RelayOrigin,
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
-	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, DotName,
+	FeeSplit, Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
@@ -693,11 +693,25 @@ impl pallet_did_lookup::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
-	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_did_lookup_did_lookup::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
 	// Do not change the below flag to `true` without also deploying a runtime
 	// migration which removes any links that point to the same DID!
 	type UniqueLinkingEnabled = ConstBool<false>;
+}
+
+type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
+impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
+	type BalanceMigrationManager = ();
+	type Currency = Balances;
+	type Deposit = constants::did_lookup::DidLookupDeposit;
+	type DidIdentifier = DidIdentifier;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type UniqueLinkingEnabled = ConstBool<true>;
+	type WeightInfo = weights::pallet_did_lookup_unique_linking::WeightInfo<Runtime>;
 }
 
 impl pallet_web3_names::Config for Runtime {
@@ -712,8 +726,25 @@ impl pallet_web3_names::Config for Runtime {
 	type MinNameLength = constants::web3_names::MinNameLength;
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_web3_names_web3_names::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
+}
+
+type DotNamesDeployment = pallet_web3_names::Instance2;
+impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
+	type BalanceMigrationManager = ();
+	type BanOrigin = EnsureRoot<AccountId>;
+	type Currency = Balances;
+	type Deposit = constants::dot_names::Web3NameDeposit;
+	type MaxNameLength = constants::dot_names::MaxNameLength;
+	type MinNameLength = constants::dot_names::MinNameLength;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type Web3Name = DotName<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
+	type Web3NameOwner = DidIdentifier;
+	type WeightInfo = weights::pallet_web3_names_dot_names::WeightInfo<Runtime>;
 }
 
 impl pallet_inflation::Config for Runtime {
@@ -818,6 +849,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					| RuntimeCall::Did(..)
 					| RuntimeCall::DidLookup(..)
 					| RuntimeCall::DipProvider(..)
+					| RuntimeCall::DotNames(..)
 					| RuntimeCall::Indices(
 						// Excludes `force_transfer`, and `transfer`
 						pallet_indices::Call::claim { .. }
@@ -838,6 +870,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					| RuntimeCall::TipsMembership(..)
 					| RuntimeCall::Timestamp(..)
 					| RuntimeCall::Treasury(..)
+					| RuntimeCall::UniqueLinking(..)
 					| RuntimeCall::Utility(..)
 					| RuntimeCall::Vesting(
 						// Excludes `force_vested_transfer`, `merge_schedules`, and `vested_transfer`
@@ -899,6 +932,14 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| RuntimeCall::DipProvider(..)
+					| RuntimeCall::DotNames(
+						// Excludes `ban`, and `reclaim_deposit`
+						pallet_web3_names::Call::claim { .. }
+							| pallet_web3_names::Call::release_by_owner { .. }
+							| pallet_web3_names::Call::unban { .. }
+							| pallet_web3_names::Call::update_deposit { .. }
+							| pallet_web3_names::Call::change_deposit_owner { .. }
+					)
 					| RuntimeCall::Indices(..)
 					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
@@ -923,6 +964,15 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					| RuntimeCall::TipsMembership(..)
 					| RuntimeCall::Timestamp(..)
 					| RuntimeCall::Treasury(..)
+					| RuntimeCall::UniqueLinking(
+						// Excludes `reclaim_deposit`
+						pallet_did_lookup::Call::associate_account { .. }
+							| pallet_did_lookup::Call::associate_sender { .. }
+							| pallet_did_lookup::Call::remove_account_association { .. }
+							| pallet_did_lookup::Call::remove_sender_association { .. }
+							| pallet_did_lookup::Call::update_deposit { .. }
+							| pallet_did_lookup::Call::change_deposit_owner { .. }
+					)
 					| RuntimeCall::Utility(..)
 					| RuntimeCall::Vesting(..)
 					| RuntimeCall::Web3Names(
@@ -1110,6 +1160,8 @@ construct_runtime! {
 		Migration: pallet_migration = 70,
 		DipProvider: pallet_dip_provider = 71,
 		DepositStorage: pallet_deposit_storage = 72,
+		DotNames: pallet_web3_names::<Instance2> = 73,
+		UniqueLinking: pallet_did_lookup::<Instance2> = 74,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
@@ -1159,8 +1211,10 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 			RuntimeCall::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			RuntimeCall::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			RuntimeCall::DotNames { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			RuntimeCall::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			RuntimeCall::UniqueLinking { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			RuntimeCall::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			RuntimeCall::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(&calls[..]),
@@ -1257,7 +1311,9 @@ mod benches {
 		[did, Did]
 		[pallet_inflation, Inflation]
 		[pallet_did_lookup, DidLookup]
+		[pallet_did_lookup, UniqueLinking]
 		[pallet_web3_names, Web3Names]
+		[pallet_web3_names, DotNames]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pallet_migration, Migration]
