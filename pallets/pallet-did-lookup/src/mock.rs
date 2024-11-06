@@ -136,9 +136,9 @@ pub(crate) const LINKABLE_ACCOUNT_01: LinkableAccountId = LinkableAccountId::Acc
 
 pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,
-	did_identifier: DidIdentifierOf<T>,
+	did_identifier: DidIdentifierOf<T, ()>,
 	account: LinkableAccountId,
-	deposit: BalanceOf<T>,
+	deposit: BalanceOf<T, ()>,
 ) {
 	let deposit = LinkableAccountDepositCollector::<T>::create_deposit(sender, deposit)
 		.expect("Account should have enough balance");
@@ -204,7 +204,7 @@ impl ExtBuilder {
 	pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 		self.build().execute_with(|| {
 			test();
-			crate::try_state::do_try_state::<Test>().expect("Sanity test for did lookup failed.");
+			crate::try_state::do_try_state::<Test, _>().expect("Sanity test for did lookup failed.");
 		})
 	}
 

@@ -23,19 +23,19 @@ use sp_runtime::TryRuntimeError;
 
 use crate::{Config, ConnectedAccounts, ConnectedDids};
 
-pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
-	ConnectedDids::<T>::iter().try_for_each(|(account, record)| -> Result<(), TryRuntimeError> {
+pub(crate) fn do_try_state<T: Config<I>, I: 'static>() -> Result<(), TryRuntimeError> {
+	ConnectedDids::<T, I>::iter().try_for_each(|(account, record)| -> Result<(), TryRuntimeError> {
 		ensure!(
-			ConnectedAccounts::<T>::contains_key(&record.did, &account),
+			ConnectedAccounts::<T, I>::contains_key(&record.did, &account),
 			log_and_return_error_message(format!("Account {:?} with did {:?} not found", record.did, account))
 		);
 		Ok(())
 	})?;
 
-	ConnectedAccounts::<T>::iter().try_for_each(
+	ConnectedAccounts::<T, I>::iter().try_for_each(
 		|(did_identifier, linked_account_id, _)| -> Result<(), TryRuntimeError> {
 			ensure!(
-				ConnectedDids::<T>::get(&linked_account_id).expect("Unknown did").did == did_identifier,
+				ConnectedDids::<T, I>::get(&linked_account_id).expect("Unknown did").did == did_identifier,
 				log_and_return_error_message(format!(
 					"Linked Account {:?} for did {:?} not match",
 					linked_account_id, did_identifier
