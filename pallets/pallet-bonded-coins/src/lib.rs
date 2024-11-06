@@ -289,6 +289,10 @@ pub mod pallet {
 
 			let pool_account = &pool_id.clone().into();
 
+			// Touch the pool account in order to be able to transfer the collateral
+			// currency to it. This should also verify that the currency actually exists.
+			T::CollateralCurrencies::touch(collateral_id.clone(), pool_account, &who)?;
+
 			currencies
 				.into_iter()
 				.zip(currency_ids.iter())
@@ -312,10 +316,6 @@ pub mod pallet {
 
 					Ok(())
 				})?;
-
-			// Touch the pool account in order to be able to transfer the collateral
-			// currency to it. This should also verify that the currency actually exists.
-			T::CollateralCurrencies::touch(collateral_id.clone(), pool_account, &who)?;
 
 			Pools::<T>::set(
 				&pool_id,
