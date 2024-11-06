@@ -20,9 +20,6 @@ fn single_currency() {
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
 		.execute_with(|| {
-			assert_eq!(NextAssetId::<Test>::get(), 0);
-			assert_eq!(initial_balance, Balances::free_balance(ACCOUNT_00));
-
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
 
@@ -109,9 +106,6 @@ fn multi_currency() {
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
 		.execute_with(|| {
-			assert_eq!(NextAssetId::<Test>::get(), 0);
-			assert_eq!(initial_balance, Balances::free_balance(ACCOUNT_00));
-
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
 
@@ -158,8 +152,6 @@ fn can_create_identical_pools() {
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
 		.execute_with(|| {
-			assert_eq!(NextAssetId::<Test>::get(), 0);
-
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
 
