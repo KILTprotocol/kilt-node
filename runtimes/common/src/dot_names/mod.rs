@@ -25,6 +25,8 @@ use sp_std::vec::Vec;
 
 use pallet_web3_names::{Config, Error};
 
+use crate::constants::dot_names::DOT_NAME_SUFFIX;
+
 #[cfg(test)]
 mod tests;
 
@@ -64,7 +66,7 @@ impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> TryFrom<Vec<u8>> for DotName<
 	}
 }
 fn is_valid_dot_name(input: &[u8]) -> bool {
-	let Some(dot_name_without_suffix) = input.strip_suffix(b".dot") else {
+	let Some(dot_name_without_suffix) = input.strip_suffix(DOT_NAME_SUFFIX.as_bytes()) else {
 		return false;
 	};
 	// Char validation logic taken from https://github.com/paritytech/polkadot-sdk/blob/657b5503a04e97737696fa7344641019350fb521/substrate/frame/identity/src/lib.rs#L1435
