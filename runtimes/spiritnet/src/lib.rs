@@ -1400,9 +1400,8 @@ mod benches {
 			let remaining_name_length = length
 				.checked_sub(suffix_length)
 				.expect("Provided length should cover at least the length of the suffix.");
-			let input = sp_std::iter::once(b'1')
-				.cycle()
-				.take(remaining_name_length)
+			let input = vec![b'1'; remaining_name_length]
+				.into_iter()
 				.chain(runtime_common::constants::dot_names::DOT_NAME_SUFFIX.bytes())
 				.collect::<Vec<_>>();
 
