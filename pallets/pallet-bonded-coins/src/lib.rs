@@ -289,6 +289,10 @@ pub mod pallet {
 
 			let pool_account = &pool_id.clone().into();
 
+			// Touch the pool account in order to be able to transfer the collateral
+			// currency to it. This should also verify that the currency actually exists.
+			T::CollateralCurrencies::touch(collateral_id.clone(), pool_account, &who)?;
+
 			currencies
 				.into_iter()
 				.zip(currency_ids.iter())
@@ -312,10 +316,6 @@ pub mod pallet {
 
 					Ok(())
 				})?;
-
-			// Touch the pool account in order to be able to transfer the collateral
-			// currency to it. This should also verify that the currency actually exists.
-			T::CollateralCurrencies::touch(collateral_id.clone(), pool_account, &who)?;
 
 			Pools::<T>::set(
 				&pool_id,
@@ -961,13 +961,13 @@ pub mod pallet {
 			Ok((currency_array, start_id))
 		}
 
-		fn get_currencies_number(pool_details: &PoolDetailsOf<T>) -> u32 {
+		pub(crate) fn get_currencies_number(pool_details: &PoolDetailsOf<T>) -> u32 {
 			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is
 			// a u32; conversion to u32 must thus be lossless.
 			pool_details.bonded_currencies.len().saturated_into()
 		}
 
-		fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
+		pub(crate) fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
 			n_currencies: N,
 		) -> DepositCurrencyBalanceOf<T> {
 			T::BaseDeposit::get()
