@@ -5,6 +5,7 @@ use frame_support::{
 	Hashable,
 };
 use frame_system::{EnsureRoot, EnsureSigned};
+use parity_scale_codec::Codec;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	BoundedVec, BuildStorage, MultiSignature,
@@ -17,7 +18,9 @@ use substrate_fixed::{
 use crate::{
 	self as pallet_bonded_coins,
 	curves::{
+		lmsr::{LMSRParameters, LMSRParametersInput},
 		polynomial::{PolynomialParameters, PolynomialParametersInput},
+		square_root::{SquareRootParameters, SquareRootParametersInput},
 		Curve, CurveInput,
 	},
 	types::{Locks, PoolStatus},
@@ -67,7 +70,32 @@ pub(crate) fn get_linear_bonding_curve_input<Float: FixedUnsigned>() -> CurveInp
 	CurveInput::Polynomial(PolynomialParametersInput { m, n, o })
 }
 
-pub(crate) fn calculate_pool_id(currencies: &[AssetId]) -> AccountId {
+pub(crate) fn get_square_root_curve<Float: FixedSigned>() -> Curve<Float> {
+	let m = Float::from_num(3);
+	let n = Float::from_num(2);
+	Curve::SquareRoot(SquareRootParameters { m, n })
+}
+
+pub(crate) fn get_square_root_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
+	let m = Float::from_num(3);
+	let n = Float::from_num(2);
+	CurveInput::SquareRoot(SquareRootParametersInput { m, n })
+}
+
+pub(crate) fn get_lmsr_curve<Float: FixedSigned>() -> Curve<Float> {
+	let m = Float::from_num(3);
+	Curve::Lmsr(LMSRParameters { m })
+}
+
+pub(crate) fn get_lmsr_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
+	let m = Float::from_num(3);
+	CurveInput::Lmsr(LMSRParametersInput { m })
+}
+
+pub(crate) fn calculate_pool_id<AssetId>(currencies: &[AssetId]) -> AccountId
+where
+	AssetId: Clone + Hashable + Codec,
+{
 	AccountId::from(currencies.to_vec().blake2_256())
 }
 
@@ -164,6 +192,15 @@ pub mod runtime {
 
 	}
 
+	#[cfg(feature = "runtime-benchmarks")]
+	struct BenchmarkHelper;
+	#[cfg(feature = "runtime-benchmarks")]
+	impl pallet_assets::BenchmarkHelper<AssetId> for BenchmarkHelper {
+		fn create_asset_id_parameter(seed: u32) -> AssetId {
+			seed.into()
+		}
+	}
+
 	impl pallet_assets::Config for Test {
 		type ApprovalDeposit = ConstU128<0>;
 		type AssetAccountDeposit = ConstU128<0>;
@@ -210,9 +247,6 @@ pub mod runtime {
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;
 		type RuntimeHoldReason = RuntimeHoldReason;
-
-		#[cfg(feature = "runtime-benchmarks")]
-		type BenchmarkHelper = ();
 	}
 	parameter_types! {
 		pub const ExistentialDeposit: Balance = 500;

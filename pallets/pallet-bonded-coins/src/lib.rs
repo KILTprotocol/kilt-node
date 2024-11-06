@@ -87,6 +87,8 @@ pub mod pallet {
 
 	pub(crate) type CurveParameterInputOf<T> = <T as Config>::CurveParameterInput;
 
+	pub(crate) type PoolIdOf<T> = <T as Config>::PoolId;
+
 	pub(crate) type PoolDetailsOf<T> = PoolDetails<
 		<T as frame_system::Config>::AccountId,
 		Curve<CurveParameterTypeOf<T>>,
@@ -160,9 +162,6 @@ pub mod pallet {
 			+ From<Precision>;
 
 		type CurveParameterInput: Parameter + FixedUnsigned + MaxEncodedLen;
-
-		#[cfg(feature = "runtime-benchmarks")]
-		type BenchmarkHelper: pallet_assets::BenchmarkHelper<Self::AssetId>;
 	}
 
 	#[pallet::pallet]

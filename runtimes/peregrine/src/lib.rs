@@ -1046,6 +1046,56 @@ impl pallet_assets::Config for Runtime {
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 }
 
+type BondedCurrencies = pallet_assets::Instance2;
+impl pallet_assets::Config<BondedCurrencies> for Runtime {
+	type ApprovalDeposit = frame_support::traits::ConstU128<0>;
+	type AssetAccountDeposit = frame_support::traits::ConstU128<0>;
+	type AssetDeposit = frame_support::traits::ConstU128<0>;
+	type AssetId = u32;
+	type AssetIdParameter = u32;
+	type Balance = Balance;
+	type CallbackHandle = ();
+	type CreateOrigin = EnsureSigned<AccountId>;
+	type Currency = Balances;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
+	type MetadataDepositBase = frame_support::traits::ConstU128<0>;
+	type MetadataDepositPerByte = frame_support::traits::ConstU128<0>;
+	type RemoveItemsLimit = ConstU32<5>;
+	type RuntimeEvent = RuntimeEvent;
+	type StringLimit = runtime_common::constants::assets::StringLimit;
+	type WeightInfo = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+}
+
+parameter_types! {
+	pub const CurrencyDeposit: Balance = 500;
+	pub const MaxCurrencies: u32 = 50;
+	pub const CollateralAssetId: u32 = u32::MAX;
+}
+
+impl pallet_bonded_coins::Config for Runtime {
+	type AssetId = u32;
+	type BaseDeposit = ExistentialDeposit;
+	type CollateralCurrencies = Fungibles;
+	type CurveParameterInput = substrate_fixed::types::U90F38;
+	type CurveParameterType = substrate_fixed::types::I90F38;
+	type DefaultOrigin = EnsureSigned<AccountId>;
+	type DepositCurrency = Balances;
+	type DepositPerCurrency = CurrencyDeposit;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Fungibles = BondedFungible;
+	type MaxCurrencies = MaxCurrencies;
+	type MaxStringLength = runtime_common::constants::assets::StringLimit;
+	type PoolCreateOrigin = EnsureSigned<AccountId>;
+	type PoolId = AccountId;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+}
+
 construct_runtime! {
 	pub enum Runtime
 	{
@@ -1099,6 +1149,8 @@ construct_runtime! {
 
 		AssetSwitchPool1: pallet_asset_switch::<Instance1> = 48,
 		Fungibles: pallet_assets = 49,
+		BondedCoins : pallet_bonded_coins = 50,
+		BondedFungible : pallet_assets::<Instance2> = 51,
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
@@ -1272,6 +1324,7 @@ mod benches {
 		[pallet_assets, Fungibles]
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
+		[pallet_bonded_coins, BondedCoins]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 

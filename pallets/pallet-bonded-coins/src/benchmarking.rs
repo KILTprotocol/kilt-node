@@ -3,7 +3,7 @@ use pallet_assets::BenchmarkHelper;
 use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::traits::{Fixed, ToFixed};
 
-use crate::{curves::CurveInput, Call, Config, CurveParameterTypeOf, FungiblesAssetIdOf, Pallet};
+use crate::{Call, Config, CurveParameterTypeOf, FungiblesAssetIdOf, Pallet};
 
 #[benchmarks(where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
@@ -15,13 +15,11 @@ mod benchmarks {
 	use sp_runtime::BoundedVec;
 	use sp_runtime::SaturatedConversion;
 
+	use crate::curves::polynomial::PolynomialParameters;
 	use crate::{
-		curves::{
-			polynomial::{PolynomialParameters, PolynomialParametersInput},
-			Curve,
-		},
-		types::PoolStatus,
-		CollateralAssetIdOf, CurveParameterInputOf, PoolDetailsOf, Pools, TokenMetaOf,
+		curves::Curve,
+		mock::{calculate_pool_id, get_linear_bonding_curve_input, get_lmsr_curve_input, get_square_root_curve_input},
+		CollateralAssetIdOf, CurveParameterInputOf, PoolIdOf, Pools, TokenMetaOf,
 	};
 
 	use super::*;
@@ -56,25 +54,19 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn create_pool() {
+	fn create_pool_polynomial() {
 		let collateral_id = calculate_collateral_asset_id::<T>(u32::MAX);
 		create_collateral_asset::<T>(collateral_id.clone());
 
-		let curve_parameters = CurveParameterInputOf::<T>::from_num(0);
+		let curve = get_linear_bonding_curve_input::<CurveParameterInputOf<T>>();
 
-		let curve = CurveInput::Polynomial(PolynomialParametersInput {
-			m: curve_parameters,
-			n: curve_parameters,
-			o: curve_parameters,
-		});
-
+		let c = 0..<T as Config>::MaxCurrencies::get();
 		let mut token_meta = vec![];
-
-		for _ in 0..<T as Config>::MaxCurrencies::get() {
+		for _ in c {
 			token_meta.push(TokenMetaOf::<T> {
 				min_balance: 1u128.saturated_into(),
-				name: BoundedVec::try_from(vec![]).expect("Failed to create BoundedVec"),
-				symbol: BoundedVec::try_from(vec![]).expect("Failed to create BoundedVec"),
+				name: BoundedVec::try_from(b"Bitcoin".to_vec()).expect("Failed to create BoundedVec"),
+				symbol: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
 			})
 		}
 
@@ -82,10 +74,85 @@ mod benchmarks {
 		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, curve, collateral_id, currencies, 10, true);
+		create_pool(origin as T::RuntimeOrigin, curve, collateral_id, currencies, 10, true);
 
 		// Verify
-		assert_eq!(Pools::<T>::iter().count(), 1);
+		let (id, pool) = Pools::<T>::iter().next().expect("Pool should exist");
+		let pool_id = calculate_pool_id(&pool.bonded_currencies.into_inner());
+		match pool.curve {
+			Curve::Polynomial(_) => {
+				assert_eq!(id, PoolIdOf::<T>::from(pool_id.into()));
+			}
+			_ => panic!("pool.curve is not a Polynomial function"),
+		}
+	}
+
+	#[benchmark]
+	fn create_pool_square_root() {
+		let collateral_id = calculate_collateral_asset_id::<T>(u32::MAX);
+		create_collateral_asset::<T>(collateral_id.clone());
+
+		let curve = get_square_root_curve_input::<CurveParameterInputOf<T>>();
+
+		let c = 0..<T as Config>::MaxCurrencies::get();
+		let mut token_meta = vec![];
+		for _ in c {
+			token_meta.push(TokenMetaOf::<T> {
+				min_balance: 1u128.saturated_into(),
+				name: BoundedVec::try_from(b"Bitcoin".to_vec()).expect("Failed to create BoundedVec"),
+				symbol: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
+			})
+		}
+
+		let currencies = BoundedVec::try_from(token_meta).expect("Failed to create BoundedVec");
+		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
+
+		#[extrinsic_call]
+		create_pool(origin as T::RuntimeOrigin, curve, collateral_id, currencies, 10, true);
+
+		// Verify
+		let (id, pool) = Pools::<T>::iter().next().expect("Pool should exist");
+		let pool_id = calculate_pool_id(&pool.bonded_currencies.into_inner());
+		match pool.curve {
+			Curve::SquareRoot(_) => {
+				assert_eq!(id, PoolIdOf::<T>::from(pool_id.into()));
+			}
+			_ => panic!("pool.curve is not a Polynomial function"),
+		}
+	}
+
+	#[benchmark]
+	fn create_pool_lmsr() {
+		let collateral_id = calculate_collateral_asset_id::<T>(u32::MAX);
+		create_collateral_asset::<T>(collateral_id.clone());
+
+		let curve = get_lmsr_curve_input::<CurveParameterInputOf<T>>();
+
+		let c = 0..<T as Config>::MaxCurrencies::get();
+		let mut token_meta = vec![];
+		for _ in c {
+			token_meta.push(TokenMetaOf::<T> {
+				min_balance: 1u128.saturated_into(),
+				name: BoundedVec::try_from(b"Bitcoin".to_vec()).expect("Failed to create BoundedVec"),
+				symbol: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
+			})
+		}
+
+		let currencies = BoundedVec::try_from(token_meta).expect("Failed to create BoundedVec");
+		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
+
+		#[extrinsic_call]
+		create_pool(origin as T::RuntimeOrigin, curve, collateral_id, currencies, 10, true);
+
+		// Verify
+		let (id, pool) = Pools::<T>::iter().next().expect("Pool should exist");
+		let pool_id = calculate_pool_id(&pool.bonded_currencies.into_inner());
+		match pool.curve {
+			Curve::Lmsr(_) => {
+				assert_eq!(id, PoolIdOf::<T>::from(pool_id.into()));
+			}
+			_ => panic!("pool.curve is not a Polynomial function"),
+		}
 	}
 
 	// #[benchmark]
@@ -124,4 +191,15 @@ mod benchmarks {
 	// 	// Verify
 	// 	assert_eq!(Pools::<T>::iter().count(), 1);
 	// }
+
+	#[cfg(test)]
+	mod benchmark_tests {
+		use crate::Pallet;
+
+		frame_benchmarking::v2::impl_benchmark_test_suite!(
+			Pallet,
+			crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+			crate::mock::runtime::Test
+		);
+	}
 }
