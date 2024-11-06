@@ -29,6 +29,8 @@ fn single_currency() {
 				min_balance: 1,
 			};
 
+			let new_asset_id = NextAssetId::<Test>::get();
+
 			assert_ok!(BondingPallet::create_pool(
 				origin,
 				curve,
@@ -38,7 +40,7 @@ fn single_currency() {
 				true
 			));
 
-			let pool_id = calculate_pool_id(&[0]);
+			let pool_id = calculate_pool_id(&[new_asset_id]);
 
 			let details = Pools::<Test>::get(&pool_id).unwrap();
 
@@ -55,10 +57,10 @@ fn single_currency() {
 			);
 			assert_eq!(details.denomination, 10);
 			assert_eq!(details.collateral_id, DEFAULT_COLLATERAL_CURRENCY_ID);
-			assert_eq!(details.bonded_currencies.len(), 1);
-			assert_eq!(details.bonded_currencies[0], 0);
+			assert_eq!(details.bonded_currencies, vec![new_asset_id]);
 
-			assert_eq!(NextAssetId::<Test>::get(), 1);
+			// collateral is id 0, new bonded currency should be 1, next is 2
+			assert_eq!(NextAssetId::<Test>::get(), new_asset_id + 1);
 
 			assert_eq!(
 				Balances::free_balance(ACCOUNT_00),
@@ -70,7 +72,7 @@ fn single_currency() {
 			// TODO: check events or storage of linked pallets?
 			System::assert_has_event(
 				AssetsPalletEvents::ForceCreated {
-					asset_id: 0,
+					asset_id: new_asset_id,
 					owner: pool_id.clone(),
 				}
 				.into(),
@@ -78,7 +80,7 @@ fn single_currency() {
 
 			System::assert_has_event(
 				AssetsPalletEvents::MetadataSet {
-					asset_id: 0,
+					asset_id: new_asset_id,
 					name: b"Bitcoin".into(),
 					symbol: b"btc".into(),
 					decimals: 10,
@@ -117,7 +119,7 @@ fn multi_currency() {
 
 			let bonded_tokens = vec![bonded_token; 3];
 
-			assert_eq!(bonded_tokens.len(), 3);
+			let next_asset_id = NextAssetId::<Test>::get();
 
 			assert_ok!(BondingPallet::create_pool(
 				origin,
@@ -128,14 +130,15 @@ fn multi_currency() {
 				true
 			));
 
-			assert_eq!(NextAssetId::<Test>::get(), 3);
+			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 3);
 
-			let pool_id = calculate_pool_id(&[0, 1, 2]);
+			let new_assets = Vec::from_iter(next_asset_id..next_asset_id + 3);
+			let pool_id = calculate_pool_id(&new_assets);
 
 			let details = Pools::<Test>::get(pool_id).unwrap();
 
 			assert_eq!(BondingPallet::get_currencies_number(&details), 3);
-			assert_eq!(details.bonded_currencies, vec![0, 1, 2]);
+			assert_eq!(details.bonded_currencies, new_assets);
 
 			assert_eq!(
 				Balances::free_balance(ACCOUNT_00),
@@ -161,6 +164,8 @@ fn can_create_identical_pools() {
 				min_balance: 1,
 			};
 
+			let next_asset_id = NextAssetId::<Test>::get();
+
 			assert_ok!(BondingPallet::create_pool(
 				origin.clone(),
 				curve.clone(),
@@ -179,13 +184,13 @@ fn can_create_identical_pools() {
 				true
 			));
 
-			assert_eq!(NextAssetId::<Test>::get(), 2);
+			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 2);
 
-			let details1 = Pools::<Test>::get(calculate_pool_id(&[0])).unwrap();
-			let details2 = Pools::<Test>::get(calculate_pool_id(&[1])).unwrap();
+			let details1 = Pools::<Test>::get(calculate_pool_id(&[next_asset_id])).unwrap();
+			let details2 = Pools::<Test>::get(calculate_pool_id(&[next_asset_id + 1])).unwrap();
 
-			assert_eq!(details1.bonded_currencies, vec![0]);
-			assert_eq!(details2.bonded_currencies, vec![1]);
+			assert_eq!(details1.bonded_currencies, vec![next_asset_id]);
+			assert_eq!(details2.bonded_currencies, vec![next_asset_id + 1]);
 		});
 }
 
@@ -208,7 +213,7 @@ fn fails_if_collateral_not_exists() {
 				BondingPallet::create_pool(
 					origin,
 					curve,
-					DEFAULT_COLLATERAL_CURRENCY_ID,
+					100,
 					BoundedVec::truncate_from(vec![bonded_token]),
 					10,
 					true
@@ -223,7 +228,7 @@ fn handles_asset_id_overflow() {
 	let initial_balance = 100_000_000_000_000_000u128;
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
-		.with_collaterals(vec![0])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
 		.execute_with(|| {
 			NextAssetId::<Test>::set(u32::MAX);

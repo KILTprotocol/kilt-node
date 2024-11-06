@@ -38,8 +38,8 @@ pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
 const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
 // assets
-pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 0;
-pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = AssetId::MAX;
+pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 1;
+pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = 0;
 pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
 pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
 
@@ -276,19 +276,24 @@ pub mod runtime {
 
 			let collateral_assets = self.collaterals.into_iter().map(|id| (id, ACCOUNT_99, false, 1));
 
-			pallet_assets::GenesisConfig::<Test> {
-				assets: self
-					.pools
-					.iter()
-					.flat_map(|(owner, pool)| {
-						pool.bonded_currencies
-							.iter()
-							.map(|id| (*id, owner.to_owned(), false, 1u128))
-							.collect::<Vec<(AssetId, AccountId, bool, Balance)>>()
-					})
-					.chain(collateral_assets)
-					.collect(),
+			let all_assets: Vec<_> = self
+				.pools
+				.iter()
+				.flat_map(|(owner, pool)| {
+					pool.bonded_currencies
+						.iter()
+						.map(|id| (*id, owner.to_owned(), false, 1u128))
+						.collect::<Vec<(AssetId, AccountId, bool, Balance)>>()
+				})
+				.chain(collateral_assets)
+				.collect();
 
+			// NextAssetId is set to the maximum value of all collateral/bonded currency ids, plus one.
+			// If no currencies are created, it's set to 0.
+			let next_asset_id = all_assets.iter().map(|(id, ..)| id).max().map_or(0, |id| id + 1);
+
+			pallet_assets::GenesisConfig::<Test> {
+				assets: all_assets,
 				accounts: self.bonded_balance,
 				metadata: self
 					.pools
@@ -313,6 +318,8 @@ pub mod runtime {
 				self.pools.into_iter().for_each(|(pool_id, pool)| {
 					crate::Pools::<Test>::insert(pool_id, pool);
 				});
+
+				crate::NextAssetId::<Test>::set(next_asset_id);
 			});
 
 			ext
