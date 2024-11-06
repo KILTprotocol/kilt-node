@@ -693,7 +693,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
-	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_did_lookup_did_lookup::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
 	// Do not change the below flag to `true` without also deploying a runtime
 	// migration which removes any links that point to the same DID!
@@ -711,8 +711,7 @@ impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type UniqueLinkingEnabled = ConstBool<true>;
-	// TODO: Change
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_did_lookup_unique_linking::WeightInfo<Runtime>;
 }
 
 impl pallet_web3_names::Config for Runtime {
@@ -727,7 +726,7 @@ impl pallet_web3_names::Config for Runtime {
 	type MinNameLength = constants::web3_names::MinNameLength;
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_web3_names_web3_names::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
 }
 
@@ -745,8 +744,7 @@ impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Web3Name = DotName<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
 	type Web3NameOwner = DidIdentifier;
-	// TODO: Change
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_web3_names_dot_names::WeightInfo<Runtime>;
 }
 
 impl pallet_inflation::Config for Runtime {
