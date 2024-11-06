@@ -29,7 +29,7 @@ use frame_support::{
 };
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use sp_runtime::app_crypto::sr25519;
-use sp_std::{vec, vec::Vec};
+use sp_std::vec::Vec;
 
 use kilt_support::{traits::GenerateBenchmarkOrigin, Deposit};
 
@@ -37,6 +37,20 @@ use crate::{
 	mock::insert_raw_w3n, AccountIdOf, Banned, Call, Config, CurrencyOf, Error, Names, Owner, Pallet, Web3NameOf,
 	Web3NameOwnerOf,
 };
+
+pub trait BenchmarkHelper<T: Config<I>, I: 'static> {
+	fn generate_name_input_with_length(length: usize) -> Vec<u8>;
+}
+
+impl<T, I> BenchmarkHelper<T, I> for ()
+where
+	T: Config<I>,
+	I: 'static,
+{
+	fn generate_name_input_with_length(length: usize) -> Vec<u8> {
+		sp_std::vec![b'a'; length]
+	}
+}
 
 const CALLER_SEED: u32 = 0;
 const OWNER_SEED: u32 = 1;
@@ -51,10 +65,6 @@ where
 		+ <T as Config<I>>::Deposit::get()
 		+ <T as Config<I>>::Deposit::get();
 	CurrencyOf::<T, I>::set_balance(account, balance);
-}
-
-fn generate_web3_name_input(length: usize) -> Vec<u8> {
-	vec![b'1'; length]
 }
 
 benchmarks_instance_pallet! {
@@ -72,7 +82,7 @@ benchmarks_instance_pallet! {
 		let n in (T::MinNameLength::get()) .. (T::MaxNameLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T, I> = account("owner", 0, OWNER_SEED);
-		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
+		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(<T as Config<I>>::BenchmarkHelper::generate_name_input_with_length(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
 		let origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 
@@ -89,7 +99,7 @@ benchmarks_instance_pallet! {
 	release_by_owner {
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T, I> = account("owner", 0, OWNER_SEED);
-		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(T::MaxNameLength::get().saturated_into())).expect("BoundedVec creation should not fail.");
+		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(<T as Config<I>>::BenchmarkHelper::generate_name_input_with_length(T::MaxNameLength::get().saturated_into())).expect("BoundedVec creation should not fail.");
 		let origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 
 		make_free_for_did::<T, I>(&caller);
@@ -107,7 +117,7 @@ benchmarks_instance_pallet! {
 		let n in (T::MinNameLength::get()) .. (T::MaxNameLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T, I> = account("owner", 0, OWNER_SEED);
-		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
+		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(<T as Config<I>>::BenchmarkHelper::generate_name_input_with_length(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
 		let did_origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 		let signed_origin = RawOrigin::Signed(caller.clone());
@@ -127,7 +137,7 @@ benchmarks_instance_pallet! {
 		let n in (T::MinNameLength::get()) .. (T::MaxNameLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T, I> = account("owner", 0, OWNER_SEED);
-		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
+		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(<T as Config<I>>::BenchmarkHelper::generate_name_input_with_length(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
 		let did_origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 		let ban_origin = RawOrigin::Root;
@@ -148,7 +158,7 @@ benchmarks_instance_pallet! {
 		let n in (T::MinNameLength::get()) .. (T::MaxNameLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T, I> = account("owner", 0, OWNER_SEED);
-		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
+		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(<T as Config<I>>::BenchmarkHelper::generate_name_input_with_length(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
 		let ban_origin = RawOrigin::Root;
 
@@ -169,7 +179,7 @@ benchmarks_instance_pallet! {
 		let deposit_owner_new: AccountIdOf<T> = account("caller", 1, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T, I> = account("owner", 0, OWNER_SEED);
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(
-			generate_web3_name_input(T::MaxNameLength::get().saturated_into())
+			<T as Config<I>>::BenchmarkHelper::generate_name_input_with_length(T::MaxNameLength::get().saturated_into())
 		).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
 		let origin_create = T::OwnerOrigin::generate_origin(deposit_owner_old.clone(), owner.clone());
@@ -194,7 +204,7 @@ benchmarks_instance_pallet! {
 		let deposit_owner: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T, I> = account("owner", 0, OWNER_SEED);
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(
-			generate_web3_name_input(T::MaxNameLength::get().saturated_into())
+			<T as Config<I>>::BenchmarkHelper::generate_name_input_with_length(T::MaxNameLength::get().saturated_into())
 		).expect("BoundedVec creation should not fail.");
 		let Ok(web3_name) = Web3NameOf::<T, I>::try_from(web3_name_input.to_vec()) else {
 			panic!();
