@@ -26,11 +26,10 @@ use crate::{AccountIdOf, Config, CurrencyOf, Error, HoldReason, Owner, Web3NameO
 
 pub fn update_balance_for_w3n<T: Config>(key: &Web3NameOf<T>) -> DispatchResult
 where
-	<T as Config>::Currency:
-		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+	T::Currency: ReservableCurrency<T::AccountId, Balance = <T::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
 	let details = Owner::<T>::get(key).ok_or(Error::<T>::NotFound)?;
-	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T, _>>(
 		&details.deposit.owner,
 		&HoldReason::Deposit.into(),
 		details.deposit.amount,

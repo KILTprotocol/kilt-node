@@ -77,59 +77,61 @@ pub mod pallet {
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	pub type Web3NameOwnerOf<T> = <T as Config>::Web3NameOwner;
-	pub type Web3NameInput<T> = BoundedVec<u8, <T as Config>::MaxNameLength>;
-	pub type Web3NameOf<T> = <T as Config>::Web3Name;
-	pub type Web3OwnershipOf<T> =
-		Web3NameOwnership<Web3NameOwnerOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>, BlockNumberFor<T>>;
+	pub type BalanceOf<T, I = ()> = <CurrencyOf<T, I> as Inspect<AccountIdOf<T>>>::Balance;
+	pub type Web3NameOwnerOf<T, I = ()> = <T as Config<I>>::Web3NameOwner;
+	pub type Web3NameInput<T, I = ()> = BoundedVec<u8, <T as Config<I>>::MaxNameLength>;
+	pub type Web3NameOf<T, I = ()> = <T as Config<I>>::Web3Name;
+	pub type Web3OwnershipOf<T, I = ()> =
+		Web3NameOwnership<Web3NameOwnerOf<T, I>, Deposit<AccountIdOf<T>, BalanceOf<T, I>>, BlockNumberFor<T>>;
 
-	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
-	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
-	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
+	pub(crate) type BalanceMigrationManagerOf<T, I> = <T as Config<I>>::BalanceMigrationManager;
+	pub(crate) type CurrencyOf<T, I> = <T as Config<I>>::Currency;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
-	pub struct Pallet<T>(_);
+	pub struct Pallet<T, I = ()>(_);
 
 	/// Map of name -> ownership details.
 	#[pallet::storage]
 	#[pallet::getter(fn owner)]
-	pub type Owner<T> = StorageMap<_, Blake2_128Concat, Web3NameOf<T>, Web3OwnershipOf<T>>;
+	pub type Owner<T: Config<I>, I: 'static = ()> =
+		StorageMap<_, Blake2_128Concat, Web3NameOf<T, I>, Web3OwnershipOf<T, I>>;
 
 	/// Map of owner -> name.
 	#[pallet::storage]
 	#[pallet::getter(fn names)]
-	pub type Names<T> = StorageMap<_, Blake2_128Concat, Web3NameOwnerOf<T>, Web3NameOf<T>>;
+	pub type Names<T: Config<I>, I: 'static = ()> =
+		StorageMap<_, Blake2_128Concat, Web3NameOwnerOf<T, I>, Web3NameOf<T, I>>;
 
 	/// Map of name -> ().
 	///
 	/// If a name key is present, the name is currently banned.
 	#[pallet::storage]
 	#[pallet::getter(fn is_banned)]
-	pub type Banned<T> = StorageMap<_, Blake2_128Concat, Web3NameOf<T>, ()>;
+	pub type Banned<T: Config<I>, I: 'static = ()> = StorageMap<_, Blake2_128Concat, Web3NameOf<T, I>, ()>;
 
 	#[pallet::composite_enum]
-	pub enum HoldReason {
+	pub enum HoldReason<I: 'static = ()> {
 		Deposit,
 	}
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config<I: 'static = ()>: frame_system::Config {
 		/// The origin allowed to ban names.
 		type BanOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		/// The origin allowed to perform regular operations.
 		type OwnerOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		/// The type of origin after a successful origin check.
-		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self>>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self, I>>;
 		/// Aggregated hold reason.
-		type RuntimeHoldReason: From<HoldReason>;
+		type RuntimeHoldReason: From<HoldReason<I>>;
 		/// The currency type to reserve and release deposits.
 		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 		/// The amount of KILT to deposit to claim a name.
 		#[pallet::constant]
-		type Deposit: Get<BalanceOf<Self>>;
+		type Deposit: Get<BalanceOf<Self, I>>;
 		/// The overarching event type.
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The min encoded length of a name.
 		#[pallet::constant]
 		type MinNameLength: Get<u32>;
@@ -144,7 +146,7 @@ pub mod pallet {
 			+ PartialEq
 			+ Clone
 			+ TypeInfo
-			+ TryFrom<Vec<u8>, Error = Error<Self>>
+			+ TryFrom<Vec<u8>, Error = Error<Self, I>>
 			+ MaxEncodedLen
 			+ Ord;
 		/// The type of a name owner.
@@ -153,30 +155,30 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// Migration manager to handle new created entries
-		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self, I>>;
 	}
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
+	pub enum Event<T: Config<I>, I: 'static = ()> {
 		/// A new name has been claimed.
 		Web3NameClaimed {
-			owner: Web3NameOwnerOf<T>,
-			name: Web3NameOf<T>,
+			owner: Web3NameOwnerOf<T, I>,
+			name: Web3NameOf<T, I>,
 		},
 		/// A name has been released.
 		Web3NameReleased {
-			owner: Web3NameOwnerOf<T>,
-			name: Web3NameOf<T>,
+			owner: Web3NameOwnerOf<T, I>,
+			name: Web3NameOf<T, I>,
 		},
 		/// A name has been banned.
-		Web3NameBanned { name: Web3NameOf<T> },
+		Web3NameBanned { name: Web3NameOf<T, I> },
 		/// A name has been unbanned.
-		Web3NameUnbanned { name: Web3NameOf<T> },
+		Web3NameUnbanned { name: Web3NameOf<T, I> },
 		/// The deposit for a web3name has changed owner.
 		DepositOwnerChanged {
 			/// The web3name whose deposit owner changed.
-			id: Web3NameOf<T>,
+			id: Web3NameOf<T, I>,
 			/// The old deposit owner.
 			from: AccountIdOf<T>,
 			/// The new deposit owner.
@@ -186,7 +188,7 @@ pub mod pallet {
 
 	#[pallet::error]
 	#[derive(PartialEq, Eq)]
-	pub enum Error<T> {
+	pub enum Error<T, I = ()> {
 		/// The tx submitter does not have enough funds to pay for the deposit.
 		InsufficientFunds,
 		/// The specified name has already been previously claimed.
@@ -215,15 +217,15 @@ pub mod pallet {
 	}
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+	impl<T: Config<I>, I: 'static> Hooks<BlockNumberFor<T>> for Pallet<T, I> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
-			crate::try_state::do_try_state::<T>()
+			crate::try_state::do_try_state::<T, I>()
 		}
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		/// Assign the specified name to the owner as specified in the
 		/// origin.
 		///
@@ -240,8 +242,8 @@ pub mod pallet {
 		/// - Writes: Names, Owner storage entries + currency deposit reserve
 		/// # </weight>
 		#[pallet::call_index(0)]
-		#[pallet::weight(<T as Config>::WeightInfo::claim(name.len().saturated_into()))]
-		pub fn claim(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config<I>>::WeightInfo::claim(name.len().saturated_into()))]
+		pub fn claim(origin: OriginFor<T>, name: Web3NameInput<T, I>) -> DispatchResult {
 			let runtime_origin = T::OwnerOrigin::ensure_origin(origin)?;
 			let payer = runtime_origin.sender();
 			let owner = runtime_origin.subject();
@@ -266,7 +268,7 @@ pub mod pallet {
 		/// - Writes: Names, Owner storage entries + currency deposit release
 		/// # </weight>
 		#[pallet::call_index(1)]
-		#[pallet::weight(<T as Config>::WeightInfo::release_by_owner())]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::release_by_owner())]
 		pub fn release_by_owner(origin: OriginFor<T>) -> DispatchResult {
 			let runtime_origin = T::OwnerOrigin::ensure_origin(origin)?;
 			let owner = runtime_origin.subject();
@@ -291,8 +293,8 @@ pub mod pallet {
 		/// - Writes: Names, Owner storage entries + currency deposit release
 		/// # </weight>
 		#[pallet::call_index(2)]
-		#[pallet::weight(<T as Config>::WeightInfo::reclaim_deposit(name.len().saturated_into()))]
-		pub fn reclaim_deposit(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config<I>>::WeightInfo::reclaim_deposit(name.len().saturated_into()))]
+		pub fn reclaim_deposit(origin: OriginFor<T>, name: Web3NameInput<T, I>) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
 			let decoded_name = Self::check_reclaim_deposit_preconditions(name, &caller)?;
@@ -319,8 +321,8 @@ pub mod pallet {
 		///   release
 		/// # </weight>
 		#[pallet::call_index(3)]
-		#[pallet::weight(<T as Config>::WeightInfo::ban(name.len().saturated_into()))]
-		pub fn ban(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config<I>>::WeightInfo::ban(name.len().saturated_into()))]
+		pub fn ban(origin: OriginFor<T>, name: Web3NameInput<T, I>) -> DispatchResult {
 			T::BanOrigin::ensure_origin(origin)?;
 
 			let (decoded_name, is_claimed) = Self::check_banning_preconditions(name)?;
@@ -330,7 +332,7 @@ pub mod pallet {
 			}
 
 			Self::ban_name(&decoded_name);
-			Self::deposit_event(Event::<T>::Web3NameBanned { name: decoded_name });
+			Self::deposit_event(Event::<T, I>::Web3NameBanned { name: decoded_name });
 
 			Ok(())
 		}
@@ -350,14 +352,14 @@ pub mod pallet {
 		/// - Writes: Banned storage entry deposit release
 		/// # </weight>
 		#[pallet::call_index(4)]
-		#[pallet::weight(<T as Config>::WeightInfo::unban(name.len().saturated_into()))]
-		pub fn unban(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config<I>>::WeightInfo::unban(name.len().saturated_into()))]
+		pub fn unban(origin: OriginFor<T>, name: Web3NameInput<T, I>) -> DispatchResult {
 			T::BanOrigin::ensure_origin(origin)?;
 
 			let decoded_name = Self::check_unbanning_preconditions(name)?;
 
 			Self::unban_name(&decoded_name);
-			Self::deposit_event(Event::<T>::Web3NameUnbanned { name: decoded_name });
+			Self::deposit_event(Event::<T, I>::Web3NameUnbanned { name: decoded_name });
 
 			Ok(())
 		}
@@ -370,18 +372,18 @@ pub mod pallet {
 		/// The subject of the call must be the owner of the web3name.
 		/// The sender of the call will be the new deposit owner.
 		#[pallet::call_index(5)]
-		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		#[pallet::weight(<T as Config<I>>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>) -> DispatchResult {
-			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
+			let source = <T as Config<I>>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
 			let sender = source.sender();
-			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::NotFound)?;
+			let name = Names::<T, I>::get(&w3n_owner).ok_or(Error::<T, I>::NotFound)?;
 
-			let old_deposit_owner = Web3NameStorageDepositCollector::<T>::change_deposit_owner::<
-				BalanceMigrationManagerOf<T>,
+			let old_deposit_owner = Web3NameStorageDepositCollector::<T, I>::change_deposit_owner::<
+				BalanceMigrationManagerOf<T, I>,
 			>(&name, sender.clone())?;
 
-			Self::deposit_event(Event::<T>::DepositOwnerChanged {
+			Self::deposit_event(Event::<T, I>::DepositOwnerChanged {
 				id: name,
 				from: old_deposit_owner,
 				to: sender,
@@ -394,20 +396,20 @@ pub mod pallet {
 		///
 		/// The sender must be the deposit owner.
 		#[pallet::call_index(6)]
-		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
-		pub fn update_deposit(origin: OriginFor<T>, name_input: Web3NameInput<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config<I>>::WeightInfo::update_deposit())]
+		pub fn update_deposit(origin: OriginFor<T>, name_input: Web3NameInput<T, I>) -> DispatchResult {
 			let source = ensure_signed(origin)?;
-			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
-			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
-			ensure!(w3n_entry.deposit.owner == source, Error::<T>::NotAuthorized);
+			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let w3n_entry = Owner::<T, I>::get(&name).ok_or(Error::<T, I>::NotFound)?;
+			ensure!(w3n_entry.deposit.owner == source, Error::<T, I>::NotAuthorized);
 
-			Web3NameStorageDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&name)?;
+			Web3NameStorageDepositCollector::<T, I>::update_deposit::<BalanceMigrationManagerOf<T, I>>(&name)?;
 
 			Ok(())
 		}
 	}
 
-	impl<T: Config> Pallet<T> {
+	impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		/// Verify that the claiming preconditions are verified. Specifically:
 		/// - The name input data can be decoded as a valid name
 		/// - The name does not already exist
@@ -415,15 +417,15 @@ pub mod pallet {
 		/// - The name has not been banned
 		/// - The tx submitter has enough funds to pay the deposit
 		fn check_claiming_preconditions(
-			name_input: Web3NameInput<T>,
-			owner: &Web3NameOwnerOf<T>,
+			name_input: Web3NameInput<T, I>,
+			owner: &Web3NameOwnerOf<T, I>,
 			deposit_payer: &AccountIdOf<T>,
-		) -> Result<Web3NameOf<T>, DispatchError> {
-			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+		) -> Result<Web3NameOf<T, I>, DispatchError> {
+			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(!Names::<T>::contains_key(owner), Error::<T>::OwnerAlreadyExists);
-			ensure!(!Owner::<T>::contains_key(&name), Error::<T>::AlreadyExists);
-			ensure!(!Banned::<T>::contains_key(&name), Error::<T>::Banned);
+			ensure!(!Names::<T, I>::contains_key(owner), Error::<T, I>::OwnerAlreadyExists);
+			ensure!(!Owner::<T, I>::contains_key(&name), Error::<T, I>::AlreadyExists);
+			ensure!(!Banned::<T, I>::contains_key(&name), Error::<T, I>::Banned);
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
@@ -431,7 +433,7 @@ pub mod pallet {
 					deposit_payer,
 					T::Deposit::get()
 				),
-				Error::<T>::InsufficientFunds
+				Error::<T, I>::InsufficientFunds
 			);
 
 			Ok(name)
@@ -442,34 +444,36 @@ pub mod pallet {
 		/// `check_claiming_preconditions` as it does not verify all the
 		/// preconditions again.
 		pub fn register_name(
-			name: Web3NameOf<T>,
-			owner: Web3NameOwnerOf<T>,
+			name: Web3NameOf<T, I>,
+			owner: Web3NameOwnerOf<T, I>,
 			deposit_payer: AccountIdOf<T>,
 		) -> DispatchResult {
 			let block_number = frame_system::Pallet::<T>::block_number();
 
-			let deposit = Web3NameStorageDepositCollector::<T>::create_deposit(deposit_payer, T::Deposit::get())?;
-			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Owner::<T>::hashed_key_for(&name));
-
-			Names::<T>::insert(&owner, name.clone());
-			Owner::<T>::insert(
+			let deposit = Web3NameStorageDepositCollector::<T, I>::create_deposit(deposit_payer, T::Deposit::get())?;
+			<T as Config<I>>::BalanceMigrationManager::exclude_key_from_migration(&Owner::<T, I>::hashed_key_for(
 				&name,
-				Web3OwnershipOf::<T> {
+			));
+
+			Names::<T, I>::insert(&owner, name.clone());
+			Owner::<T, I>::insert(
+				&name,
+				Web3OwnershipOf::<T, I> {
 					owner: owner.clone(),
 					claimed_at: block_number,
 					deposit,
 				},
 			);
 
-			Self::deposit_event(Event::<T>::Web3NameClaimed { owner, name });
+			Self::deposit_event(Event::<T, I>::Web3NameClaimed { owner, name });
 			Ok(())
 		}
 
 		/// Verify that the releasing preconditions for an owner are verified.
 		/// Specifically:
 		/// - The owner has a previously claimed name
-		fn check_releasing_preconditions(owner: &Web3NameOwnerOf<T>) -> Result<Web3NameOf<T>, DispatchError> {
-			let name = Names::<T>::get(owner).ok_or(Error::<T>::OwnerNotFound)?;
+		fn check_releasing_preconditions(owner: &Web3NameOwnerOf<T, I>) -> Result<Web3NameOf<T, I>, DispatchError> {
+			let name = Names::<T, I>::get(owner).ok_or(Error::<T, I>::OwnerNotFound)?;
 
 			Ok(name)
 		}
@@ -480,13 +484,13 @@ pub mod pallet {
 		/// - The name exists (i.e., it has been previous claimed)
 		/// - The caller owns the name's deposit
 		fn check_reclaim_deposit_preconditions(
-			name_input: Web3NameInput<T>,
+			name_input: Web3NameInput<T, I>,
 			caller: &AccountIdOf<T>,
-		) -> Result<Web3NameOf<T>, DispatchError> {
-			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
-			let Web3NameOwnership { deposit, .. } = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
+		) -> Result<Web3NameOf<T, I>, DispatchError> {
+			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let Web3NameOwnership { deposit, .. } = Owner::<T, I>::get(&name).ok_or(Error::<T, I>::NotFound)?;
 
-			ensure!(caller == &deposit.owner, Error::<T>::NotAuthorized);
+			ensure!(caller == &deposit.owner, Error::<T, I>::NotAuthorized);
 
 			Ok(name)
 		}
@@ -495,23 +499,23 @@ pub mod pallet {
 		/// original payer. This function must be called after
 		/// `check_releasing_preconditions` as it does not verify all the
 		/// preconditions again.
-		fn unregister_name(name: &Web3NameOf<T>) -> Result<Web3OwnershipOf<T>, DispatchError> {
-			let name_ownership = Owner::<T>::take(name).ok_or(Error::<T>::OwnerNotFound)?;
-			Names::<T>::remove(&name_ownership.owner);
+		fn unregister_name(name: &Web3NameOf<T, I>) -> Result<Web3OwnershipOf<T, I>, DispatchError> {
+			let name_ownership = Owner::<T, I>::take(name).ok_or(Error::<T, I>::OwnerNotFound)?;
+			Names::<T, I>::remove(&name_ownership.owner);
 
 			let is_key_migrated =
-				<T as Config>::BalanceMigrationManager::is_key_migrated(&Owner::<T>::hashed_key_for(name));
+				<T as Config<I>>::BalanceMigrationManager::is_key_migrated(&Owner::<T, I>::hashed_key_for(name));
 
 			if is_key_migrated {
-				Web3NameStorageDepositCollector::<T>::free_deposit(name_ownership.clone().deposit)?;
+				Web3NameStorageDepositCollector::<T, I>::free_deposit(name_ownership.clone().deposit)?;
 			} else {
-				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+				<T as Config<I>>::BalanceMigrationManager::release_reserved_deposit(
 					&name_ownership.deposit.owner,
 					&name_ownership.deposit.amount,
 				)
 			}
 
-			Self::deposit_event(Event::<T>::Web3NameReleased {
+			Self::deposit_event(Event::<T, I>::Web3NameReleased {
 				owner: name_ownership.owner.clone(),
 				name: name.clone(),
 			});
@@ -527,12 +531,14 @@ pub mod pallet {
 		/// If the preconditions are verified, return
 		/// a tuple containing the parsed name value and whether the name
 		/// being banned is currently assigned to someone or not.
-		fn check_banning_preconditions(name_input: Web3NameInput<T>) -> Result<(Web3NameOf<T>, bool), DispatchError> {
-			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+		fn check_banning_preconditions(
+			name_input: Web3NameInput<T, I>,
+		) -> Result<(Web3NameOf<T, I>, bool), DispatchError> {
+			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(!Banned::<T>::contains_key(&name), Error::<T>::AlreadyBanned);
+			ensure!(!Banned::<T, I>::contains_key(&name), Error::<T, I>::AlreadyBanned);
 
-			let is_claimed = Owner::<T>::contains_key(&name);
+			let is_claimed = Owner::<T, I>::contains_key(&name);
 
 			Ok((name, is_claimed))
 		}
@@ -540,18 +546,18 @@ pub mod pallet {
 		/// Ban the provided name. This function must be called after
 		/// `check_banning_preconditions` as it does not verify all the
 		/// preconditions again.
-		pub(crate) fn ban_name(name: &Web3NameOf<T>) {
-			Banned::<T>::insert(name, ());
+		pub(crate) fn ban_name(name: &Web3NameOf<T, I>) {
+			Banned::<T, I>::insert(name, ());
 		}
 
 		/// Verify that the unbanning preconditions are verified.
 		/// Specifically:
 		/// - The name input data can be decoded as a valid name
 		/// - The name must have already been banned
-		fn check_unbanning_preconditions(name_input: Web3NameInput<T>) -> Result<Web3NameOf<T>, DispatchError> {
-			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+		fn check_unbanning_preconditions(name_input: Web3NameInput<T, I>) -> Result<Web3NameOf<T, I>, DispatchError> {
+			let name = Web3NameOf::<T, I>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(Banned::<T>::contains_key(&name), Error::<T>::NotBanned);
+			ensure!(Banned::<T, I>::contains_key(&name), Error::<T, I>::NotBanned);
 
 			Ok(name)
 		}
@@ -559,20 +565,21 @@ pub mod pallet {
 		/// Unban the provided name. This function must be called after
 		/// `check_unbanning_preconditions` as it does not verify all the
 		/// preconditions again.
-		fn unban_name(name: &Web3NameOf<T>) {
-			Banned::<T>::remove(name);
+		fn unban_name(name: &Web3NameOf<T, I>) {
+			Banned::<T, I>::remove(name);
 		}
 	}
 
-	pub(crate) struct Web3NameStorageDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, T::Web3Name, T::RuntimeHoldReason>
-		for Web3NameStorageDepositCollector<T>
+	pub(crate) struct Web3NameStorageDepositCollector<T, I>(PhantomData<(T, I)>);
+	impl<T: Config<I>, I: 'static>
+		StorageDepositCollector<AccountIdOf<T>, <T as Config<I>>::Web3Name, <T as Config<I>>::RuntimeHoldReason>
+		for Web3NameStorageDepositCollector<T, I>
 	{
 		type Currency = T::Currency;
-		type Reason = HoldReason;
+		type Reason = HoldReason<I>;
 
 		fn get_hashed_key(key: &T::Web3Name) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
-			Ok(Owner::<T>::hashed_key_for(key))
+			Ok(Owner::<T, I>::hashed_key_for(key))
 		}
 
 		fn reason() -> Self::Reason {
@@ -581,7 +588,7 @@ pub mod pallet {
 		fn deposit(
 			key: &T::Web3Name,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
-			let w3n_entry = Owner::<T>::get(key).ok_or(Error::<T>::NotFound)?;
+			let w3n_entry = Owner::<T, I>::get(key).ok_or(Error::<T, I>::NotFound)?;
 
 			Ok(w3n_entry.deposit)
 		}
@@ -594,8 +601,8 @@ pub mod pallet {
 			key: &T::Web3Name,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let w3n_entry = Owner::<T>::get(key).ok_or(Error::<T>::NotFound)?;
-			Owner::<T>::insert(key, Web3OwnershipOf::<T> { deposit, ..w3n_entry });
+			let w3n_entry = Owner::<T, I>::get(key).ok_or(Error::<T, I>::NotFound)?;
+			Owner::<T, I>::insert(key, Web3OwnershipOf::<T, I> { deposit, ..w3n_entry });
 
 			Ok(())
 		}
