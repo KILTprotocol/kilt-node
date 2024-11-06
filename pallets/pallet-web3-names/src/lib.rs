@@ -36,6 +36,8 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::BenchmarkHelper;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 

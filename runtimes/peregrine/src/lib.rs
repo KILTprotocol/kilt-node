@@ -737,6 +737,9 @@ impl pallet_web3_names::Config for Runtime {
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names_web3_names::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = benches::Web3NamePalletsBenchmarkHelper;
 }
 
 pub type DotName = runtime_common::DotName<{ constants::dot_names::MIN_LENGTH }, { constants::dot_names::MAX_LENGTH }>;
@@ -756,6 +759,9 @@ impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type Web3Name = DotName;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names_dot_names::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = benches::Web3NamePalletsBenchmarkHelper;
 }
 
 impl pallet_inflation::Config for Runtime {
@@ -1293,7 +1299,7 @@ mod benches {
 	use runtime_common::AccountId;
 	use xcm::v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location, ParentThen};
 
-	use crate::{Fungibles, ParachainSystem};
+	use crate::{DotNamesDeployment, Fungibles, ParachainSystem, Runtime};
 
 	frame_support::parameter_types! {
 		pub const MaxBalance: crate::Balance = crate::Balance::max_value();
@@ -1382,6 +1388,38 @@ mod benches {
 				remote_asset_id: None,
 				remote_xcm_fee: Some(remote_xcm_fee),
 			})
+		}
+	}
+
+	pub struct Web3NamePalletsBenchmarkHelper;
+
+	impl pallet_web3_names::BenchmarkHelper<Runtime, ()> for Web3NamePalletsBenchmarkHelper {
+		fn generate_name_input_with_length(length: usize) -> Vec<u8> {
+			let input = sp_std::vec![b'a'; length];
+
+			debug_assert!(<Runtime as pallet_web3_names::Config<()>>::Web3Name::try_from(input.clone()).is_ok());
+			input
+		}
+	}
+
+	impl pallet_web3_names::BenchmarkHelper<Runtime, DotNamesDeployment> for Web3NamePalletsBenchmarkHelper {
+		// Returns the name `11[...]111.dot` with as many `1`s as the provided length -
+		// 4, to account for the ".dot" suffix.
+		fn generate_name_input_with_length(length: usize) -> Vec<u8> {
+			let suffix_length = runtime_common::constants::dot_names::DOT_NAME_SUFFIX.len();
+			let remaining_name_length = length
+				.checked_sub(suffix_length)
+				.expect("Provided length should cover at least the length of the suffix.");
+			let input = sp_std::iter::once(b'1')
+				.cycle()
+				.take(remaining_name_length)
+				.chain(runtime_common::constants::dot_names::DOT_NAME_SUFFIX.bytes())
+				.collect::<Vec<_>>();
+
+			debug_assert!(
+				<Runtime as pallet_web3_names::Config<DotNamesDeployment>>::Web3Name::try_from(input.clone()).is_ok()
+			);
+			input
 		}
 	}
 }
