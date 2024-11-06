@@ -1,6 +1,11 @@
-use frame_support::{assert_err, assert_ok};
+use frame_support::{
+	assert_err, assert_ok,
+	traits::fungibles::{
+		metadata::Inspect as InspectMetadata, roles::Inspect as InspectRoles, Inspect as InspectFungibles,
+	},
+};
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
-use pallet_assets::{Error as AssetsPalletErrors, Event as AssetsPalletEvents};
+use pallet_assets::Error as AssetsPalletErrors;
 use sp_runtime::{ArithmeticError, BoundedVec};
 use sp_std::ops::Sub;
 
@@ -69,34 +74,29 @@ fn single_currency() {
 
 			System::assert_has_event(BondingPalletEvents::PoolCreated { id: pool_id.clone() }.into());
 
-			// TODO: check events or storage of linked pallets?
-			System::assert_has_event(
-				AssetsPalletEvents::ForceCreated {
-					asset_id: new_asset_id,
-					owner: pool_id.clone(),
-				}
-				.into(),
+			// Check creation
+			assert!(<Test as crate::Config>::Fungibles::asset_exists(new_asset_id));
+			// Check team
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::owner(new_asset_id),
+				Some(pool_id.clone())
 			);
-
-			System::assert_has_event(
-				AssetsPalletEvents::MetadataSet {
-					asset_id: new_asset_id,
-					name: b"Bitcoin".into(),
-					symbol: b"btc".into(),
-					decimals: 10,
-					is_frozen: false,
-				}
-				.into(),
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::admin(new_asset_id),
+				Some(pool_id.clone())
 			);
-
-			System::assert_has_event(
-				AssetsPalletEvents::Touched {
-					asset_id: DEFAULT_COLLATERAL_CURRENCY_ID,
-					who: pool_id.clone(),
-					depositor: ACCOUNT_00,
-				}
-				.into(),
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::issuer(new_asset_id),
+				Some(pool_id.clone())
 			);
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::freezer(new_asset_id),
+				Some(pool_id.clone())
+			);
+			// Check metadata
+			assert_eq!(<Test as crate::Config>::Fungibles::decimals(new_asset_id), 10);
+			assert_eq!(<Test as crate::Config>::Fungibles::name(new_asset_id), b"Bitcoin");
+			assert_eq!(<Test as crate::Config>::Fungibles::symbol(new_asset_id), b"btc");
 		});
 }
 
@@ -135,7 +135,7 @@ fn multi_currency() {
 			let new_assets = Vec::from_iter(next_asset_id..next_asset_id + 3);
 			let pool_id = calculate_pool_id(&new_assets);
 
-			let details = Pools::<Test>::get(pool_id).unwrap();
+			let details = Pools::<Test>::get(pool_id.clone()).unwrap();
 
 			assert_eq!(BondingPallet::get_currencies_number(&details), 3);
 			assert_eq!(details.bonded_currencies, new_assets);
@@ -144,6 +144,14 @@ fn multi_currency() {
 				Balances::free_balance(ACCOUNT_00),
 				initial_balance.sub(BondingPallet::calculate_pool_deposit(3))
 			);
+
+			for new_asset_id in new_assets {
+				assert!(<Test as crate::Config>::Fungibles::asset_exists(new_asset_id));
+				assert_eq!(
+					<Test as crate::Config>::Fungibles::owner(new_asset_id),
+					Some(pool_id.clone())
+				);
+			}
 		});
 }
 
@@ -191,6 +199,9 @@ fn can_create_identical_pools() {
 
 			assert_eq!(details1.bonded_currencies, vec![next_asset_id]);
 			assert_eq!(details2.bonded_currencies, vec![next_asset_id + 1]);
+
+			assert!(<Test as crate::Config>::Fungibles::asset_exists(next_asset_id));
+			assert!(<Test as crate::Config>::Fungibles::asset_exists(next_asset_id + 1));
 		});
 }
 
