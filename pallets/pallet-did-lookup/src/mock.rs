@@ -182,7 +182,7 @@ pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
 	/// list of connection (sender, did, connected address)
 	connections: Vec<(AccountId, SubjectId, LinkableAccountId)>,
-	unique_flag: Option<()>,
+	unique_flag: bool,
 }
 
 impl ExtBuilder {
@@ -200,7 +200,7 @@ impl ExtBuilder {
 	}
 
 	pub fn with_unique_connections(mut self) -> Self {
-		self.unique_flag = Some(());
+		self.unique_flag = true;
 		self
 	}
 
@@ -223,7 +223,7 @@ impl ExtBuilder {
 					.expect("Should create connection");
 			}
 
-			UniqueLinkEnabledFlag::set(self.unique_flag.is_some());
+			UniqueLinkEnabledFlag::set(self.unique_flag);
 		});
 		ext
 	}
