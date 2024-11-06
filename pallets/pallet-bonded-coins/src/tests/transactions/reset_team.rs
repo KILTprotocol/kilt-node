@@ -1,11 +1,10 @@
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, traits::fungibles::roles::Inspect};
 use frame_system::RawOrigin;
-use pallet_assets::Event as AssetsPalletEvents;
 
 use crate::{
 	mock::{runtime::*, *},
 	types::{PoolManagingTeam, PoolStatus},
-	Error as BondingPalletErrors, Pools,
+	Error as BondingPalletErrors,
 };
 
 #[test]
@@ -37,14 +36,21 @@ fn resets_team() {
 				0
 			));
 
-			System::assert_has_event(
-				AssetsPalletEvents::<Test>::TeamChanged {
-					asset_id: DEFAULT_BONDED_CURRENCY_ID,
-					issuer: pool_id,
-					admin: ACCOUNT_00,
-					freezer: ACCOUNT_01,
-				}
-				.into(),
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::admin(DEFAULT_BONDED_CURRENCY_ID),
+				Some(ACCOUNT_00)
+			);
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::freezer(DEFAULT_BONDED_CURRENCY_ID),
+				Some(ACCOUNT_01)
+			);
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::owner(DEFAULT_BONDED_CURRENCY_ID),
+				Some(pool_id.clone())
+			);
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::issuer(DEFAULT_BONDED_CURRENCY_ID),
+				Some(pool_id)
 			);
 		})
 }
@@ -79,6 +85,11 @@ fn does_not_change_team_when_not_live() {
 					0
 				),
 				BondingPalletErrors::<Test>::PoolNotLive
+			);
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::admin(DEFAULT_BONDED_CURRENCY_ID),
+				Some(pool_id)
 			);
 		})
 }
@@ -131,8 +142,10 @@ fn only_manager_can_change_team() {
 				BondingPalletErrors::<Test>::NoPermission
 			);
 
-			let new_details = Pools::<Test>::get(&pool_id).unwrap();
-			assert_eq!(new_details.manager, Some(manager));
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::admin(DEFAULT_BONDED_CURRENCY_ID),
+				Some(pool_id)
+			);
 		})
 }
 
