@@ -15,11 +15,9 @@ use crate::{
 	Event as BondingPalletEvents, NextAssetId, Pools, TokenMetaOf,
 };
 
-// create_pool tests
-
 #[test]
 fn single_currency() {
-	let initial_balance = 100_000_000_000_000_000u128;
+	let initial_balance = ONE_HUNDRED_KILT;
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
@@ -41,7 +39,7 @@ fn single_currency() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				BoundedVec::truncate_from(vec![bonded_token]),
-				10,
+				DEFAULT_BONDED_DENOMINATION,
 				true
 			));
 
@@ -60,7 +58,7 @@ fn single_currency() {
 					allow_swap: false
 				})
 			);
-			assert_eq!(details.denomination, 10);
+			assert_eq!(details.denomination, DEFAULT_BONDED_DENOMINATION);
 			assert_eq!(details.collateral_id, DEFAULT_COLLATERAL_CURRENCY_ID);
 			assert_eq!(details.bonded_currencies, vec![new_asset_id]);
 
@@ -94,7 +92,10 @@ fn single_currency() {
 				Some(pool_id.clone())
 			);
 			// Check metadata
-			assert_eq!(<Test as crate::Config>::Fungibles::decimals(new_asset_id), 10);
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::decimals(new_asset_id),
+				DEFAULT_BONDED_DENOMINATION
+			);
 			assert_eq!(<Test as crate::Config>::Fungibles::name(new_asset_id), b"Bitcoin");
 			assert_eq!(<Test as crate::Config>::Fungibles::symbol(new_asset_id), b"btc");
 		});
@@ -102,7 +103,7 @@ fn single_currency() {
 
 #[test]
 fn multi_currency() {
-	let initial_balance = 100_000_000_000_000_000u128;
+	let initial_balance = ONE_HUNDRED_KILT;
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
@@ -126,7 +127,7 @@ fn multi_currency() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				BoundedVec::truncate_from(bonded_tokens),
-				10,
+				DEFAULT_BONDED_DENOMINATION,
 				true
 			));
 
@@ -157,7 +158,7 @@ fn multi_currency() {
 
 #[test]
 fn can_create_identical_pools() {
-	let initial_balance = 100_000_000_000_000_000u128;
+	let initial_balance = ONE_HUNDRED_KILT;
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
@@ -179,7 +180,7 @@ fn can_create_identical_pools() {
 				curve.clone(),
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				BoundedVec::truncate_from(vec![bonded_token.clone()]),
-				10,
+				DEFAULT_BONDED_DENOMINATION,
 				true
 			));
 
@@ -188,7 +189,7 @@ fn can_create_identical_pools() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				BoundedVec::truncate_from(vec![bonded_token]),
-				10,
+				DEFAULT_BONDED_DENOMINATION,
 				true
 			));
 
@@ -208,7 +209,7 @@ fn can_create_identical_pools() {
 #[test]
 fn fails_if_collateral_not_exists() {
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, 100_000_000_000_000_000u128)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.build()
 		.execute_with(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -226,7 +227,7 @@ fn fails_if_collateral_not_exists() {
 					curve,
 					100,
 					BoundedVec::truncate_from(vec![bonded_token]),
-					10,
+					DEFAULT_BONDED_DENOMINATION,
 					true
 				),
 				AssetsPalletErrors::<Test>::Unknown
@@ -237,7 +238,7 @@ fn fails_if_collateral_not_exists() {
 #[test]
 fn cannot_create_circular_pool() {
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, 100_000_000_000_000_000u128)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.build()
 		.execute_with(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -258,7 +259,7 @@ fn cannot_create_circular_pool() {
 					// try specifying the id of the currency to be created as collateral
 					next_asset_id,
 					BoundedVec::truncate_from(vec![bonded_token]),
-					10,
+					DEFAULT_BONDED_DENOMINATION,
 					true
 				),
 				AssetsPalletErrors::<Test>::Unknown
@@ -268,7 +269,7 @@ fn cannot_create_circular_pool() {
 
 #[test]
 fn handles_asset_id_overflow() {
-	let initial_balance = 100_000_000_000_000_000u128;
+	let initial_balance = ONE_HUNDRED_KILT;
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])

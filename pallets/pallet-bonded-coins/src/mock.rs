@@ -42,6 +42,7 @@ pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 1;
 pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = 0;
 pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
 pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
+pub(crate) const ONE_HUNDRED_KILT: u128 = 100_000_000_000_000_000;
 
 // helper functions
 pub fn assert_relative_eq(target: Float, expected: Float, epsilon: Float) {
@@ -98,7 +99,7 @@ pub mod runtime {
 			bonded_currencies,
 			state,
 			collateral_id,
-			denomination: 10,
+			denomination: DEFAULT_BONDED_DENOMINATION,
 			owner,
 		}
 	}
