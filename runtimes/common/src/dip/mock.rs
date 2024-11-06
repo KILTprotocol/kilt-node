@@ -30,7 +30,7 @@ use frame_system::{mocking::MockBlock, pallet_prelude::BlockNumberFor, EnsureRoo
 use kilt_dip_primitives::RevealedWeb3Name;
 use pallet_did_lookup::{account::AccountId20, linkable_account::LinkableAccountId};
 use pallet_web3_names::{web3_name::AsciiWeb3Name, Web3NameOf};
-use sp_core::{sr25519, ConstU128, ConstU16, ConstU32, ConstU64};
+use sp_core::{sr25519, ConstBool, ConstU128, ConstU16, ConstU32, ConstU64};
 use sp_runtime::{traits::IdentityLookup, AccountId32, BoundedVec};
 
 use crate::{
@@ -169,6 +169,7 @@ impl pallet_did_lookup::Config for TestRuntime {
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type UniqueLinkingEnabled = ConstBool<false>;
 	type WeightInfo = ();
 }
 

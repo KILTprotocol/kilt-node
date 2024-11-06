@@ -16,13 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::parameter_types;
+use frame_support::{pallet_prelude::ValueQuery, parameter_types, storage_alias};
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::{
 	mock::{mock_origin, SubjectId},
 	traits::StorageDepositCollector,
 };
 
+use sp_core::Get;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	BuildStorage, MultiSignature,
@@ -109,6 +110,23 @@ parameter_types! {
 	pub const DidLookupDeposit: Balance = 10;
 }
 
+pub struct UniqueLinkEnabledFlag;
+
+#[storage_alias]
+type FlagStorage = StorageValue<DidLookup, bool, ValueQuery>;
+
+impl UniqueLinkEnabledFlag {
+	fn set(flag: bool) {
+		FlagStorage::set(flag)
+	}
+}
+
+impl Get<bool> for UniqueLinkEnabledFlag {
+	fn get() -> bool {
+		FlagStorage::get()
+	}
+}
+
 impl pallet_did_lookup::Config for Test {
 	type BalanceMigrationManager = ();
 	type RuntimeEvent = RuntimeEvent;
@@ -119,6 +137,7 @@ impl pallet_did_lookup::Config for Test {
 	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 	type DidIdentifier = SubjectId;
 	type WeightInfo = ();
+	type UniqueLinkingEnabled = UniqueLinkEnabledFlag;
 }
 
 impl mock_origin::Config for Test {
@@ -163,6 +182,7 @@ pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
 	/// list of connection (sender, did, connected address)
 	connections: Vec<(AccountId, SubjectId, LinkableAccountId)>,
+	unique_flag: bool,
 }
 
 impl ExtBuilder {
@@ -176,6 +196,11 @@ impl ExtBuilder {
 	#[must_use]
 	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, LinkableAccountId)>) -> Self {
 		self.connections = connections;
+		self
+	}
+
+	pub fn with_unique_connections(mut self) -> Self {
+		self.unique_flag = true;
 		self
 	}
 
@@ -197,6 +222,8 @@ impl ExtBuilder {
 				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
 					.expect("Should create connection");
 			}
+
+			UniqueLinkEnabledFlag::set(self.unique_flag);
 		});
 		ext
 	}
