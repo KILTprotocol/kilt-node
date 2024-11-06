@@ -224,6 +224,38 @@ fn fails_if_collateral_not_exists() {
 }
 
 #[test]
+fn cannot_create_circular_pool() {
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, 100_000_000_000_000_000u128)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+			let curve = get_linear_bonding_curve_input();
+
+			let bonded_token = TokenMetaOf::<Test> {
+				name: BoundedVec::truncate_from(b"Bitcoin".to_vec()),
+				symbol: BoundedVec::truncate_from(b"btc".to_vec()),
+				min_balance: 1,
+			};
+
+			let next_asset_id = NextAssetId::<Test>::get();
+
+			assert_err!(
+				BondingPallet::create_pool(
+					origin,
+					curve,
+					// try specifying the id of the currency to be created as collateral
+					next_asset_id,
+					BoundedVec::truncate_from(vec![bonded_token]),
+					10,
+					true
+				),
+				AssetsPalletErrors::<Test>::Unknown
+			);
+		})
+}
+
+#[test]
 fn handles_asset_id_overflow() {
 	let initial_balance = 100_000_000_000_000_000u128;
 	ExtBuilder::default()
