@@ -512,7 +512,7 @@ pub mod dot_names {
 
 	const MIN_NAME_LENGTH: u32 = 3;
 	const MAX_NAME_LENGTH: u32 = 28;
-	const DOT_NAME_SUFFIX: &str = ".dot";
+	pub const DOT_NAME_SUFFIX: &str = ".dot";
 
 	#[allow(clippy::as_conversions)]
 	pub const MIN_LENGTH: u32 = MIN_NAME_LENGTH + DOT_NAME_SUFFIX.len() as u32;
