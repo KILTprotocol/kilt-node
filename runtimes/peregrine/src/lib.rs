@@ -1297,6 +1297,7 @@ mod benches {
 	use frame_system::RawOrigin;
 	use pallet_asset_switch::PartialBenchmarkInfo;
 	use runtime_common::AccountId;
+	use sp_std::{vec, vec::Vec};
 	use xcm::v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location, ParentThen};
 
 	use crate::{DotNamesDeployment, Fungibles, ParachainSystem, Runtime};
@@ -1395,7 +1396,7 @@ mod benches {
 
 	impl pallet_web3_names::BenchmarkHelper<Runtime, ()> for Web3NamePalletsBenchmarkHelper {
 		fn generate_name_input_with_length(length: usize) -> Vec<u8> {
-			let input = sp_std::vec![b'a'; length];
+			let input = vec![b'a'; length];
 
 			debug_assert!(<Runtime as pallet_web3_names::Config<()>>::Web3Name::try_from(input.clone()).is_ok());
 			input
