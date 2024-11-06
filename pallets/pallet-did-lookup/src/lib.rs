@@ -454,18 +454,13 @@ pub mod pallet {
 				did: did_identifier.clone(),
 			};
 
-			// We don't care if an account is linked to a new DID (handled below by
-			// replacing the old with the new), but we care that if the unique linking flag
-			// is on, the DID can have a single account linked.
-			let is_did_already_linked = ConnectedAccounts::<T, I>::iter_key_prefix(&did_identifier)
-				.next()
-				.is_some();
 			let is_unique_flag_enabled = <T as Config<I>>::UniqueLinkingEnabled::get();
-			// Either flag not enabled, or if it is, the DID is not already linked.
-			ensure!(
-				!is_unique_flag_enabled || !is_did_already_linked,
-				Error::<T, I>::LinkExisting
-			);
+			if is_unique_flag_enabled {
+				let is_did_already_linked = ConnectedAccounts::<T, I>::iter_key_prefix(&did_identifier)
+					.next()
+					.is_some();
+				ensure!(!is_did_already_linked, Error::<T, I>::LinkExisting);
+			}
 
 			LinkableAccountDepositCollector::<T, I>::create_deposit(
 				record.clone().deposit.owner,
