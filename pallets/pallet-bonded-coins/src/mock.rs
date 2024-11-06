@@ -275,7 +275,7 @@ pub mod runtime {
 			.assimilate_storage(&mut storage)
 			.expect("assimilate should not fail");
 
-			let collateral_assets = self.collaterals.into_iter().map(|id| (id, ACCOUNT_99, false, 1));
+			let collateral_assets = self.collaterals.iter().map(|id| (*id, ACCOUNT_99, true, 1));
 
 			let all_assets: Vec<_> = self
 				.pools
@@ -306,6 +306,11 @@ pub mod runtime {
 							.map(|id| (*id, vec![], vec![], pool_details.denomination))
 							.collect::<Vec<(u32, Vec<u8>, Vec<u8>, u8)>>()
 					})
+					.chain(
+						self.collaterals
+							.into_iter()
+							.map(|id| (id, vec![], vec![], DEFAULT_COLLATERAL_DENOMINATION)),
+					)
 					.collect(),
 			}
 			.assimilate_storage(&mut storage)
