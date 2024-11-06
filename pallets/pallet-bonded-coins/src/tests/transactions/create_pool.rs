@@ -5,7 +5,9 @@ use sp_runtime::{ArithmeticError, BoundedVec};
 use sp_std::ops::Sub;
 
 use crate::{
-	mock::runtime::*, mock::*, types::PoolStatus, Event as BondingPalletEvents, NextAssetId, Pools, TokenMetaOf,
+	mock::{runtime::*, *},
+	types::{Locks, PoolStatus},
+	Event as BondingPalletEvents, NextAssetId, Pools, TokenMetaOf,
 };
 
 // create_pool tests
@@ -46,7 +48,14 @@ fn single_currency() {
 			assert!(details.is_owner(&ACCOUNT_00));
 			assert!(details.is_manager(&ACCOUNT_00));
 			assert!(details.transferable);
-			assert_eq!(details.state, PoolStatus::Locked(Default::default()));
+			assert_eq!(
+				details.state,
+				PoolStatus::Locked(Locks {
+					allow_mint: false,
+					allow_burn: false,
+					allow_swap: false
+				})
+			);
 			assert_eq!(details.denomination, 10);
 			assert_eq!(details.collateral_id, DEFAULT_COLLATERAL_CURRENCY_ID);
 			assert_eq!(details.bonded_currencies.len(), 1);
