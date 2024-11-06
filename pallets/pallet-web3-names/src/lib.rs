@@ -149,6 +149,9 @@ pub mod pallet {
 
 		/// Migration manager to handle new created entries
 		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self, I>>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper<Self, I>;
 	}
 
 	#[pallet::event]

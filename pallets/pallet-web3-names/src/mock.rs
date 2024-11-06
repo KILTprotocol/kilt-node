@@ -166,6 +166,9 @@ pub(crate) mod runtime {
 		type Web3NameOwner = TestWeb3NameOwner;
 		type WeightInfo = ();
 		type BalanceMigrationManager = ();
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper = ();
 	}
 
 	impl mock_origin::Config for Test {
