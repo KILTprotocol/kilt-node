@@ -87,6 +87,7 @@ kilt-runtime-api-dip-provider       = { path = "runtime-api/dip-provider", defau
 kilt-runtime-api-public-credentials = { path = "runtime-api/public-credentials", default-features = false }
 kilt-runtime-api-staking            = { path = "runtime-api/staking", default-features = false }
 pallet-asset-switch-runtime-api     = { path = "runtime-api/asset-switch", default-features = false }
+unique-linking-runtime-api          = { path = "runtime-api/unique-linking", default-features = false }
 
 # Internal KILT runtimes (with default disabled)
 kestrel-runtime   = { path = "runtimes/kestrel", default-features = false }
