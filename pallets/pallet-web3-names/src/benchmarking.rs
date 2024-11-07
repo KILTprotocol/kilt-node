@@ -38,15 +38,11 @@ use crate::{
 	Web3NameOwnerOf,
 };
 
-pub trait BenchmarkHelper<T: Config<I>, I: 'static> {
+pub trait BenchmarkHelper {
 	fn generate_name_input_with_length(length: usize) -> Vec<u8>;
 }
 
-impl<T, I> BenchmarkHelper<T, I> for ()
-where
-	T: Config<I>,
-	I: 'static,
-{
+impl BenchmarkHelper for () {
 	fn generate_name_input_with_length(length: usize) -> Vec<u8> {
 		sp_std::vec![b'a'; length]
 	}

@@ -739,7 +739,7 @@ impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = Migration;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = benches::Web3NamePalletsBenchmarkHelper;
+	type BenchmarkHelper = benches::Web3NamesBenchmarkHelper;
 }
 
 pub type DotName = runtime_common::DotName<{ constants::dot_names::MIN_LENGTH }, { constants::dot_names::MAX_LENGTH }>;
@@ -761,7 +761,7 @@ impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type WeightInfo = weights::pallet_web3_names_dot_names::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = benches::Web3NamePalletsBenchmarkHelper;
+	type BenchmarkHelper = benches::DotNamesBenchmarkHelper;
 }
 
 impl pallet_inflation::Config for Runtime {
@@ -1392,9 +1392,9 @@ mod benches {
 		}
 	}
 
-	pub struct Web3NamePalletsBenchmarkHelper;
+	pub struct Web3NamesBenchmarkHelper;
 
-	impl pallet_web3_names::BenchmarkHelper<Runtime, ()> for Web3NamePalletsBenchmarkHelper {
+	impl pallet_web3_names::BenchmarkHelper for Web3NamesBenchmarkHelper {
 		fn generate_name_input_with_length(length: usize) -> Vec<u8> {
 			let input = vec![b'a'; length];
 
@@ -1403,7 +1403,9 @@ mod benches {
 		}
 	}
 
-	impl pallet_web3_names::BenchmarkHelper<Runtime, DotNamesDeployment> for Web3NamePalletsBenchmarkHelper {
+	pub struct DotNamesBenchmarkHelper;
+
+	impl pallet_web3_names::BenchmarkHelper for DotNamesBenchmarkHelper {
 		// Returns the name `11[...]111.dot` with as many `1`s as the provided length -
 		// 4, to account for the ".dot" suffix.
 		fn generate_name_input_with_length(length: usize) -> Vec<u8> {

@@ -153,7 +153,7 @@ pub mod pallet {
 		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self, I>>;
 
 		#[cfg(feature = "runtime-benchmarks")]
-		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper<Self, I>;
+		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper;
 	}
 
 	#[pallet::event]
