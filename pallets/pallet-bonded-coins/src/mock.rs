@@ -56,7 +56,7 @@ pub fn assert_relative_eq(target: Float, expected: Float, epsilon: Float) {
 
 pub(crate) fn get_linear_bonding_curve<Float: FixedSigned>() -> Curve<Float> {
 	let m = Float::from_num(0);
-	let n = Float::from_num(2);
+	let n = Float::from_num(1);
 	let o = Float::from_num(3);
 	Curve::Polynomial(PolynomialParameters { m, n, o })
 }
