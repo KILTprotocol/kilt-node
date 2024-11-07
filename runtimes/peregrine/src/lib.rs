@@ -73,7 +73,7 @@ use runtime_common::{
 		RELAY_CHAIN_SLOT_DURATION_MILLIS, SLOT_DURATION, UNINCLUDED_SEGMENT_CAPACITY,
 	},
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
-	errors::{PublicCredentialsApiError, UniqueLinkingApiError},
+	errors::PublicCredentialsApiError,
 	fees::{ToAuthorCredit, WeightToFee},
 	pallet_id,
 	xcm_config::RelayOrigin,
@@ -1756,46 +1756,35 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl unique_linking_runtime_api::UniqueLinking<Block, LinkableAccountId, DotName, DidIdentifier, UniqueLinkingApiError> for Runtime {
-		fn address_for_name(name: DotName) -> Result<Option<AddressResult<LinkableAccountId, DidIdentifier>>, UniqueLinkingApiError> {
-			let Some(Web3NameOwnership { owner, .. }) = DotNames::owner(name) else {
-				return Ok(None);
-			};
+	impl unique_linking_runtime_api::UniqueLinking<Block, LinkableAccountId, DotName, DidIdentifier> for Runtime {
+		fn address_for_name(name: DotName) -> Option<AddressResult<LinkableAccountId, DidIdentifier>> {
+			let Web3NameOwnership { owner, .. } = DotNames::owner(name)?;
 
 			let (first_account, second_account) = {
 				let mut owner_linked_accounts = pallet_did_lookup::ConnectedAccounts::<Runtime, UniqueLinkingDeployment>::iter_key_prefix(&owner);
 				(owner_linked_accounts.next(), owner_linked_accounts.next())
 			};
 			let linked_account = match (first_account, second_account) {
-				(Some(_), Some(_)) => Err(UniqueLinkingApiError::Internal),
-				(first, _) => Ok(first)
+				(Some(_), Some(_)) => { panic!("More than a single account found for DID {:?}.", owner) },
+				(first, _) => first
 			}?;
 
-			let Some(account) = linked_account else {
-				return Ok(None);
-			};
-
-			Ok(Some(AddressResult::new(account, Some(owner))))
+			Some(AddressResult::new(linked_account, Some(owner)))
 		}
 
-		fn batch_address_for_name(names: Vec<DotName>) -> Result<Vec<Option<AddressResult<LinkableAccountId, DidIdentifier>>>, UniqueLinkingApiError> {
-			names.into_iter().map(Self::address_for_name).collect::<Result<Vec<_>, _>>()
+		fn batch_address_for_name(names: Vec<DotName>) -> Vec<Option<AddressResult<LinkableAccountId, DidIdentifier>>> {
+			names.into_iter().map(Self::address_for_name).collect()
 		}
 
-		fn name_for_address(address: LinkableAccountId) -> Result<Option<NameResult<DotName, DidIdentifier>>, UniqueLinkingApiError> {
-			let Some(ConnectionRecord { did, .. }) = UniqueLinking::connected_dids(address) else {
-				return Ok(None);
-			};
+		fn name_for_address(address: LinkableAccountId) -> Option<NameResult<DotName, DidIdentifier>> {
+			let ConnectionRecord { did, .. } = UniqueLinking::connected_dids(address)?;
+			let name = DotNames::names(&did)?;
 
-			let Some(name) = DotNames::names(&did) else {
-				return Ok(None);
-			};
-
-			Ok(Some(NameResult::new(name, Some(did))))
+			Some(NameResult::new(name, Some(did)))
 		}
 
-		fn batch_name_for_address(addresses: Vec<LinkableAccountId>) -> Result<Vec<Option<NameResult<DotName, DidIdentifier>>>, UniqueLinkingApiError> {
-			addresses.into_iter().map(Self::name_for_address).collect::<Result<Vec<_>, _>>()
+		fn batch_name_for_address(addresses: Vec<LinkableAccountId>) -> Vec<Option<NameResult<DotName, DidIdentifier>>> {
+			addresses.into_iter().map(Self::name_for_address).collect()
 		}
 	}
 

@@ -47,15 +47,14 @@ impl<Name, Extra> NameResult<Name, Extra> {
 }
 
 sp_api::decl_runtime_apis! {
-	pub trait UniqueLinking<Address, Name, Extra, Error> where
+	pub trait UniqueLinking<Address, Name, Extra> where
 		Address: Codec,
 		Name: Codec,
 		Extra: Codec,
-		Error: Codec,
 		{
-			fn address_for_name(name: Name) -> Result<Option<AddressResult<Address, Extra>>, Error>;
-			fn batch_address_for_name(names: Vec<Name>) -> Result<Vec<Option<AddressResult<Address, Extra>>>, Error>;
-			fn name_for_address(address: Address) -> Result<Option<NameResult<Name, Extra>>, Error>;
-			fn batch_name_for_address(addresses: Vec<Address>) -> Result<Vec<Option<NameResult<Name, Extra>>>, Error>;
+			fn address_for_name(name: Name) -> Option<AddressResult<Address, Extra>>;
+			fn batch_address_for_name(names: Vec<Name>) -> Vec<Option<AddressResult<Address, Extra>>>;
+			fn name_for_address(address: Address) -> Option<NameResult<Name, Extra>>;
+			fn batch_name_for_address(addresses: Vec<Address>) -> Vec<Option<NameResult<Name, Extra>>>;
 		}
 }
