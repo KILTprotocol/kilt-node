@@ -1,1 +1,521 @@
+use frame_support::{
+	assert_err, assert_ok,
+	traits::{
+		fungibles::Inspect,
+		tokens::{Fortitude, Preservation},
+	},
+};
+use frame_system::{pallet_prelude::OriginFor, RawOrigin};
+use sp_runtime::TokenError;
 
+use crate::{
+	mock::{runtime::*, *},
+	types::{Locks, PoolStatus},
+	Error,
+};
+
+fn collateral_at_supply(supply: u128) -> u128 {
+	supply.pow(2) + 3 * supply
+}
+
+#[test]
+fn burn_first_coin() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	let initial_balance = 1u128;
+	let amount_to_burn = 1u128;
+	let expected_price = collateral_at_supply(amount_to_burn);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, initial_balance),
+		])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				get_linear_bonding_curve(),
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_ok!(BondingPallet::burn_into(
+				origin,
+				pool_id,
+				0,
+				ACCOUNT_00,
+				amount_to_burn,
+				expected_price,
+				1
+			));
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
+				expected_price // Collateral returned
+			);
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				0 // Burned amount removed
+			);
+		});
+}
+
+#[test]
+fn burn_large_supply() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	let curve = get_linear_bonding_curve();
+
+	let initial_supply = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
+	let amount_to_burn = 10u128.pow(10);
+
+	let expected_price = collateral_at_supply(initial_supply) - collateral_at_supply(initial_supply - amount_to_burn);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, initial_supply),
+		])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				curve,
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_ok!(BondingPallet::burn_into(
+				origin,
+				pool_id.clone(),
+				0,
+				ACCOUNT_00,
+				amount_to_burn,
+				expected_price,
+				1
+			));
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				initial_supply - amount_to_burn
+			);
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				u128::MAX - expected_price,
+			);
+		})
+}
+
+#[test]
+fn burn_large_quantity() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	let curve = get_linear_bonding_curve();
+
+	let amount_to_burn = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
+	let expected_price = collateral_at_supply(amount_to_burn);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, amount_to_burn),
+		])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				curve,
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_ok!(BondingPallet::burn_into(
+				origin,
+				pool_id.clone(),
+				0,
+				ACCOUNT_00,
+				amount_to_burn,
+				expected_price,
+				1
+			));
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				0
+			);
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				u128::MAX - expected_price,
+			);
+		})
+}
+
+#[test]
+fn burn_multiple_currencies() {
+	let currencies = vec![DEFAULT_BONDED_CURRENCY_ID, DEFAULT_BONDED_CURRENCY_ID + 1];
+
+	let pool_id = calculate_pool_id(&currencies);
+
+	let amount_to_burn = 10_000u128;
+	let expected_price_second_burn = collateral_at_supply(amount_to_burn);
+	let expected_price_first_burn = collateral_at_supply(amount_to_burn * 2) - expected_price_second_burn;
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(currencies[0], ACCOUNT_00, amount_to_burn),
+			(currencies[1], ACCOUNT_00, amount_to_burn),
+		])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				currencies.clone(),
+				get_linear_bonding_curve(),
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_ok!(BondingPallet::burn_into(
+				origin.clone(),
+				pool_id.clone(),
+				0,
+				ACCOUNT_00,
+				amount_to_burn,
+				expected_price_first_burn,
+				2
+			));
+			// Burning account should now hold the expected amount of collateral
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
+				expected_price_first_burn
+			);
+			// Bonded token balance should have dropped to 0
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(currencies[0], &ACCOUNT_00),
+				0
+			);
+
+			assert_ok!(BondingPallet::burn_into(
+				origin,
+				pool_id.clone(),
+				1,
+				ACCOUNT_00,
+				amount_to_burn,
+				expected_price_second_burn,
+				2
+			));
+			// Burning account should now hold the expected amount of collateral from first and second burn
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
+				expected_price_first_burn + expected_price_second_burn
+			);
+			// Bonded token balance should have dropped to 0
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				0
+			);
+		})
+}
+
+#[test]
+fn burn_with_frozen_balance() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	let initial_balance = 10 * 10u128.pow(10);
+	let amount_to_burn = 10u128.pow(10); // must be smaller than initial_balance / 2
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, initial_balance),
+		])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				get_linear_bonding_curve(),
+				false, // Non-transferable
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_ok!(BondingPallet::burn_into(
+				origin.clone(),
+				pool_id.clone(),
+				0,
+				ACCOUNT_00,
+				amount_to_burn,
+				1,
+				1
+			));
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				initial_balance - amount_to_burn
+			);
+
+			// Check that balance is frozen
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::reducible_balance(
+					DEFAULT_BONDED_CURRENCY_ID,
+					&ACCOUNT_00,
+					Preservation::Expendable,
+					Fortitude::Polite
+				),
+				0
+			);
+
+			// check that we can still burn when account is frozen
+			assert_ok!(BondingPallet::burn_into(
+				origin,
+				pool_id,
+				0,
+				ACCOUNT_00,
+				amount_to_burn,
+				1,
+				1
+			));
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				initial_balance - (2 * amount_to_burn)
+			);
+		})
+}
+
+#[test]
+fn burn_on_locked_pool() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	let initial_balance = 10 * 10u128.pow(10);
+	let amount_to_burn = 10u128.pow(10);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, initial_balance),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, initial_balance),
+		])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				get_linear_bonding_curve(),
+				true,
+				Some(PoolStatus::Locked(Locks {
+					allow_burn: false,
+					..Default::default()
+				})),
+				Some(ACCOUNT_00), // manager account
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_01).into();
+			let manager_origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_err!(
+				BondingPallet::burn_into(origin, pool_id.clone(), 0, ACCOUNT_01, amount_to_burn, 1, 1),
+				Error::<Test>::NoPermission
+			);
+
+			assert_ok!(BondingPallet::burn_into(
+				manager_origin,
+				pool_id,
+				0,
+				ACCOUNT_01,
+				amount_to_burn,
+				1,
+				1
+			));
+		});
+}
+
+#[test]
+fn burn_invalid_pool_id() {
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.build()
+		.execute_with(|| {
+			let invalid_pool_id = calculate_pool_id(&[999]); // Nonexistent pool
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_err!(
+				BondingPallet::burn_into(origin, invalid_pool_id, 0, ACCOUNT_00, 1, 1, 1),
+				Error::<Test>::PoolUnknown
+			);
+		});
+}
+
+#[test]
+fn burn_in_refunding_pool() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	ExtBuilder::default()
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				get_linear_bonding_curve(),
+				true,
+				Some(PoolStatus::Refunding),
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				Some(ACCOUNT_00),
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+			assert_err!(
+				BondingPallet::burn_into(origin, pool_id, 0, ACCOUNT_00, 1, 2, 1),
+				Error::<Test>::PoolNotLive
+			);
+		});
+}
+
+#[test]
+fn burn_not_hitting_minimum() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				get_linear_bonding_curve(),
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			// burn operation would return less than minimum return
+			assert_err!(
+				BondingPallet::burn_into(origin, pool_id, 0, ACCOUNT_00, 1, 100000, 1),
+				Error::<Test>::Slippage
+			);
+		});
+}
+
+#[test]
+fn burn_invalid_currency_index() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	ExtBuilder::default()
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				get_linear_bonding_curve(),
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			// Index beyond array length
+			assert_err!(
+				BondingPallet::burn_into(origin, pool_id, 5, ACCOUNT_00, 1, 2, 1),
+				Error::<Test>::IndexOutOfBounds
+			);
+		});
+}
+
+#[test]
+fn burn_beyond_balance() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, 1), // Only 1 unit available
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+		])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				get_linear_bonding_curve(),
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_err!(
+				BondingPallet::burn_into(origin, pool_id, 0, ACCOUNT_00, 2, 0, 1), // Attempt to burn 2 units
+				TokenError::FundsUnavailable
+			);
+		});
+}
