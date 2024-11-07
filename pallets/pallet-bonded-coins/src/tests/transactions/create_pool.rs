@@ -6,6 +6,7 @@ use frame_support::{
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use pallet_assets::Error as AssetsPalletErrors;
+use sp_core::bounded_vec;
 use sp_runtime::{ArithmeticError, BoundedVec};
 use sp_std::ops::Sub;
 
@@ -38,7 +39,7 @@ fn single_currency() {
 				origin,
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
-				BoundedVec::truncate_from(vec![bonded_token]),
+				bounded_vec![bonded_token],
 				DEFAULT_BONDED_DENOMINATION,
 				true
 			));
@@ -118,7 +119,7 @@ fn multi_currency() {
 				min_balance: 1,
 			};
 
-			let bonded_tokens = vec![bonded_token; 3];
+			let bonded_tokens = bounded_vec![bonded_token; 3];
 
 			let next_asset_id = NextAssetId::<Test>::get();
 
@@ -126,7 +127,7 @@ fn multi_currency() {
 				origin,
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
-				BoundedVec::truncate_from(bonded_tokens),
+				bonded_tokens,
 				DEFAULT_BONDED_DENOMINATION,
 				true
 			));
@@ -179,7 +180,7 @@ fn can_create_identical_pools() {
 				origin.clone(),
 				curve.clone(),
 				DEFAULT_COLLATERAL_CURRENCY_ID,
-				BoundedVec::truncate_from(vec![bonded_token.clone()]),
+				bounded_vec![bonded_token.clone()],
 				DEFAULT_BONDED_DENOMINATION,
 				true
 			));
@@ -188,7 +189,7 @@ fn can_create_identical_pools() {
 				origin,
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
-				BoundedVec::truncate_from(vec![bonded_token]),
+				bounded_vec![bonded_token],
 				DEFAULT_BONDED_DENOMINATION,
 				true
 			));
@@ -226,7 +227,7 @@ fn fails_if_collateral_not_exists() {
 					origin,
 					curve,
 					100,
-					BoundedVec::truncate_from(vec![bonded_token]),
+					bounded_vec![bonded_token],
 					DEFAULT_BONDED_DENOMINATION,
 					true
 				),
@@ -258,7 +259,7 @@ fn cannot_create_circular_pool() {
 					curve,
 					// try specifying the id of the currency to be created as collateral
 					next_asset_id,
-					BoundedVec::truncate_from(vec![bonded_token]),
+					bounded_vec![bonded_token],
 					DEFAULT_BONDED_DENOMINATION,
 					true
 				),
@@ -291,8 +292,8 @@ fn handles_asset_id_overflow() {
 					origin,
 					curve,
 					0,
-					BoundedVec::truncate_from(vec![bonded_token; 2]),
-					10,
+					bounded_vec![bonded_token; 2],
+					DEFAULT_BONDED_DENOMINATION,
 					true
 				),
 				ArithmeticError::Overflow

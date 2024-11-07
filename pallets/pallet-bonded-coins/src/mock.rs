@@ -36,7 +36,7 @@ pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 // accounts
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
-const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
+pub(crate) const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
 // assets
 pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 1;
 pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = 0;
