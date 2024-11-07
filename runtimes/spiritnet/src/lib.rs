@@ -1755,6 +1755,7 @@ impl_runtime_apis! {
 				(owner_linked_accounts.next(), owner_linked_accounts.next())
 			};
 			let linked_account = match (first_account, second_account) {
+				#[allow(clippy::panic)]
 				(Some(_), Some(_)) => { panic!("More than a single account found for DID {:?}.", owner) },
 				(first, _) => first
 			}?;
