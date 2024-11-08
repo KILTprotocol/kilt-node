@@ -55,16 +55,16 @@ fn claiming_successful() {
 					claimed_at: 1,
 					deposit: Deposit {
 						owner: ACCOUNT_00,
-						amount: Web3NameDeposit::get(),
+						amount: DEPOSIT,
 					},
 				}
 			);
 			// Test that the deposit was reserved correctly.
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
-				Web3NameDeposit::get()
+				DEPOSIT
 			);
-			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance - Web3NameDeposit::get(),);
+			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance - DEPOSIT);
 
 			// Test that the same name cannot be claimed again.
 			assert_noop!(
@@ -144,7 +144,7 @@ fn claiming_banned() {
 fn claiming_not_enough_funds() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() - 1)])
+		.with_balances(vec![(ACCOUNT_00, DEPOSIT - 1)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), web3_name_00.0),

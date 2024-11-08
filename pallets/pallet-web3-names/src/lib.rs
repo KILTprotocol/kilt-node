@@ -80,14 +80,14 @@ pub mod pallet {
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BalanceOf<T, I = ()> = <CurrencyOf<T, I> as Inspect<AccountIdOf<T>>>::Balance;
+	pub type CurrencyOf<T, I> = <T as Config<I>>::Currency;
 	pub type Web3NameOwnerOf<T, I = ()> = <T as Config<I>>::Web3NameOwner;
-	pub type Web3NameInput<T, I = ()> = BoundedVec<u8, <T as Config<I>>::MaxNameLength>;
 	pub type Web3NameOf<T, I = ()> = <T as Config<I>>::Web3Name;
 	pub type Web3OwnershipOf<T, I = ()> =
 		Web3NameOwnership<Web3NameOwnerOf<T, I>, Deposit<AccountIdOf<T>, BalanceOf<T, I>>, BlockNumberFor<T>>;
 
 	pub(crate) type BalanceMigrationManagerOf<T, I> = <T as Config<I>>::BalanceMigrationManager;
-	pub(crate) type CurrencyOf<T, I> = <T as Config<I>>::Currency;
+	pub(crate) type Web3NameInput<T, I = ()> = BoundedVec<u8, <T as Config<I>>::MaxNameLength>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
@@ -140,10 +140,8 @@ pub mod pallet {
 		/// The max encoded length of a name.
 		#[pallet::constant]
 		type MaxNameLength: Get<u32>;
-		// FIXME: Refactor the definition of AsciiWeb3Name so that we don't need to
-		// require `Ord` here
 		/// The type of a name.
-		type Web3Name: FullCodec + Debug + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>> + MaxEncodedLen + Ord;
+		type Web3Name: FullCodec + Debug + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>> + MaxEncodedLen;
 		/// The type of a name owner.
 		type Web3NameOwner: Parameter + MaxEncodedLen;
 		/// Weight information for extrinsics in this pallet.

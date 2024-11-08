@@ -50,7 +50,7 @@ pub mod test {
 	fn test_setup() {
 		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 		ExtBuilder::default()
-			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
+			.with_balances(vec![(ACCOUNT_00, DEPOSIT * 2)])
 			.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
 			.build_and_execute_with_sanity_tests(|| {
 				let hold_balance_pre_migration =
@@ -59,7 +59,7 @@ pub mod test {
 						&ACCOUNT_00,
 					);
 
-				assert_eq!(hold_balance_pre_migration, <Test as Config>::Deposit::get());
+				assert_eq!(hold_balance_pre_migration, DEPOSIT);
 
 				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
@@ -73,7 +73,7 @@ pub mod test {
 					);
 
 				assert!(hold_balance.is_zero());
-				assert_eq!(reserved_balance, Web3NameDeposit::get());
+				assert_eq!(reserved_balance, DEPOSIT);
 			})
 	}
 
@@ -82,7 +82,7 @@ pub mod test {
 		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 		let web3_name_01 = get_web3_name(WEB3_NAME_01_INPUT);
 		ExtBuilder::default()
-			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
+			.with_balances(vec![(ACCOUNT_00, DEPOSIT * 2)])
 			.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
 			.build_and_execute_with_sanity_tests(|| {
 				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());

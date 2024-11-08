@@ -19,14 +19,17 @@
 use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 
 use kilt_support::{mock::mock_origin, Deposit};
-use sp_runtime::{traits::Zero, TokenError};
+use sp_runtime::{
+	traits::{Get, Zero},
+	TokenError,
+};
 
-use crate::{mock::*, Config, Error, Event, HoldReason, Owner, Pallet};
+use crate::{mock::*, BalanceOf, Config, Error, Event, HoldReason, Owner, Pallet};
 
 #[test]
 fn test_change_deposit_owner() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
-	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	let initial_balance = <<Test as Config>::Deposit as Get<BalanceOf<Test>>>::get() * 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance), (ACCOUNT_01, initial_balance)])
 		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
@@ -61,7 +64,7 @@ fn test_change_deposit_owner() {
 #[test]
 fn test_change_deposit_owner_insufficient_balance() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
-	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	let initial_balance: Balance = <<Test as Config>::Deposit as Get<BalanceOf<Test>>>::get() * 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
@@ -76,7 +79,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 #[test]
 fn test_change_deposit_owner_not_found() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
-	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	let initial_balance: Balance = <<Test as Config>::Deposit as Get<BalanceOf<Test>>>::get() * 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
@@ -91,7 +94,7 @@ fn test_change_deposit_owner_not_found() {
 #[test]
 fn test_update_deposit() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
-	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	let initial_balance: Balance = <<Test as Config>::Deposit as Get<BalanceOf<Test>>>::get() * 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.build_and_execute_with_sanity_tests(|| {
@@ -100,11 +103,11 @@ fn test_update_deposit() {
 				DID_00,
 				web3_name_00.clone(),
 				12,
-				<Test as Config>::Deposit::get() * 2,
+				<<Test as Config>::Deposit as Get<BalanceOf<Test>>>::get() * 2,
 			);
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
-				<Test as Config>::Deposit::get() * 2
+				<<Test as Config>::Deposit as Get<BalanceOf<Test>>>::get() * 2
 			);
 			assert_ok!(Pallet::<Test>::update_deposit(
 				RuntimeOrigin::signed(ACCOUNT_00),
@@ -129,7 +132,7 @@ fn test_update_deposit() {
 #[test]
 fn test_update_deposit_unauthorized() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
-	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	let initial_balance: Balance = <<Test as Config>::Deposit as Get<BalanceOf<Test>>>::get() * 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.build_and_execute_with_sanity_tests(|| {
@@ -138,11 +141,11 @@ fn test_update_deposit_unauthorized() {
 				DID_00,
 				web3_name_00.clone(),
 				12,
-				<Test as Config>::Deposit::get() * 2,
+				<<Test as Config>::Deposit as Get<BalanceOf<Test>>>::get() * 2,
 			);
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
-				<Test as Config>::Deposit::get() * 2
+				<<Test as Config>::Deposit as Get<BalanceOf<Test>>>::get() * 2
 			);
 			assert_noop!(
 				Pallet::<Test>::update_deposit(

@@ -53,15 +53,18 @@ pub use crate::mock::runtime::*;
 // Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use frame_support::parameter_types;
+	use frame_support::{ensure, parameter_types};
 	use frame_system::EnsureRoot;
 	use kilt_support::mock::{mock_origin, SubjectId};
+	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+	use scale_info::TypeInfo;
+	use sp_core::{ConstU128, ConstU32, RuntimeDebug};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BuildStorage, MultiSignature,
+		BoundedVec, BuildStorage, MultiSignature, SaturatedConversion,
 	};
 
-	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name};
+	use crate::{Config, Error, Owner, Pallet};
 
 	type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -78,7 +81,7 @@ pub(crate) mod runtime {
 		{
 			System: frame_system,
 			Balances: pallet_balances,
-			Web3Names: pallet_web3_names,
+			Web3Names: crate,
 			MockOrigin: mock_origin,
 		}
 	);
@@ -138,30 +141,49 @@ pub(crate) mod runtime {
 		type WeightInfo = ();
 	}
 
-	pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;
+	#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen, PartialEq, Eq, PartialOrd, Ord, Clone)]
+	pub struct TestWeb3Name(pub(crate) BoundedVec<u8, ConstU32<MAX_LENGTH>>);
+
+	fn is_valid_web3_name(input: &[u8]) -> bool {
+		input
+			.iter()
+			.all(|c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_'))
+	}
+
+	impl TryFrom<Vec<u8>> for TestWeb3Name {
+		type Error = Error<Test>;
+
+		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+			ensure!(value.len() >= MIN_LENGTH.saturated_into(), Self::Error::TooShort);
+			let bounded_vec: BoundedVec<u8, ConstU32<MAX_LENGTH>> =
+				BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
+			ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);
+			Ok(Self(bounded_vec))
+		}
+	}
+
+	pub(crate) const DEPOSIT: Balance = 2 * ExistentialDeposit::get();
+	const MIN_LENGTH: u32 = 3;
+	const MAX_LENGTH: u32 = 32;
+
 	pub(crate) type TestWeb3NameOwner = SubjectId;
 	pub(crate) type TestWeb3NamePayer = AccountId;
 	pub(crate) type TestOwnerOrigin = mock_origin::EnsureDoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
 	pub(crate) type TestOriginSuccess = mock_origin::DoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
 	pub(crate) type TestBanOrigin = EnsureRoot<AccountId>;
 
-	parameter_types! {
-		pub const MaxNameLength: u32 = 32;
-		pub const MinNameLength: u32 = 3;
-		// Easier to setup insufficient funds for deposit but still above existential deposit
-		pub const Web3NameDeposit: Balance = 2 * ExistentialDeposit::get();
-	}
-
-	impl pallet_web3_names::Config for Test {
+	impl Config for Test {
 		type BanOrigin = TestBanOrigin;
 		type OwnerOrigin = TestOwnerOrigin;
 		type OriginSuccess = TestOriginSuccess;
 		type Currency = Balances;
 		type RuntimeHoldReason = RuntimeHoldReason;
-		type Deposit = Web3NameDeposit;
+		// Easier to setup insufficient funds for deposit but still above existential
+		// deposit
+		type Deposit = ConstU128<DEPOSIT>;
 		type RuntimeEvent = RuntimeEvent;
-		type MaxNameLength = MaxNameLength;
-		type MinNameLength = MinNameLength;
+		type MaxNameLength = ConstU32<MAX_LENGTH>;
+		type MinNameLength = ConstU32<MIN_LENGTH>;
 		type Web3Name = TestWeb3Name;
 		type Web3NameOwner = TestWeb3NameOwner;
 		type WeightInfo = ();
@@ -185,7 +207,7 @@ pub(crate) mod runtime {
 	pub(crate) const WEB3_NAME_01_INPUT: &[u8; 12] = b"web3_name_01";
 
 	pub(crate) fn get_web3_name(web3_name_input: &[u8]) -> TestWeb3Name {
-		AsciiWeb3Name::try_from(web3_name_input.to_vec()).expect("Invalid web3 name input.")
+		TestWeb3Name::try_from(web3_name_input.to_vec()).expect("Invalid web3 name input.")
 	}
 
 	#[derive(Clone, Default)]
@@ -232,13 +254,12 @@ pub(crate) mod runtime {
 				System::set_block_number(System::block_number() + 1);
 
 				for (owner, web3_name, payer) in self.claimed_web3_names {
-					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer)
-						.expect("Could not register name");
+					Pallet::<Test>::register_name(web3_name, owner, payer).expect("Could not register name");
 				}
 
 				for web3_name in self.banned_web3_names {
-					assert!(pallet_web3_names::Owner::<Test>::get(&web3_name).is_none());
-					pallet_web3_names::Pallet::<Test>::ban_name(&web3_name);
+					assert!(Owner::<Test>::get(&web3_name).is_none());
+					Pallet::<Test>::ban_name(&web3_name);
 				}
 			});
 			ext

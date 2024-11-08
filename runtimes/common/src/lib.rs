@@ -56,7 +56,9 @@ pub mod errors;
 pub mod fees;
 pub mod migrations;
 pub mod pallet_id;
+pub mod web3_names;
 pub mod xcm_config;
+pub use web3_names::Web3Name;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarks;
