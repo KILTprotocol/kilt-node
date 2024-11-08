@@ -456,6 +456,9 @@ impl pallet_web3_names::Config for Runtime {
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 	type BalanceMigrationManager = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 parameter_types! {
