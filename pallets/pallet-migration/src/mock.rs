@@ -340,6 +340,9 @@ pub mod runtime {
 		type Web3NameOwner = TestWeb3NameOwner;
 		type WeightInfo = ();
 		type BalanceMigrationManager = Migration;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper = ();
 	}
 
 	#[derive(
