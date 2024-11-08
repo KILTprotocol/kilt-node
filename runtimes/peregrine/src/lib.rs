@@ -79,7 +79,7 @@ use runtime_common::{
 	pallet_id,
 	xcm_config::RelayOrigin,
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
-	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
+	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate, Web3Name,
 };
 
 use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
@@ -755,7 +755,7 @@ impl pallet_web3_names::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
+	type Web3Name = Web3Name<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
@@ -1633,7 +1633,7 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let parsed_name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			let parsed_name: pallet_web3_names::Web3NameOf<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&parsed_name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))

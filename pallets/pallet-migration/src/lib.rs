@@ -66,7 +66,7 @@ pub mod pallet {
 
 	pub type HashOf<T> = <T as frame_system::Config>::Hash;
 
-	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq, Eq)]
+	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq)]
 	pub struct EntriesToMigrate<T>
 	where
 		T: Config

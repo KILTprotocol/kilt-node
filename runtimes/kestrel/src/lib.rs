@@ -66,7 +66,7 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
-	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Nonce, Signature, SlowAdjustingFeeUpdate,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Nonce, Signature, SlowAdjustingFeeUpdate, Web3Name,
 };
 
 pub use pallet_timestamp::Call as TimestampCall;
@@ -452,7 +452,7 @@ impl pallet_web3_names::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
+	type Web3Name = Web3Name<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 	type BalanceMigrationManager = ();
@@ -1016,7 +1016,7 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let parsed_name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			let parsed_name: pallet_web3_names::Web3NameOf<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&parsed_name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))

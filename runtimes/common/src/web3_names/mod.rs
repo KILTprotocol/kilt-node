@@ -22,6 +22,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, RuntimeDebug};
 use sp_runtime::{BoundedVec, SaturatedConversion};
+use sp_std::{ops::Deref, vec::Vec};
 
 #[cfg(test)]
 mod tests;
@@ -51,7 +52,7 @@ where
 ///
 /// It is bounded in size (inclusive range [MinLength, MaxLength]) and can only
 /// contain a subset of ASCII characters.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen, PartialEq, Eq, PartialOrd, Ord, Clone, Default)]
 pub struct Web3Name<const MIN_LENGTH: u32, const MAX_LENGTH: u32>(BoundedVec<u8, ConstU32<MAX_LENGTH>>);
 
 impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> TryFrom<Vec<u8>> for Web3Name<MIN_LENGTH, MAX_LENGTH> {
@@ -63,6 +64,26 @@ impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> TryFrom<Vec<u8>> for Web3Name
 			BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
 		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);
 		Ok(Self(bounded_vec))
+	}
+}
+
+impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> Deref for Web3Name<MIN_LENGTH, MAX_LENGTH> {
+	type Target = BoundedVec<u8, ConstU32<MAX_LENGTH>>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> From<Web3Name<MIN_LENGTH, MAX_LENGTH>> for Vec<u8> {
+	fn from(name: Web3Name<MIN_LENGTH, MAX_LENGTH>) -> Self {
+		name.0.into_inner()
+	}
+}
+
+impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> AsRef<[u8]> for Web3Name<MIN_LENGTH, MAX_LENGTH> {
+	fn as_ref(&self) -> &[u8] {
+		self.0.as_ref()
 	}
 }
 

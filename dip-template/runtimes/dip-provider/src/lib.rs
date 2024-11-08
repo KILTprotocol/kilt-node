@@ -31,7 +31,6 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_web3_names::web3_name::AsciiWeb3Name;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -437,7 +436,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
-pub type Web3Name = AsciiWeb3Name<Runtime>;
+pub type Web3Name = runtime_common::Web3Name<3, 32>;
 
 impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = ();
@@ -642,7 +641,7 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			let name: pallet_web3_names::Web3NameOf<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))

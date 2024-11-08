@@ -53,7 +53,6 @@ pub mod runtime {
 		signature::EqualVerify,
 	};
 	use pallet_did_lookup::linkable_account::LinkableAccountId;
-	use pallet_web3_names::web3_name::AsciiWeb3Name;
 	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use public_credentials::InputSubjectIdOf;
 	use scale_info::TypeInfo;
@@ -312,7 +311,7 @@ pub mod runtime {
 		type UniqueLinkingEnabled = ConstBool<false>;
 	}
 
-	pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;
+	pub(crate) type TestWeb3Name = pallet_web3_names::Web3NameOf<Test>;
 	pub(crate) type TestWeb3NameOwner = SubjectId;
 	pub(crate) type TestWeb3NamePayer = AccountId;
 	pub(crate) type TestOwnerOrigin = mock_origin::EnsureDoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
