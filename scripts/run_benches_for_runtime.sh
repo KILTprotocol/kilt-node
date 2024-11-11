@@ -13,55 +13,55 @@ chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 standard_args="--profile $profile --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
 pallets=(
-	pallet-migration
-	attestation
-	ctype
-	delegation
-	did
-	frame-system
-	pallet-balances
-	pallet-collective
-	# This is `pallet-collective`. Can be removed once benchmarking supports pallet instances.
-	pallet-technical-committee-collective
-	pallet-democracy
-	pallet-did-lookup
-	# This is `pallet-web3-names`. Can be removed once benchmarking supports pallet instances.
-	pallet-dot-names
-	pallet-indices
-	pallet-inflation
+	# pallet-migration
+	# attestation
+	# ctype
+	# delegation
+	# did
+	# frame-system
+	# pallet-balances
+	# pallet-democracy
+	# pallet-indices
+	# pallet-inflation
+	# pallet-preimage
+	# pallet-proxy
+	# pallet-scheduler
+	# pallet-session
+	# pallet-timestamp
+	# pallet-tips
+	# pallet-treasury
+	# pallet-utility
+	# pallet-vesting
+	# pallet-xcm
+	# parachain-staking
+	# public-credentials
+	# pallet-deposit-storage
+	# pallet-dip-provider
+	# pallet-message-queue
+	# cumulus-pallet-parachain-system
+	# pallet_multisig
+	# pallet-assets
+	# pallet-asset-switch
+	# `pallet-membership` instances
 	pallet-membership
-	# This is `pallet-membership`. Can be removed once benchmarking supports pallet instances.
 	pallet-technical-membership
-	pallet-preimage
-	pallet-proxy
-	pallet-scheduler
-	pallet-session
-	pallet-timestamp
-	pallet-tips
-	pallet-treasury
-	# This is `pallet-did-lookup`. Can be removed once benchmarking supports pallet instances.
+	# `pallet-collective` instances
+	pallet-collective
+	pallet-technical-committee-collective
+	# `pallet-did-lookup` instances
+	pallet-did-lookup
 	pallet-unique-linking
-	pallet-utility
-	pallet-vesting
+	# `pallet-web3-names` instances
+	pallet-dot-names
 	pallet-web3-names
-	pallet-xcm
-	parachain-staking
-	public-credentials
-	pallet-deposit-storage
-	pallet-dip-provider
-	pallet-message-queue
-	cumulus-pallet-parachain-system
-	pallet_multisig
-	pallet-assets
-	pallet-asset-switch
 )
 
-# Add Peregrine-only pallets here!
-if [ "$runtime" = "peregrine" ]; then
-	pallets+=(
-		pallet-sudo
-	)
-fi
+# # Add Peregrine-only pallets here!
+# if [ "$runtime" = "peregrine" ]; then
+# 	pallets+=(
+# 		pallet-sudo
+# 	)
+# fi
 
 echo "[+] Running all runtime benchmarks for \"$runtime\", \"--chain=$chain\" and profile \"$profile\""
 
@@ -70,7 +70,7 @@ cargo build $standard_args
 if [ $profile == "dev" ]; then
 	target_folder="debug"
 	# We care about benchmark correctness, not accuracy.
-	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored --no-verify"
+	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
 else
 	target_folder=$profile
 	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
