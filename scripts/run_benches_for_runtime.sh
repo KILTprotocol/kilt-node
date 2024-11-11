@@ -21,13 +21,17 @@ pallets=(
 	frame-system
 	pallet-balances
 	pallet-collective
+	# This is `pallet-collective`. Can be removed once benchmarking supports pallet instances.
+	pallet-technical-committee-collective
 	pallet-democracy
 	pallet-did-lookup
-	# This is `pallet_web3-names`. Can be removed once benchmarking supports pallet instances.
+	# This is `pallet-web3-names`. Can be removed once benchmarking supports pallet instances.
 	pallet-dot-names
 	pallet-indices
 	pallet-inflation
 	pallet-membership
+	# This is `pallet-membership`. Can be removed once benchmarking supports pallet instances.
+	pallet-technical-membership
 	pallet-preimage
 	pallet-proxy
 	pallet-scheduler
