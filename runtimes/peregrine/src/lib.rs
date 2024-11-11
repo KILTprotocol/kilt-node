@@ -1306,6 +1306,11 @@ mod benches {
 		pub const MaxBalance: crate::Balance = crate::Balance::max_value();
 	}
 
+	/// Workaround for a bug in the benchmarking code around instances.
+	/// Upstream fix: https://github.com/paritytech/polkadot-sdk/pull/6435
+	#[allow(unused_imports)]
+	use pallet_web3_names as pallet_dot_names;
+
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_timestamp, Timestamp]
@@ -1334,7 +1339,7 @@ mod benches {
 		[pallet_did_lookup, DidLookup]
 		[pallet_did_lookup, UniqueLinking]
 		[pallet_web3_names, Web3Names]
-		[pallet_web3_names, DotNames]
+		[pallet_dot_names, DotNames]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pallet_migration, Migration]
