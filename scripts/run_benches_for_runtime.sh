@@ -56,12 +56,12 @@ pallets=(
 	pallet-web3-names
 )
 
-# # Add Peregrine-only pallets here!
-# if [ "$runtime" = "peregrine" ]; then
-# 	pallets+=(
-# 		pallet-sudo
-# 	)
-# fi
+# Add Peregrine-only pallets here!
+if [ "$runtime" = "peregrine" ]; then
+	pallets+=(
+		pallet-sudo
+	)
+fi
 
 echo "[+] Running all runtime benchmarks for \"$runtime\", \"--chain=$chain\" and profile \"$profile\""
 
@@ -70,7 +70,7 @@ cargo build $standard_args
 if [ $profile == "dev" ]; then
 	target_folder="debug"
 	# We care about benchmark correctness, not accuracy.
-	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
+	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored --no-verify"
 else
 	target_folder=$profile
 	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
