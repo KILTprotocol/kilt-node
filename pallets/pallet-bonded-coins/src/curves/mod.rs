@@ -111,6 +111,31 @@ pub(crate) fn convert_to_fixed<T: Config>(
 	let decimals = 10u128
 		.checked_pow(u32::from(denomination))
 		.ok_or(ArithmeticError::Overflow)?;
-	let scaled_x = x.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
-	scaled_x.checked_to_fixed().ok_or(ArithmeticError::Overflow)
+
+	// Divide `x` to separate the quotient and remainder
+	let quotient = x.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
+	let remainder = x.checked_rem_euclid(decimals).ok_or(ArithmeticError::DivisionByZero)?;
+
+	// Convert quotient to fixed-point
+	// This can overflow if capacity(u128) / 10^denomination > capacity(fixed)
+	let fixed_quotient: CurveParameterTypeOf<T> = quotient.checked_to_fixed().ok_or(ArithmeticError::Overflow)?;
+
+	// we can skip handling the remainder if it's 0
+	if remainder == 0 {
+		Ok(fixed_quotient)
+	} else {
+		// Convert remainder to fixed-point and scale it down by `decimals`
+		let fixed_remainder = remainder
+			// This can overflow if 10^denomination > capacity(float)
+			.checked_to_fixed::<CurveParameterTypeOf<T>>()
+			.ok_or(ArithmeticError::Overflow)?
+			// This WILL overflow if 10^denomination > capacity(float)
+			.checked_div(decimals.checked_to_fixed().ok_or(ArithmeticError::Overflow)?)
+			.ok_or(ArithmeticError::DivisionByZero)?;
+		// Combine both parts
+		fixed_quotient
+			// This WILL overflow if x / 10^denomination > capacity(float)
+			.checked_add(fixed_remainder)
+			.ok_or(ArithmeticError::Overflow)
+	}
 }
