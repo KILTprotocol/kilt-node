@@ -695,7 +695,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
-	type WeightInfo = weights::pallet_did_lookup_did_lookup::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
 	// Do not change the below flag to `true` without also deploying a runtime
 	// migration which removes any links that point to the same DID!
@@ -713,7 +713,7 @@ impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type UniqueLinkingEnabled = ConstBool<true>;
-	type WeightInfo = weights::pallet_did_lookup_unique_linking::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_unique_linking::WeightInfo<Runtime>;
 }
 
 impl pallet_web3_names::Config for Runtime {
@@ -728,7 +728,7 @@ impl pallet_web3_names::Config for Runtime {
 	type MinNameLength = constants::web3_names::MinNameLength;
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = weights::pallet_web3_names_web3_names::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
 
 	#[cfg(feature = "runtime-benchmarks")]
@@ -751,7 +751,7 @@ impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Web3Name = DotName;
 	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = weights::pallet_web3_names_dot_names::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_dot_names::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = benches::DotNamesBenchmarkHelper;
@@ -1297,6 +1297,13 @@ mod benches {
 		pub const MaxBalance: crate::Balance = crate::Balance::max_value();
 	}
 
+	/// Workaround for a bug in the benchmarking code around instances.
+	/// Upstream fix PR: https://github.com/paritytech/polkadot-sdk/pull/6435
+	#[allow(unused_imports)]
+	use pallet_did_lookup as pallet_unique_linking;
+	#[allow(unused_imports)]
+	use pallet_web3_names as pallet_dot_names;
+
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_timestamp, Timestamp]
@@ -1322,9 +1329,9 @@ mod benches {
 		[did, Did]
 		[pallet_inflation, Inflation]
 		[pallet_did_lookup, DidLookup]
-		[pallet_did_lookup, UniqueLinking]
+		[pallet_unique_linking, UniqueLinking]
 		[pallet_web3_names, Web3Names]
-		[pallet_web3_names, DotNames]
+		[pallet_dot_names, DotNames]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pallet_migration, Migration]
