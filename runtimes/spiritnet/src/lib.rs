@@ -567,14 +567,16 @@ impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {
 pub struct MockMembershipChangedForBenchmarks;
 
 impl ChangeMembers<AccountId> for MockMembershipChangedForBenchmarks {
-	fn change_members_sorted(_incoming: &[AccountId], _outgoing: &[AccountId], _sorted_new: &[AccountId]) {}
+	fn change_members_sorted(incoming: &[AccountId], outgoing: &[AccountId], sorted_new: &[AccountId]) {
+		<()>::change_members_sorted(incoming, outgoing, sorted_new)
+	}
 
 	fn get_prime() -> Option<AccountId> {
 		cfg_if! {
 			if #[cfg(feature = "runtime-benchmark")] {
 				Some(AccountId::new([0; 32]))
 			} else {
-				pallet_membership::Prime::<Runtime, TipsMembershipProvider>::get()
+				<()>::get_prime()
 			}
 		}
 	}
