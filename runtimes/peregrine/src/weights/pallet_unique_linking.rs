@@ -46,6 +46,9 @@
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
 
+// TODO: Remove once the benchmarking stuff fully supports pallet instances.
+use pallet_did_lookup as pallet_unique_linking;
+
 /// Weight functions for `pallet_unique_linking`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_unique_linking::WeightInfo for WeightInfo<T> {
