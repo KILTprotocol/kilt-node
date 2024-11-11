@@ -13,35 +13,35 @@ chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 standard_args="--profile $profile --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
 pallets=(
-	# pallet-migration
-	# attestation
-	# ctype
-	# delegation
-	# did
-	# frame-system
-	# pallet-balances
-	# pallet-democracy
-	# pallet-indices
-	# pallet-inflation
-	# pallet-preimage
-	# pallet-proxy
-	# pallet-scheduler
-	# pallet-session
-	# pallet-timestamp
-	# pallet-tips
-	# pallet-treasury
-	# pallet-utility
-	# pallet-vesting
-	# pallet-xcm
-	# parachain-staking
-	# public-credentials
-	# pallet-deposit-storage
-	# pallet-dip-provider
-	# pallet-message-queue
-	# cumulus-pallet-parachain-system
-	# pallet_multisig
-	# pallet-assets
-	# pallet-asset-switch
+	pallet-migration
+	attestation
+	ctype
+	delegation
+	did
+	frame-system
+	pallet-balances
+	pallet-democracy
+	pallet-indices
+	pallet-inflation
+	pallet-preimage
+	pallet-proxy
+	pallet-scheduler
+	pallet-session
+	pallet-timestamp
+	pallet-tips
+	pallet-treasury
+	pallet-utility
+	pallet-vesting
+	pallet-xcm
+	parachain-staking
+	public-credentials
+	pallet-deposit-storage
+	pallet-dip-provider
+	pallet-message-queue
+	cumulus-pallet-parachain-system
+	pallet_multisig
+	pallet-assets
+	pallet-asset-switch
 	# `pallet-membership` instances
 	pallet-membership
 	pallet-technical-membership

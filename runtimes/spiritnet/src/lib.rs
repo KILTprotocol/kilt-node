@@ -27,6 +27,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use cfg_if::cfg_if;
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
 	construct_runtime,
@@ -35,7 +36,7 @@ use frame_support::{
 	traits::{
 		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter,
+		AsEnsureOriginWithArg, ChangeMembers, ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter,
 		LinearStoragePrice, PrivilegeCmp,
 	},
 	weights::{ConstantMultiplier, Weight},
@@ -560,6 +561,27 @@ impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {
 	type WeightInfo = weights::pallet_technical_membership::WeightInfo<Runtime>;
 }
 
+// Implementation of `MembershipChanged` equivalent to using `()` but that
+// returns `Some(AccountId::new([0; 32]))` in `get_prime()` only when
+// benchmarking. TODO: Remove once we upgrade with a version containing the fix: https://github.com/paritytech/polkadot-sdk/pull/6439
+pub struct MockMembershipChangedForBenchmarks;
+
+impl ChangeMembers<AccountId> for MockMembershipChangedForBenchmarks {
+	fn change_members_sorted(_incoming: &[AccountId], _outgoing: &[AccountId], _sorted_new: &[AccountId]) {
+		()
+	}
+
+	fn get_prime() -> Option<AccountId> {
+		cfg_if! {
+			if #[cfg(feature = "runtime-benchmark")] {
+				Some(AccountId::new([0; 32]))
+			} else {
+				pallet_membership::Prime::<Runtime, TipsMembershipProvider>::get()
+			}
+		}
+	}
+}
+
 type TipsMembershipProvider = pallet_membership::Instance2;
 impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
@@ -569,7 +591,7 @@ impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type ResetOrigin = MoreThanHalfCouncil;
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = ();
-	type MembershipChanged = ();
+	type MembershipChanged = MockMembershipChangedForBenchmarks;
 	type MaxMembers = constants::governance::TipperMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
