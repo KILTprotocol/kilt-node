@@ -112,30 +112,38 @@ pub(crate) fn convert_to_fixed<T: Config>(
 		.checked_pow(u32::from(denomination))
 		.ok_or(ArithmeticError::Overflow)?;
 
-	// Divide `x` to separate the quotient and remainder
-	let quotient = x.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
+	// Scale down x by the denomination using integer division, truncating any
+	// fractional parts of the result for now. Will overflow if down-scaling is not
+	// sufficient to bring x to a range representable in the fixed point format.
+	// This can happen if capacity(u128) / 10^denomination > capacity(fixed).
+	let mut scaled_x: CurveParameterTypeOf<T> = x
+		.checked_div(decimals)
+		.ok_or(ArithmeticError::DivisionByZero)?
+		.checked_to_fixed()
+		.ok_or(ArithmeticError::Overflow)?;
+
+	// Next we handle the remainder of the division
 	let remainder = x.checked_rem_euclid(decimals).ok_or(ArithmeticError::DivisionByZero)?;
 
-	// Convert quotient to fixed-point
-	// This can overflow if capacity(u128) / 10^denomination > capacity(fixed)
-	let fixed_quotient: CurveParameterTypeOf<T> = quotient.checked_to_fixed().ok_or(ArithmeticError::Overflow)?;
-
-	// we can skip handling the remainder if it's 0
-	if remainder == 0 {
-		Ok(fixed_quotient)
-	} else {
-		// Convert remainder to fixed-point and scale it down by `decimals`
-		let fixed_remainder = remainder
+	// If the remainder is not 0, convert to fixed, scale it down and add the
+	// resulting fractional part to the previous result
+	if remainder > 0 {
+		// Convert remainder to fixed-point and scale it down by `decimals`,
+		let fractional = remainder
 			// This can overflow if 10^denomination > capacity(float)
 			.checked_to_fixed::<CurveParameterTypeOf<T>>()
 			.ok_or(ArithmeticError::Overflow)?
 			// This WILL overflow if 10^denomination > capacity(float)
 			.checked_div(decimals.checked_to_fixed().ok_or(ArithmeticError::Overflow)?)
 			.ok_or(ArithmeticError::DivisionByZero)?;
+
 		// Combine both parts
-		fixed_quotient
-			// This WILL overflow if x / 10^denomination > capacity(float)
-			.checked_add(fixed_remainder)
-			.ok_or(ArithmeticError::Overflow)
-	}
+		scaled_x = scaled_x
+			// Overflow is theoretically impossible as we are adding a number < 1 to a fixed point where the fractional
+			// part is 0.
+			.checked_add(fractional)
+			.ok_or(ArithmeticError::Overflow)?;
+	};
+
+	Ok(scaled_x)
 }
