@@ -528,7 +528,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type MaxProposals = constants::governance::CouncilMaxProposals;
 	type MaxMembers = constants::governance::CouncilMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
-	type WeightInfo = weights::pallet_collective_council::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
@@ -542,7 +542,7 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type MaxProposals = constants::governance::TechnicalMaxProposals;
 	type MaxMembers = constants::governance::TechnicalMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
-	type WeightInfo = weights::pallet_collective_technical_committee::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_technical_committee_collective::WeightInfo<Runtime>;
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
@@ -557,7 +557,7 @@ impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {
 	type MembershipInitialized = TechnicalCommittee;
 	type MembershipChanged = TechnicalCommittee;
 	type MaxMembers = constants::governance::TechnicalMaxMembers;
-	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_technical_membership::WeightInfo<Runtime>;
 }
 
 type TipsMembershipProvider = pallet_membership::Instance2;
@@ -1300,7 +1300,11 @@ mod benches {
 	/// Workaround for a bug in the benchmarking code around instances.
 	/// Upstream fix PR: https://github.com/paritytech/polkadot-sdk/pull/6435
 	#[allow(unused_imports)]
+	use pallet_collective as pallet_technical_committee_collective;
+	#[allow(unused_imports)]
 	use pallet_did_lookup as pallet_unique_linking;
+	#[allow(unused_imports)]
+	use pallet_membership as pallet_technical_membership;
 	#[allow(unused_imports)]
 	use pallet_web3_names as pallet_dot_names;
 
@@ -1312,9 +1316,6 @@ mod benches {
 		[pallet_session, SessionBench::<Runtime>]
 		[parachain_staking, ParachainStaking]
 		[pallet_democracy, Democracy]
-		[pallet_collective, Council]
-		[pallet_collective, TechnicalCommittee]
-		[pallet_membership, TechnicalMembership]
 		[pallet_treasury, Treasury]
 		[pallet_utility, Utility]
 		[pallet_vesting, Vesting]
@@ -1328,10 +1329,6 @@ mod benches {
 		[delegation, Delegation]
 		[did, Did]
 		[pallet_inflation, Inflation]
-		[pallet_did_lookup, DidLookup]
-		[pallet_unique_linking, UniqueLinking]
-		[pallet_web3_names, Web3Names]
-		[pallet_dot_names, DotNames]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pallet_migration, Migration]
@@ -1342,6 +1339,18 @@ mod benches {
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
+		// pallet_collective instances
+		[pallet_collective, Council]
+		[pallet_technical_committee_collective, TechnicalCommittee]
+		// pallet_membership instances
+		[pallet_membership, TipsMembership]
+		[pallet_technical_membership, TechnicalMembership]
+		// pallet_did_lookup instances
+		[pallet_did_lookup, DidLookup]
+		[pallet_unique_linking, UniqueLinking]
+		// pallet_web3_names instances
+		[pallet_web3_names, Web3Names]
+		[pallet_dot_names, DotNames]
 	);
 
 	// Required since the pallet `AssetTransactor` will try to deduct the XCM fee
