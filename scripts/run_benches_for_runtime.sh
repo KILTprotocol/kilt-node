@@ -23,6 +23,8 @@ pallets=(
 	pallet-collective
 	pallet-democracy
 	pallet-did-lookup
+	# This is `pallet_web3-names`. Can be removed once benchmarking supports pallet instances.
+	pallet-dot-names
 	pallet-indices
 	pallet-inflation
 	pallet-membership
@@ -33,6 +35,8 @@ pallets=(
 	pallet-timestamp
 	pallet-tips
 	pallet-treasury
+	# This is `pallet-did-lookup`. Can be removed once benchmarking supports pallet instances.
+	pallet-unique-linking
 	pallet-utility
 	pallet-vesting
 	pallet-web3-names
@@ -50,9 +54,9 @@ pallets=(
 
 # Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
-  pallets+=(
-	pallet-sudo
-  )
+	pallets+=(
+		pallet-sudo
+	)
 fi
 
 echo "[+] Running all runtime benchmarks for \"$runtime\", \"--chain=$chain\" and profile \"$profile\""
@@ -60,11 +64,11 @@ echo "[+] Running all runtime benchmarks for \"$runtime\", \"--chain=$chain\" an
 cargo build $standard_args
 
 if [ $profile == "dev" ]; then
-    target_folder="debug"
+	target_folder="debug"
 	# We care about benchmark correctness, not accuracy.
 	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored --no-verify"
 else
-    target_folder=$profile
+	target_folder=$profile
 	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
 fi
 
@@ -82,7 +86,7 @@ for pallet in "${pallets[@]}"; do
 
 	# Exit with error as soon as one benchmark fails
 	if [ $bench_status -ne 0 ]; then
-    	exit $bench_status
-  	fi
+		exit $bench_status
+	fi
 
 done
