@@ -35,11 +35,11 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
-	use sp_arithmetic::ArithmeticError;
+	use sp_arithmetic::{traits::CheckedRem, ArithmeticError};
 	use sp_runtime::{
 		traits::{
-			Bounded, CheckedDiv, CheckedMul, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto,
-			Zero,
+			Bounded, CheckedAdd, CheckedDiv, CheckedMul, One, SaturatedConversion, Saturating, StaticLookup,
+			UniqueSaturatedInto, Zero,
 		},
 		BoundedVec,
 	};
@@ -681,12 +681,35 @@ pub mod pallet {
 					sum.saturating_add(T::Fungibles::total_issuance(id))
 				});
 
-			let amount = burnt
-				.checked_mul(&total_collateral_issuance)
-				.ok_or(ArithmeticError::Overflow)? // TODO: do we need a fallback if this fails?
+			defensive_assert!(
+				sum_of_issuances >= burnt,
+				"burnt amount exceeds the total supply of all bonded currencies"
+			);
+
+			// divide first to avoid overflow, remainder will be handled seperately
+			let divisible_part = total_collateral_issuance
 				.checked_div(&sum_of_issuances)
-				.ok_or(Error::<T>::NothingToRefund)?; // should be impossible - how would we be able to burn funds if the sum of total
-									  // supplies is 0?
+				.ok_or(Error::<T>::Internal)? // because sum_of_issuances >= burnt > 0, this is theoretically impossible
+				.checked_mul(&burnt)
+				// An overflow is also theoretically impossible, as burnt <= sum_of_issuances
+				.ok_or(Error::<T>::Internal)?;
+
+			// for the remainder, we multiply first and divide next
+			let remainder_part = total_collateral_issuance
+				.checked_rem(&sum_of_issuances)
+				.ok_or(Error::<T>::Internal)? // Should only fail on sum_of_issuances == 0, same as above
+				.checked_mul(&burnt)
+				// This can indeed overflow if (sum_of_issuances - 1) * burnt > capacity(u128)
+				.ok_or(ArithmeticError::Overflow)?
+				.checked_div(&sum_of_issuances)
+				.ok_or(Error::<T>::Internal)?; // same as above
+
+			// total amount is the sum of divisible part and remainder part
+			let amount = divisible_part
+				.checked_add(&remainder_part)
+				// Also theoretically impossible, as this sum would be smaller than total_collateral_issuance as long as
+				// burnt <= sum_of_issuances
+				.ok_or(Error::<T>::Internal)?;
 
 			if amount.is_zero()
 				|| T::CollateralCurrencies::can_deposit(
