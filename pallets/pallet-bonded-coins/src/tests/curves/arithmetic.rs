@@ -94,16 +94,16 @@ fn test_convert_to_fixed_overflow_avoided() {
 #[test]
 fn test_convert_to_fixed_handles_large_denomination() {
 	let x = u128::MAX; // around 3.4e+38
-	let denomination = 22u8; // I75F53 should handle around 1.8e+22
+	let denomination = 22u8; // I75F53 should handle around 1.8e+22; this is the maximum safe denomination
 
 	let result = convert_to_fixed::<Test>(x, denomination);
 	assert_ok!(result);
 }
 
 #[test]
-fn test_convert_to_fixed_too_large_denomination() {
-	let x = u128::MAX; // around 3.4e+38
-	let denomination = 30u8; // I75F53 should handle around 1.8e+22, this can't be represented
+fn test_convert_to_fixed_very_large_denomination() {
+	let x = 10u128.pow(31); // multiple of denomination should not result in overflow of remainder
+	let denomination = 30u8; // I75F53 should handle around 1.8e+22, this can lead to overflow
 
 	let result = convert_to_fixed::<Test>(x, denomination);
 	assert_ok!(result);

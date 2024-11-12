@@ -5,6 +5,7 @@ pub(crate) mod square_root;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
+use sp_runtime::traits::CheckedConversion;
 use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
 
@@ -104,10 +105,10 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
 }
 
-pub(crate) fn convert_to_fixed<T: Config>(
-	x: u128,
-	denomination: u8,
-) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
+pub(crate) fn convert_to_fixed<T: Config>(x: u128, denomination: u8) -> Result<CurveParameterTypeOf<T>, ArithmeticError>
+where
+	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<u128>,
+{
 	let decimals = 10u128
 		.checked_pow(u32::from(denomination))
 		.ok_or(ArithmeticError::Overflow)?;
@@ -130,11 +131,13 @@ pub(crate) fn convert_to_fixed<T: Config>(
 	if remainder > 0 {
 		// Convert remainder to fixed-point and scale it down by `decimals`,
 		let fractional = remainder
-			// This can overflow if 10^denomination > capacity(float)
+			// This can overflow if 10^denomination > capacity(fixed)
 			.checked_to_fixed::<CurveParameterTypeOf<T>>()
 			.ok_or(ArithmeticError::Overflow)?
-			// This WILL overflow if 10^denomination > capacity(float)
-			.checked_div(decimals.checked_to_fixed().ok_or(ArithmeticError::Overflow)?)
+			// This would overflow if 10^denomination exceeds the capacity of the _underlying integer_ of the fixed
+			// (e.g., i128 for an I75F53). However, there is no denomination that is representable in a u128 but not in
+			// an i128.
+			.checked_div_int(decimals.checked_into().ok_or(ArithmeticError::Overflow)?)
 			.ok_or(ArithmeticError::DivisionByZero)?;
 
 		// Combine both parts
