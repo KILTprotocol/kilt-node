@@ -42,7 +42,7 @@ pub mod test {
 		assert_noop, assert_ok,
 		traits::{fungible::InspectHold, ReservableCurrency},
 	};
-	use sp_runtime::traits::Zero;
+	use sp_runtime::traits::{Get, Zero};
 
 	use crate::{migrations::update_balance_for_w3n, mock::*, AccountIdOf, Config, Error, HoldReason, Owner};
 
