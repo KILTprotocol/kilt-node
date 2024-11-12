@@ -22,7 +22,7 @@ pub mod default_weights;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod test;
@@ -44,13 +44,14 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 pub mod pallet {
 	use super::*;
 
-	use core::fmt::Debug;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{fungible::Inspect, Currency, ReservableCurrency},
+		DefaultNoBound,
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{traits::Hash, SaturatedConversion};
+	use sp_std::fmt::Debug;
 
 	use attestation::{Attestations, ClaimHashOf};
 	use delegation::{DelegationNodeIdOf, DelegationNodes};
@@ -66,15 +67,11 @@ pub mod pallet {
 
 	pub type HashOf<T> = <T as frame_system::Config>::Hash;
 
-	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq)]
+	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq, Eq, DefaultNoBound)]
+	#[scale_info(skip_type_params(T))]
 	pub struct EntriesToMigrate<T>
 	where
-		T: Config
-			+ did::Config
-			+ delegation::Config
-			+ frame_system::Config
-			+ pallet_web3_names::Config
-			+ public_credentials::Config,
+		T: Config + delegation::Config + did::Config + pallet_web3_names::Config + public_credentials::Config,
 	{
 		pub attestation: BoundedVec<ClaimHashOf<T>, <T as Config>::MaxMigrationsPerPallet>,
 		pub delegation: BoundedVec<DelegationNodeIdOf<T>, <T as Config>::MaxMigrationsPerPallet>,
@@ -93,7 +90,6 @@ pub mod pallet {
 		+ pallet_did_lookup::Config
 		+ pallet_web3_names::Config
 		+ public_credentials::Config
-		+ TypeInfo
 	{
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
