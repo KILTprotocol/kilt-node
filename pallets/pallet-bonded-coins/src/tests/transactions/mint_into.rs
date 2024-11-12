@@ -267,6 +267,87 @@ fn mint_large_supply() {
 }
 
 #[test]
+fn multiple_mints_vs_combined_mint() {
+	let currency_id1 = DEFAULT_BONDED_CURRENCY_ID;
+	let currency_id2 = 2;
+	let pool_id1 = calculate_pool_id(&[currency_id1]);
+	let pool_id2 = calculate_pool_id(&[currency_id2]);
+
+	let curve = get_linear_bonding_curve();
+
+	let amount_to_mint = 11u128.pow(10);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
+		.with_pools(vec![
+			(
+				pool_id1.clone(),
+				generate_pool_details(
+					vec![currency_id1],
+					curve.clone(),
+					true,
+					None,
+					None,
+					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+					None,
+				),
+			),
+			(
+				pool_id2.clone(),
+				generate_pool_details(
+					vec![currency_id2],
+					curve,
+					true,
+					None,
+					None,
+					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+					None,
+				),
+			),
+		])
+		.build()
+		.execute_with(|| {
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
+
+			// pool 1: 1 mint of 10 * amount
+			assert_ok!(BondingPallet::mint_into(
+				origin.clone(),
+				pool_id1.clone(),
+				0,
+				ACCOUNT_00,
+				amount_to_mint * 10,
+				u128::MAX,
+				1
+			));
+
+			// pool 2: 10 mints of amount
+			for _ in 0..10 {
+				assert_ok!(BondingPallet::mint_into(
+					origin.clone(),
+					pool_id2.clone(),
+					0,
+					ACCOUNT_00,
+					amount_to_mint,
+					u128::MAX,
+					1
+				));
+			}
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(currency_id1, &ACCOUNT_00),
+				<Test as crate::Config>::Fungibles::total_balance(currency_id2, &ACCOUNT_00),
+			);
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1),
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
+			);
+		})
+}
+
+#[test]
 fn mint_with_frozen_balance() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 

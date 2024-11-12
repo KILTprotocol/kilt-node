@@ -244,7 +244,8 @@ fn burn_multiple_currencies() {
 				expected_price_second_burn,
 				2
 			));
-			// Burning account should now hold the expected amount of collateral from first and second burn
+			// Burning account should now hold the expected amount of collateral from first
+			// and second burn
 			assert_eq!(
 				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
 				expected_price_first_burn + expected_price_second_burn
@@ -253,6 +254,167 @@ fn burn_multiple_currencies() {
 			assert_eq!(
 				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				0
+			);
+		})
+}
+
+#[test]
+fn multiple_burns_vs_combined_burn() {
+	let currency_1 = DEFAULT_BONDED_CURRENCY_ID;
+	let currency_2 = DEFAULT_BONDED_CURRENCY_ID + 1;
+
+	let pool_id1 = calculate_pool_id(&[currency_1]);
+	let pool_id2 = calculate_pool_id(&[currency_2]);
+
+	let amount_to_burn = 11u128.pow(10);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id1.clone(), u128::MAX / 2),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id2.clone(), u128::MAX / 2),
+			(currency_1, ACCOUNT_00, amount_to_burn * 10),
+			(currency_2, ACCOUNT_00, amount_to_burn * 10),
+		])
+		.with_pools(vec![
+			(
+				pool_id1.clone(),
+				generate_pool_details(
+					vec![currency_1],
+					get_linear_bonding_curve(),
+					true,
+					None,
+					None,
+					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+					None,
+				),
+			),
+			(
+				pool_id2.clone(),
+				generate_pool_details(
+					vec![currency_2],
+					get_linear_bonding_curve(),
+					true,
+					None,
+					None,
+					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+					None,
+				),
+			),
+		])
+		.build()
+		.execute_with(|| {
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
+
+			// pool 1: 1 mint of 10 * amount
+			assert_ok!(BondingPallet::burn_into(
+				origin.clone(),
+				pool_id1.clone(),
+				0,
+				ACCOUNT_00,
+				amount_to_burn * 10,
+				0,
+				1
+			));
+
+			let balance_after_first_burn =
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00);
+
+			// pool 2: 10 mints of amount
+			for _ in 0..10 {
+				assert_ok!(BondingPallet::burn_into(
+					origin.clone(),
+					pool_id2.clone(),
+					0,
+					ACCOUNT_00,
+					amount_to_burn,
+					0,
+					1
+				));
+			}
+
+			let balance_after_second_burn =
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00);
+
+			assert_eq!(
+				balance_after_second_burn - balance_after_first_burn,
+				balance_after_first_burn,
+			);
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1),
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
+			);
+		})
+}
+
+#[test]
+fn multiple_mints_vs_combined_burn() {
+	let currency_id = DEFAULT_BONDED_CURRENCY_ID;
+	let pool_id = calculate_pool_id(&[currency_id]);
+
+	let curve = get_linear_bonding_curve();
+
+	let amount_to_mint = 11u128.pow(10);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![currency_id],
+				curve.clone(),
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
+
+			// step one: 10 mints of amount
+			for _ in 0..10 {
+				assert_ok!(BondingPallet::mint_into(
+					origin.clone(),
+					pool_id.clone(),
+					0,
+					ACCOUNT_00,
+					amount_to_mint,
+					u128::MAX,
+					1
+				));
+			}
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(currency_id, &ACCOUNT_00),
+				amount_to_mint * 10,
+			);
+
+			// step 2: 1 burn of 10 * amount
+			assert_ok!(BondingPallet::burn_into(
+				origin.clone(),
+				pool_id.clone(),
+				0,
+				ACCOUNT_00,
+				amount_to_mint * 10,
+				0,
+				1
+			));
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(currency_id, &ACCOUNT_00),
+				0,
+			);
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				0,
 			);
 		})
 }
