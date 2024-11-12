@@ -129,10 +129,15 @@ pub mod pallet {
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
 		type MaxCurrencies: Get<u32>;
-		/// The deposit required for each bonded currency.
 
 		#[pallet::constant]
 		type MaxStringLength: Get<u32>;
+
+		/// The maximum denomination that bonded currencies can use. To ensure
+		/// safe operation, this should be set so that 10^MaxDenomination <
+		/// 2^CurveParameterType::int_nbits().
+		#[pallet::constant]
+		type MaxDenomination: Get<u8>;
 
 		/// The deposit required for each bonded currency.
 		#[pallet::constant]
@@ -270,9 +275,11 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
-			let currency_length = currencies.len();
+			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
 
 			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
+
+			let currency_length = currencies.len();
 
 			let current_asset_id = NextAssetId::<T>::get();
 
@@ -842,6 +849,7 @@ pub mod pallet {
 
 			Ok(real_costs)
 		}
+
 		fn calculate_normalized_passive_issuance(
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
