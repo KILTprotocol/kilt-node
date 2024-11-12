@@ -59,7 +59,7 @@ pub mod test {
 						&ACCOUNT_00,
 					);
 
-				assert_eq!(hold_balance_pre_migration, DEPOSIT);
+				assert_eq!(hold_balance_pre_migration, <Test as Config>::Deposit::get());
 
 				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(

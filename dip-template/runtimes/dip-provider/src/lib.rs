@@ -436,15 +436,17 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
-pub type Web3Name = runtime_common::Web3Name<3, 32>;
+pub const MIN_NAME_LENGTH: u32 = 3;
+pub const MAX_NAME_LENGTH: u32 = 3;
+pub type Web3Name = runtime_common::Web3Name<MIN_NAME_LENGTH, MAX_NAME_LENGTH>;
 
 impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
-	type MaxNameLength = ConstU32<32>;
-	type MinNameLength = ConstU32<3>;
+	type MaxNameLength = ConstU32<MAX_NAME_LENGTH>;
+	type MinNameLength = ConstU32<MIN_NAME_LENGTH>;
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
