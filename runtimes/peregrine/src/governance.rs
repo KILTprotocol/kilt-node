@@ -37,7 +37,7 @@ use sp_std::cmp::Ordering;
 
 use crate::{
 	benchmarks, weights, Balances, OriginCaller, Preimage, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason,
-	RuntimeOrigin, ScheduleOrigin, Scheduler, TechnicalCommittee, Treasury,
+	RuntimeOrigin, Scheduler, TechnicalCommittee, Treasury,
 };
 
 pub type RootOrCollectiveProportion<Collective, const NUM: u32, const DEN: u32> =

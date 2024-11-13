@@ -18,11 +18,11 @@
 
 use frame_support::traits::InstanceFilter;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use runtime_common::{constants, weights};
+use runtime_common::constants;
 use sp_core::RuntimeDebug;
 use sp_runtime::traits::BlakeTwo256;
 
-use crate::{Balances, Runtime, RuntimeCall, RuntimeEvent};
+use crate::{weights, Balances, Runtime, RuntimeCall, RuntimeEvent};
 
 /// The type used to represent the kinds of proxying allowed.
 #[derive(

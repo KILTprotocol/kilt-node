@@ -210,7 +210,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type UniqueLinkingEnabled = ConstBool<false>;
 }
 
-type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
+pub type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
 impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type Currency = Balances;

@@ -16,8 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{parameter_types, traits::Everything};
+use frame_support::{
+	parameter_types,
+	traits::{AsEnsureOriginWithArg, Everything},
+};
+use frame_system::EnsureRoot;
 use runtime_common::{
+	asset_switch::{EnsureRootAsTreasury, NoopBenchmarkHelper as AssetSwitchNoopBenchmarkHelper},
 	constants::{self, UnvestedFundsAllowedWithdrawReasons, EXISTENTIAL_DEPOSIT},
 	fees::{ToAuthorCredit, WeightToFee},
 	AccountId, AuthorityId, Balance, Block, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
@@ -30,6 +35,7 @@ use sp_runtime::{
 };
 use sp_version::RuntimeVersion;
 use sp_weights::ConstantMultiplier;
+use xcm::v4::Location;
 
 use crate::{
 	weights, Aura, Balances, OriginCaller, PalletInfo, ParachainStaking, Runtime, RuntimeCall, RuntimeEvent,
@@ -173,4 +179,61 @@ impl pallet_vesting::Config for Runtime {
 	type WeightInfo = weights::pallet_vesting::WeightInfo<Runtime>;
 	type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
 	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
+}
+
+impl pallet_multisig::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type Currency = Balances;
+	type DepositBase = ConstU128<{ constants::multisig::DEPOSIT_BASE }>;
+	type DepositFactor = ConstU128<{ constants::multisig::DEPOSIT_FACTOR }>;
+	type MaxSignatories = ConstU32<{ constants::multisig::MAX_SIGNITORS }>;
+	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
+}
+
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
+	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
+}
+
+impl pallet_indices::Config for Runtime {
+	type AccountIndex = Nonce;
+	type Currency = Balances;
+	type Deposit = constants::IndicesDeposit;
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = weights::pallet_indices::WeightInfo<Runtime>;
+}
+
+impl pallet_sudo::Config for Runtime {
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = weights::pallet_sudo::WeightInfo<Runtime>;
+}
+
+// No deposit is taken since creation is permissioned. Only the root origin can
+// create new assets, and the owner will be the treasury account.
+impl pallet_assets::Config for Runtime {
+	type ApprovalDeposit = constants::assets::ApprovalDeposit;
+	type AssetAccountDeposit = constants::assets::AssetAccountDeposit;
+	type AssetDeposit = constants::assets::AssetDeposit;
+	type AssetId = Location;
+	type AssetIdParameter = Location;
+	type Balance = Balance;
+	type CallbackHandle = ();
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
+	type Currency = Balances;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
+	type MetadataDepositBase = constants::assets::MetaDepositBase;
+	type MetadataDepositPerByte = constants::assets::MetaDepositPerByte;
+	type RemoveItemsLimit = constants::assets::RemoveItemsLimit;
+	type RuntimeEvent = RuntimeEvent;
+	type StringLimit = constants::assets::StringLimit;
+	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = AssetSwitchNoopBenchmarkHelper;
 }

@@ -16,17 +16,43 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use cumulus_pallet_aura_ext::FixedVelocityConsensusHook;
 use frame_support::{
+	genesis_builder_helper::{build_config, create_default_config},
 	pallet_prelude::{TransactionSource, TransactionValidity},
 	weights::Weight,
 };
-use runtime_common::{constants::SLOT_DURATION, AccountId, AuthorityId, Balance, Nonce};
+use kilt_support::traits::ItemFilter;
+use pallet_asset_switch::xcm::AccountId32ToAccountId32JunctionConverter;
+use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
+use pallet_web3_names::web3_name::{AsciiWeb3Name, Web3NameOwnership};
+use runtime_common::{
+	asset_switch::runtime_api::Error as AssetSwitchApiError,
+	assets::{AssetDid, PublicCredentialsFilter},
+	authorization::AuthorizationId,
+	constants::{EXISTENTIAL_DEPOSIT, SLOT_DURATION},
+	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
+	errors::PublicCredentialsApiError,
+	AccountId, AuthorityId, Balance, BlockNumber, BlockWeights, DidIdentifier, Hash, Nonce,
+};
 use sp_api::impl_runtime_apis;
-use sp_core::OpaqueMetadata;
+use sp_core::{storage::TrackedStorageKey, OpaqueMetadata};
 use sp_runtime::{traits::Block as BlockT, ApplyExtrinsicResult};
 use sp_version::RuntimeVersion;
+use unique_linking_runtime_api::{AddressResult, NameResult};
+use xcm::{v4::Location, VersionedAssetId, VersionedLocation, VersionedXcm};
 
-use crate::{system::SessionKeys, Aura, Block, Executive, Runtime, TransactionPayment, VERSION};
+use crate::{
+	add_benchmarks,
+	dip::runtime_api::{DipProofError, DipProofRequest},
+	kilt::{DotName, UniqueLinkingDeployment},
+	list_benchmarks,
+	parachain::ConsensusHook,
+	system::SessionKeys,
+	xcm_config::{UniversalLocation, XcmConfig},
+	AllPalletsWithSystem, AssetSwitchPool1, Aura, Balances, Block, DotNames, Executive, ParachainStaking,
+	ParachainSystem, Runtime, RuntimeCall, RuntimeGenesisConfig, System, TransactionPayment, UniqueLinking, VERSION,
+};
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -197,7 +223,7 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let parsed_name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			let parsed_name: AsciiWeb3Name<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&parsed_name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
@@ -337,14 +363,14 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl kilt_runtime_api_dip_provider::DipProvider<Block, dip::runtime_api::DipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, dip::runtime_api::DipProofError> for Runtime {
-		fn generate_proof(request: dip::runtime_api::DipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, dip::runtime_api::DipProofError> {
+	impl kilt_runtime_api_dip_provider::DipProvider<Block, DipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, DipProofError> for Runtime {
+		fn generate_proof(request: DipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, DipProofError> {
 			use pallet_dip_provider::traits::IdentityProvider;
 
-			let identity_details = pallet_dip_provider::IdentityProviderOf::<Runtime>::retrieve(&request.identifier).map_err(dip::runtime_api::DipProofError::IdentityProvider)?;
+			let identity_details = pallet_dip_provider::IdentityProviderOf::<Runtime>::retrieve(&request.identifier).map_err(DipProofError::IdentityProvider)?;
 			log::info!(target: "runtime_api::dip_provider", "Identity details retrieved for request {:#?}: {:#?}", request, identity_details);
 
-			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(dip::runtime_api::DipProofError::MerkleProof)
+			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(DipProofError::MerkleProof)
 		}
 	}
 
@@ -440,11 +466,6 @@ impl_runtime_apis! {
 			use frame_benchmarking::{Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
 
-			use frame_system_benchmarking::Pallet as SystemBench;
-			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			use frame_benchmarking::baseline::Pallet as Baseline;
-			use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
-
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
 
@@ -455,17 +476,12 @@ impl_runtime_apis! {
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-			use frame_benchmarking::{Benchmarking, BenchmarkBatch, BenchmarkError};
-			use frame_system_benchmarking::Pallet as SystemBench;
-			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			use frame_benchmarking::baseline::Pallet as Baseline;
-			use frame_support::traits::TrackedStorageKey;
-			use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+			use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
 			use runtime_common::benchmarks::xcm as xcm_benchmarking;
-			use xcm::lts::prelude::*;
+			use xcm::v4::{Asset, Assets, Fungibility};
 
 			impl pallet_xcm::benchmarking::Config for Runtime {
-				type DeliveryHelper = xcm_benchmarking::ParachainDeliveryHelper<ParachainSystem, xcm_config::XcmConfig>;
+				type DeliveryHelper = xcm_benchmarking::ParachainDeliveryHelper<ParachainSystem, XcmConfig>;
 
 				fn reachable_dest() -> Option<Location> {
 					ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(xcm_benchmarking::RandomParaId::get());
@@ -483,12 +499,12 @@ impl_runtime_apis! {
 				fn set_up_complex_asset_transfer() -> Option<(Assets, u32, Location, Box<dyn FnOnce()>)> {
 					let (transferable_asset, dest) = Self::reserve_transferable_asset_and_dest().unwrap();
 
-					let fee_amount = ExistentialDeposit::get();
+					let fee_amount = EXISTENTIAL_DEPOSIT;
 					let fee_asset: Asset = (Location::here(), fee_amount).into();
 
 					// Make account free to pay the fee
 					let who = frame_benchmarking::whitelisted_caller();
-					let balance = fee_amount + ExistentialDeposit::get() * 1000;
+					let balance = fee_amount + EXISTENTIAL_DEPOSIT * 1000;
 					let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
 						&who, balance,
 					);

@@ -16,13 +16,24 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use cumulus_pallet_aura_ext::FixedVelocityConsensusHook;
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
-use frame_support::traits::EnqueueWithOrigin;
-use runtime_common::xcm_config::RelayOrigin;
+use frame_support::{parameter_types, traits::EnqueueWithOrigin, weights::Weight};
+use runtime_common::{constants, xcm_config::RelayOrigin};
 
-use crate::{
-	weights, ConsensusHook, MessageQueue, ReservedDmpWeight, ReservedXcmpWeight, Runtime, RuntimeEvent, XcmpQueue,
-};
+use crate::{weights, MessageQueue, Runtime, RuntimeEvent, XcmpQueue};
+
+parameter_types! {
+	pub const ReservedXcmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+	pub const ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+}
+
+pub type ConsensusHook = FixedVelocityConsensusHook<
+	Runtime,
+	{ constants::RELAY_CHAIN_SLOT_DURATION_MILLIS },
+	{ constants::BLOCK_PROCESSING_VELOCITY },
+	{ constants::UNINCLUDED_SEGMENT_CAPACITY },
+>;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;

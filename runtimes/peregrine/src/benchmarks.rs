@@ -16,11 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_benchmarking::define_benchmarks;
+use frame_support::parameter_types;
 use frame_system::RawOrigin;
 use runtime_common::AccountId;
 use xcm::v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location, ParentThen};
 
-frame_support::parameter_types! {
+parameter_types! {
 	pub const MaxBalance: crate::Balance = crate::Balance::max_value();
 }
 
@@ -38,7 +40,7 @@ use pallet_web3_names as pallet_dot_names;
 
 use crate::{kilt::DotNamesDeployment, Fungibles, ParachainSystem, Runtime};
 
-frame_benchmarking::define_benchmarks!(
+define_benchmarks!(
 	[frame_system, SystemBench::<Runtime>]
 	[pallet_timestamp, Timestamp]
 	[pallet_indices, Indices]

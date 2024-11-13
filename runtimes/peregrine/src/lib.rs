@@ -88,16 +88,16 @@ use unique_linking_runtime_api::{AddressResult, NameResult};
 use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
 
 mod dip;
-pub mod governance;
-pub mod kilt;
-pub mod parachain;
-pub mod runtime_apis;
-pub mod system;
+mod governance;
+mod kilt;
+mod parachain;
+mod runtime_apis;
+mod system;
 mod weights;
-pub mod xcm_config;
+mod xcm_config;
 
 #[cfg(feature = "runtime-benchmarks")]
-pub mod benchmarks;
+mod benchmarks;
 
 #[cfg(test)]
 mod tests;
@@ -213,73 +213,9 @@ construct_runtime! {
 	}
 }
 
-impl pallet_multisig::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type Currency = Balances;
-	type DepositBase = ConstU128<{ constants::multisig::DEPOSIT_BASE }>;
-	type DepositFactor = ConstU128<{ constants::multisig::DEPOSIT_FACTOR }>;
-	type MaxSignatories = ConstU32<{ constants::multisig::MAX_SIGNITORS }>;
-	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
-}
-
-impl pallet_migration::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
-	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
-}
-
-impl pallet_indices::Config for Runtime {
-	type AccountIndex = Nonce;
-	type Currency = pallet_balances::Pallet<Runtime>;
-	type Deposit = constants::IndicesDeposit;
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::pallet_indices::WeightInfo<Runtime>;
-}
-
-impl pallet_sudo::Config for Runtime {
-	type RuntimeCall = RuntimeCall;
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::pallet_sudo::WeightInfo<Runtime>;
-}
-
 parameter_types! {
 	pub const ReservedXcmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 	pub const ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-}
-
-type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
-	Runtime,
-	RELAY_CHAIN_SLOT_DURATION_MILLIS,
-	BLOCK_PROCESSING_VELOCITY,
-	UNINCLUDED_SEGMENT_CAPACITY,
->;
-
-// No deposit is taken since creation is permissioned. Only the root origin can
-// create new assets, and the owner will be the treasury account.
-impl pallet_assets::Config for Runtime {
-	type ApprovalDeposit = runtime_common::constants::assets::ApprovalDeposit;
-	type AssetAccountDeposit = runtime_common::constants::assets::AssetAccountDeposit;
-	type AssetDeposit = runtime_common::constants::assets::AssetDeposit;
-	type AssetId = Location;
-	type AssetIdParameter = Location;
-	type Balance = Balance;
-	type CallbackHandle = ();
-	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
-	type Currency = Balances;
-	type Extra = ();
-	type ForceOrigin = EnsureRoot<AccountId>;
-	type Freezer = ();
-	type MetadataDepositBase = runtime_common::constants::assets::MetaDepositBase;
-	type MetadataDepositPerByte = runtime_common::constants::assets::MetaDepositPerByte;
-	type RemoveItemsLimit = runtime_common::constants::assets::RemoveItemsLimit;
-	type RuntimeEvent = RuntimeEvent;
-	type StringLimit = runtime_common::constants::assets::StringLimit;
-	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 }
 
 /// The address format for describing accounts.
