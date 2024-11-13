@@ -19,11 +19,11 @@
 use frame_benchmarking::define_benchmarks;
 use frame_support::parameter_types;
 use frame_system::RawOrigin;
-use runtime_common::AccountId;
+use runtime_common::{AccountId, Balance};
 use xcm::v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location, ParentThen};
 
 parameter_types! {
-	pub const MaxBalance: crate::Balance = crate::Balance::max_value();
+	pub const MaxBalance: Balance = Balance::max_value();
 }
 
 use pallet_asset_switch::PartialBenchmarkInfo;

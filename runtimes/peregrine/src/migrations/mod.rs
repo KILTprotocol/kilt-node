@@ -24,5 +24,5 @@ parameter_types! {
 	pub const DmpPalletName: &'static str = "DmpQueue";
 }
 
-pub type Migrations =
+pub type RuntimeMigrations =
 	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>;

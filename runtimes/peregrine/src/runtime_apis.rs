@@ -1,8 +1,54 @@
+use core::str;
+
+use ::xcm::{
+	v4::{Asset, AssetId, Location},
+	VersionedAssetId, VersionedLocation, VersionedXcm,
+};
+use cumulus_primitives_aura::Slot;
+use cumulus_primitives_core::CollationInfo;
+use frame_support::{
+	genesis_builder_helper::{build_config, create_default_config},
+	pallet_prelude::{TransactionSource, TransactionValidity},
+	traits::PalletInfoAccess,
+	weights::Weight,
+};
+use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
-use sp_runtime::create_runtime_str;
+use sp_core::OpaqueMetadata;
+use sp_inherents::{CheckInherentsResult, InherentData};
+use sp_runtime::{
+	create_runtime_str,
+	traits::{Block as BlockT, TryConvert},
+	ApplyExtrinsicResult, KeyTypeId,
+};
 use sp_version::RuntimeVersion;
 
-use super::*;
+use kilt_runtime_api_did::RawDidLinkedInfo;
+use kilt_support::traits::ItemFilter;
+use pallet_asset_switch::xcm::AccountId32ToAccountId32JunctionConverter;
+use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
+use pallet_dip_provider::traits::IdentityProvider;
+use pallet_web3_names::web3_name::{AsciiWeb3Name, Web3NameOwnership};
+use public_credentials::CredentialEntry;
+use runtime_common::{
+	asset_switch::runtime_api::Error as AssetSwitchApiError,
+	assets::{AssetDid, PublicCredentialsFilter},
+	authorization::AuthorizationId,
+	constants::SLOT_DURATION,
+	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
+	errors::PublicCredentialsApiError,
+	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Nonce,
+};
+use unique_linking_runtime_api::{AddressResult, NameResult};
+
+use crate::{
+	dip::runtime_api::{DipProofError, DipProofRequest},
+	kilt::{DotName, UniqueLinkingDeployment},
+	parachain::ConsensusHook,
+	xcm::UniversalLocation,
+	AssetSwitchPool1, Aura, Block, DotNames, Executive, InherentDataExt, ParachainStaking, ParachainSystem, Runtime,
+	RuntimeCall, RuntimeGenesisConfig, SessionKeys, TransactionPayment, UniqueLinking,
+};
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

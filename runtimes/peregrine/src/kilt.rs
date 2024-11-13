@@ -210,7 +210,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type UniqueLinkingEnabled = ConstBool<false>;
 }
 
-pub type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
+pub(crate) type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
 impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
@@ -245,7 +245,7 @@ impl pallet_web3_names::Config for Runtime {
 
 pub type DotName = runtime_common::DotName<{ constants::dot_names::MIN_LENGTH }, { constants::dot_names::MAX_LENGTH }>;
 
-pub type DotNamesDeployment = pallet_web3_names::Instance2;
+pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
@@ -322,7 +322,7 @@ parameter_types! {
 	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }
 
-pub type KiltToEKiltSwitchPallet = pallet_asset_switch::Instance1;
+pub(crate) type KiltToEKiltSwitchPallet = pallet_asset_switch::Instance1;
 impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
 	type AssetTransactor = FungiblesAdapter<

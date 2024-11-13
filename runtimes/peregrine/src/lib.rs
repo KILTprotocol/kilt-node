@@ -22,7 +22,6 @@
 #![recursion_limit = "256"]
 // Triggered by `impl_runtime_apis` macro
 #![allow(clippy::empty_structs_with_brackets)]
-#![allow(unused_imports)]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -31,77 +30,34 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use core::str;
 
 // Polkadot-sdk crates
-use ::xcm::{
-	v4::{Asset, AssetId, Location},
-	VersionedAssetId, VersionedLocation, VersionedXcm,
-};
 use cumulus_pallet_parachain_system::register_validate_block;
-use cumulus_primitives_aura::Slot;
-use cumulus_primitives_core::CollationInfo;
-use frame_support::{
-	construct_runtime,
-	genesis_builder_helper::{build_config, create_default_config},
-	pallet_prelude::{TransactionSource, TransactionValidity},
-	traits::PalletInfoAccess,
-	weights::Weight,
-};
+use frame_support::construct_runtime;
 use frame_system::{
 	ChainContext, CheckEra, CheckGenesis, CheckNonZeroSender, CheckNonce, CheckSpecVersion, CheckTxVersion, CheckWeight,
 };
-use kilt_runtime_api_did::RawDidLinkedInfo;
-use kilt_support::traits::ItemFilter;
-use pallet_asset_switch::xcm::AccountId32ToAccountId32JunctionConverter;
-use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
-use pallet_dip_provider::traits::IdentityProvider;
-use pallet_transaction_payment::{ChargeTransactionPayment, FeeDetails, RuntimeDispatchInfo};
-use pallet_web3_names::web3_name::{AsciiWeb3Name, Web3NameOwnership};
-use public_credentials::CredentialEntry;
-use runtime_common::{
-	asset_switch::runtime_api::Error as AssetSwitchApiError,
-	assets::{AssetDid, PublicCredentialsFilter},
-	authorization::AuthorizationId,
-	constants::SLOT_DURATION,
-	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
-	errors::PublicCredentialsApiError,
-	opaque::Header,
-	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Nonce,
-};
-use sp_api::impl_runtime_apis;
-use sp_core::OpaqueMetadata;
-use sp_inherents::{CheckInherentsResult, InherentData};
-use sp_runtime::{
-	create_runtime_str, generic,
-	traits::{Block as BlockT, TryConvert},
-	ApplyExtrinsicResult, KeyTypeId,
-};
+use pallet_transaction_payment::ChargeTransactionPayment;
+use runtime_common::opaque::Header;
+use sp_runtime::generic;
 use sp_std::{prelude::*, vec::Vec};
-use sp_version::RuntimeVersion;
-use unique_linking_runtime_api::{AddressResult, NameResult};
 
 // Internal crates
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 use runtime_common::{constants, fees::WeightToFee, Address, Signature};
 
-use crate::{
-	dip::runtime_api::{DipProofError, DipProofRequest},
-	kilt::{DotName, UniqueLinkingDeployment},
-	migrations::Migrations,
-	parachain::ConsensusHook,
-	xcm::UniversalLocation,
-};
-
 mod dip;
 mod governance;
 mod kilt;
+pub use kilt::DotName;
 mod migrations;
+pub use migrations::RuntimeMigrations;
 mod parachain;
 mod runtime_apis;
 #[cfg(feature = "std")]
 pub use runtime_apis::native_version;
 pub use runtime_apis::{api, RuntimeApi, VERSION};
 mod system;
-pub use system::SessionKeys;
+pub use system::{SessionKeys, SS_58_PREFIX};
 mod weights;
 mod xcm;
 
@@ -209,7 +165,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	Migrations,
+	RuntimeMigrations,
 >;
 
 /// Block header type as expected by this runtime.

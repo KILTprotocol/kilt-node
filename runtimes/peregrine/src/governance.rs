@@ -40,7 +40,7 @@ use crate::{
 	Scheduler, TechnicalCommittee, Treasury,
 };
 
-pub type RootOrCollectiveProportion<Collective, const NUM: u32, const DEN: u32> =
+type RootOrCollectiveProportion<Collective, const NUM: u32, const DEN: u32> =
 	EitherOfDiverse<EnsureRoot<AccountId>, pallet_collective::EnsureProportionAtLeast<AccountId, Collective, 2, 3>>;
 
 impl pallet_democracy::Config for Runtime {
@@ -176,7 +176,7 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
-pub type RootOrMoreThanHalfCouncil = RootOrCollectiveProportion<CouncilCollective, 1, 2>;
+type RootOrMoreThanHalfCouncil = RootOrCollectiveProportion<CouncilCollective, 1, 2>;
 
 type TechnicalMembershipProvider = pallet_membership::Instance1;
 impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {
