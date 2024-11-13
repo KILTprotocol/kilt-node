@@ -35,12 +35,11 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
-	use sp_arithmetic::{traits::CheckedRem, ArithmeticError};
+	use sp_arithmetic::ArithmeticError;
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{
-			Bounded, CheckedAdd, CheckedDiv, CheckedMul, One, SaturatedConversion, Saturating, StaticLookup,
-			UniqueSaturatedInto, Zero,
+			Bounded, CheckedConversion, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto, Zero,
 		},
 		BoundedVec,
 	};
@@ -263,7 +262,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
-		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<u128>,
+		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
@@ -670,13 +669,14 @@ pub mod pallet {
 
 			// With amount = max_value(), this trait implementation burns the reducible
 			// balance on the account and returns the actual amount burnt
-			let burnt = T::Fungibles::burn_from(
+			let burnt: U256 = T::Fungibles::burn_from(
 				asset_id.clone(),
 				&who,
 				Bounded::max_value(),
 				WithdrawalPrecision::BestEffort,
 				Fortitude::Force,
-			)?;
+			)?
+			.into();
 
 			if burnt.is_zero() {
 				// no funds available to be burnt on account; nothing to do here
@@ -686,8 +686,8 @@ pub mod pallet {
 			let sum_of_issuances = pool_details
 				.bonded_currencies
 				.into_iter()
-				.fold(FungiblesBalanceOf::<T>::zero(), |sum, id| {
-					sum.saturating_add(T::Fungibles::total_issuance(id))
+				.fold(U256::from(0), |sum, id| {
+					sum.saturating_add(T::Fungibles::total_issuance(id).into())
 				});
 
 			defensive_assert!(
@@ -695,29 +695,16 @@ pub mod pallet {
 				"burnt amount exceeds the total supply of all bonded currencies"
 			);
 
-			// divide first to avoid overflow, remainder will be handled seperately
-			let divisible_part = total_collateral_issuance
-				.checked_div(&sum_of_issuances)
-				.ok_or(Error::<T>::Internal)? // because sum_of_issuances >= burnt > 0, this is theoretically impossible
-				.checked_mul(&burnt)
-				// An overflow is also theoretically impossible, as burnt <= sum_of_issuances
-				.ok_or(Error::<T>::Internal)?;
-
-			// for the remainder, we multiply first and divide next
-			let remainder_part = total_collateral_issuance
-				.checked_rem(&sum_of_issuances)
-				.ok_or(Error::<T>::Internal)? // Should only fail on sum_of_issuances == 0, same as above
-				.checked_mul(&burnt)
-				// This can indeed overflow if (sum_of_issuances - 1) * burnt > capacity(u128)
+			let amount: CollateralCurrenciesBalanceOf<T> = burnt
+				.checked_mul(total_collateral_issuance.into())
+				// As long as the balance type is half the size of a U256, this won't overflow.
 				.ok_or(ArithmeticError::Overflow)?
-				.checked_div(&sum_of_issuances)
-				.ok_or(Error::<T>::Internal)?; // same as above
-
-			// total amount is the sum of divisible part and remainder part
-			let amount = divisible_part
-				.checked_add(&remainder_part)
-				// Also theoretically impossible, as this sum would be smaller than total_collateral_issuance as long as
-				// burnt <= sum_of_issuances
+				.checked_div(sum_of_issuances)
+				// Because sum_of_issuances >= burnt > 0, this is theoretically impossible
+				.ok_or(Error::<T>::Internal)?
+				.checked_into()
+				// Also theoretically impossible, as the result must be <= total_collateral_issuance
+				// if burnt <= sum_of_issuances, which should always hold true
 				.ok_or(Error::<T>::Internal)?;
 
 			if amount.is_zero()
