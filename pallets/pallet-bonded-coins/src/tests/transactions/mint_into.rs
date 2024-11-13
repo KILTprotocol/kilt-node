@@ -1,3 +1,5 @@
+use core::u128;
+
 use frame_support::{
 	assert_err, assert_ok,
 	traits::{
@@ -6,9 +8,10 @@ use frame_support::{
 	},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
-use sp_runtime::TokenError;
+use sp_runtime::{ArithmeticError, TokenError};
 
 use crate::{
+	curves::{polynomial::PolynomialParameters, Curve},
 	mock::{runtime::*, *},
 	types::{Locks, PoolStatus},
 	Error,
@@ -603,4 +606,78 @@ fn mint_without_collateral() {
 				TokenError::FundsUnavailable
 			);
 		});
+}
+
+#[test]
+fn mint_more_than_fixed_can_represent() {
+	// denomination is 10
+	// capacity of I75F53 is 1.8+e22
+	// -> we need to get beyond 1.8+e32
+	// check that we can still burn afterwards
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	let curve = Curve::Polynomial(PolynomialParameters {
+		m: Float::from_num(0),
+		n: Float::from_num(0),
+		o: Float::from_num(0.1),
+	});
+
+	let amount_to_mint = 10u128.pow(20);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
+		// .with_bonded_balance(vec![(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, 10u128.pow(32))])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				curve,
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
+
+			// repeatedly mint until we hit balance that cannot be represented
+			let mut result = Ok(());
+			let mut mints = 0;
+			while result.is_ok() {
+				result = BondingPallet::mint_into(
+					origin.clone(),
+					pool_id.clone(),
+					0,
+					ACCOUNT_00,
+					amount_to_mint,
+					u128::MAX,
+					1,
+				);
+				mints += 1;
+			}
+
+			assert!(mints > 2);
+			assert_err!(result, ArithmeticError::Overflow);
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				amount_to_mint * (mints - 1)
+			);
+
+			// Make sure the pool is not stuck
+			assert_ok!(BondingPallet::burn_into(
+				origin.clone(),
+				pool_id.clone(),
+				0,
+				ACCOUNT_00,
+				amount_to_mint,
+				1,
+				1
+			));
+		})
 }
