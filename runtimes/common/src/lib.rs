@@ -59,6 +59,24 @@ pub mod xcm_config;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarks;
 
+/// Opaque types. These are used by the CLI to instantiate machinery that don't
+/// need to know the specifics of the runtime. They can then be made to be
+/// agnostic over specific formats of data like extrinsics, allowing for them to
+/// continue syncing the network through upgrades to even the core data
+/// structures.
+pub mod opaque {
+	use sp_runtime::{generic, traits::BlakeTwo256};
+
+	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+
+	use crate::BlockNumber;
+
+	/// Opaque block header type.
+	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	/// Opaque block type.
+	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
+}
+
 /// An index to a block.
 pub type BlockNumber = u64;
 
@@ -98,8 +116,6 @@ pub type Nonce = u64;
 pub type Hasher = BlakeTwo256;
 /// A hash of some data used by the chain.
 pub type Hash = <BlakeTwo256 as sp_core::Hasher>::Out;
-
-pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;

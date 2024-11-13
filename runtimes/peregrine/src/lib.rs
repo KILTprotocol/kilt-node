@@ -66,7 +66,8 @@ use runtime_common::{
 	constants::SLOT_DURATION,
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
-	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Nonce,
+	opaque::Header,
+	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Nonce,
 };
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
@@ -88,9 +89,10 @@ use crate::{
 	kilt::{DotName, UniqueLinkingDeployment},
 	migrations::Migrations,
 	parachain::ConsensusHook,
-	system::SessionKeys,
 	xcm::UniversalLocation,
 };
+
+pub use crate::system::SessionKeys;
 
 mod dip;
 mod governance;
