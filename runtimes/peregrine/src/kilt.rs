@@ -36,7 +36,7 @@ use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use crate::{
 	constants, weights,
-	xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
+	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
 	Balances, Fungibles, Migration, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeFreezeReason,
 	RuntimeHoldReason, RuntimeOrigin,
 };

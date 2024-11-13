@@ -22,10 +22,10 @@ use frame_support::{
 };
 use frame_system::EnsureRoot;
 use runtime_common::{
-	asset_switch::{EnsureRootAsTreasury, NoopBenchmarkHelper as AssetSwitchNoopBenchmarkHelper},
+	asset_switch::EnsureRootAsTreasury,
 	constants::{self, UnvestedFundsAllowedWithdrawReasons, EXISTENTIAL_DEPOSIT},
 	fees::{ToAuthorCredit, WeightToFee},
-	AccountId, AuthorityId, Balance, Block, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
 	SendDustAndFeesToTreasury, SlowAdjustingFeeUpdate,
 };
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64};
@@ -38,7 +38,7 @@ use sp_weights::ConstantMultiplier;
 use xcm::v4::Location;
 
 use crate::{
-	weights, Aura, Balances, OriginCaller, PalletInfo, ParachainStaking, Runtime, RuntimeCall, RuntimeEvent,
+	weights, Aura, Balances, Block, OriginCaller, PalletInfo, ParachainStaking, Runtime, RuntimeCall, RuntimeEvent,
 	RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
 };
 
@@ -235,5 +235,5 @@ impl pallet_assets::Config for Runtime {
 	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = AssetSwitchNoopBenchmarkHelper;
+	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 }

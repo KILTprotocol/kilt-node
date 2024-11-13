@@ -36,8 +36,8 @@ use sp_runtime::{traits::AccountIdLookup, Perbill, Permill};
 use sp_std::cmp::Ordering;
 
 use crate::{
-	benchmarks, weights, Balances, OriginCaller, Preimage, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason,
-	RuntimeOrigin, Scheduler, TechnicalCommittee, Treasury,
+	weights, Balances, OriginCaller, Preimage, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
+	Scheduler, TechnicalCommittee, Treasury,
 };
 
 pub type RootOrCollectiveProportion<Collective, const NUM: u32, const DEN: u32> =
@@ -92,7 +92,7 @@ impl pallet_democracy::Config for Runtime {
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
 	pub const Burn: Permill = Permill::zero();
-	pub const TreasuryAccount: AccountId = Treasury::account_id();
+	pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -109,7 +109,7 @@ impl pallet_treasury::Config for Runtime {
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type SpendOrigin = frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, benchmarks::MaxBalance>;
+	type SpendOrigin = frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, crate::benchmarks::MaxBalance>;
 	type Burn = Burn;
 	type BurnDestination = ();
 	type SpendFunds = ();

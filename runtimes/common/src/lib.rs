@@ -23,8 +23,6 @@ use fees::SplitFeesByRatio;
 
 pub use sp_consensus_aura::sr25519::AuthorityId;
 
-pub use opaque::*;
-
 pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 use frame_support::{
 	dispatch::DispatchClass,
@@ -40,7 +38,7 @@ use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
 	traits::{BlakeTwo256, Bounded, IdentifyAccount, Verify},
-	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion,
+	FixedPointNumber, MultiAddress, MultiSignature, Perquintill, SaturatedConversion,
 };
 use sp_std::marker::PhantomData;
 use sp_weights::Weight;
@@ -61,24 +59,6 @@ pub mod xcm_config;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarks;
 
-/// Opaque types. These are used by the CLI to instantiate machinery that don't
-/// need to know the specifics of the runtime. They can then be made to be
-/// agnostic over specific formats of data like extrinsics, allowing for them to
-/// continue syncing the network through upgrades to even the core data
-/// structures.
-pub mod opaque {
-	use super::*;
-	use sp_runtime::{generic, traits::BlakeTwo256};
-
-	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
-	/// Opaque block header type.
-	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
-	/// Opaque block type.
-	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-	/// Opaque block identifier type.
-	pub type BlockId = generic::BlockId<Block>;
-}
-
 /// An index to a block.
 pub type BlockNumber = u64;
 
@@ -96,6 +76,9 @@ pub type AccountPublic = <Signature as Verify>::Signer;
 /// Alias to the opaque account ID type for this chain, actually a
 /// `AccountId32`. This is always 32 bytes.
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+/// The address format for describing accounts.
+pub type Address = MultiAddress<AccountId, ()>;
 
 /// The type for looking up accounts. We don't expect more than 4 billion of
 /// them, but you never know...
@@ -115,6 +98,8 @@ pub type Nonce = u64;
 pub type Hasher = BlakeTwo256;
 /// A hash of some data used by the chain.
 pub type Hash = <BlakeTwo256 as sp_core::Hasher>::Out;
+
+pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;

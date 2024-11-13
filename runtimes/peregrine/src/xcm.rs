@@ -17,9 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, AssetSwitchPool1, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet,
-	MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
-	Treasury, WeightToFee, XcmpQueue,
+	kilt::{CheckingAccount, KiltToEKiltSwitchPallet},
+	AccountId, AllPalletsWithSystem, AssetSwitchPool1, Balances, Fungibles, MessageQueue, ParachainInfo,
+	ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};

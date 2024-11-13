@@ -27,74 +27,79 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-// External crates
-use cfg_if::cfg_if;
-
+use cumulus_pallet_parachain_system::register_validate_block;
 // Polkadot-sdk crates
-use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
-use frame_support::{
-	construct_runtime,
-	genesis_builder_helper::{build_config, create_default_config},
-	parameter_types,
-	traits::{
-		fungible::HoldConsideration,
-		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		AsEnsureOriginWithArg, ChangeMembers, ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter,
-		LinearStoragePrice, PrivilegeCmp,
-	},
-	weights::{ConstantMultiplier, Weight},
+use core::str;
+use frame_support::construct_runtime;
+use frame_system::{
+	ChainContext, CheckEra, CheckGenesis, CheckNonZeroSender, CheckNonce, CheckSpecVersion, CheckTxVersion, CheckWeight,
 };
-use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
-use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use sp_api::impl_runtime_apis;
-use sp_core::{ConstBool, ConstU128, ConstU64, ConstU8, OpaqueMetadata};
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, Perbill, Permill, RuntimeDebug,
-};
-use sp_std::{cmp::Ordering, prelude::*};
+use pallet_transaction_payment::ChargeTransactionPayment;
+use sp_runtime::{create_runtime_str, generic};
+use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
-use xcm::{v4::Location, VersionedAssetId, VersionedLocation, VersionedXcm};
-use xcm_builder::{FungiblesAdapter, NoChecking};
 
-// Internal crates
-use delegation::DelegationAc;
+use ::xcm::{
+	v4::{Asset, AssetId, Location},
+	VersionedAssetId, VersionedLocation, VersionedXcm,
+};
+use cumulus_primitives_aura::Slot;
+use cumulus_primitives_core::CollationInfo;
+use frame_support::{
+	genesis_builder_helper::{build_config, create_default_config},
+	pallet_prelude::{TransactionSource, TransactionValidity},
+	traits::PalletInfoAccess,
+	weights::Weight,
+};
+use kilt_runtime_api_did::RawDidLinkedInfo;
 use kilt_support::traits::ItemFilter;
+use pallet_asset_switch::xcm::AccountId32ToAccountId32JunctionConverter;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
-use pallet_web3_names::web3_name::Web3NameOwnership;
-pub use parachain_staking::InflationInfo;
-pub use public_credentials;
+use pallet_dip_provider::traits::IdentityProvider;
+use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
+use pallet_web3_names::web3_name::{AsciiWeb3Name, Web3NameOwnership};
+use public_credentials::CredentialEntry;
 use runtime_common::{
-	asset_switch::{runtime_api::Error as AssetSwitchApiError, EnsureRootAsTreasury},
+	asset_switch::runtime_api::Error as AssetSwitchApiError,
 	assets::{AssetDid, PublicCredentialsFilter},
-	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{
-		self, UnvestedFundsAllowedWithdrawReasons, BLOCK_PROCESSING_VELOCITY, EXISTENTIAL_DEPOSIT, KILT,
-		RELAY_CHAIN_SLOT_DURATION_MILLIS, SLOT_DURATION, UNINCLUDED_SEGMENT_CAPACITY,
-	},
+	authorization::AuthorizationId,
+	constants::SLOT_DURATION,
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
-	fees::{ToAuthorCredit, WeightToFee},
-	pallet_id,
-	xcm_config::RelayOrigin,
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
-	Hash, Header, Nonce, SendDustAndFeesToTreasury, Signature, SlowAdjustingFeeUpdate,
+	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Nonce,
 };
+use sp_api::impl_runtime_apis;
+use sp_core::OpaqueMetadata;
+use sp_inherents::{CheckInherentsResult, InherentData};
+use sp_runtime::{
+	traits::{Block as BlockT, TryConvert},
+	ApplyExtrinsicResult, KeyTypeId,
+};
+use sp_std::vec::Vec;
 use unique_linking_runtime_api::{AddressResult, NameResult};
 
-use crate::xcm_config::{LocationToAccountIdConverter, UniversalLocation, XcmRouter};
+// Internal crates
+pub use parachain_staking::InflationInfo;
+pub use public_credentials;
+use runtime_common::{constants, fees::WeightToFee, Address, Signature};
+
+use crate::{
+	dip::runtime_api::{DipProofError, DipProofRequest},
+	kilt::{DotName, UniqueLinkingDeployment},
+	migrations::Migrations,
+	parachain::ConsensusHook,
+	system::SessionKeys,
+	xcm::UniversalLocation,
+};
 
 mod dip;
 mod governance;
 mod kilt;
+mod migrations;
 mod parachain;
-mod runtime_apis;
 mod system;
 mod weights;
-mod xcm_config;
+mod xcm;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;
@@ -213,51 +218,464 @@ construct_runtime! {
 	}
 }
 
-parameter_types! {
-	pub const ReservedXcmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-	pub const ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+register_validate_block! {
+	Runtime = Runtime,
+	BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
 }
 
-/// The address format for describing accounts.
-pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
-/// Block header type as expected by this runtime.
-/// Block type as expected by this runtime.
-pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-/// A Block signed with a Justification
-pub type SignedBlock = generic::SignedBlock<Block>;
-/// BlockId type as expected by this runtime.
-pub type BlockId = generic::BlockId<Block>;
-/// The SignedExtension to the basic transaction logic.
-pub type SignedExtra = (
-	frame_system::CheckNonZeroSender<Runtime>,
-	frame_system::CheckSpecVersion<Runtime>,
-	frame_system::CheckTxVersion<Runtime>,
-	frame_system::CheckGenesis<Runtime>,
-	frame_system::CheckEra<Runtime>,
-	frame_system::CheckNonce<Runtime>,
-	frame_system::CheckWeight<Runtime>,
-	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-);
-/// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
-/// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
 	Runtime,
 	Block,
-	frame_system::ChainContext<Runtime>,
+	ChainContext<Runtime>,
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>,
+	Migrations,
 >;
 
-parameter_types! {
-	pub const DmpPalletName: &'static str = "DmpQueue";
-}
+/// Block header type as expected by this runtime.
+/// Block type as expected by this runtime.
+pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 
-cumulus_pallet_parachain_system::register_validate_block! {
-	Runtime = Runtime,
-	BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+/// Unchecked extrinsic type as expected by this runtime.
+pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+
+/// The SignedExtension to the basic transaction logic.
+pub type SignedExtra = (
+	CheckNonZeroSender<Runtime>,
+	CheckSpecVersion<Runtime>,
+	CheckTxVersion<Runtime>,
+	CheckGenesis<Runtime>,
+	CheckEra<Runtime>,
+	CheckNonce<Runtime>,
+	CheckWeight<Runtime>,
+	ChargeTransactionPayment<Runtime>,
+);
+
+impl_runtime_apis! {
+	impl sp_api::Core<Block> for Runtime {
+		fn version() -> RuntimeVersion {
+			VERSION
+		}
+
+		fn execute_block(block: Block) {
+			Executive::execute_block(block);
+		}
+
+		fn initialize_block(header: &<Block as BlockT>::Header) {
+			Executive::initialize_block(header)
+		}
+	}
+
+	impl sp_api::Metadata<Block> for Runtime {
+		fn metadata() -> OpaqueMetadata {
+			OpaqueMetadata::new(Runtime::metadata().into())
+		}
+
+		fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
+			Runtime::metadata_at_version(version)
+		}
+
+		fn metadata_versions() -> Vec<u32> {
+			Runtime::metadata_versions()
+		}
+	}
+
+	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce> for Runtime {
+		fn account_nonce(account: AccountId) -> Nonce {
+			frame_system::Pallet::<Runtime>::account_nonce(account)
+		}
+	}
+
+	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance> for Runtime {
+		fn query_info(
+			uxt: <Block as BlockT>::Extrinsic,
+			len: u32,
+		) -> RuntimeDispatchInfo<Balance> {
+			TransactionPayment::query_info(uxt, len)
+		}
+
+		fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
+			TransactionPayment::query_fee_details(uxt, len)
+		}
+
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
+		}
+	}
+
+	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
+	for Runtime
+	{
+		fn query_call_info(
+			call: RuntimeCall,
+			len: u32,
+		) -> RuntimeDispatchInfo<Balance> {
+			TransactionPayment::query_call_info(call, len)
+		}
+		fn query_call_fee_details(
+			call: RuntimeCall,
+			len: u32,
+		) -> FeeDetails<Balance> {
+			TransactionPayment::query_call_fee_details(call, len)
+		}
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
+		}
+	}
+
+	impl sp_block_builder::BlockBuilder<Block> for Runtime {
+		fn apply_extrinsic(
+			extrinsic: <Block as BlockT>::Extrinsic,
+		) -> ApplyExtrinsicResult {
+			Executive::apply_extrinsic(extrinsic)
+		}
+
+		fn finalize_block() -> <Block as BlockT>::Header {
+			Executive::finalize_block()
+		}
+
+		fn inherent_extrinsics(data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
+			data.create_extrinsics()
+		}
+
+		fn check_inherents(block: Block, data: InherentData) -> CheckInherentsResult {
+			data.check_extrinsics(&block)
+		}
+	}
+
+	impl sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block> for Runtime {
+		fn validate_transaction(
+			source: TransactionSource,
+			tx: <Block as BlockT>::Extrinsic,
+			block_hash: <Block as BlockT>::Hash,
+		) -> TransactionValidity {
+			Executive::validate_transaction(source, tx, block_hash)
+		}
+	}
+
+	impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
+		fn offchain_worker(header: &<Block as BlockT>::Header) {
+			Executive::offchain_worker(header)
+		}
+	}
+
+	impl sp_session::SessionKeys<Block> for Runtime {
+		fn decode_session_keys(
+			encoded: Vec<u8>,
+		) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
+			SessionKeys::decode_into_raw_public_keys(&encoded)
+		}
+
+		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
+			SessionKeys::generate(seed)
+		}
+	}
+
+	impl sp_consensus_aura::AuraApi<Block, AuthorityId> for Runtime {
+		fn slot_duration() -> sp_consensus_aura::SlotDuration {
+			sp_consensus_aura::SlotDuration::from_millis(SLOT_DURATION)
+		}
+
+		fn authorities() -> Vec<AuthorityId> {
+			Aura::authorities().into_inner()
+		}
+	}
+
+	impl cumulus_primitives_aura::AuraUnincludedSegmentApi<Block> for Runtime {
+		fn can_build_upon(
+			included_hash: <Block as BlockT>::Hash,
+			slot: Slot,
+			) -> bool {
+				ConsensusHook::can_build_upon(included_hash, slot)
+			}
+	}
+
+	impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
+		fn collect_collation_info(header: &<Block as BlockT>::Header) -> CollationInfo {
+			ParachainSystem::collect_collation_info(header)
+		}
+	}
+
+	impl kilt_runtime_api_did::Did<
+		Block,
+		DidIdentifier,
+		AccountId,
+		LinkableAccountId,
+		Balance,
+		Hash,
+		BlockNumber
+	> for Runtime {
+		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			let parsed_name: AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			pallet_web3_names::Owner::<Runtime>::get(&parsed_name)
+				.and_then(|owner_info| {
+					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
+				})
+				.map(|(owner_info, details)| {
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
+						&owner_info.owner,
+					).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
+
+					RawDidLinkedInfo{
+						identifier: owner_info.owner,
+						w3n: Some(parsed_name.into()),
+						accounts,
+						service_endpoints,
+						details: details.into(),
+					}
+			})
+		}
+
+		fn batch_query_by_web3_name(names: Vec<Vec<u8>>) -> Vec<Option<RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			names.into_iter().map(Self::query_by_web3_name).collect()
+		}
+
+		fn query_by_account(account: LinkableAccountId) -> Option<
+			RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			pallet_did_lookup::ConnectedDids::<Runtime>::get(account)
+				.and_then(|owner_info| {
+					did::Did::<Runtime>::get(&owner_info.did).map(|details| (owner_info, details))
+				})
+				.map(|(connection_record, details)| {
+					let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
+
+					RawDidLinkedInfo {
+						identifier: connection_record.did,
+						w3n,
+						accounts,
+						service_endpoints,
+						details: details.into(),
+					}
+				})
+		}
+
+		fn batch_query_by_account(accounts: Vec<LinkableAccountId>) -> Vec<Option<
+			RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			accounts.into_iter().map(Self::query_by_account).collect()
+		}
+
+		fn query(did: DidIdentifier) -> Option<
+			RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			let details = did::Did::<Runtime>::get(&did)?;
+			let w3n = pallet_web3_names::Names::<Runtime>::get(&did).map(Into::into);
+			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
+			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
+
+			Some(RawDidLinkedInfo {
+				identifier: did,
+				w3n,
+				accounts,
+				service_endpoints,
+				details: details.into(),
+			})
+		}
+
+		fn batch_query(dids: Vec<DidIdentifier>) -> Vec<Option<
+			RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			dids.into_iter().map(Self::query).collect()
+		}
+	}
+
+	impl kilt_runtime_api_public_credentials::PublicCredentials<Block, Vec<u8>, Hash, CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
+		fn get_by_id(credential_id: Hash) -> Option<CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
+			let subject = public_credentials::CredentialSubjects::<Runtime>::get(credential_id)?;
+			public_credentials::Credentials::<Runtime>::get(subject, credential_id)
+		}
+
+		fn get_by_subject(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
+			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
+			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(asset_did);
+			if let Some(credentials_filter) = filter {
+				Ok(credentials_prefix.filter(|(_, entry)| credentials_filter.should_include(entry)).collect())
+			} else {
+				Ok(credentials_prefix.collect())
+			}
+		}
+	}
+
+	impl kilt_runtime_api_staking::Staking<Block, AccountId, Balance> for Runtime {
+		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance {
+			ParachainStaking::get_unclaimed_staking_rewards(account)
+		}
+
+		fn get_staking_rates() -> kilt_runtime_api_staking::StakingRates {
+			ParachainStaking::get_staking_rates()
+		}
+	}
+
+	impl kilt_runtime_api_dip_provider::DipProvider<Block, DipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, DipProofError> for Runtime {
+		fn generate_proof(request: DipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, DipProofError> {
+			let identity_details = pallet_dip_provider::IdentityProviderOf::<Runtime>::retrieve(&request.identifier).map_err(DipProofError::IdentityProvider)?;
+			log::info!(target: "runtime_api::dip_provider", "Identity details retrieved for request {:#?}: {:#?}", request, identity_details);
+
+			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(DipProofError::MerkleProof)
+		}
+	}
+
+	impl pallet_asset_switch_runtime_api::AssetSwitch<Block, VersionedAssetId, AccountId, u128, VersionedLocation, AssetSwitchApiError, VersionedXcm<()>> for Runtime {
+		fn pool_account_id(pair_id: Vec<u8>, asset_id: VersionedAssetId) -> Result<AccountId, AssetSwitchApiError> {
+			let Ok(pair_id_as_string) = str::from_utf8(pair_id.as_slice()) else {
+				return Err(AssetSwitchApiError::InvalidInput);
+			};
+			match pair_id_as_string {
+				kilt_to_ekilt if kilt_to_ekilt == AssetSwitchPool1::name() => {
+					AssetSwitchPool1::pool_account_id_for_remote_asset(&asset_id).map_err(|e| {
+						log::error!("Failed to calculate pool account address for asset ID {:?} with error: {:?}", asset_id, e);
+						AssetSwitchApiError::Internal
+					})
+				},
+				_ => Err(AssetSwitchApiError::SwitchPoolNotFound)
+			}
+		}
+
+		fn xcm_for_switch(pair_id: Vec<u8>, from: AccountId, to: VersionedLocation, amount: u128) -> Result<VersionedXcm<()>, AssetSwitchApiError> {
+			let Ok(pair_id_as_string) = str::from_utf8(pair_id.as_slice()) else {
+				return Err(AssetSwitchApiError::InvalidInput);
+			};
+
+			if pair_id_as_string != AssetSwitchPool1::name() {
+				return Err(AssetSwitchApiError::SwitchPoolNotFound);
+			}
+
+			let Some(switch_pair) = AssetSwitchPool1::switch_pair() else {
+				return Err(AssetSwitchApiError::SwitchPoolNotSet);
+			};
+
+			let from_v4 = AccountId32ToAccountId32JunctionConverter::try_convert(from).map_err(|_| AssetSwitchApiError::Internal)?;
+			let to_v4 = Location::try_from(to).map_err(|_| AssetSwitchApiError::Internal)?;
+			let our_location_for_destination = {
+				let universal_location = UniversalLocation::get();
+				universal_location.invert_target(&to_v4)
+			}.map_err(|_| AssetSwitchApiError::Internal)?;
+			let asset_id_v4 = AssetId::try_from(switch_pair.remote_asset_id).map_err(|_| AssetSwitchApiError::Internal)?;
+			let remote_asset_fee_v4 = Asset::try_from(switch_pair.remote_xcm_fee).map_err(|_| AssetSwitchApiError::Internal)?;
+
+			Ok(VersionedXcm::V4(AssetSwitchPool1::compute_xcm_for_switch(&our_location_for_destination, &from_v4.into(), &to_v4, amount, &asset_id_v4, &remote_asset_fee_v4)))
+		}
+	}
+
+	impl unique_linking_runtime_api::UniqueLinking<Block, LinkableAccountId, DotName, DidIdentifier> for Runtime {
+		fn address_for_name(name: DotName) -> Option<AddressResult<LinkableAccountId, DidIdentifier>> {
+			let Web3NameOwnership { owner, .. } = DotNames::owner(name)?;
+
+			let (first_account, second_account) = {
+				let mut owner_linked_accounts = pallet_did_lookup::ConnectedAccounts::<Runtime, UniqueLinkingDeployment>::iter_key_prefix(&owner);
+				(owner_linked_accounts.next(), owner_linked_accounts.next())
+			};
+			let linked_account = match (first_account, second_account) {
+				#[allow(clippy::panic)]
+				(Some(_), Some(_)) => { panic!("More than a single account found for DID {:?}.", owner) },
+				(first, _) => first
+			}?;
+
+			Some(AddressResult::new(linked_account, Some(owner)))
+		}
+
+		fn batch_address_for_name(names: Vec<DotName>) -> Vec<Option<AddressResult<LinkableAccountId, DidIdentifier>>> {
+			names.into_iter().map(Self::address_for_name).collect()
+		}
+
+		fn name_for_address(address: LinkableAccountId) -> Option<NameResult<DotName, DidIdentifier>> {
+			let ConnectionRecord { did, .. } = UniqueLinking::connected_dids(address)?;
+			let name = DotNames::names(&did)?;
+
+			Some(NameResult::new(name, Some(did)))
+		}
+
+		fn batch_name_for_address(addresses: Vec<LinkableAccountId>) -> Vec<Option<NameResult<DotName, DidIdentifier>>> {
+			addresses.into_iter().map(Self::name_for_address).collect()
+		}
+	}
+
+	#[cfg(feature = "try-runtime")]
+	impl frame_try_runtime::TryRuntime<Block> for Runtime {
+		fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
+			log::info!("try-runtime::on_runtime_upgrade peregrine.");
+			let weight = Executive::try_runtime_upgrade(checks).unwrap();
+			(weight, runtime_common::BlockWeights::get().max_block)
+		}
+
+		fn execute_block(block: Block, state_root_check: bool, sig_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
+			log::info!(
+				target: "runtime::peregrine", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sig check: {:?} / sanity-checks: {:?}",
+				block.header.number,
+				block.header.hash(),
+				state_root_check,
+				sig_check,
+				select,
+			);
+			Executive::try_execute_block(block, state_root_check, sig_check, select).expect("try_execute_block failed")
+		}
+	}
+
+	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+
+		fn create_default_config() -> Vec<u8> {
+			create_default_config::<RuntimeGenesisConfig>()
+		}
+
+		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_config::<RuntimeGenesisConfig>(config)
+		}
+
+	}
 }

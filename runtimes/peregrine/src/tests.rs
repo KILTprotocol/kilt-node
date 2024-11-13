@@ -38,6 +38,8 @@ use runtime_common::{
 	AccountId, BlockNumber,
 };
 
+use crate::kilt::DotNamesDeployment;
+
 use super::{Runtime, RuntimeCall};
 
 // TODO: Uncomment if pallet_assets implements measures to reduce their `Call`
