@@ -5,6 +5,7 @@ pub(crate) mod square_root;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
+use sp_core::U256;
 use sp_runtime::traits::CheckedConversion;
 use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
@@ -107,46 +108,26 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 
 pub(crate) fn convert_to_fixed<T: Config>(x: u128, denomination: u8) -> Result<CurveParameterTypeOf<T>, ArithmeticError>
 where
-	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<u128>,
+	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256>,
 {
-	let decimals = 10u128
-		.checked_pow(u32::from(denomination))
+	let decimals = U256::from(10)
+		.checked_pow(denomination.into())
 		.ok_or(ArithmeticError::Overflow)?;
-
-	// Scale down x by the denomination using integer division, truncating any
-	// fractional parts of the result for now. Will overflow if down-scaling is not
-	// sufficient to bring x to a range representable in the fixed point format.
-	// This can happen if capacity(u128) / 10^denomination > capacity(fixed).
-	let mut scaled_x: CurveParameterTypeOf<T> = x
-		.checked_div(decimals)
-		.ok_or(ArithmeticError::DivisionByZero)?
-		.checked_to_fixed()
-		.ok_or(ArithmeticError::Overflow)?;
-
-	// Next we handle the remainder of the division
-	let remainder = x.checked_rem_euclid(decimals).ok_or(ArithmeticError::DivisionByZero)?;
-
-	// If the remainder is not 0, convert to fixed, scale it down and add the
-	// resulting fractional part to the previous result
-	if remainder > 0 {
-		// Convert remainder to fixed-point and scale it down by `decimals`,
-		let fractional = remainder
-			// This can overflow if 10^denomination > capacity(fixed)
-			.checked_to_fixed::<CurveParameterTypeOf<T>>()
-			.ok_or(ArithmeticError::Overflow)?
-			// This would overflow if 10^denomination exceeds the capacity of the _underlying integer_ of the fixed
-			// (e.g., i128 for an I75F53). However, there is no denomination that is representable in a u128 but not in
-			// an i128.
-			.checked_div_int(decimals.checked_into().ok_or(ArithmeticError::Overflow)?)
-			.ok_or(ArithmeticError::DivisionByZero)?;
-
-		// Combine both parts
-		scaled_x = scaled_x
-			// Overflow is theoretically impossible as we are adding a number < 1 to a fixed point where the fractional
-			// part is 0.
-			.checked_add(fractional)
-			.ok_or(ArithmeticError::Overflow)?;
-	};
-
-	Ok(scaled_x)
+	// Convert to U256 so we have enough bits to perform lossless scaling.
+	let mut x_u256 = U256::from(x);
+	// Shift left to produce the representation that our fixed type would have (but
+	// with extra integer bits that would potentially not fit in the fixed type).
+	x_u256.shl_assign(CurveParameterTypeOf::<T>::frac_nbits());
+	// Perform division. Due to the shift the precision/truncation is identical to
+	// division on the fixed type.
+	x_u256 = x_u256.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
+	// Try conversion to integer type underlying the fixed type (e.g., i128 for a
+	// I75F53). If this overflows, there is nothing we can do; even the scaled value
+	// does not fit in the fixed type.
+	let truncated = x_u256.checked_into().ok_or(ArithmeticError::Overflow)?;
+	// Cast the integer as a fixed. We can do this because we've already applied the
+	// correct bit shift above.
+	let fixed = <CurveParameterTypeOf<T> as Fixed>::from_bits(truncated);
+	// Return the result of scaled conversion to fixed.
+	Ok(fixed)
 }

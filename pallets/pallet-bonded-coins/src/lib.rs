@@ -36,6 +36,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
 	use sp_arithmetic::{traits::CheckedRem, ArithmeticError};
+	use sp_core::U256;
 	use sp_runtime::{
 		traits::{
 			Bounded, CheckedAdd, CheckedDiv, CheckedMul, One, SaturatedConversion, Saturating, StaticLookup,
@@ -261,6 +262,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
+		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
 		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<u128>,
 	{
 		#[pallet::call_index(0)]
@@ -824,7 +826,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T>
 	where
-		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<u128>,
+		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
 	{
 		fn calculate_collateral(
 			low: CurveParameterTypeOf<T>,
