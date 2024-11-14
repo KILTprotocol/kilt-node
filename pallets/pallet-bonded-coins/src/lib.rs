@@ -35,7 +35,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
-	use sp_arithmetic::ArithmeticError;
+	use sp_arithmetic::{traits::CheckedAdd, ArithmeticError};
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{
@@ -688,7 +688,10 @@ pub mod pallet {
 				.into_iter()
 				.fold(U256::from(0), |sum, id| {
 					sum.saturating_add(T::Fungibles::total_issuance(id).into())
-				});
+				})
+				// Add the burnt amount back to the sum of total supplies
+				.checked_add(burnt)
+				.ok_or(ArithmeticError::Overflow)?;
 
 			defensive_assert!(
 				sum_of_issuances >= burnt,
