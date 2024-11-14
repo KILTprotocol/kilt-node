@@ -179,6 +179,18 @@ pub mod pallet {
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn integrity_test() {
+			assert!(
+				2u128.pow(T::CurveParameterType::frac_nbits()) > 10u128.pow(T::MaxDenomination::get().into()),
+				"In order to prevent truncation of balances, `MaxDenomination` should be configured such \
+				that the maximum scaling factor `10^MaxDenomination` is smaller than the fractional \
+				capacity `2^frac_nbits` of `CurveParameterType`",
+			);
+		}
+	}
+
 	#[pallet::storage]
 	#[pallet::getter(fn pools)]
 	pub(crate) type Pools<T: Config> = StorageMap<_, Twox64Concat, T::PoolId, PoolDetailsOf<T>, OptionQuery>;
