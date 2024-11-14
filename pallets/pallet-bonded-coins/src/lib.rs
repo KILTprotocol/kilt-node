@@ -35,7 +35,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
-	use sp_arithmetic::ArithmeticError;
+	use sp_arithmetic::{traits::CheckedAdd, ArithmeticError};
 	use sp_runtime::{
 		traits::{
 			Bounded, CheckedDiv, CheckedMul, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto,
@@ -595,7 +595,10 @@ pub mod pallet {
 				.into_iter()
 				.fold(FungiblesBalanceOf::<T>::zero(), |sum, id| {
 					sum.saturating_add(T::Fungibles::total_issuance(id))
-				});
+				})
+				// Add the burnt amount to the sum of total supplies
+				.checked_add(&burnt)
+				.ok_or(ArithmeticError::Overflow)?;
 
 			let amount = burnt
 				.checked_mul(&total_collateral_issuance)
