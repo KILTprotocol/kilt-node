@@ -46,6 +46,7 @@ pub mod pallet {
 	use sp_std::{
 		default::Default,
 		ops::{AddAssign, BitOrAssign, ShlAssign},
+		vec::Vec,
 	};
 	use substrate_fixed::{
 		traits::{Fixed, FixedSigned, FixedUnsigned, ToFixed},
@@ -58,7 +59,8 @@ pub mod pallet {
 		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, TokenMeta},
 	};
 
-	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
+	pub(crate) type AccountIdLookupOf<T> =
+		<<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -77,7 +79,7 @@ pub mod pallet {
 	pub(crate) type CollateralAssetIdOf<T> =
 		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
-	type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
+	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
 
 	pub(crate) type CurrencyNameOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
 
@@ -162,6 +164,9 @@ pub mod pallet {
 			+ From<Precision>;
 
 		type CurveParameterInput: Parameter + FixedUnsigned + MaxEncodedLen;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper<Self>;
 	}
 
 	#[pallet::pallet]
@@ -941,7 +946,7 @@ pub mod pallet {
 			pool_details.bonded_currencies.len().saturated_into()
 		}
 
-		fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
+		pub(crate) fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
 			n_currencies: N,
 		) -> DepositCurrencyBalanceOf<T> {
 			T::BaseDeposit::get()

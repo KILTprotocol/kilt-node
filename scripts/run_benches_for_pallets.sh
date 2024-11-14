@@ -25,10 +25,11 @@ pallets=(
 
 // Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
-  pallets+=()
+  pallets+=(pallet-bonded-coins)
 fi
 
 echo "[+] Running all default weight benchmarks for $runtime --chain=$chain"
+echo $pallets
 
 cargo build $standard_args
 
@@ -41,6 +42,6 @@ for pallet in "${pallets[@]}"; do
 		--heap-pages=4096 \
 		--chain="${chain}" \
 		--pallet="$pallet" \
-		--extrinsic="*" \
+		--extrinsic="refund_account" \
 		--output="./pallets/${pallet//_/-}/src/default_weights.rs"
 done

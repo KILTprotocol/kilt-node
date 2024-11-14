@@ -2,6 +2,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
+use sp_std::vec::Vec;
 use substrate_fixed::{
 	traits::{Fixed, FixedSigned, FixedUnsigned, ToFixed},
 	transcendental::{exp, ln},

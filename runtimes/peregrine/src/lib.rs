@@ -1046,8 +1046,8 @@ impl pallet_assets::Config for Runtime {
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 }
 
-type BondedCurrencies = pallet_assets::Instance2;
-impl pallet_assets::Config<BondedCurrencies> for Runtime {
+type BondedCurrenciesInstance = pallet_assets::Instance2;
+impl pallet_assets::Config<BondedCurrenciesInstance> for Runtime {
 	type ApprovalDeposit = frame_support::traits::ConstU128<0>;
 	type AssetAccountDeposit = frame_support::traits::ConstU128<0>;
 	type AssetDeposit = frame_support::traits::ConstU128<0>;
@@ -1080,20 +1080,23 @@ parameter_types! {
 impl pallet_bonded_coins::Config for Runtime {
 	type AssetId = u32;
 	type BaseDeposit = ExistentialDeposit;
-	type CollateralCurrencies = Fungibles;
+	type CollateralCurrencies = BondedCurrencies;
 	type CurveParameterInput = substrate_fixed::types::U90F38;
 	type CurveParameterType = substrate_fixed::types::I90F38;
 	type DefaultOrigin = EnsureSigned<AccountId>;
 	type DepositCurrency = Balances;
 	type DepositPerCurrency = CurrencyDeposit;
 	type ForceOrigin = EnsureRoot<AccountId>;
-	type Fungibles = BondedFungible;
+	type Fungibles = BondedCurrencies;
 	type MaxCurrencies = MaxCurrencies;
 	type MaxStringLength = runtime_common::constants::assets::StringLimit;
 	type PoolCreateOrigin = EnsureSigned<AccountId>;
 	type PoolId = AccountId;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 construct_runtime! {
@@ -1149,8 +1152,8 @@ construct_runtime! {
 
 		AssetSwitchPool1: pallet_asset_switch::<Instance1> = 48,
 		Fungibles: pallet_assets = 49,
-		BondedCoins : pallet_bonded_coins = 50,
-		BondedFungible : pallet_assets::<Instance2> = 51,
+		BondedCoins: pallet_bonded_coins = 50,
+		BondedCurrencies: pallet_assets::<Instance2> = 51,
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
@@ -1324,6 +1327,7 @@ mod benches {
 		[pallet_assets, Fungibles]
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
+		[pallet_assets, BondedCurrencies]
 		[pallet_bonded_coins, BondedCoins]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);

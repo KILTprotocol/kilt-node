@@ -1,50 +1,19 @@
-use frame_support::{
-	parameter_types,
-	traits::{ConstU128, ConstU32},
-	weights::constants::RocksDbWeight,
-	Hashable,
-};
-use frame_system::{EnsureRoot, EnsureSigned};
+use frame_support::Hashable;
 use parity_scale_codec::Codec;
-use sp_runtime::{
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, MultiSignature,
-};
 use substrate_fixed::{
 	traits::{FixedSigned, FixedUnsigned},
 	types::{I75F53, U75F53},
 };
 
-use crate::{
-	self as pallet_bonded_coins,
-	curves::{
-		lmsr::{LMSRParameters, LMSRParametersInput},
-		polynomial::{PolynomialParameters, PolynomialParametersInput},
-		square_root::{SquareRootParameters, SquareRootParametersInput},
-		Curve, CurveInput,
-	},
-	types::{Locks, PoolStatus},
-	DepositCurrencyBalanceOf, PoolDetailsOf,
+use crate::curves::{
+	lmsr::{LMSRParameters, LMSRParametersInput},
+	polynomial::{PolynomialParameters, PolynomialParametersInput},
+	square_root::{SquareRootParameters, SquareRootParametersInput},
+	Curve, CurveInput,
 };
 
 pub type Float = I75F53;
-pub(crate) type FloatInput = U75F53;
-pub type Hash = sp_core::H256;
-pub type Balance = u128;
-pub type AssetId = u32;
-pub type Signature = MultiSignature;
-pub type AccountPublic = <Signature as Verify>::Signer;
-pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-
-// accounts
-pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
-pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
-const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
-// assets
-pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 0;
-pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = AssetId::MAX;
-pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
-pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
+type FloatInput = U75F53;
 
 // helper functions
 pub fn assert_relative_eq(target: Float, expected: Float, epsilon: Float) {
@@ -92,9 +61,10 @@ pub(crate) fn get_lmsr_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> 
 	CurveInput::Lmsr(LMSRParametersInput { m })
 }
 
-pub(crate) fn calculate_pool_id<AssetId>(currencies: &[AssetId]) -> AccountId
+pub(crate) fn calculate_pool_id<AssetId, AccountId>(currencies: &[AssetId]) -> AccountId
 where
 	AssetId: Clone + Hashable + Codec,
+	AccountId: From<[u8; 32]>,
 {
 	AccountId::from(currencies.to_vec().blake2_256())
 }
@@ -103,6 +73,41 @@ where
 pub mod runtime {
 
 	use super::*;
+	use frame_support::{
+		parameter_types,
+		traits::{ConstU128, ConstU32},
+		weights::constants::RocksDbWeight,
+	};
+	use frame_system::{EnsureRoot, EnsureSigned};
+	use sp_runtime::{
+		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+		BoundedVec, BuildStorage, MultiSignature,
+	};
+
+	use crate::{
+		self as pallet_bonded_coins,
+		types::{Locks, PoolStatus},
+		DepositCurrencyBalanceOf, PoolDetailsOf,
+	};
+
+	pub type Float = I75F53;
+	pub(crate) type FloatInput = U75F53;
+	pub type Hash = sp_core::H256;
+	pub type Balance = u128;
+	pub type AssetId = u32;
+	pub type Signature = MultiSignature;
+	pub type AccountPublic = <Signature as Verify>::Signer;
+	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+	// accounts
+	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
+	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
+	const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
+	// assets
+	pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 0;
+	pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = AssetId::MAX;
+	pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
+	pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
 
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -247,7 +252,11 @@ pub mod runtime {
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;
 		type RuntimeHoldReason = RuntimeHoldReason;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper = ();
 	}
+
 	parameter_types! {
 		pub const ExistentialDeposit: Balance = 500;
 		pub const MaxLocks: u32 = 50;
