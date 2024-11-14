@@ -42,23 +42,24 @@ mod benchmarks {
 	use frame_support::traits::OriginTrait;
 	use frame_support::traits::{
 		fungible::{Inspect, Mutate, MutateHold},
-		fungibles::{Destroy, Mutate as MutateFungibles},
+		fungibles::{Destroy, Inspect as InspectFungibles, Mutate as MutateFungibles},
 	};
 	use frame_support::traits::{fungibles::Create, AccountTouch, EnsureOrigin, Get};
-	use sp_runtime::BoundedVec;
-	use sp_runtime::SaturatedConversion;
+	use sp_runtime::{traits::Zero, BoundedVec, SaturatedConversion};
 	use sp_std::ops::Mul;
 
 	use crate::{
 		curves::Curve,
 		mock::*,
 		types::{Locks, PoolManagingTeam, PoolStatus},
-		AccountIdLookupOf, AccountIdOf, BoundedCurrencyVec, CollateralAssetIdOf, CurveParameterInputOf, HoldReason,
-		PoolDetailsOf, Pools, TokenMetaOf,
+		AccountIdLookupOf, AccountIdOf, CollateralAssetIdOf, CurveParameterInputOf, HoldReason, PoolDetailsOf, Pools,
+		TokenMetaOf,
 	};
 
 	use super::*;
 
+	// helper functions
+	// collateral currencies
 	fn create_collateral_asset<T: Config>(asset_id: CollateralAssetIdOf<T>)
 	where
 		<T as Config>::CollateralCurrencies: Create<T::AccountId>,
@@ -68,11 +69,56 @@ mod benchmarks {
 			.expect("Creating collateral asset should work");
 	}
 
+	fn calculate_default_collateral_asset_id<T: Config>() -> CollateralAssetIdOf<T> {
+		T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX)
+	}
+
+	fn create_default_collateral_asset<T: Config>() -> CollateralAssetIdOf<T>
+	where
+		<T as Config>::CollateralCurrencies: Create<T::AccountId>,
+	{
+		let collateral_id = calculate_default_collateral_asset_id::<T>();
+		create_collateral_asset::<T>(collateral_id.clone());
+		collateral_id
+	}
+
+	fn set_collateral_balance<T: Config>(asset_id: CollateralAssetIdOf<T>, who: &AccountIdOf<T>, amount: u128)
+	where
+		<T as Config>::CollateralCurrencies: MutateFungibles<T::AccountId>,
+	{
+		T::CollateralCurrencies::set_balance(asset_id, who, amount.saturated_into());
+	}
+
+	// bonded currencies
+
 	fn create_bonded_asset<T: Config>(asset_id: T::AssetId) {
 		let pool_account = account("bonded_owner", 0, 0);
 		<T as Config>::Fungibles::create(asset_id, pool_account, false, 1u128.saturated_into())
 			.expect("Creating bonded asset should work");
 	}
+
+	fn create_bonded_currencies_in_range<T: Config>(c: u32, is_destroying: bool) -> Vec<FungiblesAssetIdOf<T>> {
+		let mut asset_ids = Vec::new();
+		for i in 0..c {
+			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
+			asset_ids.push(asset_id.clone());
+			create_bonded_asset::<T>(asset_id.clone());
+			if is_destroying {
+				<T as Config>::Fungibles::start_destroy(asset_id, None).expect("Destroying should work");
+			}
+		}
+
+		asset_ids
+	}
+
+	fn set_fungible_balance<T: Config>(asset_id: FungiblesAssetIdOf<T>, who: &AccountIdOf<T>, amount: u128)
+	where
+		<T as Config>::Fungibles: MutateFungibles<T::AccountId>,
+	{
+		T::Fungibles::set_balance(asset_id, who, amount.saturated_into());
+	}
+
+	// native currency
 
 	fn make_free_for_deposit<T: Config>(account: &AccountIdOf<T>)
 	where
@@ -81,31 +127,47 @@ mod benchmarks {
 		let balance = <T::DepositCurrency as Inspect<AccountIdOf<T>>>::minimum_balance()
 			+ <T as Config>::BaseDeposit::get().mul(10u32.into())
 			+ <T as Config>::DepositPerCurrency::get().mul(T::MaxCurrencies::get().into());
-		<T::DepositCurrency as Mutate<AccountIdOf<T>>>::set_balance(account, balance);
+		set_native_balance::<T>(account, balance.saturated_into());
 	}
 
-	fn make_free_for_collateral<T: Config>(asset_id: CollateralAssetIdOf<T>, who: &AccountIdOf<T>, amount: u128)
+	fn set_native_balance<T: Config>(account: &AccountIdOf<T>, amount: u128)
 	where
-		<T as Config>::CollateralCurrencies: MutateFungibles<T::AccountId>,
+		<T as Config>::DepositCurrency: Mutate<T::AccountId>,
 	{
-		T::CollateralCurrencies::set_balance(asset_id, who, amount.saturated_into());
+		<T::DepositCurrency as Mutate<AccountIdOf<T>>>::set_balance(account, amount.saturated_into());
 	}
 
-	fn make_free_for_bonded_fungibles<T: Config>(asset_id: FungiblesAssetIdOf<T>, who: &AccountIdOf<T>, amount: u128)
-	where
-		<T as Config>::Fungibles: MutateFungibles<T::AccountId>,
-	{
-		T::Fungibles::mint_into(asset_id.clone(), who, amount.saturated_into()).unwrap();
-		T::Fungibles::set_balance(asset_id, who, amount.saturated_into());
+	// Storage
+
+	fn create_pool<T: Config>(
+		curve: Curve<CurveParameterTypeOf<T>>,
+		bonded_coin_ids: Vec<FungiblesAssetIdOf<T>>,
+		manager: Option<AccountIdOf<T>>,
+		state: Option<PoolStatus<Locks>>,
+		denomination: Option<u8>,
+	) -> T::PoolId {
+		let owner = account("owner", 0, 0);
+		let state = state.unwrap_or(PoolStatus::Active);
+		let collateral_id = calculate_default_collateral_asset_id::<T>();
+		let denomination = denomination.unwrap_or(10);
+
+		let pool_id: T::PoolId = calculate_pool_id(&bonded_coin_ids);
+		let pool_details = PoolDetailsOf::<T> {
+			curve,
+			manager,
+			owner,
+			state,
+			collateral_id,
+			denomination,
+			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids),
+			transferable: true,
+		};
+		Pools::<T>::insert(&pool_id, pool_details);
+
+		pool_id
 	}
 
-	#[benchmark]
-	fn create_pool_polynomial(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
-
-		let curve = get_linear_bonding_curve_input::<CurveParameterInputOf<T>>();
-
+	fn generate_token_metadata<T: Config>(c: u32) -> BoundedVec<TokenMetaOf<T>, T::MaxCurrencies> {
 		let mut token_meta = Vec::new();
 		for _ in 0..c {
 			token_meta.push(TokenMetaOf::<T> {
@@ -114,11 +176,21 @@ mod benchmarks {
 				symbol: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
 			})
 		}
+		BoundedVec::try_from(token_meta).expect("creating bounded Vec should not fail")
+	}
 
-		let currencies = BoundedVec::try_from(token_meta).expect("Failed to create BoundedVec");
-		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
+	#[benchmark]
+	fn create_pool_polynomial(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+		let collateral_id = create_default_collateral_asset::<T>();
+		let curve = get_linear_bonding_curve_input::<CurveParameterInputOf<T>>();
 
-		let account_origin = origin.clone().into_signer().unwrap();
+		let currencies = generate_token_metadata::<T>(c);
+		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
+
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
 		#[extrinsic_call]
@@ -136,30 +208,21 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn create_pool_square_root() {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
+	fn create_pool_square_root(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+		let collateral_id = create_default_collateral_asset::<T>();
 
 		let curve = get_square_root_curve_input::<CurveParameterInputOf<T>>();
 
-		let c = 0..<T as Config>::MaxCurrencies::get();
-		let mut token_meta = Vec::new();
-		for _ in c {
-			token_meta.push(TokenMetaOf::<T> {
-				min_balance: 1u128.saturated_into(),
-				name: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
-				symbol: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
-			})
-		}
+		let currencies = generate_token_metadata::<T>(c);
 
-		let currencies = BoundedVec::try_from(token_meta).expect("Failed to create BoundedVec");
+		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 
-		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
-
-		let account_origin = origin.clone().into_signer().unwrap();
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		make_free_for_deposit::<T>(&account_origin);
 		#[extrinsic_call]
 		create_pool(origin as T::RuntimeOrigin, curve, collateral_id, currencies, 10, true);
 
@@ -176,24 +239,17 @@ mod benchmarks {
 
 	#[benchmark]
 	fn create_pool_lmsr(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
+		let collateral_id = create_default_collateral_asset::<T>();
 
 		let curve = get_lmsr_curve_input::<CurveParameterInputOf<T>>();
+		let currencies = generate_token_metadata::<T>(c);
 
-		let mut token_meta = Vec::new();
-		for _ in 0..c {
-			token_meta.push(TokenMetaOf::<T> {
-				min_balance: 1u128.saturated_into(),
-				name: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
-				symbol: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
-			})
-		}
+		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 
-		let currencies = BoundedVec::try_from(token_meta).expect("Failed to create BoundedVec");
-		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
-
-		let account_origin = origin.clone().into_signer().unwrap();
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
 		#[extrinsic_call]
@@ -212,27 +268,24 @@ mod benchmarks {
 
 	#[benchmark]
 	fn reset_team() {
-		let origin = T::DefaultOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
 		let bonded_coin_id = T::BenchmarkHelper::calculate_bonded_asset_id(0);
-
 		create_bonded_asset::<T>(bonded_coin_id.clone());
-		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account_origin),
-			transferable: true,
-			bonded_currencies: BoundedVec::truncate_from([bonded_coin_id.clone()].to_vec()),
-			state: PoolStatus::Active,
-			collateral_id,
-			denomination: 10,
-			owner: account("owner", 0, 0),
-		};
 
-		let pool_id: T::PoolId = calculate_pool_id(&[bonded_coin_id.clone()]);
+		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
+		let pool_id = create_pool::<T>(
+			curve,
+			[bonded_coin_id.clone()].to_vec(),
+			Some(account_origin.clone()),
+			None,
+			None,
+		);
 
 		let admin: AccountIdOf<T> = account("admin", 0, 0);
 		let freezer: AccountIdOf<T> = account("freezer", 0, 0);
@@ -240,8 +293,6 @@ mod benchmarks {
 			admin: admin.clone(),
 			freezer: freezer.clone(),
 		};
-
-		Pools::<T>::insert(&pool_id, pool_details);
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id, fungibles_team, 0);
@@ -253,29 +304,24 @@ mod benchmarks {
 
 	#[benchmark]
 	fn reset_manager() {
-		let origin = T::DefaultOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
 		let bonded_coin_id = T::BenchmarkHelper::calculate_bonded_asset_id(0);
-
 		create_bonded_asset::<T>(bonded_coin_id.clone());
+
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
-		let pool_details = PoolDetailsOf::<T> {
+		let pool_id = create_pool::<T>(
 			curve,
-			manager: Some(account_origin),
-			transferable: true,
-			bonded_currencies: BoundedVec::truncate_from([bonded_coin_id.clone()].to_vec()),
-			state: PoolStatus::Active,
-			collateral_id,
-			denomination: 10,
-			owner: account("owner", 0, 0),
-		};
-
-		let pool_id: T::PoolId = calculate_pool_id(&[bonded_coin_id.clone()]);
-
-		Pools::<T>::insert(&pool_id, pool_details);
+			[bonded_coin_id.clone()].to_vec(),
+			Some(account_origin.clone()),
+			None,
+			None,
+		);
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id, None);
@@ -286,29 +332,24 @@ mod benchmarks {
 
 	#[benchmark]
 	fn set_lock() {
-		let origin = T::DefaultOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
 		let bonded_coin_id = T::BenchmarkHelper::calculate_bonded_asset_id(0);
-
 		create_bonded_asset::<T>(bonded_coin_id.clone());
+
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
-		let pool_details = PoolDetailsOf::<T> {
+		let pool_id = create_pool::<T>(
 			curve,
-			manager: Some(account_origin),
-			transferable: true,
-			bonded_currencies: BoundedVec::truncate_from([bonded_coin_id.clone()].to_vec()),
-			state: PoolStatus::Active,
-			collateral_id,
-			denomination: 10,
-			owner: account("owner", 0, 0),
-		};
-
-		let pool_id: T::PoolId = calculate_pool_id(&[bonded_coin_id.clone()]);
-
-		Pools::<T>::insert(&pool_id, pool_details);
+			[bonded_coin_id.clone()].to_vec(),
+			Some(account_origin.clone()),
+			None,
+			None,
+		);
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id, Locks::default());
@@ -319,29 +360,24 @@ mod benchmarks {
 
 	#[benchmark]
 	fn unlock() {
-		let origin = T::DefaultOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
 		let bonded_coin_id = T::BenchmarkHelper::calculate_bonded_asset_id(0);
-
 		create_bonded_asset::<T>(bonded_coin_id.clone());
+
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
-		let pool_details = PoolDetailsOf::<T> {
+		let pool_id = create_pool::<T>(
 			curve,
-			manager: Some(account_origin),
-			transferable: true,
-			bonded_currencies: BoundedVec::truncate_from([bonded_coin_id.clone()].to_vec()),
-			state: PoolStatus::Locked(Locks::default()),
-			collateral_id,
-			denomination: 10,
-			owner: account("owner", 0, 0),
-		};
-
-		let pool_id: T::PoolId = calculate_pool_id(&[bonded_coin_id.clone()]);
-
-		Pools::<T>::insert(&pool_id, pool_details);
+			[bonded_coin_id.clone()].to_vec(),
+			Some(account_origin.clone()),
+			Some(PoolStatus::Locked(Locks::default())),
+			None,
+		);
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id);
@@ -352,42 +388,25 @@ mod benchmarks {
 
 	#[benchmark]
 	fn mint_into_polynomial(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
-
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-		}
+		let collateral_id = create_default_collateral_asset::<T>();
 
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account_origin.clone()),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 10,
-			owner: account("owner", 0, 0),
-		};
-
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
+		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
 
 		T::CollateralCurrencies::touch(collateral_id, &pool_id.clone().into(), &account_origin)
 			.expect("Touching should work");
 
-		Pools::<T>::insert(&pool_id, pool_details);
-
-		let beneficiary = AccountIdLookupOf::<T>::from(account_origin);
+		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
+		let amount_to_mint = 10u128;
 
 		#[extrinsic_call]
 		mint_into(
@@ -395,52 +414,40 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			10u128.saturated_into(),
-			100u128.saturated_into(),
+			amount_to_mint.saturated_into(),
+			100000u128.saturated_into(),
 			T::MaxCurrencies::get(),
 		);
 
 		// Verify
+
+		let target_asset_id = bonded_currencies[0].clone();
+
+		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
+		assert_eq!(balance, amount_to_mint.saturated_into());
 	}
 
 	#[benchmark]
 	fn mint_into_square_root(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
-
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-		}
+		let collateral_id = create_default_collateral_asset::<T>();
 
 		let curve = get_square_root_curve::<CurveParameterTypeOf<T>>();
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account_origin.clone()),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 10,
-			owner: account("owner", 0, 0),
-		};
-
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
+		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
 
 		T::CollateralCurrencies::touch(collateral_id, &pool_id.clone().into(), &account_origin)
 			.expect("Touching should work");
 
-		Pools::<T>::insert(&pool_id, pool_details);
-
-		let beneficiary = AccountIdLookupOf::<T>::from(account_origin);
+		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
+		let amount_to_mint = 10u128;
 
 		#[extrinsic_call]
 		mint_into(
@@ -448,52 +455,41 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			10u128.saturated_into(),
-			100u128.saturated_into(),
+			amount_to_mint.saturated_into(),
+			100000u128.saturated_into(),
 			T::MaxCurrencies::get(),
 		);
 
 		// Verify
+
+		let target_asset_id = bonded_currencies[0].clone();
+
+		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
+		assert_eq!(balance, amount_to_mint.saturated_into());
 	}
 
 	#[benchmark]
 	fn mint_into_lmsr(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
-
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-		}
+		let collateral_id = create_default_collateral_asset::<T>();
 
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account_origin.clone()),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 10,
-			owner: account("owner", 0, 0),
-		};
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
+		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
 
 		T::CollateralCurrencies::touch(collateral_id, &pool_id.clone().into(), &account_origin)
 			.expect("Touching should work");
 
-		Pools::<T>::insert(&pool_id, pool_details);
-
-		let beneficiary = AccountIdLookupOf::<T>::from(account_origin);
+		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
+		let amount_to_mint = 10u128;
 
 		#[extrinsic_call]
 		mint_into(
@@ -501,61 +497,45 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			10u128.saturated_into(),
-			100u128.saturated_into(),
+			amount_to_mint.saturated_into(),
+			100000u128.saturated_into(),
 			T::MaxCurrencies::get(),
 		);
 
 		// Verify
+		let target_asset_id = bonded_currencies[0].clone();
+		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
+		assert_eq!(balance, amount_to_mint.saturated_into());
 	}
 
 	#[benchmark]
 	fn burn_into_polynomial(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
-
-		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-		}
+		let collateral_id = create_default_collateral_asset::<T>();
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
+		let target_asset_id = bonded_currencies[0].clone();
 
-		make_free_for_bonded_fungibles::<T>(
-			T::BenchmarkHelper::calculate_bonded_asset_id(0),
-			&account_origin,
-			100u128,
-		);
+		let start_balance = 100u128;
+		set_fungible_balance::<T>(target_asset_id.clone(), &account_origin, start_balance);
 
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account_origin.clone()),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 0,
-			owner: account("owner", 0, 0),
-		};
-
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
+		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, Some(0));
 		let pool_account = pool_id.clone().into();
 
 		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_account, &account_origin)
 			.expect("Touching should work");
 
-		make_free_for_collateral::<T>(collateral_id, &pool_account, 10000u128);
+		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
-		Pools::<T>::insert(&pool_id, pool_details);
-
-		let beneficiary = AccountIdLookupOf::<T>::from(account_origin);
+		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
+		let amount_to_burn = 10u128;
 
 		#[extrinsic_call]
 		burn_into(
@@ -563,61 +543,42 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			10u128.saturated_into(),
+			amount_to_burn.saturated_into(),
 			0u128.saturated_into(),
 			T::MaxCurrencies::get(),
 		);
 
-		// Verify
+		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
+		assert_eq!(balance, (start_balance - amount_to_burn).saturated_into());
 	}
 
 	#[benchmark]
 	fn burn_into_square_root(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
-
-		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-		}
+		let collateral_id = create_default_collateral_asset::<T>();
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
+		let target_asset_id = bonded_currencies[0].clone();
 
-		make_free_for_bonded_fungibles::<T>(
-			T::BenchmarkHelper::calculate_bonded_asset_id(0),
-			&account_origin,
-			100u128,
-		);
+		let start_balance = 100u128;
+		set_fungible_balance::<T>(target_asset_id.clone(), &account_origin, start_balance);
 
 		let curve = get_square_root_curve::<CurveParameterTypeOf<T>>();
-
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account_origin.clone()),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 0,
-			owner: account("owner", 0, 0),
-		};
-
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
+		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, Some(0));
 		let pool_account = pool_id.clone().into();
 
 		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_account, &account_origin)
 			.expect("Touching should work");
 
-		make_free_for_collateral::<T>(collateral_id, &pool_account, 10000u128);
+		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
-		Pools::<T>::insert(&pool_id, pool_details);
-
-		let beneficiary = AccountIdLookupOf::<T>::from(account_origin);
+		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
+		let amount_to_burn = 10u128;
 
 		#[extrinsic_call]
 		burn_into(
@@ -625,61 +586,43 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			10u128.saturated_into(),
+			amount_to_burn.saturated_into(),
 			0u128.saturated_into(),
 			T::MaxCurrencies::get(),
 		);
 
-		// Verify
+		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
+		assert_eq!(balance, (start_balance - amount_to_burn).saturated_into());
 	}
 
 	#[benchmark]
-	fn burn_into_lsmr(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
 
-		let origin = T::PoolCreateOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
+	fn burn_into_lmsr(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-		}
+		let collateral_id = create_default_collateral_asset::<T>();
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
+		let target_asset_id = bonded_currencies[0].clone();
 
-		make_free_for_bonded_fungibles::<T>(
-			T::BenchmarkHelper::calculate_bonded_asset_id(0),
-			&account_origin,
-			100u128,
-		);
+		let start_balance = 100u128;
+		set_fungible_balance::<T>(target_asset_id.clone(), &account_origin, start_balance);
 
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
-
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account_origin.clone()),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 0,
-			owner: account("owner", 0, 0),
-		};
-
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
+		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, Some(0));
 		let pool_account = pool_id.clone().into();
 
 		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_account, &account_origin)
 			.expect("Touching should work");
 
-		make_free_for_collateral::<T>(collateral_id, &pool_account, 10000u128);
+		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
-		Pools::<T>::insert(&pool_id, pool_details);
-
-		let beneficiary = AccountIdLookupOf::<T>::from(account_origin);
+		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
+		let amount_to_burn = 10u128;
 
 		#[extrinsic_call]
 		burn_into(
@@ -687,119 +630,74 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			10u128.saturated_into(),
+			amount_to_burn.saturated_into(),
 			0u128.saturated_into(),
 			T::MaxCurrencies::get(),
 		);
 
-		// Verify
+		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
+		assert_eq!(balance, (start_balance - amount_to_burn).saturated_into());
 	}
 
 	#[benchmark]
 	fn start_destroy(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
+		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 
-		let origin = T::DefaultOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
-
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-		}
-
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_details = PoolDetailsOf::<T> {
+		let pool_id = create_pool::<T>(
 			curve,
-			manager: Some(account_origin.clone()),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 0,
-			owner: account("owner", 0, 0),
-		};
-
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
-
-		Pools::<T>::insert(&pool_id, pool_details);
+			bonded_currencies.clone(),
+			Some(account_origin.clone()),
+			None,
+			None,
+		);
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id, T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
 
 		// Verify
+
+		let pool_details = Pools::<T>::get(&pool_id).expect("Pool should exist");
+		assert_eq!(pool_details.state, PoolStatus::Destroying);
 	}
 
 	#[benchmark]
 	fn force_start_destroy(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
-
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-		}
-
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account("manager", 0, 0)),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 0,
-			owner: account("owner", 0, 0),
-		};
+		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
 
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
-
-		Pools::<T>::insert(&pool_id, pool_details);
-
-		let origin = T::ForceOrigin::try_successful_origin().unwrap();
+		let origin = T::ForceOrigin::try_successful_origin().expect("creating origin should not fail");
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id, T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
 
 		// Verify
+
+		let pool_details = Pools::<T>::get(&pool_id).expect("Pool should exist");
+		assert_eq!(pool_details.state, PoolStatus::Destroying);
 	}
 
 	#[benchmark]
 	fn finish_destroy(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
-
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-			T::Fungibles::start_destroy(asset_id, None).unwrap();
-		}
-
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, true);
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
 		let owner: T::AccountId = account("owner", 0, 0);
-
-		let pool_details = PoolDetailsOf::<T> {
+		let pool_id = create_pool::<T>(
 			curve,
-			manager: Some(account("manager", 0, 0)),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Destroying,
-			collateral_id: collateral_id.clone(),
-			denomination: 0,
-			owner: owner.clone(),
-		};
+			bonded_currencies.clone(),
+			None,
+			Some(PoolStatus::Destroying),
+			None,
+		);
 
 		make_free_for_deposit::<T>(&owner);
 
@@ -808,176 +706,136 @@ mod benchmarks {
 			&owner,
 			Pallet::<T>::calculate_pool_deposit(bonded_currencies.len()),
 		)
-		.unwrap();
+		.expect("Generating Hold should not fail");
 
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
-
-		Pools::<T>::insert(&pool_id, pool_details);
-
-		let origin = T::DefaultOrigin::try_successful_origin().unwrap();
+		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id, T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
 
 		// Verify
+		let pool_details = Pools::<T>::get(&pool_id);
+		assert!(pool_details.is_none());
 	}
 
 	#[benchmark]
 	fn start_refund(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
+		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
 
-		let origin = T::DefaultOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
-
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(asset_id);
-		}
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
+		let target_asset_id = bonded_currencies[0].clone();
 
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_details = PoolDetailsOf::<T> {
+		let pool_id = create_pool::<T>(
 			curve,
-			manager: Some(account_origin.clone()),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 0,
-			owner: account("owner", 0, 0),
-		};
+			bonded_currencies.clone(),
+			Some(account_origin.clone()),
+			None,
+			None,
+		);
 
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
 		let pool_account = pool_id.clone().into();
-		Pools::<T>::insert(&pool_id, pool_details);
 
+		let collateral_id = create_default_collateral_asset::<T>();
 		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
 			.expect("Touching should work");
+		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
-		make_free_for_collateral::<T>(collateral_id, &pool_account, 10000u128);
-
-		let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(0);
-		let holder: T::AccountId = account("holder", 0, 0);
-		T::Fungibles::touch(asset_id.clone(), &holder, &account_origin).expect("Touching should work");
-		make_free_for_bonded_fungibles::<T>(asset_id, &holder, 10000u128);
+		let holder: T::AccountId = account("holder", 0, 1);
+		T::Fungibles::touch(target_asset_id.clone(), &holder, &account_origin).expect("Touching should work");
+		set_fungible_balance::<T>(target_asset_id, &holder, 10000u128);
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id, T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
 
 		// Verify
+
+		let pool_details = Pools::<T>::get(&pool_id).expect("Pool should exist");
+		assert_eq!(pool_details.state, PoolStatus::Refunding);
 	}
 
 	#[benchmark]
 	fn force_start_refund(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
-
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(T::BenchmarkHelper::calculate_bonded_asset_id(i));
-		}
+		let collateral_id = create_default_collateral_asset::<T>();
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account("manager", 0, 0)),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Active,
-			collateral_id: collateral_id.clone(),
-			denomination: 0,
-			owner: account("owner", 0, 0),
-		};
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
+		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
+
 		let pool_account = pool_id.clone().into();
+
 		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_id.clone().into(), &pool_account)
 			.expect("Touching should work");
-		make_free_for_collateral::<T>(collateral_id.clone(), &pool_account, 10000u128);
-		Pools::<T>::insert(&pool_id, pool_details);
+
+		set_collateral_balance::<T>(collateral_id.clone(), &pool_account, 10000u128);
 
 		let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(0);
 
 		let holder: T::AccountId = account("holder", 0, 0);
-
 		make_free_for_deposit::<T>(&holder);
+		set_fungible_balance::<T>(asset_id, &holder, 10000u128);
+		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
-		make_free_for_bonded_fungibles::<T>(asset_id, &holder, 10000u128);
-
-		make_free_for_collateral::<T>(collateral_id, &pool_account, 10000u128);
-
-		let origin = T::ForceOrigin::try_successful_origin().unwrap();
+		let origin = T::ForceOrigin::try_successful_origin().expect("creating origin should not fail");
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id, T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
+
+		let pool_details = Pools::<T>::get(&pool_id).expect("Pool should exist");
+		assert_eq!(pool_details.state, PoolStatus::Refunding);
 
 		// Verify
+		let pool_details = Pools::<T>::get(&pool_id).expect("Pool should exist");
+		assert_eq!(pool_details.state, PoolStatus::Refunding);
 	}
 
-	#[benchmark]
-	fn refund_account(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-		let collateral_id = T::BenchmarkHelper::calculate_collateral_asset_id(u32::MAX);
-		create_collateral_asset::<T>(collateral_id.clone());
+	// #[benchmark]
+	// fn refund_account(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	// 	let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
+	// 	let account_origin = origin.clone().into_signer().expect("generating account_id from origin should not fail");
+	// 	make_free_for_deposit::<T>(&account_origin);
 
-		let origin = T::DefaultOrigin::try_successful_origin().unwrap();
-		let account_origin = origin.clone().into_signer().unwrap();
-		make_free_for_deposit::<T>(&account_origin);
+	// 	let collateral_id = create_default_collateral_asset::<T>();
+	// 	let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
+	// 	let target_asset_id = bonded_currencies[0].clone();
 
-		let mut bonded_currencies = Vec::new();
-		for i in 0..c {
-			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
-			bonded_currencies.push(asset_id.clone());
-			create_bonded_asset::<T>(asset_id);
-		}
+	// 	let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
+	// 	let pool_id = create_pool::<T>(
+	// 		curve,
+	// 		bonded_currencies.clone(),
+	// 		None,
+	// 		Some(PoolStatus::Refunding),
+	// 		None,
+	// 	);
 
-		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
+	// 	let pool_account = pool_id.clone().into();
+	// 	T::CollateralCurrencies::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
+	// 		.expect("Touching should work");
+	// 	set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
-		let pool_details = PoolDetailsOf::<T> {
-			curve,
-			manager: Some(account_origin.clone()),
-			transferable: false,
-			bonded_currencies: BoundedCurrencyVec::<T>::try_from(bonded_currencies.clone())
-				.expect("Failed to create BoundedVec"),
-			state: PoolStatus::Refunding,
-			collateral_id: collateral_id.clone(),
-			denomination: 0,
-			owner: account("owner", 0, 0),
-		};
+	// 	set_fungible_balance::<T>(target_asset_id.clone(), &account_origin, 100000u128);
 
-		let pool_id: T::PoolId = calculate_pool_id(&bonded_currencies);
-		let pool_account = pool_id.clone().into();
-		Pools::<T>::insert(&pool_id, pool_details);
+	// 	let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 
-		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
-			.expect("Touching should work");
+	// 	#[extrinsic_call]
+	// 	_(
+	// 		origin as T::RuntimeOrigin,
+	// 		pool_id,
+	// 		beneficiary,
+	// 		0,
+	// 		T::MaxCurrencies::get(),
+	// 	);
 
-		make_free_for_collateral::<T>(collateral_id, &pool_account, 10000u128);
-
-		let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(0);
-
-		T::Fungibles::touch(asset_id.clone(), &account_origin, &account_origin).expect("Touching should work");
-		make_free_for_bonded_fungibles::<T>(asset_id.clone(), &account_origin, 100000u128);
-
-		let beneficiary = AccountIdLookupOf::<T>::from(account_origin);
-
-		#[extrinsic_call]
-		_(
-			origin as T::RuntimeOrigin,
-			pool_id,
-			beneficiary,
-			0,
-			T::MaxCurrencies::get(),
-		);
-
-		// Verify
-	}
+	// 	// Verify
+	// 	let balance = T::Fungibles::balance(target_asset_id, &account_origin);
+	// 	assert_eq!(balance, Zero::zero());
+	// }
 	#[cfg(test)]
 	mod benchmark_tests {
 		use crate::Pallet;

@@ -252,6 +252,7 @@ pub mod runtime {
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;
 		type RuntimeHoldReason = RuntimeHoldReason;
+		type WeightInfo = ();
 
 		#[cfg(feature = "runtime-benchmarks")]
 		type BenchmarkHelper = ();

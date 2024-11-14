@@ -13,8 +13,11 @@ mod mock;
 mod tests;
 
 mod curves;
+mod default_weights;
 pub mod traits;
 mod types;
+pub use default_weights::WeightInfo;
+
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -46,6 +49,7 @@ pub mod pallet {
 	use sp_std::{
 		default::Default,
 		ops::{AddAssign, BitOrAssign, ShlAssign},
+		prelude::*,
 		vec::Vec,
 	};
 	use substrate_fixed::{
@@ -57,6 +61,7 @@ pub mod pallet {
 		curves::{convert_to_fixed, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, ResetTeam},
 		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, TokenMeta},
+		WeightInfo,
 	};
 
 	pub(crate) type AccountIdLookupOf<T> =
@@ -88,8 +93,6 @@ pub mod pallet {
 	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
 
 	pub(crate) type CurveParameterInputOf<T> = <T as Config>::CurveParameterInput;
-
-	pub(crate) type PoolIdOf<T> = <T as Config>::PoolId;
 
 	pub(crate) type PoolDetailsOf<T> = PoolDetails<
 		<T as frame_system::Config>::AccountId,
@@ -164,6 +167,8 @@ pub mod pallet {
 			+ From<Precision>;
 
 		type CurveParameterInput: Parameter + FixedUnsigned + MaxEncodedLen;
+
+		type WeightInfo: WeightInfo;
 
 		#[cfg(feature = "runtime-benchmarks")]
 		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper<Self>;
@@ -250,7 +255,13 @@ pub mod pallet {
 		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 	{
 		#[pallet::call_index(0)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight({
+			let currency_length = currencies.len().saturated_into();
+			let weight_polynomial = T::WeightInfo::create_pool_polynomial(currency_length);
+			let weight_square_root = T::WeightInfo::create_pool_square_root(currency_length);
+			let weight_lmsr = T::WeightInfo::create_pool_lmsr(currency_length);
+			weight_polynomial.max(weight_square_root).max(weight_lmsr)
+		})]
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			curve: CurveInput<CurveParameterInputOf<T>>,
@@ -258,12 +269,13 @@ pub mod pallet {
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			denomination: u8,
 			transferable: bool,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
 			let currency_length = currencies.len();
 
-			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
+			let checked_curve: Curve<CurveParameterTypeOf<T>> =
+				curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let current_asset_id = NextAssetId::<T>::get();
 
@@ -312,7 +324,7 @@ pub mod pallet {
 				&pool_id,
 				Some(PoolDetails::new(
 					who,
-					checked_curve,
+					checked_curve.clone(),
 					collateral_id,
 					currency_ids,
 					transferable,
@@ -325,11 +337,17 @@ pub mod pallet {
 
 			Self::deposit_event(Event::PoolCreated { id: pool_id });
 
-			Ok(())
+			let currency_index = currency_length.saturated_into();
+			Ok(Some(match checked_curve {
+				Curve::Polynomial(_) => T::WeightInfo::create_pool_polynomial(currency_index),
+				Curve::SquareRoot(_) => T::WeightInfo::create_pool_square_root(currency_index),
+				Curve::Lmsr(_) => T::WeightInfo::create_pool_lmsr(currency_index),
+			})
+			.into())
 		}
 
 		#[pallet::call_index(1)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::reset_team())]
 		pub fn reset_team(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -361,7 +379,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(2)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::reset_manager())]
 		pub fn reset_manager(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -385,7 +403,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(3)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::set_lock())]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
@@ -405,7 +423,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(4)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::unlock())]
 		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
@@ -424,7 +442,12 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(5)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight({
+			let weight_polynomial = T::WeightInfo::mint_into_polynomial(currency_count.to_owned());
+			let weight_square_root = T::WeightInfo::mint_into_square_root(currency_count.to_owned());
+			let weight_lmsr = T::WeightInfo::mint_into_lmsr(currency_count.to_owned());
+			weight_polynomial.max(weight_square_root).max(weight_lmsr)
+		})]
 		pub fn mint_into(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -433,7 +456,7 @@ pub mod pallet {
 			amount_to_mint: FungiblesBalanceOf<T>,
 			max_cost: CollateralCurrenciesBalanceOf<T>,
 			currency_count: u32,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
@@ -493,11 +516,21 @@ pub mod pallet {
 				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
 			}
 
-			Ok(())
+			Ok(Some(match pool_details.curve {
+				Curve::Polynomial(_) => T::WeightInfo::mint_into_polynomial(currency_count),
+				Curve::SquareRoot(_) => T::WeightInfo::mint_into_square_root(currency_count),
+				Curve::Lmsr(_) => T::WeightInfo::mint_into_lmsr(currency_count),
+			})
+			.into())
 		}
 
 		#[pallet::call_index(6)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight({
+			let weight_polynomial = T::WeightInfo::burn_into_polynomial(currency_count.to_owned());
+			let weight_square_root = T::WeightInfo::burn_into_square_root(currency_count.to_owned());
+			let weight_lmsr = T::WeightInfo::burn_into_lmsr(currency_count.to_owned());
+			weight_polynomial.max(weight_square_root).max(weight_lmsr)
+		})]
 		pub fn burn_into(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -506,7 +539,7 @@ pub mod pallet {
 			amount_to_burn: FungiblesBalanceOf<T>,
 			min_return: CollateralCurrenciesBalanceOf<T>,
 			currency_count: u32,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
@@ -574,7 +607,12 @@ pub mod pallet {
 				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
 			}
 
-			Ok(())
+			Ok(Some(match pool_details.curve {
+				Curve::Polynomial(_) => T::WeightInfo::burn_into_polynomial(currency_count),
+				Curve::SquareRoot(_) => T::WeightInfo::burn_into_square_root(currency_count),
+				Curve::Lmsr(_) => T::WeightInfo::burn_into_lmsr(currency_count),
+			})
+			.into())
 		}
 
 		#[pallet::call_index(7)]
@@ -584,23 +622,31 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(8)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		#[pallet::weight(T::WeightInfo::start_refund(currency_count.to_owned()))]
+		pub fn start_refund(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
-			Self::do_start_refund(pool_id, currency_count, Some(&who))?;
+			let actual_currency_count = Self::do_start_refund(pool_id, currency_count, Some(&who))?;
 
-			Ok(())
+			Ok(Some(T::WeightInfo::start_refund(actual_currency_count)).into())
 		}
 
 		#[pallet::call_index(9)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn force_start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		#[pallet::weight(T::WeightInfo::force_start_refund(currency_count.to_owned()))]
+		pub fn force_start_refund(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			T::ForceOrigin::ensure_origin(origin)?;
 
-			Self::do_start_refund(pool_id, currency_count, None)?;
+			let actual_currency_count = Self::do_start_refund(pool_id, currency_count, None)?;
 
-			Ok(())
+			Ok(Some(T::WeightInfo::force_start_refund(actual_currency_count)).into())
 		}
 
 		#[pallet::call_index(10)]

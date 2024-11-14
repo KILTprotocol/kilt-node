@@ -42,6 +42,6 @@ for pallet in "${pallets[@]}"; do
 		--heap-pages=4096 \
 		--chain="${chain}" \
 		--pallet="$pallet" \
-		--extrinsic="refund_account" \
+		--extrinsic="*" \
 		--output="./pallets/${pallet//_/-}/src/default_weights.rs"
 done

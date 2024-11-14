@@ -1094,6 +1094,7 @@ impl pallet_bonded_coins::Config for Runtime {
 	type PoolId = AccountId;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type WeightInfo = ();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = ();
