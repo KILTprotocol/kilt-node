@@ -213,6 +213,7 @@ pub mod runtime {
 		pub const CurrencyDeposit: Balance = 500;
 		pub const MaxCurrencies: u32 = 50;
 		pub const CollateralAssetId: u32 = u32::MAX;
+		pub const MaxDenomination: u8 = 15;
 	}
 
 	impl pallet_bonded_coins::Config for Test {
@@ -232,6 +233,7 @@ pub mod runtime {
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;
 		type RuntimeHoldReason = RuntimeHoldReason;
+		type MaxDenomination = MaxDenomination;
 	}
 
 	#[derive(Clone, Default)]
@@ -289,8 +291,8 @@ pub mod runtime {
 				.chain(collateral_assets)
 				.collect();
 
-			// NextAssetId is set to the maximum value of all collateral/bonded currency ids, plus one.
-			// If no currencies are created, it's set to 0.
+			// NextAssetId is set to the maximum value of all collateral/bonded currency
+			// ids, plus one. If no currencies are created, it's set to 0.
 			let next_asset_id = all_assets.iter().map(|(id, ..)| id).max().map_or(0, |id| id + 1);
 
 			pallet_assets::GenesisConfig::<Test> {
