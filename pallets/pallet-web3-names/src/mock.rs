@@ -53,15 +53,18 @@ pub use crate::mock::runtime::*;
 // Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use frame_support::parameter_types;
+	use frame_support::{ensure, parameter_types};
 	use frame_system::EnsureRoot;
 	use kilt_support::mock::{mock_origin, SubjectId};
+	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+	use scale_info::TypeInfo;
+	use sp_core::RuntimeDebug;
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BuildStorage, MultiSignature,
+		BoundedVec, BuildStorage, MultiSignature, SaturatedConversion,
 	};
 
-	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name};
+	use crate::{self as pallet_web3_names, Config, Error};
 
 	type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -138,7 +141,30 @@ pub(crate) mod runtime {
 		type WeightInfo = ();
 	}
 
-	pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;
+	#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen, PartialEq, Eq, PartialOrd, Ord, Clone)]
+	pub struct TestWeb3Name(pub(crate) BoundedVec<u8, <Test as Config>::MaxNameLength>);
+
+	impl TryFrom<Vec<u8>> for TestWeb3Name {
+		type Error = Error<Test>;
+
+		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+			ensure!(
+				value.len() >= <Test as Config>::MinNameLength::get().saturated_into(),
+				Self::Error::TooShort
+			);
+			let bounded_vec: BoundedVec<u8, <Test as Config>::MaxNameLength> =
+				BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
+			ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);
+			Ok(Self(bounded_vec))
+		}
+	}
+
+	fn is_valid_web3_name(input: &[u8]) -> bool {
+		input
+			.iter()
+			.all(|c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_'))
+	}
+
 	pub(crate) type TestWeb3NameOwner = SubjectId;
 	pub(crate) type TestWeb3NamePayer = AccountId;
 	pub(crate) type TestOwnerOrigin = mock_origin::EnsureDoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
@@ -185,7 +211,7 @@ pub(crate) mod runtime {
 	pub(crate) const WEB3_NAME_01_INPUT: &[u8; 12] = b"web3_name_01";
 
 	pub(crate) fn get_web3_name(web3_name_input: &[u8]) -> TestWeb3Name {
-		AsciiWeb3Name::try_from(web3_name_input.to_vec()).expect("Invalid web3 name input.")
+		TestWeb3Name::try_from(web3_name_input.to_vec()).expect("Invalid web3 name input.")
 	}
 
 	#[derive(Clone, Default)]
