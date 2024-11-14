@@ -6,7 +6,8 @@ use crate::{
 // linear function
 #[test]
 fn mint_first_coin_linear_function() {
-	// Create curve with shape f(x) = 2x + 3, resulting into integral function F(x) = x^2 + 3x
+	// Create curve with shape f(x) = 2x + 3, resulting into integral function
+	// F(x) = x^2 + 3x
 	let m = Float::from_num(0);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
@@ -25,7 +26,8 @@ fn mint_first_coin_linear_function() {
 
 #[test]
 fn high_supply_linear_function() {
-	// Create curve with shape f(x) = 2x + 3, resulting into integral function F(x) = x^2 + 3x
+	// Create curve with shape f(x) = 2x + 3, resulting into integral function
+	// F(x) = x^2 + 3x
 	let m = Float::from_num(0);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
@@ -36,7 +38,8 @@ fn high_supply_linear_function() {
 
 	// Existing supply: 10_000_000^2 + 3*10_000_000 = 100000030000000
 	// New Supply: 10_100_000^2 + 3*10_100_000 = 102010030300000
-	// Cost to mint the first coin: 102010030300000 - 100000030000000 = 2010000300000
+	// Cost to mint the first coin:
+	// 102010030300000 - 100000030000000 = 2010000300000
 	let costs = curve.calculate_costs(low, high, vec![]).unwrap();
 
 	assert_eq!(costs, 2000010000300000u128);
@@ -44,7 +47,8 @@ fn high_supply_linear_function() {
 
 #[test]
 fn mint_coin_with_existing_supply_linear_function() {
-	// Create curve with shape f(x) = 2x + 3, resulting into integral function F(x) = x^2 + 3x
+	// Create curve with shape f(x) = 2x + 3, resulting in integral function
+	// F(x) = x^2 + 3x
 	let m = Float::from_num(0);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
@@ -63,7 +67,8 @@ fn mint_coin_with_existing_supply_linear_function() {
 
 #[test]
 fn mint_first_coin_frac_bonding_linear_function() {
-	// Create curve with shape f(x) = x + 3, resulting into integral function F(x) = 1/2*x^2 + 3x
+	// Create curve with shape f(x) = x + 3, resulting in integral function
+	// F(x) = 1/2*x^2 + 3x
 	let m = Float::from_num(0);
 	let n = Float::from_num(0.5);
 	let o = Float::from_num(3);
@@ -84,7 +89,8 @@ fn mint_first_coin_frac_bonding_linear_function() {
 
 #[test]
 fn mint_first_coin_quadratic_function() {
-	// Create curve with shape f(x) = 3*x^2 + 2x + 3, resulting into integral function F(x) = x^3 +  x^2 + 3x
+	// Create curve with shape f(x) = 3*x^2 + 2x + 3, resulting in integral function
+	// F(x) = x^3 +  x^2 + 3x
 	let m = Float::from_num(1);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
@@ -103,7 +109,8 @@ fn mint_first_coin_quadratic_function() {
 
 #[test]
 fn high_supply_quadratic_function() {
-	// Create curve with shape f(x) = 3x² + 2x + 3, resulting into integral function F(x) = x³ + x^2 + 3x
+	// Create curve with shape f(x) = 3x² + 2x + 3, resulting in integral function
+	// F(x) = x³ + x^2 + 3x
 	let m = Float::from_num(1);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
@@ -112,16 +119,24 @@ fn high_supply_quadratic_function() {
 	let low = Float::from_num(100_000_000);
 	let high = Float::from_num(100_100_000);
 
-	// Existing supply: (1) * 100000000^3 + (1)*(100000000)^2 + (100000000)*3 = 1000000010000000300000000
-	// New supply: (1)*(100100000)^3 + (1)*(100100000)^2 + (100100000)*3 = 1003003011020010300300000
-	// Cost to mint 10 coin: 1003003011020010300300000 - 1000000010000000300000000 = 3003001020010000300000
+	// Existing supply:
+	// (1) * 100000000^3 + (1)*(100000000)^2 + (100000000)*3 =
+	// 1000000010000000300000000
+
+	// New supply: (1)*(100100000)^3 + (1)*(100100000)^2 + (100100000)*3 =
+	// 1003003011020010300300000
+
+	// Cost to mint 10 coin:
+	// 1003003011020010300300000 - 1000000010000000300000000 =
+	// 3003001020010000300000
 	let costs = curve.calculate_costs(low, high, vec![]).unwrap();
 	assert_eq!(costs, 3003001020010000300000u128);
 }
 
 #[test]
 fn mint_coin_with_existing_supply_quadratic_function() {
-	// Create curve with shape f(x) = 3x² + 2x + 3, resulting into integral function F(x) = x³ + x^2 + 3x
+	// Create curve with shape f(x) = 3x² + 2x + 3, resulting in integral function
+	// F(x) = x³ + x^2 + 3x
 	let m = Float::from_num(1);
 	let n = Float::from_num(1);
 	let o = Float::from_num(3);
@@ -140,7 +155,8 @@ fn mint_coin_with_existing_supply_quadratic_function() {
 
 #[test]
 fn mint_first_coin_frac_bonding_quadratic_function() {
-	// Create curve with shape f(x) = x + 3, resulting into integral function F(x) = 1/2*x^2 + 3x
+	// Create curve with shape f(x) = x + 3, resulting in integral function
+	// F(x) = 1/2*x^2 + 3x
 	let m = Float::from_num(0.5);
 	let n = Float::from_num(0.5);
 	let o = Float::from_num(3);

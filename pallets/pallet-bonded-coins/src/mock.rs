@@ -108,6 +108,7 @@ pub mod runtime {
 	pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = AssetId::MAX;
 	pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
 	pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
+	pub(crate) const ONE_HUNDRED_KILT: u128 = 100_000_000_000_000_000;
 
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -131,7 +132,7 @@ pub mod runtime {
 			bonded_currencies,
 			state,
 			collateral_id,
-			denomination: 10,
+			denomination: DEFAULT_BONDED_DENOMINATION,
 			owner,
 		}
 	}
@@ -193,19 +194,31 @@ pub mod runtime {
 	}
 
 	parameter_types! {
+		pub const ExistentialDeposit: Balance = 500;
+		pub const MaxLocks: u32 = 50;
+		pub const MaxReserves: u32 = 50;
+	}
+
+	impl pallet_balances::Config for Test {
+		type AccountStore = System;
+		type Balance = Balance;
+		type DustRemoval = ();
+		type ExistentialDeposit = ExistentialDeposit;
+		type FreezeIdentifier = ();
+		type MaxFreezes = ();
+		type MaxLocks = MaxLocks;
+		type MaxReserves = MaxReserves;
+		type ReserveIdentifier = [u8; 8];
+		type RuntimeEvent = RuntimeEvent;
+		type RuntimeFreezeReason = ();
+		type RuntimeHoldReason = RuntimeHoldReason;
+		type WeightInfo = ();
+	}
+
+	parameter_types! {
 		pub const StringLimit: u32 = 50;
 
 	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	struct BenchmarkHelper;
-	#[cfg(feature = "runtime-benchmarks")]
-	impl pallet_assets::BenchmarkHelper<AssetId> for BenchmarkHelper {
-		fn create_asset_id_parameter(seed: u32) -> AssetId {
-			seed.into()
-		}
-	}
-
 	impl pallet_assets::Config for Test {
 		type ApprovalDeposit = ConstU128<0>;
 		type AssetAccountDeposit = ConstU128<0>;
@@ -258,28 +271,6 @@ pub mod runtime {
 		type BenchmarkHelper = ();
 	}
 
-	parameter_types! {
-		pub const ExistentialDeposit: Balance = 500;
-		pub const MaxLocks: u32 = 50;
-		pub const MaxReserves: u32 = 50;
-	}
-
-	impl pallet_balances::Config for Test {
-		type AccountStore = System;
-		type Balance = Balance;
-		type DustRemoval = ();
-		type ExistentialDeposit = ExistentialDeposit;
-		type FreezeIdentifier = ();
-		type MaxFreezes = ();
-		type MaxLocks = MaxLocks;
-		type MaxReserves = MaxReserves;
-		type ReserveIdentifier = [u8; 8];
-		type RuntimeEvent = RuntimeEvent;
-		type RuntimeFreezeReason = ();
-		type RuntimeHoldReason = RuntimeHoldReason;
-		type WeightInfo = ();
-	}
-
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
 		native_assets: Vec<(AccountId, DepositCurrencyBalanceOf<Test>)>,
@@ -323,19 +314,24 @@ pub mod runtime {
 
 			let collateral_assets = self.collaterals.into_iter().map(|id| (id, ACCOUNT_99, false, 1));
 
-			pallet_assets::GenesisConfig::<Test> {
-				assets: self
-					.pools
-					.iter()
-					.flat_map(|(owner, pool)| {
-						pool.bonded_currencies
-							.iter()
-							.map(|id| (*id, owner.to_owned(), false, 1u128))
-							.collect::<Vec<(AssetId, AccountId, bool, Balance)>>()
-					})
-					.chain(collateral_assets)
-					.collect(),
+			let all_assets: Vec<_> = self
+				.pools
+				.iter()
+				.flat_map(|(owner, pool)| {
+					pool.bonded_currencies
+						.iter()
+						.map(|id| (*id, owner.to_owned(), false, 1u128))
+						.collect::<Vec<(AssetId, AccountId, bool, Balance)>>()
+				})
+				.chain(collateral_assets)
+				.collect();
 
+			// NextAssetId is set to the maximum value of all collateral/bonded currency ids, plus one.
+			// If no currencies are created, it's set to 0.
+			let next_asset_id = all_assets.iter().map(|(id, ..)| id).max().map_or(0, |id| id + 1);
+
+			pallet_assets::GenesisConfig::<Test> {
+				assets: all_assets,
 				accounts: self.bonded_balance,
 				metadata: self
 					.pools
@@ -360,6 +356,8 @@ pub mod runtime {
 				self.pools.into_iter().for_each(|(pool_id, pool)| {
 					crate::Pools::<Test>::insert(pool_id, pool);
 				});
+
+				crate::NextAssetId::<Test>::set(next_asset_id);
 			});
 
 			ext

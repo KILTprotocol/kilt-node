@@ -30,7 +30,6 @@ log             = { workspace = true }
 substrate-fixed = { workspace = true }
 
 [dev-dependencies]
-
 pallet-balances = { workspace = true, features = ["std"] }
 serde           = { workspace = true }
 sp-keystore     = { workspace = true, features = ["std"] }
