@@ -795,6 +795,7 @@ mod benchmarks {
 		assert_eq!(pool_details.state, PoolStatus::Refunding);
 	}
 
+	// TODO: Enable benchmark, if https://github.com/KILTprotocol/kilt-node/pull/794/files is merged.
 	// #[benchmark]
 	// fn refund_account(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
 	// 	let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
