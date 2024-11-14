@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::ensure;
+use pallet_web3_names::{Config, Error};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, RuntimeDebug};
@@ -32,6 +33,20 @@ pub enum Web3NameValidationError {
 	InvalidCharacter,
 }
 
+impl<T, I> From<Web3NameValidationError> for Error<T, I>
+where
+	T: Config<I>,
+	I: 'static,
+{
+	fn from(value: Web3NameValidationError) -> Self {
+		match value {
+			Web3NameValidationError::TooLong => Self::TooLong,
+			Web3NameValidationError::TooShort => Self::TooShort,
+			Web3NameValidationError::InvalidCharacter => Self::InvalidCharacter,
+		}
+	}
+}
+
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Web3Name<const MIN_LENGTH: u32, const MAX_LENGTH: u32>(BoundedVec<u8, ConstU32<MAX_LENGTH>>);
 
@@ -44,6 +59,12 @@ impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> TryFrom<Vec<u8>> for Web3Name
 			BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
 		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);
 		Ok(Self(bounded_vec))
+	}
+}
+
+impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> From<Web3Name<MIN_LENGTH, MAX_LENGTH>> for Vec<u8> {
+	fn from(value: Web3Name<MIN_LENGTH, MAX_LENGTH>) -> Self {
+		value.0.into_inner()
 	}
 }
 

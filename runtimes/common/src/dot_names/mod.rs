@@ -65,6 +65,13 @@ impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> TryFrom<Vec<u8>> for DotName<
 		Ok(Self(bounded_vec))
 	}
 }
+
+impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> From<DotName<MIN_LENGTH, MAX_LENGTH>> for Vec<u8> {
+	fn from(value: DotName<MIN_LENGTH, MAX_LENGTH>) -> Self {
+		value.0.into_inner()
+	}
+}
+
 fn is_valid_dot_name(input: &[u8]) -> bool {
 	let Some(dot_name_without_suffix) = input.strip_suffix(DOT_NAME_SUFFIX.as_bytes()) else {
 		return false;

@@ -177,6 +177,7 @@ impl<
 		+ pallet_web3_names::Config
 		+ pallet_did_lookup::Config,
 	KiltRuntime::IdentityCommitmentGenerator: IdentityCommitmentGenerator<KiltRuntime, Output = ConsumerRuntime::Hash>,
+	KiltRuntime::Web3Name: Eq,
 	SignedExtra: GetWithoutArg,
 	SignedExtra::Result: Encode + Debug,
 	DidCallVerifier: DipCallOriginFilter<

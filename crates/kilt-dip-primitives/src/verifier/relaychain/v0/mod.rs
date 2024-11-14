@@ -119,6 +119,7 @@ impl<
 		+ pallet_did_lookup::Config,
 	KiltRuntime::IdentityCommitmentGenerator: IdentityCommitmentGenerator<KiltRuntime, Output = ConsumerRuntime::Hash>,
 	IdentityCommitmentOf<KiltRuntime>: Into<KiltRuntime::Hash>,
+	KiltRuntime::Web3Name: Eq,
 	SignedExtra: GetWithoutArg,
 	SignedExtra::Result: Encode + Debug,
 	DidCallVerifier: DipCallOriginFilter<

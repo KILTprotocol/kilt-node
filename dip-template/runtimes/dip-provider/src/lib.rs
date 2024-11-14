@@ -31,7 +31,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_web3_names::web3_name::AsciiWeb3Name;
+use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -61,7 +61,10 @@ use pallet_collator_selection::IdentityCollator;
 use pallet_dip_provider::{traits::IdentityProvider, IdentityProviderOf};
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo};
-use runtime_common::dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator};
+use runtime_common::{
+	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
+	Web3Name,
+};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
 use sp_core::{crypto::KeyTypeId, ConstBool, ConstU128, ConstU16, OpaqueMetadata};
@@ -437,8 +440,6 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
-pub type Web3Name = AsciiWeb3Name<Runtime>;
-
 impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
@@ -450,7 +451,7 @@ impl pallet_web3_names::Config for Runtime {
 	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type Web3Name = Web3Name;
+	type Web3Name = Web3Name<3, 32>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 
@@ -642,7 +643,7 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			let name: Web3NameOf<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
