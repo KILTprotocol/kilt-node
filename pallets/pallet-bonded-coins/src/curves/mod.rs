@@ -108,7 +108,7 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 
 pub(crate) fn convert_to_fixed<T: Config>(x: u128, denomination: u8) -> Result<CurveParameterTypeOf<T>, ArithmeticError>
 where
-	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256>,
+	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
 {
 	let decimals = U256::from(10)
 		.checked_pow(denomination.into())
@@ -117,6 +117,8 @@ where
 	let mut x_u256 = U256::from(x);
 	// Shift left to produce the representation that our fixed type would have (but
 	// with extra integer bits that would potentially not fit in the fixed type).
+	// This function can panic in theory, but only if frac_nbits() would be larger
+	// than 256 - and no Fixed of that size exists.
 	x_u256.shl_assign(CurveParameterTypeOf::<T>::frac_nbits());
 	// Perform division. Due to the shift the precision/truncation is identical to
 	// division on the fixed type.

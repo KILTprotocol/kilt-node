@@ -262,7 +262,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
-		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
+		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>, // TODO: make large integer type configurable
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
