@@ -42,7 +42,7 @@ use crate::{
 	RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
 };
 
-pub mod proxy;
+pub(crate) mod proxy;
 
 pub const SS_58_PREFIX: u16 = 38;
 
@@ -189,13 +189,6 @@ impl pallet_multisig::Config for Runtime {
 	type DepositFactor = ConstU128<{ constants::multisig::DEPOSIT_FACTOR }>;
 	type MaxSignatories = ConstU32<{ constants::multisig::MAX_SIGNITORS }>;
 	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
-}
-
-impl pallet_migration::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
-	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
 }
 
 impl pallet_indices::Config for Runtime {

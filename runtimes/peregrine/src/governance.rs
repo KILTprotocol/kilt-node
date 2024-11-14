@@ -109,7 +109,8 @@ impl pallet_treasury::Config for Runtime {
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type SpendOrigin = frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, crate::benchmarks::MaxBalance>;
+	type SpendOrigin =
+		frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, ConstU128<{ Balance::max_value() }>>;
 	type Burn = Burn;
 	type BurnDestination = ();
 	type SpendFunds = ();

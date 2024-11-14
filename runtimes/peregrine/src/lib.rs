@@ -22,6 +22,8 @@
 #![recursion_limit = "256"]
 // Triggered by `impl_runtime_apis` macro
 #![allow(clippy::empty_structs_with_brackets)]
+// We don't want to put the tests module after we declare the runtime
+#![allow(clippy::items_after_test_module)]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -37,7 +39,7 @@ use frame_system::{
 };
 use pallet_transaction_payment::ChargeTransactionPayment;
 use runtime_common::opaque::Header;
-use sp_runtime::generic;
+use sp_runtime::{create_runtime_str, generic};
 use sp_std::{prelude::*, vec::Vec};
 
 // Internal crates
@@ -53,16 +55,43 @@ mod migrations;
 pub use migrations::RuntimeMigrations;
 mod parachain;
 mod runtime_apis;
-#[cfg(feature = "std")]
-pub use runtime_apis::native_version;
-pub use runtime_apis::{api, RuntimeApi, VERSION};
+pub use runtime_apis::{api, RuntimeApi};
 mod system;
+use sp_version::RuntimeVersion;
 pub use system::{SessionKeys, SS_58_PREFIX};
+
+use crate::runtime_apis::RUNTIME_API_VERSION;
 mod weights;
 mod xcm;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;
+
+#[cfg(test)]
+mod tests;
+
+/// This runtime version.
+#[sp_version::runtime_version]
+pub const VERSION: RuntimeVersion = RuntimeVersion {
+	spec_name: create_runtime_str!("mashnet-node"),
+	impl_name: create_runtime_str!("mashnet-node"),
+	authoring_version: 4,
+	spec_version: 11500,
+	impl_version: 0,
+	apis: RUNTIME_API_VERSION,
+	transaction_version: 8,
+	state_version: 0,
+};
+
+/// The version information used to identify this runtime when compiled
+/// natively.
+#[cfg(feature = "std")]
+pub fn native_version() -> sp_version::NativeVersion {
+	sp_version::NativeVersion {
+		runtime_version: VERSION,
+		can_author_with: Default::default(),
+	}
+}
 
 construct_runtime! {
 	pub enum Runtime
@@ -186,6 +215,3 @@ pub type SignedExtra = (
 	CheckWeight<Runtime>,
 	ChargeTransactionPayment<Runtime>,
 );
-
-#[cfg(test)]
-mod tests;

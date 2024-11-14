@@ -48,7 +48,7 @@ use pallet_transaction_payment::{FeeDetails, FungibleAdapter};
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
-use sp_core::{ConstBool, ConstU64, OpaqueMetadata};
+use sp_core::{ConstBool, ConstU128, ConstU32, ConstU64, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
@@ -676,9 +676,9 @@ impl pallet_multisig::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type Currency = Balances;
-	type DepositBase = constants::multisig::DepositBase;
-	type DepositFactor = constants::multisig::DepositFactor;
-	type MaxSignatories = constants::multisig::MaxSignitors;
+	type DepositBase = ConstU128<{ constants::multisig::DEPOSIT_BASE }>;
+	type DepositFactor = ConstU128<{ constants::multisig::DEPOSIT_FACTOR }>;
+	type MaxSignatories = ConstU32<{ constants::multisig::MAX_SIGNITORS }>;
 	type WeightInfo = ();
 }
 

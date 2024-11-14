@@ -240,7 +240,7 @@ impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = Migration;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = crate::benchmarks::Web3NamesBenchmarkHelper;
+	type BenchmarkHelper = crate::benchmarks::web3_names::Web3NamesBenchmarkHelper;
 }
 
 pub type DotName = runtime_common::DotName<{ constants::dot_names::MIN_LENGTH }, { constants::dot_names::MAX_LENGTH }>;
@@ -262,7 +262,7 @@ impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type WeightInfo = weights::pallet_dot_names::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = crate::benchmarks::DotNamesBenchmarkHelper;
+	type BenchmarkHelper = crate::benchmarks::web3_names::DotNamesBenchmarkHelper;
 }
 
 impl parachain_staking::Config for Runtime {
@@ -345,5 +345,12 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type XcmRouter = XcmRouter;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = crate::benchmarks::CreateFungibleForAssetSwitchPool1;
+	type BenchmarkHelper = crate::benchmarks::asset_switch::CreateFungibleForAssetSwitchPool1;
+}
+
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
+	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
 }

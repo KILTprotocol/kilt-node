@@ -33,7 +33,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
-use runtime_common::{AccountId, Balance, Block, Nonce};
+use runtime_common::{opaque::Block, AccountId, Balance, Nonce};
 
 /// Full client dependencies.
 pub(crate) struct FullDeps<C, P> {
