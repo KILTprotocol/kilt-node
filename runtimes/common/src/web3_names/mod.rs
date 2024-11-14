@@ -22,6 +22,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, RuntimeDebug};
 use sp_runtime::{BoundedVec, SaturatedConversion};
+use sp_std::vec::Vec;
 
 #[cfg(test)]
 mod tests;
@@ -65,6 +66,12 @@ impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> TryFrom<Vec<u8>> for Web3Name
 impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> From<Web3Name<MIN_LENGTH, MAX_LENGTH>> for Vec<u8> {
 	fn from(value: Web3Name<MIN_LENGTH, MAX_LENGTH>) -> Self {
 		value.0.into_inner()
+	}
+}
+
+impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> AsRef<[u8]> for Web3Name<MIN_LENGTH, MAX_LENGTH> {
+	fn as_ref(&self) -> &[u8] {
+		self.0.as_ref()
 	}
 }
 

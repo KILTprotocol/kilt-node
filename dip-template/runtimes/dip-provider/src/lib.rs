@@ -61,10 +61,7 @@ use pallet_collator_selection::IdentityCollator;
 use pallet_dip_provider::{traits::IdentityProvider, IdentityProviderOf};
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo};
-use runtime_common::{
-	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
-	Web3Name,
-};
+use runtime_common::dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
 use sp_core::{crypto::KeyTypeId, ConstBool, ConstU128, ConstU16, OpaqueMetadata};
@@ -440,6 +437,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
+pub type Web3Name = runtime_common::Web3Name<3, 32>;
 impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
@@ -451,7 +449,7 @@ impl pallet_web3_names::Config for Runtime {
 	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type Web3Name = Web3Name<3, 32>;
+	type Web3Name = Web3Name;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 

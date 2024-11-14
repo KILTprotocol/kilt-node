@@ -62,7 +62,7 @@ pub use system::{SessionKeys, SS_58_PREFIX};
 
 use crate::runtime_apis::RUNTIME_API_VERSION;
 mod weights;
-mod xcm;
+pub mod xcm;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;

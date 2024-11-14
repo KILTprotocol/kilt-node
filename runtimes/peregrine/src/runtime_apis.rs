@@ -20,6 +20,7 @@ use sp_runtime::{
 	traits::{Block as BlockT, TryConvert},
 	ApplyExtrinsicResult, KeyTypeId,
 };
+use sp_std::vec::Vec;
 use sp_version::{ApisVec, RuntimeVersion};
 
 use kilt_runtime_api_did::RawDidLinkedInfo;
@@ -27,7 +28,7 @@ use kilt_support::traits::ItemFilter;
 use pallet_asset_switch::xcm::AccountId32ToAccountId32JunctionConverter;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
 use pallet_dip_provider::traits::IdentityProvider;
-use pallet_web3_names::web3_name::{AsciiWeb3Name, Web3NameOwnership};
+use pallet_web3_names::{web3_name::Web3NameOwnership, Web3NameOf};
 use public_credentials::CredentialEntry;
 use runtime_common::{
 	asset_switch::runtime_api::Error as AssetSwitchApiError,
@@ -222,7 +223,7 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let parsed_name: AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			let parsed_name: Web3NameOf<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&parsed_name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))

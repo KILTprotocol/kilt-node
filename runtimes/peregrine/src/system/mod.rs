@@ -33,6 +33,7 @@ use sp_runtime::{
 	impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys},
 };
+use sp_std::vec::Vec;
 use sp_version::RuntimeVersion;
 use sp_weights::ConstantMultiplier;
 use xcm::v4::Location;

@@ -18,6 +18,8 @@
 
 pub(crate) use web3_names_deployment::Web3NamesBenchmarkHelper;
 mod web3_names_deployment {
+	use sp_std::{vec, vec::Vec};
+
 	use crate::Runtime;
 
 	pub struct Web3NamesBenchmarkHelper;
@@ -34,6 +36,8 @@ mod web3_names_deployment {
 
 pub use dot_names_deployment::DotNamesBenchmarkHelper;
 mod dot_names_deployment {
+	use sp_std::{vec, vec::Vec};
+
 	use crate::{kilt::DotNamesDeployment, Runtime};
 
 	pub struct DotNamesBenchmarkHelper;

@@ -28,7 +28,7 @@ use runtime_common::{
 	asset_switch::hooks::RestrictSwitchDestinationToSelf,
 	assets::AssetDid,
 	authorization::{AuthorizationId, PalletAuthorize},
-	AccountId, Balance, DidIdentifier, Hash, SendDustAndFeesToTreasury,
+	AccountId, Balance, DidIdentifier, Hash, SendDustAndFeesToTreasury, Web3Name,
 };
 use sp_core::ConstBool;
 use sp_runtime::traits::BlakeTwo256;
@@ -72,7 +72,8 @@ impl delegation::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type Signature = runtime_common::benchmarks::DummySignature;
 	#[cfg(feature = "runtime-benchmarks")]
-	type DelegationSignatureVerification = kilt_support::signature::AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
+	type DelegationSignatureVerification =
+		kilt_support::signature::AlwaysVerify<AccountId, sp_std::vec::Vec<u8>, Self::Signature>;
 
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
@@ -150,7 +151,7 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
-		RuntimeCall::System(frame_system::Call::remark { remark: vec![] })
+		RuntimeCall::System(frame_system::Call::remark { remark: sp_std::vec![] })
 	}
 }
 
@@ -234,7 +235,7 @@ impl pallet_web3_names::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
+	type Web3Name = Web3Name<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;

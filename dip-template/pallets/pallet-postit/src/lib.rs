@@ -65,7 +65,7 @@ pub mod pallet {
 		type OriginCheck: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		type OriginSuccess: GetUsername<Username = Self::Username>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-		type Username: Encode + Decode + TypeInfo + MaxEncodedLen + Clone + PartialEq + Debug + Default;
+		type Username: Encode + Decode + TypeInfo + MaxEncodedLen + Clone + PartialEq + Debug;
 	}
 
 	#[pallet::storage]

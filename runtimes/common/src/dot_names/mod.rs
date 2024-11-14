@@ -72,6 +72,12 @@ impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> From<DotName<MIN_LENGTH, MAX_
 	}
 }
 
+impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> AsRef<[u8]> for DotName<MIN_LENGTH, MAX_LENGTH> {
+	fn as_ref(&self) -> &[u8] {
+		self.0.as_ref()
+	}
+}
+
 fn is_valid_dot_name(input: &[u8]) -> bool {
 	let Some(dot_name_without_suffix) = input.strip_suffix(DOT_NAME_SUFFIX.as_bytes()) else {
 		return false;
