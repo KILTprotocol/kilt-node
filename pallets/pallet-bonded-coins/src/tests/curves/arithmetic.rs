@@ -75,7 +75,7 @@ fn test_convert_to_fixed_overflow() {
 #[test]
 fn test_convert_to_fixed_denomination_overflow() {
 	let x = 1000u128;
-	let denomination = 128u8; // 10^128 overflows and results in division by zero
+	let denomination = 128u8; // 10^128 overflows
 
 	let result = convert_to_fixed::<Test>(x, denomination);
 	assert!(result.is_err());
@@ -102,11 +102,14 @@ fn test_convert_to_fixed_handles_large_denomination() {
 
 #[test]
 fn test_convert_to_fixed_very_large_denomination() {
-	let x = 10u128.pow(31); // multiple of denomination should not result in overflow of remainder
 	let denomination = 30u8; // I75F53 should handle around 1.8e+22, this can lead to overflow
 
-	let result = convert_to_fixed::<Test>(x, denomination);
-	assert_ok!(result);
+	// multiple of denomination would not result in remainder = 0
+	assert_ok!(convert_to_fixed::<Test>(10u128.pow(31), denomination));
+
+	// non-multiples of denomination could lead to overflow of remainder
+	assert_ok!(convert_to_fixed::<Test>(11u128.pow(31), denomination));
+	assert_ok!(convert_to_fixed::<Test>(10u128.pow(29), denomination));
 }
 
 #[test]
