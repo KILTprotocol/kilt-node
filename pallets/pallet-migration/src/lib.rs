@@ -22,7 +22,7 @@ pub mod default_weights;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod test;
@@ -48,6 +48,7 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{fungible::Inspect, Currency, ReservableCurrency},
+		DefaultNoBound,
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{traits::Hash, SaturatedConversion};
@@ -66,15 +67,10 @@ pub mod pallet {
 
 	pub type HashOf<T> = <T as frame_system::Config>::Hash;
 
-	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq, Eq)]
+	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq, Eq, DefaultNoBound)]
 	pub struct EntriesToMigrate<T>
 	where
-		T: Config
-			+ did::Config
-			+ delegation::Config
-			+ frame_system::Config
-			+ pallet_web3_names::Config
-			+ public_credentials::Config,
+		T: Config + did::Config + delegation::Config + pallet_web3_names::Config + public_credentials::Config,
 	{
 		pub attestation: BoundedVec<ClaimHashOf<T>, <T as Config>::MaxMigrationsPerPallet>,
 		pub delegation: BoundedVec<DelegationNodeIdOf<T>, <T as Config>::MaxMigrationsPerPallet>,
