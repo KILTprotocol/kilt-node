@@ -5,6 +5,8 @@ pub(crate) mod square_root;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
+use sp_core::U256;
+use sp_runtime::traits::CheckedConversion;
 use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
 use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
 
@@ -104,13 +106,30 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
 }
 
-pub(crate) fn convert_to_fixed<T: Config>(
-	x: u128,
-	denomination: u8,
-) -> Result<CurveParameterTypeOf<T>, ArithmeticError> {
-	let decimals = 10u128
-		.checked_pow(u32::from(denomination))
+pub(crate) fn convert_to_fixed<T: Config>(x: u128, denomination: u8) -> Result<CurveParameterTypeOf<T>, ArithmeticError>
+where
+	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
+{
+	let decimals = U256::from(10)
+		.checked_pow(denomination.into())
 		.ok_or(ArithmeticError::Overflow)?;
-	let scaled_x = x.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
-	scaled_x.checked_to_fixed().ok_or(ArithmeticError::Overflow)
+	// Convert to U256 so we have enough bits to perform lossless scaling.
+	let mut x_u256 = U256::from(x);
+	// Shift left to produce the representation that our fixed type would have (but
+	// with extra integer bits that would potentially not fit in the fixed type).
+	// This function can panic in theory, but only if frac_nbits() would be larger
+	// than 256 - and no Fixed of that size exists.
+	x_u256.shl_assign(CurveParameterTypeOf::<T>::frac_nbits());
+	// Perform division. Due to the shift the precision/truncation is identical to
+	// division on the fixed type.
+	x_u256 = x_u256.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
+	// Try conversion to integer type underlying the fixed type (e.g., i128 for a
+	// I75F53). If this overflows, there is nothing we can do; even the scaled value
+	// does not fit in the fixed type.
+	let truncated = x_u256.checked_into().ok_or(ArithmeticError::Overflow)?;
+	// Cast the integer as a fixed. We can do this because we've already applied the
+	// correct bit shift above.
+	let fixed = <CurveParameterTypeOf<T> as Fixed>::from_bits(truncated);
+	// Return the result of scaled conversion to fixed.
+	Ok(fixed)
 }

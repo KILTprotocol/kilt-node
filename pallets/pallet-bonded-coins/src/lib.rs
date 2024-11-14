@@ -39,10 +39,10 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
 	use sp_arithmetic::ArithmeticError;
+	use sp_core::U256;
 	use sp_runtime::{
 		traits::{
-			Bounded, CheckedDiv, CheckedMul, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto,
-			Zero,
+			Bounded, CheckedConversion, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto, Zero,
 		},
 		BoundedVec,
 	};
@@ -134,10 +134,16 @@ pub mod pallet {
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
 		type MaxCurrencies: Get<u32>;
-		/// The deposit required for each bonded currency.
 
 		#[pallet::constant]
 		type MaxStringLength: Get<u32>;
+
+		/// The maximum denomination that bonded currencies can use. This should
+		/// be configured so that
+		/// 10^MaxDenomination < 2^CurveParameterType::frac_nbits()
+		/// as larger denominations could result in truncation.
+		#[pallet::constant]
+		type MaxDenomination: Get<u8>;
 
 		/// The deposit required for each bonded currency.
 		#[pallet::constant]
@@ -182,6 +188,23 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn integrity_test() {
+			let scaling_factor = U256::from(10).checked_pow(T::MaxDenomination::get().into()).expect(
+				"`MaxDenomination` is set so high that the resulting scaling factor cannot be represented. /
+				Any attempt to mint or burn on a pool where `10^denomination > 2^256` _WILL_ fail.",
+			);
+
+			assert!(
+				U256::from(2).pow(T::CurveParameterType::frac_nbits().into()) > scaling_factor,
+				"In order to prevent truncation of balances, `MaxDenomination` should be configured such \
+				that the maximum scaling factor `10^MaxDenomination` is smaller than the fractional \
+				capacity `2^frac_nbits` of `CurveParameterType`",
+			);
+		}
+	}
 
 	#[pallet::storage]
 	#[pallet::getter(fn pools)]
@@ -266,7 +289,8 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
+		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>, // TODO: make large integer type configurable
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight({
@@ -286,10 +310,12 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
-			let currency_length = currencies.len();
+			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
 
 			let checked_curve: Curve<CurveParameterTypeOf<T>> =
 				curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
+
+			let currency_length = currencies.len();
 
 			let current_asset_id = NextAssetId::<T>::get();
 
@@ -713,13 +739,14 @@ pub mod pallet {
 
 			// With amount = max_value(), this trait implementation burns the reducible
 			// balance on the account and returns the actual amount burnt
-			let burnt = T::Fungibles::burn_from(
+			let burnt: U256 = T::Fungibles::burn_from(
 				asset_id.clone(),
 				&who,
 				Bounded::max_value(),
 				WithdrawalPrecision::BestEffort,
 				Fortitude::Force,
-			)?;
+			)?
+			.into();
 
 			if burnt.is_zero() {
 				// no funds available to be burnt on account; nothing to do here
@@ -729,16 +756,29 @@ pub mod pallet {
 			let sum_of_issuances = pool_details
 				.bonded_currencies
 				.into_iter()
-				.fold(FungiblesBalanceOf::<T>::zero(), |sum, id| {
-					sum.saturating_add(T::Fungibles::total_issuance(id))
-				});
+				.fold(U256::from(0), |sum, id| {
+					sum.saturating_add(T::Fungibles::total_issuance(id).into())
+				})
+				// Add the burnt amount back to the sum of total supplies
+				.checked_add(burnt)
+				.ok_or(ArithmeticError::Overflow)?;
 
-			let amount = burnt
-				.checked_mul(&total_collateral_issuance)
-				.ok_or(ArithmeticError::Overflow)? // TODO: do we need a fallback if this fails?
-				.checked_div(&sum_of_issuances)
-				.ok_or(Error::<T>::NothingToRefund)?; // should be impossible - how would we be able to burn funds if the sum of total
-									  // supplies is 0?
+			defensive_assert!(
+				sum_of_issuances >= burnt,
+				"burnt amount exceeds the total supply of all bonded currencies"
+			);
+
+			let amount: CollateralCurrenciesBalanceOf<T> = burnt
+				.checked_mul(total_collateral_issuance.into())
+				// As long as the balance type is half the size of a U256, this won't overflow.
+				.ok_or(ArithmeticError::Overflow)?
+				.checked_div(sum_of_issuances)
+				// Because sum_of_issuances >= burnt > 0, this is theoretically impossible
+				.ok_or(Error::<T>::Internal)?
+				.checked_into()
+				// Also theoretically impossible, as the result must be <= total_collateral_issuance
+				// if burnt <= sum_of_issuances, which should always hold true
+				.ok_or(Error::<T>::Internal)?;
 
 			if amount.is_zero()
 				|| T::CollateralCurrencies::can_deposit(
@@ -858,7 +898,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T>
 	where
-		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
 	{
 		fn calculate_collateral(
 			low: CurveParameterTypeOf<T>,
@@ -883,6 +923,7 @@ pub mod pallet {
 
 			Ok(real_costs)
 		}
+
 		fn calculate_normalized_passive_issuance(
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
