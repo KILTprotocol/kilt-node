@@ -213,7 +213,7 @@ pub mod runtime {
 		pub const CurrencyDeposit: Balance = 500;
 		pub const MaxCurrencies: u32 = 50;
 		pub const CollateralAssetId: u32 = u32::MAX;
-		pub const MaxDenomination: u8 = 22;
+		pub const MaxDenomination: u8 = 15;
 	}
 
 	impl pallet_bonded_coins::Config for Test {

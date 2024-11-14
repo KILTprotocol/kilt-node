@@ -35,7 +35,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
-	use sp_arithmetic::{traits::CheckedAdd, ArithmeticError};
+	use sp_arithmetic::ArithmeticError;
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{
@@ -133,9 +133,10 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxStringLength: Get<u32>;
 
-		/// The maximum denomination that bonded currencies can use. To ensure
-		/// safe operation, this should be set so that 10^MaxDenomination <
-		/// 2^CurveParameterType::int_nbits().
+		/// The maximum denomination that bonded currencies can use. This should
+		/// be configured so that
+		/// 10^MaxDenomination < 2^CurveParameterType::frac_nbits()
+		/// as larger denominations could result in truncation.
 		#[pallet::constant]
 		type MaxDenomination: Get<u8>;
 
