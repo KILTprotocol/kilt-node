@@ -182,8 +182,13 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn integrity_test() {
+			let scaling_factor = U256::from(10).checked_pow(T::MaxDenomination::get().into()).expect(
+				"`MaxDenomination` is set so high that the resulting scaling factor cannot be represented. /
+				Any attempt to mint or burn on a pool where `10^denomination > 2^256` _WILL_ fail.",
+			);
+
 			assert!(
-				2u128.pow(T::CurveParameterType::frac_nbits()) > 10u128.pow(T::MaxDenomination::get().into()),
+				U256::from(2).pow(T::CurveParameterType::frac_nbits().into()) > scaling_factor,
 				"In order to prevent truncation of balances, `MaxDenomination` should be configured such \
 				that the maximum scaling factor `10^MaxDenomination` is smaller than the fractional \
 				capacity `2^frac_nbits` of `CurveParameterType`",
