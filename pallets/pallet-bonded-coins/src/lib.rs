@@ -664,6 +664,7 @@ pub mod pallet {
 			Ok(Some(T::WeightInfo::force_start_refund(actual_currency_count)).into())
 		}
 
+		// TODO: add benchmarks, if https://github.com/KILTprotocol/kilt-node/pull/794/files is merged.
 		#[pallet::call_index(10)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn refund_account(
@@ -774,27 +775,39 @@ pub mod pallet {
 
 		#[pallet::call_index(11)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		pub fn start_destroy(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, currency_count, false, Some(&who))?;
+			let actual_currency_count = Self::do_start_destroy_pool(pool_id, currency_count, false, Some(&who))?;
 
-			Ok(())
+			Ok(Some(T::WeightInfo::start_destroy(actual_currency_count)).into())
 		}
 
 		#[pallet::call_index(12)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		#[pallet::weight(T::WeightInfo::force_start_destroy(currency_count.to_owned()))]
+		pub fn force_start_destroy(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			T::ForceOrigin::ensure_origin(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, currency_count, true, None)?;
+			let actual_currency_count = Self::do_start_destroy_pool(pool_id, currency_count, true, None)?;
 
-			Ok(())
+			Ok(Some(T::WeightInfo::force_start_destroy(actual_currency_count)).into())
 		}
 
 		#[pallet::call_index(13)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		#[pallet::weight(T::WeightInfo::finish_destroy(currency_count.to_owned()))]
+		pub fn finish_destroy(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			T::DefaultOrigin::ensure_origin(origin)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
@@ -839,7 +852,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::Destroyed { id: pool_id });
 
-			Ok(())
+			Ok(Some(T::WeightInfo::finish_destroy(n_currencies)).into())
 		}
 	}
 
