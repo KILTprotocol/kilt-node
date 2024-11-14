@@ -36,7 +36,7 @@ pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 // accounts
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
-const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
+pub(crate) const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
 // assets
 pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 1;
 pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = 0;
@@ -213,6 +213,7 @@ pub mod runtime {
 		pub const CurrencyDeposit: Balance = 500;
 		pub const MaxCurrencies: u32 = 50;
 		pub const CollateralAssetId: u32 = u32::MAX;
+		pub const MaxDenomination: u8 = 15;
 	}
 
 	impl pallet_bonded_coins::Config for Test {
@@ -232,6 +233,7 @@ pub mod runtime {
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;
 		type RuntimeHoldReason = RuntimeHoldReason;
+		type MaxDenomination = MaxDenomination;
 	}
 
 	#[derive(Clone, Default)]
