@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+// Old benchmarking macros are a mess.
+#![allow(clippy::tests_outside_test_module)]
+
 use frame_benchmarking::{account, benchmarks};
 use frame_support::traits::{fungible::Mutate, Get};
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};

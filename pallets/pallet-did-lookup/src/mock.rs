@@ -240,7 +240,7 @@ impl ExtBuilder {
 		let mut ext = self.build();
 
 		let keystore = sp_keystore::testing::MemoryKeystore::new();
-		ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
+		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 
 		ext
 	}

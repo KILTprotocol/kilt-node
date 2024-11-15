@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+// Old benchmarking macros are a mess.
+#![allow(clippy::tests_outside_test_module)]
+
 use frame_benchmarking::benchmarks;
 use frame_support::traits::EnsureOriginWithArg;
 
