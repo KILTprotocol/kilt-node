@@ -8730,7 +8730,6 @@ dependencies = [
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
- "pallet-bonded-coins",
  "pallet-collective",
  "pallet-democracy",
  "pallet-deposit-storage",

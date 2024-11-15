@@ -38,7 +38,7 @@ use frame_support::{
 	},
 	weights::{ConstantMultiplier, Weight},
 };
-use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
+use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureRootWithSuccess, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use sp_api::impl_runtime_apis;
@@ -1046,62 +1046,6 @@ impl pallet_assets::Config for Runtime {
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
 }
 
-type BondedCurrenciesInstance = pallet_assets::Instance2;
-impl pallet_assets::Config<BondedCurrenciesInstance> for Runtime {
-	type ApprovalDeposit = frame_support::traits::ConstU128<0>;
-	type AssetAccountDeposit = frame_support::traits::ConstU128<0>;
-	type AssetDeposit = frame_support::traits::ConstU128<0>;
-	type AssetId = u32;
-	type AssetIdParameter = u32;
-	type Balance = Balance;
-	type CallbackHandle = ();
-	type CreateOrigin = EnsureRoot<AccountId>;
-	type Currency = Balances;
-	type Extra = ();
-	type ForceOrigin = EnsureRoot<AccountId>;
-	type Freezer = ();
-	type MetadataDepositBase = frame_support::traits::ConstU128<0>;
-	type MetadataDepositPerByte = frame_support::traits::ConstU128<0>;
-	type RemoveItemsLimit = ConstU32<5>;
-	type RuntimeEvent = RuntimeEvent;
-	type StringLimit = runtime_common::constants::assets::StringLimit;
-	type WeightInfo = ();
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
-}
-
-parameter_types! {
-	pub const CurrencyDeposit: Balance = 500;
-	pub const MaxCurrencies: u32 = 50;
-	pub const CollateralAssetId: u32 = u32::MAX;
-	pub const MaxDenomination: u8 = 14;
-}
-
-impl pallet_bonded_coins::Config for Runtime {
-	type AssetId = u32;
-	type BaseDeposit = ExistentialDeposit;
-	type CollateralCurrencies = BondedCurrencies;
-	type CurveParameterInput = substrate_fixed::types::U90F38;
-	type CurveParameterType = substrate_fixed::types::I90F38;
-	type DefaultOrigin = EnsureSigned<AccountId>;
-	type DepositCurrency = Balances;
-	type DepositPerCurrency = CurrencyDeposit;
-	type ForceOrigin = EnsureRoot<AccountId>;
-	type Fungibles = BondedCurrencies;
-	type MaxCurrencies = MaxCurrencies;
-	type MaxDenomination = MaxDenomination;
-	type MaxStringLength = runtime_common::constants::assets::StringLimit;
-	type PoolCreateOrigin = EnsureSigned<AccountId>;
-	type PoolId = AccountId;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type WeightInfo = ();
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
-}
-
 construct_runtime! {
 	pub enum Runtime
 	{
@@ -1155,8 +1099,7 @@ construct_runtime! {
 
 		AssetSwitchPool1: pallet_asset_switch::<Instance1> = 48,
 		Fungibles: pallet_assets = 49,
-		BondedCoins: pallet_bonded_coins = 50,
-		BondedCurrencies: pallet_assets::<Instance2> = 51,
+
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
@@ -1330,8 +1273,6 @@ mod benches {
 		[pallet_assets, Fungibles]
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
-		[pallet_assets, BondedCurrencies]
-		[pallet_bonded_coins, BondedCoins]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 
