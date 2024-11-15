@@ -1,13 +1,15 @@
 use frame_benchmarking::v2::*;
 use frame_support::traits::fungibles::roles::Inspect as InspectRoles;
+use sp_core::U256;
 use sp_std::{
 	ops::{AddAssign, BitOrAssign, ShlAssign},
 	vec::Vec,
 };
-
 use substrate_fixed::traits::{Fixed, ToFixed};
 
-use crate::{Call, CollateralAssetIdOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf, Pallet};
+use crate::{
+	Call, CollateralAssetIdOf, CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf, Pallet,
+};
 
 pub trait BenchmarkHelper<T: Config> {
 	fn calculate_collateral_asset_id(seed: u32) -> CollateralAssetIdOf<T>;
@@ -31,7 +33,8 @@ where
 }
 
 #[benchmarks(where
-	<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
+	CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
 	<T as Config>::CollateralCurrencies: Create<T::AccountId> ,
 	<T as Config>::Fungibles: InspectRoles<T::AccountId> + AccountTouch<FungiblesAssetIdOf<T>, AccountIdOf<T>>,
 	<T as Config>::DepositCurrency: Mutate<T::AccountId>,
@@ -795,48 +798,50 @@ mod benchmarks {
 		assert_eq!(pool_details.state, PoolStatus::Refunding);
 	}
 
-	// TODO: Enable benchmark, if https://github.com/KILTprotocol/kilt-node/pull/794/files is merged.
-	// #[benchmark]
-	// fn refund_account(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
-	// 	let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
-	// 	let account_origin = origin.clone().into_signer().expect("generating account_id from origin should not fail");
-	// 	make_free_for_deposit::<T>(&account_origin);
+	#[benchmark]
+	fn refund_account(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
+		let account_origin = origin
+			.clone()
+			.into_signer()
+			.expect("generating account_id from origin should not fail");
+		make_free_for_deposit::<T>(&account_origin);
 
-	// 	let collateral_id = create_default_collateral_asset::<T>();
-	// 	let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
-	// 	let target_asset_id = bonded_currencies[0].clone();
+		let collateral_id = create_default_collateral_asset::<T>();
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
+		let target_asset_id = bonded_currencies[0].clone();
 
-	// 	let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
-	// 	let pool_id = create_pool::<T>(
-	// 		curve,
-	// 		bonded_currencies.clone(),
-	// 		None,
-	// 		Some(PoolStatus::Refunding),
-	// 		None,
-	// 	);
+		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
+		let pool_id = create_pool::<T>(
+			curve,
+			bonded_currencies.clone(),
+			None,
+			Some(PoolStatus::Refunding),
+			None,
+		);
 
-	// 	let pool_account = pool_id.clone().into();
-	// 	T::CollateralCurrencies::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
-	// 		.expect("Touching should work");
-	// 	set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
+		let pool_account = pool_id.clone().into();
+		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
+			.expect("Touching should work");
+		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
-	// 	set_fungible_balance::<T>(target_asset_id.clone(), &account_origin, 100000u128);
+		set_fungible_balance::<T>(target_asset_id.clone(), &account_origin, 100000u128);
 
-	// 	let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
+		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 
-	// 	#[extrinsic_call]
-	// 	_(
-	// 		origin as T::RuntimeOrigin,
-	// 		pool_id,
-	// 		beneficiary,
-	// 		0,
-	// 		T::MaxCurrencies::get(),
-	// 	);
+		#[extrinsic_call]
+		_(
+			origin as T::RuntimeOrigin,
+			pool_id,
+			beneficiary,
+			0,
+			T::MaxCurrencies::get(),
+		);
 
-	// 	// Verify
-	// 	let balance = T::Fungibles::balance(target_asset_id, &account_origin);
-	// 	assert_eq!(balance, Zero::zero());
-	// }
+		// Verify
+		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
+		assert_eq!(balance, Zero::zero());
+	}
 	#[cfg(test)]
 	mod benchmark_tests {
 		use crate::Pallet;

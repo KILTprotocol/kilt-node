@@ -1055,7 +1055,7 @@ impl pallet_assets::Config<BondedCurrenciesInstance> for Runtime {
 	type AssetIdParameter = u32;
 	type Balance = Balance;
 	type CallbackHandle = ();
-	type CreateOrigin = EnsureSigned<AccountId>;
+	type CreateOrigin = EnsureRoot<AccountId>;
 	type Currency = Balances;
 	type Extra = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
@@ -1075,6 +1075,7 @@ parameter_types! {
 	pub const CurrencyDeposit: Balance = 500;
 	pub const MaxCurrencies: u32 = 50;
 	pub const CollateralAssetId: u32 = u32::MAX;
+	pub const MaxDenomination: u8 = 14;
 }
 
 impl pallet_bonded_coins::Config for Runtime {
@@ -1089,6 +1090,7 @@ impl pallet_bonded_coins::Config for Runtime {
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Fungibles = BondedCurrencies;
 	type MaxCurrencies = MaxCurrencies;
+	type MaxDenomination = MaxDenomination;
 	type MaxStringLength = runtime_common::constants::assets::StringLimit;
 	type PoolCreateOrigin = EnsureSigned<AccountId>;
 	type PoolId = AccountId;

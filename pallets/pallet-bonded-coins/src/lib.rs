@@ -504,10 +504,8 @@ pub mod pallet {
 
 			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
 
-			ensure!(
-				Self::get_currencies_number(&pool_details) <= currency_count,
-				Error::<T>::CurrencyCount
-			);
+			let number_of_currencies = Self::get_currencies_number(&pool_details);
+			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
 			let bonded_currencies = pool_details.bonded_currencies;
 
@@ -558,9 +556,9 @@ pub mod pallet {
 			}
 
 			Ok(Some(match pool_details.curve {
-				Curve::Polynomial(_) => T::WeightInfo::mint_into_polynomial(currency_count),
-				Curve::SquareRoot(_) => T::WeightInfo::mint_into_square_root(currency_count),
-				Curve::Lmsr(_) => T::WeightInfo::mint_into_lmsr(currency_count),
+				Curve::Polynomial(_) => T::WeightInfo::mint_into_polynomial(number_of_currencies),
+				Curve::SquareRoot(_) => T::WeightInfo::mint_into_square_root(number_of_currencies),
+				Curve::Lmsr(_) => T::WeightInfo::mint_into_lmsr(number_of_currencies),
 			})
 			.into())
 		}
@@ -588,10 +586,8 @@ pub mod pallet {
 
 			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
 
-			ensure!(
-				Self::get_currencies_number(&pool_details) <= currency_count,
-				Error::<T>::CurrencyCount
-			);
+			let number_of_currencies = Self::get_currencies_number(&pool_details);
+			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
 			let bonded_currencies = pool_details.bonded_currencies;
 
@@ -649,9 +645,9 @@ pub mod pallet {
 			}
 
 			Ok(Some(match pool_details.curve {
-				Curve::Polynomial(_) => T::WeightInfo::burn_into_polynomial(currency_count),
-				Curve::SquareRoot(_) => T::WeightInfo::burn_into_square_root(currency_count),
-				Curve::Lmsr(_) => T::WeightInfo::burn_into_lmsr(currency_count),
+				Curve::Polynomial(_) => T::WeightInfo::burn_into_polynomial(number_of_currencies),
+				Curve::SquareRoot(_) => T::WeightInfo::burn_into_square_root(number_of_currencies),
+				Curve::Lmsr(_) => T::WeightInfo::burn_into_lmsr(number_of_currencies),
 			})
 			.into())
 		}
@@ -690,25 +686,23 @@ pub mod pallet {
 			Ok(Some(T::WeightInfo::force_start_refund(actual_currency_count)).into())
 		}
 
-		// TODO: add benchmarks, if https://github.com/KILTprotocol/kilt-node/pull/794/files is merged.
 		#[pallet::call_index(10)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::refund_account(currency_count.to_owned()))]
 		pub fn refund_account(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			account: AccountIdLookupOf<T>,
 			asset_idx: u32,
 			currency_count: u32,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			T::DefaultOrigin::ensure_origin(origin)?;
 			let who = T::Lookup::lookup(account)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(
-				Self::get_currencies_number(&pool_details) <= currency_count,
-				Error::<T>::CurrencyCount
-			);
+			let number_of_currencies = Self::get_currencies_number(&pool_details);
+
+			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
 			ensure!(pool_details.state.is_refunding(), Error::<T>::NotRefunding);
 
@@ -810,7 +804,7 @@ pub mod pallet {
 				Self::deposit_event(Event::RefundComplete { id: pool_id });
 			}
 
-			Ok(())
+			Ok(Some(T::WeightInfo::refund_account(currency_count.to_owned())).into())
 		}
 
 		#[pallet::call_index(11)]
