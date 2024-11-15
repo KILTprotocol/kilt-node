@@ -23,7 +23,6 @@ cfg-if             = { workspace = true }
 log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info         = { workspace = true, features = ["derive"] }
-substrate-fixed    = { workspace = true }
 
 hex-literal = { workspace = true, optional = true }
 
