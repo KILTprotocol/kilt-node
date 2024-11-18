@@ -36,6 +36,8 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::BenchmarkHelper;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
@@ -149,6 +151,9 @@ pub mod pallet {
 
 		/// Migration manager to handle new created entries
 		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self, I>>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper;
 	}
 
 	#[pallet::event]

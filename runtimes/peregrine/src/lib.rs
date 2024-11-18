@@ -27,6 +27,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use cfg_if::cfg_if;
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 use frame_support::{
 	construct_runtime,
@@ -35,7 +36,7 @@ use frame_support::{
 	traits::{
 		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter,
+		AsEnsureOriginWithArg, ChangeMembers, ConstU32, EitherOfDiverse, EnqueueWithOrigin, Everything, InstanceFilter,
 		LinearStoragePrice, PrivilegeCmp,
 	},
 	weights::{ConstantMultiplier, Weight},
@@ -535,7 +536,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type MaxProposals = constants::governance::CouncilMaxProposals;
 	type MaxMembers = constants::governance::CouncilMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
-	type WeightInfo = weights::pallet_collective_council::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
@@ -549,7 +550,7 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type MaxProposals = constants::governance::TechnicalMaxProposals;
 	type MaxMembers = constants::governance::TechnicalMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
-	type WeightInfo = weights::pallet_collective_technical_committee::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_technical_committee_collective::WeightInfo<Runtime>;
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
@@ -564,7 +565,28 @@ impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {
 	type MembershipInitialized = TechnicalCommittee;
 	type MembershipChanged = TechnicalCommittee;
 	type MaxMembers = constants::governance::TechnicalMaxMembers;
-	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_technical_membership::WeightInfo<Runtime>;
+}
+
+// Implementation of `MembershipChanged` equivalent to using `()` but that
+// returns `Some(AccountId::new([0; 32]))` in `get_prime()` only when
+// benchmarking. TODO: Remove once we upgrade with a version containing the fix: https://github.com/paritytech/polkadot-sdk/pull/6439
+pub struct MockMembershipChangedForBenchmarks;
+
+impl ChangeMembers<AccountId> for MockMembershipChangedForBenchmarks {
+	fn change_members_sorted(incoming: &[AccountId], outgoing: &[AccountId], sorted_new: &[AccountId]) {
+		<()>::change_members_sorted(incoming, outgoing, sorted_new)
+	}
+
+	fn get_prime() -> Option<AccountId> {
+		cfg_if! {
+			if #[cfg(feature = "runtime-benchmark")] {
+				Some(AccountId::new([0; 32]))
+			} else {
+				<()>::get_prime()
+			}
+		}
+	}
 }
 
 type TipsMembershipProvider = pallet_membership::Instance2;
@@ -576,7 +598,7 @@ impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type ResetOrigin = MoreThanHalfCouncil;
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = ();
-	type MembershipChanged = ();
+	type MembershipChanged = MockMembershipChangedForBenchmarks;
 	type MaxMembers = constants::governance::TipperMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
@@ -702,7 +724,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
-	type WeightInfo = weights::pallet_did_lookup_did_lookup::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
 	// Do not change the below flag to `true` without also deploying a runtime
 	// migration which removes any links that point to the same DID!
@@ -720,7 +742,7 @@ impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type UniqueLinkingEnabled = ConstBool<true>;
-	type WeightInfo = weights::pallet_did_lookup_did_unique_linking::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_unique_linking::WeightInfo<Runtime>;
 }
 
 impl pallet_web3_names::Config for Runtime {
@@ -735,8 +757,11 @@ impl pallet_web3_names::Config for Runtime {
 	type MinNameLength = constants::web3_names::MinNameLength;
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = weights::pallet_web3_names_web3_names::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = benches::Web3NamesBenchmarkHelper;
 }
 
 pub type DotName = runtime_common::DotName<{ constants::dot_names::MIN_LENGTH }, { constants::dot_names::MAX_LENGTH }>;
@@ -755,7 +780,10 @@ impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Web3Name = DotName;
 	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = weights::pallet_web3_names_dot_names::WeightInfo<Runtime>;
+	type WeightInfo = weights::pallet_dot_names::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = benches::DotNamesBenchmarkHelper;
 }
 
 impl pallet_inflation::Config for Runtime {
@@ -1291,13 +1319,25 @@ mod benches {
 	use frame_system::RawOrigin;
 	use pallet_asset_switch::PartialBenchmarkInfo;
 	use runtime_common::AccountId;
+	use sp_std::{vec, vec::Vec};
 	use xcm::v4::{Asset, AssetId, Fungibility, Junction, Junctions, Location, ParentThen};
 
-	use crate::{Fungibles, ParachainSystem};
+	use crate::{DotNamesDeployment, Fungibles, ParachainSystem, Runtime};
 
 	frame_support::parameter_types! {
 		pub const MaxBalance: crate::Balance = crate::Balance::max_value();
 	}
+
+	/// Workaround for a bug in the benchmarking code around instances.
+	/// Upstream fix PR: https://github.com/paritytech/polkadot-sdk/pull/6435
+	#[allow(unused_imports)]
+	use pallet_collective as pallet_technical_committee_collective;
+	#[allow(unused_imports)]
+	use pallet_did_lookup as pallet_unique_linking;
+	#[allow(unused_imports)]
+	use pallet_membership as pallet_technical_membership;
+	#[allow(unused_imports)]
+	use pallet_web3_names as pallet_dot_names;
 
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
@@ -1307,9 +1347,6 @@ mod benches {
 		[pallet_session, SessionBench::<Runtime>]
 		[parachain_staking, ParachainStaking]
 		[pallet_democracy, Democracy]
-		[pallet_collective, Council]
-		[pallet_collective, TechnicalCommittee]
-		[pallet_membership, TechnicalMembership]
 		[pallet_treasury, Treasury]
 		[pallet_sudo, Sudo]
 		[pallet_utility, Utility]
@@ -1324,10 +1361,6 @@ mod benches {
 		[delegation, Delegation]
 		[did, Did]
 		[pallet_inflation, Inflation]
-		[pallet_did_lookup, DidLookup]
-		[pallet_did_lookup, UniqueLinking]
-		[pallet_web3_names, Web3Names]
-		[pallet_web3_names, DotNames]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pallet_migration, Migration]
@@ -1338,6 +1371,18 @@ mod benches {
 		[pallet_message_queue, MessageQueue]
 		[cumulus_pallet_parachain_system, ParachainSystem]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
+		// pallet_collective instances
+		[pallet_collective, Council]
+		[pallet_technical_committee_collective, TechnicalCommittee]
+		// pallet_membership instances
+		[pallet_membership, TipsMembership]
+		[pallet_technical_membership, TechnicalMembership]
+		// pallet_did_lookup instances
+		[pallet_did_lookup, DidLookup]
+		[pallet_unique_linking, UniqueLinking]
+		// pallet_web3_names instances
+		[pallet_web3_names, Web3Names]
+		[pallet_dot_names, DotNames]
 	);
 
 	// Required since the pallet `AssetTransactor` will try to deduct the XCM fee
@@ -1382,6 +1427,39 @@ mod benches {
 				remote_asset_id: None,
 				remote_xcm_fee: Some(remote_xcm_fee),
 			})
+		}
+	}
+
+	pub struct Web3NamesBenchmarkHelper;
+
+	impl pallet_web3_names::BenchmarkHelper for Web3NamesBenchmarkHelper {
+		fn generate_name_input_with_length(length: usize) -> Vec<u8> {
+			let input = vec![b'a'; length];
+
+			debug_assert!(<Runtime as pallet_web3_names::Config<()>>::Web3Name::try_from(input.clone()).is_ok());
+			input
+		}
+	}
+
+	pub struct DotNamesBenchmarkHelper;
+
+	impl pallet_web3_names::BenchmarkHelper for DotNamesBenchmarkHelper {
+		// Returns the name `11[...]111.dot` with as many `1`s as the provided length -
+		// 4, to account for the ".dot" suffix.
+		fn generate_name_input_with_length(length: usize) -> Vec<u8> {
+			let suffix_length = runtime_common::constants::dot_names::DOT_NAME_SUFFIX.len();
+			let remaining_name_length = length
+				.checked_sub(suffix_length)
+				.expect("Provided length should cover at least the length of the suffix.");
+			let input = vec![b'1'; remaining_name_length]
+				.into_iter()
+				.chain(runtime_common::constants::dot_names::DOT_NAME_SUFFIX.bytes())
+				.collect::<Vec<_>>();
+
+			debug_assert!(
+				<Runtime as pallet_web3_names::Config<DotNamesDeployment>>::Web3Name::try_from(input.clone()).is_ok()
+			);
+			input
 		}
 	}
 }

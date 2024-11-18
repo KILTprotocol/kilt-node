@@ -158,6 +158,9 @@ impl pallet_web3_names::Config for TestRuntime {
 	type Web3Name = AsciiWeb3Name<Self>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 impl pallet_did_lookup::Config for TestRuntime {
