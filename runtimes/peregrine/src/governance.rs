@@ -22,7 +22,7 @@ use frame_support::{
 	traits::{
 		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		ChangeMembers, EitherOfDiverse, LinearStoragePrice, PrivilegeCmp,
+		ChangeMembers, EitherOfDiverse, LinearStoragePrice,
 	},
 	weights::Weight,
 };
@@ -33,14 +33,13 @@ use runtime_common::{
 };
 use sp_core::{ConstBool, ConstU128, ConstU32, ConstU64};
 use sp_runtime::{traits::AccountIdLookup, Perbill, Permill};
-use sp_std::cmp::Ordering;
 
 use crate::{
 	weights, Balances, OriginCaller, Preimage, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
 	Scheduler, TechnicalCommittee, Treasury,
 };
 
-type RootOrCollectiveProportion<Collective, const NUM: u32, const DEN: u32> =
+pub(crate) type RootOrCollectiveProportion<Collective, const NUM: u32, const DEN: u32> =
 	EitherOfDiverse<EnsureRoot<AccountId>, pallet_collective::EnsureProportionAtLeast<AccountId, Collective, 2, 3>>;
 
 impl pallet_democracy::Config for Runtime {
@@ -149,7 +148,7 @@ parameter_types! {
 	pub MaxProposalWeight: Weight = maximum_proposal_weight();
 }
 
-type CouncilCollective = pallet_collective::Instance1;
+pub(crate) type CouncilCollective = pallet_collective::Instance1;
 impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Proposal = RuntimeCall;
@@ -243,50 +242,4 @@ impl pallet_preimage::Config for Runtime {
 		PreImageHoldReason,
 		LinearStoragePrice<constants::preimage::PreimageBaseDeposit, constants::ByteDeposit, Balance>,
 	>;
-}
-
-#[allow(clippy::arithmetic_side_effects)]
-#[inline]
-fn maximum_scheduler_weight() -> Weight {
-	Perbill::from_percent(80) * BlockWeights::get().max_block
-}
-
-parameter_types! {
-	pub MaximumSchedulerWeight: Weight = maximum_scheduler_weight();
-}
-
-/// Used the compare the privilege of an origin inside the scheduler.
-pub struct OriginPrivilegeCmp;
-
-impl PrivilegeCmp<OriginCaller> for OriginPrivilegeCmp {
-	fn cmp_privilege(left: &OriginCaller, right: &OriginCaller) -> Option<Ordering> {
-		if left == right {
-			return Some(Ordering::Equal);
-		}
-
-		match (left, right) {
-			// Root is greater than anything.
-			(OriginCaller::system(frame_system::RawOrigin::Root), _) => Some(Ordering::Greater),
-			// Check which one has more yes votes.
-			(
-				OriginCaller::Council(pallet_collective::RawOrigin::Members(l_yes_votes, l_count)),
-				OriginCaller::Council(pallet_collective::RawOrigin::Members(r_yes_votes, r_count)),
-			) => Some((l_yes_votes.saturating_mul(*r_count)).cmp(&(r_yes_votes.saturating_mul(*l_count)))),
-			// For every other origin we don't care, as they are not used for `ScheduleOrigin`.
-			_ => None,
-		}
-	}
-}
-
-impl pallet_scheduler::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeOrigin = RuntimeOrigin;
-	type PalletsOrigin = OriginCaller;
-	type RuntimeCall = RuntimeCall;
-	type MaximumWeight = MaximumSchedulerWeight;
-	type ScheduleOrigin = RootOrCollectiveProportion<CouncilCollective, 1, 2>;
-	type MaxScheduledPerBlock = ConstU32<50>;
-	type WeightInfo = weights::pallet_scheduler::WeightInfo<Runtime>;
-	type OriginPrivilegeCmp = OriginPrivilegeCmp;
-	type Preimages = Preimage;
 }

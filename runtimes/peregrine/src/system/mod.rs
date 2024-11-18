@@ -18,7 +18,8 @@
 
 use frame_support::{
 	parameter_types,
-	traits::{AsEnsureOriginWithArg, Everything},
+	traits::{AsEnsureOriginWithArg, Everything, PrivilegeCmp},
+	weights::Weight,
 };
 use frame_system::EnsureRoot;
 use runtime_common::{
@@ -32,15 +33,17 @@ use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64};
 use sp_runtime::{
 	impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys},
+	Perbill,
 };
-use sp_std::vec::Vec;
+use sp_std::{cmp::Ordering, vec::Vec};
 use sp_version::RuntimeVersion;
 use sp_weights::ConstantMultiplier;
 use xcm::v4::Location;
 
 use crate::{
-	weights, Aura, Balances, Block, OriginCaller, PalletInfo, ParachainStaking, Runtime, RuntimeCall, RuntimeEvent,
-	RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
+	governance::{CouncilCollective, RootOrCollectiveProportion},
+	weights, Aura, Balances, Block, OriginCaller, PalletInfo, ParachainStaking, Preimage, Runtime, RuntimeCall,
+	RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
 };
 
 pub(crate) mod proxy;
@@ -230,4 +233,50 @@ impl pallet_assets::Config for Runtime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
+}
+
+#[allow(clippy::arithmetic_side_effects)]
+#[inline]
+fn maximum_scheduler_weight() -> Weight {
+	Perbill::from_percent(80) * BlockWeights::get().max_block
+}
+
+parameter_types! {
+	pub MaximumSchedulerWeight: Weight = maximum_scheduler_weight();
+}
+
+/// Used the compare the privilege of an origin inside the scheduler.
+pub struct OriginPrivilegeCmp;
+
+impl PrivilegeCmp<OriginCaller> for OriginPrivilegeCmp {
+	fn cmp_privilege(left: &OriginCaller, right: &OriginCaller) -> Option<Ordering> {
+		if left == right {
+			return Some(Ordering::Equal);
+		}
+
+		match (left, right) {
+			// Root is greater than anything.
+			(OriginCaller::system(frame_system::RawOrigin::Root), _) => Some(Ordering::Greater),
+			// Check which one has more yes votes.
+			(
+				OriginCaller::Council(pallet_collective::RawOrigin::Members(l_yes_votes, l_count)),
+				OriginCaller::Council(pallet_collective::RawOrigin::Members(r_yes_votes, r_count)),
+			) => Some((l_yes_votes.saturating_mul(*r_count)).cmp(&(r_yes_votes.saturating_mul(*l_count)))),
+			// For every other origin we don't care, as they are not used for `ScheduleOrigin`.
+			_ => None,
+		}
+	}
+}
+
+impl pallet_scheduler::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeOrigin = RuntimeOrigin;
+	type PalletsOrigin = OriginCaller;
+	type RuntimeCall = RuntimeCall;
+	type MaximumWeight = MaximumSchedulerWeight;
+	type ScheduleOrigin = RootOrCollectiveProportion<CouncilCollective, 1, 2>;
+	type MaxScheduledPerBlock = ConstU32<50>;
+	type WeightInfo = weights::pallet_scheduler::WeightInfo<Runtime>;
+	type OriginPrivilegeCmp = OriginPrivilegeCmp;
+	type Preimages = Preimage;
 }
