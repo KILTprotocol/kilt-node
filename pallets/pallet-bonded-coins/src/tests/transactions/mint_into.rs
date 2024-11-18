@@ -17,24 +17,20 @@ use crate::{
 	Error,
 };
 
-fn collateral_at_supply(supply: u128) -> u128 {
-	supply.pow(2) + 3 * supply
-}
-
 #[test]
 fn mint_first_coin() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve = get_linear_bonding_curve();
 
-	let initial_balance = 100u128;
+	let initial_collateral = 100u128;
 	let amount_to_mint = 1u128;
 	let expected_price = collateral_at_supply(amount_to_mint);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_balance)])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_collateral)])
 		.with_pools(vec![(
 			pool_id.clone(),
 			generate_pool_details(
@@ -62,12 +58,15 @@ fn mint_first_coin() {
 			));
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
-				initial_balance - expected_price
+				<Test as crate::Config>::CollateralCurrencies::total_balance(
+					DEFAULT_COLLATERAL_CURRENCY_ID,
+					&ACCOUNT_00
+				),
+				initial_collateral - expected_price
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price
 			);
 
@@ -94,15 +93,17 @@ fn mint_large_quantity() {
 
 	let curve = get_linear_bonding_curve();
 
-	let initial_balance = u128::MAX;
-
-	let amount_to_mint = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
+	let initial_collateral = u128::MAX;
+	// Overflows will likely occur when squaring the total supply, which happens on
+	// an I75 representation of the balance, scaled down by its denomination
+	let denomination = 10u128.pow(DEFAULT_BONDED_DENOMINATION.into());
+	let amount_to_mint = (2_u128.pow(74).saturating_mul(denomination) as f64).sqrt() as u128;
 	let expected_price = collateral_at_supply(amount_to_mint);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_balance)])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_collateral)])
 		.with_pools(vec![(
 			pool_id.clone(),
 			generate_pool_details(
@@ -135,7 +136,7 @@ fn mint_large_quantity() {
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price,
 			);
 		})
@@ -184,7 +185,7 @@ fn mint_multiple_currencies() {
 
 			// pool collateral should now hold the expected price
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price
 			);
 			// minting account should hold balance of amount_to_mint
@@ -204,7 +205,7 @@ fn mint_multiple_currencies() {
 			));
 			// pool collateral should now hold the expected price of first and second mint
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price + expected_price_second_mint
 			);
 			// minting account should hold balance of amount_to_mint
@@ -221,16 +222,16 @@ fn mint_large_supply() {
 
 	let curve = get_linear_bonding_curve();
 
-	let initial_balance = u128::MAX;
+	let initial_collateral = u128::MAX;
 	let initial_supply = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
 
-	let amount_to_mint = 1;
+	let amount_to_mint = 1u128;
 	let expected_price = collateral_at_supply(initial_supply + amount_to_mint) - collateral_at_supply(initial_supply);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_balance)])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_collateral)])
 		.with_pools(vec![(
 			pool_id.clone(),
 			generate_pool_details(
@@ -263,7 +264,7 @@ fn mint_large_supply() {
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price,
 			);
 		})
@@ -344,8 +345,8 @@ fn multiple_mints_vs_combined_mint() {
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1),
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
 			);
 		})
 }
@@ -354,13 +355,13 @@ fn multiple_mints_vs_combined_mint() {
 fn mint_with_frozen_balance() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
-	let initial_balance = u128::MAX;
+	let initial_collateral = u128::MAX;
 	let amount_to_mint = 10u128.pow(10);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_balance)])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_collateral)])
 		.with_pools(vec![(
 			pool_id.clone(),
 			generate_pool_details(
@@ -383,7 +384,7 @@ fn mint_with_frozen_balance() {
 				0,
 				ACCOUNT_00,
 				amount_to_mint,
-				initial_balance,
+				initial_collateral,
 				1
 			));
 
@@ -410,7 +411,7 @@ fn mint_with_frozen_balance() {
 				0,
 				ACCOUNT_00,
 				amount_to_mint,
-				initial_balance,
+				initial_collateral,
 				1
 			));
 		})
@@ -420,7 +421,7 @@ fn mint_with_frozen_balance() {
 fn mint_on_locked_pool() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
-	let initial_balance = u128::MAX;
+	let initial_balance = u128::MAX / 2;
 	let amount_to_mint = 10u128.pow(10);
 
 	ExtBuilder::default()
@@ -585,6 +586,7 @@ fn mint_without_collateral() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_01, u128::MAX / 2)])
 		.with_pools(vec![(
 			pool_id.clone(),
 			generate_pool_details(

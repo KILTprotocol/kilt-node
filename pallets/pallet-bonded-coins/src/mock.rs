@@ -5,9 +5,10 @@ use frame_support::{
 	Hashable,
 };
 use frame_system::{EnsureRoot, EnsureSigned};
+use sp_core::U256;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, MultiSignature,
+	BoundedVec, BuildStorage, MultiSignature, PerThing,
 };
 use substrate_fixed::{
 	traits::{FixedSigned, FixedUnsigned},
@@ -45,18 +46,45 @@ pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
 pub(crate) const ONE_HUNDRED_KILT: u128 = 100_000_000_000_000_000;
 
 // helper functions
-pub fn assert_relative_eq(target: Float, expected: Float, epsilon: Float) {
+pub fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
 	assert!(
 		(target - expected).abs() <= epsilon,
-		"Expected {:?} but got {:?}",
+		"Expected {:?} +/- {:?} but got {:?}",
 		expected,
+		epsilon,
 		target
 	);
 }
 
+pub fn assert_balance_with_error_margin<T: PerThing>(target: u128, expected: u128, margin: T) {
+	let error_margin: u128 = margin.mul_ceil(expected);
+
+	assert!(
+		(target <= expected.saturating_add(error_margin)) && (target >= expected.saturating_sub(error_margin)),
+		"Expected {:?} to be in range {:?} +/- {:?}",
+		target,
+		expected,
+		error_margin
+	);
+}
+
+pub(crate) fn collateral_at_supply(supply: u128) -> u128 {
+	let supply_u256 = U256::from(supply);
+	let sup_squared = supply_u256 * supply_u256;
+	// curve is f(x) = 4x + 3, resulting in f'(x) = 2x^2 + 3x.
+	// The actual implementation operates on denomination-scaled amounts; we can
+	// replicate this behaviour based on smallest units by denomination-scaling 'n',
+	// the factor of x
+	let result =
+		U256::from(2) / U256::exp10(DEFAULT_BONDED_DENOMINATION.into()) * sup_squared + U256::from(3) * supply_u256;
+	result
+		.try_into()
+		.expect("expected collateral too large for balance type")
+}
+
 pub(crate) fn get_linear_bonding_curve<Float: FixedSigned>() -> Curve<Float> {
 	let m = Float::from_num(0);
-	let n = Float::from_num(1);
+	let n = Float::from_num(2);
 	let o = Float::from_num(3);
 	Curve::Polynomial(PolynomialParameters { m, n, o })
 }

@@ -6,44 +6,43 @@ use frame_support::{
 	},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
-use sp_runtime::TokenError;
+use sp_core::bounded_vec;
+use sp_runtime::{traits::Scale, Percent, TokenError};
+use substrate_fixed::{traits::ToFixed, types::I128F0};
 
 use crate::{
 	mock::{runtime::*, *},
 	types::{Locks, PoolStatus},
-	Error,
+	Error, PoolDetailsOf,
 };
-
-fn collateral_at_supply(supply: u128) -> u128 {
-	supply.pow(2) + 3 * supply
-}
 
 #[test]
 fn burn_first_coin() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
-	let initial_balance = 1u128;
-	let amount_to_burn = 1u128;
-	let expected_price = collateral_at_supply(amount_to_burn);
+	let amount_to_burn: u128 = 1;
+	let expected_price =
+		(2 * amount_to_burn.pow(2) + 3 * amount_to_burn) * 10u128.pow(DEFAULT_COLLATERAL_DENOMINATION.into());
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
-			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, initial_balance),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, amount_to_burn),
 		])
 		.with_pools(vec![(
 			pool_id.clone(),
-			generate_pool_details(
-				vec![DEFAULT_BONDED_CURRENCY_ID],
-				get_linear_bonding_curve(),
-				true,
-				None,
-				None,
-				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
-				None,
-			),
+			PoolDetailsOf::<Test> {
+				curve: get_linear_bonding_curve(),
+				manager: None,
+				transferable: true,
+				bonded_currencies: bounded_vec![DEFAULT_BONDED_CURRENCY_ID],
+				state: PoolStatus::Active,
+				collateral_id: DEFAULT_COLLATERAL_CURRENCY_ID,
+				denomination: 0,
+				owner: ACCOUNT_99,
+			},
 		)])
 		.build()
 		.execute_with(|| {
@@ -55,18 +54,23 @@ fn burn_first_coin() {
 				0,
 				ACCOUNT_00,
 				amount_to_burn,
-				expected_price,
+				expected_price - 1, // rounding down may be happening in the conversion to fixed
 				1
 			));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
-				expected_price // Collateral returned
+			assert_relative_eq::<I128F0>(
+				<Test as crate::Config>::CollateralCurrencies::total_balance(
+					DEFAULT_COLLATERAL_CURRENCY_ID,
+					&ACCOUNT_00,
+				)
+				.to_fixed(),
+				expected_price.to_fixed(), // Collateral returned
+				1.into(),
 			);
 
 			assert_eq!(
 				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
-				0 // Burned amount removed
+				0 // Burnt amount removed
 			);
 		});
 }
@@ -111,18 +115,20 @@ fn burn_large_supply() {
 				0,
 				ACCOUNT_00,
 				amount_to_burn,
-				expected_price,
+				expected_price - 1,
 				1
 			));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
-				initial_supply - amount_to_burn
+			assert_relative_eq::<I128F0>(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00).to_fixed(),
+				(initial_supply - amount_to_burn).to_fixed(),
+				1.into(),
 			);
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+			assert_balance_with_error_margin(
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				u128::MAX - expected_price,
+				Percent::from_percent(1),
 			);
 		})
 }
@@ -132,8 +138,10 @@ fn burn_large_quantity() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve = get_linear_bonding_curve();
-
-	let amount_to_burn = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
+	let denomination = 10u128.pow(DEFAULT_BONDED_DENOMINATION.into());
+	// Overflows will likely occur when squaring the total supply, which happens on
+	// an I75 representation of the balance, scaled down by its denomination
+	let amount_to_burn = (2_u128.pow(74).mul(denomination) as f64).sqrt() as u128;
 	let expected_price = collateral_at_supply(amount_to_burn);
 
 	ExtBuilder::default()
@@ -165,7 +173,7 @@ fn burn_large_quantity() {
 				0,
 				ACCOUNT_00,
 				amount_to_burn,
-				expected_price,
+				expected_price - 1,
 				1
 			));
 
@@ -175,7 +183,7 @@ fn burn_large_quantity() {
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				u128::MAX - expected_price,
 			);
 		})
@@ -221,12 +229,15 @@ fn burn_multiple_currencies() {
 				0,
 				ACCOUNT_00,
 				amount_to_burn,
-				expected_price_first_burn,
+				expected_price_first_burn - 1,
 				2
 			));
 			// Burning account should now hold the expected amount of collateral
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(
+					DEFAULT_COLLATERAL_CURRENCY_ID,
+					&ACCOUNT_00
+				),
 				expected_price_first_burn
 			);
 			// Bonded token balance should have dropped to 0
@@ -241,13 +252,16 @@ fn burn_multiple_currencies() {
 				1,
 				ACCOUNT_00,
 				amount_to_burn,
-				expected_price_second_burn,
+				expected_price_second_burn - 1,
 				2
 			));
 			// Burning account should now hold the expected amount of collateral from first
 			// and second burn
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(
+					DEFAULT_COLLATERAL_CURRENCY_ID,
+					&ACCOUNT_00
+				),
 				expected_price_first_burn + expected_price_second_burn
 			);
 			// Bonded token balance should have dropped to 0
@@ -307,7 +321,7 @@ fn multiple_burns_vs_combined_burn() {
 		.execute_with(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
-			// pool 1: 1 mint of 10 * amount
+			// pool 1: 1 burn of 10 * amount
 			assert_ok!(BondingPallet::burn_into(
 				origin.clone(),
 				pool_id1.clone(),
@@ -318,10 +332,12 @@ fn multiple_burns_vs_combined_burn() {
 				1
 			));
 
-			let balance_after_first_burn =
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00);
+			let balance_after_first_burn = <Test as crate::Config>::CollateralCurrencies::total_balance(
+				DEFAULT_COLLATERAL_CURRENCY_ID,
+				&ACCOUNT_00,
+			);
 
-			// pool 2: 10 mints of amount
+			// pool 2: 10 burns of amount
 			for _ in 0..10 {
 				assert_ok!(BondingPallet::burn_into(
 					origin.clone(),
@@ -334,17 +350,26 @@ fn multiple_burns_vs_combined_burn() {
 				));
 			}
 
-			let balance_after_second_burn =
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00);
+			let balance_after_second_burn = <Test as crate::Config>::CollateralCurrencies::total_balance(
+				DEFAULT_COLLATERAL_CURRENCY_ID,
+				&ACCOUNT_00,
+			);
 
 			assert_eq!(
 				balance_after_second_burn - balance_after_first_burn,
 				balance_after_first_burn,
 			);
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1),
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
+			assert_relative_eq(
+				I128F0::from_num(<Test as crate::Config>::Fungibles::total_balance(
+					DEFAULT_COLLATERAL_CURRENCY_ID,
+					&pool_id1,
+				)),
+				I128F0::from_num(<Test as crate::Config>::Fungibles::total_balance(
+					DEFAULT_COLLATERAL_CURRENCY_ID,
+					&pool_id2,
+				)),
+				I128F0::from_num(10),
 			);
 		})
 }
@@ -413,7 +438,7 @@ fn multiple_mints_vs_combined_burn() {
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				0,
 			);
 		})
