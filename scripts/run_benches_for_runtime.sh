@@ -70,7 +70,7 @@ cargo build $standard_args
 if [ $profile == "dev" ]; then
 	target_folder="debug"
 	# We care about benchmark correctness, not accuracy.
-	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored --no-verify"
+	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored"
 else
 	target_folder=$profile
 	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
