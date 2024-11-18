@@ -205,6 +205,18 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+
+		fn create_default_config() -> Vec<u8> {
+			create_default_config::<RuntimeGenesisConfig>()
+		}
+
+		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_config::<RuntimeGenesisConfig>(config)
+		}
+
+	}
+
 	impl kilt_runtime_api_did::Did<
 		Block,
 		DidIdentifier,
@@ -482,17 +494,5 @@ impl_runtime_apis! {
 			);
 			Executive::try_execute_block(block, state_root_check, sig_check, select).expect("try_execute_block failed")
 		}
-	}
-
-	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
-
-		fn create_default_config() -> Vec<u8> {
-			create_default_config::<RuntimeGenesisConfig>()
-		}
-
-		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
-			build_config::<RuntimeGenesisConfig>(config)
-		}
-
 	}
 }
