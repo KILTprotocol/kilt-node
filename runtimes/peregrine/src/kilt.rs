@@ -348,10 +348,3 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = crate::benchmarks::asset_switch::CreateFungibleForAssetSwitchPool1;
 }
-
-impl pallet_migration::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
-	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
-}

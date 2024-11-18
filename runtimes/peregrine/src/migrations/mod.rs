@@ -17,8 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::parameter_types;
+use runtime_common::constants;
 
-use crate::Runtime;
+use crate::{weights, Balances, Runtime, RuntimeEvent};
 
 parameter_types! {
 	pub const DmpPalletName: &'static str = "DmpQueue";
@@ -26,3 +27,10 @@ parameter_types! {
 
 pub type RuntimeMigrations =
 	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>;
+
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
+	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
+}
