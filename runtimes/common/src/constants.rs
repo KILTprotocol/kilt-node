@@ -373,9 +373,11 @@ pub mod timestamp {
 pub mod multisig {
 	use super::*;
 
-	pub const MAX_SIGNITORS: u32 = 64;
-	pub const DEPOSIT_BASE: Balance = DEPOSIT_STORAGE_ITEM;
-	pub const DEPOSIT_FACTOR: Balance = DEPOSIT_STORAGE_BYTE;
+	parameter_types! {
+		pub const MaxSignitors: u32 = 64;
+		pub const DepositBase: Balance = DEPOSIT_STORAGE_ITEM;
+		pub const DepositFactor: Balance = DEPOSIT_STORAGE_BYTE;
+	}
 }
 
 pub mod pallet_migration {

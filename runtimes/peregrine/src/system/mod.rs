@@ -23,7 +23,7 @@ use frame_support::{
 use frame_system::EnsureRoot;
 use runtime_common::{
 	asset_switch::EnsureRootAsTreasury,
-	constants::{self, UnvestedFundsAllowedWithdrawReasons, EXISTENTIAL_DEPOSIT},
+	constants,
 	fees::{ToAuthorCredit, WeightToFee},
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
 	SendDustAndFeesToTreasury, SlowAdjustingFeeUpdate,
@@ -112,7 +112,7 @@ impl pallet_balances::Config for Runtime {
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = runtime_common::SendDustAndFeesToTreasury<Runtime>;
-	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
+	type ExistentialDeposit = ConstU128<{ constants::EXISTENTIAL_DEPOSIT }>;
 	type AccountStore = System;
 	type WeightInfo = weights::pallet_balances::WeightInfo<Runtime>;
 	type MaxLocks = ConstU32<50>;
@@ -178,7 +178,7 @@ impl pallet_vesting::Config for Runtime {
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = constants::MinVestedTransfer;
 	type WeightInfo = weights::pallet_vesting::WeightInfo<Runtime>;
-	type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
+	type UnvestedFundsAllowedWithdrawReasons = constants::UnvestedFundsAllowedWithdrawReasons;
 	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
 }
 
@@ -186,9 +186,9 @@ impl pallet_multisig::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type Currency = Balances;
-	type DepositBase = ConstU128<{ constants::multisig::DEPOSIT_BASE }>;
-	type DepositFactor = ConstU128<{ constants::multisig::DEPOSIT_FACTOR }>;
-	type MaxSignatories = ConstU32<{ constants::multisig::MAX_SIGNITORS }>;
+	type DepositBase = constants::multisig::DepositBase;
+	type DepositFactor = constants::multisig::DepositFactor;
+	type MaxSignatories = constants::multisig::MaxSignitors;
 	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
 }
 
