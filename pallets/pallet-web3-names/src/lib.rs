@@ -140,10 +140,8 @@ pub mod pallet {
 		/// The max encoded length of a name.
 		#[pallet::constant]
 		type MaxNameLength: Get<u32>;
-		// FIXME: Refactor the definition of AsciiWeb3Name so that we don't need to
-		// require `Ord` here
 		/// The type of a name.
-		type Web3Name: FullCodec + Debug + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>> + MaxEncodedLen + Ord;
+		type Web3Name: FullCodec + Debug + Eq + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>> + MaxEncodedLen;
 		/// The type of a name owner.
 		type Web3NameOwner: Parameter + MaxEncodedLen;
 		/// Weight information for extrinsics in this pallet.

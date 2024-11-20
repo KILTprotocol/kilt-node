@@ -38,6 +38,7 @@ use frame_support::{
 };
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
+use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
@@ -48,7 +49,7 @@ use pallet_transaction_payment::{FeeDetails, FungibleAdapter};
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
-use sp_core::{ConstBool, ConstU64, OpaqueMetadata};
+use sp_core::{ConstBool, ConstU32, ConstU64, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
@@ -66,7 +67,7 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
-	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Nonce, Signature, SlowAdjustingFeeUpdate,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Nonce, Signature, SlowAdjustingFeeUpdate, Web3Name,
 };
 
 pub use pallet_timestamp::Call as TimestampCall;
@@ -197,7 +198,7 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
-	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type MaxConsumers = ConstU32<16>;
 }
 
 /// Maximum number of nominators per validator.
@@ -452,7 +453,7 @@ impl pallet_web3_names::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
+	type Web3Name = Web3Name<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 	type BalanceMigrationManager = ();
@@ -1016,7 +1017,7 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let parsed_name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			let parsed_name: Web3NameOf<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&parsed_name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))

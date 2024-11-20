@@ -363,6 +363,13 @@ pub mod governance {
 	}
 }
 
+pub mod timestamp {
+	use super::*;
+
+	#[allow(clippy::integer_division)]
+	pub const MINIMUM_PERIOD: u64 = SLOT_DURATION / 2;
+}
+
 pub mod multisig {
 	use super::*;
 

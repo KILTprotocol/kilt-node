@@ -19,6 +19,7 @@
 use did::did_details::DidVerificationKey;
 use frame_support::assert_noop;
 use pallet_dip_provider::traits::IdentityProvider;
+use pallet_web3_names::Web3NameOf;
 
 use crate::{
 	constants::dip_provider::MAX_LINKED_ACCOUNTS,
@@ -36,8 +37,7 @@ fn linked_did_info_provider_retrieve_max_capacity() {
 		web3_name_details,
 		linked_accounts,
 	} = create_linked_info(auth_key, Some(b"ntn_x2"), MAX_LINKED_ACCOUNTS);
-	let web3_name: Option<pallet_web3_names::web3_name::AsciiWeb3Name<TestRuntime>> =
-		web3_name_details.map(|n| n.web3_name);
+	let web3_name: Option<Web3NameOf<TestRuntime>> = web3_name_details.map(|n| n.web3_name);
 
 	ExtBuilder::default()
 		.with_dids(vec![(

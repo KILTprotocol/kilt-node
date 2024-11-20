@@ -139,7 +139,7 @@ decl_test_parachains! {
 		runtime = peregrine_runtime,
 		core = {
 			XcmpMessageHandler: peregrine_runtime::XcmpQueue,
-			LocationToAccountId: peregrine_runtime::xcm_config::LocationToAccountIdConverter,
+			LocationToAccountId: peregrine_runtime::xcm::LocationToAccountIdConverter,
 			ParachainInfo: peregrine_runtime::ParachainInfo,
 			MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
 		},

@@ -38,7 +38,7 @@ use runtime_common::{
 	AccountId, BlockNumber,
 };
 
-use crate::DotNamesDeployment;
+use crate::kilt::did::DotNamesDeployment;
 
 use super::{Runtime, RuntimeCall};
 

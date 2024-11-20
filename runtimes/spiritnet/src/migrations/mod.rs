@@ -16,17 +16,21 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
-use sp_std::fmt::Debug;
+use frame_support::parameter_types;
+use runtime_common::constants;
 
-/// KILT web3 name ownership details.
-#[derive(Clone, Encode, Decode, Debug, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
-pub struct Web3NameOwnership<Owner, Deposit: MaxEncodedLen, BlockNumber> {
-	/// The owner of the web3 name.
-	pub owner: Owner,
-	/// The block number at which the web3 name was claimed.
-	pub claimed_at: BlockNumber,
-	/// The deposit associated with the web3 name.
-	pub deposit: Deposit,
+use crate::{weights, Balances, Runtime, RuntimeEvent};
+
+parameter_types! {
+	pub const DmpPalletName: &'static str = "DmpQueue";
+}
+
+pub type RuntimeMigrations =
+	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>;
+
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
+	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
 }

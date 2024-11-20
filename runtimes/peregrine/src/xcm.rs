@@ -17,9 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, AssetSwitchPool1, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet,
-	MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
-	Treasury, WeightToFee, XcmpQueue,
+	kilt::{CheckingAccount, KiltToEKiltSwitchPallet},
+	AllPalletsWithSystem, AssetSwitchPool1, Balances, Fungibles, MessageQueue, ParachainInfo, ParachainSystem,
+	PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
@@ -53,18 +53,20 @@ use runtime_common::{
 		LocationToAccountId, MaxAssetsIntoHolding, MaxInstructions, MaxStale, ParentLocation, ParentOrSiblings,
 		ServiceWeight, UnitWeightCost,
 	},
-	SendDustAndFeesToTreasury,
+	AccountId, SendDustAndFeesToTreasury,
 };
 
 parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: Location = Parachain(ParachainInfo::parachain_id().into()).into();
-	pub const RelayNetworkId: NetworkId = NetworkId::Polkadot;
-	pub UniversalLocation: InteriorLocation = Junctions::X2([GlobalConsensus(RelayNetworkId::get()), Parachain(ParachainInfo::parachain_id().into())].into());
+	// TODO: This needs to be updated once we deploy Peregrine on Rococo/Paseo and once we migrate to an SDK version that includes Paseo.
+	pub const RelayNetworkId: Option<NetworkId> = None;
+	pub UniversalLocation: InteriorLocation =
+		Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
 /// This type specifies how a `MultiLocation` can be converted into an
-/// `AccountId` within the Spiritnet network, which is crucial for determining
+/// `AccountId` within the Peregrine network, which is crucial for determining
 /// ownership of accounts for asset transactions and for dispatching XCM
 /// `Transact` operations.
 pub type LocationToAccountIdConverter = LocationToAccountId<RelayNetworkId>;
@@ -75,8 +77,9 @@ pub type LocationToAccountIdConverter = LocationToAccountId<RelayNetworkId>;
 /// `Origin` it will become.
 pub type XcmOriginToTransactDispatchOrigin = (
 	// Sovereign account converter; this attempts to derive an `AccountId` from the origin location
-	// using `LocationToAccountId` and then turn that into the usual `Signed` origin. Useful for
+	// using `LocationToAccountIdConverter` and then turn that into the usual `Signed` origin. Useful for
 	// foreign chains who want to have a local sovereign account on this chain which they control.
+	// In contrast to Spiritnet, it's fine to include this on peregrine for testing.
 	SovereignSignedViaLocation<LocationToAccountIdConverter, RuntimeOrigin>,
 	// Native converter for Relay-chain (Parent) location which converts to a `Relay` origin when
 	// recognized.
@@ -206,6 +209,7 @@ impl xcm_executor::Config for XcmConfig {
 		IsSwitchPairRemoteAsset<Runtime, KiltToEKiltSwitchPallet>,
 		IsSwitchPairXcmFeeAsset<Runtime, KiltToEKiltSwitchPallet>,
 	);
+
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	type UniversalLocation = UniversalLocation;
@@ -231,6 +235,7 @@ impl xcm_executor::Config for XcmConfig {
 		// Can pay with the fungible that matches the "Here" location.
 		UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, SendDustAndFeesToTreasury<Runtime>>,
 	);
+
 	type ResponseHandler = EitherOr<PolkadotXcm, AssetSwitchPool1>;
 	// What happens with assets that are left in the register after the XCM message
 	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset
@@ -297,10 +302,6 @@ impl cumulus_pallet_xcm::Config for Runtime {
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 }
 
-parameter_types! {
-	pub const MaxInboundSuspended: u32 = 1_000;
-}
-
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ChannelInfo = ParachainSystem;
@@ -309,7 +310,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
 	type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
 	type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
-	type MaxInboundSuspended = MaxInboundSuspended;
+	type MaxInboundSuspended = ConstU32<1_000>;
 	type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
 }
 
