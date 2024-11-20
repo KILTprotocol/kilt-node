@@ -24,9 +24,7 @@ pallets=(
 
 // Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
-  pallets+=(
-		pallet-bonded-coins
-	)
+  pallets+=()
 fi
 
 echo "[+] Running all default weight benchmarks for $runtime --chain=$chain"
