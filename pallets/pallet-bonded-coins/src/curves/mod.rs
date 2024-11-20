@@ -41,7 +41,7 @@ pub enum Curve<Parameter> {
 }
 
 /// An enum representing input parameters for different types of curves.
-/// Used to convert input parameters to the correct fixed-point type.
+/// Used to convert into Curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum CurveInput<Parameter> {
 	Polynomial(PolynomialParametersInput<Parameter>),
