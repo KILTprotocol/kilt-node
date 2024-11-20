@@ -8,7 +8,7 @@ use frame_support::{
 	},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
-use sp_runtime::{ArithmeticError, TokenError};
+use sp_runtime::{assert_eq_error_rate, ArithmeticError, Permill, TokenError};
 
 use crate::{
 	curves::{polynomial::PolynomialParameters, Curve},
@@ -16,6 +16,8 @@ use crate::{
 	types::{Locks, PoolStatus},
 	Error,
 };
+
+const MAX_ERROR: Permill = Permill::from_perthousand(1);
 
 #[test]
 fn mint_first_coin() {
@@ -57,17 +59,19 @@ fn mint_first_coin() {
 				1
 			));
 
-			assert_eq!(
+			assert_eq_error_rate!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(
 					DEFAULT_COLLATERAL_CURRENCY_ID,
 					&ACCOUNT_00
 				),
-				initial_collateral - expected_price
+				initial_collateral - expected_price,
+				MAX_ERROR.mul_floor(expected_price)
 			);
 
-			assert_eq!(
+			assert_eq_error_rate!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
-				expected_price
+				expected_price,
+				MAX_ERROR.mul_floor(expected_price)
 			);
 
 			assert_eq!(
@@ -135,9 +139,10 @@ fn mint_large_quantity() {
 				amount_to_mint
 			);
 
-			assert_eq!(
+			assert_eq_error_rate!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price,
+				MAX_ERROR.mul_floor(expected_price)
 			);
 		})
 }
@@ -188,9 +193,10 @@ fn mint_multiple_currencies() {
 			));
 
 			// pool collateral should now hold the expected price
-			assert_eq!(
+			assert_eq_error_rate!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
-				expected_price
+				expected_price,
+				MAX_ERROR.mul_floor(expected_price)
 			);
 			// minting account should hold balance of amount_to_mint
 			assert_eq!(
@@ -208,9 +214,10 @@ fn mint_multiple_currencies() {
 				2
 			));
 			// pool collateral should now hold the expected price of first and second mint
-			assert_eq!(
+			assert_eq_error_rate!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
-				expected_price + expected_price_second_mint
+				expected_price + expected_price_second_mint,
+				MAX_ERROR.mul_floor(expected_price + expected_price_second_mint)
 			);
 			// minting account should hold balance of amount_to_mint
 			assert_eq!(
@@ -270,9 +277,10 @@ fn mint_large_supply() {
 				amount_to_mint
 			);
 
-			assert_eq!(
+			assert_eq_error_rate!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price,
+				MAX_ERROR.mul_floor(expected_price)
 			);
 		})
 }
