@@ -362,8 +362,10 @@ mod benchmarks {
 			None,
 		);
 
+		let locks = Locks::default();
+
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id, Locks::default());
+		_(origin as T::RuntimeOrigin, pool_id, locks);
 		// Verify
 		let (_, pool) = Pools::<T>::iter().next().expect("Pool should exist");
 		assert_eq!(pool.state, PoolStatus::Locked(Locks::default()));
@@ -417,7 +419,9 @@ mod benchmarks {
 			.expect("Touching should work");
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
-		let amount_to_mint = 10u128;
+		let amount_to_mint = 10u128.saturated_into();
+		let max_costs = 100000u128.saturated_into();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
 		mint_into(
@@ -425,9 +429,9 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			amount_to_mint.saturated_into(),
-			100000u128.saturated_into(),
-			T::MaxCurrencies::get(),
+			amount_to_mint,
+			max_costs,
+			max_currencies,
 		);
 
 		// Verify
@@ -458,7 +462,9 @@ mod benchmarks {
 			.expect("Touching should work");
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
-		let amount_to_mint = 10u128;
+		let amount_to_mint = 10u128.saturated_into();
+		let max_costs = 100000u128.saturated_into();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
 		mint_into(
@@ -466,9 +472,9 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			amount_to_mint.saturated_into(),
-			100000u128.saturated_into(),
-			T::MaxCurrencies::get(),
+			amount_to_mint,
+			max_costs,
+			max_currencies,
 		);
 
 		// Verify
@@ -500,7 +506,9 @@ mod benchmarks {
 			.expect("Touching should work");
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
-		let amount_to_mint = 10u128;
+		let amount_to_mint = 10u128.saturated_into();
+		let max_costs = 100000u128.saturated_into();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
 		mint_into(
@@ -508,9 +516,9 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			amount_to_mint.saturated_into(),
-			100000u128.saturated_into(),
-			T::MaxCurrencies::get(),
+			amount_to_mint,
+			max_costs,
+			max_currencies,
 		);
 
 		// Verify
@@ -546,7 +554,9 @@ mod benchmarks {
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
-		let amount_to_burn = 10u128;
+		let amount_to_burn = 10u128.saturated_into();
+		let min_return = 0u128.saturated_into();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
 		burn_into(
@@ -554,13 +564,16 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			amount_to_burn.saturated_into(),
-			0u128.saturated_into(),
-			T::MaxCurrencies::get(),
+			amount_to_burn,
+			min_return,
+			max_currencies,
 		);
 
 		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
-		assert_eq!(balance, (start_balance - amount_to_burn).saturated_into());
+		assert_eq!(
+			balance,
+			(start_balance - amount_to_burn.saturated_into::<u128>()).saturated_into()
+		);
 	}
 
 	#[benchmark]
@@ -589,7 +602,9 @@ mod benchmarks {
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
-		let amount_to_burn = 10u128;
+		let amount_to_burn = 10u128.saturated_into();
+		let min_return = 0u128.saturated_into();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
 		burn_into(
@@ -597,13 +612,16 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			amount_to_burn.saturated_into(),
-			0u128.saturated_into(),
-			T::MaxCurrencies::get(),
+			amount_to_burn,
+			min_return,
+			max_currencies,
 		);
 
 		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
-		assert_eq!(balance, (start_balance - amount_to_burn).saturated_into());
+		assert_eq!(
+			balance,
+			(start_balance - amount_to_burn.saturated_into::<u128>()).saturated_into()
+		);
 	}
 
 	#[benchmark]
@@ -633,7 +651,9 @@ mod benchmarks {
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
-		let amount_to_burn = 10u128;
+		let amount_to_burn = 10u128.saturated_into();
+		let min_return = 0u128.saturated_into();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
 		burn_into(
@@ -641,13 +661,16 @@ mod benchmarks {
 			pool_id,
 			0,
 			beneficiary,
-			amount_to_burn.saturated_into(),
-			0u128.saturated_into(),
-			T::MaxCurrencies::get(),
+			amount_to_burn,
+			min_return,
+			max_currencies,
 		);
 
 		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
-		assert_eq!(balance, (start_balance - amount_to_burn).saturated_into());
+		assert_eq!(
+			balance,
+			(start_balance - amount_to_burn.saturated_into::<u128>()).saturated_into()
+		);
 	}
 
 	#[benchmark]
@@ -668,9 +691,11 @@ mod benchmarks {
 			None,
 			None,
 		);
+		let pool_id_clone = pool_id.clone();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
 
 		// Verify
 
@@ -686,9 +711,11 @@ mod benchmarks {
 		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
 
 		let origin = T::ForceOrigin::try_successful_origin().expect("creating origin should not fail");
+		let pool_id_clone = pool_id.clone();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
 
 		// Verify
 
@@ -720,9 +747,11 @@ mod benchmarks {
 		.expect("Generating Hold should not fail");
 
 		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
+		let pool_id_clone = pool_id.clone();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
 
 		// Verify
 		let pool_details = Pools::<T>::get(&pool_id);
@@ -761,8 +790,11 @@ mod benchmarks {
 		T::Fungibles::touch(target_asset_id.clone(), &holder, &account_origin).expect("Touching should work");
 		set_fungible_balance::<T>(target_asset_id, &holder, 10000u128);
 
+		let pool_id_clone = pool_id.clone();
+		let max_currencies = T::MaxCurrencies::get();
+
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
 
 		// Verify
 
@@ -794,9 +826,11 @@ mod benchmarks {
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
 		let origin = T::ForceOrigin::try_successful_origin().expect("creating origin should not fail");
+		let pool_id_clone = pool_id.clone();
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id.clone(), T::MaxCurrencies::get());
+		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
 
 		let pool_details = Pools::<T>::get(&pool_id).expect("Pool should exist");
 		assert_eq!(pool_details.state, PoolStatus::Refunding);
@@ -836,15 +870,10 @@ mod benchmarks {
 		set_fungible_balance::<T>(target_asset_id.clone(), &account_origin, 100000u128);
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
+		let max_currencies = T::MaxCurrencies::get();
 
 		#[extrinsic_call]
-		_(
-			origin as T::RuntimeOrigin,
-			pool_id,
-			beneficiary,
-			0,
-			T::MaxCurrencies::get(),
-		);
+		_(origin as T::RuntimeOrigin, pool_id, beneficiary, 0, max_currencies);
 
 		// Verify
 		let balance = T::Fungibles::balance(target_asset_id, &account_origin);
