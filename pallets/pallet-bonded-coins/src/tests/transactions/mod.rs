@@ -1,5 +1,6 @@
 mod burn_into;
 mod create_pool;
+mod finish_destroy;
 mod mint_into;
 mod reset_manager;
 mod reset_team;
