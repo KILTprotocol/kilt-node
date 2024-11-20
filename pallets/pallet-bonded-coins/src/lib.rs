@@ -736,11 +736,6 @@ pub mod pallet {
 			)?
 			.into();
 
-			if burnt.is_zero() {
-				// no funds available to be burnt on account; nothing to do here
-				return Ok(());
-			}
-
 			let sum_of_issuances = pool_details
 				.bonded_currencies
 				.into_iter()
@@ -767,22 +762,6 @@ pub mod pallet {
 				// Also theoretically impossible, as the result must be <= total_collateral_issuance
 				// if burnt <= sum_of_issuances, which should always hold true
 				.ok_or(Error::<T>::Internal)?;
-
-			if amount.is_zero()
-				|| T::CollateralCurrencies::can_deposit(
-					pool_details.collateral_id.clone(),
-					&who,
-					amount,
-					Provenance::Extant,
-				)
-				.into_result()
-				.is_err()
-			{
-				// Funds are burnt but the collateral received is not sufficient to be deposited
-				// to the account. This is tolerated as otherwise we could have edge cases where
-				// it's impossible to refund at least some accounts.
-				return Ok(());
-			}
 
 			let transferred = T::CollateralCurrencies::transfer(
 				pool_details.collateral_id,
