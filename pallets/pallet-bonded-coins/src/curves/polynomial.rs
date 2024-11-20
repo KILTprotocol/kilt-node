@@ -1,12 +1,31 @@
 /// Polynomial bonding curve implementation.
-/// The polynomial bonding curve is defined by the following equation:
-/// C(s) = m* s^3 + n * s^2 + o * s,
+///
+/// This module provides an implementation of a polynomial bonding curve. The current implementation supports a cubic bonding curve, where the integral is precomputed.
+/// The cost function for the polynomial bonding curve is defined as:
+/// C(s) = m * s^3 + n * s^2 + o * s,
 /// where:
-/// - `s` is the supply of assets to mint,
+/// - `s` is the supply of assets,
 /// - `m` is the coefficient for the cubic part,
 /// - `n` is the coefficient for the quadratic part,
 /// - `o` is the coefficient for the linear part.
-/// `C(s)` represents the cost of purchasing a set of assets from the market.
+/// `C(s)` represents the accumulated cost of purchasing assets up to the current supply `s`.
+///
+/// To calculate the incremental cost of purchasing the assets, use the formula:
+/// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
+///
+/// The module includes the following components:
+///
+/// - `PolynomialParametersInput`: A struct representing the input parameters for a polynomial bonding curve.
+/// - `PolynomialParameters`: A struct representing the parameters for a polynomial bonding curve, used to perform calculations and stored in storage.
+/// - `TryFrom<PolynomialParametersInput<I>> for PolynomialParameters<C>`: An implementation to convert input parameters to the correct fixed-point type.
+/// - `BondingFunction<Parameter> for PolynomialParameters<Parameter>`: An implementation of the bonding function to calculate costs.
+///
+/// Optimization
+/// The calculation of x^3 can quickly overflow the fixed-point type. To avoid this, the calculation is factored into:
+/// x^3 = (x^2 + x * y + y^2) * (x - y),
+/// where:
+/// - `x` is the upper bound of the integral,
+/// - `y` is the lower bound of the integral.
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
@@ -29,6 +48,14 @@ pub struct PolynomialParametersInput<Parameter> {
 	pub o: Parameter,
 }
 
+/// A struct representing the parameters for a polynomial bonding curve.
+/// This struct is used to store the parameters for a polynomial bonding
+/// curve and to perform calculations using the polynomial bonding curve.
+///
+/// # Fields
+/// - `m`: Coefficient for the cubic part.
+/// - `n`: Coefficient for the quadratic part.
+/// - `o`: Coefficient for the linear part.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PolynomialParameters<Parameter> {
 	pub m: Parameter,
@@ -36,6 +63,9 @@ pub struct PolynomialParameters<Parameter> {
 	pub o: Parameter,
 }
 
+/// Implementation of the TryFrom trait for `PolynomialParametersInput` to convert the input parameters to
+/// the correct fixed-point type. The TryFrom implementation for `PolynomialParameters` will fail if the
+/// conversion to the fixed-point type fails.
 impl<I: FixedUnsigned, C: FixedSigned> TryFrom<PolynomialParametersInput<I>> for PolynomialParameters<C> {
 	type Error = ();
 	fn try_from(value: PolynomialParametersInput<I>) -> Result<Self, Self::Error> {
@@ -51,6 +81,7 @@ impl<Parameter> BondingFunction<Parameter> for PolynomialParameters<Parameter>
 where
 	Parameter: FixedSigned,
 {
+	/// Calculate the cost of purchasing assets using the polynomial bonding curve.
 	fn calculate_costs(
 		&self,
 		low: Parameter,

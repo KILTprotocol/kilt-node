@@ -1,9 +1,6 @@
-/// Implementation of the Logarithmic Market Scoring Rule (LMSR) bonding curve. The LMSR bonding curve
-/// acts as a market maker, facilitating the creation of a market for a set of assets. The cost of
-/// purchasing a set of assets from the market is determined using the liquidity parameter of the
+/// Implementation of the Logarithmic Market Scoring Rule (LMSR) bonding curve.
+/// The cost of purchasing an amount of assets from the market is determined using the liquidity parameter of the
 /// LMSR model and the current supply of assets in the market.
-///
-/// # Equation
 /// The LMSR bonding curve is defined by the following equation:
 ///
 /// C(s) = m * ln(Σ(e^(s_i/m))),
@@ -13,9 +10,18 @@
 /// - `m` is the liquidity parameter of the LMSR model,
 /// - `s_i` is the current supply of the assets.
 ///
-/// `C(s)` represents the cost of purchasing a set of assets from the market.
+/// `C(s)` represents the accumulated cost of purchasing assets up to the current supply `s`.
+/// To calculate the incremental cost of purchasing the assets, use the formula:
+/// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
 ///
-/// # Numerical Stability
+///
+/// Components
+/// - `LMSRParametersInput`: A struct representing the input parameters for the LMSR model.
+/// - `LMSRParameters`: A struct representing the parameters for the LMSR model.
+/// - `calculate_cost`: A function to calculate the cost of purchasing assets using the LMSR model.
+/// - `calculate_incremental_cost`: A function to calculate the incremental cost of purchasing assets using the LMSR model.
+///
+/// Optimization
 /// For numerical stability, the LMSR bonding curve employs the log-sum-exp trick to calculate the cost.
 use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -31,13 +37,10 @@ use super::BondingFunction;
 use crate::{PassiveSupply, Precision, LOG_TARGET};
 
 /// A struct representing the input parameters for the LMSR model. This struct is used to convert
-/// the input parameters to the correct fixed-point type. The TryFrom implementation for
-/// `LMSRParameters` will fail if the conversion to the fixed-point type fails or if the liquidity
-/// parameter is less than or equal to zero.
+/// the input parameters to the correct fixed-point type.
 ///
 /// # Fields
 /// - `m`: The liquidity parameter for the LMSR model. This value must be greater than zero.
-///
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParametersInput<Parameter> {
 	pub m: Parameter,
@@ -48,7 +51,6 @@ pub struct LMSRParametersInput<Parameter> {
 ///
 /// # Fields
 /// - `m`: The liquidity parameter for the LMSR model. This value must be greater than zero and unsigned.
-///
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParameters<Parameter> {
 	pub m: Parameter,

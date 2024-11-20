@@ -1,3 +1,15 @@
+///  Curve Module
+///
+/// This module defines various curve types and their associated parameters used in the system.
+/// It includes the following curve types:
+/// - Polynomial
+/// - SquareRoot
+/// - LMSR (Logarithmic Market Scoring Rule)
+///
+/// The module provides the following key components:
+/// - `Curve`: An enum representing different types of curves with their respective parameters. Used to store curve parameters and perform calculations.
+/// - `CurveInput`: An enum representing input parameters for different types of curves. Used to convert input parameters to the correct fixed-point type.
+/// - `TryFrom<CurveInput<I>> for Curve<C>`: An implementation to convert `CurveInput` into `Curve`.
 pub(crate) mod lmsr;
 pub(crate) mod polynomial;
 pub(crate) mod square_root;
@@ -19,6 +31,8 @@ use crate::{
 	Config, CurveParameterTypeOf, PassiveSupply, Precision,
 };
 
+/// An enum representing different types of curves with their respective parameters.
+/// Used to store curve parameters and perform calculations.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<Parameter> {
 	Polynomial(PolynomialParameters<Parameter>),
@@ -26,6 +40,8 @@ pub enum Curve<Parameter> {
 	Lmsr(LMSRParameters<Parameter>),
 }
 
+/// An enum representing input parameters for different types of curves.
+/// Used to convert input parameters to the correct fixed-point type.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum CurveInput<Parameter> {
 	Polynomial(PolynomialParametersInput<Parameter>),
@@ -33,6 +49,11 @@ pub enum CurveInput<Parameter> {
 	Lmsr(LMSRParametersInput<Parameter>),
 }
 
+/// Implementation of the TryFrom trait for `CurveInput` to convert the input parameters to
+/// the correct fixed-point type. The TryFrom implementation for `Curve` will fail if the
+/// conversion to the fixed-point type fails.
+/// The conversion is done by converting the input parameters to the correct fixed-point type
+/// using the TryFrom implementation for the respective parameters type.
 impl<I, C> TryFrom<CurveInput<I>> for Curve<C>
 where
 	LMSRParameters<C>: TryFrom<LMSRParametersInput<I>>,
@@ -72,6 +93,10 @@ where
 	}
 }
 
+/// Implementation of the `BondingFunction` trait for `Curve`.
+/// The `BondingFunction` trait is used to calculate the cost of purchasing assets using the curve.
+///
+/// The implementation forwards the call to the inner bonding function.
 impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
@@ -87,6 +112,14 @@ where
 	}
 }
 
+/// Trait defining the bonding function for a curve.
+/// The bonding function is used to calculate the cost of purchasing assets using the curve.
+/// The trait is implemented for each curve type.
+///
+/// Variables:
+/// - `low`: The lower bound of integral.
+/// - `high`: The upper bound of integral.
+/// - `passive_supply`: The passive supply of other assets in the pool.
 pub trait BondingFunction<Balance> {
 	fn calculate_costs(
 		&self,
@@ -96,16 +129,19 @@ pub trait BondingFunction<Balance> {
 	) -> Result<Balance, ArithmeticError>;
 }
 
+/// Helper function to calculate the square of a fixed-point number.
 fn square<FixedType: Fixed>(x: FixedType) -> Result<FixedType, ArithmeticError> {
 	x.checked_mul(x).ok_or(ArithmeticError::Overflow)
 }
 
+/// Helper function to calculate the accumulated passive issuance.
 fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Balance]) -> Balance {
 	passive_issuance
 		.iter()
 		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
 }
 
+/// TODO. Implementation might change.
 pub(crate) fn convert_to_fixed<T: Config>(x: u128, denomination: u8) -> Result<CurveParameterTypeOf<T>, ArithmeticError>
 where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
