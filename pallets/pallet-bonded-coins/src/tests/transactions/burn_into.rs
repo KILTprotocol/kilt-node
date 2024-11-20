@@ -15,6 +15,10 @@ use crate::{
 	Error, PoolDetailsOf,
 };
 
+// should not be u128::MAX, as a bug in the assets pallet results in transfers
+// failing if amount + total supply > u128::MAX
+const LARGE_BALANCE: u128 = u128::MAX / 10;
+
 #[test]
 fn burn_first_coin() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
@@ -27,7 +31,7 @@ fn burn_first_coin() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), LARGE_BALANCE),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, amount_to_burn),
 		])
 		.with_pools(vec![(
@@ -88,7 +92,7 @@ fn burn_large_supply() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), LARGE_BALANCE),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, initial_supply),
 		])
 		.with_pools(vec![(
@@ -125,7 +129,7 @@ fn burn_large_supply() {
 
 			assert_eq_error_rate!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
-				u128::MAX - expected_price,
+				LARGE_BALANCE - expected_price,
 				1,
 			);
 		})
@@ -146,7 +150,7 @@ fn burn_large_quantity() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), LARGE_BALANCE),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, amount_to_burn),
 		])
 		.with_pools(vec![(
@@ -182,7 +186,7 @@ fn burn_large_quantity() {
 
 			assert_eq!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
-				u128::MAX - expected_price,
+				LARGE_BALANCE - expected_price,
 			);
 		})
 }
@@ -201,7 +205,11 @@ fn burn_multiple_currencies() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(
+				DEFAULT_COLLATERAL_CURRENCY_ID,
+				pool_id.clone(),
+				(expected_price_first_burn + expected_price_second_burn) * 2,
+			),
 			(currencies[0], ACCOUNT_00, amount_to_burn),
 			(currencies[1], ACCOUNT_00, amount_to_burn),
 		])
@@ -284,8 +292,8 @@ fn multiple_burns_vs_combined_burn() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id1.clone(), u128::MAX / 2),
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id2.clone(), u128::MAX / 2),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id1.clone(), LARGE_BALANCE),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id2.clone(), LARGE_BALANCE),
 			(currency_1, ACCOUNT_00, amount_to_burn * 10),
 			(currency_2, ACCOUNT_00, amount_to_burn * 10),
 		])
@@ -335,6 +343,8 @@ fn multiple_burns_vs_combined_burn() {
 				&ACCOUNT_00,
 			);
 
+			assert_ne!(balance_after_first_burn, 0u128);
+
 			// pool 2: 10 burns of amount
 			for _ in 0..10 {
 				assert_ok!(BondingPallet::burn_into(
@@ -355,13 +365,12 @@ fn multiple_burns_vs_combined_burn() {
 
 			assert_eq!(
 				balance_after_second_burn - balance_after_first_burn,
-				balance_after_first_burn,
+				balance_after_first_burn
 			);
 
-			assert_eq_error_rate!(
+			assert_eq!(
 				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1,),
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2,),
-				10,
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2,)
 			);
 		})
 }
@@ -375,10 +384,12 @@ fn multiple_mints_vs_combined_burn() {
 
 	let amount_to_mint = 11u128.pow(10);
 
+	let expected_prize = collateral_at_supply(10 * amount_to_mint);
+
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, LARGE_BALANCE)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, expected_prize)])
 		.with_pools(vec![(
 			pool_id.clone(),
 			generate_pool_details(
@@ -440,14 +451,14 @@ fn multiple_mints_vs_combined_burn() {
 fn burn_with_frozen_balance() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
-	let initial_balance = 10 * 10u128.pow(10);
 	let amount_to_burn = 10u128.pow(10); // must be smaller than initial_balance / 2
+	let initial_balance = 3 * amount_to_burn;
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), LARGE_BALANCE),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, initial_balance),
 		])
 		.with_pools(vec![(
@@ -521,7 +532,7 @@ fn burn_on_locked_pool() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), LARGE_BALANCE),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, initial_balance),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, initial_balance),
 		])
@@ -674,7 +685,7 @@ fn burn_beyond_balance() {
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, 1), // Only 1 unit available
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), LARGE_BALANCE),
 		])
 		.with_pools(vec![(
 			pool_id.clone(),

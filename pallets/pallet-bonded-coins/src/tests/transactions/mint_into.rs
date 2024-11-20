@@ -156,7 +156,11 @@ fn mint_multiple_currencies() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
+		.with_bonded_balance(vec![(
+			DEFAULT_COLLATERAL_CURRENCY_ID,
+			ACCOUNT_00,
+			(expected_price + expected_price_second_mint) * 2,
+		)])
 		.with_pools(vec![(
 			pool_id.clone(),
 			generate_pool_details(
@@ -222,16 +226,19 @@ fn mint_large_supply() {
 
 	let curve = get_linear_bonding_curve();
 
-	let initial_collateral = u128::MAX;
 	let initial_supply = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
 
 	let amount_to_mint = 1u128;
 	let expected_price = collateral_at_supply(initial_supply + amount_to_mint) - collateral_at_supply(initial_supply);
+	let initial_collateral = expected_price * 2;
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_collateral)])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_collateral),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, initial_supply),
+		])
 		.with_pools(vec![(
 			pool_id.clone(),
 			generate_pool_details(
@@ -280,11 +287,12 @@ fn multiple_mints_vs_combined_mint() {
 	let curve = get_linear_bonding_curve();
 
 	let amount_to_mint = 11u128.pow(10);
+	let account_collateral = 10u128.pow(20);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, account_collateral)])
 		.with_pools(vec![
 			(
 				pool_id1.clone(),
@@ -322,7 +330,7 @@ fn multiple_mints_vs_combined_mint() {
 				0,
 				ACCOUNT_00,
 				amount_to_mint * 10,
-				u128::MAX,
+				account_collateral / 2,
 				1
 			));
 
@@ -334,7 +342,7 @@ fn multiple_mints_vs_combined_mint() {
 					0,
 					ACCOUNT_00,
 					amount_to_mint,
-					u128::MAX,
+					account_collateral / 2 / 10,
 					1
 				));
 			}
@@ -355,7 +363,7 @@ fn multiple_mints_vs_combined_mint() {
 fn mint_with_frozen_balance() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
-	let initial_collateral = u128::MAX;
+	let initial_collateral = 10u128.pow(20);
 	let amount_to_mint = 10u128.pow(10);
 
 	ExtBuilder::default()
@@ -629,8 +637,12 @@ fn mint_more_than_fixed_can_represent() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
-		// .with_bonded_balance(vec![(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, 10u128.pow(32))])
+		.with_bonded_balance(vec![(
+			DEFAULT_COLLATERAL_CURRENCY_ID,
+			ACCOUNT_00,
+			u128::MAX - amount_to_mint, /* due to a bug in the assets pallet, transfers silently fail if the total
+			                             * supply + transferred amount > u128::MAX */
+		)])
 		.with_pools(vec![(
 			pool_id.clone(),
 			generate_pool_details(

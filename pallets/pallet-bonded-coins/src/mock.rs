@@ -64,7 +64,7 @@ pub(crate) fn collateral_at_supply(supply: u128) -> u128 {
 	// replicate this behaviour based on smallest units by denomination-scaling 'n',
 	// the factor of x
 	let result =
-		U256::from(2) / U256::exp10(DEFAULT_BONDED_DENOMINATION.into()) * sup_squared + U256::from(3) * supply_u256;
+		U256::from(2) * sup_squared / U256::exp10(DEFAULT_BONDED_DENOMINATION.into()) + U256::from(3) * supply_u256;
 	result
 		.try_into()
 		.expect("expected collateral too large for balance type")
