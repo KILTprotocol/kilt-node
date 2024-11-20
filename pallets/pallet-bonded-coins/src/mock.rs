@@ -87,11 +87,13 @@ pub mod runtime {
 		manager: Option<AccountId>,
 		collateral_id: Option<AssetId>,
 		owner: Option<AccountId>,
+		min_operation_balance: Option<u128>,
 	) -> PoolDetailsOf<Test> {
 		let bonded_currencies = BoundedVec::truncate_from(currencies);
 		let state = state.unwrap_or(PoolStatus::Active);
 		let owner = owner.unwrap_or(ACCOUNT_99);
 		let collateral_id = collateral_id.unwrap_or(DEFAULT_COLLATERAL_CURRENCY_ID);
+		let min_operation_balance = min_operation_balance.unwrap_or(0);
 		PoolDetailsOf::<Test> {
 			curve,
 			manager,
@@ -101,6 +103,7 @@ pub mod runtime {
 			collateral_id,
 			denomination: DEFAULT_BONDED_DENOMINATION,
 			owner,
+			min_operation_balance,
 		}
 	}
 

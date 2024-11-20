@@ -269,6 +269,11 @@ pub mod pallet {
 		InvalidInput,
 		Internal,
 		Slippage,
+		/// The requested Operation could not be performed due to insufficient
+		/// balance.
+		InsufficientBalance,
+		/// The calculated collateral is zero.
+		ZeroCollateral,
 	}
 
 	#[pallet::composite_enum]
@@ -291,6 +296,7 @@ pub mod pallet {
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			denomination: u8,
 			transferable: bool,
+			min_operation_balance: u128,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
@@ -352,6 +358,7 @@ pub mod pallet {
 					currency_ids,
 					transferable,
 					denomination,
+					min_operation_balance,
 				)),
 			);
 
@@ -477,6 +484,11 @@ pub mod pallet {
 			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
 
 			ensure!(
+				amount_to_mint >= pool_details.min_operation_balance.saturated_into(),
+				Error::<T>::InsufficientBalance
+			);
+
+			ensure!(
 				Self::get_currencies_number(&pool_details) <= currency_count,
 				Error::<T>::CurrencyCount
 			);
@@ -510,6 +522,7 @@ pub mod pallet {
 				pool_details.collateral_id.clone(),
 			)?;
 
+			ensure!(cost > Zero::zero(), Error::<T>::ZeroCollateral);
 			// fail if cost > max_cost
 			ensure!(cost <= max_cost, Error::<T>::Slippage);
 
@@ -549,6 +562,10 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
+			ensure!(
+				amount_to_burn >= pool_details.min_operation_balance.saturated_into(),
+				Error::<T>::InsufficientBalance
+			);
 
 			ensure!(
 				Self::get_currencies_number(&pool_details) <= currency_count,
@@ -584,6 +601,7 @@ pub mod pallet {
 				pool_details.collateral_id.clone(),
 			)?;
 
+			ensure!(collateral_return > Zero::zero(), Error::<T>::ZeroCollateral);
 			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
 
 			T::CollateralCurrencies::transfer(
