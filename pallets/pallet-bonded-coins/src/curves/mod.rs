@@ -94,7 +94,7 @@ where
 }
 
 /// Implementation of the `BondingFunction` trait for `Curve`.
-/// The `BondingFunction` trait is used to calculate the cost of purchasing assets using the curve.
+/// The `BondingFunction` trait is used to calculate the cost of purchasing or selling assets using the curve.
 ///
 /// The implementation forwards the call to the inner bonding function.
 impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
