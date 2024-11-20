@@ -40,7 +40,7 @@ use crate::{PassiveSupply, Precision, LOG_TARGET};
 /// the input parameters to the correct fixed-point type.
 ///
 /// # Fields
-/// - `m`: The liquidity parameter for the LMSR model. This value must be greater than zero.
+/// - `m`: The liquidity parameter for the LMSR model.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParametersInput<Parameter> {
 	pub m: Parameter,
