@@ -802,7 +802,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(11)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::start_destroy(currency_count.to_owned()))]
 		pub fn start_destroy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
