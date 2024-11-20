@@ -45,6 +45,7 @@ use crate::{
 };
 
 pub(crate) mod asset_switch;
+pub(crate) mod governance;
 pub(crate) mod web3_names;
 
 /// Workaround for a bug in the benchmarking code around instances.

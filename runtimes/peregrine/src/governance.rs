@@ -16,14 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use cfg_if::cfg_if;
 use frame_support::{
-	pallet_prelude::OptionQuery,
-	parameter_types, storage_alias,
+	parameter_types,
 	traits::{
 		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
-		ChangeMembers, EitherOfDiverse, LinearStoragePrice,
+		EitherOfDiverse, LinearStoragePrice,
 	},
 	weights::Weight,
 };
@@ -36,8 +34,8 @@ use sp_core::{ConstBool, ConstU128, ConstU32, ConstU64};
 use sp_runtime::{traits::AccountIdLookup, Perbill, Permill};
 
 use crate::{
-	weights, Balances, OriginCaller, Preimage, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
-	Scheduler, TechnicalCommittee, Treasury,
+	benchmarks::governance::MockMembershipChangedForBenchmarks, weights, Balances, OriginCaller, Preimage, Runtime,
+	RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, Scheduler, TechnicalCommittee, Treasury,
 };
 
 pub(crate) type RootOrCollectiveProportion<Collective, const NUM: u32, const DEN: u32> =
@@ -193,41 +191,6 @@ impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {
 	type WeightInfo = weights::pallet_technical_membership::WeightInfo<Runtime>;
 }
 
-// Implementation of `MembershipChanged` equivalent to using `()` but that
-// returns `Some(AccountId::new([0; 32]))` in `get_prime()` only when
-// benchmarking. TODO: Remove once we upgrade with a version containing the fix: https://github.com/paritytech/polkadot-sdk/pull/6439
-pub struct MockMembershipChangedForBenchmarks;
-
-#[cfg(feature = "runtime-benchmarks")]
-#[storage_alias]
-type PrimeMember = StorageValue<TipsMembership, AccountId, OptionQuery>;
-
-impl ChangeMembers<AccountId> for MockMembershipChangedForBenchmarks {
-	fn change_members_sorted(incoming: &[AccountId], outgoing: &[AccountId], sorted_new: &[AccountId]) {
-		<()>::change_members_sorted(incoming, outgoing, sorted_new)
-	}
-
-	fn get_prime() -> Option<AccountId> {
-		cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				PrimeMember::get()
-			} else {
-				<()>::get_prime()
-			}
-		}
-	}
-
-	fn set_prime(prime: Option<AccountId>) {
-		cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				PrimeMember::set(prime)
-			} else {
-				<()>::set_prime(prime)
-			}
-		}
-	}
-}
-
 type TipsMembershipProvider = pallet_membership::Instance2;
 impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
@@ -237,7 +200,10 @@ impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type ResetOrigin = RootOrMoreThanHalfCouncil;
 	type PrimeOrigin = RootOrMoreThanHalfCouncil;
 	type MembershipInitialized = ();
+	#[cfg(feature = "runtime-benchmarks")]
 	type MembershipChanged = MockMembershipChangedForBenchmarks;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type MembershipChanged = ();
 	type MaxMembers = constants::governance::TipperMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
