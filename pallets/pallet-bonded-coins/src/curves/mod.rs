@@ -113,13 +113,13 @@ where
 }
 
 /// Trait defining the bonding function for a curve.
-/// The bonding function is used to calculate the cost of purchasing assets using the curve.
+/// The bonding function is used to calculate the cost of purchasing or selling assets using the curve.
 /// The trait is implemented for each curve type.
 ///
 /// Variables:
 /// - `low`: The lower bound of integral.
 /// - `high`: The upper bound of integral.
-/// - `passive_supply`: The passive supply of other assets in the pool.
+/// - `passive_supply`: The passive supply of other assets in the pool, which are not affected by the operation.
 pub trait BondingFunction<Balance> {
 	fn calculate_costs(
 		&self,
