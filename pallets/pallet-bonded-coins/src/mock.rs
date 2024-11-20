@@ -8,7 +8,7 @@ use frame_system::{EnsureRoot, EnsureSigned};
 use sp_core::U256;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, MultiSignature, PerThing,
+	BoundedVec, BuildStorage, MultiSignature,
 };
 use substrate_fixed::{
 	traits::{FixedSigned, FixedUnsigned},
@@ -53,18 +53,6 @@ pub fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
 		expected,
 		epsilon,
 		target
-	);
-}
-
-pub fn assert_balance_with_error_margin<T: PerThing>(target: u128, expected: u128, margin: T) {
-	let error_margin: u128 = margin.mul_ceil(expected);
-
-	assert!(
-		(target <= expected.saturating_add(error_margin)) && (target >= expected.saturating_sub(error_margin)),
-		"Expected {:?} to be in range {:?} +/- {:?}",
-		target,
-		expected,
-		error_margin
 	);
 }
 

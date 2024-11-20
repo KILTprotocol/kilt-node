@@ -7,8 +7,7 @@ use frame_support::{
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use sp_core::bounded_vec;
-use sp_runtime::{traits::Scale, Percent, TokenError};
-use substrate_fixed::{traits::ToFixed, types::I128F0};
+use sp_runtime::{assert_eq_error_rate, traits::Scale, TokenError};
 
 use crate::{
 	mock::{runtime::*, *},
@@ -58,14 +57,13 @@ fn burn_first_coin() {
 				1
 			));
 
-			assert_relative_eq::<I128F0>(
+			assert_eq_error_rate!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(
 					DEFAULT_COLLATERAL_CURRENCY_ID,
 					&ACCOUNT_00,
-				)
-				.to_fixed(),
-				expected_price.to_fixed(), // Collateral returned
-				1.into(),
+				),
+				expected_price, // Collateral returned
+				1
 			);
 
 			assert_eq!(
@@ -119,16 +117,16 @@ fn burn_large_supply() {
 				1
 			));
 
-			assert_relative_eq::<I128F0>(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00).to_fixed(),
-				(initial_supply - amount_to_burn).to_fixed(),
-				1.into(),
+			assert_eq_error_rate!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				initial_supply - amount_to_burn,
+				1,
 			);
 
-			assert_balance_with_error_margin(
+			assert_eq_error_rate!(
 				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				u128::MAX - expected_price,
-				Percent::from_percent(1),
+				1,
 			);
 		})
 }
@@ -360,16 +358,10 @@ fn multiple_burns_vs_combined_burn() {
 				balance_after_first_burn,
 			);
 
-			assert_relative_eq(
-				I128F0::from_num(<Test as crate::Config>::Fungibles::total_balance(
-					DEFAULT_COLLATERAL_CURRENCY_ID,
-					&pool_id1,
-				)),
-				I128F0::from_num(<Test as crate::Config>::Fungibles::total_balance(
-					DEFAULT_COLLATERAL_CURRENCY_ID,
-					&pool_id2,
-				)),
-				I128F0::from_num(10),
+			assert_eq_error_rate!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1,),
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2,),
+				10,
 			);
 		})
 }
