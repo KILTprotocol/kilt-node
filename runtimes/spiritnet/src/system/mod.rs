@@ -203,12 +203,6 @@ impl pallet_indices::Config for Runtime {
 	type WeightInfo = weights::pallet_indices::WeightInfo<Runtime>;
 }
 
-impl pallet_sudo::Config for Runtime {
-	type RuntimeCall = RuntimeCall;
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::pallet_sudo::WeightInfo<Runtime>;
-}
-
 // No deposit is taken since creation is permissioned. Only the root origin can
 // create new assets, and the owner will be the treasury account.
 impl pallet_assets::Config for Runtime {

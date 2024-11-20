@@ -31,7 +31,8 @@ use sp_core::ConstU32;
 
 use crate::{weights, Balances, Runtime, RuntimeEvent, RuntimeHoldReason};
 
-pub(crate) mod runtime_api;
+mod runtime_api;
+pub use runtime_api::{DipProofError, DipProofRequest};
 
 impl pallet_dip_provider::Config for Runtime {
 	// Only DID origins can submit the commitment identity tx, which will go through
