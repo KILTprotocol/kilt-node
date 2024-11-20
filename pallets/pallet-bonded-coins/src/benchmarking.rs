@@ -15,8 +15,6 @@ pub trait BenchmarkHelper<T: Config> {
 	fn calculate_collateral_asset_id(seed: u32) -> CollateralAssetIdOf<T>;
 
 	fn calculate_bonded_asset_id(seed: u32) -> FungiblesAssetIdOf<T>;
-
-	fn is_bonded_asset_destroying(asset_id: FungiblesAssetIdOf<T>) -> bool;
 }
 
 impl<T> BenchmarkHelper<T> for ()
@@ -31,10 +29,6 @@ where
 
 	fn calculate_bonded_asset_id(seed: u32) -> FungiblesAssetIdOf<T> {
 		seed.into()
-	}
-
-	fn is_bonded_asset_destroying(_asset_id: FungiblesAssetIdOf<T>) -> bool {
-		true
 	}
 }
 
@@ -117,9 +111,7 @@ mod benchmarks {
 			asset_ids.push(asset_id.clone());
 			create_bonded_asset::<T>(asset_id.clone());
 			if is_destroying {
-				T::Fungibles::start_destroy(asset_id.clone(), None).expect("Destroying should work");
-				let is_destroying = T::BenchmarkHelper::is_bonded_asset_destroying(asset_id);
-				assert!(is_destroying);
+				T::Fungibles::start_destroy(asset_id, None).expect("Destroying should work");
 			}
 		}
 
