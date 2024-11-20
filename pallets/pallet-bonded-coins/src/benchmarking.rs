@@ -68,8 +68,9 @@ mod benchmarks {
 		<T as Config>::CollateralCurrencies: Create<T::AccountId>,
 	{
 		let pool_account = account("collateral_owner", 0, 0);
-		<T as Config>::CollateralCurrencies::create(asset_id, pool_account, false, 1u128.saturated_into())
+		<T as Config>::CollateralCurrencies::create(asset_id.clone(), pool_account, false, 1u128.saturated_into())
 			.expect("Creating collateral asset should work");
+		assert!(T::CollateralCurrencies::asset_exists(asset_id));
 	}
 
 	fn calculate_default_collateral_asset_id<T: Config>() -> CollateralAssetIdOf<T> {
@@ -87,17 +88,20 @@ mod benchmarks {
 
 	fn set_collateral_balance<T: Config>(asset_id: CollateralAssetIdOf<T>, who: &AccountIdOf<T>, amount: u128)
 	where
-		<T as Config>::CollateralCurrencies: MutateFungibles<T::AccountId>,
+		T::CollateralCurrencies: MutateFungibles<T::AccountId>,
 	{
-		T::CollateralCurrencies::set_balance(asset_id, who, amount.saturated_into());
+		T::CollateralCurrencies::set_balance(asset_id.clone(), who, amount.saturated_into());
+		let balance = T::CollateralCurrencies::balance(asset_id.clone(), who);
+		assert_eq!(balance, amount.saturated_into());
 	}
 
 	// bonded currencies
 
 	fn create_bonded_asset<T: Config>(asset_id: T::AssetId) {
 		let pool_account = account("bonded_owner", 0, 0);
-		<T as Config>::Fungibles::create(asset_id, pool_account, false, 1u128.saturated_into())
+		<T as Config>::Fungibles::create(asset_id.clone(), pool_account, false, 1u128.saturated_into())
 			.expect("Creating bonded asset should work");
+		assert!(T::Fungibles::asset_exists(asset_id));
 	}
 
 	fn create_bonded_currencies_in_range<T: Config>(c: u32, is_destroying: bool) -> Vec<FungiblesAssetIdOf<T>> {
@@ -118,7 +122,9 @@ mod benchmarks {
 	where
 		<T as Config>::Fungibles: MutateFungibles<T::AccountId>,
 	{
-		T::Fungibles::set_balance(asset_id, who, amount.saturated_into());
+		T::Fungibles::set_balance(asset_id.clone(), who, amount.saturated_into());
+		let balance = T::Fungibles::balance(asset_id, who);
+		assert_eq!(balance, amount.saturated_into());
 	}
 
 	// native currency
@@ -138,6 +144,8 @@ mod benchmarks {
 		<T as Config>::DepositCurrency: Mutate<T::AccountId>,
 	{
 		<T::DepositCurrency as Mutate<AccountIdOf<T>>>::set_balance(account, amount.saturated_into());
+		let balance = <T::DepositCurrency as Inspect<AccountIdOf<T>>>::balance(account);
+		assert_eq!(balance, amount.saturated_into());
 	}
 
 	// Storage
