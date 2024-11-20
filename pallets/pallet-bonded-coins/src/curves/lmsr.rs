@@ -19,7 +19,7 @@
 /// - `LMSRParametersInput`: A struct representing the input parameters for the LMSR model.
 /// - `LMSRParameters`: A struct representing the parameters for the LMSR model. Used to perform calculations and stored in storage.
 /// - `TryFrom<LMSRParametersInput<I>> for LMSRParameters<C>`: A trait implementation to convert input parameters to the correct fixed-point type.
-/// - `calculate_incremental_cost`: A function to calculate the incremental cost of purchasing assets using the LMSR model.
+/// - `BondingFunction<Parameter> for LMSRParameters<Parameter>`: An implementation of the bonding function to calculate costs.
 ///
 /// Optimization
 /// For numerical stability, the LMSR bonding curve employs the log-sum-exp trick to calculate the cost.
