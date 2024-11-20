@@ -22,8 +22,6 @@
 /// Optimization
 /// The calculation of sqrt(s^3) can quickly overflow the fixed-point type. To avoid this, the calculation is factored into:
 /// sqrt(s^3) = sqrt(s) * s,
-/// where:
-/// - `s` is the supply of assets.
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
