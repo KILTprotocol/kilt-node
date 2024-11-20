@@ -10,7 +10,7 @@
 /// - `m` is the liquidity parameter of the LMSR model,
 /// - `s_i` is the current supply of the assets.
 ///
-/// `C(s)` represents the accumulated cost of purchasing assets up to the current supply `s`.
+/// `C(s)` represents the accumulated cost of purchasing/selling assets up to the current supply `s`.
 /// To calculate the incremental cost of purchasing the assets, use the formula:
 /// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
 ///
@@ -18,7 +18,7 @@
 /// Components
 /// - `LMSRParametersInput`: A struct representing the input parameters for the LMSR model.
 /// - `LMSRParameters`: A struct representing the parameters for the LMSR model. Used to perform calculations and stored in storage.
-/// - `TryFrom<LMSRParametersInput<I>> for LMSRParameters<C>`: A trait implementation to convert input parameters to the correct fixed-point type.
+/// - `TryFrom<LMSRParametersInput<I>> for LMSRParameters<C>`: An implementation to convert input parameters to the correct fixed-point type.
 /// - `BondingFunction<Parameter> for LMSRParameters<Parameter>`: An implementation of the bonding function to calculate costs.
 ///
 /// Optimization

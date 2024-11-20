@@ -7,7 +7,7 @@
 /// - `s` is the supply of assets,
 /// - `m` is the coefficient for the square root part,
 /// - `n` is the coefficient for the linear part.
-/// `C(s)` represents the accumulated cost of purchasing assets up to the current supply `s`.
+/// `C(s)` represents the accumulated cost of purchasing/selling assets up to the current supply `s`.
 ///
 /// To calculate the incremental cost of purchasing the assets, use the formula:
 /// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
@@ -75,7 +75,7 @@ impl<Parameter> BondingFunction<Parameter> for SquareRootParameters<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 {
-	/// Calculate the cost of purchasing assets using the square root bonding curve.
+	/// Calculate the cost of purchasing/selling assets using the square root bonding curve.
 	fn calculate_costs(
 		&self,
 		low: Parameter,

@@ -10,7 +10,7 @@
 /// - `o` is the coefficient for the linear part.
 /// `C(s)` represents the accumulated cost of purchasing/selling assets up to the current supply `s`.
 ///
-/// To calculate the incremental cost of purchasing/selling the assets, use the formula:
+/// To calculate the incremental cost of purchasing the assets, use the formula:
 /// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
 ///
 /// The module includes the following components:
