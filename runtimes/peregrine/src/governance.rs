@@ -18,7 +18,8 @@
 
 use cfg_if::cfg_if;
 use frame_support::{
-	parameter_types,
+	pallet_prelude::OptionQuery,
+	parameter_types, storage_alias,
 	traits::{
 		fungible::HoldConsideration,
 		tokens::{PayFromAccount, UnityAssetBalanceConversion},
@@ -197,6 +198,10 @@ impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {
 // benchmarking. TODO: Remove once we upgrade with a version containing the fix: https://github.com/paritytech/polkadot-sdk/pull/6439
 pub struct MockMembershipChangedForBenchmarks;
 
+#[cfg(feature = "runtime-benchmarks")]
+#[storage_alias]
+type PrimeMember = StorageValue<TipsMembership, AccountId, OptionQuery>;
+
 impl ChangeMembers<AccountId> for MockMembershipChangedForBenchmarks {
 	fn change_members_sorted(incoming: &[AccountId], outgoing: &[AccountId], sorted_new: &[AccountId]) {
 		<()>::change_members_sorted(incoming, outgoing, sorted_new)
@@ -204,10 +209,20 @@ impl ChangeMembers<AccountId> for MockMembershipChangedForBenchmarks {
 
 	fn get_prime() -> Option<AccountId> {
 		cfg_if! {
-			if #[cfg(feature = "runtime-benchmark")] {
-				Some(AccountId::new([0; 32]))
+			if #[cfg(feature = "runtime-benchmarks")] {
+				PrimeMember::get()
 			} else {
 				<()>::get_prime()
+			}
+		}
+	}
+
+	fn set_prime(prime: Option<AccountId>) {
+		cfg_if! {
+			if #[cfg(feature = "runtime-benchmarks")] {
+				PrimeMember::set(prime)
+			} else {
+				<()>::set_prime(prime)
 			}
 		}
 	}
