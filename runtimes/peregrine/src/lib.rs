@@ -47,10 +47,9 @@ pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 use runtime_common::{constants, fees::WeightToFee, Address, Signature};
 
-mod dip;
 mod governance;
 mod kilt;
-pub use kilt::DotName;
+pub use kilt::{DotName, Web3Name};
 mod migrations;
 pub use migrations::RuntimeMigrations;
 mod parachain;

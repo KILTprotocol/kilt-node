@@ -16,91 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use delegation::DelegationAc;
 use did::{
 	DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult, DidRawOrigin,
 	DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
 };
-use frame_support::parameter_types;
-use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
-use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
-use runtime_common::{
-	asset_switch::hooks::RestrictSwitchDestinationToSelf,
-	assets::AssetDid,
-	authorization::{AuthorizationId, PalletAuthorize},
-	AccountId, Balance, DidIdentifier, Hash, SendDustAndFeesToTreasury, Web3Name,
-};
+use frame_system::EnsureRoot;
+use runtime_common::{constants, AccountId, DidIdentifier, SendDustAndFeesToTreasury};
 use sp_core::ConstBool;
-use sp_runtime::traits::BlakeTwo256;
-use xcm_builder::{FungiblesAdapter, NoChecking};
 
-use crate::{
-	constants, weights,
-	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
-	Balances, Fungibles, Migration, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeFreezeReason,
-	RuntimeHoldReason, RuntimeOrigin,
-};
-
-impl attestation::Config for Runtime {
-	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
-
-	type Currency = Balances;
-	type Deposit = constants::attestation::AttestationDeposit;
-	type MaxDelegatedAttestations = constants::attestation::MaxDelegatedAttestations;
-	type AttesterId = DidIdentifier;
-	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
-	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
-	type BalanceMigrationManager = Migration;
-}
-
-impl delegation::Config for Runtime {
-	type DelegationEntityId = DidIdentifier;
-	type DelegationNodeId = Hash;
-
-	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
-
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type DelegationSignatureVerification = did::DidSignatureVerify<Runtime>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type Signature = did::DidSignature;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type Signature = runtime_common::benchmarks::DummySignature;
-	#[cfg(feature = "runtime-benchmarks")]
-	type DelegationSignatureVerification =
-		kilt_support::signature::AlwaysVerify<AccountId, sp_std::vec::Vec<u8>, Self::Signature>;
-
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type MaxSignatureByteLength = constants::delegation::MaxSignatureByteLength;
-	type MaxParentChecks = constants::delegation::MaxParentChecks;
-	type MaxRevocations = constants::delegation::MaxRevocations;
-	type MaxRemovals = constants::delegation::MaxRemovals;
-	type MaxChildren = constants::delegation::MaxChildren;
-	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
-	type Currency = Balances;
-	type Deposit = constants::delegation::DelegationDeposit;
-	type BalanceMigrationManager = Migration;
-}
-
-impl ctype::Config for Runtime {
-	type CtypeCreatorId = AccountId;
-	type Currency = Balances;
-	type Fee = constants::CtypeFee;
-	type FeeCollector = SendDustAndFeesToTreasury<Runtime>;
-
-	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
-	type OverarchingOrigin = EnsureRoot<AccountId>;
-
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
-}
+use crate::{weights, Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin};
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
@@ -225,6 +149,8 @@ impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
 	type WeightInfo = weights::pallet_unique_linking::WeightInfo<Runtime>;
 }
 
+pub type Web3Name =
+	runtime_common::Web3Name<{ constants::web3_names::MIN_LENGTH }, { constants::web3_names::MAX_LENGTH }>;
 impl pallet_web3_names::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
@@ -235,7 +161,7 @@ impl pallet_web3_names::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
-	type Web3Name = Web3Name<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
+	type Web3Name = Web3Name;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
@@ -245,7 +171,6 @@ impl pallet_web3_names::Config for Runtime {
 }
 
 pub type DotName = runtime_common::DotName<{ constants::dot_names::MIN_LENGTH }, { constants::dot_names::MAX_LENGTH }>;
-
 pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
@@ -264,87 +189,4 @@ impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = crate::benchmarks::web3_names::DotNamesBenchmarkHelper;
-}
-
-impl parachain_staking::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type CurrencyBalance = Balance;
-	type FreezeIdentifier = RuntimeFreezeReason;
-	type MinBlocksPerRound = constants::staking::MinBlocksPerRound;
-	type DefaultBlocksPerRound = constants::staking::DefaultBlocksPerRound;
-	type StakeDuration = constants::staking::StakeDuration;
-	type ExitQueueDelay = constants::staking::ExitQueueDelay;
-	type MinCollators = constants::staking::MinCollators;
-	type MinRequiredCollators = constants::staking::MinRequiredCollators;
-	type MaxDelegationsPerRound = constants::staking::MaxDelegationsPerRound;
-	type MaxDelegatorsPerCollator = constants::staking::MaxDelegatorsPerCollator;
-	type MinCollatorStake = constants::staking::MinCollatorStake;
-	type MinCollatorCandidateStake = constants::staking::MinCollatorStake;
-	type MaxTopCandidates = constants::staking::MaxCollatorCandidates;
-	type MinDelegatorStake = constants::staking::MinDelegatorStake;
-	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
-	type NetworkRewardRate = constants::staking::NetworkRewardRate;
-	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-	type NetworkRewardBeneficiary = SendDustAndFeesToTreasury<Runtime>;
-	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
-
-	const BLOCKS_PER_YEAR: BlockNumberFor<Self> = constants::BLOCKS_PER_YEAR;
-}
-
-impl pallet_inflation::Config for Runtime {
-	type Currency = Balances;
-	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
-	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
-	type Beneficiary = SendDustAndFeesToTreasury<Runtime>;
-	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
-}
-
-impl public_credentials::Config for Runtime {
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
-	type AttesterId = DidIdentifier;
-	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
-	type CredentialId = Hash;
-	type CredentialHash = BlakeTwo256;
-	type Currency = Balances;
-	type Deposit = constants::public_credentials::Deposit;
-	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
-	type MaxEncodedClaimsLength = constants::public_credentials::MaxEncodedClaimsLength;
-	type MaxSubjectIdLength = constants::public_credentials::MaxSubjectIdLength;
-	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
-	type RuntimeEvent = RuntimeEvent;
-	type SubjectId = AssetDid;
-	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
-	type BalanceMigrationManager = Migration;
-}
-
-parameter_types! {
-	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
-}
-
-pub(crate) type KiltToEKiltSwitchPallet = pallet_asset_switch::Instance1;
-impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
-	type AccountIdConverter = AccountId32ToAccountId32JunctionConverter;
-	type AssetTransactor = FungiblesAdapter<
-		Fungibles,
-		MatchesSwitchPairXcmFeeFungibleAsset<Runtime, KiltToEKiltSwitchPallet>,
-		LocationToAccountIdConverter,
-		AccountId,
-		NoChecking,
-		CheckingAccount,
-	>;
-	type FeeOrigin = EnsureRoot<AccountId>;
-	type LocalCurrency = Balances;
-	type PauseOrigin = EnsureRoot<AccountId>;
-	type RuntimeEvent = RuntimeEvent;
-	type SubmitterOrigin = EnsureSigned<AccountId>;
-	type SwitchHooks = RestrictSwitchDestinationToSelf;
-	type SwitchOrigin = EnsureRoot<AccountId>;
-	type UniversalLocation = UniversalLocation;
-	type WeightInfo = weights::pallet_asset_switch::WeightInfo<Runtime>;
-	type XcmRouter = XcmRouter;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = crate::benchmarks::asset_switch::CreateFungibleForAssetSwitchPool1;
 }

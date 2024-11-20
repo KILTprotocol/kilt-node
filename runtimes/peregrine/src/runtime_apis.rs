@@ -42,8 +42,7 @@ use runtime_common::{
 use unique_linking_runtime_api::{AddressResult, NameResult};
 
 use crate::{
-	dip::runtime_api::{DipProofError, DipProofRequest},
-	kilt::{DotName, UniqueLinkingDeployment},
+	kilt::{DipProofError, DipProofRequest, DotName, UniqueLinkingDeployment},
 	parachain::ConsensusHook,
 	xcm::UniversalLocation,
 	AssetSwitchPool1, Aura, Block, DotNames, Executive, InherentDataExt, ParachainStaking, ParachainSystem, Runtime,
