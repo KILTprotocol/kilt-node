@@ -30,11 +30,11 @@ use crate::{
 	Balances, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
 };
 
-mod credential;
-mod did;
+pub(crate) mod credential;
+pub(crate) mod did;
 pub(crate) use did::UniqueLinkingDeployment;
 pub use did::{DotName, Web3Name};
-mod dip;
+pub(crate) mod dip;
 pub use dip::{DipProofError, DipProofRequest};
 
 impl parachain_staking::Config for Runtime {

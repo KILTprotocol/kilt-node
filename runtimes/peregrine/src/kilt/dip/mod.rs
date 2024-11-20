@@ -31,7 +31,7 @@ use sp_core::ConstU32;
 
 use crate::{weights, Balances, Runtime, RuntimeEvent, RuntimeHoldReason};
 
-mod runtime_api;
+pub(crate) mod runtime_api;
 pub use runtime_api::{DipProofError, DipProofRequest};
 
 impl pallet_dip_provider::Config for Runtime {

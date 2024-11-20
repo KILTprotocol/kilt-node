@@ -38,7 +38,7 @@ pub use dot_names_deployment::DotNamesBenchmarkHelper;
 mod dot_names_deployment {
 	use sp_std::{vec, vec::Vec};
 
-	use crate::{kilt::DotNamesDeployment, Runtime};
+	use crate::{kilt::did::DotNamesDeployment, Runtime};
 
 	pub struct DotNamesBenchmarkHelper;
 
