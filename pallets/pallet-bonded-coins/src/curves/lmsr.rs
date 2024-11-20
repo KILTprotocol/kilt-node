@@ -1,3 +1,4 @@
+use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
@@ -23,9 +24,9 @@ pub struct LMSRParameters<Parameter> {
 impl<I: FixedUnsigned, C: FixedSigned> TryFrom<LMSRParametersInput<I>> for LMSRParameters<C> {
 	type Error = ();
 	fn try_from(value: LMSRParametersInput<I>) -> Result<Self, Self::Error> {
-		Ok(LMSRParameters {
-			m: C::checked_from_fixed(value.m).ok_or(())?,
-		})
+		let m = C::checked_from_fixed(value.m).ok_or(())?;
+		ensure!(m > C::from_num(0), ());
+		Ok(LMSRParameters { m })
 	}
 }
 
