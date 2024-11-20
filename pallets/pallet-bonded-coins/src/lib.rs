@@ -307,7 +307,7 @@ pub mod pallet {
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			denomination: u8,
 			transferable: bool,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
@@ -377,13 +377,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::PoolCreated { id: pool_id });
 
-			let currency_index = currency_length.saturated_into();
-			Ok(Some(match checked_curve {
-				Curve::Polynomial(_) => T::WeightInfo::create_pool_polynomial(currency_index),
-				Curve::SquareRoot(_) => T::WeightInfo::create_pool_square_root(currency_index),
-				Curve::Lmsr(_) => T::WeightInfo::create_pool_lmsr(currency_index),
-			})
-			.into())
+			Ok(())
 		}
 
 		#[pallet::call_index(1)]
