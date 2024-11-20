@@ -1,3 +1,12 @@
+/// Polynomial bonding curve implementation.
+/// The polynomial bonding curve is defined by the following equation:
+/// C(s) = m* s^3 + n * s^2 + o * s,
+/// where:
+/// - `s` is the supply of assets to mint,
+/// - `m` is the coefficient for the cubic part,
+/// - `n` is the coefficient for the quadratic part,
+/// - `o` is the coefficient for the linear part.
+/// `C(s)` represents the cost of purchasing a set of assets from the market.
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
@@ -6,6 +15,13 @@ use substrate_fixed::traits::{FixedSigned, FixedUnsigned};
 use super::{calculate_accumulated_passive_issuance, square, BondingFunction};
 use crate::PassiveSupply;
 
+/// A struct representing the input parameters for a polynomial bonding curve.
+/// This struct is used to convert the input parameters to the correct fixed-point type.
+///
+/// # Fields
+/// - `m`: Coefficient for the cubic part.
+/// - `n`: Coefficient for the quadratic part.
+/// - `o`: Coefficient for the linear part.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PolynomialParametersInput<Parameter> {
 	pub m: Parameter,

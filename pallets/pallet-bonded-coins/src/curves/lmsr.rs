@@ -1,3 +1,23 @@
+/// Implementation of the Logarithmic Market Scoring Rule (LMSR) bonding curve. The LMSR bonding curve
+/// acts as a market maker, facilitating the creation of a market for a set of assets. The cost of
+/// purchasing a set of assets from the market is determined using the liquidity parameter of the
+/// LMSR model and the current supply of assets in the market.
+///
+/// # Equation
+/// The LMSR bonding curve is defined by the following equation:
+///
+/// C(s) = m * ln(Σ(e^(s_i/m))),
+///
+/// where:
+/// - `s` is the supply of assets to mint,
+/// - `m` is the liquidity parameter of the LMSR model,
+/// - `s_i` is the current supply of the assets.
+///
+/// `C(s)` represents the cost of purchasing a set of assets from the market.
+///
+/// # Numerical Stability
+/// For numerical stability, the LMSR bonding curve employs the log-sum-exp trick to calculate the cost.
+use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
@@ -10,22 +30,40 @@ use substrate_fixed::{
 use super::BondingFunction;
 use crate::{PassiveSupply, Precision, LOG_TARGET};
 
+/// A struct representing the input parameters for the LMSR model. This struct is used to convert
+/// the input parameters to the correct fixed-point type. The TryFrom implementation for
+/// `LMSRParameters` will fail if the conversion to the fixed-point type fails or if the liquidity
+/// parameter is less than or equal to zero.
+///
+/// # Fields
+/// - `m`: The liquidity parameter for the LMSR model. This value must be greater than zero.
+///
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParametersInput<Parameter> {
 	pub m: Parameter,
 }
 
+/// A struct representing the parameters for the LMSR model. This struct is used to store the
+/// parameters for the LMSR model and to perform calculations using the LMSR model.
+///
+/// # Fields
+/// - `m`: The liquidity parameter for the LMSR model. This value must be greater than zero and unsigned.
+///
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParameters<Parameter> {
 	pub m: Parameter,
 }
 
+/// Implementation of the TryFrom trait for `LMSRParametersInput` to convert the input parameters to
+/// the correct fixed-point type. The TryFrom implementation for `LMSRParameters` will fail if the
+/// conversion to the fixed-point type fails or if the liquidity parameter is less than or equal to
+/// zero.
 impl<I: FixedUnsigned, C: FixedSigned> TryFrom<LMSRParametersInput<I>> for LMSRParameters<C> {
 	type Error = ();
 	fn try_from(value: LMSRParametersInput<I>) -> Result<Self, Self::Error> {
-		Ok(LMSRParameters {
-			m: C::checked_from_fixed(value.m).ok_or(())?,
-		})
+		let m = C::checked_from_fixed(value.m).ok_or(())?;
+		ensure!(m > C::from_num(0), ());
+		Ok(LMSRParameters { m })
 	}
 }
 
@@ -34,6 +72,8 @@ where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
+	/// Calculate the logarithmic sum of the exponentials of the supply values,
+	/// using the log-sum-exp trick.
 	fn lse(&self, supply: &[Parameter]) -> Result<Parameter, ArithmeticError> {
 		// Find the maximum value in the supply for numerical stability
 		let max = supply.iter().max().ok_or_else(|| {
@@ -66,6 +106,7 @@ where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
+	/// Calculate the cost of purchasing a set of assets from the market using the LMSR model.
 	fn calculate_costs(
 		&self,
 		low: Parameter,
