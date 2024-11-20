@@ -6,7 +6,7 @@
 /// C(s) = m * ln(Σ(e^(s_i/m))),
 ///
 /// where:
-/// - `s` is the supply of assets to mint,
+/// - `s` is the supply of assets,
 /// - `m` is the liquidity parameter of the LMSR model,
 /// - `s_i` is the current supply of the assets.
 ///
