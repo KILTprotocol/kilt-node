@@ -35,10 +35,10 @@ where
 #[benchmarks(where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
 	CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
-	<T as Config>::CollateralCurrencies: Create<T::AccountId> ,
-	<T as Config>::Fungibles: InspectRoles<T::AccountId> + AccountTouch<FungiblesAssetIdOf<T>, AccountIdOf<T>>,
-	<T as Config>::DepositCurrency: Mutate<T::AccountId>,
-	<T as Config>::CollateralCurrencies: MutateFungibles<T::AccountId>,
+	T::CollateralCurrencies: Create<T::AccountId> ,
+	T::Fungibles: InspectRoles<T::AccountId> + AccountTouch<FungiblesAssetIdOf<T>, AccountIdOf<T>>,
+	T::DepositCurrency: Mutate<T::AccountId>,
+	T::CollateralCurrencies: MutateFungibles<T::AccountId>,
 	AccountIdLookupOf<T>: From<T::AccountId>,
 )]
 mod benchmarks {
@@ -65,10 +65,10 @@ mod benchmarks {
 	// collateral currencies
 	fn create_collateral_asset<T: Config>(asset_id: CollateralAssetIdOf<T>)
 	where
-		<T as Config>::CollateralCurrencies: Create<T::AccountId>,
+		T::CollateralCurrencies: Create<T::AccountId>,
 	{
 		let pool_account = account("collateral_owner", 0, 0);
-		<T as Config>::CollateralCurrencies::create(asset_id.clone(), pool_account, false, 1u128.saturated_into())
+		T::CollateralCurrencies::create(asset_id.clone(), pool_account, false, 1u128.saturated_into())
 			.expect("Creating collateral asset should work");
 		assert!(T::CollateralCurrencies::asset_exists(asset_id));
 	}
@@ -79,7 +79,7 @@ mod benchmarks {
 
 	fn create_default_collateral_asset<T: Config>() -> CollateralAssetIdOf<T>
 	where
-		<T as Config>::CollateralCurrencies: Create<T::AccountId>,
+		T::CollateralCurrencies: Create<T::AccountId>,
 	{
 		let collateral_id = calculate_default_collateral_asset_id::<T>();
 		create_collateral_asset::<T>(collateral_id.clone());
@@ -99,7 +99,7 @@ mod benchmarks {
 
 	fn create_bonded_asset<T: Config>(asset_id: T::AssetId) {
 		let pool_account = account("bonded_owner", 0, 0);
-		<T as Config>::Fungibles::create(asset_id.clone(), pool_account, false, 1u128.saturated_into())
+		T::Fungibles::create(asset_id.clone(), pool_account, false, 1u128.saturated_into())
 			.expect("Creating bonded asset should work");
 		assert!(T::Fungibles::asset_exists(asset_id));
 	}
@@ -111,7 +111,7 @@ mod benchmarks {
 			asset_ids.push(asset_id.clone());
 			create_bonded_asset::<T>(asset_id.clone());
 			if is_destroying {
-				<T as Config>::Fungibles::start_destroy(asset_id, None).expect("Destroying should work");
+				T::Fungibles::start_destroy(asset_id, None).expect("Destroying should work");
 			}
 		}
 
@@ -120,7 +120,7 @@ mod benchmarks {
 
 	fn set_fungible_balance<T: Config>(asset_id: FungiblesAssetIdOf<T>, who: &AccountIdOf<T>, amount: u128)
 	where
-		<T as Config>::Fungibles: MutateFungibles<T::AccountId>,
+		T::Fungibles: MutateFungibles<T::AccountId>,
 	{
 		T::Fungibles::set_balance(asset_id.clone(), who, amount.saturated_into());
 		let balance = T::Fungibles::balance(asset_id, who);
@@ -131,17 +131,17 @@ mod benchmarks {
 
 	fn make_free_for_deposit<T: Config>(account: &AccountIdOf<T>)
 	where
-		<T as Config>::DepositCurrency: Mutate<T::AccountId>,
+		T::DepositCurrency: Mutate<T::AccountId>,
 	{
 		let balance = <T::DepositCurrency as Inspect<AccountIdOf<T>>>::minimum_balance()
-			+ <T as Config>::BaseDeposit::get().mul(10u32.into())
-			+ <T as Config>::DepositPerCurrency::get().mul(T::MaxCurrencies::get().into());
+			+ T::BaseDeposit::get().mul(10u32.into())
+			+ T::DepositPerCurrency::get().mul(T::MaxCurrencies::get().into());
 		set_native_balance::<T>(account, balance.saturated_into());
 	}
 
 	fn set_native_balance<T: Config>(account: &AccountIdOf<T>, amount: u128)
 	where
-		<T as Config>::DepositCurrency: Mutate<T::AccountId>,
+		T::DepositCurrency: Mutate<T::AccountId>,
 	{
 		<T::DepositCurrency as Mutate<AccountIdOf<T>>>::set_balance(account, amount.saturated_into());
 		let balance = <T::DepositCurrency as Inspect<AccountIdOf<T>>>::balance(account);
@@ -191,7 +191,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn create_pool_polynomial(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn create_pool_polynomial(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 		let curve = get_linear_bonding_curve_input::<CurveParameterInputOf<T>>();
 
@@ -219,7 +219,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn create_pool_square_root(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn create_pool_square_root(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 
 		let curve = get_square_root_curve_input::<CurveParameterInputOf<T>>();
@@ -249,7 +249,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn create_pool_lmsr(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn create_pool_lmsr(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 
 		let curve = get_lmsr_curve_input::<CurveParameterInputOf<T>>();
@@ -398,7 +398,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn mint_into_polynomial(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn mint_into_polynomial(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -439,7 +439,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn mint_into_square_root(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn mint_into_square_root(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -480,7 +480,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn mint_into_lmsr(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn mint_into_lmsr(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -520,7 +520,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn burn_into_polynomial(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn burn_into_polynomial(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -564,7 +564,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn burn_into_square_root(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn burn_into_square_root(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -608,7 +608,7 @@ mod benchmarks {
 
 	#[benchmark]
 
-	fn burn_into_lmsr(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn burn_into_lmsr(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -651,7 +651,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn start_destroy(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn start_destroy(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -679,7 +679,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn force_start_destroy(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn force_start_destroy(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
@@ -697,7 +697,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn finish_destroy(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn finish_destroy(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, true);
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
@@ -730,7 +730,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn start_refund(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn start_refund(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -771,7 +771,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn force_start_refund(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn force_start_refund(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
@@ -807,7 +807,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn refund_account(c: Linear<1, { <T as Config>::MaxCurrencies::get() }>) {
+	fn refund_account(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()

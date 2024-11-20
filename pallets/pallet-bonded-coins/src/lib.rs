@@ -31,7 +31,7 @@ pub mod pallet {
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
-			tokens::{Fortitude, Precision as WithdrawalPrecision, Preservation, Provenance},
+			tokens::{Fortitude, Precision as WithdrawalPrecision, Preservation},
 			AccountTouch,
 		},
 		Hashable, Parameter,
