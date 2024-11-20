@@ -24,11 +24,10 @@ pallets=(
 
 // Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
-  pallets+=()
+	pallets+=()
 fi
 
 echo "[+] Running all default weight benchmarks for $runtime --chain=$chain"
-
 
 cargo build $standard_args
 
