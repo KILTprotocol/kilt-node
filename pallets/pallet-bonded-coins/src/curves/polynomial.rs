@@ -1,6 +1,6 @@
 /// Polynomial bonding curve implementation.
 ///
-/// This module provides an implementation of a polynomial bonding curve. The current implementation supports a cubic bonding curve, where the integral is precomputed.
+/// This module provides an implementation of a polynomial bonding curve. The current implementation supports a square bonding curve, where the integral is precomputed.
 /// The cost function for the polynomial bonding curve is defined as:
 /// C(s) = m * s^3 + n * s^2 + o * s,
 /// where:
@@ -8,9 +8,9 @@
 /// - `m` is the coefficient for the cubic part,
 /// - `n` is the coefficient for the quadratic part,
 /// - `o` is the coefficient for the linear part.
-/// `C(s)` represents the accumulated cost of purchasing assets up to the current supply `s`.
+/// `C(s)` represents the accumulated cost of purchasing/selling assets up to the current supply `s`.
 ///
-/// To calculate the incremental cost of purchasing the assets, use the formula:
+/// To calculate the incremental cost of purchasing/selling the assets, use the formula:
 /// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
 ///
 /// The module includes the following components:
@@ -81,7 +81,7 @@ impl<Parameter> BondingFunction<Parameter> for PolynomialParameters<Parameter>
 where
 	Parameter: FixedSigned,
 {
-	/// Calculate the cost of purchasing assets using the polynomial bonding curve.
+	/// Calculate the cost of purchasing/selling assets using the polynomial bonding curve.
 	fn calculate_costs(
 		&self,
 		low: Parameter,
