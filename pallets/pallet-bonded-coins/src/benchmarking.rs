@@ -106,7 +106,7 @@ mod benchmarks {
 
 	fn create_bonded_currencies_in_range<T: Config>(c: u32, is_destroying: bool) -> Vec<FungiblesAssetIdOf<T>> {
 		let mut asset_ids = Vec::new();
-		for i in 0..c {
+		for i in 1..=c {
 			let asset_id = T::BenchmarkHelper::calculate_bonded_asset_id(i);
 			asset_ids.push(asset_id.clone());
 			create_bonded_asset::<T>(asset_id.clone());
@@ -180,7 +180,7 @@ mod benchmarks {
 
 	fn generate_token_metadata<T: Config>(c: u32) -> BoundedVec<TokenMetaOf<T>, T::MaxCurrencies> {
 		let mut token_meta = Vec::new();
-		for _ in 0..c {
+		for _ in 1..=c {
 			token_meta.push(TokenMetaOf::<T> {
 				min_balance: 1u128.saturated_into(),
 				name: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
