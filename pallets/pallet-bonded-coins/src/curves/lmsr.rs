@@ -1,4 +1,4 @@
-/// Implementation of the Logarithmic Market Scoring Rule (LMSR) bonding curve.
+/// Implementation of the [Logarithmic Market Scoring Rule](https://mason.gmu.edu/~rhanson/mktscore.pdf) (LMSR) bonding curve.
 /// The cost of purchasing an amount of assets from the market is determined using the liquidity parameter of the
 /// LMSR model and the current supply of assets in the market.
 /// The LMSR bonding curve is defined by the following equation:
@@ -14,15 +14,8 @@
 /// To calculate the incremental cost of purchasing the assets, use the formula:
 /// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
 ///
-///
-/// Components
-/// - `LMSRParametersInput`: A struct representing the input parameters for the LMSR model.
-/// - `LMSRParameters`: A struct representing the parameters for the LMSR model. Used to perform calculations and stored in storage.
-/// - `TryFrom<LMSRParametersInput<I>> for LMSRParameters<C>`: An implementation to convert input parameters to the correct fixed-point type.
-/// - `BondingFunction<Parameter> for LMSRParameters<Parameter>`: An implementation of the bonding function to calculate costs.
-///
 /// Optimization
-/// For numerical stability, the LMSR bonding curve employs the log-sum-exp trick to calculate the cost.
+/// For numerical stability, the LMSR bonding curve employs the [log-sum-exp trick](https://en.wikipedia.org/wiki/LogSumExp) to calculate the cost.
 use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -36,7 +29,7 @@ use substrate_fixed::{
 use super::BondingFunction;
 use crate::{PassiveSupply, Precision, LOG_TARGET};
 
-/// A struct representing the input parameters for the LMSR model. This struct is used to convert
+/// A struct representing the unchecked input parameters for the LMSR model. This struct is used to convert
 /// the input parameters to the correct fixed-point type.
 ///
 /// # Fields
@@ -46,13 +39,11 @@ pub struct LMSRParametersInput<Parameter> {
 	pub m: Parameter,
 }
 
-/// A struct representing the parameters for the LMSR model. This struct is used to store the
+/// A struct representing the validated parameters for the LMSR model. This struct is used to store the
 /// parameters for the LMSR model and to perform calculations using the LMSR model.
-///
-/// # Fields
-/// - `m`: The liquidity parameter for the LMSR model. This value must be greater than zero and unsigned.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParameters<Parameter> {
+	///The liquidity parameter for the LMSR model. This value must be greater than zero and unsigned.
 	pub m: Parameter,
 }
 

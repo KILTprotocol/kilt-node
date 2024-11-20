@@ -12,13 +12,6 @@
 /// To calculate the incremental cost of purchasing the assets, use the formula:
 /// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
 ///
-/// The module includes the following components:
-///
-/// - `SquareRootParametersInput`: A struct representing the input parameters for a square root bonding curve.
-/// - `SquareRootParameters`: A struct representing the parameters for a square root bonding curve, used to perform calculations and stored in storage.
-/// - `TryFrom<SquareRootParametersInput<I>> for SquareRootParameters<C>`: An implementation to convert input parameters to the correct fixed-point type.
-/// - `BondingFunction<Parameter> for SquareRootParameters<Parameter>`: An implementation of the bonding function to calculate costs.
-///
 /// Optimization
 /// The calculation of sqrt(s^3) can quickly overflow the fixed-point type. To avoid this, the calculation is factored into:
 /// sqrt(s^3) = sqrt(s) * s,
@@ -33,27 +26,23 @@ use substrate_fixed::{
 use super::{calculate_accumulated_passive_issuance, BondingFunction};
 use crate::{PassiveSupply, Precision};
 
-/// A struct representing the input parameters for a square root bonding curve.
+/// A struct representing the unchecked input parameters for a square root bonding curve.
 /// This struct is used to convert the input parameters to the correct fixed-point type.
-///
-/// # Fields
-/// - `m`: Coefficient for the square root part.
-/// - `n`: Coefficient for the linear part.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct SquareRootParametersInput<Parameter> {
+	/// Coefficient for the square root part.
 	pub m: Parameter,
+	/// Coefficient for the linear part.
 	pub n: Parameter,
 }
 
-/// A struct representing the parameters for a square root bonding curve.
+/// A struct representing the validated parameters for a square root bonding curve.
 /// This struct is used to store the parameters for a square root bonding curve and to perform calculations using the square root bonding curve.
-///
-/// # Fields
-/// - `m`: Coefficient for the square root part.
-/// - `n`: Coefficient for the linear part.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct SquareRootParameters<Parameter> {
+	/// Coefficient for the square root part.
 	pub m: Parameter,
+	/// Coefficient for the linear part.
 	pub n: Parameter,
 }
 

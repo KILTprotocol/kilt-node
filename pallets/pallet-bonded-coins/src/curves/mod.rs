@@ -5,11 +5,6 @@
 /// - Polynomial
 /// - SquareRoot
 /// - LMSR (Logarithmic Market Scoring Rule)
-///
-/// The module provides the following key components:
-/// - `Curve`: An enum representing different types of curves with their respective parameters. Used to store curve parameters and perform calculations.
-/// - `CurveInput`: An enum representing input parameters for different types of curves. Used to convert input parameters to the correct fixed-point type.
-/// - `TryFrom<CurveInput<I>> for Curve<C>`: An implementation to convert `CurveInput` into `Curve`.
 pub(crate) mod lmsr;
 pub(crate) mod polynomial;
 pub(crate) mod square_root;
@@ -116,7 +111,7 @@ where
 /// The bonding function is used to calculate the cost of purchasing or selling assets using the curve.
 /// The trait is implemented for each curve type.
 ///
-/// Variables:
+/// Called arguments:
 /// - `low`: The lower bound of integral.
 /// - `high`: The upper bound of integral.
 /// - `passive_supply`: The passive supply of other assets in the pool, which are not affected by the operation.
