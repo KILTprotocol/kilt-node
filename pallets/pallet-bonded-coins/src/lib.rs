@@ -364,7 +364,7 @@ pub mod pallet {
 				&pool_id,
 				Some(PoolDetails::new(
 					who,
-					checked_curve.clone(),
+					checked_curve,
 					collateral_id,
 					currency_ids,
 					transferable,
