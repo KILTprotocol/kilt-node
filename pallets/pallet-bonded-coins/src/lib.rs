@@ -31,7 +31,7 @@ pub mod pallet {
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
-			tokens::{Fortitude, Precision as WithdrawalPrecision, Preservation},
+			tokens::{Fortitude, Precision as WithdrawalPrecision, Preservation, Provenance},
 			AccountTouch,
 		},
 		Hashable, Parameter,
@@ -279,6 +279,8 @@ pub mod pallet {
 		InvalidInput,
 		Internal,
 		Slippage,
+		/// The user has no bonded currencies.
+		InsufficientBalance,
 	}
 
 	#[pallet::composite_enum]
@@ -736,6 +738,8 @@ pub mod pallet {
 			)?
 			.into();
 
+			ensure!(!burnt.is_zero(), Error::<T>::InsufficientBalance);
+
 			let sum_of_issuances = pool_details
 				.bonded_currencies
 				.into_iter()
@@ -762,6 +766,22 @@ pub mod pallet {
 				// Also theoretically impossible, as the result must be <= total_collateral_issuance
 				// if burnt <= sum_of_issuances, which should always hold true
 				.ok_or(Error::<T>::Internal)?;
+
+			if amount.is_zero()
+				|| T::CollateralCurrencies::can_deposit(
+					pool_details.collateral_id.clone(),
+					&who,
+					amount,
+					Provenance::Extant,
+				)
+				.into_result()
+				.is_err()
+			{
+				// Funds are burnt but the collateral received is not sufficient to be deposited
+				// to the account. This is tolerated as otherwise we could have edge cases where
+				// it's impossible to refund at least some accounts.
+				return Ok(Some(T::WeightInfo::refund_account(currency_count.to_owned())).into());
+			}
 
 			let transferred = T::CollateralCurrencies::transfer(
 				pool_details.collateral_id,
