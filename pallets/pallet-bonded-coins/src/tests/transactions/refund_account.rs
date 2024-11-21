@@ -2,9 +2,12 @@ use crate::{
 	mock::{runtime::*, *},
 	traits::FreezeAccounts,
 	types::PoolStatus,
-	Error, Event,
+	Error, Event, Pools,
 };
-use frame_support::{assert_err, assert_ok, assert_storage_noop, traits::fungibles::Inspect};
+use frame_support::{
+	assert_err, assert_ok, assert_storage_noop,
+	traits::fungibles::{Create, Inspect, Mutate},
+};
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 
 #[test]
@@ -198,6 +201,64 @@ fn balance_is_burnt_even_if_no_collateral_received() {
 					.into_iter()
 					.find(|ev| { matches!(ev, Event::<Test>::RefundComplete { id: _ }) }),
 				None
+			);
+		});
+}
+
+#[test]
+fn refund_below_min_balance() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		true,
+		Some(PoolStatus::Refunding),
+		Some(ACCOUNT_00),
+		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+		Some(ACCOUNT_00),
+	);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	ExtBuilder::default()
+		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, 2000),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, 2000),
+		])
+		.build()
+		.execute_with(|| {
+			// change collateral to one that has a minimum balance
+			let collateral_id = 101;
+			assert_ok!(<<Test as crate::Config>::CollateralCurrencies as Create<_>>::create(
+				collateral_id,
+				pool_id.clone(),
+				true,
+				1000
+			));
+			Pools::<Test>::mutate(&pool_id, |details| {
+				details.as_mut().unwrap().collateral_id = collateral_id
+			});
+			// put less than 2*min balance in pool account
+			let total_collateral = 1500;
+			assert_ok!(<Test as crate::Config>::CollateralCurrencies::mint_into(
+				collateral_id,
+				&pool_id.clone(),
+				total_collateral
+			));
+
+			let origin = RawOrigin::Signed(ACCOUNT_01).into();
+
+			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1));
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01),
+				0
+			);
+			// each would get half, which is below minimum - should not get transferred
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(collateral_id, &pool_id),
+				total_collateral
 			);
 		});
 }
