@@ -272,3 +272,36 @@ fn refund_account_no_balance() {
 			.is_err()));
 		});
 }
+
+#[test]
+fn nothing_to_refund() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		true,
+		Some(PoolStatus::Refunding),
+		Some(ACCOUNT_00),
+		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+		Some(ACCOUNT_00),
+	);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	// no collateral left
+	ExtBuilder::default()
+		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, 100_000),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, 100_000),
+		])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_01).into();
+
+			assert_err!(
+				BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1),
+				Error::<Test>::NothingToRefund
+			);
+		});
+}
