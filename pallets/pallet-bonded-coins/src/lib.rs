@@ -269,9 +269,8 @@ pub mod pallet {
 		InvalidInput,
 		Internal,
 		Slippage,
-		/// The requested Operation could not be performed due to insufficient
-		/// balance.
-		InsufficientBalance,
+		/// The amount to mint or burn is below the minimum allowed.
+		BelowMinimum,
 		/// The calculated collateral is zero.
 		ZeroCollateral,
 	}
@@ -485,7 +484,7 @@ pub mod pallet {
 
 			ensure!(
 				amount_to_mint >= pool_details.min_operation_balance.saturated_into(),
-				Error::<T>::InsufficientBalance
+				Error::<T>::BelowMinimum
 			);
 
 			ensure!(
@@ -564,7 +563,7 @@ pub mod pallet {
 			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
 			ensure!(
 				amount_to_burn >= pool_details.min_operation_balance.saturated_into(),
-				Error::<T>::InsufficientBalance
+				Error::<T>::BelowMinimum
 			);
 
 			ensure!(
