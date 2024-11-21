@@ -509,8 +509,8 @@ fn burn_with_frozen_balance() {
 
 			// check that we can still burn when account is frozen
 			assert_ok!(BondingPallet::burn_into(
-				origin,
-				pool_id,
+				origin.clone(),
+				pool_id.clone(),
 				0,
 				ACCOUNT_00,
 				amount_to_burn,
@@ -518,10 +518,21 @@ fn burn_with_frozen_balance() {
 				1
 			));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
-				initial_balance - (2 * amount_to_burn)
-			);
+			let account_balance =
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00);
+
+			assert_eq!(account_balance, initial_balance - (2 * amount_to_burn));
+
+			// check that we can burn the account's entire holdings
+			assert_ok!(BondingPallet::burn_into(
+				origin,
+				pool_id,
+				0,
+				ACCOUNT_00,
+				account_balance,
+				1,
+				1
+			));
 		})
 }
 
