@@ -647,6 +647,45 @@ fn mint_exceeding_max_collateral_cost() {
 }
 
 #[test]
+fn mint_with_zero_cost() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	let curve: Curve<Float> = Curve::Polynomial(PolynomialParameters {
+		m: Float::from_num(0),
+		n: Float::from_num(0),
+		o: Float::from_num(0.1),
+	});
+	// with an o < 1 a mint of 1 should result in less than 1 collateral returned
+	let mint_amount = 1u128;
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				curve,
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_err!(
+				BondingPallet::mint_into(origin, pool_id.clone(), 0, ACCOUNT_00, mint_amount, u128::MAX, 1),
+				TokenError::BelowMinimum // TODO: update error
+			);
+		});
+}
+
+#[test]
 fn mint_invalid_currency_index() {
 	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
