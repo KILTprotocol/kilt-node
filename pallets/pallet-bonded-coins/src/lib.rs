@@ -301,6 +301,8 @@ pub mod pallet {
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
 
+			ensure!(!min_operation_balance.is_zero(), Error::<T>::InvalidInput);
+
 			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let currency_length = currencies.len();
