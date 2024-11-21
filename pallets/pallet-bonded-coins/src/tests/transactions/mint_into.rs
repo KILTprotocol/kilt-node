@@ -1,5 +1,3 @@
-use core::u128;
-
 use frame_support::{
 	assert_err, assert_ok,
 	traits::{
@@ -143,6 +141,79 @@ fn mint_large_quantity() {
 				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price,
 				MAX_ERROR.mul_floor(expected_price)
+			);
+		})
+}
+
+#[test]
+fn mint_to_other() {
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	let initial_collateral = ONE_HUNDRED_KILT;
+	let amount_to_mint = 100_000;
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, initial_collateral)])
+		.with_pools(vec![(
+			pool_id.clone(),
+			generate_pool_details(
+				vec![DEFAULT_BONDED_CURRENCY_ID],
+				get_linear_bonding_curve(),
+				true,
+				None,
+				None,
+				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
+			),
+		)])
+		.build()
+		.execute_with(|| {
+			let holder_origin = RawOrigin::Signed(ACCOUNT_00).into();
+			let broke_origin = RawOrigin::Signed(ACCOUNT_01).into();
+
+			// The broke origin should not be able to burn anything, even if the beneficiary
+			// is the holder
+
+			assert_err!(
+				BondingPallet::mint_into(
+					broke_origin,
+					pool_id.clone(),
+					0,
+					ACCOUNT_00,
+					amount_to_mint,
+					initial_collateral,
+					1
+				),
+				TokenError::FundsUnavailable
+			);
+
+			assert_ok!(BondingPallet::mint_into(
+				holder_origin,
+				pool_id.clone(),
+				0,
+				ACCOUNT_01,
+				amount_to_mint,
+				initial_collateral,
+				1
+			));
+
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01),
+				amount_to_mint
+			);
+
+			assert_ne!(
+				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				0
+			);
+
+			assert!(
+				<Test as crate::Config>::CollateralCurrencies::total_balance(
+					DEFAULT_COLLATERAL_CURRENCY_ID,
+					&ACCOUNT_00
+				) < initial_collateral
 			);
 		})
 }
