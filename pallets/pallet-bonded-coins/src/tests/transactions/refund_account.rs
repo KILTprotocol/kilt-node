@@ -4,7 +4,7 @@ use crate::{
 	types::PoolStatus,
 	Error, Event,
 };
-use frame_support::{assert_err, assert_ok, traits::fungibles::Inspect};
+use frame_support::{assert_err, assert_ok, assert_storage_noop, traits::fungibles::Inspect};
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 
 #[test]
@@ -260,16 +260,15 @@ fn refund_account_no_balance() {
 		.execute_with(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 
-			// Ensure the refund_account call acts as no-op when there is no balance to be
+			// Ensure the refund_account call fails when there is no balance to be
 			// refunded
-			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1),);
-
-			// At this point we've only refunded one of two accounts
-			assert_eq!(
-				events()
-					.into_iter()
-					.find(|ev| { matches!(ev, Event::<Test>::RefundComplete { id: _ }) }),
-				None
-			);
+			assert_storage_noop!(assert!(BondingPallet::refund_account(
+				origin,
+				pool_id.clone(),
+				ACCOUNT_01,
+				0,
+				1
+			)
+			.is_err()));
 		});
 }
