@@ -6,7 +6,7 @@ use frame_support::{
 	},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
-use sp_runtime::{assert_eq_error_rate, ArithmeticError, Permill, TokenError};
+use sp_runtime::{assert_eq_error_rate, ArithmeticError, TokenError};
 
 use crate::{
 	curves::{polynomial::PolynomialParameters, Curve},
@@ -14,8 +14,6 @@ use crate::{
 	types::{Locks, PoolStatus},
 	Error,
 };
-
-const MAX_ERROR: Permill = Permill::from_perthousand(1);
 
 #[test]
 fn mint_first_coin() {
@@ -501,6 +499,17 @@ fn mint_with_frozen_balance() {
 				initial_collateral,
 				1
 			));
+
+			// Check that balance is still frozen
+			assert_eq!(
+				<Test as crate::Config>::Fungibles::reducible_balance(
+					DEFAULT_BONDED_CURRENCY_ID,
+					&ACCOUNT_00,
+					Preservation::Expendable,
+					Fortitude::Polite
+				),
+				0
+			);
 		})
 }
 

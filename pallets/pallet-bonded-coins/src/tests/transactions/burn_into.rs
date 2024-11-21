@@ -7,7 +7,7 @@ use frame_support::{
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use sp_core::bounded_vec;
-use sp_runtime::{assert_eq_error_rate, traits::Scale, Permill, TokenError};
+use sp_runtime::{assert_eq_error_rate, traits::Scale, TokenError};
 
 use crate::{
 	mock::{runtime::*, *},
@@ -18,8 +18,6 @@ use crate::{
 // should not be u128::MAX, as a bug in the assets pallet results in transfers
 // failing if amount + total supply > u128::MAX
 const LARGE_BALANCE: u128 = u128::MAX / 10;
-
-const MAX_ERROR: Permill = Permill::from_perthousand(1);
 
 #[test]
 fn burn_first_coin() {

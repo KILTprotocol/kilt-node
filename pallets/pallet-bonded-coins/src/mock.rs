@@ -8,7 +8,7 @@ use frame_system::{EnsureRoot, EnsureSigned};
 use sp_core::U256;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, MultiSignature,
+	BoundedVec, BuildStorage, MultiSignature, Permill,
 };
 use substrate_fixed::{
 	traits::{FixedSigned, FixedUnsigned},
@@ -44,6 +44,8 @@ pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = 0;
 pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
 pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
 pub(crate) const ONE_HUNDRED_KILT: u128 = 100_000_000_000_000_000;
+
+pub(crate) const MAX_ERROR: Permill = Permill::from_perthousand(1);
 
 // helper functions
 pub fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
