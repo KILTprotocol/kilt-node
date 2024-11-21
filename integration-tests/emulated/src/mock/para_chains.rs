@@ -116,7 +116,7 @@ decl_test_parachains! {
 		runtime = spiritnet_runtime,
 		core = {
 			XcmpMessageHandler: spiritnet_runtime::XcmpQueue,
-			LocationToAccountId: spiritnet_runtime::xcm_config::LocationToAccountIdConverter,
+			LocationToAccountId: spiritnet_runtime::xcm::LocationToAccountIdConverter,
 			ParachainInfo: spiritnet_runtime::ParachainInfo,
 			MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
 		},
