@@ -1,21 +1,33 @@
-/// Implementation of the [Logarithmic Market Scoring Rule](https://mason.gmu.edu/~rhanson/mktscore.pdf) (LMSR) bonding curve.
-/// The cost of purchasing an amount of assets from the market is determined using the liquidity parameter of the
-/// LMSR model and the current supply of assets in the market.
-/// The LMSR bonding curve is defined by the following equation:
+/// Implementation of the [Logarithmic Market Scoring Rule (LMSR)](https://mason.gmu.edu/~rhanson/mktscore.pdf) bonding curve.
 ///
-/// C(s) = m * ln(Σ(e^(s_i/m))),
+/// This module provides an LMSR bonding curve implementation, which determines the cost of purchasing
+/// assets based on the liquidity parameter and the current supply of assets in the market.
 ///
-/// where:
-/// - `s` is the supply of assets,
+/// ### Cost Function
+/// The LMSR bonding curve is defined by the equation:
+/// ```text
+/// C(s) = m * ln(Σ(e^(s_i / m)))
+/// ```
+/// Where:
+/// - `s` is the supply of all assets, represented as a vector,
 /// - `m` is the liquidity parameter of the LMSR model,
-/// - `s_i` is the current supply of the assets.
+/// - `s_i` is the supply of a single asset.
 ///
-/// `C(s)` represents the accumulated cost of purchasing/selling assets up to the current supply `s`.
-/// To calculate the incremental cost of purchasing the assets, use the formula:
-/// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
+/// `C(s)` represents the accumulated cost of purchasing or selling assets up to the current supply `s`.
 ///
-/// Optimization
-/// For numerical stability, the LMSR bonding curve employs the [log-sum-exp trick](https://en.wikipedia.org/wiki/LogSumExp) to calculate the cost.
+/// ### Incremental Cost
+/// To calculate the incremental cost of a transaction, use the formula:
+/// ```text
+/// Incremental Cost = C(s) - C(s*)
+/// ```
+/// Here:
+/// - `s*` is the supply of assets in the market before the transaction, and
+/// - `s` is the supply of assets after the transaction.
+///
+/// ### Optimization for Numerical Stability
+/// To ensure numerical stability and prevent overflow/underflow during calculations,
+/// this implementation uses the [log-sum-exp trick](https://en.wikipedia.org/wiki/LogSumExp).
+/// This technique improves precision when handling the summation and exponential terms in the cost function.
 use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -31,11 +43,9 @@ use crate::{PassiveSupply, Precision, LOG_TARGET};
 
 /// A struct representing the unchecked input parameters for the LMSR model. This struct is used to convert
 /// the input parameters to the correct fixed-point type.
-///
-/// # Fields
-/// - `m`: The liquidity parameter for the LMSR model.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct LMSRParametersInput<Parameter> {
+	/// The liquidity parameter for the LMSR model
 	pub m: Parameter,
 }
 

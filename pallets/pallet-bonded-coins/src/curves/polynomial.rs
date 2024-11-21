@@ -1,24 +1,44 @@
-/// Polynomial bonding curve implementation.
+/// Polynomial Bonding Curve Implementation.
 ///
-/// This module provides an implementation of a polynomial bonding curve. The current implementation supports a square bonding curve, where the integral is precomputed.
-/// The cost function for the polynomial bonding curve is defined as:
-/// C(s) = m * s^3 + n * s^2 + o * s,
-/// where:
-/// - `s` is the supply of assets,
-/// - `m` is the coefficient for the cubic part,
-/// - `n` is the coefficient for the quadratic part,
-/// - `o` is the coefficient for the linear part.
-/// `C(s)` represents the accumulated cost of purchasing/selling assets up to the current supply `s`.
+/// This module provides an implementation of a polynomial bonding curve.
+/// The current implementation supports a polynomial function of order 2, with the integral precomputed for efficiency.
 ///
-/// To calculate the incremental cost of purchasing the assets, use the formula:
-/// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
+/// ### Cost Function
+/// The cost function is defined as:
+/// ```text
+/// c(s) = m * s^2 + n * s + o
+/// ```
+/// This function, `c(s)`, determines the price for purchasing or selling assets at any supply point `s`.
+/// The total cost of transactions is computed as the integral of `c(s)` between the start point and `s`.
 ///
-/// Optimization
-/// The calculation of x^3 can quickly overflow the fixed-point type. To avoid this, the calculation is factored into:
-/// x^3 = (x^2 + x * y + y^2) * (x - y),
-/// where:
-/// - `x` is the upper bound of the integral,
-/// - `y` is the lower bound of the integral.
+/// ### Antiderivative
+/// The indefinite integral of the cost function is:
+/// ```text
+/// C(s) = (m / 3) * s^3 + (n / 2) * s^2 + o * s
+/// ```
+/// Where:
+/// - `m` is the coefficient for the quadratic term,
+/// - `n` is the coefficient for the linear term,
+/// - `o` is the constant term.
+///
+///
+/// `C(s)` represents the accumulated cost of purchasing or selling assets up to the current supply `s`.
+/// The integral between two supply points, `s*` (initial supply) and `s` (current supply), gives the incremental cost:
+/// ```text
+/// Incremental Cost = C(s) - C(s*)
+/// ```
+/// This captures the total cost for changing the supply from `s*` to `s`.
+///
+/// ### Optimization for Numerical Stability
+/// The computation of `s^3` can cause overflow in fixed-point arithmetic. To mitigate this, the calculation is factored as:
+/// ```text
+/// x^3 - y^3 = (x^2 + x * y + y^2) * (x - y)
+/// ```
+/// Where:
+/// - `x` is the upper limit of the integral,
+/// - `y` is the lower limit of the integral.
+///
+/// By breaking down the computation in this way, we reduce the risk of overflow while maintaining precision.
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
@@ -29,6 +49,22 @@ use crate::PassiveSupply;
 
 /// A struct representing the unchecked input parameters for a polynomial bonding curve.
 /// This struct is used to convert the input parameters to the correct fixed-point type.
+///
+/// The input struct assumes that the coefficients are precomputed according to the integral rules of the polynomial function.
+///
+/// ### Example
+///
+/// For a polynomial cost function `c(s) = 3 * s^2 + 2 * s + 2`
+///
+/// which is resulting into the antiderivative `C(s) = (3 / 3) * s^3 + (2 / 2) * s^2 + 2 * s`
+/// the input parameters would be:
+/// ```rust, ignore
+/// PolynomialParametersInput {
+///    m: 1,
+///    n: 1,
+///    o: 2,
+/// }
+/// ```
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PolynomialParametersInput<Parameter> {
 	/// Coefficient for the cubic part.

@@ -1,20 +1,38 @@
-/// Square Root bonding curve implementation.
+/// Square Root Bonding Curve Implementation.
 ///
-/// This module provides an implementation of a square root bonding curve. The current implementation supports a bonding curve where the integral is precomputed.
-/// The cost function for the square root bonding curve is defined as:
-/// C(s) = m * sqrt(s^3) + n * s,
-/// where:
+/// This module provides an implementation of a square root bonding curve, with the integral precomputed for efficiency.
+///
+/// ### Cost Function
+/// The cost function is defined as:
+/// ```text
+/// c(s) = m * sqrt(s) + n
+/// ```
+/// This function, `c(s)`, determines the price for purchasing or selling assets at any supply point `s`.
+/// The total transaction cost is calculated as the integral of `c(s)` between the start point and `s`.
+///
+/// ### Antiderivative
+/// The indefinite integral of the cost function is:
+/// ```text
+/// C(s) = (2/3) * m * s^(3/2) + n * s
+/// ```
+/// Where:
 /// - `s` is the supply of assets,
-/// - `m` is the coefficient for the square root part,
-/// - `n` is the coefficient for the linear part.
-/// `C(s)` represents the accumulated cost of purchasing/selling assets up to the current supply `s`.
+/// - `m` is the coefficient for the square root term,
+/// - `n` is the coefficient for the linear term.
 ///
-/// To calculate the incremental cost of purchasing the assets, use the formula:
-/// `C(s) - C(s*)`, where `s*` is the supply of assets in the market before the purchase.
+/// `C(s)` represents the total cost of purchasing or selling assets up to the current supply `s`.
+/// To calculate the incremental cost of a transaction, use the formula:
+/// ```text
+/// Incremental Cost = C(s) - C(s*)
+/// ```
+/// Here, `s*` represents the initial supply before the transaction, and `s` is the supply after the transaction.
 ///
-/// Optimization
-/// The calculation of sqrt(s^3) can quickly overflow the fixed-point type. To avoid this, the calculation is factored into:
-/// sqrt(s^3) = sqrt(s) * s,
+/// ### Optimization for Numerical Stability
+/// Calculating `s^(3/2)` directly can lead to overflow in fixed-point arithmetic. To mitigate this, the calculation is factored as:
+/// ```text
+/// sqrt(s^3) = sqrt(s) * s
+/// ```
+/// By expressing `s^(3/2)` as the product of `sqrt(s)` and `s`, we reduce the risk of overflow while maintaining computational precision.
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
@@ -28,6 +46,19 @@ use crate::{PassiveSupply, Precision};
 
 /// A struct representing the unchecked input parameters for a square root bonding curve.
 /// This struct is used to convert the input parameters to the correct fixed-point type.
+///
+/// The input struct assumes that the coefficients are precomputed according to the integral rules of the square root function./// ### Example
+///
+/// For a square root cost function `c(s) = 3 * s^1/2 + 2
+///
+/// which is resulting into the antiderivative `C(s) = (6 / 3) * s^(1/2) + 2 * s`
+/// the input parameters would be:
+/// ```rust, ignore
+/// SquareRootParametersInput {
+///    m: 2,
+///    n: 2,
+/// }
+/// ```
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct SquareRootParametersInput<Parameter> {
 	/// Coefficient for the square root part.
