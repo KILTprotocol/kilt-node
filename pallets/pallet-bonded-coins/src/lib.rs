@@ -39,9 +39,10 @@ pub mod pallet {
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{
-			Bounded, CheckedConversion, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto, Zero,
+			Bounded, CheckedAdd, CheckedConversion, One, SaturatedConversion, Saturating, StaticLookup,
+			UniqueSaturatedInto, Zero,
 		},
-		BoundedVec,
+		BoundedVec, TokenError,
 	};
 	use sp_std::{
 		default::Default,
@@ -161,7 +162,7 @@ pub mod pallet {
 
 		/// The type used for asset ids. This is the type of the bonded
 		/// currencies.
-		type AssetId: Parameter + Member + FullCodec + MaxEncodedLen + Saturating + One + Default;
+		type AssetId: Parameter + Member + FullCodec + MaxEncodedLen + One + Default + CheckedAdd;
 
 		type RuntimeHoldReason: From<HoldReason>;
 
@@ -376,6 +377,7 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(pool_details.is_manager(&who), Error::<T>::NoPermission);
+			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
 			let asset_id = pool_details
 				.bonded_currencies
@@ -600,9 +602,10 @@ pub mod pallet {
 			)?;
 
 			// just remove any locks, if existing.
-			T::Fungibles::thaw(target_currency_id, &beneficiary).map_err(|freeze_error| {
+			T::Fungibles::thaw(target_currency_id, &who).map_err(|freeze_error| {
 				log::info!(target: LOG_TARGET, "Failed to thaw account: {:?}", freeze_error);
-				freeze_error.into()
+				// The thaw operation is failing, if there is no account to thaw. Overwrite the error with FungiblesError::FundsUnavailable
+				DispatchError::from(TokenError::FundsUnavailable)
 			})?;
 
 			T::Fungibles::burn_from(
@@ -1021,11 +1024,12 @@ pub mod pallet {
 		fn generate_sequential_asset_ids(
 			mut start_id: T::AssetId,
 			count: usize,
-		) -> Result<(BoundedCurrencyVec<T>, T::AssetId), Error<T>> {
+		) -> Result<(BoundedCurrencyVec<T>, T::AssetId), DispatchError> {
 			let mut currency_ids_vec = Vec::new();
 			for _ in 0..count {
 				currency_ids_vec.push(start_id.clone());
-				start_id.saturating_inc();
+
+				start_id = start_id.checked_add(&One::one()).ok_or(ArithmeticError::Overflow)?;
 			}
 
 			let currency_array = BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(
