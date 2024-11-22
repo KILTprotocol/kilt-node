@@ -474,6 +474,7 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
+			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
 
 			ensure!(
@@ -526,7 +527,10 @@ pub mod pallet {
 			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
 
 			if !pool_details.transferable {
-				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
+				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
+					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
+					freeze_error.into()
+				})?;
 			}
 
 			Ok(())
@@ -548,6 +552,7 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
+			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
 
 			ensure!(
@@ -595,28 +600,30 @@ pub mod pallet {
 			)?;
 
 			// just remove any locks, if existing.
-			T::Fungibles::thaw(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
+			T::Fungibles::thaw(target_currency_id, &beneficiary).map_err(|freeze_error| {
+				log::info!(target: LOG_TARGET, "Failed to thaw account: {:?}", freeze_error);
+				freeze_error.into()
+			})?;
 
 			T::Fungibles::burn_from(
 				target_currency_id.clone(),
-				&beneficiary,
+				&who,
 				amount_to_burn,
 				WithdrawalPrecision::Exact,
 				Fortitude::Force,
 			)?;
 
-			if !pool_details.transferable {
+			let user_funds = T::Fungibles::balance(target_currency_id.clone(), &who);
+
+			if !pool_details.transferable && !user_funds.is_zero() {
 				// Restore locks.
-				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
+				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
+					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
+					freeze_error.into()
+				})?;
 			}
 
 			Ok(())
-		}
-
-		#[pallet::call_index(7)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn swap_into(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
 		}
 
 		#[pallet::call_index(8)]
@@ -683,7 +690,10 @@ pub mod pallet {
 			);
 
 			//  remove any existing locks on the account prior to burning
-			T::Fungibles::thaw(asset_id, &who).map_err(|freeze_error| freeze_error.into())?;
+			T::Fungibles::thaw(asset_id, &who).map_err(|freeze_error| {
+				log::info!(target: LOG_TARGET, "Failed to thaw account: {:?}", freeze_error);
+				freeze_error.into()
+			})?;
 
 			// With amount = max_value(), this trait implementation burns the reducible
 			// balance on the account and returns the actual amount burnt
@@ -722,11 +732,33 @@ pub mod pallet {
 				.ok_or(ArithmeticError::Overflow)?
 				.checked_div(sum_of_issuances)
 				// Because sum_of_issuances >= burnt > 0, this is theoretically impossible
-				.ok_or(Error::<T>::Internal)?
+				.ok_or_else(|| {
+					log::error!(
+						target: LOG_TARGET,
+						"Could not divide burn * total collateral issuance by sum of issuances. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}", 
+						pool_id,
+						who,
+						burnt,
+						total_collateral_issuance,
+						sum_of_issuances
+					);
+					Error::<T>::Internal
+				})?
 				.checked_into()
 				// Also theoretically impossible, as the result must be <= total_collateral_issuance
 				// if burnt <= sum_of_issuances, which should always hold true
-				.ok_or(Error::<T>::Internal)?;
+				.ok_or_else(|| {
+					log::error!(
+						target: LOG_TARGET,
+						"Could not cast U256 into CollateralCurrency. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}", 
+						pool_id,
+						who,
+						burnt,
+						total_collateral_issuance,
+						sum_of_issuances
+					);
+					Error::<T>::Internal
+				})?;
 
 			if amount.is_zero()
 				|| T::CollateralCurrencies::can_deposit(
@@ -996,8 +1028,17 @@ pub mod pallet {
 				start_id.saturating_inc();
 			}
 
-			let currency_array = BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(currency_ids_vec)
-				.map_err(|_| Error::<T>::Internal)?;
+			let currency_array = BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(
+				currency_ids_vec.clone(),
+			)
+			.map_err(|_| {
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to convert currency_ids_vec to BoundedVec in generate_sequential_asset_ids. Currency_ids_vec: {:?}",
+					&currency_ids_vec
+				);
+				Error::<T>::Internal
+			})?;
 
 			Ok((currency_array, start_id))
 		}

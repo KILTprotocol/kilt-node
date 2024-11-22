@@ -1,3 +1,5 @@
+use core::fmt::Debug;
+
 use frame_support::{dispatch::DispatchResult, traits::fungibles::roles::Inspect};
 use frame_system::RawOrigin;
 use pallet_assets::{Config as AssetConfig, Pallet as AssetsPallet};
@@ -6,7 +8,7 @@ use sp_runtime::{traits::StaticLookup, DispatchError};
 use crate::AccountIdOf;
 
 pub trait FreezeAccounts<AccountId, AssetId> {
-	type Error: Into<DispatchError>;
+	type Error: Into<DispatchError> + Debug;
 
 	fn freeze(asset_id: &AssetId, who: &AccountId) -> Result<(), Self::Error>;
 

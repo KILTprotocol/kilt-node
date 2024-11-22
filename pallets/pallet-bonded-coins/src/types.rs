@@ -6,7 +6,6 @@ use scale_info::TypeInfo;
 pub struct Locks {
 	pub allow_mint: bool,
 	pub allow_burn: bool,
-	pub allow_swap: bool,
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
@@ -97,14 +96,6 @@ where
 	pub fn can_mint(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(who),
-			PoolStatus::Active => true,
-			_ => false,
-		}
-	}
-
-	pub fn can_swap(&self, who: &AccountId) -> bool {
-		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(who),
 			PoolStatus::Active => true,
 			_ => false,
 		}

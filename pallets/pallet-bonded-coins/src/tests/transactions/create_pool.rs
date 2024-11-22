@@ -56,7 +56,6 @@ fn single_currency() {
 				PoolStatus::Locked(Locks {
 					allow_mint: false,
 					allow_burn: false,
-					allow_swap: false
 				})
 			);
 			assert_eq!(details.denomination, DEFAULT_BONDED_DENOMINATION);
