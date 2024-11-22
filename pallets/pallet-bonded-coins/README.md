@@ -93,6 +93,10 @@ The `Config` trait defines the configuration parameters and associated types req
 - `PoolCreateOrigin`: The origin required to create a pool.
 - `ForceOrigin`: The origin with force privileges.
 
+### Feature guided 
+
+- `BenchmarkHelper`: Helper type for benchmarking to calculate asset ids for collateral and bonded currencies
+
 ## Life Cycle of a Pool
 
 1. **Creation**:
