@@ -182,6 +182,7 @@ pub mod pallet {
 
 		type WeightInfo: WeightInfo;
 
+		/// Benchmark helper to calculate asset ids for the collateral and bonded currencies.
 		#[cfg(feature = "runtime-benchmarks")]
 		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper<Self>;
 	}
