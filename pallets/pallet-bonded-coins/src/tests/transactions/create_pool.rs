@@ -271,9 +271,10 @@ fn cannot_create_circular_pool() {
 #[test]
 fn handles_asset_id_overflow() {
 	let initial_balance = ONE_HUNDRED_KILT;
+	let random_collateral_id = 100;
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
-		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_collaterals(vec![random_collateral_id])
 		.build()
 		.execute_with(|| {
 			NextAssetId::<Test>::set(u32::MAX);
@@ -291,7 +292,7 @@ fn handles_asset_id_overflow() {
 				BondingPallet::create_pool(
 					origin,
 					curve,
-					0,
+					random_collateral_id,
 					bounded_vec![bonded_token; 2],
 					DEFAULT_BONDED_DENOMINATION,
 					true
