@@ -11,9 +11,12 @@ use crate::{
 	Call, CollateralAssetIdOf, CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf, Pallet,
 };
 
+/// Helper trait to calculate asset ids for collateral and bonded assets used in benchmarks.
 pub trait BenchmarkHelper<T: Config> {
+	/// Calculate the asset id for the collateral asset.
 	fn calculate_collateral_asset_id(seed: u32) -> CollateralAssetIdOf<T>;
 
+	/// Calculate the asset id for the bonded asset.
 	fn calculate_bonded_asset_id(seed: u32) -> FungiblesAssetIdOf<T>;
 }
 
