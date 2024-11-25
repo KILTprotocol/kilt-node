@@ -122,9 +122,15 @@ fn refund_account_works_with_large_supply() {
 		])
 		.build()
 		.execute_with(|| {
-			let origin = RawOrigin::Signed(ACCOUNT_01).into();
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_01).into();
 
-			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 2));
+			assert_ok!(BondingPallet::refund_account(
+				origin.clone(),
+				pool_id.clone(),
+				ACCOUNT_01,
+				0,
+				2
+			));
 
 			assert_eq!(Assets::total_balance(currencies[0], &ACCOUNT_01), 0);
 
@@ -140,6 +146,14 @@ fn refund_account_works_with_large_supply() {
 					.find(|ev| { matches!(ev, Event::<Test>::RefundComplete { id: _ }) }),
 				None
 			);
+
+			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 1, 2));
+
+			assert_eq!(Assets::total_balance(currencies[1], &ACCOUNT_01), 0);
+
+			assert_eq!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id), 0);
+
+			System::assert_has_event(Event::<Test>::RefundComplete { id: pool_id }.into());
 		});
 }
 
