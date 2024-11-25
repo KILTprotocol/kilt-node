@@ -150,7 +150,7 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 	pub min_balance: Balance,
 }
 
-/// Represents the managing team of a pool.
+/// Managing team of a pool.
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
 pub struct PoolManagingTeam<AccountId> {
 	/// The admin of the pool.
