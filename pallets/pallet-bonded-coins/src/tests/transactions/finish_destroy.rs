@@ -32,7 +32,7 @@ fn anyone_can_call_finish_destroy() {
 		.build()
 		.execute_with(|| {
 			// Assets need to be in destroying state if pool is in destroying state
-			<<Test as crate::Config>::Fungibles as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
+			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
 				.expect("failed to set up test state: asset cannot be set to destroying");
 
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -46,9 +46,7 @@ fn anyone_can_call_finish_destroy() {
 			System::assert_has_event(Event::Destroyed { id: pool_id }.into());
 
 			// Verify that the bonded asset class has been destroyed
-			assert!(!<<Test as crate::Config>::Fungibles>::asset_exists(
-				DEFAULT_BONDED_CURRENCY_ID
-			));
+			assert!(!Assets::asset_exists(DEFAULT_BONDED_CURRENCY_ID));
 
 			// Verify that deposit has been freed
 			assert_eq!(
@@ -85,7 +83,7 @@ fn owner_receives_collateral() {
 		.build()
 		.execute_with(|| {
 			// Assets need to be in destroying state if pool is in destroying state
-			<<Test as crate::Config>::Fungibles as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
+			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
 				.expect("failed to set up test state: asset cannot be set to destroying");
 
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -94,10 +92,7 @@ fn owner_receives_collateral() {
 
 			// Verify that the remaining collateral has been moved to the owner
 			assert_eq!(
-				<<Test as crate::Config>::CollateralCurrencies>::total_balance(
-					DEFAULT_COLLATERAL_CURRENCY_ID,
-					&ACCOUNT_01
-				),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01),
 				remaining_collateral
 			);
 		});
@@ -123,10 +118,10 @@ fn works_if_asset_is_gone() {
 		.build()
 		.execute_with(|| {
 			// Assets need to be in destroying state if pool is in destroying state
-			<<Test as crate::Config>::Fungibles as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
+			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
 				.expect("failed to set up test state: asset cannot be set to destroying");
 			// Assets need to be in destroying state if pool is in destroying state
-			<<Test as crate::Config>::Fungibles as Destroy<_>>::finish_destroy(DEFAULT_BONDED_CURRENCY_ID)
+			<Assets as Destroy<_>>::finish_destroy(DEFAULT_BONDED_CURRENCY_ID)
 				.expect("failed to set up test state: asset cannot be set to destroying");
 
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -162,7 +157,7 @@ fn fails_on_incorrect_state() {
 		.build()
 		.execute_with(|| {
 			// Assets need to be in destroying state if pool is in destroying state
-			<<Test as crate::Config>::Fungibles as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
+			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
 				.expect("failed to set up test state: asset cannot be set to destroying");
 
 			assert_err!(
@@ -212,22 +207,20 @@ fn fails_if_assets_cannot_be_destroyed() {
 			assert!(BondingPallet::finish_destroy(origin.clone(), pool_id.clone(), 1).is_err());
 
 			// Assets need to be in destroying state if pool is in destroying state
-			<<Test as crate::Config>::Fungibles as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
+			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
 				.expect("failed to set asset to destroying state");
 
 			// Fails because asset has active accounts attached to it
 			assert!(BondingPallet::finish_destroy(origin.clone(), pool_id.clone(), 1).is_err());
 
-			<<Test as crate::Config>::Fungibles as Destroy<_>>::destroy_accounts(DEFAULT_BONDED_CURRENCY_ID, 100)
+			<Assets as Destroy<_>>::destroy_accounts(DEFAULT_BONDED_CURRENCY_ID, 100)
 				.expect("failed to destroy accounts");
 
 			// now we should be good to go
 			assert_ok!(BondingPallet::finish_destroy(origin, pool_id.clone(), 1));
 
 			// Verify that the bonded asset class has been destroyed
-			assert!(!<<Test as crate::Config>::Fungibles>::asset_exists(
-				DEFAULT_BONDED_CURRENCY_ID
-			));
+			assert!(!Assets::asset_exists(DEFAULT_BONDED_CURRENCY_ID));
 		});
 }
 
@@ -258,7 +251,7 @@ fn fails_on_invalid_arguments() {
 		.execute_with(|| {
 			// All assets need to be in destroying state if pool is in destroying state
 			currencies.into_iter().for_each(|id| {
-				<<Test as crate::Config>::Fungibles as Destroy<_>>::start_destroy(id, None)
+				<Assets as Destroy<_>>::start_destroy(id, None)
 					.expect("failed to set up test state: asset cannot be set to destroying");
 			});
 

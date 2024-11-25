@@ -40,12 +40,10 @@ fn start_destroy_works() {
 			// There is no direct way to check the asset status, so we assert that it has
 			// been moved to destroying state by calling a function that would otherwise
 			// fail.
-			assert_ok!(
-				<<Test as crate::Config>::Fungibles as Destroy<AccountId>>::destroy_accounts(
-					DEFAULT_BONDED_CURRENCY_ID,
-					1
-				)
-			);
+			assert_ok!(<Assets as Destroy<AccountId>>::destroy_accounts(
+				DEFAULT_BONDED_CURRENCY_ID,
+				1
+			));
 		});
 }
 
@@ -179,13 +177,7 @@ fn start_destroy_fails_when_pool_has_active_currencies() {
 				Error::<Test>::LivePool
 			);
 
-			assert!(
-				<<Test as crate::Config>::Fungibles as Destroy<AccountId>>::destroy_accounts(
-					DEFAULT_BONDED_CURRENCY_ID,
-					1
-				)
-				.is_err()
-			);
+			assert!(<Assets as Destroy<AccountId>>::destroy_accounts(DEFAULT_BONDED_CURRENCY_ID, 1).is_err());
 		});
 }
 
