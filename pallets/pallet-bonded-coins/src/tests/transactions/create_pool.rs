@@ -291,7 +291,7 @@ fn handles_asset_id_overflow() {
 				BondingPallet::create_pool(
 					origin,
 					curve,
-					0,
+					DEFAULT_COLLATERAL_CURRENCY_ID,
 					bounded_vec![bonded_token; 2],
 					DEFAULT_BONDED_DENOMINATION,
 					true
