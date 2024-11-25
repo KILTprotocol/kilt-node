@@ -142,7 +142,8 @@ fn burn_large_supply() {
 	let initial_supply = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
 	let amount_to_burn = 10u128.pow(10);
 
-	let expected_price = collateral_at_supply(initial_supply) - collateral_at_supply(initial_supply - amount_to_burn);
+	let expected_price = mocks_curve_get_collateral_at_supply(initial_supply)
+		- mocks_curve_get_collateral_at_supply(initial_supply - amount_to_burn);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -199,7 +200,7 @@ fn burn_large_quantity() {
 	// Overflows will likely occur when squaring the total supply, which happens on
 	// an I75 representation of the balance, scaled down by its denomination
 	let amount_to_burn = (2_u128.pow(74).mul(denomination) as f64).sqrt() as u128;
-	let expected_price = collateral_at_supply(amount_to_burn);
+	let expected_price = mocks_curve_get_collateral_at_supply(amount_to_burn);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -251,8 +252,9 @@ fn burn_multiple_currencies() {
 	let pool_id = calculate_pool_id(&currencies);
 
 	let amount_to_burn = 10_000u128;
-	let expected_price_second_burn = collateral_at_supply(amount_to_burn);
-	let expected_price_first_burn = collateral_at_supply(amount_to_burn * 2) - expected_price_second_burn;
+	let expected_price_second_burn = mocks_curve_get_collateral_at_supply(amount_to_burn);
+	let expected_price_first_burn =
+		mocks_curve_get_collateral_at_supply(amount_to_burn * 2) - expected_price_second_burn;
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -421,7 +423,7 @@ fn multiple_mints_vs_combined_burn() {
 
 	let amount_to_mint = 11u128.pow(10);
 
-	let expected_prize = collateral_at_supply(10 * amount_to_mint);
+	let expected_prize = mocks_curve_get_collateral_at_supply(10 * amount_to_mint);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, LARGE_BALANCE)])

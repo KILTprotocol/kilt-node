@@ -23,7 +23,7 @@ fn mint_first_coin() {
 
 	let initial_collateral = 100u128;
 	let amount_to_mint = 1u128;
-	let expected_price = collateral_at_supply(amount_to_mint);
+	let expected_price = mocks_curve_get_collateral_at_supply(amount_to_mint);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -95,7 +95,7 @@ fn mint_large_quantity() {
 	// an I75 representation of the balance, scaled down by its denomination
 	let denomination = 10u128.pow(DEFAULT_BONDED_DENOMINATION.into());
 	let amount_to_mint = (2_u128.pow(74).saturating_mul(denomination) as f64).sqrt() as u128;
-	let expected_price = collateral_at_supply(amount_to_mint);
+	let expected_price = mocks_curve_get_collateral_at_supply(amount_to_mint);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -213,8 +213,8 @@ fn mint_multiple_currencies() {
 	let curve = get_linear_bonding_curve();
 
 	let amount_to_mint = 10u128.pow(10);
-	let expected_price = collateral_at_supply(amount_to_mint);
-	let expected_price_second_mint = collateral_at_supply(amount_to_mint * 2) - expected_price;
+	let expected_price = mocks_curve_get_collateral_at_supply(amount_to_mint);
+	let expected_price_second_mint = mocks_curve_get_collateral_at_supply(amount_to_mint * 2) - expected_price;
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -288,7 +288,8 @@ fn mint_large_supply() {
 	let initial_supply = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
 
 	let amount_to_mint = 1u128;
-	let expected_price = collateral_at_supply(initial_supply + amount_to_mint) - collateral_at_supply(initial_supply);
+	let expected_price = mocks_curve_get_collateral_at_supply(initial_supply + amount_to_mint)
+		- mocks_curve_get_collateral_at_supply(initial_supply);
 	let initial_collateral = expected_price * 2;
 
 	ExtBuilder::default()

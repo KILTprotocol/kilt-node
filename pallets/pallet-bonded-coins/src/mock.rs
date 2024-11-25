@@ -58,7 +58,7 @@ pub fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
 	);
 }
 
-pub(crate) fn collateral_at_supply(supply: u128) -> u128 {
+pub(crate) fn mocks_curve_get_collateral_at_supply(supply: u128) -> u128 {
 	let supply_u256 = U256::from(supply);
 	let sup_squared = supply_u256 * supply_u256;
 	// curve is f(x) = 4x + 3, resulting in f'(x) = 2x^2 + 3x.
