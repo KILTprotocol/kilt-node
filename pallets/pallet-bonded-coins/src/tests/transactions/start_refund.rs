@@ -305,3 +305,40 @@ fn start_refund_fails_when_no_collateral() {
 			);
 		});
 }
+
+#[test]
+fn pool_does_not_exist() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		true,
+		Some(PoolStatus::Active),
+		Some(ACCOUNT_00),
+		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+		Some(ACCOUNT_00),
+	);
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let currency_count = 1;
+
+	ExtBuilder::default()
+		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10),
+		])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_err!(
+				BondingPallet::start_refund(
+					origin,
+					calculate_pool_id(&[DEFAULT_COLLATERAL_CURRENCY_ID]),
+					currency_count
+				),
+				Error::<Test>::PoolUnknown
+			);
+		});
+}

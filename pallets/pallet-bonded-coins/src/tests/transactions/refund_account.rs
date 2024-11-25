@@ -352,3 +352,51 @@ fn nothing_to_refund() {
 			);
 		});
 }
+
+#[test]
+fn unknown_pool_or_currency() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		true,
+		Some(PoolStatus::Refunding),
+		Some(ACCOUNT_00),
+		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+		Some(ACCOUNT_00),
+	);
+
+	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	let total_collateral = 10u128.pow(10);
+
+	ExtBuilder::default()
+		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), total_collateral),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, total_collateral * 10),
+		])
+		.build()
+		.execute_with(|| {
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_01).into();
+
+			// using some other pool id
+			assert_err!(
+				BondingPallet::refund_account(
+					origin.clone(),
+					calculate_pool_id(&[DEFAULT_COLLATERAL_CURRENCY_ID]),
+					ACCOUNT_01,
+					0,
+					1
+				),
+				Error::<Test>::PoolUnknown
+			);
+
+			// use the right pool id but asset idx that is too large
+			assert_err!(
+				BondingPallet::refund_account(origin, pool_id, ACCOUNT_01, 10, 1),
+				Error::<Test>::IndexOutOfBounds
+			);
+		});
+}
