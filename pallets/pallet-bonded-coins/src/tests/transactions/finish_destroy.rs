@@ -204,7 +204,8 @@ fn fails_if_assets_cannot_be_destroyed() {
 		.build()
 		.execute_with(|| {
 			// Fails because asset is not in destroying state
-			assert!(BondingPallet::finish_destroy(origin.clone(), pool_id.clone(), 1).is_err());
+			BondingPallet::finish_destroy(origin.clone(), pool_id.clone(), 1)
+				.expect_err("Pool destruction should fail if any asset is not in destroying state.");
 
 			// Assets need to be in destroying state if pool is in destroying state
 			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
