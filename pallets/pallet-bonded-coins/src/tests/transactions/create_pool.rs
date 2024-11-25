@@ -13,7 +13,7 @@ use sp_std::ops::Sub;
 use crate::{
 	mock::{runtime::*, *},
 	types::{Locks, PoolStatus},
-	Event as BondingPalletEvents, NextAssetId, Pools, TokenMetaOf,
+	AccountIdOf, Event as BondingPalletEvents, NextAssetId, Pools, TokenMetaOf,
 };
 
 #[test]
@@ -44,7 +44,7 @@ fn single_currency() {
 				true
 			));
 
-			let pool_id = calculate_pool_id(&[new_asset_id]);
+			let pool_id: AccountIdOf<Test> = calculate_pool_id(&[new_asset_id]);
 
 			let details = Pools::<Test>::get(&pool_id).unwrap();
 
@@ -120,7 +120,7 @@ fn multi_currency() {
 			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 3);
 
 			let new_assets = Vec::from_iter(next_asset_id..next_asset_id + 3);
-			let pool_id = calculate_pool_id(&new_assets);
+			let pool_id: AccountIdOf<Test> = calculate_pool_id(&new_assets);
 
 			let details = Pools::<Test>::get(pool_id.clone()).unwrap();
 
@@ -178,8 +178,10 @@ fn can_create_identical_pools() {
 
 			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 2);
 
-			let details1 = Pools::<Test>::get(calculate_pool_id(&[next_asset_id])).unwrap();
-			let details2 = Pools::<Test>::get(calculate_pool_id(&[next_asset_id + 1])).unwrap();
+			let details1 =
+				Pools::<Test>::get(calculate_pool_id::<AssetId, AccountIdOf<Test>>(&[next_asset_id])).unwrap();
+			let details2 =
+				Pools::<Test>::get(calculate_pool_id::<AssetId, AccountIdOf<Test>>(&[next_asset_id + 1])).unwrap();
 
 			assert_eq!(details1.bonded_currencies, vec![next_asset_id]);
 			assert_eq!(details2.bonded_currencies, vec![next_asset_id + 1]);

@@ -12,7 +12,7 @@ use sp_runtime::{assert_eq_error_rate, traits::Scale, TokenError};
 use crate::{
 	mock::{runtime::*, *},
 	types::{Locks, PoolStatus},
-	Error, PoolDetailsOf,
+	AccountIdOf, Error, PoolDetailsOf,
 };
 
 // should not be u128::MAX, as a bug in the assets pallet results in transfers
@@ -21,7 +21,7 @@ const LARGE_BALANCE: u128 = u128::MAX / 10;
 
 #[test]
 fn burn_first_coin() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let amount_to_burn: u128 = 1;
 	let expected_price =
@@ -76,7 +76,7 @@ fn burn_first_coin() {
 
 #[test]
 fn burn_to_other() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let initial_supply = 100_000;
 	let amount_to_burn = initial_supply / 2;
@@ -135,7 +135,7 @@ fn burn_to_other() {
 
 #[test]
 fn burn_large_supply() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve = get_linear_bonding_curve();
 
@@ -193,7 +193,7 @@ fn burn_large_supply() {
 
 #[test]
 fn burn_large_quantity() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve = get_linear_bonding_curve();
 	let denomination = 10u128.pow(DEFAULT_BONDED_DENOMINATION.into());
@@ -249,7 +249,7 @@ fn burn_large_quantity() {
 fn burn_multiple_currencies() {
 	let currencies = vec![DEFAULT_BONDED_CURRENCY_ID, DEFAULT_BONDED_CURRENCY_ID + 1];
 
-	let pool_id = calculate_pool_id(&currencies);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&currencies);
 
 	let amount_to_burn = 10_000u128;
 	let expected_price_second_burn = mocks_curve_get_collateral_at_supply(amount_to_burn);
@@ -328,8 +328,8 @@ fn multiple_burns_vs_combined_burn() {
 	let currency_1 = DEFAULT_BONDED_CURRENCY_ID;
 	let currency_2 = DEFAULT_BONDED_CURRENCY_ID + 1;
 
-	let pool_id1 = calculate_pool_id(&[currency_1]);
-	let pool_id2 = calculate_pool_id(&[currency_2]);
+	let pool_id1: AccountIdOf<Test> = calculate_pool_id(&[currency_1]);
+	let pool_id2: AccountIdOf<Test> = calculate_pool_id(&[currency_2]);
 
 	let amount_to_burn = 11u128.pow(10);
 
@@ -417,7 +417,7 @@ fn multiple_burns_vs_combined_burn() {
 #[test]
 fn multiple_mints_vs_combined_burn() {
 	let currency_id = DEFAULT_BONDED_CURRENCY_ID;
-	let pool_id = calculate_pool_id(&[currency_id]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[currency_id]);
 
 	let curve = get_linear_bonding_curve();
 
@@ -479,7 +479,7 @@ fn multiple_mints_vs_combined_burn() {
 
 #[test]
 fn burn_with_frozen_balance() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let amount_to_burn = 10u128.pow(10); // must be smaller than initial_balance / 2
 	let initial_balance = 3 * amount_to_burn;
@@ -563,7 +563,7 @@ fn burn_with_frozen_balance() {
 
 #[test]
 fn burn_on_locked_pool() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let initial_balance = 10 * 10u128.pow(10);
 	let amount_to_burn = 10u128.pow(10);
@@ -631,7 +631,7 @@ fn burn_invalid_pool_id() {
 
 #[test]
 fn burn_in_refunding_pool() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(
@@ -658,7 +658,7 @@ fn burn_in_refunding_pool() {
 
 #[test]
 fn burn_not_hitting_minimum() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -689,7 +689,7 @@ fn burn_not_hitting_minimum() {
 
 #[test]
 fn burn_invalid_currency_index() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(
@@ -718,7 +718,7 @@ fn burn_invalid_currency_index() {
 
 #[test]
 fn burn_beyond_balance() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
