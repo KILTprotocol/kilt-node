@@ -37,7 +37,7 @@ fn start_refund_works() {
 
 			// Verify that the pool state has been updated to refunding
 			let updated_pool = Pools::<Test>::get(&pool_id).unwrap();
-			assert!(matches!(updated_pool.state, PoolStatus::Refunding));
+			assert_eq!(updated_pool.state, PoolStatus::Refunding);
 
 			// Verify the expected event has been deposited
 			System::assert_last_event(Event::RefundingStarted { id: pool_id }.into());
@@ -92,7 +92,7 @@ fn start_refund_fails_when_pool_not_live() {
 }
 
 #[test]
-fn start_destroy_fails_when_currency_no_low() {
+fn start_refund_fails_when_currency_no_low() {
 	let currencies = vec![
 		DEFAULT_BONDED_CURRENCY_ID,
 		DEFAULT_BONDED_CURRENCY_ID + 1,
@@ -169,7 +169,7 @@ fn force_start_refund_works() {
 
 			// Verify that the pool state has been updated to refunding
 			let updated_pool = Pools::<Test>::get(&pool_id).unwrap();
-			assert!(matches!(updated_pool.state, PoolStatus::Refunding));
+			assert_eq!(updated_pool.state, PoolStatus::Refunding);
 
 			// Verify the expected event has been deposited
 			System::assert_last_event(Event::RefundingStarted { id: pool_id }.into());
