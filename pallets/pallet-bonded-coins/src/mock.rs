@@ -1,6 +1,6 @@
 use frame_support::{
 	parameter_types,
-	traits::{ConstU128, ConstU32},
+	traits::{fungible::MutateHold, ConstU128, ConstU32},
 	weights::constants::RocksDbWeight,
 	Hashable,
 };
@@ -22,7 +22,7 @@ use crate::{
 		Curve, CurveInput,
 	},
 	types::{Locks, PoolStatus},
-	DepositCurrencyBalanceOf, PoolDetailsOf,
+	DepositCurrencyBalanceOf, HoldReason, PoolDetailsOf,
 };
 
 pub type Float = I75F53;
@@ -342,6 +342,13 @@ pub mod runtime {
 				System::set_block_number(System::block_number() + 1);
 
 				self.pools.into_iter().for_each(|(pool_id, pool)| {
+					// try to continue if we can't create the hold - might not be needed for all
+					// tests
+					let _ = <Test as crate::Config>::DepositCurrency::hold(
+						&HoldReason::Deposit.into(),
+						&pool.owner,
+						BondingPallet::calculate_pool_deposit(pool.bonded_currencies.len()),
+					);
 					crate::Pools::<Test>::insert(pool_id, pool);
 				});
 
