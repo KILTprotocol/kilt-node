@@ -36,22 +36,10 @@ fn resets_team() {
 				0
 			));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::admin(DEFAULT_BONDED_CURRENCY_ID),
-				Some(ACCOUNT_00)
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::freezer(DEFAULT_BONDED_CURRENCY_ID),
-				Some(ACCOUNT_01)
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::owner(DEFAULT_BONDED_CURRENCY_ID),
-				Some(pool_id.clone())
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::issuer(DEFAULT_BONDED_CURRENCY_ID),
-				Some(pool_id)
-			);
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_00));
+			assert_eq!(Assets::freezer(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_01));
+			assert_eq!(Assets::owner(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
+			assert_eq!(Assets::issuer(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
 		})
 }
 
@@ -87,10 +75,7 @@ fn does_not_change_team_when_not_live() {
 				BondingPalletErrors::<Test>::PoolNotLive
 			);
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::admin(DEFAULT_BONDED_CURRENCY_ID),
-				Some(pool_id)
-			);
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
 		})
 }
 
@@ -142,10 +127,7 @@ fn only_manager_can_change_team() {
 				BondingPalletErrors::<Test>::NoPermission
 			);
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::admin(DEFAULT_BONDED_CURRENCY_ID),
-				Some(pool_id)
-			);
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
 		})
 }
 
