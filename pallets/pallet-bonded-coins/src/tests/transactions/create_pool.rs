@@ -13,7 +13,7 @@ use sp_std::ops::Sub;
 use crate::{
 	mock::{runtime::*, *},
 	types::{Locks, PoolStatus},
-	Event as BondingPalletEvents, NextAssetId, Pools, TokenMetaOf,
+	AccountIdOf, Event as BondingPalletEvents, NextAssetId, Pools, TokenMetaOf,
 };
 
 #[test]
@@ -44,7 +44,7 @@ fn single_currency() {
 				true
 			));
 
-			let pool_id = calculate_pool_id(&[new_asset_id]);
+			let pool_id: AccountIdOf<Test> = calculate_pool_id(&[new_asset_id]);
 
 			let details = Pools::<Test>::get(&pool_id).unwrap();
 
@@ -74,31 +74,16 @@ fn single_currency() {
 			System::assert_has_event(BondingPalletEvents::PoolCreated { id: pool_id.clone() }.into());
 
 			// Check creation
-			assert!(<Test as crate::Config>::Fungibles::asset_exists(new_asset_id));
+			assert!(Assets::asset_exists(new_asset_id));
 			// Check team
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::owner(new_asset_id),
-				Some(pool_id.clone())
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::admin(new_asset_id),
-				Some(pool_id.clone())
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::issuer(new_asset_id),
-				Some(pool_id.clone())
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::freezer(new_asset_id),
-				Some(pool_id.clone())
-			);
+			assert_eq!(Assets::owner(new_asset_id), Some(pool_id.clone()));
+			assert_eq!(Assets::admin(new_asset_id), Some(pool_id.clone()));
+			assert_eq!(Assets::issuer(new_asset_id), Some(pool_id.clone()));
+			assert_eq!(Assets::freezer(new_asset_id), Some(pool_id.clone()));
 			// Check metadata
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::decimals(new_asset_id),
-				DEFAULT_BONDED_DENOMINATION
-			);
-			assert_eq!(<Test as crate::Config>::Fungibles::name(new_asset_id), b"Bitcoin");
-			assert_eq!(<Test as crate::Config>::Fungibles::symbol(new_asset_id), b"btc");
+			assert_eq!(Assets::decimals(new_asset_id), DEFAULT_BONDED_DENOMINATION);
+			assert_eq!(Assets::name(new_asset_id), b"Bitcoin");
+			assert_eq!(Assets::symbol(new_asset_id), b"btc");
 		});
 }
 
@@ -135,7 +120,7 @@ fn multi_currency() {
 			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 3);
 
 			let new_assets = Vec::from_iter(next_asset_id..next_asset_id + 3);
-			let pool_id = calculate_pool_id(&new_assets);
+			let pool_id: AccountIdOf<Test> = calculate_pool_id(&new_assets);
 
 			let details = Pools::<Test>::get(pool_id.clone()).unwrap();
 
@@ -148,11 +133,8 @@ fn multi_currency() {
 			);
 
 			for new_asset_id in new_assets {
-				assert!(<Test as crate::Config>::Fungibles::asset_exists(new_asset_id));
-				assert_eq!(
-					<Test as crate::Config>::Fungibles::owner(new_asset_id),
-					Some(pool_id.clone())
-				);
+				assert!(Assets::asset_exists(new_asset_id));
+				assert_eq!(Assets::owner(new_asset_id), Some(pool_id.clone()));
 			}
 		});
 }
@@ -196,14 +178,16 @@ fn can_create_identical_pools() {
 
 			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 2);
 
-			let details1 = Pools::<Test>::get(calculate_pool_id(&[next_asset_id])).unwrap();
-			let details2 = Pools::<Test>::get(calculate_pool_id(&[next_asset_id + 1])).unwrap();
+			let details1 =
+				Pools::<Test>::get(calculate_pool_id::<AssetId, AccountIdOf<Test>>(&[next_asset_id])).unwrap();
+			let details2 =
+				Pools::<Test>::get(calculate_pool_id::<AssetId, AccountIdOf<Test>>(&[next_asset_id + 1])).unwrap();
 
 			assert_eq!(details1.bonded_currencies, vec![next_asset_id]);
 			assert_eq!(details2.bonded_currencies, vec![next_asset_id + 1]);
 
-			assert!(<Test as crate::Config>::Fungibles::asset_exists(next_asset_id));
-			assert!(<Test as crate::Config>::Fungibles::asset_exists(next_asset_id + 1));
+			assert!(Assets::asset_exists(next_asset_id));
+			assert!(Assets::asset_exists(next_asset_id + 1));
 		});
 }
 
@@ -291,7 +275,7 @@ fn handles_asset_id_overflow() {
 				BondingPallet::create_pool(
 					origin,
 					curve,
-					0,
+					DEFAULT_COLLATERAL_CURRENCY_ID,
 					bounded_vec![bonded_token; 2],
 					DEFAULT_BONDED_DENOMINATION,
 					true

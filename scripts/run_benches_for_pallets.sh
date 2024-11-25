@@ -19,13 +19,12 @@ pallets=(
 	pallet-web3-names
 	parachain-staking
 	public-credentials
+	pallet-asset-switch
 )
 
 // Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
-  pallets+=(
-	pallet-asset-switch
-  )
+	pallets+=()
 fi
 
 echo "[+] Running all default weight benchmarks for $runtime --chain=$chain"
