@@ -56,9 +56,9 @@ pub mod pallet {
 	};
 
 	use crate::{
-		curves::{convert_to_fixed, BondingFunction, Curve, CurveInput},
+		curves::{convert_to_fixed, round, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, ResetTeam},
-		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, TokenMeta},
+		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 	};
 
 	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -280,8 +280,9 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
-		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>, // TODO: make large integer type configurable
+		<CurveParameterTypeOf<T> as Fixed>::Bits:
+			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
+		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256> + TryInto<U256>, // TODO: make large integer type configurable
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
@@ -492,14 +493,20 @@ pub mod pallet {
 				.get(currency_idx)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
+			let round_kind = Round::Up;
+
 			let (active_pre, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
 				pool_details.denomination,
 				currency_idx,
+				&round_kind,
 			)?;
 
-			let normalized_amount_to_mint =
-				convert_to_fixed::<T>(amount_to_mint.saturated_into::<u128>(), pool_details.denomination)?;
+			let normalized_amount_to_mint = convert_to_fixed::<T>(
+				amount_to_mint.saturated_into::<u128>(),
+				pool_details.denomination,
+				&round_kind,
+			)?;
 
 			let active_post = active_pre
 				.checked_add(normalized_amount_to_mint)
@@ -511,6 +518,7 @@ pub mod pallet {
 				passive,
 				&pool_details.curve,
 				pool_details.collateral_id.clone(),
+				&round_kind,
 			)?;
 
 			// fail if cost > max_cost
@@ -565,6 +573,7 @@ pub mod pallet {
 			let bonded_currencies = pool_details.bonded_currencies;
 
 			let currency_idx: usize = currency_idx.saturated_into();
+			let round_kind = Round::Down;
 
 			let target_currency_id = bonded_currencies
 				.get(currency_idx)
@@ -574,10 +583,14 @@ pub mod pallet {
 				&bonded_currencies,
 				pool_details.denomination,
 				currency_idx,
+				&round_kind,
 			)?;
 
-			let normalized_amount_to_burn =
-				convert_to_fixed::<T>(amount_to_burn.saturated_into::<u128>(), pool_details.denomination)?;
+			let normalized_amount_to_burn = convert_to_fixed::<T>(
+				amount_to_burn.saturated_into::<u128>(),
+				pool_details.denomination,
+				&round_kind,
+			)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -589,6 +602,7 @@ pub mod pallet {
 				passive,
 				&pool_details.curve,
 				pool_details.collateral_id.clone(),
+				&round_kind,
 			)?;
 
 			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
@@ -869,7 +883,9 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T>
 	where
-		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
+		<CurveParameterTypeOf<T> as Fixed>::Bits:
+			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
+		CollateralCurrenciesBalanceOf<T>: TryFrom<U256>,
 	{
 		fn calculate_collateral(
 			low: CurveParameterTypeOf<T>,
@@ -877,28 +893,20 @@ pub mod pallet {
 			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
 			curve: &Curve<CurveParameterTypeOf<T>>,
 			collateral_currency_id: CollateralAssetIdOf<T>,
+			round_kind: &Round,
 		) -> Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError> {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
-			let collateral_denomination = 10u128
-				.checked_pow(T::CollateralCurrencies::decimals(collateral_currency_id).into())
-				.ok_or(ArithmeticError::Overflow)?;
+			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id).into();
 
-			let real_costs = normalized_costs
-				.checked_mul(CurveParameterTypeOf::<T>::from_num(collateral_denomination))
-				.ok_or(ArithmeticError::Overflow)?
-				// should never fail
-				.checked_to_num::<u128>()
-				.ok_or(ArithmeticError::Overflow)?
-				.saturated_into();
-
-			Ok(real_costs)
+			round::<T>(normalized_costs, round_kind, denomination)
 		}
 
 		fn calculate_normalized_passive_issuance(
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
 			currency_idx: usize,
+			round_kind: &Round,
 		) -> Result<(CurveParameterTypeOf<T>, PassiveSupply<CurveParameterTypeOf<T>>), DispatchError> {
 			let currencies_total_supply = bonded_currencies
 				.iter()
@@ -907,7 +915,7 @@ pub mod pallet {
 
 			let mut normalized_total_issuances = currencies_total_supply
 				.into_iter()
-				.map(|x| convert_to_fixed::<T>(x.saturated_into::<u128>(), denomination))
+				.map(|x| convert_to_fixed::<T>(x.saturated_into::<u128>(), denomination, round_kind))
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
 			let active_issuance = normalized_total_issuances.swap_remove(currency_idx);

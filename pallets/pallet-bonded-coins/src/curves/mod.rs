@@ -7,7 +7,7 @@ use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use sp_core::U256;
 use sp_runtime::traits::CheckedConversion;
-use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
+use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign, ShrAssign};
 use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
 
 use crate::{
@@ -16,7 +16,8 @@ use crate::{
 		polynomial::{PolynomialParameters, PolynomialParametersInput},
 		square_root::{SquareRootParameters, SquareRootParametersInput},
 	},
-	Config, CurveParameterTypeOf, PassiveSupply, Precision,
+	types::Round,
+	CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, PassiveSupply, Precision,
 };
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
@@ -106,7 +107,11 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
 }
 
-pub(crate) fn convert_to_fixed<T: Config>(x: u128, denomination: u8) -> Result<CurveParameterTypeOf<T>, ArithmeticError>
+pub(crate) fn convert_to_fixed<T: Config>(
+	x: u128,
+	denomination: u8,
+	round_kind: &Round,
+) -> Result<CurveParameterTypeOf<T>, ArithmeticError>
 where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
 {
@@ -120,6 +125,13 @@ where
 	// This function can panic in theory, but only if frac_nbits() would be larger
 	// than 256 - and no Fixed of that size exists.
 	x_u256.shl_assign(CurveParameterTypeOf::<T>::frac_nbits());
+
+	if round_kind == &Round::Up {
+		x_u256 = x_u256
+			.checked_add(U256::from(decimals - 1))
+			.ok_or(ArithmeticError::Overflow)?;
+	}
+
 	// Perform division. Due to the shift the precision/truncation is identical to
 	// division on the fixed type.
 	x_u256 = x_u256.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
@@ -132,4 +144,35 @@ where
 	let fixed = <CurveParameterTypeOf<T> as Fixed>::from_bits(truncated);
 	// Return the result of scaled conversion to fixed.
 	Ok(fixed)
+}
+
+/// Rounds the given value to the given rounding kind.
+pub(crate) fn round<T: Config>(
+	value: CurveParameterTypeOf<T>,
+	round_kind: &Round,
+	denomination: u8,
+) -> Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError>
+where
+	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256> + TryInto<U256>,
+	CollateralCurrenciesBalanceOf<T>: TryFrom<U256>,
+{
+	let mut value_u256: U256 = value.to_bits().try_into().map_err(|_| ArithmeticError::Overflow)?;
+
+	let denomination = U256::from(10)
+		.checked_pow(denomination.into())
+		.ok_or(ArithmeticError::Overflow)?;
+
+	value_u256 = value_u256.checked_mul(denomination).ok_or(ArithmeticError::Overflow)?;
+
+	let trailing_zeros = value_u256.trailing_zeros();
+
+	let frac_bits: u32 = CurveParameterTypeOf::<T>::frac_nbits().into();
+
+	value_u256.shr_assign(frac_bits);
+
+	if round_kind == &Round::Up && trailing_zeros < frac_bits {
+		value_u256.checked_add(U256::from(1)).ok_or(ArithmeticError::Overflow)?;
+	}
+
+	value_u256.try_into().map_err(|_| ArithmeticError::Overflow)
 }

@@ -122,3 +122,12 @@ pub struct PoolManagingTeam<AccountId> {
 	pub admin: AccountId,
 	pub freezer: AccountId,
 }
+
+/// Enum, to specify the rounding direction.
+#[derive(PartialEq)]
+pub(crate) enum Round {
+	/// Round up.
+	Up,
+	/// Round down.
+	Down,
+}
