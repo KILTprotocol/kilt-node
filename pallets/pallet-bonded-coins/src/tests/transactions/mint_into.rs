@@ -56,27 +56,24 @@ fn mint_first_coin() {
 			));
 
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(
-					DEFAULT_COLLATERAL_CURRENCY_ID,
-					&ACCOUNT_00
-				),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
 				initial_collateral - expected_price,
 				MAX_ERROR.mul_floor(expected_price)
 			);
 
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price,
 				MAX_ERROR.mul_floor(expected_price)
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				amount_to_mint
 			);
 			// Balance should not be frozen
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::reducible_balance(
+				Assets::reducible_balance(
 					DEFAULT_BONDED_CURRENCY_ID,
 					&ACCOUNT_00,
 					Preservation::Expendable,
@@ -131,12 +128,12 @@ fn mint_large_quantity() {
 			));
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				amount_to_mint
 			);
 
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price,
 				MAX_ERROR.mul_floor(expected_price)
 			);
@@ -198,21 +195,13 @@ fn mint_to_other() {
 			));
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01),
 				amount_to_mint
 			);
 
-			assert_ne!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
-				0
-			);
+			assert_ne!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id), 0);
 
-			assert!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(
-					DEFAULT_COLLATERAL_CURRENCY_ID,
-					&ACCOUNT_00
-				) < initial_collateral
-			);
+			assert!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00) < initial_collateral);
 		})
 }
 
@@ -263,15 +252,12 @@ fn mint_multiple_currencies() {
 
 			// pool collateral should now hold the expected price
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price,
 				MAX_ERROR.mul_floor(expected_price)
 			);
 			// minting account should hold balance of amount_to_mint
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(currencies[0], &ACCOUNT_00),
-				amount_to_mint
-			);
+			assert_eq!(Assets::total_balance(currencies[0], &ACCOUNT_00), amount_to_mint);
 
 			assert_ok!(BondingPallet::mint_into(
 				origin,
@@ -284,15 +270,12 @@ fn mint_multiple_currencies() {
 			));
 			// pool collateral should now hold the expected price of first and second mint
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price + expected_price_second_mint,
 				MAX_ERROR.mul_floor(expected_price + expected_price_second_mint)
 			);
 			// minting account should hold balance of amount_to_mint
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(currencies[1], &ACCOUNT_00),
-				amount_to_mint
-			);
+			assert_eq!(Assets::total_balance(currencies[1], &ACCOUNT_00), amount_to_mint);
 		})
 }
 
@@ -342,12 +325,12 @@ fn mint_large_supply() {
 			));
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				amount_to_mint
 			);
 
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				expected_price,
 				MAX_ERROR.mul_floor(expected_price)
 			);
@@ -425,13 +408,13 @@ fn multiple_mints_vs_combined_mint() {
 			}
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(currency_id1, &ACCOUNT_00),
-				<Test as crate::Config>::Fungibles::total_balance(currency_id2, &ACCOUNT_00),
+				Assets::total_balance(currency_id1, &ACCOUNT_00),
+				Assets::total_balance(currency_id2, &ACCOUNT_00),
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1),
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
 			);
 		})
 }
@@ -474,13 +457,13 @@ fn mint_with_frozen_balance() {
 			));
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				amount_to_mint
 			);
 
 			// Check that balance is frozen
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::reducible_balance(
+				Assets::reducible_balance(
 					DEFAULT_BONDED_CURRENCY_ID,
 					&ACCOUNT_00,
 					Preservation::Expendable,
@@ -502,7 +485,7 @@ fn mint_with_frozen_balance() {
 
 			// Check that balance is still frozen
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::reducible_balance(
+				Assets::reducible_balance(
 					DEFAULT_BONDED_CURRENCY_ID,
 					&ACCOUNT_00,
 					Preservation::Expendable,
@@ -806,7 +789,7 @@ fn mint_more_than_fixed_can_represent() {
 			assert_err!(result, ArithmeticError::Overflow);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				amount_to_mint * (mints - 1)
 			);
 

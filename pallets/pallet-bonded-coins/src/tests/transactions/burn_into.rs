@@ -62,16 +62,13 @@ fn burn_first_coin() {
 			));
 
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(
-					DEFAULT_COLLATERAL_CURRENCY_ID,
-					&ACCOUNT_00,
-				),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00,),
 				expected_price, // Collateral returned
 				MAX_ERROR.mul_floor(expected_price)
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				0 // Burnt amount removed
 			);
 		});
@@ -128,16 +125,11 @@ fn burn_to_other() {
 			));
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				initial_supply - amount_to_burn
 			);
 
-			assert!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(
-					DEFAULT_COLLATERAL_CURRENCY_ID,
-					&ACCOUNT_01
-				) > 0
-			);
+			assert!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01) > 0);
 		})
 }
 
@@ -186,12 +178,12 @@ fn burn_large_supply() {
 			));
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				initial_supply - amount_to_burn
 			);
 
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				LARGE_BALANCE - expected_price,
 				MAX_ERROR.mul_floor(expected_price)
 			);
@@ -242,13 +234,10 @@ fn burn_large_quantity() {
 				1
 			));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
-				0
-			);
+			assert_eq!(Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00), 0);
 
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
 				LARGE_BALANCE - expected_price,
 				MAX_ERROR.mul_floor(expected_price)
 			);
@@ -304,18 +293,12 @@ fn burn_multiple_currencies() {
 			));
 			// Burning account should now hold the expected amount of collateral
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(
-					DEFAULT_COLLATERAL_CURRENCY_ID,
-					&ACCOUNT_00
-				),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
 				expected_price_first_burn,
 				MAX_ERROR.mul_floor(expected_price_first_burn)
 			);
 			// Bonded token balance should have dropped to 0
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(currencies[0], &ACCOUNT_00),
-				0
-			);
+			assert_eq!(Assets::total_balance(currencies[0], &ACCOUNT_00), 0);
 
 			assert_ok!(BondingPallet::burn_into(
 				origin,
@@ -329,18 +312,12 @@ fn burn_multiple_currencies() {
 			// Burning account should now hold the expected amount of collateral from first
 			// and second burn
 			assert_eq_error_rate!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(
-					DEFAULT_COLLATERAL_CURRENCY_ID,
-					&ACCOUNT_00
-				),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00),
 				expected_price_first_burn + expected_price_second_burn,
 				MAX_ERROR.mul_floor(expected_price_second_burn)
 			);
 			// Bonded token balance should have dropped to 0
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
-				0
-			);
+			assert_eq!(Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00), 0);
 		})
 }
 
@@ -404,10 +381,7 @@ fn multiple_burns_vs_combined_burn() {
 				1
 			));
 
-			let balance_after_first_burn = <Test as crate::Config>::CollateralCurrencies::total_balance(
-				DEFAULT_COLLATERAL_CURRENCY_ID,
-				&ACCOUNT_00,
-			);
+			let balance_after_first_burn = Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00);
 
 			assert_ne!(balance_after_first_burn, 0u128);
 
@@ -424,10 +398,7 @@ fn multiple_burns_vs_combined_burn() {
 				));
 			}
 
-			let balance_after_second_burn = <Test as crate::Config>::CollateralCurrencies::total_balance(
-				DEFAULT_COLLATERAL_CURRENCY_ID,
-				&ACCOUNT_00,
-			);
+			let balance_after_second_burn = Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00);
 
 			assert_eq!(
 				balance_after_second_burn - balance_after_first_burn,
@@ -435,8 +406,8 @@ fn multiple_burns_vs_combined_burn() {
 			);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1,),
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2,)
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1,),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2,)
 			);
 		})
 }
@@ -485,10 +456,7 @@ fn multiple_mints_vs_combined_burn() {
 				));
 			}
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(currency_id, &ACCOUNT_00),
-				amount_to_mint * 10,
-			);
+			assert_eq!(Assets::total_balance(currency_id, &ACCOUNT_00), amount_to_mint * 10,);
 
 			// step 2: 1 burn of 10 * amount
 			assert_ok!(BondingPallet::burn_into(
@@ -501,15 +469,9 @@ fn multiple_mints_vs_combined_burn() {
 				1
 			));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(currency_id, &ACCOUNT_00),
-				0,
-			);
+			assert_eq!(Assets::total_balance(currency_id, &ACCOUNT_00), 0,);
 
-			assert_eq!(
-				<Test as crate::Config>::CollateralCurrencies::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id),
-				0,
-			);
+			assert_eq!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id), 0,);
 		})
 }
 
@@ -554,13 +516,13 @@ fn burn_with_frozen_balance() {
 			));
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
+				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
 				initial_balance - amount_to_burn
 			);
 
 			// Check that balance is frozen
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::reducible_balance(
+				Assets::reducible_balance(
 					DEFAULT_BONDED_CURRENCY_ID,
 					&ACCOUNT_00,
 					Preservation::Expendable,
@@ -580,8 +542,7 @@ fn burn_with_frozen_balance() {
 				1
 			));
 
-			let account_balance =
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00);
+			let account_balance = Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00);
 
 			assert_eq!(account_balance, initial_balance - (2 * amount_to_burn));
 
