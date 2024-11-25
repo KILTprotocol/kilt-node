@@ -32,7 +32,7 @@ fn start_destroy_works() {
 
 			// Verify that the pool state has been updated to destroying
 			let updated_pool = Pools::<Test>::get(&pool_id).unwrap();
-			assert!(matches!(updated_pool.state, PoolStatus::Destroying));
+			assert_eq!(updated_pool.state, PoolStatus::Destroying);
 
 			// Verify the expected event has been deposited
 			System::assert_has_event(Event::DestructionStarted { id: pool_id }.into());
@@ -73,7 +73,7 @@ fn start_destroy_works_when_nothing_to_refund() {
 
 			// Verify that the pool state has been updated to destroying
 			let updated_pool = Pools::<Test>::get(&pool_id).unwrap();
-			assert!(matches!(updated_pool.state, PoolStatus::Destroying));
+			assert_eq!(updated_pool.state, PoolStatus::Destroying);
 
 			// Verify the expected event has been deposited
 			System::assert_has_event(Event::DestructionStarted { id: pool_id }.into());
@@ -106,7 +106,7 @@ fn start_destroy_works_when_no_collateral() {
 
 			// Verify that the pool state has been updated to destroying
 			let updated_pool = Pools::<Test>::get(&pool_id).unwrap();
-			assert!(matches!(updated_pool.state, PoolStatus::Destroying));
+			assert_eq!(updated_pool.state, PoolStatus::Destroying);
 
 			// Verify the expected event has been deposited
 			System::assert_has_event(Event::DestructionStarted { id: pool_id }.into());
@@ -139,7 +139,7 @@ fn start_destroy_works_when_refunding() {
 
 			// Verify that the pool state has been updated to destroying
 			let updated_pool = Pools::<Test>::get(&pool_id).unwrap();
-			assert!(matches!(updated_pool.state, PoolStatus::Destroying));
+			assert_eq!(updated_pool.state, PoolStatus::Destroying);
 
 			// Verify the expected event has been deposited
 			System::assert_has_event(Event::DestructionStarted { id: pool_id }.into());
@@ -285,7 +285,7 @@ fn force_start_destroy_works() {
 
 			// Verify that the pool state has been updated to destroying
 			let updated_pool = Pools::<Test>::get(&pool_id).unwrap();
-			assert!(matches!(updated_pool.state, PoolStatus::Destroying));
+			assert_eq!(updated_pool.state, PoolStatus::Destroying);
 
 			// Verify the expected event has been deposited
 			System::assert_has_event(Event::DestructionStarted { id: pool_id }.into());
@@ -321,7 +321,7 @@ fn force_start_destroy_works_even_with_nonzero_supply() {
 
 			// Verify that the pool state has been updated to destroying
 			let updated_pool = Pools::<Test>::get(&pool_id).unwrap();
-			assert!(matches!(updated_pool.state, PoolStatus::Destroying));
+			assert_eq!(updated_pool.state, PoolStatus::Destroying);
 
 			// Verify the expected event has been deposited
 			System::assert_has_event(Event::DestructionStarted { id: pool_id }.into());
