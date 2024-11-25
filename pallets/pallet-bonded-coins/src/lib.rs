@@ -44,7 +44,7 @@ pub mod pallet {
 		traits::{
 			Bounded, CheckedConversion, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto, Zero,
 		},
-		BoundedVec,
+		BoundedVec, TokenError,
 	};
 	use sp_std::{
 		default::Default,
@@ -280,8 +280,6 @@ pub mod pallet {
 		InvalidInput,
 		Internal,
 		Slippage,
-		/// The user has no bonded currencies.
-		InsufficientBalance,
 	}
 
 	#[pallet::composite_enum]
@@ -739,7 +737,7 @@ pub mod pallet {
 			)?
 			.into();
 
-			ensure!(!burnt.is_zero(), Error::<T>::InsufficientBalance);
+			ensure!(!burnt.is_zero(), TokenError::FundsUnavailable);
 
 			let sum_of_issuances = pool_details
 				.bonded_currencies
