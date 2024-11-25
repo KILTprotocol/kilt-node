@@ -179,11 +179,9 @@ fn test_convert_to_fixed_round_up_representable() {
 
 #[test]
 fn test_round_up() {
-	// let value = Float::from_str("1.123456789").unwrap();
+	let value = Float::from_num(1.1200000000005);
 
-	// let b = U256::from(value.frac().to_bits());
+	let result = round::<Test>(value, &Round::Up, 2).unwrap();
 
-	// let result = round::<Test>(value, Round::Up, 2).unwrap();
-
-	// assert_eq!(result, Float::from_str("1.12").unwrap());
+	assert_eq!(result, 113u128);
 }

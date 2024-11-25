@@ -73,31 +73,16 @@ fn single_currency() {
 			System::assert_has_event(BondingPalletEvents::PoolCreated { id: pool_id.clone() }.into());
 
 			// Check creation
-			assert!(<Test as crate::Config>::Fungibles::asset_exists(new_asset_id));
+			assert!(Assets::asset_exists(new_asset_id));
 			// Check team
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::owner(new_asset_id),
-				Some(pool_id.clone())
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::admin(new_asset_id),
-				Some(pool_id.clone())
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::issuer(new_asset_id),
-				Some(pool_id.clone())
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::freezer(new_asset_id),
-				Some(pool_id.clone())
-			);
+			assert_eq!(Assets::owner(new_asset_id), Some(pool_id.clone()));
+			assert_eq!(Assets::admin(new_asset_id), Some(pool_id.clone()));
+			assert_eq!(Assets::issuer(new_asset_id), Some(pool_id.clone()));
+			assert_eq!(Assets::freezer(new_asset_id), Some(pool_id.clone()));
 			// Check metadata
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::decimals(new_asset_id),
-				DEFAULT_BONDED_DENOMINATION
-			);
-			assert_eq!(<Test as crate::Config>::Fungibles::name(new_asset_id), b"Bitcoin");
-			assert_eq!(<Test as crate::Config>::Fungibles::symbol(new_asset_id), b"btc");
+			assert_eq!(Assets::decimals(new_asset_id), DEFAULT_BONDED_DENOMINATION);
+			assert_eq!(Assets::name(new_asset_id), b"Bitcoin");
+			assert_eq!(Assets::symbol(new_asset_id), b"btc");
 		});
 }
 
@@ -147,11 +132,8 @@ fn multi_currency() {
 			);
 
 			for new_asset_id in new_assets {
-				assert!(<Test as crate::Config>::Fungibles::asset_exists(new_asset_id));
-				assert_eq!(
-					<Test as crate::Config>::Fungibles::owner(new_asset_id),
-					Some(pool_id.clone())
-				);
+				assert!(Assets::asset_exists(new_asset_id));
+				assert_eq!(Assets::owner(new_asset_id), Some(pool_id.clone()));
 			}
 		});
 }
@@ -201,8 +183,8 @@ fn can_create_identical_pools() {
 			assert_eq!(details1.bonded_currencies, vec![next_asset_id]);
 			assert_eq!(details2.bonded_currencies, vec![next_asset_id + 1]);
 
-			assert!(<Test as crate::Config>::Fungibles::asset_exists(next_asset_id));
-			assert!(<Test as crate::Config>::Fungibles::asset_exists(next_asset_id + 1));
+			assert!(Assets::asset_exists(next_asset_id));
+			assert!(Assets::asset_exists(next_asset_id + 1));
 		});
 }
 
@@ -290,7 +272,7 @@ fn handles_asset_id_overflow() {
 				BondingPallet::create_pool(
 					origin,
 					curve,
-					0,
+					DEFAULT_COLLATERAL_CURRENCY_ID,
 					bounded_vec![bonded_token; 2],
 					DEFAULT_BONDED_DENOMINATION,
 					true

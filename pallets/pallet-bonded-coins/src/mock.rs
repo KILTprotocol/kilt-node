@@ -1,13 +1,14 @@
 use frame_support::{
 	parameter_types,
-	traits::{ConstU128, ConstU32},
+	traits::{fungible::MutateHold, ConstU128, ConstU32},
 	weights::constants::RocksDbWeight,
 	Hashable,
 };
 use frame_system::{EnsureRoot, EnsureSigned};
+use sp_core::U256;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, MultiSignature,
+	BoundedVec, BuildStorage, MultiSignature, Permill,
 };
 use substrate_fixed::{
 	traits::{FixedSigned, FixedUnsigned},
@@ -21,7 +22,7 @@ use crate::{
 		Curve, CurveInput,
 	},
 	types::{Locks, PoolStatus},
-	DepositCurrencyBalanceOf, PoolDetailsOf,
+	DepositCurrencyBalanceOf, HoldReason, PoolDetailsOf,
 };
 
 pub type Float = I75F53;
@@ -44,14 +45,31 @@ pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
 pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
 pub(crate) const ONE_HUNDRED_KILT: u128 = 100_000_000_000_000_000;
 
+pub(crate) const MAX_ERROR: Permill = Permill::from_perthousand(1);
+
 // helper functions
-pub fn assert_relative_eq(target: Float, expected: Float, epsilon: Float) {
+pub fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
 	assert!(
 		(target - expected).abs() <= epsilon,
-		"Expected {:?} but got {:?}",
+		"Expected {:?} +/- {:?} but got {:?}",
 		expected,
+		epsilon,
 		target
 	);
+}
+
+pub(crate) fn mocks_curve_get_collateral_at_supply(supply: u128) -> u128 {
+	let supply_u256 = U256::from(supply);
+	let sup_squared = supply_u256 * supply_u256;
+	// curve is f(x) = 4x + 3, resulting in f'(x) = 2x^2 + 3x.
+	// The actual implementation operates on denomination-scaled amounts; we can
+	// replicate this behaviour based on smallest units by denomination-scaling 'n',
+	// the factor of x
+	let result =
+		U256::from(2) * sup_squared / U256::exp10(DEFAULT_BONDED_DENOMINATION.into()) + U256::from(3) * supply_u256;
+	result
+		.try_into()
+		.expect("expected collateral too large for balance type")
 }
 
 pub(crate) fn get_linear_bonding_curve<Float: FixedSigned>() -> Curve<Float> {
@@ -277,7 +295,7 @@ pub mod runtime {
 			.assimilate_storage(&mut storage)
 			.expect("assimilate should not fail");
 
-			let collateral_assets = self.collaterals.into_iter().map(|id| (id, ACCOUNT_99, false, 1));
+			let collateral_assets = self.collaterals.iter().map(|id| (*id, ACCOUNT_99, true, 1));
 
 			let all_assets: Vec<_> = self
 				.pools
@@ -308,6 +326,11 @@ pub mod runtime {
 							.map(|id| (*id, vec![], vec![], pool_details.denomination))
 							.collect::<Vec<(u32, Vec<u8>, Vec<u8>, u8)>>()
 					})
+					.chain(
+						self.collaterals
+							.into_iter()
+							.map(|id| (id, vec![], vec![], DEFAULT_COLLATERAL_DENOMINATION)),
+					)
 					.collect(),
 			}
 			.assimilate_storage(&mut storage)
@@ -319,6 +342,13 @@ pub mod runtime {
 				System::set_block_number(System::block_number() + 1);
 
 				self.pools.into_iter().for_each(|(pool_id, pool)| {
+					// try to continue if we can't create the hold - might not be needed for all
+					// tests
+					let _ = <Test as crate::Config>::DepositCurrency::hold(
+						&HoldReason::Deposit.into(),
+						&pool.owner,
+						BondingPallet::calculate_pool_deposit(pool.bonded_currencies.len()),
+					);
 					crate::Pools::<Test>::insert(pool_id, pool);
 				});
 
