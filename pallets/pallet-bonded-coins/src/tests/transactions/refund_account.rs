@@ -39,13 +39,10 @@ fn refund_account_works() {
 
 			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01),
-				0
-			);
+			assert_eq!(Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01), 0);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01),
 				total_collateral
 			);
 
@@ -79,23 +76,17 @@ fn refund_account_works_on_frozen() {
 		])
 		.build()
 		.execute_with(|| {
-			<<Test as crate::Config>::Fungibles as FreezeAccounts<_, _>>::freeze(
-				&DEFAULT_BONDED_CURRENCY_ID,
-				&ACCOUNT_01,
-			)
-			.expect("failed to freeze account prior to testing");
+			<Assets as FreezeAccounts<_, _>>::freeze(&DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01)
+				.expect("failed to freeze account prior to testing");
 
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 
 			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01),
-				0
-			);
+			assert_eq!(Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01), 0);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01),
 				total_collateral
 			);
 
@@ -135,13 +126,10 @@ fn refund_account_works_with_large_supply() {
 
 			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 2));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(currencies[0], &ACCOUNT_01),
-				0
-			);
+			assert_eq!(Assets::total_balance(currencies[0], &ACCOUNT_01), 0);
 
 			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01),
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01),
 				total_collateral / 2
 			);
 
@@ -185,15 +173,9 @@ fn balance_is_burnt_even_if_no_collateral_received() {
 
 			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01),
-				0
-			);
+			assert_eq!(Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01), 0);
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01),
-				0
-			);
+			assert_eq!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_01), 0);
 
 			// At this point we've only refunded one of two accounts
 			assert_eq!(
@@ -230,7 +212,7 @@ fn refund_below_min_balance() {
 		.execute_with(|| {
 			// change collateral to one that has a minimum balance
 			let collateral_id = 101;
-			assert_ok!(<<Test as crate::Config>::CollateralCurrencies as Create<_>>::create(
+			assert_ok!(<Assets as Create<_>>::create(
 				collateral_id,
 				pool_id.clone(),
 				true,
@@ -241,25 +223,15 @@ fn refund_below_min_balance() {
 			});
 			// put less than 2*min balance in pool account
 			let total_collateral = 1500;
-			assert_ok!(<Test as crate::Config>::CollateralCurrencies::mint_into(
-				collateral_id,
-				&pool_id.clone(),
-				total_collateral
-			));
+			assert_ok!(Assets::mint_into(collateral_id, &pool_id.clone(), total_collateral));
 
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 
 			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01),
-				0
-			);
+			assert_eq!(Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01), 0);
 			// each would get half, which is below minimum - should not get transferred
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::total_balance(collateral_id, &pool_id),
-				total_collateral
-			);
+			assert_eq!(Assets::total_balance(collateral_id, &pool_id), total_collateral);
 		});
 }
 
