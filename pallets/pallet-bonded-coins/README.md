@@ -136,7 +136,7 @@ The `Config` trait defines the configuration parameters and associated types req
                   During the pool creation step, the manager must specify whether the bonded coins are transferable or not. 
                   This flag can not be changed later on. 
                   The selected denomination is used not only as metadata but also to scale down the existing supply or the amount specified in a mint or burn operation. 
-                  An deposit is taken from the caller, which can be reclaimed back, once the pool is getting destroyed. 
+                  A deposit is taken from the caller, which is returned once the pool is getting destroyed. 
 - `reset_team`:   Resets the managing team of a pool. 
                   Only the admin and the freezer can be updated in this operation. 
 - `reset_manager`: Resets the manager of a pool. 
