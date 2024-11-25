@@ -850,6 +850,7 @@ pub mod pallet {
 				.ok_or(ArithmeticError::Overflow)?;
 
 			let real_costs = normalized_costs
+				// TODO: can easily overflow, causing test burn_large_quantity to fail
 				.checked_mul(CurveParameterTypeOf::<T>::from_num(collateral_denomination))
 				.ok_or(ArithmeticError::Overflow)?
 				// should never fail
