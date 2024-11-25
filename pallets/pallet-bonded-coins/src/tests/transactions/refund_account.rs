@@ -5,10 +5,11 @@ use crate::{
 	Error, Event, Pools,
 };
 use frame_support::{
-	assert_err, assert_ok, assert_storage_noop,
+	assert_err, assert_ok,
 	traits::fungibles::{Create, Inspect, Mutate},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
+use sp_runtime::TokenError;
 
 #[test]
 fn refund_account_works() {
@@ -309,14 +310,10 @@ fn refund_account_no_balance() {
 
 			// Ensure the refund_account call fails when there is no balance to be
 			// refunded
-			assert_storage_noop!(assert!(BondingPallet::refund_account(
-				origin,
-				pool_id.clone(),
-				ACCOUNT_01,
-				0,
-				1
-			)
-			.is_err()));
+			assert_err!(
+				BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1),
+				TokenError::FundsUnavailable
+			);
 		});
 }
 
