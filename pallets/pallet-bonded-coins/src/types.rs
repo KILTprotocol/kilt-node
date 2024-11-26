@@ -1,7 +1,7 @@
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
-/// Represents the locks applied to a pool.
+/// Locks applied to a pool.
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub struct Locks {
 	pub allow_mint: bool,
@@ -9,7 +9,7 @@ pub struct Locks {
 	pub allow_swap: bool,
 }
 
-/// Represents the status of a pool.
+/// Status of a pool.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub enum PoolStatus<LockType> {
 	Active,
@@ -56,7 +56,7 @@ impl<LockType> PoolStatus<LockType> {
 	}
 }
 
-/// Represents the details of a pool.
+/// Details of a pool.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId> {
 	/// The owner of the pool.
@@ -139,7 +139,7 @@ where
 	}
 }
 
-/// Represents the metadata of a token.
+/// Metadata of a bonded token.
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
 pub struct TokenMeta<Balance, Symbol, Name> {
 	/// The name of the token.
@@ -150,7 +150,7 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 	pub min_balance: Balance,
 }
 
-/// Represents the managing team of a pool.
+/// Managing team of a pool.
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
 pub struct PoolManagingTeam<AccountId> {
 	/// The admin of the pool.
