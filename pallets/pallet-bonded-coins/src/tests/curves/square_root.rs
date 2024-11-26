@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
 	curves::{square_root::SquareRootParameters, BondingFunction},
-	mock::{assert_relative_eq, Float},
+	mock::runtime::{assert_relative_eq, Float},
 };
 
 #[test]
