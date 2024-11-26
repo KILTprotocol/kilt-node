@@ -3,9 +3,7 @@ use parity_scale_codec::Codec;
 use substrate_fixed::traits::{FixedSigned, FixedUnsigned};
 
 use crate::curves::{
-	lmsr::{LMSRParameters, LMSRParametersInput},
 	polynomial::{PolynomialParameters, PolynomialParametersInput},
-	square_root::{SquareRootParameters, SquareRootParametersInput},
 	Curve, CurveInput,
 };
 
@@ -21,28 +19,6 @@ pub(crate) fn get_linear_bonding_curve_input<Float: FixedUnsigned>() -> CurveInp
 	let n = Float::from_num(2);
 	let o = Float::from_num(3);
 	CurveInput::Polynomial(PolynomialParametersInput { m, n, o })
-}
-
-pub(crate) fn get_square_root_curve<Float: FixedSigned>() -> Curve<Float> {
-	let m = Float::from_num(3);
-	let n = Float::from_num(2);
-	Curve::SquareRoot(SquareRootParameters { m, n })
-}
-
-pub(crate) fn get_square_root_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
-	let m = Float::from_num(3);
-	let n = Float::from_num(2);
-	CurveInput::SquareRoot(SquareRootParametersInput { m, n })
-}
-
-pub(crate) fn get_lmsr_curve<Float: FixedSigned>() -> Curve<Float> {
-	let m = Float::from_num(3);
-	Curve::Lmsr(LMSRParameters { m })
-}
-
-pub(crate) fn get_lmsr_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
-	let m = Float::from_num(3);
-	CurveInput::Lmsr(LMSRParametersInput { m })
 }
 
 pub(crate) fn calculate_pool_id<AssetId, AccountId>(currencies: &[AssetId]) -> AccountId
