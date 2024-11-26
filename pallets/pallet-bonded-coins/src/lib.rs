@@ -56,7 +56,7 @@ pub mod pallet {
 	};
 
 	use crate::{
-		curves::{convert_to_fixed, round, BondingFunction, Curve, CurveInput},
+		curves::{convert_fixed_to_collateral, convert_to_fixed, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, ResetTeam},
 		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
@@ -802,9 +802,9 @@ pub mod pallet {
 				Fortitude::Force,
 			)?;
 
-			let user_funds = T::Fungibles::total_balance(target_currency_id.clone(), &who);
+			let account_exists = T::Fungibles::total_balance(target_currency_id.clone(), &who) > Zero::zero();
 
-			if !pool_details.transferable && !user_funds.is_zero() {
+			if !pool_details.transferable && account_exists {
 				// Restore locks.
 				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
@@ -992,7 +992,7 @@ pub mod pallet {
 				.ok_or_else(|| {
 					log::error!(
 						target: LOG_TARGET,
-						"Could not divide burn * total collateral issuance by sum of issuances. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}", 
+						"Sum of issuance is zero. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}", 
 						pool_id,
 						who,
 						burnt,
@@ -1216,7 +1216,7 @@ pub mod pallet {
 
 			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id.clone()).into();
 
-			round::<T>(normalized_costs, round_kind, denomination)
+			convert_fixed_to_collateral::<T>(normalized_costs, round_kind, denomination)
 		}
 
 		/// Calculates the normalized passive and active issuance for a pool.
