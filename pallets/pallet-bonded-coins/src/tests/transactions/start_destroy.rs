@@ -1,11 +1,12 @@
-use crate::{
-	mock::{runtime::*, *},
-	types::PoolStatus,
-	Error, Event, Pools,
-};
 use frame_support::{assert_err, assert_ok, traits::fungibles::Destroy};
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use sp_runtime::traits::BadOrigin;
+
+use crate::{
+	mock::{runtime::*, *},
+	types::PoolStatus,
+	AccountIdOf, Error, Event, Pools,
+};
 
 #[test]
 fn start_destroy_works() {
@@ -18,7 +19,7 @@ fn start_destroy_works() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -58,7 +59,7 @@ fn start_destroy_works_when_nothing_to_refund() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -91,7 +92,7 @@ fn start_destroy_works_when_no_collateral() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -124,7 +125,7 @@ fn start_destroy_works_when_refunding() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -157,7 +158,7 @@ fn start_destroy_fails_when_pool_has_active_currencies() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -192,7 +193,7 @@ fn start_destroy_fails_when_pool_destroying() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -226,7 +227,7 @@ fn start_destroy_fails_when_currency_no_low() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&currencies);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&currencies);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -266,7 +267,7 @@ fn force_start_destroy_works() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -303,7 +304,7 @@ fn force_start_destroy_works_even_with_nonzero_supply() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -339,7 +340,7 @@ fn force_start_destroy_fails_when_not_root() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -374,7 +375,7 @@ fn force_start_destroy_fails_when_currency_no_low() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&currencies);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&currencies);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])

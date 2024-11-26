@@ -1,10 +1,11 @@
+use frame_support::{assert_err, assert_ok};
+use frame_system::{pallet_prelude::OriginFor, RawOrigin};
+
 use crate::{
 	mock::{runtime::*, *},
 	types::{Locks, PoolStatus},
-	Error, Event, Pools,
+	AccountIdOf, Error, Event, Pools,
 };
-use frame_support::{assert_err, assert_ok};
-use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 
 #[test]
 fn set_lock_works() {
@@ -17,7 +18,7 @@ fn set_lock_works() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -62,7 +63,7 @@ fn set_lock_works_when_locked() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let new_state = Locks {
 		allow_mint: false,
@@ -109,7 +110,7 @@ fn set_lock_fails_when_not_authorized() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -153,7 +154,7 @@ fn set_lock_fails_when_not_live() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])

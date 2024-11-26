@@ -1,8 +1,3 @@
-use crate::{
-	mock::{runtime::*, *},
-	types::PoolStatus,
-	Error, Event, Pools,
-};
 use frame_support::{
 	assert_err, assert_ok,
 	traits::{
@@ -11,6 +6,12 @@ use frame_support::{
 	},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
+
+use crate::{
+	mock::{runtime::*, *},
+	types::PoolStatus,
+	AccountIdOf, Error, Event, Pools,
+};
 
 #[test]
 fn anyone_can_call_finish_destroy() {
@@ -23,7 +24,7 @@ fn anyone_can_call_finish_destroy() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_01), // owner must hold native asset so we can reserve deposit
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -67,7 +68,7 @@ fn owner_receives_collateral() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_01), // owner must hold native asset so we can reserve deposit
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let remaining_collateral: u128 = 100_000;
 
@@ -109,7 +110,7 @@ fn works_if_asset_is_gone() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_01), // owner must hold native asset so we can reserve deposit
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -147,7 +148,7 @@ fn fails_on_incorrect_state() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00), // owner must hold native asset so we can reserve deposit
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 	ExtBuilder::default()
@@ -193,7 +194,7 @@ fn fails_if_assets_cannot_be_destroyed() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00), // owner must hold native asset so we can reserve deposit
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 	ExtBuilder::default()
@@ -241,7 +242,7 @@ fn fails_on_invalid_arguments() {
 		None,
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&currencies);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&currencies);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])

@@ -1,15 +1,16 @@
-use crate::{
-	mock::{runtime::*, *},
-	traits::FreezeAccounts,
-	types::PoolStatus,
-	Error, Event, Pools,
-};
 use frame_support::{
 	assert_err, assert_ok,
 	traits::fungibles::{Create, Inspect, Mutate},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use sp_runtime::TokenError;
+
+use crate::{
+	mock::{runtime::*, *},
+	traits::FreezeAccounts,
+	types::PoolStatus,
+	AccountIdOf, Error, Event, Pools,
+};
 
 #[test]
 fn refund_account_works() {
@@ -22,7 +23,7 @@ fn refund_account_works() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let total_collateral = 10u128.pow(10);
 
@@ -63,7 +64,7 @@ fn refund_account_works_on_frozen() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let total_collateral = 10u128.pow(10);
 
@@ -99,7 +100,7 @@ fn refund_account_works_on_frozen() {
 #[test]
 fn refund_account_works_with_large_supply() {
 	let currencies = vec![DEFAULT_BONDED_CURRENCY_ID, DEFAULT_BONDED_CURRENCY_ID + 1];
-	let pool_id = calculate_pool_id(&currencies);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&currencies);
 	let pool_details = generate_pool_details(
 		currencies.clone(),
 		get_linear_bonding_curve(),
@@ -169,7 +170,7 @@ fn balance_is_burnt_even_if_no_collateral_received() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let total_collateral = 10u128;
 
@@ -213,7 +214,7 @@ fn refund_below_min_balance() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -261,7 +262,7 @@ fn refund_account_fails_when_pool_not_refunding() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT)])
@@ -294,7 +295,7 @@ fn refund_account_no_balance() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -328,7 +329,7 @@ fn nothing_to_refund() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	// no collateral left
 	ExtBuilder::default()
@@ -362,7 +363,7 @@ fn unknown_pool_or_currency() {
 		Some(ACCOUNT_00),
 	);
 
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let total_collateral = 10u128.pow(10);
 

@@ -12,12 +12,12 @@ use crate::{
 	curves::{polynomial::PolynomialParameters, Curve},
 	mock::{runtime::*, *},
 	types::{Locks, PoolStatus},
-	Error,
+	AccountIdOf, Error,
 };
 
 #[test]
 fn mint_first_coin() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve = get_linear_bonding_curve();
 
@@ -86,7 +86,7 @@ fn mint_first_coin() {
 
 #[test]
 fn mint_large_quantity() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve = get_linear_bonding_curve();
 
@@ -142,7 +142,7 @@ fn mint_large_quantity() {
 
 #[test]
 fn mint_to_other() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let initial_collateral = ONE_HUNDRED_KILT;
 	let amount_to_mint = 100_000;
@@ -208,7 +208,7 @@ fn mint_to_other() {
 #[test]
 fn mint_multiple_currencies() {
 	let currencies = vec![DEFAULT_BONDED_CURRENCY_ID, DEFAULT_BONDED_CURRENCY_ID + 1];
-	let pool_id = calculate_pool_id(&currencies);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&currencies);
 
 	let curve = get_linear_bonding_curve();
 
@@ -281,7 +281,7 @@ fn mint_multiple_currencies() {
 
 #[test]
 fn mint_large_supply() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve = get_linear_bonding_curve();
 
@@ -342,8 +342,8 @@ fn mint_large_supply() {
 fn multiple_mints_vs_combined_mint() {
 	let currency_id1 = DEFAULT_BONDED_CURRENCY_ID;
 	let currency_id2 = 2;
-	let pool_id1 = calculate_pool_id(&[currency_id1]);
-	let pool_id2 = calculate_pool_id(&[currency_id2]);
+	let pool_id1: AccountIdOf<Test> = calculate_pool_id(&[currency_id1]);
+	let pool_id2: AccountIdOf<Test> = calculate_pool_id(&[currency_id2]);
 
 	let curve = get_linear_bonding_curve();
 
@@ -422,7 +422,7 @@ fn multiple_mints_vs_combined_mint() {
 
 #[test]
 fn mint_with_frozen_balance() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let initial_collateral = 10u128.pow(20);
 	let amount_to_mint = 10u128.pow(10);
@@ -499,7 +499,7 @@ fn mint_with_frozen_balance() {
 
 #[test]
 fn mint_on_locked_pool() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let initial_balance = u128::MAX / 2;
 	let amount_to_mint = 10u128.pow(10);
@@ -574,7 +574,7 @@ fn mint_invalid_pool_id() {
 
 #[test]
 fn mint_in_refunding_pool() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(
@@ -601,7 +601,7 @@ fn mint_in_refunding_pool() {
 
 #[test]
 fn mint_exceeding_max_collateral_cost() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -632,7 +632,7 @@ fn mint_exceeding_max_collateral_cost() {
 
 #[test]
 fn mint_with_zero_cost() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve: Curve<Float> = Curve::Polynomial(PolynomialParameters {
 		m: Float::from_num(0),
@@ -671,7 +671,7 @@ fn mint_with_zero_cost() {
 
 #[test]
 fn mint_invalid_currency_index() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(
@@ -700,7 +700,7 @@ fn mint_invalid_currency_index() {
 
 #[test]
 fn mint_without_collateral() {
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -735,7 +735,7 @@ fn mint_more_than_fixed_can_represent() {
 	// capacity of I75F53 is 1.8+e22
 	// -> we need to get beyond 1.8+e32
 	// check that we can still burn afterwards
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve = Curve::Polynomial(PolynomialParameters {
 		m: Float::from_num(0),
@@ -771,7 +771,7 @@ fn mint_more_than_fixed_can_represent() {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// repeatedly mint until we hit balance that cannot be represented
-			let mut result = Ok(());
+			let mut result = Ok(().into());
 			let mut mints = 0;
 			while result.is_ok() {
 				result = BondingPallet::mint_into(

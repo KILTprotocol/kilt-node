@@ -1,11 +1,12 @@
-use crate::{
-	mock::{runtime::*, *},
-	types::PoolStatus,
-	Error, Event, Pools,
-};
 use frame_support::{assert_err, assert_ok};
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use sp_runtime::traits::BadOrigin;
+
+use crate::{
+	mock::{runtime::*, *},
+	types::PoolStatus,
+	AccountIdOf, Error, Event, Pools,
+};
 
 #[test]
 fn start_refund_works() {
@@ -18,7 +19,7 @@ fn start_refund_works() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let currency_count = 1;
 
 	ExtBuilder::default()
@@ -55,7 +56,7 @@ fn start_refund_fails_when_pool_not_live() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let currency_count = 1;
 
 	ExtBuilder::default()
@@ -107,7 +108,7 @@ fn start_refund_fails_when_currency_no_low() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&currencies);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&currencies);
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
@@ -146,7 +147,7 @@ fn force_start_refund_works() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let currency_count = 10;
 
 	ExtBuilder::default()
@@ -187,7 +188,7 @@ fn force_start_refund_fails_when_not_root() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let currency_count = 10;
 
 	ExtBuilder::default()
@@ -221,7 +222,7 @@ fn start_refund_fails_when_no_permission() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let currency_count = 10;
 
 	ExtBuilder::default()
@@ -255,7 +256,7 @@ fn start_refund_fails_when_nothing_to_refund() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let currency_count = 10;
 
 	ExtBuilder::default()
@@ -286,7 +287,7 @@ fn start_refund_fails_when_no_collateral() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let currency_count = 10;
 
 	ExtBuilder::default()
@@ -317,7 +318,7 @@ fn pool_does_not_exist() {
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let currency_count = 1;
 
 	ExtBuilder::default()

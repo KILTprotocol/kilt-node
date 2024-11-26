@@ -5,6 +5,7 @@ use frame_support::{
 	Hashable,
 };
 use frame_system::{EnsureRoot, EnsureSigned};
+use parity_scale_codec::Codec;
 use sp_core::U256;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -16,36 +17,20 @@ use substrate_fixed::{
 };
 
 use crate::{
-	self as pallet_bonded_coins,
 	curves::{
+		lmsr::{LMSRParameters, LMSRParametersInput},
 		polynomial::{PolynomialParameters, PolynomialParametersInput},
+		square_root::{SquareRootParameters, SquareRootParametersInput},
 		Curve, CurveInput,
 	},
 	types::{Locks, PoolStatus},
 	DepositCurrencyBalanceOf, HoldReason, PoolDetailsOf,
 };
-
 pub type Float = I75F53;
-pub(crate) type FloatInput = U75F53;
-pub type Hash = sp_core::H256;
-pub type Balance = u128;
-pub type AssetId = u32;
-pub type Signature = MultiSignature;
-pub type AccountPublic = <Signature as Verify>::Signer;
-pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-
-// accounts
-pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
-pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
-pub(crate) const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
-// assets
-pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 1;
-pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = 0;
-pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
-pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
-pub(crate) const ONE_HUNDRED_KILT: u128 = 100_000_000_000_000_000;
+type FloatInput = U75F53;
 
 pub(crate) const MAX_ERROR: Permill = Permill::from_perthousand(1);
+pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
 
 // helper functions
 pub fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
@@ -86,7 +71,33 @@ pub(crate) fn get_linear_bonding_curve_input<Float: FixedUnsigned>() -> CurveInp
 	CurveInput::Polynomial(PolynomialParametersInput { m, n, o })
 }
 
-pub(crate) fn calculate_pool_id(currencies: &[AssetId]) -> AccountId {
+pub(crate) fn get_square_root_curve<Float: FixedSigned>() -> Curve<Float> {
+	let m = Float::from_num(3);
+	let n = Float::from_num(2);
+	Curve::SquareRoot(SquareRootParameters { m, n })
+}
+
+pub(crate) fn get_square_root_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
+	let m = Float::from_num(3);
+	let n = Float::from_num(2);
+	CurveInput::SquareRoot(SquareRootParametersInput { m, n })
+}
+
+pub(crate) fn get_lmsr_curve<Float: FixedSigned>() -> Curve<Float> {
+	let m = Float::from_num(3);
+	Curve::Lmsr(LMSRParameters { m })
+}
+
+pub(crate) fn get_lmsr_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
+	let m = Float::from_num(3);
+	CurveInput::Lmsr(LMSRParametersInput { m })
+}
+
+pub(crate) fn calculate_pool_id<AssetId, AccountId>(currencies: &[AssetId]) -> AccountId
+where
+	AssetId: Clone + Hashable + Codec,
+	AccountId: From<[u8; 32]>,
+{
 	AccountId::from(currencies.to_vec().blake2_256())
 }
 
@@ -94,6 +105,39 @@ pub(crate) fn calculate_pool_id(currencies: &[AssetId]) -> AccountId {
 pub mod runtime {
 
 	use super::*;
+	use frame_support::{
+		parameter_types,
+		traits::{ConstU128, ConstU32},
+		weights::constants::RocksDbWeight,
+	};
+	use frame_system::{EnsureRoot, EnsureSigned};
+	use sp_runtime::{
+		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+		BoundedVec, BuildStorage, MultiSignature,
+	};
+
+	use crate::{
+		self as pallet_bonded_coins,
+		types::{Locks, PoolStatus},
+		DepositCurrencyBalanceOf, PoolDetailsOf,
+	};
+
+	pub type Hash = sp_core::H256;
+	pub type Balance = u128;
+	pub type AssetId = u32;
+	pub type Signature = MultiSignature;
+	pub type AccountPublic = <Signature as Verify>::Signer;
+	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+	// accounts
+	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
+	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
+	// assets
+	pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 0;
+	pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = AssetId::MAX;
+	pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
+	pub(crate) const ONE_HUNDRED_KILT: u128 = 100_000_000_000_000_000;
 
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -246,12 +290,16 @@ pub mod runtime {
 		type ForceOrigin = EnsureRoot<AccountId>;
 		type Fungibles = Assets;
 		type MaxCurrencies = MaxCurrencies;
+		type MaxDenomination = MaxDenomination;
 		type MaxStringLength = StringLimit;
 		type PoolCreateOrigin = EnsureSigned<AccountId>;
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;
 		type RuntimeHoldReason = RuntimeHoldReason;
-		type MaxDenomination = MaxDenomination;
+		type WeightInfo = ();
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper = ();
 	}
 
 	#[derive(Clone, Default)]

@@ -4,7 +4,7 @@ use frame_system::RawOrigin;
 use crate::{
 	mock::{runtime::*, *},
 	types::{PoolManagingTeam, PoolStatus},
-	Error as BondingPalletErrors,
+	AccountIdOf, Error as BondingPalletErrors,
 };
 
 #[test]
@@ -18,7 +18,7 @@ fn resets_team() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -54,7 +54,7 @@ fn does_not_change_team_when_not_live() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -93,7 +93,7 @@ fn only_manager_can_change_team() {
 		None,
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
 		.build()
@@ -142,7 +142,7 @@ fn handles_currency_idx_out_of_bounds() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])

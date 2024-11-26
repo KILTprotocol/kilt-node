@@ -48,7 +48,7 @@ serde              = { version = "1.0.144", default-features = false }
 serde_json         = { version = "1.0.85" }
 sha3               = { version = "0.10.0", default-features = false }
 smallvec           = { version = "1.8.0" }
-substrate-fixed    = { version = "0.5.9" }
+substrate-fixed    = { version = "0.5.9", default-features = false }
 
 #tests
 xcm-integration-tests = { path = "integration-tests/emulated", default-features = false }

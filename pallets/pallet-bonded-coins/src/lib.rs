@@ -13,8 +13,11 @@ mod mock;
 mod tests;
 
 mod curves;
+mod default_weights;
 pub mod traits;
 mod types;
+pub use default_weights::WeightInfo;
+
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -59,9 +62,11 @@ pub mod pallet {
 		curves::{convert_to_fixed, round, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, ResetTeam},
 		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
+		WeightInfo,
 	};
 
-	type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
+	pub(crate) type AccountIdLookupOf<T> =
+		<<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -74,13 +79,13 @@ pub mod pallet {
 	pub(crate) type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
 
-	type FungiblesAssetIdOf<T> =
+	pub(crate) type FungiblesAssetIdOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
-	type CollateralAssetIdOf<T> =
+	pub(crate) type CollateralAssetIdOf<T> =
 		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
-	type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
+	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
 
 	pub(crate) type CurrencyNameOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
 
@@ -175,6 +180,12 @@ pub mod pallet {
 			+ From<Precision>;
 
 		type CurveParameterInput: Parameter + FixedUnsigned + MaxEncodedLen;
+
+		type WeightInfo: WeightInfo;
+
+		/// Benchmark helper to calculate asset ids for the collateral and bonded currencies.
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper<Self>;
 	}
 
 	#[pallet::pallet]
@@ -285,7 +296,13 @@ pub mod pallet {
 		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256> + TryInto<U256>, // TODO: make large integer type configurable
 	{
 		#[pallet::call_index(0)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight({
+			let currency_length = currencies.len().saturated_into();
+			let weight_polynomial = T::WeightInfo::create_pool_polynomial(currency_length);
+			let weight_square_root = T::WeightInfo::create_pool_square_root(currency_length);
+			let weight_lmsr = T::WeightInfo::create_pool_lmsr(currency_length);
+			weight_polynomial.max(weight_square_root).max(weight_lmsr)
+		})]
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			curve: CurveInput<CurveParameterInputOf<T>>,
@@ -298,7 +315,8 @@ pub mod pallet {
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
 
-			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
+			let checked_curve: Curve<CurveParameterTypeOf<T>> =
+				curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let currency_length = currencies.len();
 
@@ -366,7 +384,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(1)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::reset_team())]
 		pub fn reset_team(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -399,7 +417,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(2)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::reset_manager())]
 		pub fn reset_manager(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -423,7 +441,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(3)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::set_lock())]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
@@ -443,7 +461,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(4)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::unlock())]
 		pub fn unlock(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
@@ -462,7 +480,12 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(5)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight({
+			let weight_polynomial = T::WeightInfo::mint_into_polynomial(currency_count.to_owned());
+			let weight_square_root = T::WeightInfo::mint_into_square_root(currency_count.to_owned());
+			let weight_lmsr = T::WeightInfo::mint_into_lmsr(currency_count.to_owned());
+			weight_polynomial.max(weight_square_root).max(weight_lmsr)
+		})]
 		pub fn mint_into(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -471,7 +494,7 @@ pub mod pallet {
 			amount_to_mint: FungiblesBalanceOf<T>,
 			max_cost: CollateralCurrenciesBalanceOf<T>,
 			currency_count: u32,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
@@ -480,10 +503,8 @@ pub mod pallet {
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
 
-			ensure!(
-				Self::get_currencies_number(&pool_details) <= currency_count,
-				Error::<T>::CurrencyCount
-			);
+			let number_of_currencies = Self::get_currencies_number(&pool_details);
+			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
 			let bonded_currencies = pool_details.bonded_currencies;
 
@@ -543,11 +564,21 @@ pub mod pallet {
 				})?;
 			}
 
-			Ok(())
+			Ok(Some(match pool_details.curve {
+				Curve::Polynomial(_) => T::WeightInfo::mint_into_polynomial(number_of_currencies),
+				Curve::SquareRoot(_) => T::WeightInfo::mint_into_square_root(number_of_currencies),
+				Curve::Lmsr(_) => T::WeightInfo::mint_into_lmsr(number_of_currencies),
+			})
+			.into())
 		}
 
 		#[pallet::call_index(6)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight({
+			let weight_polynomial = T::WeightInfo::burn_into_polynomial(currency_count.to_owned());
+			let weight_square_root = T::WeightInfo::burn_into_square_root(currency_count.to_owned());
+			let weight_lmsr = T::WeightInfo::burn_into_lmsr(currency_count.to_owned());
+			weight_polynomial.max(weight_square_root).max(weight_lmsr)
+		})]
 		pub fn burn_into(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -556,7 +587,7 @@ pub mod pallet {
 			amount_to_burn: FungiblesBalanceOf<T>,
 			min_return: CollateralCurrenciesBalanceOf<T>,
 			currency_count: u32,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
@@ -565,10 +596,8 @@ pub mod pallet {
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
 
-			ensure!(
-				Self::get_currencies_number(&pool_details) <= currency_count,
-				Error::<T>::CurrencyCount
-			);
+			let number_of_currencies = Self::get_currencies_number(&pool_details);
+			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
 			let bonded_currencies = pool_details.bonded_currencies;
 
@@ -640,47 +669,59 @@ pub mod pallet {
 				})?;
 			}
 
-			Ok(())
+			Ok(Some(match pool_details.curve {
+				Curve::Polynomial(_) => T::WeightInfo::burn_into_polynomial(number_of_currencies),
+				Curve::SquareRoot(_) => T::WeightInfo::burn_into_square_root(number_of_currencies),
+				Curve::Lmsr(_) => T::WeightInfo::burn_into_lmsr(number_of_currencies),
+			})
+			.into())
 		}
 
 		#[pallet::call_index(8)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		#[pallet::weight(T::WeightInfo::start_refund(currency_count.to_owned()))]
+		pub fn start_refund(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
-			Self::do_start_refund(pool_id, currency_count, Some(&who))?;
+			let actual_currency_count = Self::do_start_refund(pool_id, currency_count, Some(&who))?;
 
-			Ok(())
+			Ok(Some(T::WeightInfo::start_refund(actual_currency_count)).into())
 		}
 
 		#[pallet::call_index(9)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn force_start_refund(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		#[pallet::weight(T::WeightInfo::force_start_refund(currency_count.to_owned()))]
+		pub fn force_start_refund(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			T::ForceOrigin::ensure_origin(origin)?;
 
-			Self::do_start_refund(pool_id, currency_count, None)?;
+			let actual_currency_count = Self::do_start_refund(pool_id, currency_count, None)?;
 
-			Ok(())
+			Ok(Some(T::WeightInfo::force_start_refund(actual_currency_count)).into())
 		}
 
 		#[pallet::call_index(10)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::refund_account(currency_count.to_owned()))]
 		pub fn refund_account(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			account: AccountIdLookupOf<T>,
 			asset_idx: u32,
 			currency_count: u32,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			T::DefaultOrigin::ensure_origin(origin)?;
 			let who = T::Lookup::lookup(account)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(
-				Self::get_currencies_number(&pool_details) <= currency_count,
-				Error::<T>::CurrencyCount
-			);
+			let number_of_currencies = Self::get_currencies_number(&pool_details);
+
+			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
 			ensure!(pool_details.state.is_refunding(), Error::<T>::NotRefunding);
 
@@ -723,10 +764,7 @@ pub mod pallet {
 			)?
 			.into();
 
-			if burnt.is_zero() {
-				// no funds available to be burnt on account; nothing to do here
-				return Ok(());
-			}
+			ensure!(!burnt.is_zero(), TokenError::FundsUnavailable);
 
 			let sum_of_issuances = pool_details
 				.bonded_currencies
@@ -790,7 +828,7 @@ pub mod pallet {
 				// Funds are burnt but the collateral received is not sufficient to be deposited
 				// to the account. This is tolerated as otherwise we could have edge cases where
 				// it's impossible to refund at least some accounts.
-				return Ok(());
+				return Ok(Some(T::WeightInfo::refund_account(currency_count.to_owned())).into());
 			}
 
 			let transferred = T::CollateralCurrencies::transfer(
@@ -807,32 +845,44 @@ pub mod pallet {
 				Self::deposit_event(Event::RefundComplete { id: pool_id });
 			}
 
-			Ok(())
+			Ok(Some(T::WeightInfo::refund_account(currency_count.to_owned())).into())
 		}
 
 		#[pallet::call_index(11)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		#[pallet::weight(T::WeightInfo::start_destroy(currency_count.to_owned()))]
+		pub fn start_destroy(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, currency_count, false, Some(&who))?;
+			let actual_currency_count = Self::do_start_destroy_pool(pool_id, currency_count, false, Some(&who))?;
 
-			Ok(())
+			Ok(Some(T::WeightInfo::start_destroy(actual_currency_count)).into())
 		}
 
 		#[pallet::call_index(12)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		#[pallet::weight(T::WeightInfo::force_start_destroy(currency_count.to_owned()))]
+		pub fn force_start_destroy(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			T::ForceOrigin::ensure_origin(origin)?;
 
-			Self::do_start_destroy_pool(pool_id, currency_count, true, None)?;
+			let actual_currency_count = Self::do_start_destroy_pool(pool_id, currency_count, true, None)?;
 
-			Ok(())
+			Ok(Some(T::WeightInfo::force_start_destroy(actual_currency_count)).into())
 		}
 
 		#[pallet::call_index(13)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn finish_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
+		#[pallet::weight(T::WeightInfo::finish_destroy(currency_count.to_owned()))]
+		pub fn finish_destroy(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			currency_count: u32,
+		) -> DispatchResultWithPostInfo {
 			T::DefaultOrigin::ensure_origin(origin)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
@@ -877,7 +927,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::Destroyed { id: pool_id });
 
-			Ok(())
+			Ok(Some(T::WeightInfo::finish_destroy(n_currencies)).into())
 		}
 	}
 
