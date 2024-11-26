@@ -328,7 +328,6 @@ pub mod pallet {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
-
 			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let currency_length = currencies.len();
@@ -514,8 +513,8 @@ pub mod pallet {
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
-				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
+				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 
 				entry.state = PoolStatus::Locked(lock.clone());
 
@@ -548,8 +547,9 @@ pub mod pallet {
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
-				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
+				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
+
 				entry.state = PoolStatus::Active;
 
 				Ok(())
@@ -606,9 +606,6 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
-			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
-
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
@@ -616,6 +613,10 @@ pub mod pallet {
 				amount_to_mint >= pool_details.min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
+
+			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
+
+			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
 
 			let bonded_currencies = pool_details.bonded_currencies;
 
@@ -727,8 +728,6 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
-			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
 			ensure!(
 				amount_to_burn >= pool_details.min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
@@ -736,6 +735,9 @@ pub mod pallet {
 
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
+
+			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
+			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
 
 			let bonded_currencies = pool_details.bonded_currencies;
 
