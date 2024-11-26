@@ -2,6 +2,7 @@ use frame_support::{dispatch::DispatchResult, traits::fungibles::roles::Inspect}
 use frame_system::RawOrigin;
 use pallet_assets::{Config as AssetConfig, Pallet as AssetsPallet};
 use sp_runtime::{traits::StaticLookup, DispatchError};
+use sp_std::prelude::*;
 
 use crate::AccountIdOf;
 
@@ -16,33 +17,33 @@ pub trait FreezeAccounts<AccountId, AssetId> {
 	fn thaw(asset_id: &AssetId, who: &AccountId) -> Result<(), Self::Error>;
 }
 
-type AssetIdOf<T> = <T as AssetConfig>::AssetId;
+type AssetIdOf<T, I> = <T as AssetConfig<I>>::AssetId;
 
-impl<T> FreezeAccounts<AccountIdOf<T>, <T as AssetConfig>::AssetId> for AssetsPallet<T>
+impl<T, I> FreezeAccounts<AccountIdOf<T>, <T as AssetConfig<I>>::AssetId> for AssetsPallet<T, I>
 where
-	T: AssetConfig,
+	I: 'static,
+	T: AssetConfig<I>,
 	AccountIdOf<T>: Clone,
 	<<T as frame_system::Config>::Lookup as StaticLookup>::Source: From<AccountIdOf<T>>,
 {
 	type Error = DispatchError;
 
-	fn freeze(asset_id: &AssetIdOf<T>, who: &AccountIdOf<T>) -> Result<(), Self::Error> {
-		let asset_id: <T as AssetConfig>::AssetId = asset_id.to_owned();
-		let freezer = AssetsPallet::<T>::freezer(asset_id.clone()).ok_or(Self::Error::Unavailable)?;
+	fn freeze(asset_id: &AssetIdOf<T, I>, who: &AccountIdOf<T>) -> Result<(), Self::Error> {
+		let asset_id: <T as AssetConfig<I>>::AssetId = asset_id.to_owned();
+		let freezer = AssetsPallet::<T, I>::freezer(asset_id.clone()).ok_or(Self::Error::Unavailable)?;
 		let origin = RawOrigin::Signed(freezer);
-		AssetsPallet::<T>::freeze(origin.into(), asset_id.into(), who.to_owned().into())
+		AssetsPallet::<T, I>::freeze(origin.into(), asset_id.into(), who.to_owned().into())
 	}
 
-	fn thaw(asset_id: &AssetIdOf<T>, who: &AccountIdOf<T>) -> Result<(), Self::Error> {
-		let asset_id: <T as AssetConfig>::AssetId = asset_id.to_owned();
-		let admin = AssetsPallet::<T>::admin(asset_id.clone()).ok_or(Self::Error::Unavailable)?;
+	fn thaw(asset_id: &AssetIdOf<T, I>, who: &AccountIdOf<T>) -> Result<(), Self::Error> {
+		let asset_id: <T as AssetConfig<I>>::AssetId = asset_id.to_owned();
+		let admin = AssetsPallet::<T, I>::admin(asset_id.clone()).ok_or(Self::Error::Unavailable)?;
 		let origin = RawOrigin::Signed(admin);
-		AssetsPallet::<T>::thaw(origin.into(), asset_id.into(), who.to_owned().into())
+		AssetsPallet::<T, I>::thaw(origin.into(), asset_id.into(), who.to_owned().into())
 	}
 }
 
-/// Copy from the Polkadot SDK. once we are at version 1.13.0, we can remove
-/// this.
+/// Copy from the Polkadot SDK. once we are at version 1.13.0, we can remove this.
 pub trait ResetTeam<AccountId>: Inspect<AccountId> {
 	/// Reset the team for the asset with the given `id`.
 	///
@@ -61,9 +62,9 @@ pub trait ResetTeam<AccountId>: Inspect<AccountId> {
 	) -> DispatchResult;
 }
 
-impl<T> ResetTeam<AccountIdOf<T>> for AssetsPallet<T>
+impl<T, I: 'static> ResetTeam<AccountIdOf<T>> for AssetsPallet<T, I>
 where
-	T: AssetConfig,
+	T: AssetConfig<I>,
 	<<T as frame_system::Config>::Lookup as StaticLookup>::Source: From<AccountIdOf<T>>,
 {
 	fn reset_team(
@@ -73,8 +74,8 @@ where
 		issuer: AccountIdOf<T>,
 		freezer: AccountIdOf<T>,
 	) -> DispatchResult {
-		let owner = AssetsPallet::<T>::owner(id.clone()).ok_or(DispatchError::Unavailable)?;
+		let owner = AssetsPallet::<T, I>::owner(id.clone()).ok_or(DispatchError::Unavailable)?;
 		let origin = RawOrigin::Signed(owner);
-		AssetsPallet::<T>::set_team(origin.into(), id.into(), issuer.into(), admin.into(), freezer.into())
+		AssetsPallet::<T, I>::set_team(origin.into(), id.into(), issuer.into(), admin.into(), freezer.into())
 	}
 }

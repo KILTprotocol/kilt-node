@@ -57,7 +57,7 @@ impl<LockType> PoolStatus<LockType> {
 }
 
 /// Details of a pool.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId> {
 	/// The owner of the pool.
 	pub owner: AccountId,
