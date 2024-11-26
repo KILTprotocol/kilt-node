@@ -1,3 +1,44 @@
+/// Polynomial Bonding Curve Implementation.
+///
+/// This module provides an implementation of a polynomial bonding curve.
+/// The current implementation supports a polynomial function of order 2, with the integral precomputed for efficiency.
+///
+/// ### Cost Function
+/// The cost function is defined as:
+/// ```text
+/// c(s) = m * s^2 + n * s + o
+/// ```
+/// This function, `c(s)`, determines the price for purchasing or selling assets at any supply point `s`.
+/// The total cost of transactions is computed as the integral of `c(s)` between the start point and `s`.
+///
+/// ### Antiderivative
+/// The indefinite integral of the cost function is:
+/// ```text
+/// C(s) = (m / 3) * s^3 + (n / 2) * s^2 + o * s
+/// ```
+/// Where:
+/// - `m` is the coefficient for the quadratic term,
+/// - `n` is the coefficient for the linear term,
+/// - `o` is the constant term.
+///
+///
+/// `C(s)` represents the accumulated cost of purchasing or selling assets up to the current supply `s`.
+/// The integral between two supply points, `s*` (initial supply) and `s` (current supply), gives the incremental cost:
+/// ```text
+/// Incremental Cost = C(s) - C(s*)
+/// ```
+/// This captures the total cost for changing the supply from `s*` to `s`.
+///
+/// ### Optimization for Numerical Stability
+/// The computation of `s^3` can cause overflow in fixed-point arithmetic. To mitigate this, the calculation is factored as:
+/// ```text
+/// x^3 - y^3 = (x^2 + x * y + y^2) * (x - y)
+/// ```
+/// Where:
+/// - `x` is the upper limit of the integral,
+/// - `y` is the lower limit of the integral.
+///
+/// By breaking down the computation in this way, we reduce the risk of overflow while maintaining precision.
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
@@ -6,20 +47,50 @@ use substrate_fixed::traits::{FixedSigned, FixedUnsigned};
 use super::{calculate_accumulated_passive_issuance, square, BondingFunction};
 use crate::PassiveSupply;
 
+/// A struct representing the unchecked input parameters for a polynomial bonding curve.
+/// This struct is used to convert the input parameters to the correct fixed-point type.
+///
+/// The input struct assumes that the coefficients are precomputed according to the integral rules of the polynomial function.
+///
+/// ### Example
+///
+/// For a polynomial cost function `c(s) = 3 * s^2 + 2 * s + 2`
+///
+/// which is resulting into the antiderivative `C(s) = (3 / 3) * s^3 + (2 / 2) * s^2 + 2 * s`
+/// the input parameters would be:
+/// ```rust, ignore
+/// PolynomialParametersInput {
+///    m: 1,
+///    n: 1,
+///    o: 2,
+/// }
+/// ```
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PolynomialParametersInput<Parameter> {
+	/// Coefficient for the cubic part.
 	pub m: Parameter,
+	/// Coefficient for the quadratic part.
 	pub n: Parameter,
+	/// Coefficient for the linear part.
 	pub o: Parameter,
 }
 
+/// A struct representing the validated parameters for a polynomial bonding curve.
+/// This struct is used to store the parameters for a polynomial bonding
+/// curve and to perform calculations using the polynomial bonding curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct PolynomialParameters<Parameter> {
+	/// Coefficient for the cubic part.
 	pub m: Parameter,
+	/// Coefficient for the quadratic part.
 	pub n: Parameter,
+	/// Coefficient for the linear part.
 	pub o: Parameter,
 }
 
+/// Implementation of the TryFrom trait for `PolynomialParametersInput` to convert the input parameters to
+/// the correct fixed-point type. The TryFrom implementation for `PolynomialParameters` will fail if the
+/// conversion to the fixed-point type fails.
 impl<I: FixedUnsigned, C: FixedSigned> TryFrom<PolynomialParametersInput<I>> for PolynomialParameters<C> {
 	type Error = ();
 	fn try_from(value: PolynomialParametersInput<I>) -> Result<Self, Self::Error> {
@@ -35,6 +106,7 @@ impl<Parameter> BondingFunction<Parameter> for PolynomialParameters<Parameter>
 where
 	Parameter: FixedSigned,
 {
+	/// Calculate the cost of purchasing/selling assets using the polynomial bonding curve.
 	fn calculate_costs(
 		&self,
 		low: Parameter,

@@ -4,7 +4,7 @@ use frame_system::RawOrigin;
 use crate::{
 	mock::{runtime::*, *},
 	types::{PoolManagingTeam, PoolStatus},
-	Error as BondingPalletErrors,
+	AccountIdOf, Error as BondingPalletErrors,
 };
 
 #[test]
@@ -18,7 +18,7 @@ fn resets_team() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -36,22 +36,10 @@ fn resets_team() {
 				0
 			));
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::admin(DEFAULT_BONDED_CURRENCY_ID),
-				Some(ACCOUNT_00)
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::freezer(DEFAULT_BONDED_CURRENCY_ID),
-				Some(ACCOUNT_01)
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::owner(DEFAULT_BONDED_CURRENCY_ID),
-				Some(pool_id.clone())
-			);
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::issuer(DEFAULT_BONDED_CURRENCY_ID),
-				Some(pool_id)
-			);
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_00));
+			assert_eq!(Assets::freezer(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_01));
+			assert_eq!(Assets::owner(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
+			assert_eq!(Assets::issuer(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
 		})
 }
 
@@ -66,7 +54,7 @@ fn does_not_change_team_when_not_live() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
@@ -87,10 +75,7 @@ fn does_not_change_team_when_not_live() {
 				BondingPalletErrors::<Test>::PoolNotLive
 			);
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::admin(DEFAULT_BONDED_CURRENCY_ID),
-				Some(pool_id)
-			);
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
 		})
 }
 
@@ -108,7 +93,7 @@ fn only_manager_can_change_team() {
 		None,
 		Some(ACCOUNT_00),
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
 		.build()
@@ -142,10 +127,7 @@ fn only_manager_can_change_team() {
 				BondingPalletErrors::<Test>::NoPermission
 			);
 
-			assert_eq!(
-				<Test as crate::Config>::Fungibles::admin(DEFAULT_BONDED_CURRENCY_ID),
-				Some(pool_id)
-			);
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
 		})
 }
 
@@ -160,7 +142,7 @@ fn handles_currency_idx_out_of_bounds() {
 		None,
 		None,
 	);
-	let pool_id = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
