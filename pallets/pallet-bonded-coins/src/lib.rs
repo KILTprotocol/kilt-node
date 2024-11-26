@@ -67,7 +67,7 @@ pub mod pallet {
 	};
 
 	use crate::{
-		curves::{convert_fixed_to_collateral, convert_to_fixed, BondingFunction, Curve, CurveInput},
+		curves::{balance_to_fixed, fixed_to_balance, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, ResetTeam},
 		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
@@ -673,7 +673,7 @@ pub mod pallet {
 				&round_kind,
 			)?;
 
-			let normalized_amount_to_mint = convert_to_fixed(
+			let normalized_amount_to_mint = balance_to_fixed(
 				amount_to_mint.saturated_into::<u128>(),
 				pool_details.denomination,
 				&round_kind,
@@ -803,7 +803,7 @@ pub mod pallet {
 				&round_kind,
 			)?;
 
-			let normalized_amount_to_burn = convert_to_fixed(amount_to_burn, pool_details.denomination, &round_kind)?;
+			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, &round_kind)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -1300,7 +1300,7 @@ pub mod pallet {
 
 			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id);
 
-			convert_fixed_to_collateral(normalized_costs, round_kind, denomination)
+			fixed_to_balance(normalized_costs, denomination, round_kind)
 		}
 
 		/// Calculates the normalized passive and active issuance for a pool.
@@ -1331,7 +1331,7 @@ pub mod pallet {
 			let mut normalized_total_issuances = bonded_currencies
 				.iter()
 				.map(|currency_id| {
-					convert_to_fixed(
+					balance_to_fixed(
 						T::Fungibles::total_issuance(currency_id.to_owned()),
 						denomination,
 						round_kind,

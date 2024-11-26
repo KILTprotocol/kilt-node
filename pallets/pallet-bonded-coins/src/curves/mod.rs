@@ -140,7 +140,9 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 		.fold(Balance::from_num(0u8), |sum, x| sum.saturating_add(*x))
 }
 
-pub(crate) fn convert_to_fixed<Balance, FixedType: Fixed>(
+/// Converts an integer balance type to a fixed type by scaling the balance down
+/// by its denomination.
+pub(crate) fn balance_to_fixed<Balance, FixedType: Fixed>(
 	balance: Balance,
 	denomination: u8,
 	round_kind: &Round,
@@ -182,11 +184,12 @@ where
 	Ok(fixed)
 }
 
-/// Rounds the given value to the given rounding kind.
-pub(crate) fn convert_fixed_to_collateral<Balance, FixedType: Fixed>(
+/// Converts a fixed type representation of a balance back to an integer type
+/// via scaling up by its denomination.
+pub(crate) fn fixed_to_balance<Balance, FixedType: Fixed>(
 	fixed: FixedType,
-	round_kind: &Round,
 	denomination: u8,
+	round_kind: &Round,
 ) -> Result<Balance, ArithmeticError>
 where
 	FixedType::Bits: TryInto<U256>,
