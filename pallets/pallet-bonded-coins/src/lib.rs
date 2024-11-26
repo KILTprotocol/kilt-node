@@ -258,7 +258,8 @@ pub mod pallet {
 		/// An internal error occurred. This should never happen.
 		Internal,
 		/// The collateral required for the minting operation exceeds the
-		/// provided maximum cost.
+		/// provided maximum cost or the released collateral in the burning operation
+		/// is less than the minimum return.
 		Slippage,
 	}
 
