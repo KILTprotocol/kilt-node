@@ -57,7 +57,6 @@ fn set_lock_works_when_locked() {
 		Some(PoolStatus::Locked(Locks {
 			allow_mint: true,
 			allow_burn: false,
-			allow_swap: false,
 		})),
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
@@ -68,7 +67,6 @@ fn set_lock_works_when_locked() {
 	let new_state = Locks {
 		allow_mint: false,
 		allow_burn: true,
-		allow_swap: false,
 	};
 
 	ExtBuilder::default()
