@@ -1,6 +1,6 @@
 use crate::{
 	curves::convert_to_fixed,
-	mock::{runtime::Test, Float},
+	mock::runtime::{Float, Test},
 };
 use frame_support::assert_ok;
 use sp_runtime::ArithmeticError;

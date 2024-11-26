@@ -6,11 +6,14 @@ use sp_std::prelude::*;
 
 use crate::AccountIdOf;
 
+/// A trait for freezing and thawing accounts.
 pub trait FreezeAccounts<AccountId, AssetId> {
 	type Error: Into<DispatchError>;
 
+	/// Freeze the account `who` for the asset `asset_id`.
 	fn freeze(asset_id: &AssetId, who: &AccountId) -> Result<(), Self::Error>;
 
+	/// Thaw the account `who` for the asset `asset_id`.
 	fn thaw(asset_id: &AssetId, who: &AccountId) -> Result<(), Self::Error>;
 }
 

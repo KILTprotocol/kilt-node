@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
 	curves::{lmsr::LMSRParameters, BondingFunction},
-	mock::{assert_relative_eq, Float},
+	mock::runtime::{assert_relative_eq, Float},
 };
 
 #[test]

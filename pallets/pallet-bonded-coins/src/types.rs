@@ -1,7 +1,7 @@
-// todo: send help!
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
+/// Locks applied to a pool.
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub struct Locks {
 	pub allow_mint: bool,
@@ -9,6 +9,7 @@ pub struct Locks {
 	pub allow_swap: bool,
 }
 
+/// Status of a pool.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub enum PoolStatus<LockType> {
 	Active,
@@ -24,40 +25,55 @@ impl<LockType: Default> Default for PoolStatus<LockType> {
 }
 
 impl<LockType> PoolStatus<LockType> {
+	/// Checks if the pool is in a live state.
 	pub fn is_live(&self) -> bool {
 		matches!(self, Self::Active | Self::Locked(_))
 	}
 
+	/// Checks if the pool is in a destroying state.
 	pub fn is_destroying(&self) -> bool {
 		matches!(self, Self::Destroying)
 	}
 
+	/// Checks if the pool is in a refunding state.
 	pub fn is_refunding(&self) -> bool {
 		matches!(self, Self::Refunding)
 	}
 
+	/// Freezes the pool with the given locks.
 	pub fn freeze(&mut self, lock: LockType) {
 		*self = Self::Locked(lock);
 	}
 
+	/// Starts the destruction process for the pool.
 	pub fn start_destroy(&mut self) {
 		*self = Self::Destroying;
 	}
 
+	/// Starts the refund process for the pool.
 	pub fn start_refund(&mut self) {
 		*self = Self::Refunding;
 	}
 }
 
+/// Details of a pool.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId> {
+	/// The owner of the pool.
 	pub owner: AccountId,
+	/// The manager of the pool. If a manager is set, the pool is permissioned.
 	pub manager: Option<AccountId>,
+	/// The curve of the pool.
 	pub curve: ParametrizedCurve,
+	/// The collateral currency of the pool.
 	pub collateral_id: BaseCurrencyId,
+	/// The bonded currencies of the pool.
 	pub bonded_currencies: Currencies,
+	/// The status of the pool.
 	pub state: PoolStatus<Locks>,
+	/// Whether the pool is transferable or not.
 	pub transferable: bool,
+	/// The denomination of the pool.
 	pub denomination: u8,
 }
 
@@ -66,6 +82,7 @@ impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
 where
 	AccountId: PartialEq + Clone,
 {
+	/// Creates a new pool with the given parameters.
 	pub fn new(
 		owner: AccountId,
 		curve: ParametrizedCurve,
@@ -86,14 +103,17 @@ where
 		}
 	}
 
+	/// Checks if the given account is the owner of the pool.
 	pub fn is_owner(&self, who: &AccountId) -> bool {
 		who == &self.owner
 	}
 
+	/// Checks if the given account is the manager of the pool.
 	pub fn is_manager(&self, who: &AccountId) -> bool {
 		Some(who) == self.manager.as_ref()
 	}
 
+	/// Checks if the given account can mint tokens in the pool, if the pool is locked.
 	pub fn can_mint(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(who),
@@ -109,7 +129,7 @@ where
 			_ => false,
 		}
 	}
-
+	/// Checks if the given account can burn tokens in the pool, if the pool is locked.
 	pub fn can_burn(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(who),
@@ -119,15 +139,22 @@ where
 	}
 }
 
+/// Metadata of a bonded token.
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
 pub struct TokenMeta<Balance, Symbol, Name> {
+	/// The name of the token.
 	pub name: Name,
+	/// The symbol of the token.
 	pub symbol: Symbol,
+	/// min required balance
 	pub min_balance: Balance,
 }
 
+/// Managing team of a pool.
 #[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
 pub struct PoolManagingTeam<AccountId> {
+	/// The admin of the pool.
 	pub admin: AccountId,
+	/// The freezer of the pool.
 	pub freezer: AccountId,
 }
