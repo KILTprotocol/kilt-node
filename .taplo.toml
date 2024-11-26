@@ -1,4 +1,9 @@
-exclude = ["target-analyzer/**", "target/**"]
+exclude = [
+    "**/node_modules/**",
+    "**/srtool/**",
+    "target-analyzer/**",
+    "target/**",
+]
 
 [formatting]
 align_entries       = true
