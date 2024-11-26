@@ -58,6 +58,7 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
 	pub state: PoolStatus<Locks>,
 	pub transferable: bool,
 	pub denomination: u8,
+	pub min_operation_balance: u128,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
@@ -72,6 +73,7 @@ where
 		bonded_currencies: Currencies,
 		transferable: bool,
 		denomination: u8,
+		min_operation_balance: u128,
 	) -> Self {
 		Self {
 			manager: Some(owner.clone()),
@@ -82,6 +84,7 @@ where
 			transferable,
 			state: PoolStatus::default(),
 			denomination,
+			min_operation_balance,
 		}
 	}
 

@@ -39,6 +39,7 @@ fn mint_first_coin() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -111,6 +112,7 @@ fn mint_large_quantity() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -160,6 +162,7 @@ fn mint_to_other() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -233,6 +236,7 @@ fn mint_multiple_currencies() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -309,6 +313,7 @@ fn mint_large_supply() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -365,6 +370,7 @@ fn multiple_mints_vs_combined_mint() {
 					None,
 					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 					None,
+					None,
 				),
 			),
 			(
@@ -376,6 +382,7 @@ fn multiple_mints_vs_combined_mint() {
 					None,
 					None,
 					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+					None,
 					None,
 				),
 			),
@@ -441,6 +448,7 @@ fn mint_with_frozen_balance() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -525,6 +533,7 @@ fn mint_on_locked_pool() {
 				Some(ACCOUNT_00), // manager account
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				Some(ACCOUNT_00),
+				None,
 			),
 		)])
 		.build()
@@ -588,6 +597,7 @@ fn mint_in_refunding_pool() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				Some(ACCOUNT_00),
+				None,
 			),
 		)])
 		.build()
@@ -616,6 +626,7 @@ fn mint_exceeding_max_collateral_cost() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -657,6 +668,7 @@ fn mint_with_zero_cost() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -684,6 +696,7 @@ fn mint_invalid_currency_index() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -716,6 +729,7 @@ fn mint_without_collateral() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -764,6 +778,7 @@ fn mint_more_than_fixed_can_represent() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])

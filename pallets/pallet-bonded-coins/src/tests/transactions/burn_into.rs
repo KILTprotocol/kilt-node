@@ -45,6 +45,7 @@ fn burn_first_coin() {
 				collateral_id: DEFAULT_COLLATERAL_CURRENCY_ID,
 				denomination: 0,
 				owner: ACCOUNT_99,
+				min_operation_balance: 1,
 			},
 		)])
 		.build()
@@ -97,6 +98,7 @@ fn burn_to_other() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -162,6 +164,7 @@ fn burn_large_supply() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -218,6 +221,7 @@ fn burn_large_quantity() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -277,6 +281,7 @@ fn burn_multiple_currencies() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -353,6 +358,7 @@ fn multiple_burns_vs_combined_burn() {
 					None,
 					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 					None,
+					None,
 				),
 			),
 			(
@@ -364,6 +370,7 @@ fn multiple_burns_vs_combined_burn() {
 					None,
 					None,
 					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+					None,
 					None,
 				),
 			),
@@ -440,6 +447,7 @@ fn multiple_mints_vs_combined_burn() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -502,6 +510,7 @@ fn burn_with_frozen_balance() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -591,6 +600,7 @@ fn burn_on_locked_pool() {
 				Some(ACCOUNT_00), // manager account
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -646,6 +656,7 @@ fn burn_in_refunding_pool() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				Some(ACCOUNT_00),
+				None,
 			),
 		)])
 		.build()
@@ -675,6 +686,7 @@ fn burn_not_hitting_minimum() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -703,6 +715,7 @@ fn burn_invalid_currency_index() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -738,6 +751,7 @@ fn burn_beyond_balance() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])

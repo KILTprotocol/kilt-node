@@ -23,6 +23,7 @@ fn anyone_can_call_finish_destroy() {
 		None,
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_01), // owner must hold native asset so we can reserve deposit
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -67,6 +68,7 @@ fn owner_receives_collateral() {
 		None,
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_01), // owner must hold native asset so we can reserve deposit
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -109,6 +111,7 @@ fn works_if_asset_is_gone() {
 		None,
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_01), // owner must hold native asset so we can reserve deposit
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -147,6 +150,7 @@ fn fails_on_incorrect_state() {
 		None,
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00), // owner must hold native asset so we can reserve deposit
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
@@ -193,6 +197,7 @@ fn fails_if_assets_cannot_be_destroyed() {
 		None,
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00), // owner must hold native asset so we can reserve deposit
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
@@ -241,6 +246,7 @@ fn fails_on_invalid_arguments() {
 		None,
 		None,
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&currencies);
 

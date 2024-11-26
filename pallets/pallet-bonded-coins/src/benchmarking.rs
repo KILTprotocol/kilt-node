@@ -175,6 +175,7 @@ mod benchmarks {
 			denomination,
 			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids),
 			transferable: true,
+			min_operation_balance: 1u128.saturated_into(),
 		};
 		Pools::<T>::insert(&pool_id, pool_details);
 
@@ -208,7 +209,15 @@ mod benchmarks {
 		make_free_for_deposit::<T>(&account_origin);
 
 		#[extrinsic_call]
-		create_pool(origin as T::RuntimeOrigin, curve, collateral_id, currencies, 10, true);
+		create_pool(
+			origin as T::RuntimeOrigin,
+			curve,
+			collateral_id,
+			currencies,
+			10,
+			true,
+			1,
+		);
 
 		// Verify
 		let (id, pool) = Pools::<T>::iter().next().expect("Pool should exist");
@@ -238,7 +247,15 @@ mod benchmarks {
 		make_free_for_deposit::<T>(&account_origin);
 
 		#[extrinsic_call]
-		create_pool(origin as T::RuntimeOrigin, curve, collateral_id, currencies, 10, true);
+		create_pool(
+			origin as T::RuntimeOrigin,
+			curve,
+			collateral_id,
+			currencies,
+			10,
+			true,
+			1,
+		);
 
 		// Verify
 		let (id, pool) = Pools::<T>::iter().next().expect("Pool should exist");
@@ -267,7 +284,15 @@ mod benchmarks {
 		make_free_for_deposit::<T>(&account_origin);
 
 		#[extrinsic_call]
-		create_pool(origin as T::RuntimeOrigin, curve, collateral_id, currencies, 10, true);
+		create_pool(
+			origin as T::RuntimeOrigin,
+			curve,
+			collateral_id,
+			currencies,
+			10,
+			true,
+			1,
+		);
 
 		// Verify
 		let (id, pool) = Pools::<T>::iter().next().expect("Pool should exist");

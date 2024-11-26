@@ -281,6 +281,10 @@ pub mod pallet {
 		InvalidInput,
 		Internal,
 		Slippage,
+		/// The amount to mint or burn is below the minimum allowed.
+		BelowMinimum,
+		/// The calculated collateral is zero.
+		ZeroCollateral,
 	}
 
 	#[pallet::composite_enum]
@@ -310,13 +314,15 @@ pub mod pallet {
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			denomination: u8,
 			transferable: bool,
+			min_operation_balance: u128,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
 
-			let checked_curve: Curve<CurveParameterTypeOf<T>> =
-				curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
+			ensure!(!min_operation_balance.is_zero(), Error::<T>::InvalidInput);
+
+			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let currency_length = currencies.len();
 
@@ -372,6 +378,7 @@ pub mod pallet {
 					currency_ids,
 					transferable,
 					denomination,
+					min_operation_balance,
 				)),
 			);
 
@@ -506,6 +513,11 @@ pub mod pallet {
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
+			ensure!(
+				amount_to_mint >= pool_details.min_operation_balance.saturated_into(),
+				Error::<T>::BelowMinimum
+			);
+
 			let bonded_currencies = pool_details.bonded_currencies;
 
 			let currency_idx: usize = currency_idx.saturated_into();
@@ -542,6 +554,7 @@ pub mod pallet {
 				&round_kind,
 			)?;
 
+			ensure!(cost > Zero::zero(), Error::<T>::ZeroCollateral);
 			// fail if cost > max_cost
 			ensure!(cost <= max_cost, Error::<T>::Slippage);
 
@@ -595,6 +608,10 @@ pub mod pallet {
 
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
+			ensure!(
+				amount_to_burn >= pool_details.min_operation_balance.saturated_into(),
+				Error::<T>::BelowMinimum
+			);
 
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
@@ -634,6 +651,7 @@ pub mod pallet {
 				&round_kind,
 			)?;
 
+			ensure!(collateral_return > Zero::zero(), Error::<T>::ZeroCollateral);
 			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
 
 			T::CollateralCurrencies::transfer(
@@ -950,20 +968,6 @@ pub mod pallet {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
 			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id.clone()).into();
-
-			let q = round::<T>(normalized_costs, round_kind, denomination)?;
-
-			let collateral_denomination = 10u128
-				.checked_pow(T::CollateralCurrencies::decimals(collateral_currency_id).into())
-				.ok_or(ArithmeticError::Overflow)?;
-
-			let real_costs: CollateralCurrenciesBalanceOf<T> = normalized_costs
-				.checked_mul(CurveParameterTypeOf::<T>::from_num(collateral_denomination))
-				.ok_or(ArithmeticError::Overflow)?
-				// should never fail
-				.checked_to_num::<u128>()
-				.ok_or(ArithmeticError::Overflow)?
-				.saturated_into();
 
 			round::<T>(normalized_costs, round_kind, denomination)
 		}
