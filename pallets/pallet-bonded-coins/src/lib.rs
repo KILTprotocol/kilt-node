@@ -207,9 +207,9 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// A pool has been locked and is only permissioned usable.
+		/// Locks on a pool have been added or removed.
 		LockSet { id: T::PoolId, lock: Locks },
-		/// A pool has been unlocked and is now available for use.
+		/// All locks on this pool have been cleared.
 		Unlocked { id: T::PoolId },
 		/// A new bonded token pool has been created.
 		PoolCreated { id: T::PoolId },
@@ -426,8 +426,9 @@ pub mod pallet {
 		}
 
 		/// Resets the manager of a pool. The new manager will be set to the
-		/// provided account. If the new manager is `None`, the pool will be
-		/// set to permissionless.
+		/// provided account. If the new manager is `None`, the pool manager
+		/// will be cleared, after which no further privileged changes to the pool
+		/// can be made.
 		/// The origin account must be a manager of the pool.
 		///
 		/// # Parameters
@@ -467,7 +468,7 @@ pub mod pallet {
 
 		/// Locks a pool. The pool will be set to a locked state with the given
 		/// locks. The origin account must be a manager of the pool.
-		/// The pool must be in an active state.
+		/// The pool must be in a locked or active state.
 		/// The pool will be locked until the locks are removed.
 		///
 		/// # Parameters
@@ -481,7 +482,7 @@ pub mod pallet {
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
 		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the pool.
-		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live state.
+		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live (locked or active) state.
 		#[pallet::call_index(3)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
@@ -536,10 +537,10 @@ pub mod pallet {
 		}
 
 		/// Mints new bonded tokens. The tokens will be minted into the beneficiary account.
-		/// The amount of collateral is determined by the pools bonding curves and transferred
+		/// In exchange, an amount of collateral determined by the pool's bonding curve is debited from the caller and transferred
 		/// to the pool account.
-		/// The origin account must be a manager of the pool if a lock exists.
-		/// The pool must be in an active state.
+		/// The origin account must be a manager of the pool if its state is `Locked` and `allow_mint` is false.
+		/// The pool must be in a live (non-refunding, non-destroying) state.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call.
@@ -988,7 +989,6 @@ pub mod pallet {
 		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `max_currencies`.
 		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live or refunding state.
 		/// - `Error::<T>::NoPermission`: If the caller is not the owner or manager of the pool.
-		/// - `Error::<T>::LivePool`: If there are holders or collateral to distribute.
 		#[pallet::call_index(12)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn force_start_destroy(origin: OriginFor<T>, pool_id: T::PoolId, currency_count: u32) -> DispatchResult {
@@ -1160,7 +1160,7 @@ pub mod pallet {
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
 		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `max_currencies`.
 		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live state.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the pool.
+		/// - `Error::<T>::NoPermission`: If `maybe_check_manager` is not equal to the pool's manager. This check is skipped if `maybe_check_manager` is set to `None`.
 		/// - `Error::<T>::NothingToRefund`: If there is nothing to refund.
 		fn do_start_refund(
 			pool_id: T::PoolId,
