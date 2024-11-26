@@ -33,7 +33,7 @@ pub(crate) const MAX_ERROR: Permill = Permill::from_perthousand(1);
 pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
 
 // helper functions
-pub fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
+pub(crate) fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
 	assert!(
 		(target - expected).abs() <= epsilon,
 		"Expected {:?} +/- {:?} but got {:?}",

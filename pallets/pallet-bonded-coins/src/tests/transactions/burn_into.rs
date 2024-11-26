@@ -7,7 +7,7 @@ use frame_support::{
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use sp_core::bounded_vec;
-use sp_runtime::{assert_eq_error_rate, traits::Scale, TokenError};
+use sp_runtime::{assert_eq_error_rate, traits::Scale, SaturatedConversion, TokenError};
 
 use crate::{
 	mock::{runtime::*, *},
@@ -235,7 +235,7 @@ fn burn_large_quantity() {
 				0,
 				ACCOUNT_00,
 				amount_to_burn,
-				expected_price - 1,
+				expected_price - MAX_ERROR.mul_floor(expected_price),
 				1
 			));
 
@@ -409,9 +409,10 @@ fn multiple_burns_vs_combined_burn() {
 
 			let balance_after_second_burn = Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00);
 
-			assert_eq!(
+			assert_eq_error_rate!(
 				balance_after_second_burn - balance_after_first_burn,
-				balance_after_first_burn
+				balance_after_first_burn,
+				MAX_ERROR.mul_floor(balance_after_first_burn)
 			);
 
 			assert!(

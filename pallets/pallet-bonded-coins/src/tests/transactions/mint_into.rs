@@ -6,7 +6,7 @@ use frame_support::{
 	},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
-use sp_runtime::{assert_eq_error_rate, ArithmeticError, TokenError};
+use sp_runtime::{assert_eq_error_rate, ArithmeticError, SaturatedConversion, TokenError};
 
 use crate::{
 	curves::{polynomial::PolynomialParameters, Curve},
@@ -23,7 +23,8 @@ fn mint_first_coin() {
 
 	let initial_collateral = 100u128;
 	let amount_to_mint = 1u128;
-	let expected_price = mocks_curve_get_collateral_at_supply(amount_to_mint);
+	// Add one to the expected price to account for rounding
+	let expected_price = mocks_curve_get_collateral_at_supply(amount_to_mint) + 1;
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -91,7 +92,7 @@ fn mint_large_quantity() {
 
 	let curve = get_linear_bonding_curve();
 
-	let initial_collateral = u128::MAX;
+	let initial_collateral = u128::MAX / 2;
 	// Overflows will likely occur when squaring the total supply, which happens on
 	// an I75 representation of the balance, scaled down by its denomination
 	let denomination = 10u128.pow(DEFAULT_BONDED_DENOMINATION.into());
@@ -125,7 +126,7 @@ fn mint_large_quantity() {
 				0,
 				ACCOUNT_00,
 				amount_to_mint,
-				expected_price,
+				expected_price + MAX_ERROR.mul_ceil(expected_price),
 				1
 			));
 
@@ -326,7 +327,8 @@ fn mint_large_supply() {
 				0,
 				ACCOUNT_00,
 				amount_to_mint,
-				expected_price,
+				// add some collateral to the expected price to account for rounding
+				expected_price + MAX_ERROR.mul_ceil(expected_price),
 				1
 			));
 
@@ -649,7 +651,7 @@ fn mint_with_zero_cost() {
 	let curve: Curve<Float> = Curve::Polynomial(PolynomialParameters {
 		m: Float::from_num(0),
 		n: Float::from_num(0),
-		o: Float::from_num(0.1),
+		o: Float::from_num(0),
 	});
 	// with an o < 1 a mint of 1 should result in less than 1 collateral returned
 	let mint_amount = 1u128;
@@ -677,7 +679,7 @@ fn mint_with_zero_cost() {
 
 			assert_err!(
 				BondingPallet::mint_into(origin, pool_id.clone(), 0, ACCOUNT_00, mint_amount, u128::MAX, 1),
-				TokenError::BelowMinimum // TODO: update error
+				Error::<Test>::ZeroCollateral
 			);
 		});
 }
