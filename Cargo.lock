@@ -13803,6 +13803,7 @@ dependencies = [
  "sp-genesis-builder",
  "sp-inherents",
  "sp-io",
+ "sp-metadata-ir",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
