@@ -148,7 +148,7 @@ fn refund_account_works_with_large_supply() {
 			assert_eq!(
 				events()
 					.into_iter()
-					.find(|ev| { matches!(ev, Event::<Test>::RefundComplete { id: _ }) }),
+					.find(|ev| { matches!(ev, Event::<Test>::RefundComplete { .. }) }),
 				None
 			);
 
@@ -201,7 +201,7 @@ fn balance_is_burnt_even_if_no_collateral_received() {
 			assert_eq!(
 				events()
 					.into_iter()
-					.find(|ev| { matches!(ev, Event::<Test>::RefundComplete { id: _ }) }),
+					.find(|ev| { matches!(ev, Event::<Test>::RefundComplete { .. }) }),
 				None
 			);
 		});

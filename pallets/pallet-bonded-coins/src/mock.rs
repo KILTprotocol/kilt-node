@@ -101,6 +101,7 @@ pub mod runtime {
 
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
+	#[allow(clippy::too_many_arguments)]
 	pub fn generate_pool_details(
 		currencies: Vec<AssetId>,
 		curve: Curve<Float>,
