@@ -93,7 +93,7 @@ fn test_claim_w3n_from_asset_hub_successful() {
 					account: account == &asset_hub_sovereign_account,
 					result: result.is_ok(),
 				},
-				SpiritnetRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed{owner, name: _}) => {
+				SpiritnetRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed{owner, ..}) => {
 					owner: owner == &asset_hub_sovereign_account,
 				},
 			]

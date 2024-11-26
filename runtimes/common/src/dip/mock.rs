@@ -29,8 +29,8 @@ use frame_support::{
 use frame_system::{mocking::MockBlock, pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use kilt_dip_primitives::RevealedWeb3Name;
 use pallet_did_lookup::{account::AccountId20, linkable_account::LinkableAccountId};
-use pallet_web3_names::{web3_name::AsciiWeb3Name, Web3NameOf};
-use sp_core::{sr25519, ConstU128, ConstU16, ConstU32, ConstU64};
+use pallet_web3_names::Web3NameOf;
+use sp_core::{sr25519, ConstBool, ConstU128, ConstU16, ConstU32, ConstU64};
 use sp_runtime::{traits::IdentityLookup, AccountId32, BoundedVec};
 
 use crate::{
@@ -48,7 +48,7 @@ use crate::{
 		did::{LinkedDidInfoOf, LinkedDidInfoProvider},
 		merkle::DidMerkleRootGenerator,
 	},
-	AccountId, Balance, BlockHashCount, BlockLength, BlockWeights, DidIdentifier, Hash, Hasher, Nonce,
+	AccountId, Balance, BlockHashCount, BlockLength, BlockWeights, DidIdentifier, Hash, Hasher, Nonce, Web3Name,
 };
 
 construct_runtime!(
@@ -155,9 +155,12 @@ impl pallet_web3_names::Config for TestRuntime {
 	type OwnerOrigin = EnsureSigned<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type Web3Name = AsciiWeb3Name<Self>;
+	type Web3Name = Web3Name<{ MinNameLength::get() }, { MaxNameLength::get() }>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 impl pallet_did_lookup::Config for TestRuntime {
@@ -169,6 +172,7 @@ impl pallet_did_lookup::Config for TestRuntime {
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type UniqueLinkingEnabled = ConstBool<false>;
 	type WeightInfo = ();
 }
 
@@ -213,15 +217,13 @@ pub(crate) fn create_linked_info(
 		});
 		details
 	};
-	let web3_name = if let Some(web3_name) = web3_name {
+	let web3_name = web3_name.map(|web3_name| {
 		let claimed_at = BlockNumberFor::<TestRuntime>::default();
-		Some(RevealedWeb3Name {
+		RevealedWeb3Name {
 			web3_name: web3_name.as_ref().to_vec().try_into().unwrap(),
 			claimed_at,
-		})
-	} else {
-		None
-	};
+		}
+	});
 	let linked_accounts_iter = (0..linked_accounts).map(|i| {
 		let bytes = i.to_be_bytes();
 		if i % 2 == 0 {

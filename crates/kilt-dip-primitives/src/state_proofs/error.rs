@@ -40,26 +40,31 @@ impl From<MerkleProofError> for u8 {
 	}
 }
 
-#[test]
-fn merkle_proof_error_value_never_zero() {
-	assert!(
-		enum_iterator::all::<MerkleProofError>().all(|e| u8::from(e) != 0),
-		"One of the u8 values for the error is 0, which is not allowed."
-	);
-}
+#[cfg(test)]
+mod tests {
+	use super::*;
 
-#[test]
-fn merkle_proof_error_value_not_duplicated() {
-	enum_iterator::all::<MerkleProofError>().fold(
-		sp_std::collections::btree_set::BTreeSet::<u8>::new(),
-		|mut values, new_value| {
-			let new_encoded_value = u8::from(new_value);
-			assert!(
-				values.insert(new_encoded_value),
-				"Failed to add unique value {:#?} for error variant",
-				new_encoded_value
-			);
-			values
-		},
-	);
+	#[test]
+	fn merkle_proof_error_value_never_zero() {
+		assert!(
+			enum_iterator::all::<MerkleProofError>().all(|e| u8::from(e) != 0),
+			"One of the u8 values for the error is 0, which is not allowed."
+		);
+	}
+
+	#[test]
+	fn merkle_proof_error_value_not_duplicated() {
+		enum_iterator::all::<MerkleProofError>().fold(
+			sp_std::collections::btree_set::BTreeSet::<u8>::new(),
+			|mut values, new_value| {
+				let new_encoded_value = u8::from(new_value);
+				assert!(
+					values.insert(new_encoded_value),
+					"Failed to add unique value {:#?} for error variant",
+					new_encoded_value
+				);
+				values
+			},
+		);
+	}
 }

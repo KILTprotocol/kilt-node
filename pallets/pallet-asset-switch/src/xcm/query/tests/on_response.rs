@@ -641,7 +641,7 @@ fn fail_on_invalid_response_type() {
 	);
 
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {

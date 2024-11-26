@@ -16,6 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+// Triggered by the `ChainSpecGroup` derive macro used for the custom chainspec
+// extension.
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use cumulus_primitives_core::ParaId;
 use dip_consumer_runtime_template::{
 	AccountId, AuraId, BalancesConfig, CollatorSelectionConfig, ParachainInfoConfig, RuntimeGenesisConfig,
@@ -39,7 +43,7 @@ pub(crate) fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pa
 		.public()
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
 pub struct Extensions {
 	pub relay_chain: String,

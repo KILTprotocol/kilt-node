@@ -108,7 +108,7 @@ where
 	DidDetails::new(
 		authentication_key,
 		BlockNumberFor::<T>::default(),
-		deposit_owner.unwrap_or(AccountId32::new([0u8; 32]).into()),
+		deposit_owner.unwrap_or_else(|| AccountId32::new([0u8; 32]).into()),
 	)
 	.expect("Failed to generate new DidDetails from auth_key due to BoundedBTreeSet bound")
 }

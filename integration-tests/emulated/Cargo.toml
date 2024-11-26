@@ -49,4 +49,9 @@ xcm-emulator                      = { workspace = true, default-features = true 
 xcm-executor                      = { workspace = true, default-features = true }
 
 [features]
-runtime-benchmarks = ["asset-hub-rococo-runtime/runtime-benchmarks"]
+runtime-benchmarks = [
+  "asset-hub-rococo-runtime/runtime-benchmarks",
+  "peregrine-runtime/runtime-benchmarks",
+  "rococo-runtime/runtime-benchmarks",
+  "spiritnet-runtime/runtime-benchmarks",
+]
