@@ -273,8 +273,6 @@ pub mod pallet {
 		/// provided maximum cost or the released collateral in the burning operation
 		/// is less than the minimum return.
 		Slippage,
-		/// The amount to mint or burn is below the minimum allowed.
-		BelowMinimum,
 		/// The calculated collateral is zero.
 		ZeroCollateral,
 	}
@@ -616,7 +614,7 @@ pub mod pallet {
 
 			ensure!(
 				amount_to_mint >= pool_details.min_operation_balance.saturated_into(),
-				Error::<T>::BelowMinimum
+				TokenError::BelowMinimum
 			);
 
 			let bonded_currencies = pool_details.bonded_currencies;
@@ -733,7 +731,7 @@ pub mod pallet {
 			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
 			ensure!(
 				amount_to_burn >= pool_details.min_operation_balance.saturated_into(),
-				Error::<T>::BelowMinimum
+				TokenError::BelowMinimum
 			);
 
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
