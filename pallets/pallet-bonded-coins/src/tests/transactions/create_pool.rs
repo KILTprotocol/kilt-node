@@ -42,7 +42,7 @@ fn single_currency() {
 				bounded_vec![bonded_token],
 				DEFAULT_BONDED_DENOMINATION,
 				true,
-				0,
+				1,
 			));
 
 			let pool_id: AccountIdOf<Test> = calculate_pool_id(&[new_asset_id]);
@@ -115,7 +115,7 @@ fn multi_currency() {
 				bonded_tokens,
 				DEFAULT_BONDED_DENOMINATION,
 				true,
-				0
+				1
 			));
 
 			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 3);
@@ -166,7 +166,7 @@ fn can_create_identical_pools() {
 				bounded_vec![bonded_token.clone()],
 				DEFAULT_BONDED_DENOMINATION,
 				true,
-				0
+				1
 			));
 
 			assert_ok!(BondingPallet::create_pool(
@@ -176,7 +176,7 @@ fn can_create_identical_pools() {
 				bounded_vec![bonded_token],
 				DEFAULT_BONDED_DENOMINATION,
 				true,
-				0
+				1
 			));
 
 			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 2);
@@ -217,7 +217,7 @@ fn fails_if_collateral_not_exists() {
 					bounded_vec![bonded_token],
 					DEFAULT_BONDED_DENOMINATION,
 					true,
-					0
+					1
 				),
 				AssetsPalletErrors::<Test>::Unknown
 			);
@@ -250,7 +250,7 @@ fn cannot_create_circular_pool() {
 					bounded_vec![bonded_token],
 					DEFAULT_BONDED_DENOMINATION,
 					true,
-					0
+					1
 				),
 				AssetsPalletErrors::<Test>::Unknown
 			);
@@ -284,7 +284,7 @@ fn handles_asset_id_overflow() {
 					bounded_vec![bonded_token; 2],
 					DEFAULT_BONDED_DENOMINATION,
 					true,
-					0
+					1
 				),
 				ArithmeticError::Overflow
 			);
