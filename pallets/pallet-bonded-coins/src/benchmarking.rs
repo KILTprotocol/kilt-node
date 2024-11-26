@@ -11,7 +11,8 @@ use crate::{
 	Call, CollateralAssetIdOf, CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf, Pallet,
 };
 
-/// Helper trait to calculate asset ids for collateral and bonded assets used in benchmarks.
+/// Helper trait to calculate asset ids for collateral and bonded assets used in
+/// benchmarks.
 pub trait BenchmarkHelper<T: Config> {
 	/// Calculate the asset id for the collateral asset.
 	fn calculate_collateral_asset_id(seed: u32) -> CollateralAssetIdOf<T>;
@@ -45,12 +46,11 @@ where
 	AccountIdLookupOf<T>: From<T::AccountId>,
 )]
 mod benchmarks {
-	use frame_support::traits::OriginTrait;
 	use frame_support::traits::{
 		fungible::{Inspect, Mutate, MutateHold},
-		fungibles::{Destroy, Inspect as InspectFungibles, Mutate as MutateFungibles},
+		fungibles::{Create, Destroy, Inspect as InspectFungibles, Mutate as MutateFungibles},
+		AccountTouch, EnsureOrigin, Get, OriginTrait,
 	};
-	use frame_support::traits::{fungibles::Create, AccountTouch, EnsureOrigin, Get};
 	use sp_runtime::{traits::Zero, BoundedVec, SaturatedConversion};
 	use sp_std::ops::Mul;
 

@@ -22,7 +22,7 @@ fn unlock_works() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX / 2)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
@@ -59,7 +59,7 @@ fn unlock_works_only_for_manager() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX / 2)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
@@ -96,7 +96,7 @@ fn unlock_fails_when_not_live() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![

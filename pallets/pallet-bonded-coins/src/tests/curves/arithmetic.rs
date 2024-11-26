@@ -71,7 +71,7 @@ fn test_convert_to_fixed_overflow() {
 	let denomination = 0u8; // 10^0 = 1, no scaling
 
 	let result = convert_to_fixed::<Test>(x, denomination, &DEFAULT_ROUND_KIND);
-	assert!(result.is_err());
+	result.unwrap_err();
 	assert_eq!(result.unwrap_err(), ArithmeticError::Overflow);
 }
 
@@ -81,7 +81,7 @@ fn test_convert_to_fixed_denomination_overflow() {
 	let denomination = 128u8; // 10^128 overflows
 
 	let result = convert_to_fixed::<Test>(x, denomination, &DEFAULT_ROUND_KIND);
-	assert!(result.is_err());
+	result.unwrap_err();
 	assert_eq!(result.unwrap_err(), ArithmeticError::Overflow);
 }
 

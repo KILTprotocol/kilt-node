@@ -115,7 +115,8 @@ where
 		Some(who) == self.manager.as_ref()
 	}
 
-	/// Checks if the given account can mint tokens in the pool, if the pool is locked.
+	/// Checks if the given account can mint tokens in the pool, if the pool is
+	/// locked.
 	pub fn can_mint(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_mint || self.is_manager(who),
@@ -124,7 +125,8 @@ where
 		}
 	}
 
-	/// Checks if the given account can burn tokens in the pool, if the pool is locked.
+	/// Checks if the given account can burn tokens in the pool, if the pool is
+	/// locked.
 	pub fn can_burn(&self, who: &AccountId) -> bool {
 		match &self.state {
 			PoolStatus::Locked(locks) => locks.allow_burn || self.is_manager(who),
@@ -135,7 +137,7 @@ where
 }
 
 /// Metadata of a bonded token.
-#[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
+#[derive(Debug, Encode, Decode, Clone, PartialEq, Eq, TypeInfo)]
 pub struct TokenMeta<Balance, Symbol, Name> {
 	/// The name of the token.
 	pub name: Name,
@@ -146,7 +148,7 @@ pub struct TokenMeta<Balance, Symbol, Name> {
 }
 
 /// Managing team of a pool.
-#[derive(Debug, Encode, Decode, Clone, PartialEq, TypeInfo)]
+#[derive(Debug, Encode, Decode, Clone, PartialEq, Eq, TypeInfo)]
 pub struct PoolManagingTeam<AccountId> {
 	/// The admin of the pool.
 	pub admin: AccountId,

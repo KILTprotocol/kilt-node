@@ -168,8 +168,8 @@ pub mod pallet {
 
 		type RuntimeHoldReason: From<HoldReason>;
 
-		/// The type used for the curve parameters. This is the type used in the calculation steps
-		/// and stored in the pool details.
+		/// The type used for the curve parameters. This is the type used in the
+		/// calculation steps and stored in the pool details.
 		type CurveParameterType: Parameter
 			+ Member
 			+ FixedSigned
@@ -177,13 +177,15 @@ pub mod pallet {
 			+ PartialOrd<Precision>
 			+ From<Precision>;
 
-		/// Input type for curve parameters. This is the type used in the extrinsic
-		/// calls to create a new pool. It is converted to `CurveParameterType`.
+		/// Input type for curve parameters. This is the type used in the
+		/// extrinsic calls to create a new pool. It is converted to
+		/// `CurveParameterType`.
 		type CurveParameterInput: Parameter + FixedUnsigned + MaxEncodedLen;
 
 		type WeightInfo: WeightInfo;
 
-		/// Benchmark helper to calculate asset ids for the collateral and bonded currencies.
+		/// Benchmark helper to calculate asset ids for the collateral and
+		/// bonded currencies.
 		#[cfg(feature = "runtime-benchmarks")]
 		type BenchmarkHelper: crate::benchmarking::BenchmarkHelper<Self>;
 	}
@@ -270,8 +272,8 @@ pub mod pallet {
 		/// An internal error occurred. This should never happen.
 		Internal,
 		/// The collateral required for the minting operation exceeds the
-		/// provided maximum cost or the released collateral in the burning operation
-		/// is less than the minimum return.
+		/// provided maximum cost or the released collateral in the burning
+		/// operation is less than the minimum return.
 		Slippage,
 		/// The calculated collateral is zero.
 		ZeroCollateral,
@@ -287,7 +289,8 @@ pub mod pallet {
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits:
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
-		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256> + TryInto<U256>, // TODO: make large integer type configurable
+		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256> + TryInto<U256>,
+		// TODO: make large integer type configurable
 	{
 		/// Creates a new bonded token pool. The pool will be created with the
 		/// given curve, collateral currency, and bonded currencies. The pool
@@ -297,15 +300,18 @@ pub mod pallet {
 		/// - `origin`: The origin of the call.
 		/// - `curve`: The curve parameters for the pool.
 		/// - `collateral_id`: The ID of the collateral currency.
-		/// - `currencies`: A bounded vector of token metadata for the bonded currencies.
+		/// - `currencies`: A bounded vector of token metadata for the bonded
+		///   currencies.
 		/// - `denomination`: The denomination for the bonded currencies.
-		/// - `transferable`: A boolean indicating if the bonded currencies are transferable.
+		/// - `transferable`: A boolean indicating if the bonded currencies are
+		///   transferable.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
 		///
 		/// # Errors
-		/// - `Error::<T>::InvalidInput`: If the denomination is greater than the maximum allowed or if the curve input is invalid.
+		/// - `Error::<T>::InvalidInput`: If the denomination is greater than
+		///   the maximum allowed or if the curve input is invalid.
 		/// - `Error::<T>::Internal`: If the conversion to `BoundedVec` fails.
 		/// - Other errors depending on the types in the config.
 		#[pallet::call_index(0)]
@@ -402,18 +408,22 @@ pub mod pallet {
 		/// The origin account must be a manager of the pool.
 		///
 		/// # Parameters
-		/// - `origin`: The origin of the call, requiring the caller to be a manager of the pool.
+		/// - `origin`: The origin of the call, requiring the caller to be a
+		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool.
 		/// - `team`: The new managing team.
-		/// - `currency_idx`: The index of the currency in the bonded currencies vector.
+		/// - `currency_idx`: The index of the currency in the bonded currencies
+		///   vector.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the pool.
-		/// - `Error::<T>::IndexOutOfBounds`: If the currency index is out of bounds.
+		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
+		///   pool.
+		/// - `Error::<T>::IndexOutOfBounds`: If the currency index is out of
+		///   bounds.
 		/// - Other errors depending on the types in the config.
 		#[pallet::call_index(1)]
 		#[pallet::weight(T::WeightInfo::reset_team())]
@@ -450,21 +460,24 @@ pub mod pallet {
 
 		/// Resets the manager of a pool. The new manager will be set to the
 		/// provided account. If the new manager is `None`, the pool manager
-		/// will be cleared, after which no further privileged changes to the pool
-		/// can be made.
+		/// will be cleared, after which no further privileged changes to the
+		/// pool can be made.
 		/// The origin account must be a manager of the pool.
 		///
 		/// # Parameters
-		/// - `origin`: The origin of the call, requiring the caller to be a manager of the pool.
+		/// - `origin`: The origin of the call, requiring the caller to be a
+		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool.
-		/// - `new_manager`: The new manager account. If `None`, the pool will be set to permissionless.
+		/// - `new_manager`: The new manager account. If `None`, the pool will
+		///   be set to permissionless.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the pool.
+		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
+		///   pool.
 		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::reset_manager())]
 		pub fn reset_manager(
@@ -495,7 +508,8 @@ pub mod pallet {
 		/// The pool will be locked until the locks are removed.
 		///
 		/// # Parameters
-		/// - `origin`: The origin of the call, requiring the caller to be a manager of the pool.
+		/// - `origin`: The origin of the call, requiring the caller to be a
+		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool to be locked.
 		/// - `lock`: The locks to be applied to the pool.
 		///
@@ -504,8 +518,10 @@ pub mod pallet {
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the pool.
-		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live (locked or active) state.
+		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
+		///   pool.
+		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live (locked or
+		///   active) state.
 		#[pallet::call_index(3)]
 		#[pallet::weight(T::WeightInfo::set_lock())]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
@@ -530,7 +546,8 @@ pub mod pallet {
 		/// account must be a manager of the pool.
 		///
 		/// # Parameters
-		/// - `origin`: The origin of the call, requiring the caller to be a manager of the pool.
+		/// - `origin`: The origin of the call, requiring the caller to be a
+		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool to be unlocked.
 		///
 		/// # Returns
@@ -538,7 +555,8 @@ pub mod pallet {
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the pool.
+		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
+		///   pool.
 		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live state.
 		#[pallet::call_index(4)]
 		#[pallet::weight(T::WeightInfo::unlock())]
@@ -560,30 +578,39 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Mints new bonded tokens. The tokens will be minted into the beneficiary account.
-		/// In exchange, an amount of collateral determined by the pool's bonding curve is debited from the caller and transferred
-		/// to the pool account.
-		/// The origin account must be a manager of the pool if its state is `Locked` and `allow_mint` is false.
-		/// The pool must be in a live (non-refunding, non-destroying) state.
+		/// Mints new bonded tokens. The tokens will be minted into the
+		/// beneficiary account. In exchange, an amount of collateral determined
+		/// by the pool's bonding curve is debited from the caller and
+		/// transferred to the pool account.
+		/// The origin account must be a manager of the pool if its state is
+		/// `Locked` and `allow_mint` is false. The pool must be in a live
+		/// (non-refunding, non-destroying) state.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call.
 		/// - `pool_id`: The identifier of the pool.
-		/// - `currency_idx`: The index of the currency in the bonded currencies vector.
+		/// - `currency_idx`: The index of the currency in the bonded currencies
+		///   vector.
 		/// - `beneficiary`: The account to receive the minted tokens.
 		/// - `amount_to_mint`: The amount of bonded tokens to mint.
 		/// - `max_cost`: The maximum cost of collateral.
-		/// - `currency_count`: The maximum number of currencies allowed in the pool.
+		/// - `currency_count`: The maximum number of currencies allowed in the
+		///   pool.
 		///
 		/// # Returns
-		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the actual used weights.
+		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the
+		///   actual used weights.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::NoPermission`: If the caller does not have permission to mint.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `currency_count`.
-		/// - `Error::<T>::IndexOutOfBounds`: If the currency index is out of bounds.
-		/// - `ArithmeticError::Overflow`: If there is an overflow during the calculation.
+		/// - `Error::<T>::NoPermission`: If the caller does not have permission
+		///   to mint.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `currency_count`.
+		/// - `Error::<T>::IndexOutOfBounds`: If the currency index is out of
+		///   bounds.
+		/// - `ArithmeticError::Overflow`: If there is an overflow during the
+		///   calculation.
 		/// - `Error::<T>::Slippage`: If the cost exceeds `max_cost`.
 		#[pallet::call_index(5)]
 		#[pallet::weight({
@@ -685,28 +712,38 @@ pub mod pallet {
 			.into())
 		}
 
-		/// Burns a specified amount of bonded tokens from the callers account and transfers the corresponding collateral to the beneficiary.
-		/// The amount of collateral to be transferred is calculated based on the amount of bonded tokens burned.
+		/// Burns a specified amount of bonded tokens from the callers account
+		/// and transfers the corresponding collateral to the beneficiary.
+		/// The amount of collateral to be transferred is calculated based on
+		/// the amount of bonded tokens burned.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call.
 		/// - `pool_id`: The identifier of the pool.
-		/// - `currency_idx`: The index of the currency in the bonded currencies vector.
+		/// - `currency_idx`: The index of the currency in the bonded currencies
+		///   vector.
 		/// - `beneficiary`: The account to receive the collateral.
 		/// - `amount_to_burn`: The amount of bonded tokens to burn.
 		/// - `min_return`: The minimum amount of collateral to return.
-		/// - `currency_count`: The currency count in the pool, required for weight calculation.
+		/// - `currency_count`: The currency count in the pool, required for
+		///   weight calculation.
 		///
 		/// # Returns
-		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the actual used weights.
+		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the
+		///   actual used weights.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::NoPermission`: If the caller does not have permission to burn.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `currency_count`.
-		/// - `Error::<T>::IndexOutOfBounds`: If the currency index is out of bounds.
-		/// - `ArithmeticError`: If there is an error during the calculation or while converting the amount to fixed types.
-		/// - `Error::<T>::Slippage`: If the collateral return is less than `min_return`.
+		/// - `Error::<T>::NoPermission`: If the caller does not have permission
+		///   to burn.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `currency_count`.
+		/// - `Error::<T>::IndexOutOfBounds`: If the currency index is out of
+		///   bounds.
+		/// - `ArithmeticError`: If there is an error during the calculation or
+		///   while converting the amount to fixed types.
+		/// - `Error::<T>::Slippage`: If the collateral return is less than
+		///   `min_return`.
 		#[pallet::call_index(6)]
 		#[pallet::weight({
 			let weight_polynomial = T::WeightInfo::burn_into_polynomial(currency_count.to_owned());
@@ -789,7 +826,8 @@ pub mod pallet {
 			// just remove any locks, if existing.
 			T::Fungibles::thaw(target_currency_id, &who).map_err(|freeze_error| {
 				log::info!(target: LOG_TARGET, "Failed to thaw account: {:?}", freeze_error);
-				// The thaw operation is failing, if there is no account to thaw. Overwrite the error with FungiblesError::FundsUnavailable
+				// The thaw operation is failing, if there is no account to thaw. Overwrite the
+				// error with FungiblesError::FundsUnavailable
 				DispatchError::from(TokenError::FundsUnavailable)
 			})?;
 
@@ -824,18 +862,24 @@ pub mod pallet {
 		/// refunding state. The origin account must be a manager of the pool.
 		///
 		/// # Parameters
-		/// - `origin`: The origin of the call, requiring the caller to be a manager of the pool.
-		/// - `pool_id`: The identifier of the pool to start the refund process for.
-		/// - `currency_count`: The currency count in the pool, required for weight calculation.
+		/// - `origin`: The origin of the call, requiring the caller to be a
+		///   manager of the pool.
+		/// - `pool_id`: The identifier of the pool to start the refund process
+		///   for.
+		/// - `currency_count`: The currency count in the pool, required for
+		///   weight calculation.
 		///
 		/// # Returns
-		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the actual used weights.
+		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the
+		///   actual used weights.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `max_currencies`.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `max_currencies`.
 		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live state.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the pool.
+		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
+		///   pool.
 		/// - `Error::<T>::NothingToRefund`: If there is nothing to refund.
 		#[pallet::call_index(8)]
 		#[pallet::weight(T::WeightInfo::start_refund(currency_count.to_owned()))]
@@ -856,17 +900,22 @@ pub mod pallet {
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call, requiring force privileges.
-		/// - `pool_id`: The identifier of the pool to start the refund process for.
-		/// - `currency_count`: The currency count in the pool, required for weight calculation.
+		/// - `pool_id`: The identifier of the pool to start the refund process
+		///   for.
+		/// - `currency_count`: The currency count in the pool, required for
+		///   weight calculation.
 		///
 		/// # Returns
-		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the actual used weights.
+		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the
+		///   actual used weights.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `max_currencies`.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `max_currencies`.
 		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live state.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the pool.
+		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
+		///   pool.
 		/// - `Error::<T>::NothingToRefund`: If there is nothing to refund.
 		#[pallet::call_index(9)]
 		#[pallet::weight(T::WeightInfo::force_start_refund(currency_count.to_owned()))]
@@ -892,19 +941,27 @@ pub mod pallet {
 		/// - `origin`: The origin of the call.
 		/// - `pool_id`: The identifier of the pool.
 		/// - `account`: The account to be refunded.
-		/// - `asset_idx`: The index of the asset in the bonded currencies vector.
-		/// - `currency_count`: The currency count in the pool, required for weight calculation.
+		/// - `asset_idx`: The index of the asset in the bonded currencies
+		///   vector.
+		/// - `currency_count`: The currency count in the pool, required for
+		///   weight calculation.
 		///
 		/// # Returns
-		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the actual used weights.
+		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the
+		///   actual used weights.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `currency_count`.
-		/// - `Error::<T>::NotRefunding`: If the pool is not in a refunding state.
-		/// - `Error::<T>::IndexOutOfBounds`: If the asset index is out of bounds.
-		/// - `Error::<T>::NothingToRefund`: If there is nothing to refund. Either no collateral or the account has no bonded tokens.
-		/// - `Error::<T>::Internal`: If there is an internal error during the calculation.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `currency_count`.
+		/// - `Error::<T>::NotRefunding`: If the pool is not in a refunding
+		///   state.
+		/// - `Error::<T>::IndexOutOfBounds`: If the asset index is out of
+		///   bounds.
+		/// - `Error::<T>::NothingToRefund`: If there is nothing to refund.
+		///   Either no collateral or the account has no bonded tokens.
+		/// - `Error::<T>::Internal`: If there is an internal error during the
+		///   calculation.
 		#[pallet::call_index(10)]
 		#[pallet::weight(T::WeightInfo::refund_account(currency_count.to_owned()))]
 		pub fn refund_account(
@@ -1054,19 +1111,26 @@ pub mod pallet {
 		/// destroying state. The origin account must be a manager of the pool.
 		///
 		/// # Parameters
-		/// - `origin`: The origin of the call, requiring the caller to be a manager of the pool.
+		/// - `origin`: The origin of the call, requiring the caller to be a
+		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool to be destroyed.
-		/// - `currency_count`: The currency count in the pool, required for weight calculation.
+		/// - `currency_count`: The currency count in the pool, required for
+		///   weight calculation.
 		///
 		/// # Returns
-		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the actual used weights.
+		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the
+		///   actual used weights.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `max_currencies`.
-		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live or refunding state.
-		/// - `Error::<T>::NoPermission`: If the caller is not the owner or manager of the pool.
-		/// - `Error::<T>::LivePool`: If there are holders or collateral to distribute.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `max_currencies`.
+		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live or
+		///   refunding state.
+		/// - `Error::<T>::NoPermission`: If the caller is not the owner or
+		///   manager of the pool.
+		/// - `Error::<T>::LivePool`: If there are holders or collateral to
+		///   distribute.
 		#[pallet::call_index(11)]
 		#[pallet::weight(T::WeightInfo::start_destroy(currency_count.to_owned()))]
 		pub fn start_destroy(
@@ -1087,16 +1151,21 @@ pub mod pallet {
 		/// # Parameters
 		/// - `origin`: The origin of the call, requiring force privileges.
 		/// - `pool_id`: The identifier of the pool to be destroyed.
-		/// - `currency_count`: The currency count in the pool, required for weight calculation.
+		/// - `currency_count`: The currency count in the pool, required for
+		///   weight calculation.
 		///
 		/// # Returns
-		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the actual used weights.
+		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the
+		///   actual used weights.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `max_currencies`.
-		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live or refunding state.
-		/// - `Error::<T>::NoPermission`: If the caller is not the owner or manager of the pool.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `max_currencies`.
+		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live or
+		///   refunding state.
+		/// - `Error::<T>::NoPermission`: If the caller is not the owner or
+		///   manager of the pool.
 		#[pallet::call_index(12)]
 		#[pallet::weight(T::WeightInfo::force_start_destroy(currency_count.to_owned()))]
 		pub fn force_start_destroy(
@@ -1111,22 +1180,26 @@ pub mod pallet {
 			Ok(Some(T::WeightInfo::force_start_destroy(actual_currency_count)).into())
 		}
 
-		/// Finishes the destruction process for a pool. The pool will be removed
-		/// from the storage and all leftover collateral and deposits will be refunded to the
-		/// owner.
+		/// Finishes the destruction process for a pool. The pool will be
+		/// removed from the storage and all leftover collateral and deposits
+		/// will be refunded to the owner.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call.
 		/// - `pool_id`: The identifier of the pool to be destroyed.
-		/// - `currency_count`: The currency count in the pool, required for weight calculation.
+		/// - `currency_count`: The currency count in the pool, required for
+		///   weight calculation.
 		///
 		/// # Returns
-		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the actual used weights.
+		/// - `DispatchResultWithPostInfo`: The result of the dispatch with the
+		///   actual used weights.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `currency_count`.
-		/// - `Error::<T>::LivePool`: If the pool is not in a destroying state or if there are any accounts left on any currency.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `currency_count`.
+		/// - `Error::<T>::LivePool`: If the pool is not in a destroying state
+		///   or if there are any accounts left on any currency.
 		#[pallet::call_index(13)]
 		#[pallet::weight(T::WeightInfo::finish_destroy(currency_count.to_owned()))]
 		pub fn finish_destroy(
@@ -1188,22 +1261,26 @@ pub mod pallet {
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
 		CollateralCurrenciesBalanceOf<T>: TryFrom<U256>,
 	{
-		/// Calculates the collateral by the given curve and the normalized costs.
-		/// High is the upper bound of the curve, low is the lower bound.
-		/// The passive supply is the normalized total supply of all bonded currencies, excluding the active currency.
+		/// Calculates the collateral by the given curve and the normalized
+		/// costs. High is the upper bound of the curve, low is the lower bound.
+		/// The passive supply is the normalized total supply of all bonded
+		/// currencies, excluding the active currency.
 		///
 		/// # Parameters
 		/// - `low`: The lower bound of the curve.
 		/// - `high`: The upper bound of the curve.
-		/// - `passive_supply`: The normalized total supply of all bonded currencies, excluding the active currency.
+		/// - `passive_supply`: The normalized total supply of all bonded
+		///   currencies, excluding the active currency.
 		/// - `curve`: A reference to the curve used for calculation.
 		/// - `collateral_currency_id`: The ID of the collateral currency.
 		///
 		/// # Returns
-		/// - `Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError>`: The calculated collateral or an error.
+		/// - `Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError>`: The
+		///   calculated collateral or an error.
 		///
 		/// # Errors
-		/// - `ArithmeticError`: If there is an operation overflowing, underflowing, or division by zero.
+		/// - `ArithmeticError`: If there is an operation overflowing,
+		///   underflowing, or division by zero.
 		fn calculate_collateral(
 			low: CurveParameterTypeOf<T>,
 			high: CurveParameterTypeOf<T>,
@@ -1214,14 +1291,15 @@ pub mod pallet {
 		) -> Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError> {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
-			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id.clone()).into();
+			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id);
 
 			convert_fixed_to_collateral::<T>(normalized_costs, round_kind, denomination)
 		}
 
 		/// Calculates the normalized passive and active issuance for a pool.
-		/// The active issuance is the issuance of the currency that is being minted or burned.
-		/// The normalized value is generated by dividing the funds by the denomination.
+		/// The active issuance is the issuance of the currency that is being
+		/// minted or burned. The normalized value is generated by dividing the
+		/// funds by the denomination.
 		///
 		/// # Parameters
 		/// - `bonded_currencies`: A slice of bonded currency asset IDs.
@@ -1229,10 +1307,14 @@ pub mod pallet {
 		/// - `currency_idx`: The index of the currency being minted or burned.
 		///
 		/// # Returns
-		/// - `Result<(CurveParameterTypeOf<T>, PassiveSupply<CurveParameterTypeOf<T>>), DispatchError>`: A tuple containing the active issuance and the normalized passive issuances.
+		/// - `Result<(CurveParameterTypeOf<T>,
+		///   PassiveSupply<CurveParameterTypeOf<T>>), DispatchError>`: A tuple
+		///   containing the active issuance and the normalized passive
+		///   issuances.
 		///
 		/// # Errors
-		/// - `ArithmeticError`: If there is an error during the conversion to fixed point.
+		/// - `ArithmeticError`: If there is an error during the conversion to
+		///   fixed point.
 		fn calculate_normalized_passive_issuance(
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
@@ -1255,22 +1337,30 @@ pub mod pallet {
 		}
 
 		/// Starts the refund process for a pool.
-		/// The `maybe_check_manager` parameter is used to check if the caller is a manager.
-		/// Fails if the pool is not live or there is nothing to refund.
+		/// The `maybe_check_manager` parameter is used to check if the caller
+		/// is a manager. Fails if the pool is not live or there is nothing to
+		/// refund.
 		///
 		/// # Parameters
-		/// - `pool_id`: The identifier of the pool to start the refund process for.
-		/// - `max_currencies`: The currency count in the pool, required for weight calculation.
-		/// - `maybe_check_manager`: An optional parameter to check if the caller is a manager.
+		/// - `pool_id`: The identifier of the pool to start the refund process
+		///   for.
+		/// - `max_currencies`: The currency count in the pool, required for
+		///   weight calculation.
+		/// - `maybe_check_manager`: An optional parameter to check if the
+		///   caller is a manager.
 		///
 		/// # Returns
-		/// - `Result<u32, DispatchError>`: The number of currencies in the pool or an error.
+		/// - `Result<u32, DispatchError>`: The number of currencies in the pool
+		///   or an error.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `max_currencies`.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `max_currencies`.
 		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live state.
-		/// - `Error::<T>::NoPermission`: If `maybe_check_manager` is not equal to the pool's manager. This check is skipped if `maybe_check_manager` is set to `None`.
+		/// - `Error::<T>::NoPermission`: If `maybe_check_manager` is not equal
+		///   to the pool's manager. This check is skipped if
+		///   `maybe_check_manager` is set to `None`.
 		/// - `Error::<T>::NothingToRefund`: If there is nothing to refund.
 		fn do_start_refund(
 			pool_id: T::PoolId,
@@ -1317,23 +1407,31 @@ pub mod pallet {
 		}
 
 		/// Starts the destruction process for a pool.
-		/// This function is called by both the normal and forced start_destroy functions.
+		/// This function is called by both the normal and forced start_destroy
+		/// functions.
 		///
 		/// # Parameters
 		/// - `pool_id`: The identifier of the pool to be destroyed.
-		/// - `max_currencies`: The currency count in the pool, required for weight calculation.
+		/// - `max_currencies`: The currency count in the pool, required for
+		///   weight calculation.
 		/// - `force_skip_refund`: A flag to skip the refund check.
-		/// - `maybe_check_manager`: An optional parameter to check if the caller is a manager.
+		/// - `maybe_check_manager`: An optional parameter to check if the
+		///   caller is a manager.
 		///
 		/// # Returns
-		/// - `Result<u32, DispatchError>`: The number of currencies in the pool or an error.
+		/// - `Result<u32, DispatchError>`: The number of currencies in the pool
+		///   or an error.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds `max_currencies`.
-		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live or refunding state.
-		/// - `Error::<T>::NoPermission`: If the caller is not the owner or manager of the pool.
-		/// - `Error::<T>::LivePool`: If there are holders or collateral to distribute.
+		/// - `Error::<T>::CurrencyCount`: If the number of currencies exceeds
+		///   `max_currencies`.
+		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live or
+		///   refunding state.
+		/// - `Error::<T>::NoPermission`: If the caller is not the owner or
+		///   manager of the pool.
+		/// - `Error::<T>::LivePool`: If there are holders or collateral to
+		///   distribute.
 		fn do_start_destroy_pool(
 			pool_id: T::PoolId,
 			max_currencies: u32,
@@ -1404,7 +1502,9 @@ pub mod pallet {
 		/// - `count`: The number of asset ids to generate.
 		///
 		/// # Returns
-		/// - `Result<(BoundedCurrencyVec<T>, T::AssetId), Error<T>>`: A tuple containing the generated sequence of asset ids and the next asset id.
+		/// - `Result<(BoundedCurrencyVec<T>, T::AssetId), Error<T>>`: A tuple
+		///   containing the generated sequence of asset ids and the next asset
+		///   id.
 		///
 		/// # Errors
 		/// - `Error::<T>::Internal`: If the conversion to `BoundedVec` fails.
@@ -1447,14 +1547,16 @@ pub mod pallet {
 			pool_details.bonded_currencies.len().saturated_into()
 		}
 
-		/// Calculates the deposit required for a pool with the given number of currencies.
-		/// This is the sum of the base deposit and the deposit per currency.
+		/// Calculates the deposit required for a pool with the given number of
+		/// currencies. This is the sum of the base deposit and the deposit per
+		/// currency.
 		///
 		/// # Parameters
 		/// - `n_currencies`: The number of currencies in the pool.
 		///
 		/// # Returns
-		/// - `DepositCurrencyBalanceOf<T>`: The total deposit required for the pool.
+		/// - `DepositCurrencyBalanceOf<T>`: The total deposit required for the
+		///   pool.
 		pub(crate) fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
 			n_currencies: N,
 		) -> DepositCurrencyBalanceOf<T> {

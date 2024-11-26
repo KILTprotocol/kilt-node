@@ -28,7 +28,7 @@ fn anyone_can_call_finish_destroy() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
@@ -75,7 +75,7 @@ fn owner_receives_collateral() {
 	let remaining_collateral: u128 = 100_000;
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(
@@ -116,7 +116,7 @@ fn works_if_asset_is_gone() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
@@ -156,7 +156,7 @@ fn fails_on_incorrect_state() {
 	let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
@@ -203,7 +203,7 @@ fn fails_if_assets_cannot_be_destroyed() {
 	let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, 100_000)])
@@ -218,7 +218,7 @@ fn fails_if_assets_cannot_be_destroyed() {
 				.expect("failed to set asset to destroying state");
 
 			// Fails because asset has active accounts attached to it
-			assert!(BondingPallet::finish_destroy(origin.clone(), pool_id.clone(), 1).is_err());
+			BondingPallet::finish_destroy(origin.clone(), pool_id.clone(), 1).unwrap_err();
 
 			<Assets as Destroy<_>>::destroy_accounts(DEFAULT_BONDED_CURRENCY_ID, 100)
 				.expect("failed to destroy accounts");
@@ -252,7 +252,7 @@ fn fails_on_invalid_arguments() {
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		// .with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), 100_000)])
 		.build()

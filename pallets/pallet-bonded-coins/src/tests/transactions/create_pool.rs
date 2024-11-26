@@ -79,7 +79,7 @@ fn single_currency() {
 			assert_eq!(Assets::owner(new_asset_id), Some(pool_id.clone()));
 			assert_eq!(Assets::admin(new_asset_id), Some(pool_id.clone()));
 			assert_eq!(Assets::issuer(new_asset_id), Some(pool_id.clone()));
-			assert_eq!(Assets::freezer(new_asset_id), Some(pool_id.clone()));
+			assert_eq!(Assets::freezer(new_asset_id), Some(pool_id));
 			// Check metadata
 			assert_eq!(Assets::decimals(new_asset_id), DEFAULT_BONDED_DENOMINATION);
 			assert_eq!(Assets::name(new_asset_id), b"Bitcoin");

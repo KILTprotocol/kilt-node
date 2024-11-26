@@ -422,7 +422,8 @@ fn multiple_mints_vs_combined_mint() {
 				Assets::total_balance(currency_id2, &ACCOUNT_00),
 			);
 
-			// multiple mints should result into a higher or equal amount of collateral than a single mint
+			// multiple mints should result into a higher or equal amount of collateral than
+			// a single mint
 			assert!(
 				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1)
 					<= Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
@@ -814,7 +815,7 @@ fn mint_more_than_fixed_can_represent() {
 
 			// Make sure the pool is not stuck
 			assert_ok!(BondingPallet::burn_into(
-				origin.clone(),
+				origin,
 				pool_id.clone(),
 				0,
 				ACCOUNT_00,
