@@ -15,13 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, traits::fungibles::roles::Inspect};
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use sp_runtime::traits::BadOrigin;
 
 use crate::{
 	mock::{runtime::*, *},
-	types::PoolStatus,
+	types::{PoolManagingTeam, PoolStatus},
 	AccountIdOf, Error, Event, Pools,
 };
 
@@ -59,6 +59,56 @@ fn start_refund_works() {
 
 			// Verify the expected event has been deposited
 			System::assert_last_event(Event::RefundingStarted { id: pool_id }.into());
+		});
+}
+
+#[test]
+fn start_refund_resets_asset_admin() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		true,
+		Some(PoolStatus::Active),
+		Some(ACCOUNT_00),
+		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+		Some(ACCOUNT_00),
+		None,
+	);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let currency_count = 1;
+
+	ExtBuilder::default()
+		.with_pools(vec![(pool_id.clone(), pool_details)])
+		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10),
+		])
+		.build()
+		.execute_with(|| {
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_ok!(BondingPallet::reset_team(
+				origin.clone(),
+				pool_id.clone(),
+				PoolManagingTeam {
+					admin: ACCOUNT_00,
+					freezer: ACCOUNT_00
+				},
+				0
+			));
+
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_00));
+			assert_eq!(Assets::freezer(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_00));
+
+			assert_ok!(BondingPallet::start_refund(origin, pool_id.clone(), currency_count));
+
+			// Verify that the pool state has been updated to refunding
+			assert_eq!(Pools::<Test>::get(&pool_id).unwrap().state, PoolStatus::Refunding);
+
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
+			assert_eq!(Assets::freezer(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
 		});
 }
 
