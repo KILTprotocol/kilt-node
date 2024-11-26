@@ -17,6 +17,7 @@ fn resets_team() {
 		Some(ACCOUNT_00),
 		None,
 		None,
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -51,6 +52,7 @@ fn does_not_change_team_when_not_live() {
 		false,
 		Some(PoolStatus::Refunding),
 		Some(ACCOUNT_00),
+		None,
 		None,
 		None,
 	);
@@ -92,6 +94,7 @@ fn only_manager_can_change_team() {
 		Some(manager.clone()),
 		None,
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
@@ -139,6 +142,7 @@ fn handles_currency_idx_out_of_bounds() {
 		false,
 		Some(PoolStatus::Active),
 		Some(ACCOUNT_00),
+		None,
 		None,
 		None,
 	);

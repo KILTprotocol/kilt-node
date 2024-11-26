@@ -17,6 +17,7 @@ fn unlock_works() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		None,
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -53,6 +54,7 @@ fn unlock_works_only_for_manager() {
 		Some(ACCOUNT_99),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_01),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -89,6 +91,7 @@ fn unlock_fails_when_not_live() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 

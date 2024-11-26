@@ -17,6 +17,7 @@ fn set_lock_works() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -58,18 +59,17 @@ fn set_lock_works_when_locked() {
 		Some(PoolStatus::Locked(Locks {
 			allow_mint: true,
 			allow_burn: false,
-			allow_swap: false,
 		})),
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let new_state = Locks {
 		allow_mint: false,
 		allow_burn: true,
-		allow_swap: false,
 	};
 
 	ExtBuilder::default()
@@ -111,6 +111,7 @@ fn set_lock_fails_when_not_authorized() {
 		Some(ACCOUNT_99),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -155,6 +156,7 @@ fn set_lock_fails_when_not_live() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 

@@ -22,6 +22,7 @@ fn refund_account_works() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -63,6 +64,7 @@ fn refund_account_works_on_frozen() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -109,6 +111,7 @@ fn refund_account_works_with_large_supply() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 
 	let total_collateral = u128::MAX / 2;
@@ -169,6 +172,7 @@ fn balance_is_burnt_even_if_no_collateral_received() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -213,6 +217,7 @@ fn refund_below_min_balance() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -261,6 +266,7 @@ fn refund_account_fails_when_pool_not_refunding() {
 		Some(ACCOUNT_00),
 		None,
 		None,
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -294,6 +300,7 @@ fn refund_account_no_balance() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -328,6 +335,7 @@ fn nothing_to_refund() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -361,6 +369,7 @@ fn unknown_pool_or_currency() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);

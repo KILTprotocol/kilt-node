@@ -23,7 +23,8 @@ fn mint_first_coin() {
 
 	let initial_collateral = 100u128;
 	let amount_to_mint = 1u128;
-	let expected_price = mocks_curve_get_collateral_at_supply(amount_to_mint);
+	// Add one to the expected price to account for rounding
+	let expected_price = mocks_curve_get_collateral_at_supply(amount_to_mint) + 1;
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -38,6 +39,7 @@ fn mint_first_coin() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -90,7 +92,7 @@ fn mint_large_quantity() {
 
 	let curve = get_linear_bonding_curve();
 
-	let initial_collateral = u128::MAX;
+	let initial_collateral = u128::MAX / 2;
 	// Overflows will likely occur when squaring the total supply, which happens on
 	// an I75 representation of the balance, scaled down by its denomination
 	let denomination = 10u128.pow(DEFAULT_BONDED_DENOMINATION.into());
@@ -111,6 +113,7 @@ fn mint_large_quantity() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -123,7 +126,7 @@ fn mint_large_quantity() {
 				0,
 				ACCOUNT_00,
 				amount_to_mint,
-				expected_price,
+				expected_price + MAX_ERROR.mul_ceil(expected_price),
 				1
 			));
 
@@ -160,6 +163,7 @@ fn mint_to_other() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -233,6 +237,7 @@ fn mint_multiple_currencies() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -309,6 +314,7 @@ fn mint_large_supply() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -321,7 +327,8 @@ fn mint_large_supply() {
 				0,
 				ACCOUNT_00,
 				amount_to_mint,
-				expected_price,
+				// add some collateral to the expected price to account for rounding
+				expected_price + MAX_ERROR.mul_ceil(expected_price),
 				1
 			));
 
@@ -365,6 +372,7 @@ fn multiple_mints_vs_combined_mint() {
 					None,
 					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 					None,
+					None,
 				),
 			),
 			(
@@ -376,6 +384,7 @@ fn multiple_mints_vs_combined_mint() {
 					None,
 					None,
 					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+					None,
 					None,
 				),
 			),
@@ -413,9 +422,10 @@ fn multiple_mints_vs_combined_mint() {
 				Assets::total_balance(currency_id2, &ACCOUNT_00),
 			);
 
-			assert_eq!(
-				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1),
-				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
+			// multiple mints should result into a higher or equal amount of collateral than a single mint
+			assert!(
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1)
+					<= Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
 			);
 		})
 }
@@ -440,6 +450,7 @@ fn mint_with_frozen_balance() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -501,7 +512,7 @@ fn mint_with_frozen_balance() {
 fn mint_on_locked_pool() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
-	let initial_balance = u128::MAX / 2;
+	let initial_balance = u128::MAX / 3;
 	let amount_to_mint = 10u128.pow(10);
 
 	ExtBuilder::default()
@@ -524,6 +535,7 @@ fn mint_on_locked_pool() {
 				Some(ACCOUNT_00), // manager account
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				Some(ACCOUNT_00),
+				None,
 			),
 		)])
 		.build()
@@ -587,6 +599,7 @@ fn mint_in_refunding_pool() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				Some(ACCOUNT_00),
+				None,
 			),
 		)])
 		.build()
@@ -616,6 +629,7 @@ fn mint_exceeding_max_collateral_cost() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -637,7 +651,7 @@ fn mint_with_zero_cost() {
 	let curve: Curve<Float> = Curve::Polynomial(PolynomialParameters {
 		m: Float::from_num(0),
 		n: Float::from_num(0),
-		o: Float::from_num(0.1),
+		o: Float::from_num(0),
 	});
 	// with an o < 1 a mint of 1 should result in less than 1 collateral returned
 	let mint_amount = 1u128;
@@ -656,6 +670,7 @@ fn mint_with_zero_cost() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -664,7 +679,7 @@ fn mint_with_zero_cost() {
 
 			assert_err!(
 				BondingPallet::mint_into(origin, pool_id.clone(), 0, ACCOUNT_00, mint_amount, u128::MAX, 1),
-				TokenError::BelowMinimum // TODO: update error
+				Error::<Test>::ZeroCollateral
 			);
 		});
 }
@@ -683,6 +698,7 @@ fn mint_invalid_currency_index() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -715,6 +731,7 @@ fn mint_without_collateral() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -763,6 +780,7 @@ fn mint_more_than_fixed_can_represent() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])

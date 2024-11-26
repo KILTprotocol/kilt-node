@@ -6,7 +6,6 @@ use scale_info::TypeInfo;
 pub struct Locks {
 	pub allow_mint: bool,
 	pub allow_burn: bool,
-	pub allow_swap: bool,
 }
 
 /// Status of a pool.
@@ -75,6 +74,7 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
 	pub transferable: bool,
 	/// The denomination of the pool.
 	pub denomination: u8,
+	pub min_operation_balance: u128,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
@@ -90,6 +90,7 @@ where
 		bonded_currencies: Currencies,
 		transferable: bool,
 		denomination: u8,
+		min_operation_balance: u128,
 	) -> Self {
 		Self {
 			manager: Some(owner.clone()),
@@ -100,6 +101,7 @@ where
 			transferable,
 			state: PoolStatus::default(),
 			denomination,
+			min_operation_balance,
 		}
 	}
 
@@ -122,13 +124,6 @@ where
 		}
 	}
 
-	pub fn can_swap(&self, who: &AccountId) -> bool {
-		match &self.state {
-			PoolStatus::Locked(locks) => locks.allow_swap || self.is_manager(who),
-			PoolStatus::Active => true,
-			_ => false,
-		}
-	}
 	/// Checks if the given account can burn tokens in the pool, if the pool is locked.
 	pub fn can_burn(&self, who: &AccountId) -> bool {
 		match &self.state {
@@ -157,4 +152,13 @@ pub struct PoolManagingTeam<AccountId> {
 	pub admin: AccountId,
 	/// The freezer of the pool.
 	pub freezer: AccountId,
+}
+
+/// Enum, to specify the rounding direction.
+#[derive(PartialEq)]
+pub(crate) enum Round {
+	/// Round up.
+	Up,
+	/// Round down.
+	Down,
 }

@@ -89,8 +89,8 @@ pub mod runtime {
 	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
 	pub(crate) const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
 	// assets
-	pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 0;
-	pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = AssetId::MAX;
+	pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 1;
+	pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = 0;
 	pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
 	pub(crate) const ONE_HUNDRED_KILT: u128 = 100_000_000_000_000_000;
 	pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
@@ -109,11 +109,13 @@ pub mod runtime {
 		manager: Option<AccountId>,
 		collateral_id: Option<AssetId>,
 		owner: Option<AccountId>,
+		min_operation_balance: Option<u128>,
 	) -> PoolDetailsOf<Test> {
 		let bonded_currencies = BoundedVec::truncate_from(currencies);
 		let state = state.unwrap_or(PoolStatus::Active);
 		let owner = owner.unwrap_or(ACCOUNT_99);
 		let collateral_id = collateral_id.unwrap_or(DEFAULT_COLLATERAL_CURRENCY_ID);
+		let min_operation_balance = min_operation_balance.unwrap_or(1);
 		PoolDetailsOf::<Test> {
 			curve,
 			manager,
@@ -123,6 +125,7 @@ pub mod runtime {
 			collateral_id,
 			denomination: DEFAULT_BONDED_DENOMINATION,
 			owner,
+			min_operation_balance,
 		}
 	}
 

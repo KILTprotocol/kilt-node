@@ -19,6 +19,7 @@ fn changes_manager() {
 		Some(ACCOUNT_00),
 		None,
 		None,
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
@@ -55,6 +56,7 @@ fn only_manager_can_change_manager() {
 		Some(manager.clone()),
 		None,
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()

@@ -39,7 +39,8 @@ pub mod pallet {
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{
-			Bounded, CheckedConversion, One, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto, Zero,
+			Bounded, CheckedAdd, CheckedConversion, One, SaturatedConversion, Saturating, StaticLookup,
+			UniqueSaturatedInto, Zero,
 		},
 		BoundedVec, TokenError,
 	};
@@ -55,9 +56,9 @@ pub mod pallet {
 	};
 
 	use crate::{
-		curves::{convert_to_fixed, BondingFunction, Curve, CurveInput},
+		curves::{convert_fixed_to_collateral, convert_to_fixed, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, ResetTeam},
-		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, TokenMeta},
+		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
 	};
 
@@ -163,7 +164,7 @@ pub mod pallet {
 
 		/// The type used for asset ids. This is the type of the bonded
 		/// currencies.
-		type AssetId: Parameter + Member + FullCodec + MaxEncodedLen + Saturating + One + Default;
+		type AssetId: Parameter + Member + FullCodec + MaxEncodedLen + One + Default + CheckedAdd;
 
 		type RuntimeHoldReason: From<HoldReason>;
 
@@ -272,6 +273,8 @@ pub mod pallet {
 		/// provided maximum cost or the released collateral in the burning operation
 		/// is less than the minimum return.
 		Slippage,
+		/// The calculated collateral is zero.
+		ZeroCollateral,
 	}
 
 	#[pallet::composite_enum]
@@ -282,8 +285,9 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
-		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>, // TODO: make large integer type configurable
+		<CurveParameterTypeOf<T> as Fixed>::Bits:
+			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
+		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256> + TryInto<U256>, // TODO: make large integer type configurable
 	{
 		/// Creates a new bonded token pool. The pool will be created with the
 		/// given curve, collateral currency, and bonded currencies. The pool
@@ -319,13 +323,12 @@ pub mod pallet {
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
 			denomination: u8,
 			transferable: bool,
+			min_operation_balance: u128,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
-
-			let checked_curve: Curve<CurveParameterTypeOf<T>> =
-				curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
+			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let currency_length = currencies.len();
 
@@ -381,6 +384,7 @@ pub mod pallet {
 					currency_ids,
 					transferable,
 					denomination,
+					min_operation_balance,
 				)),
 			);
 
@@ -424,6 +428,7 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(pool_details.is_manager(&who), Error::<T>::NoPermission);
+			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
 			let asset_id = pool_details
 				.bonded_currencies
@@ -508,8 +513,8 @@ pub mod pallet {
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
-				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
+				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 
 				entry.state = PoolStatus::Locked(lock.clone());
 
@@ -542,8 +547,9 @@ pub mod pallet {
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
-				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
+				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
+
 				entry.state = PoolStatus::Active;
 
 				Ok(())
@@ -600,10 +606,17 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
-
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
+
+			ensure!(
+				amount_to_mint >= pool_details.min_operation_balance.saturated_into(),
+				TokenError::BelowMinimum
+			);
+
+			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
+
+			ensure!(pool_details.can_mint(&who), Error::<T>::NoPermission);
 
 			let bonded_currencies = pool_details.bonded_currencies;
 
@@ -613,14 +626,20 @@ pub mod pallet {
 				.get(currency_idx)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
+			let round_kind = Round::Up;
+
 			let (active_pre, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
 				pool_details.denomination,
 				currency_idx,
+				&round_kind,
 			)?;
 
-			let normalized_amount_to_mint =
-				convert_to_fixed::<T>(amount_to_mint.saturated_into::<u128>(), pool_details.denomination)?;
+			let normalized_amount_to_mint = convert_to_fixed::<T>(
+				amount_to_mint.saturated_into::<u128>(),
+				pool_details.denomination,
+				&round_kind,
+			)?;
 
 			let active_post = active_pre
 				.checked_add(normalized_amount_to_mint)
@@ -632,8 +651,10 @@ pub mod pallet {
 				passive,
 				&pool_details.curve,
 				pool_details.collateral_id.clone(),
+				&round_kind,
 			)?;
 
+			ensure!(cost > Zero::zero(), Error::<T>::ZeroCollateral);
 			// fail if cost > max_cost
 			ensure!(cost <= max_cost, Error::<T>::Slippage);
 
@@ -650,7 +671,10 @@ pub mod pallet {
 			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
 
 			if !pool_details.transferable {
-				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
+				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
+					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
+					freeze_error.into()
+				})?;
 			}
 
 			Ok(Some(match pool_details.curve {
@@ -704,14 +728,21 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
+			ensure!(
+				amount_to_burn >= pool_details.min_operation_balance.saturated_into(),
+				TokenError::BelowMinimum
+			);
 
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
+			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
+			ensure!(pool_details.can_burn(&who), Error::<T>::NoPermission);
+
 			let bonded_currencies = pool_details.bonded_currencies;
 
 			let currency_idx: usize = currency_idx.saturated_into();
+			let round_kind = Round::Down;
 
 			let target_currency_id = bonded_currencies
 				.get(currency_idx)
@@ -721,10 +752,14 @@ pub mod pallet {
 				&bonded_currencies,
 				pool_details.denomination,
 				currency_idx,
+				&round_kind,
 			)?;
 
-			let normalized_amount_to_burn =
-				convert_to_fixed::<T>(amount_to_burn.saturated_into::<u128>(), pool_details.denomination)?;
+			let normalized_amount_to_burn = convert_to_fixed::<T>(
+				amount_to_burn.saturated_into::<u128>(),
+				pool_details.denomination,
+				&round_kind,
+			)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -736,9 +771,10 @@ pub mod pallet {
 				passive,
 				&pool_details.curve,
 				pool_details.collateral_id.clone(),
+				&round_kind,
 			)?;
 
-			// fail if collateral_return < min_return
+			ensure!(collateral_return > Zero::zero(), Error::<T>::ZeroCollateral);
 			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
 
 			// Transfer the collateral to the beneficiary.
@@ -751,20 +787,29 @@ pub mod pallet {
 			)?;
 
 			// just remove any locks, if existing.
-			T::Fungibles::thaw(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
+			T::Fungibles::thaw(target_currency_id, &who).map_err(|freeze_error| {
+				log::info!(target: LOG_TARGET, "Failed to thaw account: {:?}", freeze_error);
+				// The thaw operation is failing, if there is no account to thaw. Overwrite the error with FungiblesError::FundsUnavailable
+				DispatchError::from(TokenError::FundsUnavailable)
+			})?;
 
 			// Burn the tokens from caller.
 			T::Fungibles::burn_from(
 				target_currency_id.clone(),
-				&beneficiary,
+				&who,
 				amount_to_burn,
 				WithdrawalPrecision::Exact,
 				Fortitude::Force,
 			)?;
 
-			if !pool_details.transferable {
+			let account_exists = T::Fungibles::total_balance(target_currency_id.clone(), &who) > Zero::zero();
+
+			if !pool_details.transferable && account_exists {
 				// Restore locks.
-				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| freeze_error.into())?;
+				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
+					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
+					freeze_error.into()
+				})?;
 			}
 
 			Ok(Some(match pool_details.curve {
@@ -773,12 +818,6 @@ pub mod pallet {
 				Curve::Lmsr(_) => T::WeightInfo::burn_into_lmsr(number_of_currencies),
 			})
 			.into())
-		}
-
-		#[pallet::call_index(7)]
-		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
-		pub fn swap_into(_origin: OriginFor<T>) -> DispatchResult {
-			todo!()
 		}
 
 		/// Starts the refund process for a pool. The pool will be set to a
@@ -909,7 +948,12 @@ pub mod pallet {
 			);
 
 			//  remove any existing locks on the account prior to burning
-			T::Fungibles::thaw(asset_id, &who).map_err(|freeze_error| freeze_error.into())?;
+			T::Fungibles::thaw(asset_id, &who)
+				.map_err(|freeze_error| {
+					log::info!(target: LOG_TARGET, "Failed to thaw account: {:?}", freeze_error);
+					freeze_error.into()
+				})
+				.map_err(|_| TokenError::FundsUnavailable)?;
 
 			// With amount = max_value(), this trait implementation burns the reducible
 			// balance on the account and returns the actual amount burnt
@@ -945,11 +989,33 @@ pub mod pallet {
 				.ok_or(ArithmeticError::Overflow)?
 				.checked_div(sum_of_issuances)
 				// Because sum_of_issuances >= burnt > 0, this is theoretically impossible
-				.ok_or(Error::<T>::Internal)?
+				.ok_or_else(|| {
+					log::error!(
+						target: LOG_TARGET,
+						"Sum of issuance is zero. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}", 
+						pool_id,
+						who,
+						burnt,
+						total_collateral_issuance,
+						sum_of_issuances
+					);
+					Error::<T>::Internal
+				})?
 				.checked_into()
 				// Also theoretically impossible, as the result must be <= total_collateral_issuance
 				// if burnt <= sum_of_issuances, which should always hold true
-				.ok_or(Error::<T>::Internal)?;
+				.ok_or_else(|| {
+					log::error!(
+						target: LOG_TARGET,
+						"Could not cast U256 into CollateralCurrency. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}", 
+						pool_id,
+						who,
+						burnt,
+						total_collateral_issuance,
+						sum_of_issuances
+					);
+					Error::<T>::Internal
+				})?;
 
 			if amount.is_zero()
 				|| T::CollateralCurrencies::can_deposit(
@@ -1118,7 +1184,9 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T>
 	where
-		<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256>,
+		<CurveParameterTypeOf<T> as Fixed>::Bits:
+			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
+		CollateralCurrenciesBalanceOf<T>: TryFrom<U256>,
 	{
 		/// Calculates the collateral by the given curve and the normalized costs.
 		/// High is the upper bound of the curve, low is the lower bound.
@@ -1142,23 +1210,13 @@ pub mod pallet {
 			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
 			curve: &Curve<CurveParameterTypeOf<T>>,
 			collateral_currency_id: CollateralAssetIdOf<T>,
+			round_kind: &Round,
 		) -> Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError> {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
-			let collateral_denomination = 10u128
-				.checked_pow(T::CollateralCurrencies::decimals(collateral_currency_id).into())
-				.ok_or(ArithmeticError::Overflow)?;
+			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id.clone()).into();
 
-			let real_costs = normalized_costs
-				// TODO: can easily overflow, causing test burn_large_quantity to fail
-				.checked_mul(CurveParameterTypeOf::<T>::from_num(collateral_denomination))
-				.ok_or(ArithmeticError::Overflow)?
-				// should never fail
-				.checked_to_num::<u128>()
-				.ok_or(ArithmeticError::Overflow)?
-				.saturated_into();
-
-			Ok(real_costs)
+			convert_fixed_to_collateral::<T>(normalized_costs, round_kind, denomination)
 		}
 
 		/// Calculates the normalized passive and active issuance for a pool.
@@ -1179,6 +1237,7 @@ pub mod pallet {
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
 			currency_idx: usize,
+			round_kind: &Round,
 		) -> Result<(CurveParameterTypeOf<T>, PassiveSupply<CurveParameterTypeOf<T>>), DispatchError> {
 			let currencies_total_supply = bonded_currencies
 				.iter()
@@ -1187,7 +1246,7 @@ pub mod pallet {
 
 			let mut normalized_total_issuances = currencies_total_supply
 				.into_iter()
-				.map(|x| convert_to_fixed::<T>(x.saturated_into::<u128>(), denomination))
+				.map(|x| convert_to_fixed::<T>(x.saturated_into::<u128>(), denomination, round_kind))
 				.collect::<Result<Vec<CurveParameterTypeOf<T>>, ArithmeticError>>()?;
 
 			let active_issuance = normalized_total_issuances.swap_remove(currency_idx);
@@ -1352,15 +1411,25 @@ pub mod pallet {
 		fn generate_sequential_asset_ids(
 			mut start_id: T::AssetId,
 			count: usize,
-		) -> Result<(BoundedCurrencyVec<T>, T::AssetId), Error<T>> {
+		) -> Result<(BoundedCurrencyVec<T>, T::AssetId), DispatchError> {
 			let mut currency_ids_vec = Vec::new();
 			for _ in 0..count {
 				currency_ids_vec.push(start_id.clone());
-				start_id.saturating_inc();
+
+				start_id = start_id.checked_add(&One::one()).ok_or(ArithmeticError::Overflow)?;
 			}
 
-			let currency_array = BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(currency_ids_vec)
-				.map_err(|_| Error::<T>::Internal)?;
+			let currency_array = BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(
+				currency_ids_vec.clone(),
+			)
+			.map_err(|_| {
+				log::error!(
+					target: LOG_TARGET,
+					"Failed to convert currency_ids_vec to BoundedVec in generate_sequential_asset_ids. Currency_ids_vec: {:?}",
+					&currency_ids_vec
+				);
+				Error::<T>::Internal
+			})?;
 
 			Ok((currency_array, start_id))
 		}

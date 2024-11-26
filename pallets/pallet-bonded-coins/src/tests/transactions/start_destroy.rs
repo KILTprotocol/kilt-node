@@ -18,6 +18,7 @@ fn start_destroy_works() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -58,6 +59,7 @@ fn start_destroy_works_when_nothing_to_refund() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -91,6 +93,7 @@ fn start_destroy_works_when_no_collateral() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -124,6 +127,7 @@ fn start_destroy_works_when_refunding() {
 		Some(ACCOUNT_00),
 		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 		Some(ACCOUNT_00),
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -155,6 +159,7 @@ fn start_destroy_fails_when_pool_has_active_currencies() {
 		false,
 		Some(PoolStatus::Refunding),
 		Some(ACCOUNT_00),
+		None,
 		None,
 		None,
 	);
@@ -192,6 +197,7 @@ fn start_destroy_fails_when_pool_destroying() {
 		Some(ACCOUNT_00),
 		None,
 		None,
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -224,6 +230,7 @@ fn start_destroy_fails_when_currency_no_low() {
 		false,
 		Some(PoolStatus::Active),
 		Some(ACCOUNT_00),
+		None,
 		None,
 		None,
 	);
@@ -266,6 +273,7 @@ fn force_start_destroy_works() {
 		Some(ACCOUNT_00),
 		None,
 		None,
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -301,6 +309,7 @@ fn force_start_destroy_works_even_with_nonzero_supply() {
 		false,
 		Some(PoolStatus::Active),
 		Some(ACCOUNT_00),
+		None,
 		None,
 		None,
 	);
@@ -339,6 +348,7 @@ fn force_start_destroy_fails_when_not_root() {
 		Some(ACCOUNT_00),
 		None,
 		None,
+		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
@@ -372,6 +382,7 @@ fn force_start_destroy_fails_when_currency_no_low() {
 		false,
 		Some(PoolStatus::Active),
 		Some(ACCOUNT_00),
+		None,
 		None,
 		None,
 	);

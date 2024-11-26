@@ -14,7 +14,7 @@ use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use sp_core::U256;
 use sp_runtime::traits::CheckedConversion;
-use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign};
+use sp_std::ops::{AddAssign, BitOrAssign, ShlAssign, ShrAssign};
 use substrate_fixed::traits::{Fixed, FixedSigned, ToFixed};
 
 use crate::{
@@ -23,7 +23,8 @@ use crate::{
 		polynomial::{PolynomialParameters, PolynomialParametersInput},
 		square_root::{SquareRootParameters, SquareRootParametersInput},
 	},
-	Config, CurveParameterTypeOf, PassiveSupply, Precision,
+	types::Round,
+	CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, PassiveSupply, Precision,
 };
 
 /// An enum representing different types of curves with their respective parameters.
@@ -136,8 +137,11 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
 }
 
-/// TODO. Implementation might change.
-pub(crate) fn convert_to_fixed<T: Config>(x: u128, denomination: u8) -> Result<CurveParameterTypeOf<T>, ArithmeticError>
+pub(crate) fn convert_to_fixed<T: Config>(
+	x: u128,
+	denomination: u8,
+	round_kind: &Round,
+) -> Result<CurveParameterTypeOf<T>, ArithmeticError>
 where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
 {
@@ -151,6 +155,14 @@ where
 	// This function can panic in theory, but only if frac_nbits() would be larger
 	// than 256 - and no Fixed of that size exists.
 	x_u256.shl_assign(CurveParameterTypeOf::<T>::frac_nbits());
+
+	// adding the scaling factor (decimal) - 1 ensures the result of the division below is rounded up
+	if round_kind == &Round::Up {
+		x_u256 = x_u256
+			.checked_add(U256::from(decimals - 1))
+			.ok_or(ArithmeticError::Overflow)?;
+	}
+
 	// Perform division. Due to the shift the precision/truncation is identical to
 	// division on the fixed type.
 	x_u256 = x_u256.checked_div(decimals).ok_or(ArithmeticError::DivisionByZero)?;
@@ -163,4 +175,44 @@ where
 	let fixed = <CurveParameterTypeOf<T> as Fixed>::from_bits(truncated);
 	// Return the result of scaled conversion to fixed.
 	Ok(fixed)
+}
+
+/// Rounds the given value to the given rounding kind.
+pub(crate) fn convert_fixed_to_collateral<T: Config>(
+	value: CurveParameterTypeOf<T>,
+	round_kind: &Round,
+	denomination: u8,
+) -> Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError>
+where
+	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256> + TryInto<U256>,
+	CollateralCurrenciesBalanceOf<T>: TryFrom<U256>,
+{
+	// Convert to U256 so we have enough bits to perform lossless scaling.
+	let mut value_u256: U256 = value.to_bits().try_into().map_err(|_| ArithmeticError::Overflow)?;
+
+	let denomination = U256::from(10)
+		.checked_pow(denomination.into())
+		.ok_or(ArithmeticError::Overflow)?;
+
+	// calculate the actual value by multiplying with the denomination. By using th U256 type
+	// we can ensure that the multiplication does not overflow.
+	value_u256 = value_u256.checked_mul(denomination).ok_or(ArithmeticError::Overflow)?;
+
+	// Calculate the number of trailing zeros in the value.
+	let trailing_zeros = value_u256.trailing_zeros();
+
+	// Calculate the number of fractional bits in the fixed-point type.
+	let frac_bits: u32 = CurveParameterTypeOf::<T>::frac_nbits().into();
+
+	// Shift the value to the right by the number of fractional bits.
+	value_u256.shr_assign(frac_bits);
+
+	// If the number of trailing zeros is less than the number of fractional bits, the value
+	// is not rounded and we can return it directly.
+	if round_kind == &Round::Up && trailing_zeros < frac_bits {
+		value_u256 = value_u256.checked_add(U256::from(1)).ok_or(ArithmeticError::Overflow)?;
+	}
+
+	// Convert the value back to the collateral representation
+	value_u256.try_into().map_err(|_| ArithmeticError::Overflow)
 }

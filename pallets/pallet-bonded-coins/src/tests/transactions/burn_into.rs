@@ -45,6 +45,7 @@ fn burn_first_coin() {
 				collateral_id: DEFAULT_COLLATERAL_CURRENCY_ID,
 				denomination: 0,
 				owner: ACCOUNT_99,
+				min_operation_balance: 1,
 			},
 		)])
 		.build()
@@ -97,6 +98,7 @@ fn burn_to_other() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -162,6 +164,7 @@ fn burn_large_supply() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -219,6 +222,7 @@ fn burn_large_quantity() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -231,7 +235,7 @@ fn burn_large_quantity() {
 				0,
 				ACCOUNT_00,
 				amount_to_burn,
-				expected_price - 1,
+				expected_price - MAX_ERROR.mul_floor(expected_price),
 				1
 			));
 
@@ -277,6 +281,7 @@ fn burn_multiple_currencies() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -353,6 +358,7 @@ fn multiple_burns_vs_combined_burn() {
 					None,
 					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 					None,
+					None,
 				),
 			),
 			(
@@ -364,6 +370,7 @@ fn multiple_burns_vs_combined_burn() {
 					None,
 					None,
 					Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+					None,
 					None,
 				),
 			),
@@ -402,14 +409,15 @@ fn multiple_burns_vs_combined_burn() {
 
 			let balance_after_second_burn = Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &ACCOUNT_00);
 
-			assert_eq!(
+			assert_eq_error_rate!(
 				balance_after_second_burn - balance_after_first_burn,
-				balance_after_first_burn
+				balance_after_first_burn,
+				MAX_ERROR.mul_floor(balance_after_first_burn)
 			);
 
-			assert_eq!(
-				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1,),
-				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2,)
+			assert!(
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1,)
+					<= Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2,)
 			);
 		})
 }
@@ -423,7 +431,8 @@ fn multiple_mints_vs_combined_burn() {
 
 	let amount_to_mint = 11u128.pow(10);
 
-	let expected_prize = mocks_curve_get_collateral_at_supply(10 * amount_to_mint);
+	// lets add some collateral for rounding
+	let expected_prize = mocks_curve_get_collateral_at_supply(10 * amount_to_mint) + 10;
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, LARGE_BALANCE)])
@@ -438,6 +447,7 @@ fn multiple_mints_vs_combined_burn() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -473,7 +483,8 @@ fn multiple_mints_vs_combined_burn() {
 
 			assert_eq!(Assets::total_balance(currency_id, &ACCOUNT_00), 0,);
 
-			assert_eq!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id), 0,);
+			// The combined burn should not release the whole collateral.
+			assert!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id) > 0);
 		})
 }
 
@@ -500,6 +511,7 @@ fn burn_with_frozen_balance() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -589,6 +601,7 @@ fn burn_on_locked_pool() {
 				Some(ACCOUNT_00), // manager account
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -644,6 +657,7 @@ fn burn_in_refunding_pool() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				Some(ACCOUNT_00),
+				None,
 			),
 		)])
 		.build()
@@ -673,6 +687,7 @@ fn burn_not_hitting_minimum() {
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
 				None,
+				None,
 			),
 		)])
 		.build()
@@ -701,6 +716,7 @@ fn burn_invalid_currency_index() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
@@ -736,6 +752,7 @@ fn burn_beyond_balance() {
 				None,
 				None,
 				Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+				None,
 				None,
 			),
 		)])
