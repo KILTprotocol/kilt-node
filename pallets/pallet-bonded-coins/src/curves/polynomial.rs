@@ -34,7 +34,8 @@
 ///
 /// ### Optimization for Numerical Stability
 /// The computation of `s^3` can cause overflow in fixed-point arithmetic. To
-/// mitigate this, the calculation is factored as: ```text
+/// mitigate this, the calculation is factored as:
+/// ```text
 /// x^3 - y^3 = (x^2 + x * y + y^2) * (x - y)
 /// ```
 /// Where:
@@ -62,8 +63,9 @@ use crate::PassiveSupply;
 ///
 /// For a polynomial cost function `c(s) = 3 * s^2 + 2 * s + 2`
 ///
-/// which is resulting into the antiderivative `C(s) = (3 / 3) * s^3 + (2 / 2) *
-/// s^2 + 2 * s` the input parameters would be:
+/// which is resulting into the antiderivative
+/// `C(s) = (3 / 3) * s^3 + (2 / 2) * s^2 + 2 * s`
+/// the input parameters would be:
 /// ```rust, ignore
 /// PolynomialParametersInput {
 ///    m: 1,

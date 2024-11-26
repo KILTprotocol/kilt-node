@@ -24,7 +24,8 @@
 ///
 /// `C(s)` represents the total cost of purchasing or selling assets up to the
 /// current supply `s`. To calculate the incremental cost of a transaction, use
-/// the formula: ```text
+/// the formula:
+/// ```text
 /// Incremental Cost = C(s) - C(s*)
 /// ```
 /// Here, `s*` represents the initial supply before the transaction, and `s` is
@@ -32,7 +33,8 @@
 ///
 /// ### Optimization for Numerical Stability
 /// Calculating `s^(3/2)` directly can lead to overflow in fixed-point
-/// arithmetic. To mitigate this, the calculation is factored as: ```text
+/// arithmetic. To mitigate this, the calculation is factored as:
+/// ```text
 /// sqrt(s^3) = sqrt(s) * s
 /// ```
 /// By expressing `s^(3/2)` as the product of `sqrt(s)` and `s`, we reduce the
@@ -57,8 +59,9 @@ use crate::{PassiveSupply, Precision};
 ///
 /// For a square root cost function `c(s) = 3 * s^1/2 + 2
 ///
-/// which is resulting into the antiderivative `C(s) = (6 / 3) * s^(1/2) + 2 *
-/// s` the input parameters would be:
+/// which is resulting into the antiderivative
+/// `C(s) = (6 / 3) * s^(1/2) + 2 * s`
+/// the input parameters would be:
 /// ```rust, ignore
 /// SquareRootParametersInput {
 ///    m: 2,
