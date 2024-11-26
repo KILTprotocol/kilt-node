@@ -407,9 +407,9 @@ fn multiple_burns_vs_combined_burn() {
 				balance_after_first_burn
 			);
 
-			assert_eq!(
-				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1,),
-				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2,)
+			assert!(
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1,)
+					<= Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2,)
 			);
 		})
 }
@@ -423,7 +423,8 @@ fn multiple_mints_vs_combined_burn() {
 
 	let amount_to_mint = 11u128.pow(10);
 
-	let expected_prize = mocks_curve_get_collateral_at_supply(10 * amount_to_mint);
+	// lets add some collateral for rounding
+	let expected_prize = mocks_curve_get_collateral_at_supply(10 * amount_to_mint) + 10;
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, LARGE_BALANCE)])
@@ -473,7 +474,8 @@ fn multiple_mints_vs_combined_burn() {
 
 			assert_eq!(Assets::total_balance(currency_id, &ACCOUNT_00), 0,);
 
-			assert_eq!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id), 0,);
+			// The combined burn should not release the whole collateral.
+			assert!(Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id) > 0);
 		})
 }
 

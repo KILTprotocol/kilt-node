@@ -180,8 +180,13 @@ fn test_convert_to_fixed_round_up_representable() {
 #[test]
 fn test_round_up() {
 	let value = Float::from_num(1.1200000000005);
-
 	let result = round::<Test>(value, &Round::Up, 2).unwrap();
-
 	assert_eq!(result, 113u128);
+}
+
+#[test]
+fn test_round_up_exact_representable() {
+	let value = Float::from_num(1.125);
+	let result = round::<Test>(value, &Round::Up, 3).unwrap();
+	assert_eq!(result, 1125u128);
 }

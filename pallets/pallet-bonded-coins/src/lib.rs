@@ -748,10 +748,12 @@ pub mod pallet {
 			);
 
 			//  remove any existing locks on the account prior to burning
-			T::Fungibles::thaw(asset_id, &who).map_err(|freeze_error| {
-				log::info!(target: LOG_TARGET, "Failed to thaw account: {:?}", freeze_error);
-				freeze_error.into()
-			})?;
+			T::Fungibles::thaw(asset_id, &who)
+				.map_err(|freeze_error| {
+					log::info!(target: LOG_TARGET, "Failed to thaw account: {:?}", freeze_error);
+					freeze_error.into()
+				})
+				.map_err(|_| TokenError::FundsUnavailable)?;
 
 			// With amount = max_value(), this trait implementation burns the reducible
 			// balance on the account and returns the actual amount burnt
@@ -947,7 +949,21 @@ pub mod pallet {
 		) -> Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError> {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
-			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id).into();
+			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id.clone()).into();
+
+			let q = round::<T>(normalized_costs, round_kind, denomination)?;
+
+			let collateral_denomination = 10u128
+				.checked_pow(T::CollateralCurrencies::decimals(collateral_currency_id).into())
+				.ok_or(ArithmeticError::Overflow)?;
+
+			let real_costs: CollateralCurrenciesBalanceOf<T> = normalized_costs
+				.checked_mul(CurveParameterTypeOf::<T>::from_num(collateral_denomination))
+				.ok_or(ArithmeticError::Overflow)?
+				// should never fail
+				.checked_to_num::<u128>()
+				.ok_or(ArithmeticError::Overflow)?
+				.saturated_into();
 
 			round::<T>(normalized_costs, round_kind, denomination)
 		}

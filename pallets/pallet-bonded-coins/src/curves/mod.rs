@@ -201,7 +201,7 @@ where
 	value_u256.shr_assign(frac_bits);
 
 	if round_kind == &Round::Up && trailing_zeros < frac_bits {
-		value_u256.checked_add(U256::from(1)).ok_or(ArithmeticError::Overflow)?;
+		value_u256 = value_u256.checked_add(U256::from(1)).ok_or(ArithmeticError::Overflow)?;
 	}
 
 	value_u256.try_into().map_err(|_| ArithmeticError::Overflow)

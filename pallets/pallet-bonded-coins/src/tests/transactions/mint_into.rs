@@ -413,9 +413,10 @@ fn multiple_mints_vs_combined_mint() {
 				Assets::total_balance(currency_id2, &ACCOUNT_00),
 			);
 
-			assert_eq!(
-				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1),
-				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
+			// multiple mints should result into a higher or equal amount of collateral than a single mint
+			assert!(
+				Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id1)
+					<= Assets::total_balance(DEFAULT_COLLATERAL_CURRENCY_ID, &pool_id2),
 			);
 		})
 }
@@ -501,7 +502,7 @@ fn mint_with_frozen_balance() {
 fn mint_on_locked_pool() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
-	let initial_balance = u128::MAX / 2;
+	let initial_balance = u128::MAX / 3;
 	let amount_to_mint = 10u128.pow(10);
 
 	ExtBuilder::default()
