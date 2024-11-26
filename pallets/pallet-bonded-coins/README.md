@@ -23,7 +23,7 @@ However, it can guarantee the reproducibility of the same result based on the us
 ### Bonding Curve
 A bonding curve is a mathematical curve that defines the relationship between the supply of a token and its price. 
 In this pallet, the bonding curve determines the cost of minting or burning tokens based on the current supply. 
-The current system implements the [LMSR][https://mason.gmu.edu/~rhanson/mktscore.pdf], square root, and polynomial bonding curves.
+The current system implements the [LMSR][lmsr], square root, and polynomial bonding curves.
 
 - LMSR (Logarithmic Market Scoring Rule): A market-making algorithm that adjusts prices based on the logarithm of the token supply.
 - Square Root: A bonding curve where the price is proportional to the square root of the token supply.
@@ -40,7 +40,8 @@ A [pool][pool-details] is a collection of bonded currencies and their associated
 Each pool has a unique ID and can be managed independently. 
 Pools can be either permissioned or trustless, as specified during the creation step.
 
-- Permissioned Pools: Only the pool manager has the authority to mint and burn bonded currencies. The manager can be updated, or the privileges can be dropped entirely.
+- Permissioned Pools:   Only the pool manager can decide whether minting and burning should be permissioned or open to all, and can enable and disable mint and burn independently. 
+                        Those privileges can be dropped entirely.
 - Trustless Pools: Any participant can mint and burn bonded currencies without requiring special permissions.
 
 ## Storage Items
@@ -72,7 +73,7 @@ Pools can be either permissioned or trustless, as specified during the creation 
 - `NotRefunding`: The operation can only be performed when the pool is in the refunding state.
 - `CurrencyCount`: The number of currencies linked to a pool exceeds the limit.
 - `InvalidInput`: The input provided is invalid.
-- `Slippage`: The cost exceeds the maximum allowed slippage.
+- `Slippage`: The transaction would debit more than the user-specified maximum collateral (on mint) or would credit less than the user-specified minimum (on burn). 
 - `Internal`: An internal error occurred. This error should never happen.
 
 ## Config Trait
@@ -125,7 +126,7 @@ The `Config` trait defines the configuration parameters and associated types req
 
 3. **Destruction**:
    - The destruction process can be started by the manager using the `start_destroy` function. This operation will fail if accounts with bonded currencies still exist.
-   - The destruction process can be forced to start using the `force_start_destroy` function, which requires force privileges. This operation will fail if there are still accounts with bonded currencies.
+   - The destruction process can be forced to start using the `force_start_destroy` function, which requires force privileges. 
    - The destruction process is completed using the `finish_destroy` function, which refunds any taken deposits.
 
 ## Functions
@@ -136,7 +137,7 @@ The `Config` trait defines the configuration parameters and associated types req
                   During the pool creation step, the manager must specify whether the bonded coins are transferable or not. 
                   This flag can not be changed later on. 
                   The selected denomination is used not only as metadata but also to scale down the existing supply or the amount specified in a mint or burn operation. 
-                  A deposit is taken from the caller, which is returned once the pool is getting destroyed. 
+                  A deposit is taken from the caller, which is returned once the pool is destroyed. 
 - `reset_team`:   Resets the managing team of a pool. 
                   Only the admin and the freezer can be updated in this operation. 
 - `reset_manager`: Resets the manager of a pool. 
@@ -158,11 +159,10 @@ The `Config` trait defines the configuration parameters and associated types req
 - `refund_account`:  Refunds collateral to a specific account. 
                      The amount of refunded collateral is determined by the owned bonded currency.
 - `start_destroy`:   Starts the destruction process for a pool. 
-                     Only the manager is able to start the destroy process. 
+                     Only the manager and the owner is able to start the destroy process. 
                      If accounts with bonded currencies still exist, this operation will fail.
 - `force_start_destroy`:   Forces the start of the destruction process for a pool. 
                            Requires force privileges. 
-                           This operation will fail if there are still accounts with bonded currencies.
 - `finish_destroy`:  Completes the destruction process for a pool. 
                      Refunds any taken deposits.
 
