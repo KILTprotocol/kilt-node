@@ -31,7 +31,7 @@ pub struct DidRawOrigin<DidIdentifier, AccountId> {
 }
 
 impl<DidIdentifier, AccountId> DidRawOrigin<DidIdentifier, AccountId> {
-	pub fn new(id: DidIdentifier, submitter: AccountId) -> Self {
+	pub const fn new(id: DidIdentifier, submitter: AccountId) -> Self {
 		Self { id, submitter }
 	}
 }
@@ -123,13 +123,12 @@ where
 	}
 }
 
-#[cfg(all(test, feature = "runtime-benchmarks"))]
+#[cfg(test)]
 mod tests {
-	use super::EnsureDidOrigin;
-
+	#[cfg(feature = "runtime-benchmarks")]
 	#[test]
 	pub fn successful_origin() {
-		use crate::mock::Test;
+		use crate::{mock::Test, EnsureDidOrigin};
 		use frame_support::{assert_ok, traits::EnsureOrigin};
 
 		let origin: <Test as frame_system::Config>::RuntimeOrigin =

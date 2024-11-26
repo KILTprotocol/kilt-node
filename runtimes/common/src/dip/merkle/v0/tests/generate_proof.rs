@@ -11,6 +11,7 @@ use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::Encode;
 use sp_core::{ed25519, sr25519, Pair};
 use sp_runtime::AccountId32;
+use sp_std::iter::{empty, once};
 
 use crate::{
 	constants::{
@@ -159,7 +160,7 @@ fn generate_proof_for_complete_linked_info() {
 		.all(|linked_account| { linked_accounts.iter().any(|l| l.0 == *linked_account) }));
 
 	// 2. Generate a proof without any parts revealed.
-	let CompleteMerkleProof { proof, root } = generate_proof(&linked_info, [].iter(), false, [].iter()).unwrap();
+	let CompleteMerkleProof { proof, root } = generate_proof(&linked_info, empty(), false, empty()).unwrap();
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
 		root,
 		proof,
@@ -171,9 +172,9 @@ fn generate_proof_for_complete_linked_info() {
 	// 3. Generate a proof with only the authentication key revealed.
 	let CompleteMerkleProof { proof, root } = generate_proof(
 		&linked_info,
-		[linked_info.did_details.authentication_key].iter(),
+		once(&linked_info.did_details.authentication_key),
 		false,
-		[].iter(),
+		empty(),
 	)
 	.unwrap();
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
@@ -214,7 +215,7 @@ fn generate_proof_for_complete_linked_info() {
 	));
 
 	// 4. Generate a proof with only the web3name revealed.
-	let CompleteMerkleProof { proof, root } = generate_proof(&linked_info, [].iter(), true, [].iter()).unwrap();
+	let CompleteMerkleProof { proof, root } = generate_proof(&linked_info, empty(), true, empty()).unwrap();
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
 		root,
 		proof,
@@ -224,13 +225,8 @@ fn generate_proof_for_complete_linked_info() {
 	assert_ok!(cross_chain_proof.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>());
 
 	// 5. Generate a proof with only one linked account revealed.
-	let CompleteMerkleProof { proof, root } = generate_proof(
-		&linked_info,
-		[].iter(),
-		true,
-		[linked_info.linked_accounts[0].clone()].iter(),
-	)
-	.unwrap();
+	let CompleteMerkleProof { proof, root } =
+		generate_proof(&linked_info, empty(), true, once(&linked_info.linked_accounts[0])).unwrap();
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
 		root,
 		proof,
@@ -243,9 +239,9 @@ fn generate_proof_for_complete_linked_info() {
 	//    revealed.
 	let CompleteMerkleProof { proof, root } = generate_proof(
 		&linked_info,
-		[linked_info.did_details.authentication_key].iter(),
+		once(&linked_info.did_details.authentication_key),
 		true,
-		[].iter(),
+		empty(),
 	)
 	.unwrap();
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
@@ -300,9 +296,9 @@ fn generate_proof_for_complete_linked_info() {
 	//    revealed.
 	let CompleteMerkleProof { proof, root } = generate_proof(
 		&linked_info,
-		[linked_info.did_details.authentication_key].iter(),
+		once(&linked_info.did_details.authentication_key),
 		false,
-		[linked_info.linked_accounts[0].clone()].iter(),
+		once(&linked_info.linked_accounts[0]),
 	)
 	.unwrap();
 	let cross_chain_proof =
@@ -352,12 +348,7 @@ fn generate_proof_for_complete_linked_info() {
 
 	// 8. Fails to generate the proof for a key that does not exist.
 	assert_err!(
-		generate_proof(
-			&linked_info,
-			[KeyIdOf::<TestRuntime>::default()].iter(),
-			false,
-			[].iter(),
-		),
+		generate_proof(&linked_info, once(&KeyIdOf::<TestRuntime>::default()), false, empty(),),
 		DidMerkleProofError::KeyNotFound
 	);
 
@@ -365,9 +356,9 @@ fn generate_proof_for_complete_linked_info() {
 	assert_err!(
 		generate_proof(
 			&linked_info,
-			[].iter(),
+			empty(),
 			false,
-			[AccountId32::new([u8::MAX; 32]).into()].iter(),
+			once(&AccountId32::new([u8::MAX; 32]).into()),
 		),
 		DidMerkleProofError::LinkedAccountNotFound
 	);
@@ -381,18 +372,13 @@ fn generate_proof_with_only_auth_key() {
 
 	// 1. Fails to generate the proof for a key that does not exist.
 	assert_err!(
-		generate_proof(
-			&linked_info,
-			[KeyIdOf::<TestRuntime>::default()].iter(),
-			false,
-			[].iter(),
-		),
+		generate_proof(&linked_info, once(&KeyIdOf::<TestRuntime>::default()), false, empty(),),
 		DidMerkleProofError::KeyNotFound
 	);
 
 	// 2. Fails to generate the proof for the web3name.
 	assert_err!(
-		generate_proof(&linked_info, [].iter(), true, [].iter(),),
+		generate_proof(&linked_info, empty(), true, empty(),),
 		DidMerkleProofError::Web3NameNotFound
 	);
 
@@ -400,9 +386,9 @@ fn generate_proof_with_only_auth_key() {
 	assert_err!(
 		generate_proof(
 			&linked_info,
-			[].iter(),
+			empty(),
 			false,
-			[AccountId32::new([u8::MAX; 32]).into()].iter(),
+			once(&AccountId32::new([u8::MAX; 32]).into()),
 		),
 		DidMerkleProofError::LinkedAccountNotFound
 	);
@@ -418,12 +404,7 @@ fn generate_proof_with_two_keys_with_same_id() {
 			.update_attestation_key(did_auth_key, BlockNumber::default())
 			.unwrap();
 		// Remove all key agreement keys
-		let key_agreement_key_ids = info
-			.did_details
-			.key_agreement_keys
-			.clone()
-			.into_iter()
-			.collect::<Vec<_>>();
+		let key_agreement_key_ids = info.did_details.key_agreement_keys.clone().into_iter();
 		key_agreement_key_ids.into_iter().for_each(|k: sp_core::H256| {
 			info.did_details.remove_key_agreement_key(k).unwrap();
 		});

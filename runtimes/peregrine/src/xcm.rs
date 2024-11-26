@@ -17,9 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	AccountId, AllPalletsWithSystem, AssetSwitchPool1, Balances, CheckingAccount, Fungibles, KiltToEKiltSwitchPallet,
-	MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
-	Treasury, WeightToFee, XcmpQueue,
+	kilt::{CheckingAccount, KiltToEKiltSwitchPallet},
+	AllPalletsWithSystem, AssetSwitchPool1, Balances, Fungibles, MessageQueue, ParachainInfo, ParachainSystem,
+	PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
@@ -53,7 +53,7 @@ use runtime_common::{
 		LocationToAccountId, MaxAssetsIntoHolding, MaxInstructions, MaxStale, ParentLocation, ParentOrSiblings,
 		ServiceWeight, UnitWeightCost,
 	},
-	SendDustAndFeesToTreasury,
+	AccountId, SendDustAndFeesToTreasury,
 };
 
 parameter_types! {
@@ -132,7 +132,7 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 pub struct SafeCallFilter;
 impl Contains<RuntimeCall> for SafeCallFilter {
 	fn contains(c: &RuntimeCall) -> bool {
-		fn is_call_allowed(call: &RuntimeCall) -> bool {
+		const fn is_call_allowed(call: &RuntimeCall) -> bool {
 			matches!(
 				call,
 				RuntimeCall::Ctype { .. }
@@ -162,10 +162,13 @@ impl Contains<RuntimeCall> for SafeCallFilter {
 		}
 
 		match c {
-			RuntimeCall::Did(c) => match c {
+			RuntimeCall::Did(did_call) => match did_call {
 				did::Call::dispatch_as { call, .. } => is_call_allowed(call),
-				did::Call::submit_did_call { did_call, .. } => is_call_allowed(&did_call.call),
-				_ => is_call_allowed(&c.to_owned().into()),
+				did::Call::submit_did_call {
+					did_call: nested_did_call,
+					..
+				} => is_call_allowed(&nested_did_call.call),
+				_ => is_call_allowed(&did_call.to_owned().into()),
 			},
 			_ => is_call_allowed(c),
 		}
@@ -299,10 +302,6 @@ impl cumulus_pallet_xcm::Config for Runtime {
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 }
 
-parameter_types! {
-	pub const MaxInboundSuspended: u32 = 1_000;
-}
-
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ChannelInfo = ParachainSystem;
@@ -311,7 +310,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
 	type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
 	type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
-	type MaxInboundSuspended = MaxInboundSuspended;
+	type MaxInboundSuspended = ConstU32<1_000>;
 	type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
 }
 

@@ -19,6 +19,8 @@
 //! KILT node CLI.
 
 #![warn(missing_docs)]
+// Ignoring them in this case makes the code easier to follow
+#![allow(clippy::clone_on_ref_ptr)]
 
 mod chain_spec;
 #[macro_use]

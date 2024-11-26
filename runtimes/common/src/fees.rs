@@ -67,8 +67,7 @@ pub struct ToAuthor<R>(sp_std::marker::PhantomData<R>);
 impl<R> OnUnbalanced<NegativeImbalanceOf<R>> for ToAuthor<R>
 where
 	R: pallet_balances::Config + pallet_authorship::Config,
-	<R as frame_system::Config>::AccountId: From<AccountId>,
-	<R as frame_system::Config>::AccountId: Into<AccountId>,
+	<R as frame_system::Config>::AccountId: From<AccountId> + Into<AccountId>,
 	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<R>) {
@@ -82,8 +81,7 @@ pub struct ToAuthorCredit<R>(sp_std::marker::PhantomData<R>);
 impl<R> OnUnbalanced<CreditOf<R>> for ToAuthorCredit<R>
 where
 	R: pallet_balances::Config + pallet_authorship::Config,
-	<R as frame_system::Config>::AccountId: From<AccountId>,
-	<R as frame_system::Config>::AccountId: Into<AccountId>,
+	<R as frame_system::Config>::AccountId: From<AccountId> + Into<AccountId>,
 	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
@@ -109,9 +107,7 @@ where
 pub struct WeightToFee<R>(sp_std::marker::PhantomData<R>);
 impl<R> WeightToFeePolynomial for WeightToFee<R>
 where
-	R: pallet_transaction_payment::Config,
-	R: frame_system::Config,
-	R: pallet_balances::Config,
+	R: pallet_transaction_payment::Config + frame_system::Config + pallet_balances::Config,
 	u128: From<<<R as pallet_transaction_payment::Config>::OnChargeTransaction as OnChargeTransaction<R>>::Balance>,
 {
 	type Balance = Balance;
@@ -245,7 +241,7 @@ mod tests {
 	pub const TREASURY_ACC: AccountId = crate::AccountId::new([1u8; 32]);
 	const AUTHOR_ACC: AccountId = AccountId::new([2; 32]);
 
-	pub struct ToBeneficiary();
+	pub struct ToBeneficiary;
 	impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
 		fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 			// Must resolve into existing but better to be safe.

@@ -23,8 +23,6 @@ use fees::SplitFeesByRatio;
 
 pub use sp_consensus_aura::sr25519::AuthorityId;
 
-pub use opaque::*;
-
 pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 use frame_support::{
 	dispatch::DispatchClass,
@@ -40,7 +38,7 @@ use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
 	traits::{BlakeTwo256, Bounded, IdentifyAccount, Verify},
-	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion,
+	FixedPointNumber, MultiAddress, MultiSignature, Perquintill, SaturatedConversion,
 };
 use sp_std::marker::PhantomData;
 use sp_weights::Weight;
@@ -50,11 +48,15 @@ pub mod assets;
 pub mod authorization;
 pub mod constants;
 pub mod dip;
+pub mod dot_names;
+pub use dot_names::DotName;
 pub mod errors;
 pub mod fees;
 pub mod migrations;
 pub mod pallet_id;
+pub mod web3_names;
 pub mod xcm_config;
+pub use web3_names::Web3Name;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarks;
@@ -65,16 +67,16 @@ pub mod benchmarks;
 /// continue syncing the network through upgrades to even the core data
 /// structures.
 pub mod opaque {
-	use super::*;
 	use sp_runtime::{generic, traits::BlakeTwo256};
 
 	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+
+	use crate::BlockNumber;
+
 	/// Opaque block header type.
 	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// Opaque block type.
 	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-	/// Opaque block identifier type.
-	pub type BlockId = generic::BlockId<Block>;
 }
 
 /// An index to a block.
@@ -94,6 +96,9 @@ pub type AccountPublic = <Signature as Verify>::Signer;
 /// Alias to the opaque account ID type for this chain, actually a
 /// `AccountId32`. This is always 32 bytes.
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+/// The address format for describing accounts.
+pub type Address = MultiAddress<AccountId, ()>;
 
 /// The type for looking up accounts. We don't expect more than 4 billion of
 /// them, but you never know...
@@ -144,11 +149,11 @@ parameter_types! {
 	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
 	/// The adjustment variable of the runtime. Higher values will cause `TargetBlockFullness` to
 	/// change the fees more rapidly.
-	pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(3, 100_000);
+	pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(3u8, 100_000u32);
 	/// Minimum amount of the multiplier. This value cannot be too low. A test case should ensure
 	/// that combined with `AdjustmentVariable`, we can recover from the minimum.
 	/// See `multiplier_can_grow_from_zero`.
-	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000u128);
+	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1u8, 1_000_000u32);
 	/// The maximum amount of the multiplier.
 	pub MaximumMultiplier: Multiplier = Bounded::max_value();
 	/// Maximum length of block. Up to 5MB.
@@ -225,8 +230,7 @@ pub struct SendDustAndFeesToTreasury<T>(sp_std::marker::PhantomData<T>);
 
 impl<T> OnUnbalanced<CreditOf<T>> for SendDustAndFeesToTreasury<T>
 where
-	T: pallet_balances::Config,
-	T: pallet_treasury::Config,
+	T: pallet_balances::Config + pallet_treasury::Config,
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<T>) {
 		let treasury_account_id = pallet_treasury::Pallet::<T>::account_id();

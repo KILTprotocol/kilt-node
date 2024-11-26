@@ -20,12 +20,9 @@ pallets=(
 	did
 	frame-system
 	pallet-balances
-	pallet-collective
 	pallet-democracy
-	pallet-did-lookup
 	pallet-indices
 	pallet-inflation
-	pallet-membership
 	pallet-preimage
 	pallet-proxy
 	pallet-scheduler
@@ -35,7 +32,6 @@ pallets=(
 	pallet-treasury
 	pallet-utility
 	pallet-vesting
-	pallet-web3-names
 	pallet-xcm
 	parachain-staking
 	public-credentials
@@ -46,13 +42,25 @@ pallets=(
 	pallet_multisig
 	pallet-assets
 	pallet-asset-switch
+	# `pallet-membership` instances
+	pallet-membership
+	pallet-technical-membership
+	# `pallet-collective` instances
+	pallet-collective
+	pallet-technical-committee-collective
+	# `pallet-did-lookup` instances
+	pallet-did-lookup
+	pallet-unique-linking
+	# `pallet-web3-names` instances
+	pallet-dot-names
+	pallet-web3-names
 )
 
 # Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
-  pallets+=(
-	pallet-sudo
-  )
+	pallets+=(
+		pallet-sudo
+	)
 fi
 
 echo "[+] Running all runtime benchmarks for \"$runtime\", \"--chain=$chain\" and profile \"$profile\""
@@ -60,11 +68,11 @@ echo "[+] Running all runtime benchmarks for \"$runtime\", \"--chain=$chain\" an
 cargo build $standard_args
 
 if [ $profile == "dev" ]; then
-    target_folder="debug"
+	target_folder="debug"
 	# We care about benchmark correctness, not accuracy.
-	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored --no-verify"
+	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored"
 else
-    target_folder=$profile
+	target_folder=$profile
 	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
 fi
 
@@ -82,7 +90,7 @@ for pallet in "${pallets[@]}"; do
 
 	# Exit with error as soon as one benchmark fails
 	if [ $bench_status -ne 0 ]; then
-    	exit $bench_status
-  	fi
+		exit $bench_status
+	fi
 
 done

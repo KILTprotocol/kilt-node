@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{traits::Currency, BoundedVec};
+use pallet_dip_provider::IdentityCommitmentOf;
 use parity_scale_codec::MaxEncodedLen;
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
@@ -26,16 +27,20 @@ use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::{
 	constants::{
 		attestation::MAX_ATTESTATION_BYTE_LENGTH,
+		deposit_storage::MAX_DEPOSIT_PALLET_KEY_LENGTH,
 		did::{MAX_KEY_LENGTH, MAX_SERVICE_ENDPOINT_BYTE_LENGTH},
 		did_lookup::MAX_CONNECTION_BYTE_LENGTH,
+		dip_provider::MAX_COMMITMENT_BYTE_LENGTH,
 		public_credentials::MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH,
-		web3_names::MAX_NAME_BYTE_LENGTH,
 		MAX_INDICES_BYTE_LENGTH,
 	},
+	dip::deposit::DepositKey,
 	AccountId, BlockNumber,
 };
 
-use crate::{Runtime, RuntimeCall};
+use crate::kilt::did::DotNamesDeployment;
+
+use super::{Runtime, RuntimeCall};
 
 #[test]
 fn call_size() {
@@ -93,7 +98,21 @@ fn web3_name_storage_sizes() {
 	let owner_size = Web3NameOf::<Runtime>::max_encoded_len();
 	let name_size = Web3OwnershipOf::<Runtime>::max_encoded_len();
 
-	assert_eq!(owner_size + name_size, MAX_NAME_BYTE_LENGTH as usize)
+	assert_eq!(
+		owner_size + name_size,
+		runtime_common::constants::web3_names::MAX_NAME_BYTE_LENGTH as usize
+	)
+}
+
+#[test]
+fn dot_name_storage_sizes() {
+	let owner_size = Web3NameOf::<Runtime, DotNamesDeployment>::max_encoded_len();
+	let name_size = Web3OwnershipOf::<Runtime, DotNamesDeployment>::max_encoded_len();
+
+	assert_eq!(
+		owner_size + name_size,
+		runtime_common::constants::dot_names::MAX_NAME_BYTE_LENGTH as usize
+	)
 }
 
 #[test]
@@ -115,6 +134,19 @@ fn public_credentials_storage_sizes() {
 	assert_eq!(
 		credential_entry_max_size + subject_id_max_size,
 		MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH as usize
+	)
+}
+
+#[test]
+fn pallet_deposit_storage_max_key_length() {
+	assert_eq!(DepositKey::max_encoded_len(), MAX_DEPOSIT_PALLET_KEY_LENGTH as usize)
+}
+
+#[test]
+fn pallet_dip_provider_commitment_max_length() {
+	assert_eq!(
+		IdentityCommitmentOf::<Runtime>::max_encoded_len(),
+		MAX_COMMITMENT_BYTE_LENGTH as usize
 	)
 }
 

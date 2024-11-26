@@ -6,7 +6,7 @@ use frame_support::{
 	},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
-use sp_runtime::{assert_eq_error_rate, ArithmeticError, SaturatedConversion, TokenError};
+use sp_runtime::{assert_eq_error_rate, ArithmeticError, TokenError};
 
 use crate::{
 	curves::{polynomial::PolynomialParameters, Curve},

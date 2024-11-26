@@ -1,4 +1,5 @@
 use did::did_details::DidVerificationKey;
+use frame_support::assert_ok;
 
 use crate::{
 	constants::dip_provider::MAX_LINKED_ACCOUNTS,
@@ -15,22 +16,19 @@ fn generate_commitment_for_complete_info() {
 		Some(b"ntn_x2"),
 		MAX_LINKED_ACCOUNTS,
 	);
-	let commitment_result = generate_commitment::<TestRuntime, MAX_LINKED_ACCOUNTS>(&linked_info);
-	assert!(commitment_result.is_ok());
+	assert_ok!(generate_commitment::<TestRuntime, MAX_LINKED_ACCOUNTS>(&linked_info));
 }
 
 #[test]
 fn generate_commitment_for_did_details() {
 	let linked_info = create_linked_info(DidVerificationKey::Account(ACCOUNT), Option::<Vec<u8>>::None, 0);
-	let commitment_result = generate_commitment::<TestRuntime, MAX_LINKED_ACCOUNTS>(&linked_info);
-	assert!(commitment_result.is_ok());
+	assert_ok!(generate_commitment::<TestRuntime, MAX_LINKED_ACCOUNTS>(&linked_info));
 }
 
 #[test]
 fn generate_commitment_for_did_details_and_web3name() {
 	let linked_info = create_linked_info(DidVerificationKey::Account(ACCOUNT), Some(b"ntn_x2"), 0);
-	let commitment_result = generate_commitment::<TestRuntime, MAX_LINKED_ACCOUNTS>(&linked_info);
-	assert!(commitment_result.is_ok());
+	assert_ok!(generate_commitment::<TestRuntime, MAX_LINKED_ACCOUNTS>(&linked_info));
 }
 
 #[test]
@@ -40,6 +38,5 @@ fn generate_commitment_for_did_details_and_max_linked_accounts() {
 		Option::<Vec<u8>>::None,
 		MAX_LINKED_ACCOUNTS,
 	);
-	let commitment_result = generate_commitment::<TestRuntime, MAX_LINKED_ACCOUNTS>(&linked_info);
-	assert!(commitment_result.is_ok());
+	assert_ok!(generate_commitment::<TestRuntime, MAX_LINKED_ACCOUNTS>(&linked_info));
 }

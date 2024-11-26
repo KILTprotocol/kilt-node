@@ -192,7 +192,7 @@ impl SubstrateCli for RelayChainCli {
 	}
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
-		polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
+		polkadot_cli::Cli::from_iter(std::iter::once(&RelayChainCli::executable_name())).load_spec(id)
 	}
 }
 

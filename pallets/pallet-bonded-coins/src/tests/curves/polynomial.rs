@@ -1,6 +1,6 @@
 use crate::{
 	curves::{polynomial::PolynomialParameters, BondingFunction},
-	mock::Float,
+	mock::runtime::Float,
 };
 
 // linear function

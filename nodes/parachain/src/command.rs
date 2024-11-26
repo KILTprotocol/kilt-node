@@ -18,10 +18,11 @@
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
-use runtime_common::Block;
+use runtime_common::opaque::Block;
 use sc_cli::SubstrateCli;
 use sc_executor::NativeExecutionDispatch;
 use sp_runtime::traits::AccountIdConversion;
+use std::iter::once;
 
 use crate::{
 	chain_spec::{self, ParachainRuntime},
@@ -104,8 +105,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			runner.sync_run(|config| {
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					[RelayChainCli::executable_name()]
-						.iter()
+					once(&RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 
@@ -216,7 +216,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
 				}),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
@@ -228,7 +228,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
 				}),
 				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
 				(BenchmarkCmd::Machine(cmd), _) => {
@@ -260,8 +260,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					[RelayChainCli::executable_name()]
-						.iter()
+					once(&RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 

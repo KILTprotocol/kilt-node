@@ -1,6 +1,6 @@
 use crate::{
 	curves::{convert_to_fixed, round},
-	mock::{runtime::Test, Float},
+	mock::runtime::{Float, Test},
 	types::Round,
 };
 use frame_support::assert_ok;

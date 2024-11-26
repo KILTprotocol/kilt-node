@@ -22,6 +22,8 @@
 #![recursion_limit = "256"]
 // The `from_over_into` warning originates from `construct_runtime` macro.
 #![allow(clippy::from_over_into)]
+// Triggered by `impl_runtime_apis` macro
+#![allow(clippy::empty_structs_with_brackets)]
 
 // Make the WASM binary available
 #[cfg(feature = "std")]
@@ -36,6 +38,7 @@ use frame_support::{
 };
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
+use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
@@ -46,7 +49,7 @@ use pallet_transaction_payment::{FeeDetails, FungibleAdapter};
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
-use sp_core::{ConstBool, ConstU64, OpaqueMetadata};
+use sp_core::{ConstBool, ConstU32, ConstU64, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
@@ -64,7 +67,7 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
-	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Nonce, Signature, SlowAdjustingFeeUpdate,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Nonce, Signature, SlowAdjustingFeeUpdate, Web3Name,
 };
 
 pub use pallet_timestamp::Call as TimestampCall;
@@ -195,7 +198,7 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
-	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type MaxConsumers = ConstU32<16>;
 }
 
 /// Maximum number of nominators per validator.
@@ -435,6 +438,9 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type BalanceMigrationManager = ();
 	type WeightInfo = ();
+	// Do not change the below flag to `true` without also deploying a runtime
+	// migration which removes any links that point to the same DID!
+	type UniqueLinkingEnabled = ConstBool<false>;
 }
 
 impl pallet_web3_names::Config for Runtime {
@@ -447,10 +453,13 @@ impl pallet_web3_names::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
+	type Web3Name = Web3Name<{ Self::MinNameLength::get() }, { Self::MaxNameLength::get() }>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 	type BalanceMigrationManager = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 parameter_types! {
@@ -1008,8 +1017,8 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
-			pallet_web3_names::Owner::<Runtime>::get(&name)
+			let parsed_name: Web3NameOf<Runtime> = name.try_into().ok()?;
+			pallet_web3_names::Owner::<Runtime>::get(&parsed_name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
@@ -1021,12 +1030,24 @@ impl_runtime_apis! {
 
 					kilt_runtime_api_did::RawDidLinkedInfo{
 						identifier: owner_info.owner,
-						w3n: Some(name.into()),
+						w3n: Some(parsed_name.into()),
 						accounts,
 						service_endpoints,
 						details: details.into(),
 					}
 			})
+		}
+
+		fn batch_query_by_web3_name(names: Vec<Vec<u8>>) -> Vec<Option<kilt_runtime_api_did::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			names.into_iter().map(Self::query_by_web3_name).collect()
 		}
 
 		fn query_by_account(account: LinkableAccountId) -> Option<
@@ -1058,6 +1079,19 @@ impl_runtime_apis! {
 				})
 		}
 
+		fn batch_query_by_account(accounts: Vec<LinkableAccountId>) -> Vec<Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			accounts.into_iter().map(Self::query_by_account).collect()
+		}
+
 		fn query(did: DidIdentifier) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
@@ -1081,6 +1115,19 @@ impl_runtime_apis! {
 				details: details.into(),
 			})
 		}
+
+		fn batch_query(dids: Vec<DidIdentifier>) -> Vec<Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			dids.into_iter().map(Self::query).collect()
+		}
 	}
 
 	impl kilt_runtime_api_public_credentials::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
@@ -1092,8 +1139,8 @@ impl_runtime_apis! {
 		fn get_by_subject(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
 			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
 			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(asset_did);
-			if let Some(filter) = filter {
-				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(entry)).collect())
+			if let Some(credentials_filter) = filter {
+				Ok(credentials_prefix.filter(|(_, entry)| credentials_filter.should_include(entry)).collect())
 			} else {
 				Ok(credentials_prefix.collect())
 			}

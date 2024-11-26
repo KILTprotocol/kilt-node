@@ -1,61 +1,13 @@
-use frame_support::{
-	parameter_types,
-	traits::{fungible::MutateHold, ConstU128, ConstU32},
-	weights::constants::RocksDbWeight,
-	Hashable,
-};
-use frame_system::{EnsureRoot, EnsureSigned};
+use frame_support::Hashable;
 use parity_scale_codec::Codec;
-use sp_core::U256;
-use sp_runtime::{
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	BoundedVec, BuildStorage, MultiSignature, Permill,
+use substrate_fixed::traits::{FixedSigned, FixedUnsigned};
+
+use crate::curves::{
+	lmsr::{LMSRParameters, LMSRParametersInput},
+	polynomial::{PolynomialParameters, PolynomialParametersInput},
+	square_root::{SquareRootParameters, SquareRootParametersInput},
+	Curve, CurveInput,
 };
-use substrate_fixed::{
-	traits::{FixedSigned, FixedUnsigned},
-	types::{I75F53, U75F53},
-};
-
-use crate::{
-	curves::{
-		lmsr::{LMSRParameters, LMSRParametersInput},
-		polynomial::{PolynomialParameters, PolynomialParametersInput},
-		square_root::{SquareRootParameters, SquareRootParametersInput},
-		Curve, CurveInput,
-	},
-	types::{Locks, PoolStatus},
-	DepositCurrencyBalanceOf, HoldReason, PoolDetailsOf,
-};
-pub type Float = I75F53;
-type FloatInput = U75F53;
-
-pub(crate) const MAX_ERROR: Permill = Permill::from_perthousand(1);
-pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
-
-// helper functions
-pub(crate) fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
-	assert!(
-		(target - expected).abs() <= epsilon,
-		"Expected {:?} +/- {:?} but got {:?}",
-		expected,
-		epsilon,
-		target
-	);
-}
-
-pub(crate) fn mocks_curve_get_collateral_at_supply(supply: u128) -> u128 {
-	let supply_u256 = U256::from(supply);
-	let sup_squared = supply_u256 * supply_u256;
-	// curve is f(x) = 4x + 3, resulting in f'(x) = 2x^2 + 3x.
-	// The actual implementation operates on denomination-scaled amounts; we can
-	// replicate this behaviour based on smallest units by denomination-scaling 'n',
-	// the factor of x
-	let result =
-		U256::from(2) * sup_squared / U256::exp10(DEFAULT_BONDED_DENOMINATION.into()) + U256::from(3) * supply_u256;
-	result
-		.try_into()
-		.expect("expected collateral too large for balance type")
-}
 
 pub(crate) fn get_linear_bonding_curve<Float: FixedSigned>() -> Curve<Float> {
 	let m = Float::from_num(0);
@@ -105,21 +57,24 @@ where
 pub mod runtime {
 
 	use super::*;
+
 	use frame_support::{
 		parameter_types,
-		traits::{ConstU128, ConstU32},
+		traits::{fungible::hold::Mutate, ConstU128, ConstU32},
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::{EnsureRoot, EnsureSigned};
+	use sp_core::U256;
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BoundedVec, BuildStorage, MultiSignature,
+		BoundedVec, BuildStorage, MultiSignature, Permill,
 	};
+	use substrate_fixed::types::{I75F53, U75F53};
 
 	use crate::{
 		self as pallet_bonded_coins,
 		types::{Locks, PoolStatus},
-		DepositCurrencyBalanceOf, PoolDetailsOf,
+		DepositCurrencyBalanceOf, HoldReason, PoolDetailsOf,
 	};
 
 	pub type Hash = sp_core::H256;
@@ -138,6 +93,11 @@ pub mod runtime {
 	pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = 0;
 	pub(crate) const DEFAULT_COLLATERAL_DENOMINATION: u8 = 10;
 	pub(crate) const ONE_HUNDRED_KILT: u128 = 100_000_000_000_000_000;
+	pub(crate) const DEFAULT_BONDED_DENOMINATION: u8 = 10;
+	// Testing
+	pub(crate) const MAX_ERROR: Permill = Permill::from_perthousand(1);
+	pub(crate) type Float = I75F53;
+	pub(crate) type FloatInput = U75F53;
 
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -181,6 +141,31 @@ pub mod runtime {
 				}
 			})
 			.collect::<Vec<_>>()
+	}
+
+	// helper functions
+	pub fn assert_relative_eq<T: FixedSigned>(target: T, expected: T, epsilon: T) {
+		assert!(
+			(target - expected).abs() <= epsilon,
+			"Expected {:?} +/- {:?} but got {:?}",
+			expected,
+			epsilon,
+			target
+		);
+	}
+
+	pub(crate) fn mocks_curve_get_collateral_at_supply(supply: u128) -> u128 {
+		let supply_u256 = U256::from(supply);
+		let sup_squared = supply_u256 * supply_u256;
+		// curve is f(x) = 4x + 3, resulting in f'(x) = 2x^2 + 3x.
+		// The actual implementation operates on denomination-scaled amounts; we can
+		// replicate this behaviour based on smallest units by denomination-scaling 'n',
+		// the factor of x
+		let result =
+			U256::from(2) * sup_squared / U256::exp10(DEFAULT_BONDED_DENOMINATION.into()) + U256::from(3) * supply_u256;
+		result
+			.try_into()
+			.expect("expected collateral too large for balance type")
 	}
 
 	frame_support::construct_runtime!(
