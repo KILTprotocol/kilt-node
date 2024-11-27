@@ -30,6 +30,9 @@ use crate::constants::dot_names::DOT_NAME_SUFFIX;
 #[cfg(test)]
 mod tests;
 
+mod origin;
+pub use origin::AllowedNameClaimer;
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum DotNameValidationError {
 	TooShort,
