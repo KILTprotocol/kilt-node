@@ -137,7 +137,7 @@ pub mod pallet {
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
-			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrenciesBalanceOf<Self>>
+			+ MutateFungibles<Self::AccountId>
 			+ FreezeAccounts<Self::AccountId, Self::AssetId>
 			+ ResetTeam<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
@@ -300,7 +300,8 @@ pub mod pallet {
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits:
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
-		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256> + TryInto<U256>,
+		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
+		FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
 		// TODO: make large integer type configurable
 	{
 		/// Creates a new bonded token pool. The pool will be created with the
@@ -1267,6 +1268,7 @@ pub mod pallet {
 		<CurveParameterTypeOf<T> as Fixed>::Bits:
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
 		CollateralCurrenciesBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
+		FungiblesBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
 	{
 		/// Calculates the collateral by the given curve and the normalized
 		/// costs. High is the upper bound of the curve, low is the lower bound.
