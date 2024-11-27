@@ -71,6 +71,7 @@ benchmarks_instance_pallet! {
 		T::AccountId: From<sr25519::Public>,
 		<T as Config<I>>::Web3NameOwner: From<T::AccountId>,
 		<T as Config<I>>::OwnerOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, <T as Config<I>>::Web3NameOwner>,
+		<T as Config<I>>::ClaimOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, <T as Config<I>>::Web3NameOwner>,
 		<T as Config<I>>::BanOrigin: EnsureOrigin<T::RuntimeOrigin>,
 		<<T as Config<I>>::Web3Name as TryFrom<Vec<u8>>>::Error: Into<Error<T, I>>,
 		<T as Config<I>>::Currency: Mutate<T::AccountId>,
@@ -82,7 +83,7 @@ benchmarks_instance_pallet! {
 		let owner: Web3NameOwnerOf<T, I> = account("owner", 0, OWNER_SEED);
 		let web3_name_input: BoundedVec<u8, <T as Config<I>>::MaxNameLength> = BoundedVec::try_from(<T as Config<I>>::BenchmarkHelper::generate_name_input_with_length(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
-		let origin = <T as Config<I>>::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
+		let origin = <T as Config<I>>::ClaimOrigin::generate_origin(caller.clone(), owner.clone());
 
 		make_free_for_did::<T, I>(&caller);
 	}: _<T::RuntimeOrigin>(origin, web3_name_input_clone)
