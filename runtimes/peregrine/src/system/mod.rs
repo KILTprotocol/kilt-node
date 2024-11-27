@@ -212,9 +212,9 @@ impl pallet_sudo::Config for Runtime {
 // No deposit is taken since creation is permissioned. Only the root origin can
 // create new assets, and the owner will be the treasury account.
 impl pallet_assets::Config for Runtime {
-	type ApprovalDeposit = constants::assets::ApprovalDeposit;
-	type AssetAccountDeposit = constants::assets::AssetAccountDeposit;
-	type AssetDeposit = constants::assets::AssetDeposit;
+	type ApprovalDeposit = constants::foreign_assets::ApprovalDeposit;
+	type AssetAccountDeposit = constants::foreign_assets::AssetAccountDeposit;
+	type AssetDeposit = constants::foreign_assets::AssetDeposit;
 	type AssetId = Location;
 	type AssetIdParameter = Location;
 	type Balance = Balance;
@@ -224,15 +224,41 @@ impl pallet_assets::Config for Runtime {
 	type Extra = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Freezer = ();
-	type MetadataDepositBase = constants::assets::MetaDepositBase;
-	type MetadataDepositPerByte = constants::assets::MetaDepositPerByte;
-	type RemoveItemsLimit = constants::assets::RemoveItemsLimit;
+	type MetadataDepositBase = constants::foreign_assets::MetaDepositBase;
+	type MetadataDepositPerByte = constants::foreign_assets::MetaDepositPerByte;
+	type RemoveItemsLimit = constants::foreign_assets::RemoveItemsLimit;
 	type RuntimeEvent = RuntimeEvent;
-	type StringLimit = constants::assets::StringLimit;
+	type StringLimit = constants::foreign_assets::StringLimit;
 	type WeightInfo = weights::pallet_assets::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
+}
+
+pub(crate) type BondedFungibles = pallet_assets::Instance1;
+impl pallet_assets::Config<BondedFungibles> for Runtime {
+	type ApprovalDeposit = constants::bonded_assets::ApprovalDeposit;
+	type AssetAccountDeposit = constants::bonded_assets::AssetAccountDeposit;
+	type AssetDeposit = constants::foreign_assets::AssetDeposit;
+	type AssetId = u32;
+	type AssetIdParameter = u32;
+	type Balance = Balance;
+	type CallbackHandle = ();
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
+	type Currency = Balances;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
+	type MetadataDepositBase = constants::bonded_assets::MetaDepositBase;
+	type MetadataDepositPerByte = constants::bonded_assets::MetaDepositPerByte;
+	type RemoveItemsLimit = constants::bonded_assets::RemoveItemsLimit;
+	type RuntimeEvent = RuntimeEvent;
+	type StringLimit = constants::bonded_assets::StringLimit;
+	// TODO
+	type WeightInfo = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 #[allow(clippy::arithmetic_side_effects)]

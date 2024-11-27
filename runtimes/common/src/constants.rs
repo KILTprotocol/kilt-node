@@ -158,7 +158,32 @@ pub mod attestation {
 	}
 }
 
-pub mod assets {
+pub mod bonded_assets {
+	use super::*;
+
+	pub const APPROVAL_DEPOSIT: Balance = EXISTENTIAL_DEPOSIT;
+	/// 1 Storage entry with accountId
+	pub const ASSET_ACCOUNT_DEPOSIT: u128 = deposit(1, 32);
+	/// 1 Storage entry with u32 as assetId
+	pub const ASSET_DEPOSIT: u128 = deposit(1, 4);
+	///https://github.com/polkadot-fellows/runtimes/blob/main/system-parachains/asset-hubs/asset-hub-polkadot/src/lib.rs#L311
+	pub const META_DEPOSIT_BASE: u128 = deposit(1, 68);
+	pub const META_DEPOSIT_PER_BYTE: u128 = deposit(0, 1);
+	pub const REMOVE_ITEMS_LIMIT: u32 = 1000;
+	pub const STRING_LIMIT: u32 = 10;
+
+	parameter_types! {
+		pub const ApprovalDeposit: u128 = APPROVAL_DEPOSIT;
+		pub const AssetAccountDeposit: u128 = ASSET_ACCOUNT_DEPOSIT;
+		pub const AssetDeposit: u128 = ASSET_DEPOSIT;
+		pub const MetaDepositBase: u128 = META_DEPOSIT_BASE;
+		pub const MetaDepositPerByte: u128 = META_DEPOSIT_PER_BYTE;
+		pub const RemoveItemsLimit: u32 = REMOVE_ITEMS_LIMIT;
+		pub const StringLimit: u32 = STRING_LIMIT;
+	}
+}
+
+pub mod foreign_assets {
 	use super::*;
 
 	pub const APPROVAL_DEPOSIT: u128 = 0;
