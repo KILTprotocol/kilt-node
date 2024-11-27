@@ -21,11 +21,16 @@ use did::{
 	DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
 };
 use frame_system::EnsureRoot;
-use runtime_common::{constants, dot_names::AllowedNameClaimer, AccountId, DidIdentifier, SendDustAndFeesToTreasury};
+use runtime_common::{
+	constants,
+	dot_names::{AllowedDotNameClaimer, AllowedUniqueLinkingAssociator},
+	AccountId, DidIdentifier, SendDustAndFeesToTreasury,
+};
 use sp_core::ConstBool;
 
 use crate::{
 	weights, Balances, DotNames, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
+	UniqueLinking,
 };
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
@@ -127,8 +132,9 @@ impl pallet_did_lookup::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = constants::did_lookup::DidLookupDeposit;
 
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	type AssociateOrigin = Self::EnsureOrigin;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
@@ -139,12 +145,13 @@ impl pallet_did_lookup::Config for Runtime {
 
 pub(crate) type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
 impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
+	type AssociateOrigin = EnsureDidOrigin<DidIdentifier, AccountId, AllowedUniqueLinkingAssociator<UniqueLinking>>;
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = constants::did_lookup::DidLookupDeposit;
 	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type UniqueLinkingEnabled = ConstBool<true>;
@@ -178,13 +185,13 @@ pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
-	type ClaimOrigin = EnsureDidOrigin<DidIdentifier, AccountId, AllowedNameClaimer<DotNames>>;
+	type ClaimOrigin = EnsureDidOrigin<DidIdentifier, AccountId, AllowedDotNameClaimer<DotNames>>;
 	type Currency = Balances;
 	type Deposit = constants::dot_names::Web3NameDeposit;
 	type MaxNameLength = constants::dot_names::MaxNameLength;
 	type MinNameLength = constants::dot_names::MinNameLength;
-	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
+	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Web3Name = DotName;

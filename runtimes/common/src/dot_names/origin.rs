@@ -16,33 +16,68 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{pallet_prelude::OptionQuery, storage_alias, traits::PalletInfoAccess};
-use sp_core::Get;
-use sp_std::marker::PhantomData;
+pub(super) mod dot_names {
+	use frame_support::{pallet_prelude::OptionQuery, storage_alias, traits::PalletInfoAccess};
+	use sp_core::Get;
+	use sp_std::marker::PhantomData;
 
-use crate::AccountId;
+	use crate::AccountId;
 
-const LOG_TARGET: &'static str = "runtime::DotNames::AllowedNameClaimer";
+	const LOG_TARGET: &'static str = "runtime::DotNames::AllowedDotNameClaimer";
 
-// TODO: When upgrading to 1.8.0, which introduces a new `pallet-parameteres`,
-// migrate this custom implementation into the pallet.
-// The downside of this approach is that no try-runtime checks will be run on
-// this piece of storage.
-#[storage_alias]
-type AllowedNameClaimerStorage<DotNamesDeployment: PalletInfoAccess> =
-	StorageValue<DotNamesDeployment, AccountId, OptionQuery>;
+	// TODO: When upgrading to 1.8.0, which introduces a new `pallet-parameteres`,
+	// migrate this custom implementation into the pallet.
+	// The downside of this approach is that no try-runtime checks will be run on
+	// this piece of storage.
+	#[storage_alias]
+	type AllowedDotNameClaimerStorage<DotNamesDeployment: PalletInfoAccess> =
+		StorageValue<DotNamesDeployment, AccountId, OptionQuery>;
 
-/// Stored information about the allowed claimer inside the DotNames pallet,
-/// without the pallet knowing about it.
-pub struct AllowedNameClaimer<DotNamesDeployment>(PhantomData<DotNamesDeployment>);
+	/// Stored information about the allowed claimer inside the DotNames pallet,
+	/// without the pallet knowing about it.
+	pub struct AllowedDotNameClaimer<DotNamesDeployment>(PhantomData<DotNamesDeployment>);
 
-impl<DotNamesDeployment> Get<Option<AccountId>> for AllowedNameClaimer<DotNamesDeployment>
-where
-	DotNamesDeployment: PalletInfoAccess,
-{
-	fn get() -> Option<AccountId> {
-		let stored_account = AllowedNameClaimerStorage::<DotNamesDeployment>::get();
-		log::trace!(target: LOG_TARGET, "Stored value for DotNames authorized account: {:#?}", stored_account);
-		stored_account
+	impl<DotNamesDeployment> Get<Option<AccountId>> for AllowedDotNameClaimer<DotNamesDeployment>
+	where
+		DotNamesDeployment: PalletInfoAccess,
+	{
+		fn get() -> Option<AccountId> {
+			let stored_account = AllowedDotNameClaimerStorage::<DotNamesDeployment>::get();
+			log::trace!(target: LOG_TARGET, "Stored value for DotNames authorized account: {:#?}", stored_account);
+			stored_account
+		}
+	}
+}
+
+pub(super) mod unique_linking {
+	use frame_support::{pallet_prelude::OptionQuery, storage_alias, traits::PalletInfoAccess};
+	use sp_core::Get;
+	use sp_std::marker::PhantomData;
+
+	use crate::AccountId;
+
+	const LOG_TARGET: &'static str = "runtime::UniqueLinking::AllowedUniqueLinkingAssociator";
+
+	// TODO: When upgrading to 1.8.0, which introduces a new `pallet-parameteres`,
+	// migrate this custom implementation into the pallet.
+	// The downside of this approach is that no try-runtime checks will be run on
+	// this piece of storage.
+	#[storage_alias]
+	type AllowedUniqueLinkingAssociatorStorage<UniqueLinkingDeployment: PalletInfoAccess> =
+		StorageValue<UniqueLinkingDeployment, AccountId, OptionQuery>;
+
+	/// Stored information about the allowed claimer inside the UniqueLinking
+	/// pallet, without the pallet knowing about it.
+	pub struct AllowedUniqueLinkingAssociator<UniqueLinkingDeployment>(PhantomData<UniqueLinkingDeployment>);
+
+	impl<UniqueLinkingDeployment> Get<Option<AccountId>> for AllowedUniqueLinkingAssociator<UniqueLinkingDeployment>
+	where
+		UniqueLinkingDeployment: PalletInfoAccess,
+	{
+		fn get() -> Option<AccountId> {
+			let stored_account = AllowedUniqueLinkingAssociatorStorage::<UniqueLinkingDeployment>::get();
+			log::trace!(target: LOG_TARGET, "Stored value for UniqueLinking authorized account: {:#?}", stored_account);
+			stored_account
+		}
 	}
 }
