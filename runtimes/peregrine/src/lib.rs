@@ -145,6 +145,7 @@ construct_runtime! {
 
 		AssetSwitchPool1: pallet_asset_switch::<Instance1> = 48,
 		Fungibles: pallet_assets = 49,
+		BondedFungibles: pallet_assets::<Instance1> = 50,
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
