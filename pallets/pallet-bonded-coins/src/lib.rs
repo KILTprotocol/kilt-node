@@ -67,7 +67,7 @@ pub mod pallet {
 	};
 
 	use crate::{
-		curves::{convert_fixed_to_collateral, convert_to_fixed, BondingFunction, Curve, CurveInput},
+		curves::{balance_to_fixed, fixed_to_balance, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, ResetTeam},
 		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
@@ -137,7 +137,7 @@ pub mod pallet {
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
-			+ MutateFungibles<Self::AccountId, Balance = CollateralCurrenciesBalanceOf<Self>>
+			+ MutateFungibles<Self::AccountId>
 			+ FreezeAccounts<Self::AccountId, Self::AssetId>
 			+ ResetTeam<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
@@ -300,7 +300,8 @@ pub mod pallet {
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits:
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
-		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256> + TryInto<U256>,
+		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
+		FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
 		// TODO: make large integer type configurable
 	{
 		/// Creates a new bonded token pool. The pool will be created with the
@@ -673,7 +674,7 @@ pub mod pallet {
 				&round_kind,
 			)?;
 
-			let normalized_amount_to_mint = convert_to_fixed::<T>(
+			let normalized_amount_to_mint = balance_to_fixed(
 				amount_to_mint.saturated_into::<u128>(),
 				pool_details.denomination,
 				&round_kind,
@@ -803,11 +804,7 @@ pub mod pallet {
 				&round_kind,
 			)?;
 
-			let normalized_amount_to_burn = convert_to_fixed::<T>(
-				amount_to_burn.saturated_into::<u128>(),
-				pool_details.denomination,
-				&round_kind,
-			)?;
+			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, &round_kind)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -1270,7 +1267,8 @@ pub mod pallet {
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits:
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
-		CollateralCurrenciesBalanceOf<T>: TryFrom<U256>,
+		CollateralCurrenciesBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
+		FungiblesBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
 	{
 		/// Calculates the collateral by the given curve and the normalized
 		/// costs. High is the upper bound of the curve, low is the lower bound.
@@ -1304,7 +1302,7 @@ pub mod pallet {
 
 			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id);
 
-			convert_fixed_to_collateral::<T>(normalized_costs, round_kind, denomination)
+			fixed_to_balance(normalized_costs, denomination, round_kind)
 		}
 
 		/// Calculates the normalized passive and active issuance for a pool.
@@ -1335,8 +1333,8 @@ pub mod pallet {
 			let mut normalized_total_issuances = bonded_currencies
 				.iter()
 				.map(|currency_id| {
-					convert_to_fixed::<T>(
-						T::Fungibles::total_issuance(currency_id.to_owned()).saturated_into(),
+					balance_to_fixed(
+						T::Fungibles::total_issuance(currency_id.to_owned()),
 						denomination,
 						round_kind,
 					)

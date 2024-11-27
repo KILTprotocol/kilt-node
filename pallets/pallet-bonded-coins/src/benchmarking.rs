@@ -13,7 +13,8 @@ use crate::{
 		square_root::{SquareRootParameters, SquareRootParametersInput},
 		Curve, CurveInput,
 	},
-	Call, CollateralAssetIdOf, CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf, Pallet,
+	Call, CollateralAssetIdOf, CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf,
+	FungiblesBalanceOf, Pallet,
 };
 
 /// Helper trait to calculate asset ids for collateral and bonded assets used in
@@ -66,6 +67,7 @@ fn get_lmsr_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
 #[benchmarks(where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
 	CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
+	FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
 	T::CollateralCurrencies: Create<T::AccountId> ,
 	T::Fungibles: InspectRoles<T::AccountId> + AccountTouch<FungiblesAssetIdOf<T>, AccountIdOf<T>>,
 	T::DepositCurrency: Mutate<T::AccountId>,
