@@ -134,6 +134,7 @@ impl pallet_did_lookup::Config for Test {
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
+	type AssociateOrigin = Self::EnsureOrigin;
 	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 	type DidIdentifier = SubjectId;
 	type WeightInfo = ();
