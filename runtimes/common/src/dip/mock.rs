@@ -147,7 +147,7 @@ impl did::Config for TestRuntime {
 impl pallet_web3_names::Config for TestRuntime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
-	type ClaimOrigin = Self::OwnerOrigin;
+	type ClaimOrigin = EnsureSigned<AccountId>;
 	type Currency = Balances;
 	type Deposit = ConstU128<KILT>;
 	type MaxNameLength = MaxNameLength;
@@ -165,6 +165,7 @@ impl pallet_web3_names::Config for TestRuntime {
 }
 
 impl pallet_did_lookup::Config for TestRuntime {
+	type AssociateOrigin = EnsureSigned<AccountId>;
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = ConstU128<KILT>;

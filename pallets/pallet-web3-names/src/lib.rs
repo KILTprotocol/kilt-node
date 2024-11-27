@@ -124,7 +124,7 @@ pub mod pallet {
 		/// The origin allowed to claim a web3name.
 		type ClaimOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		/// The origin allowed to perform all regular operations, except
-		/// claiming a name, which is performed by `ClaimOrigin`.
+		/// claiming a name, which is authorized by `ClaimOrigin`.
 		type OwnerOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		/// The type of origin after a successful origin check.
 		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self, I>>;

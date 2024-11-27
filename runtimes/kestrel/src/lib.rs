@@ -434,6 +434,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = constants::did_lookup::DidLookupDeposit;
 
+	type AssociateOrigin = Self::EnsureOrigin;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type BalanceMigrationManager = ();
