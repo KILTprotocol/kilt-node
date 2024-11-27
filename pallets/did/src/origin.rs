@@ -88,8 +88,8 @@ where
 	}
 }
 
-impl<OuterOrigin, DidIdentifier, AccountId> EnsureOriginWithArg<OuterOrigin, DidIdentifier>
-	for EnsureDidOrigin<DidIdentifier, AccountId>
+impl<OuterOrigin, DidIdentifier, AccountId, ExpectedSubmitter> EnsureOriginWithArg<OuterOrigin, DidIdentifier>
+	for EnsureDidOrigin<DidIdentifier, AccountId, ExpectedSubmitter>
 where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
 		+ From<DidRawOrigin<DidIdentifier, AccountId>>
@@ -121,9 +121,9 @@ where
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<OuterOrigin, AccountId, DidIdentifier>
+impl<OuterOrigin, AccountId, DidIdentifier, ExpectedSubmitter>
 	kilt_support::traits::GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
-	for EnsureDidOrigin<DidIdentifier, AccountId>
+	for EnsureDidOrigin<DidIdentifier, AccountId, ExpectedSubmitter>
 where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
 		+ From<DidRawOrigin<DidIdentifier, AccountId>>,

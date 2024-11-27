@@ -24,10 +24,14 @@ use crate::AccountId;
 
 // TODO: When upgrading to 1.8.0, which introduces a new `pallet-parameteres`,
 // migrate this custom implementation into the pallet.
+// The downside of this approach is that no try-runtime checks will be run on
+// this piece of storage.
 #[storage_alias]
 type AllowedNameClaimerStorage<DotNamesDeployment: PalletInfoAccess> =
 	StorageValue<DotNamesDeployment, AccountId, OptionQuery>;
 
+/// Stored information about the allowed claimer inside the DotNames pallet,
+/// without the pallet knowing about it.
 pub struct AllowedNameClaimer<DotNamesDeployment>(PhantomData<DotNamesDeployment>);
 
 impl<DotNamesDeployment> Get<Option<AccountId>> for AllowedNameClaimer<DotNamesDeployment>

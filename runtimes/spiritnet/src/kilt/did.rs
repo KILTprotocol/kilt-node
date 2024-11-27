@@ -21,10 +21,12 @@ use did::{
 	DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
 };
 use frame_system::EnsureRoot;
-use runtime_common::{constants, AccountId, DidIdentifier, SendDustAndFeesToTreasury};
+use runtime_common::{constants, dot_names::AllowedNameClaimer, AccountId, DidIdentifier, SendDustAndFeesToTreasury};
 use sp_core::ConstBool;
 
-use crate::{weights, Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin};
+use crate::{
+	weights, Balances, DotNames, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
+};
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
@@ -176,6 +178,7 @@ pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
+	type ClaimOrigin = EnsureDidOrigin<DidIdentifier, AccountId, AllowedNameClaimer<DotNames>>;
 	type Currency = Balances;
 	type Deposit = constants::dot_names::Web3NameDeposit;
 	type MaxNameLength = constants::dot_names::MaxNameLength;
