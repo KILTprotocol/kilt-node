@@ -24,7 +24,7 @@ fn start_refund_works() {
 	let currency_count = 1;
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
@@ -63,7 +63,7 @@ fn start_refund_fails_when_pool_not_live() {
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
@@ -115,7 +115,7 @@ fn start_refund_fails_when_currency_no_low() {
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
@@ -156,7 +156,7 @@ fn force_start_refund_works() {
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
@@ -198,7 +198,7 @@ fn force_start_refund_fails_when_not_root() {
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
@@ -233,7 +233,7 @@ fn start_refund_fails_when_no_permission() {
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
@@ -268,7 +268,7 @@ fn start_refund_fails_when_nothing_to_refund() {
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX)])
 		.build()
@@ -300,7 +300,7 @@ fn start_refund_fails_when_no_collateral() {
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
 		.build()
@@ -331,11 +331,11 @@ fn pool_does_not_exist() {
 	let currency_count = 1;
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
-			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id, u128::MAX / 10),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10),
 		])
 		.build()

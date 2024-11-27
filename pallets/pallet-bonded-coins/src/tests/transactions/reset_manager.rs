@@ -60,7 +60,7 @@ fn only_manager_can_change_manager() {
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.build()
 		.execute_with(|| {
 			let owner_origin = RawOrigin::Signed(ACCOUNT_00).into();

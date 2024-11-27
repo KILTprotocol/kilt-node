@@ -22,7 +22,7 @@ fn resets_team() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.build()
 		.execute_with(|| {
 			let manager_origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -59,7 +59,7 @@ fn does_not_change_team_when_not_live() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.build()
 		.execute_with(|| {
 			let manager_origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -91,14 +91,14 @@ fn only_manager_can_change_team() {
 		curve,
 		false,
 		Some(PoolStatus::Active),
-		Some(manager.clone()),
+		Some(manager),
 		None,
 		Some(ACCOUNT_00),
 		None,
 	);
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.build()
 		.execute_with(|| {
 			let owner_origin = RawOrigin::Signed(ACCOUNT_00).into();
@@ -149,7 +149,7 @@ fn handles_currency_idx_out_of_bounds() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	ExtBuilder::default()
-		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.build()
 		.execute_with(|| {
 			let manager_origin = RawOrigin::Signed(ACCOUNT_00).into();

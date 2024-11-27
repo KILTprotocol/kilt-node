@@ -442,7 +442,7 @@ fn multiple_mints_vs_combined_burn() {
 			pool_id.clone(),
 			generate_pool_details(
 				vec![currency_id],
-				curve.clone(),
+				curve,
 				true,
 				None,
 				None,
@@ -472,7 +472,7 @@ fn multiple_mints_vs_combined_burn() {
 
 			// step 2: 1 burn of 10 * amount
 			assert_ok!(BondingPallet::burn_into(
-				origin.clone(),
+				origin,
 				pool_id.clone(),
 				0,
 				ACCOUNT_00,

@@ -1,7 +1,7 @@
 ///  Curve Module
 ///
-/// This module defines various curve types and their associated parameters used in the system.
-/// It includes the following curve types:
+/// This module defines various curve types and their associated parameters used
+/// in the system. It includes the following curve types:
 /// - Polynomial
 /// - SquareRoot
 /// - LMSR (Logarithmic Market Scoring Rule)
@@ -27,8 +27,8 @@ use crate::{
 	CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, PassiveSupply, Precision,
 };
 
-/// An enum representing different types of curves with their respective parameters.
-/// Used to store curve parameters and perform calculations.
+/// An enum representing different types of curves with their respective
+/// parameters. Used to store curve parameters and perform calculations.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum Curve<Parameter> {
 	Polynomial(PolynomialParameters<Parameter>),
@@ -45,11 +45,12 @@ pub enum CurveInput<Parameter> {
 	Lmsr(LMSRParametersInput<Parameter>),
 }
 
-/// Implementation of the TryFrom trait for `CurveInput` to convert the input parameters to
-/// the correct fixed-point type. The TryFrom implementation for `Curve` will fail if the
-/// conversion to the fixed-point type fails.
-/// The conversion is done by converting the input parameters to the correct fixed-point type
-/// using the TryFrom implementation for the respective parameters type.
+/// Implementation of the TryFrom trait for `CurveInput` to convert the input
+/// parameters to the correct fixed-point type. The TryFrom implementation for
+/// `Curve` will fail if the conversion to the fixed-point type fails.
+/// The conversion is done by converting the input parameters to the correct
+/// fixed-point type using the TryFrom implementation for the respective
+/// parameters type.
 impl<I, C> TryFrom<CurveInput<I>> for Curve<C>
 where
 	LMSRParameters<C>: TryFrom<LMSRParametersInput<I>>,
@@ -90,7 +91,8 @@ where
 }
 
 /// Implementation of the `BondingFunction` trait for `Curve`.
-/// The `BondingFunction` trait is used to calculate the cost of purchasing or selling assets using the curve.
+/// The `BondingFunction` trait is used to calculate the cost of purchasing or
+/// selling assets using the curve.
 ///
 /// The implementation forwards the call to the inner bonding function.
 impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
@@ -109,13 +111,14 @@ where
 }
 
 /// Trait defining the bonding function for a curve.
-/// The bonding function is used to calculate the cost of purchasing or selling assets using the curve.
-/// The trait is implemented for each curve type.
+/// The bonding function is used to calculate the cost of purchasing or selling
+/// assets using the curve. The trait is implemented for each curve type.
 ///
 /// Parameters:
 /// - `low`: The lower bound of integral.
 /// - `high`: The upper bound of integral.
-/// - `passive_supply`: The passive supply of other assets in the pool, which are not affected by the operation.
+/// - `passive_supply`: The passive supply of other assets in the pool, which
+///   are not affected by the operation.
 pub trait BondingFunction<Balance> {
 	fn calculate_costs(
 		&self,
@@ -134,7 +137,7 @@ fn square<FixedType: Fixed>(x: FixedType) -> Result<FixedType, ArithmeticError> 
 fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Balance]) -> Balance {
 	passive_issuance
 		.iter()
-		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
+		.fold(Balance::from_num(0u8), |sum, x| sum.saturating_add(*x))
 }
 
 pub(crate) fn convert_to_fixed<T: Config>(
@@ -145,7 +148,7 @@ pub(crate) fn convert_to_fixed<T: Config>(
 where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
 {
-	let decimals = U256::from(10)
+	let decimals = U256::from(10u8)
 		.checked_pow(denomination.into())
 		.ok_or(ArithmeticError::Overflow)?;
 	// Convert to U256 so we have enough bits to perform lossless scaling.
@@ -156,10 +159,11 @@ where
 	// than 256 - and no Fixed of that size exists.
 	x_u256.shl_assign(CurveParameterTypeOf::<T>::frac_nbits());
 
-	// adding the scaling factor (decimal) - 1 ensures the result of the division below is rounded up
+	// adding the scaling factor (decimal) - 1 ensures the result of the division
+	// below is rounded up
 	if round_kind == &Round::Up {
 		x_u256 = x_u256
-			.checked_add(U256::from(decimals - 1))
+			.checked_add(decimals.saturating_sub(1u8.into()))
 			.ok_or(ArithmeticError::Overflow)?;
 	}
 
@@ -190,27 +194,29 @@ where
 	// Convert to U256 so we have enough bits to perform lossless scaling.
 	let mut value_u256: U256 = value.to_bits().try_into().map_err(|_| ArithmeticError::Overflow)?;
 
-	let denomination = U256::from(10)
+	let decimals = U256::from(10u8)
 		.checked_pow(denomination.into())
 		.ok_or(ArithmeticError::Overflow)?;
 
-	// calculate the actual value by multiplying with the denomination. By using th U256 type
-	// we can ensure that the multiplication does not overflow.
-	value_u256 = value_u256.checked_mul(denomination).ok_or(ArithmeticError::Overflow)?;
+	// calculate the actual value by multiplying with the denomination. By using th
+	// U256 type we can ensure that the multiplication does not overflow.
+	value_u256 = value_u256.checked_mul(decimals).ok_or(ArithmeticError::Overflow)?;
 
 	// Calculate the number of trailing zeros in the value.
 	let trailing_zeros = value_u256.trailing_zeros();
 
 	// Calculate the number of fractional bits in the fixed-point type.
-	let frac_bits: u32 = CurveParameterTypeOf::<T>::frac_nbits().into();
+	let frac_bits: u32 = CurveParameterTypeOf::<T>::frac_nbits();
 
 	// Shift the value to the right by the number of fractional bits.
 	value_u256.shr_assign(frac_bits);
 
-	// If the number of trailing zeros is less than the number of fractional bits, the value
-	// is not rounded and we can return it directly.
+	// If the number of trailing zeros is less than the number of fractional bits,
+	// the value is not rounded and we can return it directly.
 	if round_kind == &Round::Up && trailing_zeros < frac_bits {
-		value_u256 = value_u256.checked_add(U256::from(1)).ok_or(ArithmeticError::Overflow)?;
+		value_u256 = value_u256
+			.checked_add(U256::from(1u8))
+			.ok_or(ArithmeticError::Overflow)?;
 	}
 
 	// Convert the value back to the collateral representation

@@ -1,14 +1,16 @@
 /// Square Root Bonding Curve Implementation.
 ///
-/// This module provides an implementation of a square root bonding curve, with the integral precomputed for efficiency.
+/// This module provides an implementation of a square root bonding curve, with
+/// the integral precomputed for efficiency.
 ///
 /// ### Cost Function
 /// The cost function is defined as:
 /// ```text
 /// c(s) = m * sqrt(s) + n
 /// ```
-/// This function, `c(s)`, determines the price for purchasing or selling assets at any supply point `s`.
-/// The total transaction cost is calculated as the integral of `c(s)` between the start point and `s`.
+/// This function, `c(s)`, determines the price for purchasing or selling assets
+/// at any supply point `s`. The total transaction cost is calculated as the
+/// integral of `c(s)` between the start point and `s`.
 ///
 /// ### Antiderivative
 /// The indefinite integral of the cost function is:
@@ -20,19 +22,23 @@
 /// - `m` is the coefficient for the square root term,
 /// - `n` is the coefficient for the linear term.
 ///
-/// `C(s)` represents the total cost of purchasing or selling assets up to the current supply `s`.
-/// To calculate the incremental cost of a transaction, use the formula:
+/// `C(s)` represents the total cost of purchasing or selling assets up to the
+/// current supply `s`. To calculate the incremental cost of a transaction, use
+/// the formula:
 /// ```text
 /// Incremental Cost = C(s) - C(s*)
 /// ```
-/// Here, `s*` represents the initial supply before the transaction, and `s` is the supply after the transaction.
+/// Here, `s*` represents the initial supply before the transaction, and `s` is
+/// the supply after the transaction.
 ///
 /// ### Optimization for Numerical Stability
-/// Calculating `s^(3/2)` directly can lead to overflow in fixed-point arithmetic. To mitigate this, the calculation is factored as:
+/// Calculating `s^(3/2)` directly can lead to overflow in fixed-point
+/// arithmetic. To mitigate this, the calculation is factored as:
 /// ```text
 /// sqrt(s^3) = sqrt(s) * s
 /// ```
-/// By expressing `s^(3/2)` as the product of `sqrt(s)` and `s`, we reduce the risk of overflow while maintaining computational precision.
+/// By expressing `s^(3/2)` as the product of `sqrt(s)` and `s`, we reduce the
+/// risk of overflow while maintaining computational precision.
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
@@ -44,14 +50,17 @@ use substrate_fixed::{
 use super::{calculate_accumulated_passive_issuance, BondingFunction};
 use crate::{PassiveSupply, Precision};
 
-/// A struct representing the unchecked input parameters for a square root bonding curve.
-/// This struct is used to convert the input parameters to the correct fixed-point type.
+/// A struct representing the unchecked input parameters for a square root
+/// bonding curve. This struct is used to convert the input parameters to the
+/// correct fixed-point type.
 ///
-/// The input struct assumes that the coefficients are precomputed according to the integral rules of the square root function./// ### Example
+/// The input struct assumes that the coefficients are precomputed according to
+/// the integral rules of the square root function./// ### Example
 ///
 /// For a square root cost function `c(s) = 3 * s^1/2 + 2
 ///
-/// which is resulting into the antiderivative `C(s) = (6 / 3) * s^(1/2) + 2 * s`
+/// which is resulting into the antiderivative
+/// `C(s) = (6 / 3) * s^(1/2) + 2 * s`
 /// the input parameters would be:
 /// ```rust, ignore
 /// SquareRootParametersInput {
@@ -67,8 +76,9 @@ pub struct SquareRootParametersInput<Parameter> {
 	pub n: Parameter,
 }
 
-/// A struct representing the validated parameters for a square root bonding curve.
-/// This struct is used to store the parameters for a square root bonding curve and to perform calculations using the square root bonding curve.
+/// A struct representing the validated parameters for a square root bonding
+/// curve. This struct is used to store the parameters for a square root bonding
+/// curve and to perform calculations using the square root bonding curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct SquareRootParameters<Parameter> {
 	/// Coefficient for the square root part.
@@ -77,8 +87,10 @@ pub struct SquareRootParameters<Parameter> {
 	pub n: Parameter,
 }
 
-/// Implementation of the TryFrom trait for `SquareRootParametersInput` to convert the input parameters to the correct fixed-point type.
-/// The TryFrom implementation for `SquareRootParameters` will fail if the conversion to the fixed-point type fails.
+/// Implementation of the TryFrom trait for `SquareRootParametersInput` to
+/// convert the input parameters to the correct fixed-point type. The TryFrom
+/// implementation for `SquareRootParameters` will fail if the conversion to the
+/// fixed-point type fails.
 impl<I: FixedUnsigned, C: FixedSigned> TryFrom<SquareRootParametersInput<I>> for SquareRootParameters<C> {
 	type Error = ();
 	fn try_from(value: SquareRootParametersInput<I>) -> Result<Self, Self::Error> {
@@ -93,21 +105,22 @@ impl<Parameter> BondingFunction<Parameter> for SquareRootParameters<Parameter>
 where
 	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
 {
-	/// Calculate the cost of purchasing/selling assets using the square root bonding curve.
+	/// Calculate the cost of purchasing/selling assets using the square root
+	/// bonding curve.
 	fn calculate_costs(
 		&self,
-		low: Parameter,
-		high: Parameter,
+		low_without_passive: Parameter,
+		high_without_passive: Parameter,
 		passive_supply: PassiveSupply<Parameter>,
 	) -> Result<Parameter, ArithmeticError> {
 		let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
 
 		// reassign high and low to include the accumulated passive issuance
-		let high = high
+		let high = high_without_passive
 			.checked_add(accumulated_passive_issuance)
 			.ok_or(ArithmeticError::Overflow)?;
 
-		let low = low
+		let low = low_without_passive
 			.checked_add(accumulated_passive_issuance)
 			.ok_or(ArithmeticError::Overflow)?;
 

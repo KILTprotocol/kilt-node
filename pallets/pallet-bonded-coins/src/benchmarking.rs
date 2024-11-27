@@ -5,13 +5,19 @@ use sp_std::{
 	ops::{AddAssign, BitOrAssign, ShlAssign},
 	vec::Vec,
 };
-use substrate_fixed::traits::{Fixed, ToFixed};
+use substrate_fixed::traits::{Fixed, FixedSigned, FixedUnsigned, ToFixed};
 
 use crate::{
+	curves::{
+		lmsr::{LMSRParameters, LMSRParametersInput},
+		square_root::{SquareRootParameters, SquareRootParametersInput},
+		Curve, CurveInput,
+	},
 	Call, CollateralAssetIdOf, CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf, Pallet,
 };
 
-/// Helper trait to calculate asset ids for collateral and bonded assets used in benchmarks.
+/// Helper trait to calculate asset ids for collateral and bonded assets used in
+/// benchmarks.
 pub trait BenchmarkHelper<T: Config> {
 	/// Calculate the asset id for the collateral asset.
 	fn calculate_collateral_asset_id(seed: u32) -> CollateralAssetIdOf<T>;
@@ -35,6 +41,28 @@ where
 	}
 }
 
+fn get_square_root_curve<Float: FixedSigned>() -> Curve<Float> {
+	let m = Float::from_num(3);
+	let n = Float::from_num(2);
+	Curve::SquareRoot(SquareRootParameters { m, n })
+}
+
+fn get_square_root_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
+	let m = Float::from_num(3);
+	let n = Float::from_num(2);
+	CurveInput::SquareRoot(SquareRootParametersInput { m, n })
+}
+
+fn get_lmsr_curve<Float: FixedSigned>() -> Curve<Float> {
+	let m = Float::from_num(3);
+	Curve::Lmsr(LMSRParameters { m })
+}
+
+fn get_lmsr_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
+	let m = Float::from_num(3);
+	CurveInput::Lmsr(LMSRParametersInput { m })
+}
+
 #[benchmarks(where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
 	CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
@@ -45,12 +73,11 @@ where
 	AccountIdLookupOf<T>: From<T::AccountId>,
 )]
 mod benchmarks {
-	use frame_support::traits::OriginTrait;
 	use frame_support::traits::{
 		fungible::{Inspect, Mutate, MutateHold},
-		fungibles::{Destroy, Inspect as InspectFungibles, Mutate as MutateFungibles},
+		fungibles::{Create, Destroy, Inspect as InspectFungibles, Mutate as MutateFungibles},
+		AccountTouch, EnsureOrigin, Get, OriginTrait,
 	};
-	use frame_support::traits::{fungibles::Create, AccountTouch, EnsureOrigin, Get};
 	use sp_runtime::{traits::Zero, BoundedVec, SaturatedConversion};
 	use sp_std::ops::Mul;
 
@@ -94,7 +121,7 @@ mod benchmarks {
 		T::CollateralCurrencies: MutateFungibles<T::AccountId>,
 	{
 		T::CollateralCurrencies::set_balance(asset_id.clone(), who, amount.saturated_into());
-		let balance = T::CollateralCurrencies::balance(asset_id.clone(), who);
+		let balance = T::CollateralCurrencies::balance(asset_id, who);
 		assert_eq!(balance, amount.saturated_into());
 	}
 
@@ -321,7 +348,7 @@ mod benchmarks {
 		let pool_id = create_pool::<T>(
 			curve,
 			[bonded_coin_id.clone()].to_vec(),
-			Some(account_origin.clone()),
+			Some(account_origin),
 			None,
 			None,
 		);
@@ -354,13 +381,7 @@ mod benchmarks {
 		create_bonded_asset::<T>(bonded_coin_id.clone());
 
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
-		let pool_id = create_pool::<T>(
-			curve,
-			[bonded_coin_id.clone()].to_vec(),
-			Some(account_origin.clone()),
-			None,
-			None,
-		);
+		let pool_id = create_pool::<T>(curve, [bonded_coin_id].to_vec(), Some(account_origin), None, None);
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id, None);
@@ -382,13 +403,7 @@ mod benchmarks {
 		create_bonded_asset::<T>(bonded_coin_id.clone());
 
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
-		let pool_id = create_pool::<T>(
-			curve,
-			[bonded_coin_id.clone()].to_vec(),
-			Some(account_origin.clone()),
-			None,
-			None,
-		);
+		let pool_id = create_pool::<T>(curve, [bonded_coin_id].to_vec(), Some(account_origin), None, None);
 
 		let locks = Locks::default();
 
@@ -414,8 +429,8 @@ mod benchmarks {
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
 		let pool_id = create_pool::<T>(
 			curve,
-			[bonded_coin_id.clone()].to_vec(),
-			Some(account_origin.clone()),
+			[bonded_coin_id].to_vec(),
+			Some(account_origin),
 			Some(PoolStatus::Locked(Locks::default())),
 			None,
 		);
@@ -712,13 +727,7 @@ mod benchmarks {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_id = create_pool::<T>(
-			curve,
-			bonded_currencies.clone(),
-			Some(account_origin.clone()),
-			None,
-			None,
-		);
+		let pool_id = create_pool::<T>(curve, bonded_currencies, Some(account_origin), None, None);
 		let pool_id_clone = pool_id.clone();
 		let max_currencies = T::MaxCurrencies::get();
 
@@ -736,7 +745,7 @@ mod benchmarks {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
+		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, None);
 
 		let origin = T::ForceOrigin::try_successful_origin().expect("creating origin should not fail");
 		let pool_id_clone = pool_id.clone();
@@ -799,13 +808,7 @@ mod benchmarks {
 
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_id = create_pool::<T>(
-			curve,
-			bonded_currencies.clone(),
-			Some(account_origin.clone()),
-			None,
-			None,
-		);
+		let pool_id = create_pool::<T>(curve, bonded_currencies, Some(account_origin.clone()), None, None);
 
 		let pool_account = pool_id.clone().into();
 
@@ -837,7 +840,7 @@ mod benchmarks {
 
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
-		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
+		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, None);
 
 		let pool_account = pool_id.clone().into();
 
@@ -882,13 +885,7 @@ mod benchmarks {
 		let target_asset_id = bonded_currencies[0].clone();
 
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
-		let pool_id = create_pool::<T>(
-			curve,
-			bonded_currencies.clone(),
-			None,
-			Some(PoolStatus::Refunding),
-			None,
-		);
+		let pool_id = create_pool::<T>(curve, bonded_currencies, None, Some(PoolStatus::Refunding), None);
 
 		let pool_account = pool_id.clone().into();
 		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
