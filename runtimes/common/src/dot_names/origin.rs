@@ -22,6 +22,8 @@ use sp_std::marker::PhantomData;
 
 use crate::AccountId;
 
+const LOG_TARGET: &'static str = "runtime::DotNames::AllowedNameClaimer";
+
 // TODO: When upgrading to 1.8.0, which introduces a new `pallet-parameteres`,
 // migrate this custom implementation into the pallet.
 // The downside of this approach is that no try-runtime checks will be run on
@@ -39,6 +41,8 @@ where
 	DotNamesDeployment: PalletInfoAccess,
 {
 	fn get() -> Option<AccountId> {
-		AllowedNameClaimerStorage::<DotNamesDeployment>::get()
+		let stored_account = AllowedNameClaimerStorage::<DotNamesDeployment>::get();
+		log::trace!(target: LOG_TARGET, "Stored value for DotNames authorized account: {:#?}", stored_account);
+		stored_account
 	}
 }
