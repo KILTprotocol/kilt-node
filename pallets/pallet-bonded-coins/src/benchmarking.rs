@@ -849,7 +849,7 @@ mod benchmarks {
 		let collateral_id = create_default_collateral_asset::<T>();
 		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_account, &pool_account)
 			.expect("Touching should work");
-		set_collateral_balance::<T>(collateral_id.clone(), &pool_account, 10000u128);
+		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
 		let holder: T::AccountId = account("holder", 0, 0);
 		T::Fungibles::touch(target_asset_id.clone(), &holder, &pool_account).expect("Touching should work");
