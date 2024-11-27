@@ -23,7 +23,7 @@ pub(super) mod dot_names {
 
 	use crate::AccountId;
 
-	const LOG_TARGET: &'static str = "runtime::DotNames::AllowedDotNameClaimer";
+	const LOG_TARGET: &str = "runtime::DotNames::AllowedDotNameClaimer";
 
 	// TODO: When upgrading to 1.8.0, which introduces a new `pallet-parameteres`,
 	// migrate this custom implementation into the pallet.
@@ -56,7 +56,7 @@ pub(super) mod unique_linking {
 
 	use crate::AccountId;
 
-	const LOG_TARGET: &'static str = "runtime::UniqueLinking::AllowedUniqueLinkingAssociator";
+	const LOG_TARGET: &str = "runtime::UniqueLinking::AllowedUniqueLinkingAssociator";
 
 	// TODO: When upgrading to 1.8.0, which introduces a new `pallet-parameteres`,
 	// migrate this custom implementation into the pallet.
