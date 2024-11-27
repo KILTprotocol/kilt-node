@@ -154,6 +154,7 @@ pub type Web3Name =
 impl pallet_web3_names::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
+	type ClaimOrigin = Self::OwnerOrigin;
 	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;

@@ -446,6 +446,7 @@ impl pallet_did_lookup::Config for Runtime {
 impl pallet_web3_names::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
+	type ClaimOrigin = Self::OwnerOrigin;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
