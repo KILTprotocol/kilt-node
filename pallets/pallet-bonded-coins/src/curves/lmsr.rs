@@ -71,7 +71,7 @@ impl<I: FixedUnsigned, C: FixedSigned> TryFrom<LMSRParametersInput<I>> for LMSRP
 	type Error = ();
 	fn try_from(value: LMSRParametersInput<I>) -> Result<Self, Self::Error> {
 		let m = C::checked_from_fixed(value.m).ok_or(())?;
-		ensure!(m > C::from_num(0), ());
+		ensure!(m > C::from_num(0u8), ());
 		Ok(LMSRParameters { m })
 	}
 }
@@ -91,7 +91,7 @@ where
 		})?;
 
 		// Compute the sum of the exponent terms, adjusted by max for stability
-		let e_term_sum = supply.iter().try_fold(Parameter::from_num(0), |acc, x| {
+		let e_term_sum = supply.iter().try_fold(Parameter::from_num(0u8), |acc, x| {
 			let exponent = x
 				.checked_sub(*max)
 				.ok_or(ArithmeticError::Underflow)?

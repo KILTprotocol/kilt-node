@@ -25,17 +25,17 @@ impl<LockType: Default> Default for PoolStatus<LockType> {
 
 impl<LockType> PoolStatus<LockType> {
 	/// Checks if the pool is in a live state.
-	pub fn is_live(&self) -> bool {
+	pub const fn is_live(&self) -> bool {
 		matches!(self, Self::Active | Self::Locked(_))
 	}
 
 	/// Checks if the pool is in a destroying state.
-	pub fn is_destroying(&self) -> bool {
+	pub const fn is_destroying(&self) -> bool {
 		matches!(self, Self::Destroying)
 	}
 
 	/// Checks if the pool is in a refunding state.
-	pub fn is_refunding(&self) -> bool {
+	pub const fn is_refunding(&self) -> bool {
 		matches!(self, Self::Refunding)
 	}
 

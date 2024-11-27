@@ -31,17 +31,17 @@ where
 	type Error = DispatchError;
 
 	fn freeze(asset_id: &AssetIdOf<T, I>, who: &AccountIdOf<T>) -> Result<(), Self::Error> {
-		let asset_id: <T as AssetConfig<I>>::AssetId = asset_id.to_owned();
-		let freezer = AssetsPallet::<T, I>::freezer(asset_id.clone()).ok_or(Self::Error::Unavailable)?;
+		let owned_asset_id: <T as AssetConfig<I>>::AssetId = asset_id.to_owned();
+		let freezer = AssetsPallet::<T, I>::freezer(owned_asset_id.clone()).ok_or(Self::Error::Unavailable)?;
 		let origin = RawOrigin::Signed(freezer);
-		AssetsPallet::<T, I>::freeze(origin.into(), asset_id.into(), who.to_owned().into())
+		AssetsPallet::<T, I>::freeze(origin.into(), owned_asset_id.into(), who.to_owned().into())
 	}
 
 	fn thaw(asset_id: &AssetIdOf<T, I>, who: &AccountIdOf<T>) -> Result<(), Self::Error> {
-		let asset_id: <T as AssetConfig<I>>::AssetId = asset_id.to_owned();
-		let admin = AssetsPallet::<T, I>::admin(asset_id.clone()).ok_or(Self::Error::Unavailable)?;
+		let owned_asset_id: <T as AssetConfig<I>>::AssetId = asset_id.to_owned();
+		let admin = AssetsPallet::<T, I>::admin(owned_asset_id.clone()).ok_or(Self::Error::Unavailable)?;
 		let origin = RawOrigin::Signed(admin);
-		AssetsPallet::<T, I>::thaw(origin.into(), asset_id.into(), who.to_owned().into())
+		AssetsPallet::<T, I>::thaw(origin.into(), owned_asset_id.into(), who.to_owned().into())
 	}
 }
 

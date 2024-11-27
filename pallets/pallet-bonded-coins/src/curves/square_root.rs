@@ -109,18 +109,18 @@ where
 	/// bonding curve.
 	fn calculate_costs(
 		&self,
-		low: Parameter,
-		high: Parameter,
+		low_without_passive: Parameter,
+		high_without_passive: Parameter,
 		passive_supply: PassiveSupply<Parameter>,
 	) -> Result<Parameter, ArithmeticError> {
 		let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
 
 		// reassign high and low to include the accumulated passive issuance
-		let high = high
+		let high = high_without_passive
 			.checked_add(accumulated_passive_issuance)
 			.ok_or(ArithmeticError::Overflow)?;
 
-		let low = low
+		let low = low_without_passive
 			.checked_add(accumulated_passive_issuance)
 			.ok_or(ArithmeticError::Overflow)?;
 

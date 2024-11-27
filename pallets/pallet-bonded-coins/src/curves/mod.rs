@@ -137,7 +137,7 @@ fn square<FixedType: Fixed>(x: FixedType) -> Result<FixedType, ArithmeticError> 
 fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Balance]) -> Balance {
 	passive_issuance
 		.iter()
-		.fold(Balance::from_num(0), |sum, x| sum.saturating_add(*x))
+		.fold(Balance::from_num(0u8), |sum, x| sum.saturating_add(*x))
 }
 
 pub(crate) fn convert_to_fixed<T: Config>(
@@ -148,7 +148,7 @@ pub(crate) fn convert_to_fixed<T: Config>(
 where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
 {
-	let decimals = U256::from(10)
+	let decimals = U256::from(10u8)
 		.checked_pow(denomination.into())
 		.ok_or(ArithmeticError::Overflow)?;
 	// Convert to U256 so we have enough bits to perform lossless scaling.
@@ -162,7 +162,9 @@ where
 	// adding the scaling factor (decimal) - 1 ensures the result of the division
 	// below is rounded up
 	if round_kind == &Round::Up {
-		x_u256 = x_u256.checked_add(decimals - 1).ok_or(ArithmeticError::Overflow)?;
+		x_u256 = x_u256
+			.checked_add(decimals.saturating_sub(1u8.into()))
+			.ok_or(ArithmeticError::Overflow)?;
 	}
 
 	// Perform division. Due to the shift the precision/truncation is identical to
@@ -192,13 +194,13 @@ where
 	// Convert to U256 so we have enough bits to perform lossless scaling.
 	let mut value_u256: U256 = value.to_bits().try_into().map_err(|_| ArithmeticError::Overflow)?;
 
-	let denomination = U256::from(10)
+	let decimals = U256::from(10u8)
 		.checked_pow(denomination.into())
 		.ok_or(ArithmeticError::Overflow)?;
 
 	// calculate the actual value by multiplying with the denomination. By using th
 	// U256 type we can ensure that the multiplication does not overflow.
-	value_u256 = value_u256.checked_mul(denomination).ok_or(ArithmeticError::Overflow)?;
+	value_u256 = value_u256.checked_mul(decimals).ok_or(ArithmeticError::Overflow)?;
 
 	// Calculate the number of trailing zeros in the value.
 	let trailing_zeros = value_u256.trailing_zeros();
@@ -212,7 +214,9 @@ where
 	// If the number of trailing zeros is less than the number of fractional bits,
 	// the value is not rounded and we can return it directly.
 	if round_kind == &Round::Up && trailing_zeros < frac_bits {
-		value_u256 = value_u256.checked_add(U256::from(1)).ok_or(ArithmeticError::Overflow)?;
+		value_u256 = value_u256
+			.checked_add(U256::from(1u8))
+			.ok_or(ArithmeticError::Overflow)?;
 	}
 
 	// Convert the value back to the collateral representation
