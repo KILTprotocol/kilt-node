@@ -93,7 +93,7 @@ pub mod pallet {
 	pub(crate) type CollateralAssetIdOf<T> =
 		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
-	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
+	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrenciesPerPool>;
 
 	pub(crate) type CurrencyNameOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
 
@@ -142,7 +142,7 @@ pub mod pallet {
 			+ ResetTeam<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
-		type MaxCurrencies: Get<u32>;
+		type MaxCurrenciesPerPool: Get<u32>;
 
 		#[pallet::constant]
 		type MaxStringLength: Get<u32>;
@@ -338,7 +338,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			curve: CurveInput<CurveParameterInputOf<T>>,
 			collateral_id: CollateralAssetIdOf<T>,
-			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
+			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool>,
 			denomination: u8,
 			transferable: bool,
 			min_operation_balance: u128,
@@ -1529,17 +1529,16 @@ pub mod pallet {
 				start_id = start_id.checked_add(&One::one()).ok_or(ArithmeticError::Overflow)?;
 			}
 
-			let currency_array = BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(
-				currency_ids_vec.clone(),
-			)
-			.map_err(|_| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert currency_ids_vec to BoundedVec in generate_sequential_asset_ids. Currency_ids_vec: {:?}",
-					&currency_ids_vec
-				);
-				Error::<T>::Internal
-			})?;
+			let currency_array =
+				BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>::try_from(currency_ids_vec.clone())
+					.map_err(|_| {
+						log::error!(
+							target: LOG_TARGET,
+							"Failed to convert currency_ids_vec to BoundedVec in generate_sequential_asset_ids. Currency_ids_vec: {:?}",
+							&currency_ids_vec
+						);
+						Error::<T>::Internal
+					})?;
 
 			Ok((currency_array, start_id))
 		}
@@ -1552,8 +1551,8 @@ pub mod pallet {
 		/// # Returns
 		/// - `u32`: The number of bonded currencies in the pool.
 		pub(crate) fn get_currencies_number(pool_details: &PoolDetailsOf<T>) -> u32 {
-			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is
-			// a u32; conversion to u32 must thus be lossless.
+			// bonded_currencies is a BoundedVec with maximum length MaxCurrenciesPerPool,
+			// which is a u32; conversion to u32 must thus be lossless.
 			pool_details.bonded_currencies.len().saturated_into()
 		}
 

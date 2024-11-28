@@ -238,7 +238,7 @@ pub mod runtime {
 	}
 	parameter_types! {
 		pub const CurrencyDeposit: Balance = 500;
-		pub const MaxCurrencies: u32 = 50;
+		pub const MaxCurrenciesPerPool: u32 = 50;
 		pub const CollateralAssetId: u32 = u32::MAX;
 		pub const MaxDenomination: u8 = 15;
 	}
@@ -254,7 +254,7 @@ pub mod runtime {
 		type DepositPerCurrency = CurrencyDeposit;
 		type ForceOrigin = EnsureRoot<AccountId>;
 		type Fungibles = Assets;
-		type MaxCurrencies = MaxCurrencies;
+		type MaxCurrenciesPerPool = MaxCurrenciesPerPool;
 		type MaxDenomination = MaxDenomination;
 		type MaxStringLength = StringLimit;
 		type PoolCreateOrigin = EnsureSigned<AccountId>;

@@ -100,7 +100,7 @@ The `Config` trait defines the configuration parameters and associated types req
 - `DepositPerCurrency`: The deposit required per currency.
 - `BaseDeposit`: The base deposit amount to create a new pool.
 - `MaxStringLength`: The maximum length of strings for the currencies symbol and name.
-- `MaxCurrencies`: The maximum number of currencies allowed per pool.
+- `MaxCurrenciesPerPool`: The maximum number of currencies allowed per pool.
 
 ### Origins 
 

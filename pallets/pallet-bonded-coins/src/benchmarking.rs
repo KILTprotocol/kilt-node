@@ -167,7 +167,7 @@ mod benchmarks {
 	{
 		let balance = <T::DepositCurrency as Inspect<AccountIdOf<T>>>::minimum_balance()
 			+ T::BaseDeposit::get().mul(1000u32.into())
-			+ T::DepositPerCurrency::get().mul(T::MaxCurrencies::get().into());
+			+ T::DepositPerCurrency::get().mul(T::MaxCurrenciesPerPool::get().into());
 		set_native_balance::<T>(account, balance.saturated_into());
 	}
 
@@ -211,7 +211,7 @@ mod benchmarks {
 		pool_id
 	}
 
-	fn generate_token_metadata<T: Config>(c: u32) -> BoundedVec<TokenMetaOf<T>, T::MaxCurrencies> {
+	fn generate_token_metadata<T: Config>(c: u32) -> BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool> {
 		let mut token_meta = Vec::new();
 		for _ in 1..=c {
 			token_meta.push(TokenMetaOf::<T> {
@@ -224,7 +224,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn create_pool_polynomial(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn create_pool_polynomial(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 		let curve = get_linear_bonding_curve_input::<CurveParameterInputOf<T>>();
 
@@ -260,7 +260,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn create_pool_square_root(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn create_pool_square_root(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 
 		let curve = get_square_root_curve_input::<CurveParameterInputOf<T>>();
@@ -298,7 +298,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn create_pool_lmsr(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn create_pool_lmsr(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 
 		let curve = get_lmsr_curve_input::<CurveParameterInputOf<T>>();
@@ -445,7 +445,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn mint_into_polynomial(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn mint_into_polynomial(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
@@ -466,7 +466,7 @@ mod benchmarks {
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 		let amount_to_mint = 10u128.saturated_into();
 		let max_costs = 100000u128.saturated_into();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		mint_into(
@@ -488,7 +488,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn mint_into_square_root(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn mint_into_square_root(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
@@ -509,7 +509,7 @@ mod benchmarks {
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 		let amount_to_mint = 10u128.saturated_into();
 		let max_costs = 100000u128.saturated_into();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		mint_into(
@@ -531,7 +531,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn mint_into_lmsr(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn mint_into_lmsr(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let collateral_id = create_default_collateral_asset::<T>();
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
@@ -553,7 +553,7 @@ mod benchmarks {
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 		let amount_to_mint = 10u128.saturated_into();
 		let max_costs = 100000u128.saturated_into();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		mint_into(
@@ -573,7 +573,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn burn_into_polynomial(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn burn_into_polynomial(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -601,7 +601,7 @@ mod benchmarks {
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 		let amount_to_burn = 10u128.saturated_into();
 		let min_return = 0u128.saturated_into();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		burn_into(
@@ -622,7 +622,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn burn_into_square_root(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn burn_into_square_root(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -649,7 +649,7 @@ mod benchmarks {
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 		let amount_to_burn = 10u128.saturated_into();
 		let min_return = 0u128.saturated_into();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		burn_into(
@@ -671,7 +671,7 @@ mod benchmarks {
 
 	#[benchmark]
 
-	fn burn_into_lmsr(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn burn_into_lmsr(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -698,7 +698,7 @@ mod benchmarks {
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 		let amount_to_burn = 10u128.saturated_into();
 		let min_return = 0u128.saturated_into();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		burn_into(
@@ -719,7 +719,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn start_destroy(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn start_destroy(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -731,7 +731,7 @@ mod benchmarks {
 
 		let pool_id = create_pool::<T>(curve, bonded_currencies, Some(account_origin), None, None);
 		let pool_id_clone = pool_id.clone();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
@@ -743,7 +743,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn force_start_destroy(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn force_start_destroy(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
@@ -751,7 +751,7 @@ mod benchmarks {
 
 		let origin = T::ForceOrigin::try_successful_origin().expect("creating origin should not fail");
 		let pool_id_clone = pool_id.clone();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
@@ -763,7 +763,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn finish_destroy(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn finish_destroy(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, true);
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
@@ -787,7 +787,7 @@ mod benchmarks {
 
 		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
 		let pool_id_clone = pool_id.clone();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
@@ -798,7 +798,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn start_refund(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn start_refund(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -824,7 +824,7 @@ mod benchmarks {
 		set_fungible_balance::<T>(target_asset_id, &holder, 10000u128);
 
 		let pool_id_clone = pool_id.clone();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
@@ -836,7 +836,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn force_start_refund(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn force_start_refund(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let target_asset_id = bonded_currencies[0].clone();
 
@@ -859,7 +859,7 @@ mod benchmarks {
 
 		let origin = T::ForceOrigin::try_successful_origin().expect("creating origin should not fail");
 		let pool_id_clone = pool_id.clone();
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id_clone, max_currencies);
@@ -870,7 +870,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn refund_account(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn refund_account(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -893,7 +893,7 @@ mod benchmarks {
 		set_fungible_balance::<T>(target_asset_id.clone(), &account_origin, 100000u128);
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
-		let max_currencies = T::MaxCurrencies::get();
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, pool_id, beneficiary, 0, max_currencies);
