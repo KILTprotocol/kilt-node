@@ -78,7 +78,7 @@ pub mod pallet {
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	pub(crate) type DepositCurrencyBalanceOf<T> =
+	pub(crate) type DepositBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
 	pub(crate) type CollateralBalanceOf<T> =
@@ -154,12 +154,12 @@ pub mod pallet {
 
 		/// The deposit required for each bonded currency.
 		#[pallet::constant]
-		type DepositPerCurrency: Get<DepositCurrencyBalanceOf<Self>>;
+		type DepositPerCurrency: Get<DepositBalanceOf<Self>>;
 
 		/// The base deposit required to create a new pool, primarily to cover
 		/// the ED of the pool account.
 		#[pallet::constant]
-		type BaseDeposit: Get<DepositCurrencyBalanceOf<Self>>;
+		type BaseDeposit: Get<DepositBalanceOf<Self>>;
 
 		/// The origin for most permissionless and priviledged operations.
 		type DefaultOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
@@ -1563,11 +1563,10 @@ pub mod pallet {
 		/// - `n_currencies`: The number of currencies in the pool.
 		///
 		/// # Returns
-		/// - `DepositCurrencyBalanceOf<T>`: The total deposit required for the
-		///   pool.
-		pub(crate) fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
+		/// - `DepositBalanceOf<T>`: The total deposit required for the pool.
+		pub(crate) fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositBalanceOf<T>>>(
 			n_currencies: N,
-		) -> DepositCurrencyBalanceOf<T> {
+		) -> DepositBalanceOf<T> {
 			T::BaseDeposit::get()
 				.saturating_add(T::DepositPerCurrency::get().saturating_mul(n_currencies.saturated_into()))
 		}

@@ -50,7 +50,7 @@ pub mod runtime {
 	use crate::{
 		self as pallet_bonded_coins,
 		types::{Locks, PoolStatus},
-		DepositCurrencyBalanceOf, HoldReason, PoolDetailsOf,
+		DepositBalanceOf, HoldReason, PoolDetailsOf,
 	};
 
 	pub type Hash = sp_core::H256;
@@ -269,7 +269,7 @@ pub mod runtime {
 
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
-		native_assets: Vec<(AccountId, DepositCurrencyBalanceOf<Test>)>,
+		native_assets: Vec<(AccountId, DepositBalanceOf<Test>)>,
 		bonded_balance: Vec<(AssetId, AccountId, Balance)>,
 		//  pool_id, PoolDetails
 		pools: Vec<(AccountId, PoolDetailsOf<Test>)>,
@@ -277,10 +277,7 @@ pub mod runtime {
 	}
 
 	impl ExtBuilder {
-		pub(crate) fn with_native_balances(
-			mut self,
-			native_assets: Vec<(AccountId, DepositCurrencyBalanceOf<Test>)>,
-		) -> Self {
+		pub(crate) fn with_native_balances(mut self, native_assets: Vec<(AccountId, DepositBalanceOf<Test>)>) -> Self {
 			self.native_assets = native_assets;
 			self
 		}
