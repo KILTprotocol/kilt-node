@@ -156,8 +156,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type DepositPerCurrency: Get<DepositBalanceOf<Self>>;
 
-		/// The base deposit required to create a new pool, primarily to cover
-		/// the ED of the pool account.
+		/// The base deposit required to create a new pool.
 		#[pallet::constant]
 		type BaseDeposit: Get<DepositBalanceOf<Self>>;
 
