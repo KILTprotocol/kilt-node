@@ -78,7 +78,7 @@ where
 
 impl<Parameter> Curve<Parameter>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	fn as_inner(&self) -> &dyn BondingFunction<Parameter> {
@@ -97,7 +97,7 @@ where
 /// The implementation forwards the call to the inner bonding function.
 impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	fn calculate_costs(

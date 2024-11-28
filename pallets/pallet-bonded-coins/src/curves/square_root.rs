@@ -43,7 +43,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use substrate_fixed::{
-	traits::{FixedSigned, FixedUnsigned, ToFixed},
+	traits::{FixedSigned, FixedUnsigned},
 	transcendental::sqrt,
 };
 
@@ -103,7 +103,7 @@ impl<I: FixedUnsigned, C: FixedSigned> TryFrom<SquareRootParametersInput<I>> for
 
 impl<Parameter> BondingFunction<Parameter> for SquareRootParameters<Parameter>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
 {
 	/// Calculate the cost of purchasing/selling assets using the square root
 	/// bonding curve.

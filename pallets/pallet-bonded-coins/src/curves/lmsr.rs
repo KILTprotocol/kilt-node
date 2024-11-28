@@ -77,7 +77,7 @@ impl<I: FixedUnsigned, C: FixedSigned> TryFrom<LMSRParametersInput<I>> for LMSRP
 
 impl<Parameter> LMSRParameters<Parameter>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	/// Calculate the logarithmic sum of the exponentials of the supply values,
@@ -111,7 +111,7 @@ where
 
 impl<Parameter> BondingFunction<Parameter> for LMSRParameters<Parameter>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
+	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
 	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	/// Calculate the cost of purchasing a set of assets from the market using
