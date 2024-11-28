@@ -13,7 +13,7 @@ use crate::{
 		square_root::{SquareRootParameters, SquareRootParametersInput},
 		Curve, CurveInput,
 	},
-	Call, CollateralAssetIdOf, CollateralCurrenciesBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf,
+	Call, CollateralAssetIdOf, CollateralBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf,
 	FungiblesBalanceOf, Pallet,
 };
 
@@ -66,7 +66,7 @@ fn get_lmsr_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
 
 #[benchmarks(where
 	<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
-	CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
+	CollateralBalanceOf<T>: Into<U256> + TryFrom<U256>,
 	FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
 	T::CollateralCurrencies: Create<T::AccountId> ,
 	T::Fungibles: InspectRoles<T::AccountId> + AccountTouch<FungiblesAssetIdOf<T>, AccountIdOf<T>>,

@@ -81,7 +81,7 @@ pub mod pallet {
 	pub(crate) type DepositCurrencyBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
-	pub(crate) type CollateralCurrenciesBalanceOf<T> =
+	pub(crate) type CollateralBalanceOf<T> =
 		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
 
 	pub(crate) type FungiblesBalanceOf<T> =
@@ -300,7 +300,7 @@ pub mod pallet {
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits:
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
-		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
+		CollateralBalanceOf<T>: Into<U256> + TryFrom<U256>,
 		FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
 		// TODO: make large integer type configurable
 	{
@@ -636,7 +636,7 @@ pub mod pallet {
 			currency_idx: u32,
 			beneficiary: AccountIdLookupOf<T>,
 			amount_to_mint: FungiblesBalanceOf<T>,
-			max_cost: CollateralCurrenciesBalanceOf<T>,
+			max_cost: CollateralBalanceOf<T>,
 			currency_count: u32,
 		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
@@ -768,7 +768,7 @@ pub mod pallet {
 			currency_idx: u32,
 			beneficiary: AccountIdLookupOf<T>,
 			amount_to_burn: FungiblesBalanceOf<T>,
-			min_return: CollateralCurrenciesBalanceOf<T>,
+			min_return: CollateralBalanceOf<T>,
 			currency_count: u32,
 		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
@@ -1007,7 +1007,7 @@ pub mod pallet {
 
 			// nothing to distribute; refunding is complete, user should call start_destroy
 			ensure!(
-				total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero(),
+				total_collateral_issuance > CollateralBalanceOf::<T>::zero(),
 				Error::<T>::NothingToRefund
 			);
 
@@ -1047,7 +1047,7 @@ pub mod pallet {
 				"burnt amount exceeds the total supply of all bonded currencies"
 			);
 
-			let amount: CollateralCurrenciesBalanceOf<T> = burnt
+			let amount: CollateralBalanceOf<T> = burnt
 				.checked_mul(total_collateral_issuance.into())
 				// As long as the balance type is half the size of a U256, this won't overflow.
 				.ok_or(ArithmeticError::Overflow)?
@@ -1237,7 +1237,7 @@ pub mod pallet {
 			let total_collateral_issuance =
 				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
-			if total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero() {
+			if total_collateral_issuance > CollateralBalanceOf::<T>::zero() {
 				T::CollateralCurrencies::transfer(
 					pool_details.collateral_id,
 					&pool_account,
@@ -1266,7 +1266,7 @@ pub mod pallet {
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits:
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
-		CollateralCurrenciesBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
+		CollateralBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
 		FungiblesBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
 	{
 		/// Calculates the collateral by the given curve and the normalized
@@ -1283,8 +1283,8 @@ pub mod pallet {
 		/// - `collateral_currency_id`: The ID of the collateral currency.
 		///
 		/// # Returns
-		/// - `Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError>`: The
-		///   calculated collateral or an error.
+		/// - `Result<CollateralBalanceOf<T>, ArithmeticError>`: The calculated
+		///   collateral or an error.
 		///
 		/// # Errors
 		/// - `ArithmeticError`: If there is an operation overflowing,
@@ -1296,7 +1296,7 @@ pub mod pallet {
 			curve: &Curve<CurveParameterTypeOf<T>>,
 			collateral_currency_id: CollateralAssetIdOf<T>,
 			round_kind: &Round,
-		) -> Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError> {
+		) -> Result<CollateralBalanceOf<T>, ArithmeticError> {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
 			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id);
@@ -1394,7 +1394,7 @@ pub mod pallet {
 				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 			// nothing to distribute
 			ensure!(
-				total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero(),
+				total_collateral_issuance > CollateralBalanceOf::<T>::zero(),
 				Error::<T>::NothingToRefund
 			);
 
@@ -1470,7 +1470,7 @@ pub mod pallet {
 				let total_collateral_issuance =
 					T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 
-				if total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero() {
+				if total_collateral_issuance > CollateralBalanceOf::<T>::zero() {
 					let has_holders = pool_details.bonded_currencies.iter().any(|asset_id| {
 						T::Fungibles::total_issuance(asset_id.clone()) > FungiblesBalanceOf::<T>::zero()
 					});
