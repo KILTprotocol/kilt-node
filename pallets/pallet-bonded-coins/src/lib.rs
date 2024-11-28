@@ -415,10 +415,10 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Resets the managing team of a pool. The new team will be set to the
-		/// provided team. The currency index is used to select the currency
-		/// that the team will manage.
-		/// The origin account must be a manager of the pool.
+		/// Changes the managing team of a bonded currency which is issued by
+		/// this pool. The new team will be set to the provided team. The
+		/// currency index is used to select the currency that the team will
+		/// manage. The origin account must be a manager of the pool.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call, requiring the caller to be a
