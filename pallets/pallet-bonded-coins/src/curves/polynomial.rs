@@ -152,27 +152,33 @@ where
 			.checked_add(accumulated_passive_issuance)
 			.ok_or(ArithmeticError::Overflow)?;
 
-		// Calculate high - low
-		let delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
-
-		let high_low_mul = high.checked_mul(low).ok_or(ArithmeticError::Overflow)?;
-		let high_square = square(high)?;
-		let low_square = square(low)?;
-
-		// Factorized cubic term:  (high^2 + high * low + low^2)
-		let cubic_term = high_square
-			.checked_add(high_low_mul)
-			.ok_or(ArithmeticError::Overflow)?
-			.checked_add(low_square)
-			.ok_or(ArithmeticError::Overflow)?;
-
 		// Calculate m * (high^2 + high * low + low^2)
-		let term1 = self.m.checked_mul(cubic_term).ok_or(ArithmeticError::Overflow)?;
+		let term1 = if self.m != 0 {
+			let high_low_mul = high.checked_mul(low).ok_or(ArithmeticError::Overflow)?;
+			let high_square = square(high)?;
+			let low_square = square(low)?;
 
-		let high_plus_low = high.checked_add(low).ok_or(ArithmeticError::Overflow)?;
+			// Factorized cubic term:  (high^2 + high * low + low^2)
+			let cubic_term = high_square
+				.checked_add(high_low_mul)
+				.ok_or(ArithmeticError::Overflow)?
+				.checked_add(low_square)
+				.ok_or(ArithmeticError::Overflow)?;
+
+			self.m.checked_mul(cubic_term).ok_or(ArithmeticError::Overflow)
+		} else {
+			// if m is 0 the product is 0
+			Ok(self.m)
+		}?;
 
 		// Calculate n * (high + low)
-		let term2 = self.n.checked_mul(high_plus_low).ok_or(ArithmeticError::Overflow)?;
+		let term2 = if self.n != 0 {
+			let high_plus_low = high.checked_add(low).ok_or(ArithmeticError::Overflow)?;
+			self.n.checked_mul(high_plus_low).ok_or(ArithmeticError::Overflow)
+		} else {
+			// if n is 0 the product is 0
+			Ok(self.n)
+		}?;
 
 		// Final calculation with factored (high - low)
 		let result = term1
@@ -180,6 +186,9 @@ where
 			.ok_or(ArithmeticError::Overflow)?
 			.checked_add(self.o)
 			.ok_or(ArithmeticError::Overflow)?;
+
+		// Calculate high - low
+		let delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)?;
 
 		result.checked_mul(delta_x).ok_or(ArithmeticError::Overflow)
 	}

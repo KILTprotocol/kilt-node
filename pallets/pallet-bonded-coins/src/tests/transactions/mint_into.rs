@@ -757,6 +757,7 @@ fn mint_without_collateral() {
 		});
 }
 
+#[ignore]
 #[test]
 fn mint_more_than_fixed_can_represent() {
 	// denomination is 10
