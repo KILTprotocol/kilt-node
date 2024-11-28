@@ -103,7 +103,7 @@ pub mod pallet {
 
 	pub(crate) type CurveParameterInputOf<T> = <T as Config>::CurveParameterInput;
 
-	pub(crate) type PoolDetailsOf<T> = PoolDetails<
+	pub type PoolDetailsOf<T> = PoolDetails<
 		<T as frame_system::Config>::AccountId,
 		Curve<CurveParameterTypeOf<T>>,
 		BoundedCurrencyVec<T>,
