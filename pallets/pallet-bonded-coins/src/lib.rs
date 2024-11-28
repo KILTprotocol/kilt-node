@@ -222,11 +222,11 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	#[pallet::getter(fn pools)]
+	#[pallet::getter(fn pool_with_id)]
 	pub(crate) type Pools<T: Config> = StorageMap<_, Twox64Concat, T::PoolId, PoolDetailsOf<T>, OptionQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn nex_asset_id)]
+	#[pallet::getter(fn next_asset_id)]
 	pub(crate) type NextAssetId<T: Config> = StorageValue<_, FungiblesAssetIdOf<T>, ValueQuery>;
 
 	#[pallet::event]
