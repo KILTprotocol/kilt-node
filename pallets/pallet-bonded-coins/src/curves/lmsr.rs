@@ -41,8 +41,7 @@ use substrate_fixed::{
 	transcendental::{exp, ln},
 };
 
-use super::BondingFunction;
-use crate::{PassiveSupply, Precision, LOG_TARGET};
+use crate::{curves::BondingFunction, PassiveSupply, Precision, LOG_TARGET};
 
 /// A struct representing the unchecked input parameters for the LMSR model.
 /// This struct is used to convert the input parameters to the correct
