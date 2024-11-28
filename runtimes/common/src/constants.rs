@@ -183,6 +183,16 @@ pub mod bonded_assets {
 	}
 }
 
+pub mod bonded_coins {
+	use super::*;
+
+	pub const BASE_DEPOSIT: Balance = 0;
+
+	parameter_types! {
+		pub const BaseDeposit: Balance = BASE_DEPOSIT;
+	}
+}
+
 pub mod foreign_assets {
 	use super::*;
 
