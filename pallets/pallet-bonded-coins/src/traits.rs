@@ -1,10 +1,8 @@
-use core::fmt::Debug;
-
 use frame_support::{dispatch::DispatchResult, traits::fungibles::roles::Inspect};
 use frame_system::RawOrigin;
 use pallet_assets::{Config as AssetConfig, Pallet as AssetsPallet};
 use sp_runtime::{traits::StaticLookup, DispatchError};
-use sp_std::prelude::*;
+use sp_std::{fmt::Debug, prelude::*};
 
 use crate::AccountIdOf;
 
