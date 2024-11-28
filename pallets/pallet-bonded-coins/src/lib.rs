@@ -355,6 +355,11 @@ pub mod pallet {
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
+			if Pools::<T>::contains_key(&pool_id) {
+				log::error!(target: LOG_TARGET, "Attempt to create pool with pre-existing id {:?}", pool_id);
+				return Err(Error::<T>::Internal.into());
+			};
+
 			T::DepositCurrency::hold(
 				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&who,
