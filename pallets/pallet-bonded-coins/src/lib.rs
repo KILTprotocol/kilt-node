@@ -95,9 +95,7 @@ pub mod pallet {
 
 	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrenciesPerPool>;
 
-	pub(crate) type CurrencyNameOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
-
-	pub(crate) type CurrencySymbolOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
+	pub(crate) type StringInputOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
 
 	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
 
@@ -114,7 +112,7 @@ pub mod pallet {
 
 	pub(crate) type PassiveSupply<T> = Vec<T>;
 
-	pub(crate) type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, CurrencyNameOf<T>, CurrencySymbolOf<T>>;
+	pub(crate) type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, StringInputOf<T>, StringInputOf<T>>;
 
 	pub(crate) const LOG_TARGET: &str = "runtime::pallet-bonded-coins";
 
