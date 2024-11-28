@@ -6,8 +6,7 @@ use frame_support::{
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use pallet_assets::Error as AssetsPalletErrors;
-use sp_core::bounded_vec;
-use sp_runtime::{ArithmeticError, BoundedVec};
+use sp_runtime::{bounded_vec, ArithmeticError, BoundedVec};
 use sp_std::ops::Sub;
 
 use crate::{

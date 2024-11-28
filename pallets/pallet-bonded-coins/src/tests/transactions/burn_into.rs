@@ -6,8 +6,7 @@ use frame_support::{
 	},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
-use sp_core::bounded_vec;
-use sp_runtime::{assert_eq_error_rate, traits::Scale, TokenError};
+use sp_runtime::{assert_eq_error_rate, bounded_vec, traits::Scale, TokenError};
 
 use crate::{
 	mock::{runtime::*, *},
