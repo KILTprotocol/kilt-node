@@ -372,15 +372,13 @@ pub mod pallet {
 			// currency to it. This should also verify that the currency actually exists.
 			T::CollateralCurrencies::touch(collateral_id.clone(), pool_account, &who)?;
 
-			currencies
-				.into_iter()
-				.zip(currency_ids.iter())
-				.try_for_each(|(entry, asset_id)| -> DispatchResult {
+			currencies.into_iter().zip(currency_ids.iter()).try_for_each(
+				|(token_metadata, asset_id)| -> DispatchResult {
 					let TokenMeta {
 						min_balance,
 						name,
 						symbol,
-					} = entry;
+					} = token_metadata;
 
 					T::Fungibles::create(asset_id.clone(), pool_account.to_owned(), false, min_balance)?;
 
@@ -394,7 +392,8 @@ pub mod pallet {
 					)?;
 
 					Ok(())
-				})?;
+				},
+			)?;
 
 			Pools::<T>::set(
 				&pool_id,
