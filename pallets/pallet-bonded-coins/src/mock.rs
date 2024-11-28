@@ -256,7 +256,7 @@ pub mod runtime {
 		type Fungibles = Assets;
 		type MaxCurrenciesPerPool = MaxCurrenciesPerPool;
 		type MaxDenomination = MaxDenomination;
-		type MaxStringLength = StringLimit;
+		type MaxStringInputLength = StringLimit;
 		type PoolCreateOrigin = EnsureSigned<AccountId>;
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;

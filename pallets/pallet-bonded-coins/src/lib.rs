@@ -95,7 +95,7 @@ pub mod pallet {
 
 	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrenciesPerPool>;
 
-	pub(crate) type StringInputOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
+	pub(crate) type StringInputOf<T> = BoundedVec<u8, <T as Config>::MaxStringInputLength>;
 
 	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
 
@@ -143,7 +143,7 @@ pub mod pallet {
 		type MaxCurrenciesPerPool: Get<u32>;
 
 		#[pallet::constant]
-		type MaxStringLength: Get<u32>;
+		type MaxStringInputLength: Get<u32>;
 
 		/// The maximum denomination that bonded currencies can use. This should
 		/// be configured so that
