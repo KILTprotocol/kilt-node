@@ -279,6 +279,8 @@ pub mod pallet {
 		/// parameter. Thrown by transactions that require specifying the number
 		/// of a pool's currencies in order to determine weight limits upfront.
 		CurrencyCount,
+		/// Raised if pool creation arguments are outside of the allowed value
+		/// range.
 		InvalidInput,
 		/// An internal error occurred. This should never happen.
 		Internal,
