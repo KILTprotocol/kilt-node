@@ -141,7 +141,11 @@ fn burn_large_supply() {
 
 	let curve = get_linear_bonding_curve();
 
-	let initial_supply = (2_u128.pow(127) as f64).sqrt() as u128;
+	// the bottleneck is the fixed type with a capacity of 2^74 = 1.89 * 10^22; as
+	// part of the calculations, the (denomination-scaled) supply is squared.
+	// (2^69 / 10^10)^2 = 3.48 * 10^21, which leaves around one magnitude of room
+	// for multiplications & additions.
+	let initial_supply = 2_u128.pow(69);
 	let amount_to_burn = 10u128.pow(10);
 
 	let expected_price = mocks_curve_get_collateral_at_supply(initial_supply)
