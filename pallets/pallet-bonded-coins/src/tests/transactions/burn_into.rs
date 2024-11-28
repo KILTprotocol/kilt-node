@@ -141,7 +141,7 @@ fn burn_large_supply() {
 
 	let curve = get_linear_bonding_curve();
 
-	let initial_supply = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
+	let initial_supply = (2_u128.pow(127) as f64).sqrt() as u128;
 	let amount_to_burn = 10u128.pow(10);
 
 	let expected_price = mocks_curve_get_collateral_at_supply(initial_supply)

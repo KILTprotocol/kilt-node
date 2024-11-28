@@ -356,7 +356,6 @@ pub mod pallet {
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
-			// Todo: change that.
 			T::DepositCurrency::hold(
 				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&who,
@@ -1104,7 +1103,7 @@ pub mod pallet {
 				&who,
 				amount,
 				Preservation::Expendable,
-			)?; // TODO: check edge cases around existential deposit
+			)?;
 
 			// if collateral or total supply drops to zero, refunding is complete
 			// -> emit event
