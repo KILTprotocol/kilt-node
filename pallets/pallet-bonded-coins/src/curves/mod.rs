@@ -145,7 +145,7 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 pub(crate) fn balance_to_fixed<Balance, FixedType: Fixed>(
 	balance: Balance,
 	denomination: u8,
-	round_kind: &Round,
+	round_kind: Round,
 ) -> Result<FixedType, ArithmeticError>
 where
 	FixedType::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
@@ -164,7 +164,7 @@ where
 
 	// adding the scaling factor (decimal) - 1 ensures the result of the division
 	// below is rounded up
-	if round_kind == &Round::Up {
+	if round_kind == Round::Up {
 		x_u256 = x_u256
 			.checked_add(decimals.saturating_sub(1u8.into()))
 			.ok_or(ArithmeticError::Overflow)?;
@@ -189,7 +189,7 @@ where
 pub(crate) fn fixed_to_balance<Balance, FixedType: Fixed>(
 	fixed: FixedType,
 	denomination: u8,
-	round_kind: &Round,
+	round_kind: Round,
 ) -> Result<Balance, ArithmeticError>
 where
 	FixedType::Bits: TryInto<U256>,
@@ -217,7 +217,7 @@ where
 
 	// If the number of trailing zeros is less than the number of fractional bits,
 	// the value is not rounded and we can return it directly.
-	if round_kind == &Round::Up && trailing_zeros < frac_bits {
+	if round_kind == Round::Up && trailing_zeros < frac_bits {
 		value_u256 = value_u256
 			.checked_add(U256::from(1u8))
 			.ok_or(ArithmeticError::Overflow)?;

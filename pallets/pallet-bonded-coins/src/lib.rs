@@ -669,13 +669,13 @@ pub mod pallet {
 				&bonded_currencies,
 				pool_details.denomination,
 				currency_idx,
-				&round_kind,
+				round_kind,
 			)?;
 
 			let normalized_amount_to_mint = balance_to_fixed(
 				amount_to_mint.saturated_into::<u128>(),
 				pool_details.denomination,
-				&round_kind,
+				round_kind,
 			)?;
 
 			let active_post = active_pre
@@ -688,7 +688,7 @@ pub mod pallet {
 				passive,
 				&pool_details.curve,
 				pool_details.collateral_id.clone(),
-				&round_kind,
+				round_kind,
 			)?;
 
 			ensure!(cost > Zero::zero(), Error::<T>::ZeroCollateral);
@@ -799,10 +799,10 @@ pub mod pallet {
 				&bonded_currencies,
 				pool_details.denomination,
 				currency_idx,
-				&round_kind,
+				round_kind,
 			)?;
 
-			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, &round_kind)?;
+			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, round_kind)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -814,7 +814,7 @@ pub mod pallet {
 				passive,
 				&pool_details.curve,
 				pool_details.collateral_id.clone(),
-				&round_kind,
+				round_kind,
 			)?;
 
 			ensure!(collateral_return > Zero::zero(), Error::<T>::ZeroCollateral);
@@ -1294,7 +1294,7 @@ pub mod pallet {
 			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
 			curve: &Curve<CurveParameterTypeOf<T>>,
 			collateral_currency_id: CollateralAssetIdOf<T>,
-			round_kind: &Round,
+			round_kind: Round,
 		) -> Result<CollateralBalanceOf<T>, ArithmeticError> {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
@@ -1326,7 +1326,7 @@ pub mod pallet {
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
 			currency_idx: usize,
-			round_kind: &Round,
+			round_kind: Round,
 		) -> Result<(CurveParameterTypeOf<T>, PassiveSupply<CurveParameterTypeOf<T>>), DispatchError> {
 			let mut normalized_total_issuances = bonded_currencies
 				.iter()
