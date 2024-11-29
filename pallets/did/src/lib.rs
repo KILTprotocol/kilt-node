@@ -165,6 +165,7 @@ pub mod pallet {
 	};
 	use service_endpoints::DidEndpoint;
 	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
+	use sp_weights::Weight;
 
 	use crate::{
 		did_details::{
@@ -1261,6 +1262,29 @@ pub mod pallet {
 
 			Self::try_insert_did(did_identifier, did_entry, sender)?;
 
+			Ok(())
+		}
+
+		#[pallet::call_index(17)]
+		// TODO: Benchmark base call dispatch + the weight specified in the call
+		#[pallet::weight(1000)]
+		pub fn cleanup_linked_resources(
+			origin: OriginFor<T>,
+			did: DidIdentifierOf<T>,
+			max_weight: Weight,
+		) -> DispatchResult {
+			// If it's a regular transaction, verify the submitter is the deposit owner.
+			if let Ok(sender) = ensure_signed(origin.clone()) {
+				let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
+				ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
+			// If it's a DID-authenticated operation, verify the specified `did`
+			// matches the origin.
+			} else if let Ok(did_origin) = T::EnsureOrigin::ensure_origin(origin) {
+				ensure!(did_origin.subject() == did, Error::<T>::BadDidOrigin);
+			// We don't accept any other origin -> fail.
+			} else {
+				return Err(DispatchError::BadOrigin);
+			};
 			Ok(())
 		}
 	}
