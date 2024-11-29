@@ -10921,6 +10921,7 @@ dependencies = [
  "pallet-assets",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-bonded-coins",
  "pallet-deposit-storage",
  "pallet-did-lookup",
  "pallet-dip-provider",

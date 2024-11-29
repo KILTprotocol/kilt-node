@@ -158,40 +158,20 @@ pub mod attestation {
 	}
 }
 
-pub mod bonded_assets {
-	use super::*;
-
-	pub const APPROVAL_DEPOSIT: Balance = EXISTENTIAL_DEPOSIT;
-	/// 1 Storage entry with accountId
-	pub const ASSET_ACCOUNT_DEPOSIT: u128 = deposit(1, 32);
-	/// 1 Storage entry with u32 as assetId
-	pub const ASSET_DEPOSIT: u128 = deposit(1, 4);
-	///https://github.com/polkadot-fellows/runtimes/blob/main/system-parachains/asset-hubs/asset-hub-polkadot/src/lib.rs#L311
-	pub const META_DEPOSIT_BASE: u128 = deposit(1, 68);
-	pub const META_DEPOSIT_PER_BYTE: u128 = deposit(0, 1);
-	pub const REMOVE_ITEMS_LIMIT: u32 = 1000;
-	pub const STRING_LIMIT: u32 = 10;
-
-	parameter_types! {
-		pub const ApprovalDeposit: u128 = APPROVAL_DEPOSIT;
-		pub const AssetAccountDeposit: u128 = ASSET_ACCOUNT_DEPOSIT;
-		pub const AssetDeposit: u128 = ASSET_DEPOSIT;
-		pub const MetaDepositBase: u128 = META_DEPOSIT_BASE;
-		pub const MetaDepositPerByte: u128 = META_DEPOSIT_PER_BYTE;
-		pub const RemoveItemsLimit: u32 = REMOVE_ITEMS_LIMIT;
-		pub const StringLimit: u32 = STRING_LIMIT;
-	}
-}
-
 pub mod bonded_coins {
 	use super::*;
 
-	pub const BASE_DEPOSIT: Balance = 0;
-	// no storage entry. u32 -> 4 bytes
-	pub const DEPOSIT_PER_CURRENCY: Balance = deposit(0, 4);
+	/// The size is checked in the runtime by a test.
+	pub const MAX_POOL_BYTE_LENGTH: u32 = 970;
+	pub const BASE_DEPOSIT: Balance = deposit(1, MAX_POOL_BYTE_LENGTH);
+	/// 1 Storage entry in the assets pallet.
+	/// AssetId has 8 bytes. Two times stored in the storage. -> 16 bytes
+	/// struct AssetMetadata has 18 bytes + name + symbol -> 18 + 8 = 26 bytes
+	/// https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/assets/src/types.rs#L188
+	pub const DEPOSIT_PER_CURRENCY: Balance = deposit(1, 42);
 	pub const MAX_CURRENCIES: u32 = 50;
-	pub const MAX_DENOMINATION: u8 = 17;
-	pub const MAX_STRING_LENGTH: u32 = 15;
+	pub const MAX_DENOMINATION: u8 = 16;
+	pub const MAX_STRING_LENGTH: u32 = crate::constants::assets::STRING_LIMIT;
 
 	parameter_types! {
 		pub const BaseDeposit: Balance = BASE_DEPOSIT;
@@ -203,7 +183,7 @@ pub mod bonded_coins {
 	}
 }
 
-pub mod foreign_assets {
+pub mod assets {
 	use super::*;
 
 	pub const APPROVAL_DEPOSIT: u128 = 0;

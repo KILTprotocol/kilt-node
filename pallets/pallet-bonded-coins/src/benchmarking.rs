@@ -469,7 +469,11 @@ mod benchmarks {
 	}
 
 	#[benchmark]
+<<<<<<< HEAD
 	fn mint_into_polynomial(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
+=======
+	fn mint_into_polynomial(c: Linear<1, { T::MaxCurrencies::get() }>) {
+>>>>>>> finished
 		let collateral_id = create_default_collateral_asset::<T>();
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
@@ -511,7 +515,11 @@ mod benchmarks {
 	}
 
 	#[benchmark]
+<<<<<<< HEAD
 	fn mint_into_square_root(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
+=======
+	fn mint_into_square_root(c: Linear<1, { T::MaxCurrencies::get() }>) {
+>>>>>>> finished
 		let collateral_id = create_default_collateral_asset::<T>();
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
@@ -553,7 +561,11 @@ mod benchmarks {
 	}
 
 	#[benchmark]
+<<<<<<< HEAD
 	fn mint_into_lmsr(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
+=======
+	fn mint_into_lmsr(c: Linear<1, { T::MaxCurrencies::get() }>) {
+>>>>>>> finished
 		let collateral_id = create_default_collateral_asset::<T>();
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
@@ -858,6 +870,7 @@ mod benchmarks {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let target_asset_id = bonded_currencies[0].clone();
 
+
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
 		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, None);
@@ -870,6 +883,7 @@ mod benchmarks {
 		T::Collaterals::touch(collateral_id.clone(), &pool_account, &pool_account).expect("Touching should work");
 
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
+
 
 		let holder: T::AccountId = account("holder", 0, 0);
 		T::Fungibles::touch(target_asset_id.clone(), &holder, &pool_account).expect("Touching should work");

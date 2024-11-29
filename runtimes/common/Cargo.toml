@@ -31,6 +31,7 @@ did                    = { workspace = true }
 kilt-dip-primitives    = { workspace = true }
 kilt-support           = { workspace = true }
 pallet-asset-switch    = { workspace = true }
+pallet-bonded-coins    = { workspace = true }
 pallet-deposit-storage = { workspace = true }
 pallet-did-lookup      = { workspace = true }
 pallet-dip-provider    = { workspace = true }
@@ -87,6 +88,7 @@ runtime-benchmarks = [
   "pallet-asset-switch/runtime-benchmarks",
   "pallet-assets/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
+  "pallet-bonded-coins/runtime-benchmarks",
   "pallet-deposit-storage/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
   "pallet-multisig/runtime-benchmarks",
@@ -116,6 +118,7 @@ std = [
   "pallet-assets/std",
   "pallet-authorship/std",
   "pallet-balances/std",
+  "pallet-bonded-coins/std",
   "pallet-deposit-storage/std",
   "pallet-did-lookup/std",
   "pallet-dip-provider/std",
@@ -155,6 +158,7 @@ try-runtime = [
   "pallet-assets/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
+  "pallet-bonded-coins/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-multisig/try-runtime",
   "pallet-transaction-payment/try-runtime",

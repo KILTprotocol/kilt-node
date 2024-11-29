@@ -34,6 +34,9 @@ mod curves;
 mod default_weights;
 pub mod traits;
 mod types;
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::BenchmarkHelper;
+
 pub use default_weights::WeightInfo;
 
 #[frame_support::pallet]
@@ -105,11 +108,16 @@ pub mod pallet {
 	pub(crate) type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
 
-	pub(crate) type FungiblesAssetIdOf<T> =
+	pub type FungiblesAssetIdOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
+<<<<<<< HEAD
 	pub(crate) type CollateralAssetIdOf<T> =
 		<<T as Config>::Collaterals as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
+=======
+	pub type CollateralAssetIdOf<T> =
+		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
+>>>>>>> finished
 
 	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrenciesPerPool>;
 
@@ -151,7 +159,11 @@ pub mod pallet {
 		/// can be used as collateral for minting bonded tokens.
 		type Collaterals: MutateFungibles<Self::AccountId>
 			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>
+<<<<<<< HEAD
 			+ InspectMetadata<Self::AccountId>;
+=======
+			+ FungiblesInspect<Self::AccountId>;
+>>>>>>> finished
 		/// Implementation of creating and managing new fungibles
 		type Fungibles: CreateFungibles<Self::AccountId>
 			+ DestroyFungibles<Self::AccountId>
