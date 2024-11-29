@@ -54,6 +54,7 @@ mod migrations;
 pub use migrations::RuntimeMigrations;
 mod parachain;
 mod runtime_apis;
+use runtime_apis::_InternalImplRuntimeApis;
 pub use runtime_apis::{api, RuntimeApi};
 mod system;
 use sp_version::RuntimeVersion;
