@@ -105,6 +105,7 @@ where
 	}
 }
 
+#[cfg(feature = "runtime-benchmarks")]
 impl<
 		Left: fungible::Inspect<AccountId>,
 		Right: fungibles::Inspect<AccountId, Balance = Left::Balance> + fungibles::Create<AccountId>,
@@ -264,7 +265,6 @@ impl<
 {
 	fn decimals(asset: Self::AssetId) -> u8 {
 		match Criterion::convert(asset) {
-			// TODO: CHANGE THAT
 			Left(()) => 15u8,
 			Right(a) => Right::decimals(a),
 		}
@@ -272,16 +272,14 @@ impl<
 
 	fn name(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
-			// TODO: CHANGE THAT
-			Left(()) => "KILT".as_bytes().to_vec(),
+			Left(()) => Vec::new(),
 			Right(a) => Right::name(a),
 		}
 	}
 
 	fn symbol(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
-			// TODO: CHANGE THAT
-			Left(()) => "KILT".as_bytes().to_vec(),
+			Left(()) => Vec::new(),
 			Right(a) => Right::symbol(a),
 		}
 	}
