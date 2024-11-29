@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use pallet_bonded_coins::{BenchmarkHelper, CollateralAssetIdOf, Config, FungiblesAssetIdOf};
-use xcm::v4::Location;
+use xcm::v4::{Junction, Junctions, Location};
 
 use crate::system::BondedFungibles;
 pub struct BondedFungiblesBenchmarkHelper<T>(sp_std::marker::PhantomData<T>);
@@ -35,7 +35,7 @@ where
 	fn calculate_collateral_asset_id(seed: u32) -> CollateralAssetIdOf<T> {
 		CollateralAssetIdOf::<T>::from(Location {
 			parents: 0,
-			interior: xcm::v4::Junctions::X1([xcm::v4::Junction::GeneralIndex(seed.into())].into()),
+			interior: Junctions::X1([Junction::GeneralIndex(seed.into())].into()),
 		})
 	}
 }
