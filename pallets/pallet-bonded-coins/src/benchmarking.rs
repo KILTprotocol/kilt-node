@@ -866,10 +866,10 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn force_start_refund(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
+
+	fn force_start_refund(c: Linear<1, { T::MaxCurrencies::get() }>) {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let target_asset_id = bonded_currencies[0].clone();
-
 
 		let curve = get_lmsr_curve::<CurveParameterTypeOf<T>>();
 
