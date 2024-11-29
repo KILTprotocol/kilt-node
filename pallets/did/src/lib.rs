@@ -88,6 +88,7 @@ pub mod errors;
 pub mod migrations;
 pub mod origin;
 pub mod service_endpoints;
+pub mod traits;
 
 #[cfg(test)]
 mod mock;
@@ -171,6 +172,7 @@ pub mod pallet {
 			DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey, RelationshipDeriveError,
 		},
 		service_endpoints::{utils as service_endpoints_utils, ServiceEndpointId},
+		traits::DeletionHelper,
 	};
 
 	/// The current storage version.
@@ -328,6 +330,10 @@ pub mod pallet {
 
 		/// Migration manager to handle new created entries
 		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
+
+		/// Helper trait to aid in cleaning up DID-related resources across all
+		/// runtime pallets.
+		type DeletionHelper: DeletionHelper<Self>;
 	}
 
 	#[pallet::pallet]
@@ -455,6 +461,9 @@ pub mod pallet {
 		/// The number of service endpoints stored under the DID is larger than
 		/// the number of endpoints to delete.
 		MaxStoredEndpointsCountExceeded,
+		/// The DID is linked to other runtime elements that would be left
+		/// dangling if the DID were to be deleted.
+		NonZeroReferences,
 		/// An error that is not supposed to take place, yet it happened.
 		Internal,
 	}
@@ -1495,6 +1504,10 @@ pub mod pallet {
 			ensure!(
 				current_endpoints_count <= endpoints_to_remove,
 				Error::<T>::MaxStoredEndpointsCountExceeded
+			);
+			ensure!(
+				T::DeletionHelper::linked_resources_count(&did_subject).is_zero(),
+				Error::<T>::NonZeroReferences
 			);
 
 			// This one can fail, albeit this should **never** be the case as we check for
