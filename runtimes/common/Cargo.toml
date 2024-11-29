@@ -24,6 +24,7 @@ log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info         = { workspace = true, features = ["derive"] }
 smallvec           = { workspace = true }
+substrate-fixed    = { workspace = true }
 
 attestation            = { workspace = true }
 did                    = { workspace = true }
@@ -138,6 +139,7 @@ std = [
   "sp-runtime/std",
   "sp-std/std",
   "sp-trie/std",
+  "substrate-fixed/std",
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",

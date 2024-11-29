@@ -187,9 +187,19 @@ pub mod bonded_coins {
 	use super::*;
 
 	pub const BASE_DEPOSIT: Balance = 0;
+	// no storage entry. u32 -> 4 bytes
+	pub const DEPOSIT_PER_CURRENCY: Balance = deposit(0, 4);
+	pub const MAX_CURRENCIES: u32 = 50;
+	pub const MAX_DENOMINATION: u8 = 17;
+	pub const MAX_STRING_LENGTH: u32 = 15;
 
 	parameter_types! {
 		pub const BaseDeposit: Balance = BASE_DEPOSIT;
+		pub const DepositPerCurrency: Balance = DEPOSIT_PER_CURRENCY;
+		pub const MaxCurrencies: u32 = MAX_CURRENCIES;
+		pub const MaxDenomination: u8 = MAX_DENOMINATION;
+		pub const MaxStringLength: u32 = MAX_STRING_LENGTH;
+
 	}
 }
 

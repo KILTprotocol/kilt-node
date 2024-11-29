@@ -26,7 +26,7 @@ use runtime_common::{
 	asset_switch::EnsureRootAsTreasury,
 	constants,
 	fees::{ToAuthorCredit, WeightToFee},
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
+	AccountId, AssetId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
 	SendDustAndFeesToTreasury, SlowAdjustingFeeUpdate,
 };
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64};
@@ -240,8 +240,8 @@ impl pallet_assets::Config<BondedFungibles> for Runtime {
 	type ApprovalDeposit = constants::bonded_assets::ApprovalDeposit;
 	type AssetAccountDeposit = constants::bonded_assets::AssetAccountDeposit;
 	type AssetDeposit = constants::foreign_assets::AssetDeposit;
-	type AssetId = u32;
-	type AssetIdParameter = u32;
+	type AssetId = AssetId;
+	type AssetIdParameter = AssetId;
 	type Balance = Balance;
 	type CallbackHandle = ();
 	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;

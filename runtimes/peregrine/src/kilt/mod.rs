@@ -20,14 +20,16 @@ use frame_support::parameter_types;
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use runtime_common::{
-	asset_switch::hooks::RestrictSwitchDestinationToSelf, AccountId, Balance, SendDustAndFeesToTreasury,
+	asset_switch::hooks::RestrictSwitchDestinationToSelf,
+	bonded_currencies::{AssetId, Float, FloatInput},
+	AccountId, Balance, SendDustAndFeesToTreasury,
 };
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use crate::{
 	constants, weights,
 	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
-	Balances, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
+	Balances, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
 };
 
 pub(crate) mod credential;
@@ -99,4 +101,29 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = crate::benchmarks::asset_switch::CreateFungibleForAssetSwitchPool1;
+}
+
+impl pallet_bonded_coins::Config for Runtime {
+	type AssetId = AssetId;
+	type BaseDeposit = runtime_common::constants::bonded_coins::BaseDeposit;
+	type CollateralCurrencies = Fungibles;
+	type CurveParameterInput = FloatInput;
+	type CurveParameterType = Float;
+	type DefaultOrigin = EnsureSigned<AccountId>;
+	type DepositCurrency = Balances;
+	type DepositPerCurrency = runtime_common::constants::bonded_coins::DepositPerCurrency;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Fungibles = BondedFungibles;
+	type MaxCurrencies = runtime_common::constants::bonded_coins::MaxCurrencies;
+	type MaxDenomination = runtime_common::constants::bonded_coins::MaxDenomination;
+	type MaxStringLength = runtime_common::constants::bonded_coins::MaxStringLength;
+	type PoolCreateOrigin = EnsureSigned<AccountId>;
+	type PoolId = AccountId;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	// TODO
+	type WeightInfo = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = crate::benchmarks::bonded_coins::CreatePool;
 }
