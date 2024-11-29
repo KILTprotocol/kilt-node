@@ -6,7 +6,7 @@ use pallet_assets::{Config as AssetConfig, Pallet as AssetsPallet};
 use sp_runtime::{traits::StaticLookup, DispatchError};
 use sp_std::prelude::*;
 
-use crate::AccountIdOf;
+use crate::{AccountIdOf, Config, FungiblesAssetIdOf};
 
 /// A trait for freezing and thawing accounts.
 pub trait FreezeAccounts<AccountId, AssetId> {
@@ -81,4 +81,8 @@ where
 		let origin = RawOrigin::Signed(owner);
 		AssetsPallet::<T, I>::set_team(origin.into(), id.into(), issuer.into(), admin.into(), freezer.into())
 	}
+}
+
+pub trait Helper<T: Config> {
+	fn get_new_asset_id() -> Option<FungiblesAssetIdOf<T>>;
 }
