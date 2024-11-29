@@ -29,7 +29,7 @@ use xcm_builder::{FungiblesAdapter, NoChecking};
 use crate::{
 	constants, weights,
 	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
-	Balances, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
+	Balances, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason,
 };
 
 pub(crate) mod credential;
@@ -125,5 +125,5 @@ impl pallet_bonded_coins::Config for Runtime {
 	type WeightInfo = ();
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = crate::benchmarks::bonded_coins::CreatePool;
+	type BenchmarkHelper = ();
 }

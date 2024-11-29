@@ -24,9 +24,10 @@ use frame_support::{
 use frame_system::EnsureRoot;
 use runtime_common::{
 	asset_switch::EnsureRootAsTreasury,
+	bonded_currencies::AssetId,
 	constants,
 	fees::{ToAuthorCredit, WeightToFee},
-	AccountId, AssetId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
 	SendDustAndFeesToTreasury, SlowAdjustingFeeUpdate,
 };
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64};

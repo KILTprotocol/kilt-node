@@ -163,7 +163,7 @@ construct_runtime! {
 		DepositStorage: pallet_deposit_storage = 72,
 		DotNames: pallet_web3_names::<Instance2> = 73,
 		UniqueLinking: pallet_did_lookup::<Instance2> = 74,
-		BondedCurrencies: pallet_bonded_currencies = 75,
+		BondedCurrencies: pallet_bonded_coins = 75,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
