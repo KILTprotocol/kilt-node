@@ -41,10 +41,7 @@ pallets=(
 	cumulus-pallet-parachain-system
 	pallet_multisig
 	pallet-asset-switch
-	pallet-bonded-coins
-	# `pallet-assets` instances
 	pallet-assets
-	pallet-bonded-assets
 	# `pallet-membership` instances
 	pallet-membership
 	pallet-technical-membership
@@ -62,7 +59,9 @@ pallets=(
 # Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
 	pallets+=(
-		#pallet-sudo
+		pallet-sudo
+		pallet-bonded-assets
+		pallet-bonded-coins
 	)
 fi
 
