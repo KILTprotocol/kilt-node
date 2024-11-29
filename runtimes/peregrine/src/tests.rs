@@ -27,6 +27,7 @@ use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::{
 	constants::{
 		attestation::MAX_ATTESTATION_BYTE_LENGTH,
+		bonded_coins::MAX_POOL_BYTE_LENGTH,
 		deposit_storage::MAX_DEPOSIT_PALLET_KEY_LENGTH,
 		did::{MAX_KEY_LENGTH, MAX_SERVICE_ENDPOINT_BYTE_LENGTH},
 		did_lookup::MAX_CONNECTION_BYTE_LENGTH,
@@ -105,6 +106,14 @@ fn web3_name_storage_sizes() {
 		owner_size + name_size,
 		runtime_common::constants::web3_names::MAX_NAME_BYTE_LENGTH as usize
 	)
+}
+
+#[test]
+fn test_bonded_coins_pool_max_length() {
+	let value = pallet_bonded_coins::PoolDetailsOf::<Runtime>::max_encoded_len();
+	let id = <Runtime as pallet_bonded_coins::Config>::PoolId::max_encoded_len();
+
+	assert_eq!(id + value, MAX_POOL_BYTE_LENGTH as usize)
 }
 
 #[test]
@@ -330,8 +339,3 @@ fn test_derive_did_verification_relation_empty() {
 		Err(did::RelationshipDeriveError::InvalidCallParameter)
 	);
 }
-
-// #[test]
-// fn test_bonded_coins_pool_max_length() {
-// 	let size = pallet_bonded_coins::PoolDetailsOf::<Runtime>::max_encoded_len();
-// }

@@ -21,9 +21,10 @@ use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use runtime_common::{
 	asset_switch::hooks::RestrictSwitchDestinationToSelf,
-	bonded_currencies::{AssetId, Float, FloatInput},
+	bonded_currencies::{AssetId, Float, FloatInput, TargetFromLeft, WrapperNativeAndForeignAssets},
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
+use xcm::v4::{Junctions, Location};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use crate::{
@@ -103,10 +104,15 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 	type BenchmarkHelper = crate::benchmarks::asset_switch::CreateFungibleForAssetSwitchPool1;
 }
 
+parameter_types! {
+	pub const NativeAsset: Location = Junctions::Here.into_location();
+}
+
 impl pallet_bonded_coins::Config for Runtime {
 	type AssetId = AssetId;
 	type BaseDeposit = runtime_common::constants::bonded_coins::BaseDeposit;
-	type CollateralCurrencies = Fungibles;
+	type CollateralCurrencies =
+		WrapperNativeAndForeignAssets<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId>;
 	type CurveParameterInput = FloatInput;
 	type CurveParameterType = Float;
 	type DefaultOrigin = EnsureSigned<AccountId>;
@@ -121,9 +127,8 @@ impl pallet_bonded_coins::Config for Runtime {
 	type PoolId = AccountId;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	// TODO
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_bonded_coins::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
+	type BenchmarkHelper = crate::benchmarks::bonded_coins::BondedFungiblesBenchmarkHelper<Runtime>;
 }
