@@ -123,25 +123,6 @@ where
 	}
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-impl<
-		Left: fungible::Inspect<AccountId>,
-		Right: fungibles::Inspect<AccountId, Balance = Left::Balance> + fungibles::Create<AccountId>,
-		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
-		AssetKind: AssetIdTraits,
-		AccountId,
-	> fungibles::Create<AccountId> for WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
-{
-	fn create(asset: AssetKind, admin: AccountId, is_sufficient: bool, min_balance: Self::Balance) -> DispatchResult {
-		NativeAndForeignAssets::<Left, Right, Criterion, AssetKind, AccountId>::create(
-			asset,
-			admin,
-			is_sufficient,
-			min_balance,
-		)
-	}
-}
-
 impl<
 		Left: fungible::Unbalanced<AccountId>,
 		Right: fungibles::Unbalanced<AccountId, Balance = Left::Balance>,
@@ -300,5 +281,24 @@ impl<
 			Left(()) => Vec::new(),
 			Right(a) => Right::symbol(a),
 		}
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<
+		Left: fungible::Inspect<AccountId>,
+		Right: fungibles::Inspect<AccountId, Balance = Left::Balance> + fungibles::Create<AccountId>,
+		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
+		AssetKind: AssetIdTraits,
+		AccountId,
+	> fungibles::Create<AccountId> for WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+{
+	fn create(asset: AssetKind, admin: AccountId, is_sufficient: bool, min_balance: Self::Balance) -> DispatchResult {
+		NativeAndForeignAssets::<Left, Right, Criterion, AssetKind, AccountId>::create(
+			asset,
+			admin,
+			is_sufficient,
+			min_balance,
+		)
 	}
 }
