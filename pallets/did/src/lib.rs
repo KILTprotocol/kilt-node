@@ -157,6 +157,7 @@ pub mod pallet {
 			tokens::{Fortitude, Precision, Preservation},
 			StorageVersion,
 		},
+		weights::Weight,
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
@@ -165,7 +166,6 @@ pub mod pallet {
 	};
 	use service_endpoints::DidEndpoint;
 	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
-	use sp_weights::Weight;
 
 	use crate::{
 		did_details::{
@@ -395,6 +395,8 @@ pub mod pallet {
 			/// The new deposit owner.
 			to: AccountIdOf<T>,
 		},
+		CleanupIncomplete,
+		CleanupComplete,
 	}
 
 	#[pallet::error]
@@ -465,6 +467,7 @@ pub mod pallet {
 		/// The DID is linked to other runtime elements that would be left
 		/// dangling if the DID were to be deleted.
 		NonZeroReferences,
+		TooExpensive,
 		/// An error that is not supposed to take place, yet it happened.
 		Internal,
 	}
@@ -541,6 +544,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+		<<T::DeletionHelper as DeletionHelper<T>>::DeletionIter as Iterator>::Item: SteppedDeletion,
 	{
 		/// Store a new DID on chain, after verifying that the creation
 		/// operation has been signed by the KILT account associated with the
@@ -1267,7 +1271,7 @@ pub mod pallet {
 
 		#[pallet::call_index(17)]
 		// TODO: Benchmark base call dispatch + the weight specified in the call
-		#[pallet::weight(1000)]
+		#[pallet::weight(*max_weight)]
 		pub fn cleanup_linked_resources(
 			origin: OriginFor<T>,
 			did: DidIdentifierOf<T>,
@@ -1286,6 +1290,32 @@ pub mod pallet {
 				return Err(DispatchError::BadOrigin);
 			};
 
+			// The cleanup logic does not need to get benchmarked as it consumes the
+			// provided weight.
+			#[cfg(not(feature = "runtime-benchmarks"))]
+			{
+				let deletion_iter = T::DeletionHelper::deletion_iter(&did);
+				let mut remaining_weight = max_weight;
+				for next_deletion_step in deletion_iter {
+					let Some(ticket) = next_deletion_step.pre_check(remaining_weight) else {
+						// If we run out of gas while there's still stuff to cleanup, apply the cleanups
+						// so far and generate an event.
+						Self::deposit_event(Event::<T>::CleanupIncomplete);
+						return Ok(());
+					};
+					let consumed_weight = next_deletion_step.execute(ticket);
+					// The `pre_check` should tell us if this step can underflow. In case this still
+					// happens, handle it accordingly.
+					let Some(new_weight) = max_weight.checked_sub(&consumed_weight) else {
+						Self::deposit_event(Event::<T>::CleanupIncomplete);
+						return Ok(());
+					};
+					remaining_weight = new_weight;
+				}
+				// If the whole loop completes, the cleanup is successful.
+				Self::deposit_event(Event::<T>::CleanupComplete);
+			}
+
 			Ok(())
 		}
 	}
@@ -1293,6 +1323,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+		<<T::DeletionHelper as DeletionHelper<T>>::DeletionIter as Iterator>::Item: SteppedDeletion,
 	{
 		/// Try creating a DID.
 		///
@@ -1530,10 +1561,8 @@ pub mod pallet {
 				current_endpoints_count <= endpoints_to_remove,
 				Error::<T>::MaxStoredEndpointsCountExceeded
 			);
-			ensure!(
-				T::DeletionHelper::linked_resources_count(&did_subject).is_zero(),
-				Error::<T>::NonZeroReferences
-			);
+			let is_deletion_possible = T::DeletionHelper::deletion_iter(&did_subject).next().is_none();
+			ensure!(is_deletion_possible, Error::<T>::NonZeroReferences);
 
 			// This one can fail, albeit this should **never** be the case as we check for
 			// the preconditions above.

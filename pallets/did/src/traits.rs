@@ -25,11 +25,12 @@ use crate::{Config, DidIdentifierOf};
 pub trait DeletionHelper<T>
 where
 	T: Config,
-	<Self::DeletionIter as Iterator>::Item: SteppedDeletion,
 {
 	type DeletionIter: Iterator;
 
-	fn deletion_iter(did: &DidIdentifierOf<T>) -> Self::DeletionIter;
+	fn deletion_iter(did: &DidIdentifierOf<T>) -> Self::DeletionIter
+	where
+		<Self::DeletionIter as Iterator>::Item: SteppedDeletion;
 }
 
 impl<T> DeletionHelper<T> for ()
@@ -56,17 +57,19 @@ impl Iterator for EmptyIterator {
 pub trait SteppedDeletion {
 	type VerifiedInfo;
 
-	fn pre_check(remaining_weight: Weight) -> Option<Self::VerifiedInfo>;
+	fn pre_check(&self, remaining_weight: Weight) -> Option<Self::VerifiedInfo>;
 
-	fn execute(info: Self::VerifiedInfo);
+	fn execute(self, info: Self::VerifiedInfo) -> Weight;
 }
 
 impl SteppedDeletion for () {
 	type VerifiedInfo = ();
 
-	fn pre_check(_remaining_weight: Weight) -> Self::VerifiedInfo {
-		()
+	fn pre_check(&self, _remaining_weight: Weight) -> Option<Self::VerifiedInfo> {
+		None
 	}
 
-	fn execute(info: Self::VerifiedInfo) {}
+	fn execute(self, _info: Self::VerifiedInfo) -> Weight {
+		Weight::zero()
+	}
 }

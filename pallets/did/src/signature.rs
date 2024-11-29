@@ -24,6 +24,7 @@ use sp_weights::Weight;
 use crate::{
 	did_details::{DidSignature, DidVerificationKeyRelationship},
 	errors::DidError,
+	traits::{DeletionHelper, SteppedDeletion},
 	Config, Did, Pallet, WeightInfo,
 };
 
@@ -31,6 +32,7 @@ pub struct DidSignatureVerify<T>(PhantomData<T>);
 impl<T: Config> VerifySignature for DidSignatureVerify<T>
 where
 	T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+	<<T::DeletionHelper as DeletionHelper<T>>::DeletionIter as Iterator>::Item: SteppedDeletion,
 {
 	type SignerId = <T as Config>::DidIdentifier;
 	type Payload = Vec<u8>;
