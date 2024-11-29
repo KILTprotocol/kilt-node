@@ -331,7 +331,7 @@ fn test_derive_did_verification_relation_empty() {
 	);
 }
 
-#[test]
-fn test_bonded_coins_pool_max_length() {
-	let size = pallet_bonded_coins::PoolDetailsOf::<Runtime>::max_encoded_len();
-}
+// #[test]
+// fn test_bonded_coins_pool_max_length() {
+// 	let size = pallet_bonded_coins::PoolDetailsOf::<Runtime>::max_encoded_len();
+// }

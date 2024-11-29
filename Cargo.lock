@@ -10946,6 +10946,7 @@ dependencies = [
  "staging-xcm",
  "staging-xcm-builder",
  "staging-xcm-executor",
+ "substrate-fixed",
 ]
 
 [[package]]
