@@ -173,7 +173,7 @@ pub mod pallet {
 			DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey, RelationshipDeriveError,
 		},
 		service_endpoints::{utils as service_endpoints_utils, ServiceEndpointId},
-		traits::DeletionHelper,
+		traits::{DeletionHelper, SteppedDeletion},
 	};
 
 	/// The current storage version.
@@ -1285,6 +1285,7 @@ pub mod pallet {
 			} else {
 				return Err(DispatchError::BadOrigin);
 			};
+
 			Ok(())
 		}
 	}

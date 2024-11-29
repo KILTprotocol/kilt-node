@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use sp_weights::Weight;
+
 use crate::{Config, DidIdentifierOf};
 
 /// Runtime-injected logic to support the DID pallet in making sure no dangling
@@ -23,16 +25,48 @@ use crate::{Config, DidIdentifierOf};
 pub trait DeletionHelper<T>
 where
 	T: Config,
+	<Self::DeletionIter as Iterator>::Item: SteppedDeletion,
 {
-	/// Return the count of resources linked to a given DID.
-	fn linked_resources_count(did: &DidIdentifierOf<T>) -> u32;
+	type DeletionIter: Iterator;
+
+	fn deletion_iter(did: &DidIdentifierOf<T>) -> Self::DeletionIter;
 }
 
 impl<T> DeletionHelper<T> for ()
 where
 	T: Config,
 {
-	fn linked_resources_count(_did: &DidIdentifierOf<T>) -> u32 {
-		0
+	type DeletionIter = EmptyIterator;
+
+	fn deletion_iter(_did: &DidIdentifierOf<T>) -> Self::DeletionIter {
+		EmptyIterator
 	}
+}
+
+pub struct EmptyIterator;
+
+impl Iterator for EmptyIterator {
+	type Item = ();
+
+	fn next(&mut self) -> Option<Self::Item> {
+		Some(())
+	}
+}
+
+pub trait SteppedDeletion {
+	type VerifiedInfo;
+
+	fn pre_check(remaining_weight: Weight) -> Option<Self::VerifiedInfo>;
+
+	fn execute(info: Self::VerifiedInfo);
+}
+
+impl SteppedDeletion for () {
+	type VerifiedInfo = ();
+
+	fn pre_check(_remaining_weight: Weight) -> Self::VerifiedInfo {
+		()
+	}
+
+	fn execute(info: Self::VerifiedInfo) {}
 }
