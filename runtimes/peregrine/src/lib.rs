@@ -33,12 +33,20 @@ use core::str;
 
 // Polkadot-sdk crates
 use cumulus_pallet_parachain_system::register_validate_block;
-use frame_support::construct_runtime;
+use did::traits::{DeletionHelper, SteppedDeletion};
+use enum_iterator::Sequence;
+use frame_support::{
+	construct_runtime,
+	pallet_prelude::{OptionQuery, ValueQuery},
+	storage_alias,
+};
 use frame_system::{
 	ChainContext, CheckEra, CheckGenesis, CheckNonZeroSender, CheckNonce, CheckSpecVersion, CheckTxVersion, CheckWeight,
 };
 use pallet_transaction_payment::ChargeTransactionPayment;
-use runtime_common::opaque::Header;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use runtime_common::{opaque::Header, DidIdentifier};
+use scale_info::TypeInfo;
 use sp_runtime::{create_runtime_str, generic};
 use sp_std::{prelude::*, vec::Vec};
 
@@ -58,9 +66,10 @@ use runtime_apis::_InternalImplRuntimeApis;
 pub use runtime_apis::{api, RuntimeApi};
 mod system;
 use sp_version::RuntimeVersion;
+use sp_weights::Weight;
 pub use system::{SessionKeys, SS_58_PREFIX};
 
-use crate::runtime_apis::RUNTIME_API_VERSION;
+use crate::{runtime_apis::RUNTIME_API_VERSION, weights::rocksdb_weights::constants::RocksDbWeight};
 mod weights;
 pub mod xcm;
 
@@ -215,3 +224,65 @@ pub type SignedExtra = (
 	CheckWeight<Runtime>,
 	ChargeTransactionPayment<Runtime>,
 );
+
+// Stores the new map inside the DID pallet. If value is not present, it returns
+// its default.
+#[storage_alias]
+type DidsUnderDeletion = StorageMap<Did, Blake2_128Concat, DidIdentifier, DidDeletionState, ValueQuery>;
+
+#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, Debug, Default, Sequence)]
+enum DidDeletionState {
+	#[default]
+	Web3Name,
+	DotName,
+	DidLookup,
+	UniqueLinking,
+}
+
+pub struct TestDidHelper;
+
+impl DeletionHelper for TestDidHelper {
+	type DeletionIter = TestDidDeletionIter;
+
+	fn deletion_iter(did: &DidIdentifier) -> (Self::DeletionIter, Weight)
+	where
+		<Self::DeletionIter as Iterator>::Item: SteppedDeletion,
+	{
+		// Returns the iterator + the cost for reading it from storage
+		(
+			TestDidDeletionIter(Some(DidsUnderDeletion::get(did))),
+			RocksDbWeight::get().read,
+		)
+	}
+}
+
+pub struct TestDidDeletionIter(Option<DidDeletionState>);
+
+impl Iterator for TestDidDeletionIter {
+	type Item = DidDeletionState;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		let current = self.0;
+		self.0 = self.0.next();
+		current
+	}
+}
+
+impl SteppedDeletion for DidDeletionState {
+	type VerifiedInfo = ();
+
+	fn pre_check(&self, remaining_weight: Weight) -> Option<Self::VerifiedInfo> {
+		// All pallets have double maps, so we need to read and write twice per pallet.
+		if remaining_weight > RocksDbWeight::get().reads_writes(2, 2) {
+			Some(())
+		} else {
+			None
+		}
+	}
+
+	fn execute(self, info: Self::VerifiedInfo) -> Weight {
+		match self {
+			DidDeletionState::DidLookup => pallet_did_lookup::ConnectedAccounts::<Runtime>::take(key)...
+		}
+	}
+}

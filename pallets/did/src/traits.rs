@@ -28,7 +28,7 @@ where
 {
 	type DeletionIter: Iterator;
 
-	fn deletion_iter(did: &DidIdentifierOf<T>) -> Self::DeletionIter
+	fn deletion_iter(did: &DidIdentifierOf<T>) -> (Self::DeletionIter, Weight)
 	where
 		<Self::DeletionIter as Iterator>::Item: SteppedDeletion;
 }
@@ -39,8 +39,8 @@ where
 {
 	type DeletionIter = EmptyIterator;
 
-	fn deletion_iter(_did: &DidIdentifierOf<T>) -> Self::DeletionIter {
-		EmptyIterator
+	fn deletion_iter(_did: &DidIdentifierOf<T>) -> (Self::DeletionIter, Weight) {
+		(EmptyIterator, Weight::zero())
 	}
 }
 
