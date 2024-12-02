@@ -92,26 +92,26 @@ use crate::PassiveSupply;
 /// }
 /// ```
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct PolynomialParametersInput<Parameter> {
+pub struct PolynomialParametersInput<Coefficient> {
 	/// Coefficient for the cubic part.
-	pub m: Parameter,
+	pub m: Coefficient,
 	/// Coefficient for the quadratic part.
-	pub n: Parameter,
+	pub n: Coefficient,
 	/// Coefficient for the linear part.
-	pub o: Parameter,
+	pub o: Coefficient,
 }
 
 /// A struct representing the validated parameters for a polynomial bonding
 /// curve. This struct is used to store the parameters for a polynomial bonding
 /// curve and to perform calculations using the polynomial bonding curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct PolynomialParameters<Parameter> {
+pub struct PolynomialParameters<Coefficient> {
 	/// Coefficient for the cubic part.
-	pub m: Parameter,
+	pub m: Coefficient,
 	/// Coefficient for the quadratic part.
-	pub n: Parameter,
+	pub n: Coefficient,
 	/// Coefficient for the linear part.
-	pub o: Parameter,
+	pub o: Coefficient,
 }
 
 /// Implementation of the TryFrom trait for `PolynomialParametersInput` to
@@ -129,18 +129,18 @@ impl<I: FixedUnsigned, C: FixedSigned> TryFrom<PolynomialParametersInput<I>> for
 	}
 }
 
-impl<Parameter> BondingFunction<Parameter> for PolynomialParameters<Parameter>
+impl<Coefficient> BondingFunction<Coefficient> for PolynomialParameters<Coefficient>
 where
-	Parameter: FixedSigned,
+	Coefficient: FixedSigned,
 {
 	/// Calculate the cost of purchasing/selling assets using the polynomial
 	/// bonding curve.
 	fn calculate_costs(
 		&self,
-		low_without_passive: Parameter,
-		high_without_passive: Parameter,
-		passive_supply: PassiveSupply<Parameter>,
-	) -> Result<Parameter, ArithmeticError> {
+		low_without_passive: Coefficient,
+		high_without_passive: Coefficient,
+		passive_supply: PassiveSupply<Coefficient>,
+	) -> Result<Coefficient, ArithmeticError> {
 		let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
 
 		// reassign high and low to include the accumulated passive issuance

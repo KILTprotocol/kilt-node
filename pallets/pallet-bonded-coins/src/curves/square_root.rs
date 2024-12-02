@@ -87,22 +87,22 @@ use crate::{PassiveSupply, Precision};
 /// }
 /// ```
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct SquareRootParametersInput<Parameter> {
+pub struct SquareRootParametersInput<Coefficient> {
 	/// Coefficient for the square root part.
-	pub m: Parameter,
+	pub m: Coefficient,
 	/// Coefficient for the linear part.
-	pub n: Parameter,
+	pub n: Coefficient,
 }
 
 /// A struct representing the validated parameters for a square root bonding
 /// curve. This struct is used to store the parameters for a square root bonding
 /// curve and to perform calculations using the square root bonding curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct SquareRootParameters<Parameter> {
+pub struct SquareRootParameters<Coefficient> {
 	/// Coefficient for the square root part.
-	pub m: Parameter,
+	pub m: Coefficient,
 	/// Coefficient for the linear part.
-	pub n: Parameter,
+	pub n: Coefficient,
 }
 
 /// Implementation of the TryFrom trait for `SquareRootParametersInput` to
@@ -119,18 +119,18 @@ impl<I: FixedUnsigned, C: FixedSigned> TryFrom<SquareRootParametersInput<I>> for
 	}
 }
 
-impl<Parameter> BondingFunction<Parameter> for SquareRootParameters<Parameter>
+impl<Coefficient> BondingFunction<Coefficient> for SquareRootParameters<Coefficient>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
+	Coefficient: FixedSigned + PartialOrd<Precision> + From<Precision>,
 {
 	/// Calculate the cost of purchasing/selling assets using the square root
 	/// bonding curve.
 	fn calculate_costs(
 		&self,
-		low_without_passive: Parameter,
-		high_without_passive: Parameter,
-		passive_supply: PassiveSupply<Parameter>,
-	) -> Result<Parameter, ArithmeticError> {
+		low_without_passive: Coefficient,
+		high_without_passive: Coefficient,
+		passive_supply: PassiveSupply<Coefficient>,
+	) -> Result<Coefficient, ArithmeticError> {
 		let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
 
 		// reassign high and low to include the accumulated passive issuance
@@ -143,12 +143,12 @@ where
 			.ok_or(ArithmeticError::Overflow)?;
 
 		// Calculate sqrt(high^3) and sqrt(low^3)
-		let sqrt_x3_high: Parameter = sqrt::<Parameter, Parameter>(high)
+		let sqrt_x3_high: Coefficient = sqrt::<Coefficient, Coefficient>(high)
 			.map_err(|_| ArithmeticError::Underflow)?
 			.checked_mul(high)
 			.ok_or(ArithmeticError::Overflow)?;
 
-		let sqrt_x3_low: Parameter = sqrt::<Parameter, Parameter>(low)
+		let sqrt_x3_low: Coefficient = sqrt::<Coefficient, Coefficient>(low)
 			.map_err(|_| ArithmeticError::Underflow)?
 			.checked_mul(low)
 			.ok_or(ArithmeticError::Overflow)?;

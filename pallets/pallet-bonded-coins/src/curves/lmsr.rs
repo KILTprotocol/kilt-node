@@ -65,19 +65,19 @@ use crate::{curves::BondingFunction, PassiveSupply, Precision, LOG_TARGET};
 /// This struct is used to convert the input parameters to the correct
 /// fixed-point type.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct LMSRParametersInput<Parameter> {
+pub struct LMSRParametersInput<Coefficient> {
 	/// The liquidity parameter for the LMSR model
-	pub m: Parameter,
+	pub m: Coefficient,
 }
 
 /// A struct representing the validated parameters for the LMSR model. This
 /// struct is used to store the parameters for the LMSR model and to perform
 /// calculations using the LMSR model.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct LMSRParameters<Parameter> {
+pub struct LMSRParameters<Coefficient> {
 	///The liquidity parameter for the LMSR model. This value must be greater
 	/// than zero and unsigned.
-	pub m: Parameter,
+	pub m: Coefficient,
 }
 
 /// Implementation of the TryFrom trait for `LMSRParametersInput` to convert the
@@ -93,14 +93,14 @@ impl<I: FixedUnsigned, C: FixedSigned> TryFrom<LMSRParametersInput<I>> for LMSRP
 	}
 }
 
-impl<Parameter> LMSRParameters<Parameter>
+impl<Coefficient> LMSRParameters<Coefficient>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
-	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	Coefficient: FixedSigned + PartialOrd<Precision> + From<Precision>,
+	<Coefficient as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	/// Calculate the logarithmic sum of the exponentials of the supply values,
 	/// using the log-sum-exp trick.
-	fn lse(&self, supply: &[Parameter]) -> Result<Parameter, ArithmeticError> {
+	fn lse(&self, supply: &[Coefficient]) -> Result<Coefficient, ArithmeticError> {
 		// Find the maximum value in the supply for numerical stability
 		let max = supply.iter().max().ok_or_else(|| {
 			log::error!(target: LOG_TARGET, "Supply is empty. Found pool with no currencies.");
@@ -108,38 +108,38 @@ where
 		})?;
 
 		// Compute the sum of the exponent terms, adjusted by max for stability
-		let e_term_sum = supply.iter().try_fold(Parameter::from_num(0u8), |acc, x| {
+		let e_term_sum = supply.iter().try_fold(Coefficient::from_num(0u8), |acc, x| {
 			let exponent = x
 				.checked_sub(*max)
 				.ok_or(ArithmeticError::Underflow)?
 				.checked_div(self.m)
 				.ok_or(ArithmeticError::DivisionByZero)?;
 
-			let exp_result = exp::<Parameter, Parameter>(exponent).map_err(|_| ArithmeticError::Overflow)?;
+			let exp_result = exp::<Coefficient, Coefficient>(exponent).map_err(|_| ArithmeticError::Overflow)?;
 			acc.checked_add(exp_result).ok_or(ArithmeticError::Overflow)
 		})?;
 
 		// Compute the logarithm of the sum and scale it by `m`, then add the max term
-		ln::<Parameter, Parameter>(e_term_sum)
+		ln::<Coefficient, Coefficient>(e_term_sum)
 			.map_err(|_| ArithmeticError::Underflow)
 			.and_then(|log_sum| log_sum.checked_mul(self.m).ok_or(ArithmeticError::Overflow))
 			.and_then(|scaled_log| scaled_log.checked_add(*max).ok_or(ArithmeticError::Overflow))
 	}
 }
 
-impl<Parameter> BondingFunction<Parameter> for LMSRParameters<Parameter>
+impl<Coefficient> BondingFunction<Coefficient> for LMSRParameters<Coefficient>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
-	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	Coefficient: FixedSigned + PartialOrd<Precision> + From<Precision>,
+	<Coefficient as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	/// Calculate the cost of purchasing a set of assets from the market using
 	/// the LMSR model.
 	fn calculate_costs(
 		&self,
-		low: Parameter,
-		high: Parameter,
-		passive_supply: PassiveSupply<Parameter>,
-	) -> Result<Parameter, ArithmeticError> {
+		low: Coefficient,
+		high: Coefficient,
+		passive_supply: PassiveSupply<Coefficient>,
+	) -> Result<Coefficient, ArithmeticError> {
 		// Clone passive_supply and add low and high to create modified supplies
 		let mut low_total_supply = passive_supply.clone();
 		low_total_supply.push(low);

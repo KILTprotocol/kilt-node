@@ -48,19 +48,19 @@ use crate::{
 /// An enum representing different types of curves with their respective
 /// parameters. Used to store curve parameters and perform calculations.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum Curve<Parameter> {
-	Polynomial(PolynomialParameters<Parameter>),
-	SquareRoot(SquareRootParameters<Parameter>),
-	Lmsr(LMSRParameters<Parameter>),
+pub enum Curve<Coefficient> {
+	Polynomial(PolynomialParameters<Coefficient>),
+	SquareRoot(SquareRootParameters<Coefficient>),
+	Lmsr(LMSRParameters<Coefficient>),
 }
 
 /// An enum representing input parameters for different types of curves.
 /// Used to convert into Curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum CurveInput<Parameter> {
-	Polynomial(PolynomialParametersInput<Parameter>),
-	SquareRoot(SquareRootParametersInput<Parameter>),
-	Lmsr(LMSRParametersInput<Parameter>),
+pub enum CurveInput<Coefficient> {
+	Polynomial(PolynomialParametersInput<Coefficient>),
+	SquareRoot(SquareRootParametersInput<Coefficient>),
+	Lmsr(LMSRParametersInput<Coefficient>),
 }
 
 /// Implementation of the TryFrom trait for `CurveInput` to convert the input
@@ -94,12 +94,12 @@ where
 	}
 }
 
-impl<Parameter> Curve<Parameter>
+impl<Coefficient> Curve<Coefficient>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
-	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	Coefficient: FixedSigned + PartialOrd<Precision> + From<Precision>,
+	<Coefficient as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn as_inner(&self) -> &dyn BondingFunction<Parameter> {
+	fn as_inner(&self) -> &dyn BondingFunction<Coefficient> {
 		match self {
 			Curve::Polynomial(params) => params,
 			Curve::SquareRoot(params) => params,
@@ -113,17 +113,17 @@ where
 /// selling assets using the curve.
 ///
 /// The implementation forwards the call to the inner bonding function.
-impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
+impl<Coefficient> BondingFunction<Coefficient> for Curve<Coefficient>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision>,
-	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	Coefficient: FixedSigned + PartialOrd<Precision> + From<Precision>,
+	<Coefficient as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	fn calculate_costs(
 		&self,
-		low: Parameter,
-		high: Parameter,
-		passive_supply: PassiveSupply<Parameter>,
-	) -> Result<Parameter, ArithmeticError> {
+		low: Coefficient,
+		high: Coefficient,
+		passive_supply: PassiveSupply<Coefficient>,
+	) -> Result<Coefficient, ArithmeticError> {
 		self.as_inner().calculate_costs(low, high, passive_supply)
 	}
 }
