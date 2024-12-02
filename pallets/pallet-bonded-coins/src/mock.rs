@@ -52,22 +52,24 @@ pub mod runtime {
 	use super::*;
 
 	use frame_support::{
-		parameter_types,
-		traits::{fungible::hold::Mutate, ConstU128, ConstU32},
+		pallet_prelude::*,
+		parameter_types, storage_alias,
+		traits::{fungible::hold::Mutate, ConstU128, ConstU32, PalletInfoAccess},
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::{EnsureRoot, EnsureSigned};
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BoundedVec, BuildStorage, MultiSignature, Permill,
+		ArithmeticError, BoundedVec, BuildStorage, DispatchError, MultiSignature, Permill,
 	};
 	use substrate_fixed::types::{I75F53, U75F53};
 
 	use crate::{
 		self as pallet_bonded_coins,
+		traits::NextAssetIds,
 		types::{Locks, PoolStatus},
-		DepositBalanceOf, HoldReason, PoolDetailsOf,
+		Config, DepositBalanceOf, FungiblesAssetIdOf, HoldReason, PoolDetailsOf,
 	};
 
 	pub type Hash = sp_core::H256;
@@ -161,6 +163,34 @@ pub mod runtime {
 		result
 			.try_into()
 			.expect("expected collateral too large for balance type")
+	}
+
+	/// Store the next asset id in the storage.
+	#[storage_alias]
+	pub type NextAssetId<BondingPallet: PalletInfoAccess> =
+		StorageValue<BondingPallet, FungiblesAssetIdOf<Test>, ValueQuery>;
+
+	/// Struct to implement desired traits for [NextAssetId].
+	pub struct NextAssetIdGenerator;
+
+	/// impl NetAssetId for GetNextAssetIdStruct
+	impl<T: Config> NextAssetIds<T> for NextAssetIdGenerator
+	where
+		FungiblesAssetIdOf<T>: From<AssetId>,
+	{
+		type Error = DispatchError;
+		fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>, Self::Error> {
+			let next_asset_id = NextAssetId::<BondingPallet>::get();
+
+			let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
+
+			let asset_ids = (next_asset_id..(next_asset_id + n))
+				.map(|id| id.into())
+				.collect::<Vec<FungiblesAssetIdOf<T>>>();
+
+			NextAssetId::<BondingPallet>::set(new_next_asset_id);
+			Ok(BoundedVec::try_from(asset_ids).expect("should be able to create bounded vec"))
+		}
 	}
 
 	frame_support::construct_runtime!(
@@ -262,7 +292,6 @@ pub mod runtime {
 	}
 
 	impl pallet_bonded_coins::Config for Test {
-		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
 		type Collaterals = Assets;
 		type CurveParameterInput = FloatInput;
@@ -275,6 +304,7 @@ pub mod runtime {
 		type MaxCurrenciesPerPool = MaxCurrenciesPerPool;
 		type MaxDenomination = MaxDenomination;
 		type MaxStringInputLength = StringLimit;
+		type NextAssetIds = NextAssetIdGenerator;
 		type PoolCreateOrigin = EnsureSigned<AccountId>;
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;
@@ -380,7 +410,7 @@ pub mod runtime {
 					crate::Pools::<Test>::insert(pool_id, pool);
 				});
 
-				crate::NextAssetId::<Test>::set(next_asset_id);
+				NextAssetId::<BondingPallet>::set(next_asset_id);
 			});
 
 			ext

@@ -146,7 +146,7 @@ mod benchmarks {
 
 	// bonded currencies
 
-	fn create_bonded_asset<T: Config>(asset_id: T::AssetId) {
+	fn create_bonded_asset<T: Config>(asset_id: FungiblesAssetIdOf<T>) {
 		let pool_account = account("bonded_owner", 0, 0);
 		T::Fungibles::create(asset_id.clone(), pool_account, false, 1u128.saturated_into())
 			.expect("Creating bonded asset should work");

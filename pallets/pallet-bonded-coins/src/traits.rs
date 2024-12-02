@@ -18,10 +18,10 @@
 use frame_support::{dispatch::DispatchResult, traits::fungibles::roles::Inspect};
 use frame_system::RawOrigin;
 use pallet_assets::{Config as AssetConfig, Pallet as AssetsPallet};
-use sp_runtime::{traits::StaticLookup, DispatchError};
+use sp_runtime::{traits::StaticLookup, BoundedVec, DispatchError};
 use sp_std::{fmt::Debug, prelude::*};
 
-use crate::AccountIdOf;
+use crate::{AccountIdOf, Config, FungiblesAssetIdOf};
 
 /// A trait for freezing and thawing accounts.
 pub trait FreezeAccounts<AccountId, AssetId> {
@@ -96,4 +96,12 @@ where
 		let origin = RawOrigin::Signed(owner);
 		AssetsPallet::<T, I>::set_team(origin.into(), id.into(), issuer.into(), admin.into(), freezer.into())
 	}
+}
+
+/// A trait for getting the next n asset ids to be used during pool creation.
+pub trait NextAssetIds<T: Config> {
+	/// Generic error type.
+	type Error: Into<DispatchError>;
+	/// Get the next `n` asset ids.
+	fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>, Self::Error>;
 }
