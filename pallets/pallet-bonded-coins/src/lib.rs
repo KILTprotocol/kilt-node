@@ -53,7 +53,7 @@ pub mod pallet {
 		traits::{
 			fungible::{Inspect as InspectFungible, MutateHold},
 			fungibles::{
-				metadata::{Inspect as FungiblesInspect, Mutate as FungiblesMetadata},
+				metadata::{Inspect as InspectMetadata, Mutate as MutateMetadata},
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
@@ -151,12 +151,12 @@ pub mod pallet {
 		/// can be used as collateral for minting bonded tokens.
 		type Collaterals: MutateFungibles<Self::AccountId>
 			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>
-			+ FungiblesMetadata<Self::AccountId>;
+			+ InspectMetadata<Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
 		type Fungibles: CreateFungibles<Self::AccountId, AssetId = Self::AssetId>
 			+ DestroyFungibles<Self::AccountId>
-			+ FungiblesMetadata<Self::AccountId>
-			+ FungiblesInspect<Self::AccountId>
+			+ MutateMetadata<Self::AccountId>
+			+ InspectMetadata<Self::AccountId>
 			+ MutateFungibles<Self::AccountId>
 			+ FreezeAccounts<Self::AccountId, Self::AssetId>
 			+ ResetTeam<Self::AccountId>;
