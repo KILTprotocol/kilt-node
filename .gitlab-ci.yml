@@ -24,9 +24,9 @@ build-production-wasm:
     - export VERBOSE=true
     # Must be in sync with the toolchain file in the project root.
     - export RUSTC_VERSION=1.74.0
-    - cp -r * /build
     # Required since we are overriding `RUSTC_VERSION`
     - rustup target add wasm32-unknown-unknown
+    - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/${RUNTIME}_runtime.compact.wasm > /out/${RUNTIME}-metadata.json
     - subwasm get -o ${RUNTIME}-live.wasm wss://${RUNTIME}.kilt.io
