@@ -13,7 +13,7 @@ use sp_std::ops::Sub;
 use crate::{
 	mock::{runtime::*, *},
 	types::{Locks, PoolStatus},
-	AccountIdOf, Event as BondingPalletEvents, NextAssetId, Pools, TokenMetaOf,
+	AccountIdOf, Event as BondingPalletEvents, Pools, TokenMetaOf,
 };
 
 #[test]
@@ -33,7 +33,7 @@ fn single_currency() {
 				min_balance: 1,
 			};
 
-			let new_asset_id = NextAssetId::<Test>::get();
+			let new_asset_id = NextAssetId::<BondingPallet>::get();
 
 			assert_ok!(BondingPallet::create_pool(
 				origin,
@@ -64,7 +64,7 @@ fn single_currency() {
 			assert_eq!(details.bonded_currencies, vec![new_asset_id]);
 
 			// collateral is id 0, new bonded currency should be 1, next is 2
-			assert_eq!(NextAssetId::<Test>::get(), new_asset_id + 1);
+			assert_eq!(NextAssetId::<BondingPallet>::get(), new_asset_id + 1);
 
 			assert_eq!(
 				Balances::free_balance(ACCOUNT_00),
@@ -106,7 +106,7 @@ fn multi_currency() {
 
 			let bonded_tokens = bounded_vec![bonded_token; 3];
 
-			let next_asset_id = NextAssetId::<Test>::get();
+			let next_asset_id = NextAssetId::<BondingPallet>::get();
 
 			assert_ok!(BondingPallet::create_pool(
 				origin,
@@ -118,7 +118,7 @@ fn multi_currency() {
 				1
 			));
 
-			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 3);
+			assert_eq!(NextAssetId::<BondingPallet>::get(), next_asset_id + 3);
 
 			let new_assets = Vec::from_iter(next_asset_id..next_asset_id + 3);
 			let pool_id: AccountIdOf<Test> = calculate_pool_id(&new_assets);
@@ -157,7 +157,7 @@ fn can_create_identical_pools() {
 				min_balance: 1,
 			};
 
-			let next_asset_id = NextAssetId::<Test>::get();
+			let next_asset_id = NextAssetId::<BondingPallet>::get();
 
 			assert_ok!(BondingPallet::create_pool(
 				origin.clone(),
@@ -179,7 +179,7 @@ fn can_create_identical_pools() {
 				1
 			));
 
-			assert_eq!(NextAssetId::<Test>::get(), next_asset_id + 2);
+			assert_eq!(NextAssetId::<BondingPallet>::get(), next_asset_id + 2);
 
 			let details1 =
 				Pools::<Test>::get(calculate_pool_id::<AssetId, AccountIdOf<Test>>(&[next_asset_id])).unwrap();
@@ -239,7 +239,7 @@ fn cannot_create_circular_pool() {
 				min_balance: 1,
 			};
 
-			let next_asset_id = NextAssetId::<Test>::get();
+			let next_asset_id = NextAssetId::<BondingPallet>::get();
 
 			assert_err!(
 				BondingPallet::create_pool(
@@ -265,7 +265,7 @@ fn handles_asset_id_overflow() {
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.build()
 		.execute_with(|| {
-			NextAssetId::<Test>::set(u32::MAX);
+			NextAssetId::<BondingPallet>::set(u32::MAX);
 
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
