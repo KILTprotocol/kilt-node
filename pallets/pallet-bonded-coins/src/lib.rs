@@ -349,10 +349,11 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		#[pallet::weight({
 			let currency_length = currencies.len().saturated_into();
-			let weight_polynomial = T::WeightInfo::create_pool_polynomial(currency_length);
-			let weight_square_root = T::WeightInfo::create_pool_square_root(currency_length);
-			let weight_lmsr = T::WeightInfo::create_pool_lmsr(currency_length);
-			weight_polynomial.max(weight_square_root).max(weight_lmsr)
+			match curve {
+				CurveInput::Polynomial(_) => T::WeightInfo::create_pool_polynomial(currency_length),
+				CurveInput::SquareRoot(_) => T::WeightInfo::create_pool_square_root(currency_length),
+				CurveInput::Lmsr(_) => T::WeightInfo::create_pool_lmsr(currency_length),
+			}
 		})]
 		pub fn create_pool(
 			origin: OriginFor<T>,

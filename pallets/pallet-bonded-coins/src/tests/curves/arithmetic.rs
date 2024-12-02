@@ -63,7 +63,8 @@ fn test_balance_to_fixed_smaller_than_denomination() {
 #[test]
 fn test_balance_to_fixed_large_value() {
 	let x = 1_000_000_000_000_000u128;
-	let denomination = 12u8; // 10^12 = 1_000_000_000_000
+	// 10^12 = 1_000_000_000_000
+	let denomination = 12u8;
 
 	let result = balance_to_fixed::<u128, Float>(x, denomination, DEFAULT_ROUND_KIND).unwrap();
 	let expected = Float::from_num(1000); // 1_000_000_000_000_000 / 1_000_000_000_000 = 1000
@@ -74,7 +75,8 @@ fn test_balance_to_fixed_large_value() {
 #[test]
 fn test_balance_to_fixed_small_denomination() {
 	let x = 12345u128;
-	let denomination = 1u8; // 10^1 = 10
+	// 10^1 = 10
+	let denomination = 1u8;
 
 	let result = balance_to_fixed::<u128, Float>(x, denomination, DEFAULT_ROUND_KIND).unwrap();
 	let expected = Float::from_num(1234.5); // 12345 / 10 = 1234.5
@@ -85,7 +87,8 @@ fn test_balance_to_fixed_small_denomination() {
 #[test]
 fn test_balance_to_fixed_overflow() {
 	let x = u128::MAX;
-	let denomination = 0u8; // 10^0 = 1, no scaling
+	// 10^0 = 1, no scaling
+	let denomination = 0u8;
 
 	let result = balance_to_fixed::<u128, Float>(x, denomination, DEFAULT_ROUND_KIND);
 	result.unwrap_err();
@@ -95,7 +98,8 @@ fn test_balance_to_fixed_overflow() {
 #[test]
 fn test_balance_to_fixed_denomination_overflow() {
 	let x = 1000u128;
-	let denomination = 128u8; // 10^128 overflows
+	// 10^128 overflows
+	let denomination = 128u8;
 
 	let result = balance_to_fixed::<u128, Float>(x, denomination, DEFAULT_ROUND_KIND);
 	result.unwrap_err();
