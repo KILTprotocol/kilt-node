@@ -3,7 +3,7 @@ use core::fmt::Debug;
 use frame_support::{dispatch::DispatchResult, traits::fungibles::roles::Inspect};
 use frame_system::RawOrigin;
 use pallet_assets::{Config as AssetConfig, Pallet as AssetsPallet};
-use sp_runtime::{traits::StaticLookup, DispatchError};
+use sp_runtime::{traits::StaticLookup, BoundedVec, DispatchError};
 use sp_std::prelude::*;
 
 use crate::{AccountIdOf, Config, FungiblesAssetIdOf};
@@ -83,6 +83,7 @@ where
 	}
 }
 
-pub trait Helper<T: Config> {
-	fn get_new_asset_id() -> Option<FungiblesAssetIdOf<T>>;
+pub trait NextAssetIds<T: Config> {
+	type Error: Into<DispatchError> + Debug;
+	fn get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies>, Self::Error>;
 }

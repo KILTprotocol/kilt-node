@@ -66,7 +66,7 @@ pub mod pallet {
 
 	use crate::{
 		curves::{balance_to_fixed, fixed_to_balance, BondingFunction, Curve, CurveInput},
-		traits::{FreezeAccounts, Helper, ResetTeam},
+		traits::{FreezeAccounts, NextAssetIds, ResetTeam},
 		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
 	};
@@ -189,7 +189,7 @@ pub mod pallet {
 
 		type WeightInfo: WeightInfo;
 
-		type Helper: Helper<Self>;
+		type NextAssetIds: NextAssetIds<Self>;
 
 		/// Benchmark helper to calculate asset ids for the collateral and
 		/// bonded currencies.
@@ -342,12 +342,8 @@ pub mod pallet {
 
 			let currency_length = currencies.len();
 
-			let currency_ids: BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies> = (0..currency_length)
-				.map(|_| T::Helper::get_new_asset_id().ok_or(()))
-				.collect::<Result<Vec<_>, _>>()
-				.expect("Failed to generate asset ID.")
-				.try_into()
-				.expect("Failed to create BoundedVec.");
+			let currency_ids: BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies> =
+				T::NextAssetIds::get(currency_length.saturated_into()).map_err(|err| err.into())?;
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
