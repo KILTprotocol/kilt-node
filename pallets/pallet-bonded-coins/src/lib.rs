@@ -54,7 +54,6 @@ pub mod pallet {
 		BoundedVec, TokenError,
 	};
 	use sp_std::{
-		default::Default,
 		ops::{AddAssign, BitOrAssign, ShlAssign},
 		prelude::*,
 		vec::Vec,
