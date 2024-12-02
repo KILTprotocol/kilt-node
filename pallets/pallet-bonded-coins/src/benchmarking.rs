@@ -80,7 +80,7 @@ mod benchmarks {
 		fungibles::{Create, Destroy, Inspect as InspectFungibles, Mutate as MutateFungibles},
 		AccountTouch, EnsureOrigin, Get, OriginTrait,
 	};
-	use sp_runtime::{traits::Zero, BoundedVec, SaturatedConversion};
+	use sp_runtime::{traits::Zero, BoundedVec, SaturatedConversion, Saturating};
 	use sp_std::ops::Mul;
 
 	use crate::{
@@ -202,10 +202,11 @@ mod benchmarks {
 			state,
 			collateral_id,
 			denomination,
-			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids),
+			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids.clone()),
 			transferable: true,
 			min_operation_balance: 1u128.saturated_into(),
-			deposit: Pallet::<T>::calculate_pool_deposit(bonded_coin_ids.len()),
+			deposit: T::BaseDeposit::get()
+				.saturating_add(T::DepositPerCurrency::get().saturating_mul(bonded_coin_ids.len().saturated_into())),
 		};
 		Pools::<T>::insert(&pool_id, pool_details);
 
