@@ -8,7 +8,8 @@ stages:
 
 build-production-wasm:
   image:
-    name: paritytech/srtool:1.75.0
+    # Use srtool image that has the right subwasm fix. The first version with the fix is subwasm 0.17.0, available only with rustc 1.81.0.
+    name: paritytech/srtool:1.81.0-0.17.0
     entrypoint: [""]
   stage: build
   parallel:
@@ -21,6 +22,8 @@ build-production-wasm:
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - export AUTHORIZE_UPGRADE_CHECK_VERSION=true
     - export VERBOSE=true
+    # Must be in sync with the toolchain file in the project root.
+    - export RUSTC_VERSION=1.74.0
     - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/${RUNTIME}_runtime.compact.wasm > /out/${RUNTIME}-metadata.json

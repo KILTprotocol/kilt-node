@@ -1,4 +1,5 @@
 [toolchain]
+# When changing this, please update the RUSTC_VERSION variable of the `build-production-wasm` Gitlab pipeline.
 channel    = "1.74.0"
 components = ["clippy", "rust-src", "rustfmt"]
 targets    = ["wasm32-unknown-unknown"]
