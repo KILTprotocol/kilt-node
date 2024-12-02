@@ -47,8 +47,6 @@ Pools can be either permissioned or trustless, as specified during the creation 
 ## Storage Items
 
 - `Pools`: Stores details of each pool, including its bonding curve, collateral type, and current state.
-- `NextAssetId`:  Tracks the next available asset ID for new currencies. 
-                  If the max value is reached, an [ArithmeticError][arithmetic-error] will be thrown.
 
 ## Events
 
@@ -84,7 +82,6 @@ The `Config` trait defines the configuration parameters and associated types req
 
 - `DepositCurrency`: The currency used for storage deposits.
 - `PoolId`: The type representing the identifier for a pool.
-- `AssetId`: The type representing the identifier for an asset.
 - `CurveParameterType`:    The type representing the parameters for the curve.
                            Used for the actual bonding curve calculation and stored on chain.
 - `CurveParameterInput`:   The type representing the unchecked input for the curve parameters. 
@@ -107,6 +104,10 @@ The `Config` trait defines the configuration parameters and associated types req
 - `DefaultOrigin`: The default origin for operations, which require no special privileges.
 - `PoolCreateOrigin`: The origin required to create a pool.
 - `ForceOrigin`: The origin for privileged operations.
+
+### Hooks
+
+`NextAssetIds`:  Takes care of producing asset ids to be used in creating new bonded currencies during initialization of a new pool. The hook must ensure that all asset ids returned are not yet in use.
 
 ### Feature guided 
 

@@ -45,18 +45,15 @@ pub mod pallet {
 		Hashable, Parameter,
 	};
 	use frame_system::pallet_prelude::*;
-	use parity_scale_codec::FullCodec;
 	use sp_arithmetic::ArithmeticError;
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{
-			Bounded, CheckedAdd, CheckedConversion, One, SaturatedConversion, Saturating, StaticLookup,
-			UniqueSaturatedInto, Zero,
+			Bounded, CheckedConversion, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto, Zero,
 		},
 		BoundedVec, TokenError,
 	};
 	use sp_std::{
-		default::Default,
 		ops::{AddAssign, BitOrAssign, ShlAssign},
 		prelude::*,
 		vec::Vec,
@@ -68,7 +65,7 @@ pub mod pallet {
 
 	use crate::{
 		curves::{balance_to_fixed, fixed_to_balance, BondingFunction, Curve, CurveInput},
-		traits::{FreezeAccounts, ResetTeam},
+		traits::{FreezeAccounts, NextAssetIds, ResetTeam},
 		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
 	};
@@ -133,12 +130,12 @@ pub mod pallet {
 			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
-		type Fungibles: CreateFungibles<Self::AccountId, AssetId = Self::AssetId>
+		type Fungibles: CreateFungibles<Self::AccountId>
 			+ DestroyFungibles<Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>
 			+ FungiblesInspect<Self::AccountId>
 			+ MutateFungibles<Self::AccountId>
-			+ FreezeAccounts<Self::AccountId, Self::AssetId>
+			+ FreezeAccounts<Self::AccountId, FungiblesAssetIdOf<Self>>
 			+ ResetTeam<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
@@ -173,10 +170,6 @@ pub mod pallet {
 		/// The type used for pool ids
 		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
 
-		/// The type used for asset ids. This is the type of the bonded
-		/// currencies.
-		type AssetId: Parameter + Member + FullCodec + MaxEncodedLen + One + Default + CheckedAdd;
-
 		type RuntimeHoldReason: From<HoldReason>;
 
 		/// The type used for the curve parameters. This is the type used in the
@@ -194,6 +187,8 @@ pub mod pallet {
 		type CurveParameterInput: Parameter + FixedUnsigned + MaxEncodedLen;
 
 		type WeightInfo: WeightInfo;
+
+		type NextAssetIds: NextAssetIds<Self>;
 
 		/// Benchmark helper to calculate asset ids for the collateral and
 		/// bonded currencies.
@@ -224,10 +219,6 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn pools)]
 	pub(crate) type Pools<T: Config> = StorageMap<_, Twox64Concat, T::PoolId, PoolDetailsOf<T>, OptionQuery>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn nex_asset_id)]
-	pub(crate) type NextAssetId<T: Config> = StorageValue<_, FungiblesAssetIdOf<T>, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -350,9 +341,8 @@ pub mod pallet {
 
 			let currency_length = currencies.len();
 
-			let current_asset_id = NextAssetId::<T>::get();
-
-			let (currency_ids, next_asset_id) = Self::generate_sequential_asset_ids(current_asset_id, currency_length)?;
+			let currency_ids: BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies> =
+				T::NextAssetIds::try_get(currency_length.saturated_into()).map_err(|err| err.into())?;
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
@@ -405,9 +395,6 @@ pub mod pallet {
 					min_operation_balance,
 				)),
 			);
-
-			// update the storage for the next tx.
-			NextAssetId::<T>::set(next_asset_id);
 
 			Self::deposit_event(Event::PoolCreated { id: pool_id });
 
@@ -1057,7 +1044,7 @@ pub mod pallet {
 				.ok_or_else(|| {
 					log::error!(
 						target: LOG_TARGET,
-						"Sum of issuance is zero. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}", 
+						"Sum of issuance is zero. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}",
 						pool_id,
 						who,
 						burnt,
@@ -1072,7 +1059,7 @@ pub mod pallet {
 				.ok_or_else(|| {
 					log::error!(
 						target: LOG_TARGET,
-						"Could not cast U256 into CollateralCurrency. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}", 
+						"Could not cast U256 into CollateralCurrency. Pool_id: {:?}, account: {:?} Burnt: {:?}, Total Collateral Issuance: {:?}, Sum of Issuances: {:?}",
 						pool_id,
 						who,
 						burnt,
@@ -1502,46 +1489,6 @@ pub mod pallet {
 			}
 
 			Ok(n_currencies)
-		}
-
-		/// Generates a sequence of asset ids starting from the given id.
-		/// The sequence will have the length of `count`.
-		///
-		/// # Parameters
-		/// - `start_id`: The starting asset id.
-		/// - `count`: The number of asset ids to generate.
-		///
-		/// # Returns
-		/// - `Result<(BoundedCurrencyVec<T>, T::AssetId), Error<T>>`: A tuple
-		///   containing the generated sequence of asset ids and the next asset
-		///   id.
-		///
-		/// # Errors
-		/// - `Error::<T>::Internal`: If the conversion to `BoundedVec` fails.
-		fn generate_sequential_asset_ids(
-			mut start_id: T::AssetId,
-			count: usize,
-		) -> Result<(BoundedCurrencyVec<T>, T::AssetId), DispatchError> {
-			let mut currency_ids_vec = Vec::new();
-			for _ in 0..count {
-				currency_ids_vec.push(start_id.clone());
-
-				start_id = start_id.checked_add(&One::one()).ok_or(ArithmeticError::Overflow)?;
-			}
-
-			let currency_array = BoundedVec::<FungiblesAssetIdOf<T>, T::MaxCurrencies>::try_from(
-				currency_ids_vec.clone(),
-			)
-			.map_err(|_| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to convert currency_ids_vec to BoundedVec in generate_sequential_asset_ids. Currency_ids_vec: {:?}",
-					&currency_ids_vec
-				);
-				Error::<T>::Internal
-			})?;
-
-			Ok((currency_array, start_id))
 		}
 
 		/// Gets the number of bonded currencies in a pool.
