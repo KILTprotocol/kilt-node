@@ -247,7 +247,7 @@ pub mod runtime {
 	impl pallet_bonded_coins::Config for Test {
 		type AssetId = AssetId;
 		type BaseDeposit = ExistentialDeposit;
-		type CollateralCurrencies = Assets;
+		type Collaterals = Assets;
 		type CurveParameterInput = FloatInput;
 		type CurveParameterType = Float;
 		type DefaultOrigin = EnsureSigned<AccountId>;

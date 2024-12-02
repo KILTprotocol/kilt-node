@@ -82,7 +82,7 @@ pub mod pallet {
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
 	pub(crate) type CollateralBalanceOf<T> =
-		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
+		<<T as Config>::Collaterals as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
 
 	pub(crate) type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
@@ -91,7 +91,7 @@ pub mod pallet {
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type CollateralAssetIdOf<T> =
-		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
+		<<T as Config>::Collaterals as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrenciesPerPool>;
 
@@ -130,7 +130,7 @@ pub mod pallet {
 		type DepositCurrency: MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 		/// A fungibles trait implementation to interact with currencies which
 		/// can be used as collateral for minting bonded tokens.
-		type CollateralCurrencies: MutateFungibles<Self::AccountId>
+		type Collaterals: MutateFungibles<Self::AccountId>
 			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>
 			+ FungiblesMetadata<Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
@@ -371,7 +371,7 @@ pub mod pallet {
 
 			// Touch the pool account in order to be able to transfer the collateral
 			// currency to it. This should also verify that the currency actually exists.
-			T::CollateralCurrencies::touch(collateral_id.clone(), pool_account, &who)?;
+			T::Collaterals::touch(collateral_id.clone(), pool_account, &who)?;
 
 			currencies.into_iter().zip(currency_ids.iter()).try_for_each(
 				|(token_metadata, asset_id)| -> DispatchResult {
@@ -703,7 +703,7 @@ pub mod pallet {
 
 			// Transfer the collateral. We do not want to kill the minter, so this operation
 			// can fail if the account is being reaped.
-			T::CollateralCurrencies::transfer(
+			T::Collaterals::transfer(
 				pool_details.collateral_id,
 				&who,
 				&pool_id.into(),
@@ -827,7 +827,7 @@ pub mod pallet {
 			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
 
 			// Transfer the collateral to the beneficiary.
-			T::CollateralCurrencies::transfer(
+			T::Collaterals::transfer(
 				pool_details.collateral_id,
 				&pool_id.into(),
 				&beneficiary,
@@ -1008,7 +1008,7 @@ pub mod pallet {
 			// resolved by governance, either by removing locks or force_destroying the
 			// pool.
 			let total_collateral_issuance =
-				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_account);
+				T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
 			// nothing to distribute; refunding is complete, user should call start_destroy
 			ensure!(
@@ -1087,14 +1087,9 @@ pub mod pallet {
 				})?;
 
 			if amount.is_zero()
-				|| T::CollateralCurrencies::can_deposit(
-					pool_details.collateral_id.clone(),
-					&who,
-					amount,
-					Provenance::Extant,
-				)
-				.into_result()
-				.is_err()
+				|| T::Collaterals::can_deposit(pool_details.collateral_id.clone(), &who, amount, Provenance::Extant)
+					.into_result()
+					.is_err()
 			{
 				// Funds are burnt but the collateral received is not sufficient to be deposited
 				// to the account. This is tolerated as otherwise we could have edge cases where
@@ -1102,7 +1097,7 @@ pub mod pallet {
 				return Ok(Some(T::WeightInfo::refund_account(currency_count.to_owned())).into());
 			}
 
-			let transferred = T::CollateralCurrencies::transfer(
+			let transferred = T::Collaterals::transfer(
 				pool_details.collateral_id,
 				&pool_account,
 				&who,
@@ -1240,10 +1235,10 @@ pub mod pallet {
 			let pool_account = pool_id.clone().into();
 
 			let total_collateral_issuance =
-				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_account);
+				T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
 			if total_collateral_issuance > CollateralBalanceOf::<T>::zero() {
-				T::CollateralCurrencies::transfer(
+				T::Collaterals::transfer(
 					pool_details.collateral_id,
 					&pool_account,
 					&pool_details.owner,
@@ -1304,7 +1299,7 @@ pub mod pallet {
 		) -> Result<CollateralBalanceOf<T>, ArithmeticError> {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
-			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id);
+			let denomination = T::Collaterals::decimals(collateral_currency_id);
 
 			fixed_to_balance(normalized_costs, denomination, round_kind)
 		}
@@ -1396,7 +1391,7 @@ pub mod pallet {
 			}
 
 			let total_collateral_issuance =
-				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
+				T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 			// nothing to distribute
 			ensure!(
 				total_collateral_issuance > CollateralBalanceOf::<T>::zero(),
@@ -1473,7 +1468,7 @@ pub mod pallet {
 
 			if !force_skip_refund {
 				let total_collateral_issuance =
-					T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
+					T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 
 				if total_collateral_issuance > CollateralBalanceOf::<T>::zero() {
 					let has_holders = pool_details.bonded_currencies.iter().any(|asset_id| {

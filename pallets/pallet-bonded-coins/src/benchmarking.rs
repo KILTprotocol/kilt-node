@@ -68,10 +68,10 @@ fn get_lmsr_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
 	<CurveParameterTypeOf<T> as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
 	CollateralBalanceOf<T>: Into<U256> + TryFrom<U256>,
 	FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
-	T::CollateralCurrencies: Create<T::AccountId> ,
+	T::Collaterals: Create<T::AccountId> ,
 	T::Fungibles: InspectRoles<T::AccountId> + AccountTouch<FungiblesAssetIdOf<T>, AccountIdOf<T>>,
 	T::DepositCurrency: Mutate<T::AccountId>,
-	T::CollateralCurrencies: MutateFungibles<T::AccountId>,
+	T::Collaterals: MutateFungibles<T::AccountId>,
 	AccountIdLookupOf<T>: From<T::AccountId>,
 )]
 mod benchmarks {
@@ -97,12 +97,12 @@ mod benchmarks {
 	// collateral currencies
 	fn create_collateral_asset<T: Config>(asset_id: CollateralAssetIdOf<T>)
 	where
-		T::CollateralCurrencies: Create<T::AccountId>,
+		T::Collaterals: Create<T::AccountId>,
 	{
 		let pool_account = account("collateral_owner", 0, 0);
-		T::CollateralCurrencies::create(asset_id.clone(), pool_account, false, 1u128.saturated_into())
+		T::Collaterals::create(asset_id.clone(), pool_account, false, 1u128.saturated_into())
 			.expect("Creating collateral asset should work");
-		assert!(T::CollateralCurrencies::asset_exists(asset_id));
+		assert!(T::Collaterals::asset_exists(asset_id));
 	}
 
 	fn calculate_default_collateral_asset_id<T: Config>() -> CollateralAssetIdOf<T> {
@@ -111,7 +111,7 @@ mod benchmarks {
 
 	fn create_default_collateral_asset<T: Config>() -> CollateralAssetIdOf<T>
 	where
-		T::CollateralCurrencies: Create<T::AccountId>,
+		T::Collaterals: Create<T::AccountId>,
 	{
 		let collateral_id = calculate_default_collateral_asset_id::<T>();
 		create_collateral_asset::<T>(collateral_id.clone());
@@ -120,10 +120,10 @@ mod benchmarks {
 
 	fn set_collateral_balance<T: Config>(asset_id: CollateralAssetIdOf<T>, who: &AccountIdOf<T>, amount: u128)
 	where
-		T::CollateralCurrencies: MutateFungibles<T::AccountId>,
+		T::Collaterals: MutateFungibles<T::AccountId>,
 	{
-		T::CollateralCurrencies::set_balance(asset_id.clone(), who, amount.saturated_into());
-		let balance = T::CollateralCurrencies::balance(asset_id, who);
+		T::Collaterals::set_balance(asset_id.clone(), who, amount.saturated_into());
+		let balance = T::Collaterals::balance(asset_id, who);
 		assert_eq!(balance, amount.saturated_into());
 	}
 
@@ -462,8 +462,7 @@ mod benchmarks {
 
 		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
 
-		T::CollateralCurrencies::touch(collateral_id, &pool_id.clone().into(), &account_origin)
-			.expect("Touching should work");
+		T::Collaterals::touch(collateral_id, &pool_id.clone().into(), &account_origin).expect("Touching should work");
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 		let amount_to_mint = 10u128.saturated_into();
@@ -505,8 +504,7 @@ mod benchmarks {
 
 		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
 
-		T::CollateralCurrencies::touch(collateral_id, &pool_id.clone().into(), &account_origin)
-			.expect("Touching should work");
+		T::Collaterals::touch(collateral_id, &pool_id.clone().into(), &account_origin).expect("Touching should work");
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 		let amount_to_mint = 10u128.saturated_into();
@@ -549,8 +547,7 @@ mod benchmarks {
 
 		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
 
-		T::CollateralCurrencies::touch(collateral_id, &pool_id.clone().into(), &account_origin)
-			.expect("Touching should work");
+		T::Collaterals::touch(collateral_id, &pool_id.clone().into(), &account_origin).expect("Touching should work");
 
 		let beneficiary = AccountIdLookupOf::<T>::from(account_origin.clone());
 		let amount_to_mint = 10u128.saturated_into();
@@ -595,8 +592,7 @@ mod benchmarks {
 		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, Some(0));
 		let pool_account = pool_id.clone().into();
 
-		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_account, &account_origin)
-			.expect("Touching should work");
+		T::Collaterals::touch(collateral_id.clone(), &pool_account, &account_origin).expect("Touching should work");
 
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
@@ -643,8 +639,7 @@ mod benchmarks {
 		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, Some(0));
 		let pool_account = pool_id.clone().into();
 
-		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_account, &account_origin)
-			.expect("Touching should work");
+		T::Collaterals::touch(collateral_id.clone(), &pool_account, &account_origin).expect("Touching should work");
 
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
@@ -692,8 +687,7 @@ mod benchmarks {
 		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, Some(0));
 		let pool_account = pool_id.clone().into();
 
-		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_account, &account_origin)
-			.expect("Touching should work");
+		T::Collaterals::touch(collateral_id.clone(), &pool_account, &account_origin).expect("Touching should work");
 
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
@@ -817,7 +811,7 @@ mod benchmarks {
 		let pool_account = pool_id.clone().into();
 
 		let collateral_id = create_default_collateral_asset::<T>();
-		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
+		T::Collaterals::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
 			.expect("Touching should work");
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
@@ -851,8 +845,7 @@ mod benchmarks {
 		// give the pool account some funds.
 		make_free_for_deposit::<T>(&pool_account);
 		let collateral_id = create_default_collateral_asset::<T>();
-		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_account, &pool_account)
-			.expect("Touching should work");
+		T::Collaterals::touch(collateral_id.clone(), &pool_account, &pool_account).expect("Touching should work");
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
 		let holder: T::AccountId = account("holder", 0, 0);
@@ -888,7 +881,7 @@ mod benchmarks {
 		let pool_id = create_pool::<T>(curve, bonded_currencies, None, Some(PoolStatus::Refunding), None);
 
 		let pool_account = pool_id.clone().into();
-		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
+		T::Collaterals::touch(collateral_id.clone(), &pool_id.clone().into(), &account_origin)
 			.expect("Touching should work");
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
