@@ -97,7 +97,7 @@ mod benchmarks {
 		fungibles::{Create, Destroy, Inspect as InspectFungibles, Mutate as MutateFungibles},
 		AccountTouch, EnsureOrigin, Get, OriginTrait,
 	};
-	use sp_runtime::{traits::Zero, BoundedVec, SaturatedConversion, Saturating};
+	use sp_runtime::{traits::Zero, BoundedVec, SaturatedConversion};
 	use sp_std::ops::Mul;
 
 	use crate::{
@@ -205,7 +205,13 @@ mod benchmarks {
 		manager: Option<AccountIdOf<T>>,
 		state: Option<PoolStatus<Locks>>,
 		denomination: Option<u8>,
-	) -> T::PoolId {
+	) -> T::PoolId
+	where
+		<CurveParameterTypeOf<T> as Fixed>::Bits:
+			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
+		CollateralBalanceOf<T>: Into<U256> + TryFrom<U256>,
+		FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
+	{
 		let owner = account("owner", 0, 0);
 		let state = state.unwrap_or(PoolStatus::Active);
 		let collateral_id = calculate_default_collateral_asset_id::<T>();
@@ -222,8 +228,7 @@ mod benchmarks {
 			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids.clone()),
 			transferable: true,
 			min_operation_balance: 1u128.saturated_into(),
-			deposit: T::BaseDeposit::get()
-				.saturating_add(T::DepositPerCurrency::get().saturating_mul(bonded_coin_ids.len().saturated_into())),
+			deposit: Pallet::<T>::calculate_pool_deposit(bonded_coin_ids.len()),
 		};
 		Pools::<T>::insert(&pool_id, pool_details);
 
@@ -477,7 +482,7 @@ mod benchmarks {
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
-		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
+		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, Some(0));
 
 		T::Collaterals::touch(collateral_id, &pool_id.clone().into(), &account_origin).expect("Touching should work");
 
@@ -519,7 +524,7 @@ mod benchmarks {
 		let curve = get_square_root_curve::<CurveParameterTypeOf<T>>();
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
-		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
+		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, Some(0));
 
 		T::Collaterals::touch(collateral_id, &pool_id.clone().into(), &account_origin).expect("Touching should work");
 
@@ -562,7 +567,7 @@ mod benchmarks {
 
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
-		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, None);
+		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, Some(0));
 
 		T::Collaterals::touch(collateral_id, &pool_id.clone().into(), &account_origin).expect("Touching should work");
 
@@ -863,6 +868,7 @@ mod benchmarks {
 		make_free_for_deposit::<T>(&pool_account);
 		let collateral_id = create_default_collateral_asset::<T>();
 		T::Collaterals::touch(collateral_id.clone(), &pool_account, &pool_account).expect("Touching should work");
+
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
 		let holder: T::AccountId = account("holder", 0, 0);
