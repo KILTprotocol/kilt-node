@@ -109,8 +109,10 @@ pub mod pallet {
 		DepositBalanceOf<T>,
 	>;
 
+	/// Minimum required amount of integer and fractional bits to perform ln, sqrt, and exp operations
 	pub(crate) type Precision = I9F23;
 
+	/// Type used for the passive supply of a pool
 	pub(crate) type PassiveSupply<T> = Vec<T>;
 
 	pub(crate) type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, StringInputOf<T>, StringInputOf<T>>;
