@@ -1,3 +1,21 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2024 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
@@ -35,7 +53,7 @@ pub mod pallet {
 		traits::{
 			fungible::{Inspect as InspectFungible, MutateHold},
 			fungibles::{
-				metadata::{Inspect as FungiblesInspect, Mutate as FungiblesMetadata},
+				metadata::{Inspect as InspectMetadata, Mutate as MutateMetadata},
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
@@ -75,11 +93,11 @@ pub mod pallet {
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	pub(crate) type DepositCurrencyBalanceOf<T> =
+	pub(crate) type DepositBalanceOf<T> =
 		<<T as Config>::DepositCurrency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
-	pub(crate) type CollateralCurrenciesBalanceOf<T> =
-		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
+	pub(crate) type CollateralBalanceOf<T> =
+		<<T as Config>::Collaterals as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
 
 	pub(crate) type FungiblesBalanceOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::Balance;
@@ -88,13 +106,11 @@ pub mod pallet {
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type CollateralAssetIdOf<T> =
-		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
+		<<T as Config>::Collaterals as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
-	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrencies>;
+	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrenciesPerPool>;
 
-	pub(crate) type CurrencyNameOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
-
-	pub(crate) type CurrencySymbolOf<T> = BoundedVec<u8, <T as Config>::MaxStringLength>;
+	pub(crate) type StringInputOf<T> = BoundedVec<u8, <T as Config>::MaxStringInputLength>;
 
 	pub(crate) type CurveParameterTypeOf<T> = <T as Config>::CurveParameterType;
 
@@ -105,13 +121,17 @@ pub mod pallet {
 		Curve<CurveParameterTypeOf<T>>,
 		BoundedCurrencyVec<T>,
 		CollateralAssetIdOf<T>,
+		DepositBalanceOf<T>,
 	>;
 
+	/// Minimum required amount of integer and fractional bits to perform ln,
+	/// sqrt, and exp operations
 	pub(crate) type Precision = I9F23;
 
+	/// Type used for the passive supply of a pool
 	pub(crate) type PassiveSupply<T> = Vec<T>;
 
-	pub(crate) type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, CurrencyNameOf<T>, CurrencySymbolOf<T>>;
+	pub(crate) type TokenMetaOf<T> = TokenMeta<FungiblesBalanceOf<T>, StringInputOf<T>, StringInputOf<T>>;
 
 	pub(crate) const LOG_TARGET: &str = "runtime::pallet-bonded-coins";
 
@@ -126,23 +146,23 @@ pub mod pallet {
 		type DepositCurrency: MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 		/// A fungibles trait implementation to interact with currencies which
 		/// can be used as collateral for minting bonded tokens.
-		type CollateralCurrencies: MutateFungibles<Self::AccountId>
+		type Collaterals: MutateFungibles<Self::AccountId>
 			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>
-			+ FungiblesMetadata<Self::AccountId>;
+			+ InspectMetadata<Self::AccountId>;
 		/// Implementation of creating and managing new fungibles
 		type Fungibles: CreateFungibles<Self::AccountId>
 			+ DestroyFungibles<Self::AccountId>
-			+ FungiblesMetadata<Self::AccountId>
-			+ FungiblesInspect<Self::AccountId>
+			+ MutateMetadata<Self::AccountId>
+			+ InspectMetadata<Self::AccountId>
 			+ MutateFungibles<Self::AccountId>
 			+ FreezeAccounts<Self::AccountId, FungiblesAssetIdOf<Self>>
 			+ ResetTeam<Self::AccountId>;
 		/// The maximum number of currencies allowed for a single pool.
 		#[pallet::constant]
-		type MaxCurrencies: Get<u32>;
+		type MaxCurrenciesPerPool: Get<u32>;
 
 		#[pallet::constant]
-		type MaxStringLength: Get<u32>;
+		type MaxStringInputLength: Get<u32>;
 
 		/// The maximum denomination that bonded currencies can use. This should
 		/// be configured so that
@@ -153,12 +173,11 @@ pub mod pallet {
 
 		/// The deposit required for each bonded currency.
 		#[pallet::constant]
-		type DepositPerCurrency: Get<DepositCurrencyBalanceOf<Self>>;
+		type DepositPerCurrency: Get<DepositBalanceOf<Self>>;
 
-		/// The base deposit required to create a new pool, primarily to cover
-		/// the ED of the pool account.
+		/// The base deposit required to create a new pool.
 		#[pallet::constant]
-		type BaseDeposit: Get<DepositCurrencyBalanceOf<Self>>;
+		type BaseDeposit: Get<DepositBalanceOf<Self>>;
 
 		/// The origin for most permissionless and priviledged operations.
 		type DefaultOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
@@ -217,7 +236,7 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	#[pallet::getter(fn pools)]
+	#[pallet::getter(fn pool_with_id)]
 	pub(crate) type Pools<T: Config> = StorageMap<_, Twox64Concat, T::PoolId, PoolDetailsOf<T>, OptionQuery>;
 
 	#[pallet::event]
@@ -270,6 +289,8 @@ pub mod pallet {
 		/// parameter. Thrown by transactions that require specifying the number
 		/// of a pool's currencies in order to determine weight limits upfront.
 		CurrencyCount,
+		/// Raised if pool creation arguments are outside of the allowed value
+		/// range.
 		InvalidInput,
 		/// An internal error occurred. This should never happen.
 		Internal,
@@ -291,7 +312,7 @@ pub mod pallet {
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits:
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
-		CollateralCurrenciesBalanceOf<T>: Into<U256> + TryFrom<U256>,
+		CollateralBalanceOf<T>: Into<U256> + TryFrom<U256>,
 		FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
 		// TODO: make large integer type configurable
 	{
@@ -320,16 +341,17 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		#[pallet::weight({
 			let currency_length = currencies.len().saturated_into();
-			let weight_polynomial = T::WeightInfo::create_pool_polynomial(currency_length);
-			let weight_square_root = T::WeightInfo::create_pool_square_root(currency_length);
-			let weight_lmsr = T::WeightInfo::create_pool_lmsr(currency_length);
-			weight_polynomial.max(weight_square_root).max(weight_lmsr)
+			match curve {
+				CurveInput::Polynomial(_) => T::WeightInfo::create_pool_polynomial(currency_length),
+				CurveInput::SquareRoot(_) => T::WeightInfo::create_pool_square_root(currency_length),
+				CurveInput::Lmsr(_) => T::WeightInfo::create_pool_lmsr(currency_length),
+			}
 		})]
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			curve: CurveInput<CurveParameterInputOf<T>>,
 			collateral_id: CollateralAssetIdOf<T>,
-			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrencies>,
+			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool>,
 			denomination: u8,
 			transferable: bool,
 			min_operation_balance: u128,
@@ -341,33 +363,33 @@ pub mod pallet {
 
 			let currency_length = currencies.len();
 
-			let currency_ids: BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies> =
+			let currency_ids: BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool> =
 				T::NextAssetIds::try_get(currency_length.saturated_into()).map_err(|err| err.into())?;
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
-			// Todo: change that.
-			T::DepositCurrency::hold(
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-				&who,
-				Self::calculate_pool_deposit(currency_length),
-			)?;
+			if Pools::<T>::contains_key(&pool_id) {
+				log::error!(target: LOG_TARGET, "Attempt to create pool with pre-existing id {:?}", pool_id);
+				return Err(Error::<T>::Internal.into());
+			};
+
+			let deposit_amount = Self::calculate_pool_deposit(currency_length);
+
+			T::DepositCurrency::hold(&T::RuntimeHoldReason::from(HoldReason::Deposit), &who, deposit_amount)?;
 
 			let pool_account = &pool_id.clone().into();
 
 			// Touch the pool account in order to be able to transfer the collateral
 			// currency to it. This should also verify that the currency actually exists.
-			T::CollateralCurrencies::touch(collateral_id.clone(), pool_account, &who)?;
+			T::Collaterals::touch(collateral_id.clone(), pool_account, &who)?;
 
-			currencies
-				.into_iter()
-				.zip(currency_ids.iter())
-				.try_for_each(|(entry, asset_id)| -> DispatchResult {
+			currencies.into_iter().zip(currency_ids.iter()).try_for_each(
+				|(token_metadata, asset_id)| -> DispatchResult {
 					let TokenMeta {
 						min_balance,
 						name,
 						symbol,
-					} = entry;
+					} = token_metadata;
 
 					T::Fungibles::create(asset_id.clone(), pool_account.to_owned(), false, min_balance)?;
 
@@ -381,7 +403,8 @@ pub mod pallet {
 					)?;
 
 					Ok(())
-				})?;
+				},
+			)?;
 
 			Pools::<T>::set(
 				&pool_id,
@@ -393,6 +416,7 @@ pub mod pallet {
 					transferable,
 					denomination,
 					min_operation_balance,
+					deposit_amount,
 				)),
 			);
 
@@ -401,10 +425,10 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Resets the managing team of a pool. The new team will be set to the
-		/// provided team. The currency index is used to select the currency
-		/// that the team will manage.
-		/// The origin account must be a manager of the pool.
+		/// Changes the managing team of a bonded currency which is issued by
+		/// this pool. The new team will be set to the provided team. The
+		/// currency index is used to select the currency that the team will
+		/// manage. The origin account must be a manager of the pool.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call, requiring the caller to be a
@@ -624,7 +648,7 @@ pub mod pallet {
 			currency_idx: u32,
 			beneficiary: AccountIdLookupOf<T>,
 			amount_to_mint: FungiblesBalanceOf<T>,
-			max_cost: CollateralCurrenciesBalanceOf<T>,
+			max_cost: CollateralBalanceOf<T>,
 			currency_count: u32,
 		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
@@ -658,13 +682,13 @@ pub mod pallet {
 				&bonded_currencies,
 				pool_details.denomination,
 				currency_idx,
-				&round_kind,
+				round_kind,
 			)?;
 
 			let normalized_amount_to_mint = balance_to_fixed(
 				amount_to_mint.saturated_into::<u128>(),
 				pool_details.denomination,
-				&round_kind,
+				round_kind,
 			)?;
 
 			let active_post = active_pre
@@ -677,7 +701,7 @@ pub mod pallet {
 				passive,
 				&pool_details.curve,
 				pool_details.collateral_id.clone(),
-				&round_kind,
+				round_kind,
 			)?;
 
 			ensure!(cost > Zero::zero(), Error::<T>::ZeroCollateral);
@@ -686,7 +710,7 @@ pub mod pallet {
 
 			// Transfer the collateral. We do not want to kill the minter, so this operation
 			// can fail if the account is being reaped.
-			T::CollateralCurrencies::transfer(
+			T::Collaterals::transfer(
 				pool_details.collateral_id,
 				&who,
 				&pool_id.into(),
@@ -756,7 +780,7 @@ pub mod pallet {
 			currency_idx: u32,
 			beneficiary: AccountIdLookupOf<T>,
 			amount_to_burn: FungiblesBalanceOf<T>,
-			min_return: CollateralCurrenciesBalanceOf<T>,
+			min_return: CollateralBalanceOf<T>,
 			currency_count: u32,
 		) -> DispatchResultWithPostInfo {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
@@ -788,10 +812,10 @@ pub mod pallet {
 				&bonded_currencies,
 				pool_details.denomination,
 				currency_idx,
-				&round_kind,
+				round_kind,
 			)?;
 
-			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, &round_kind)?;
+			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, round_kind)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -803,14 +827,14 @@ pub mod pallet {
 				passive,
 				&pool_details.curve,
 				pool_details.collateral_id.clone(),
-				&round_kind,
+				round_kind,
 			)?;
 
 			ensure!(collateral_return > Zero::zero(), Error::<T>::ZeroCollateral);
 			ensure!(collateral_return >= min_return, Error::<T>::Slippage);
 
 			// Transfer the collateral to the beneficiary.
-			T::CollateralCurrencies::transfer(
+			T::Collaterals::transfer(
 				pool_details.collateral_id,
 				&pool_id.into(),
 				&beneficiary,
@@ -991,11 +1015,11 @@ pub mod pallet {
 			// resolved by governance, either by removing locks or force_destroying the
 			// pool.
 			let total_collateral_issuance =
-				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_account);
+				T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
 			// nothing to distribute; refunding is complete, user should call start_destroy
 			ensure!(
-				total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero(),
+				total_collateral_issuance > CollateralBalanceOf::<T>::zero(),
 				Error::<T>::NothingToRefund
 			);
 
@@ -1035,7 +1059,7 @@ pub mod pallet {
 				"burnt amount exceeds the total supply of all bonded currencies"
 			);
 
-			let amount: CollateralCurrenciesBalanceOf<T> = burnt
+			let amount: CollateralBalanceOf<T> = burnt
 				.checked_mul(total_collateral_issuance.into())
 				// As long as the balance type is half the size of a U256, this won't overflow.
 				.ok_or(ArithmeticError::Overflow)?
@@ -1070,14 +1094,9 @@ pub mod pallet {
 				})?;
 
 			if amount.is_zero()
-				|| T::CollateralCurrencies::can_deposit(
-					pool_details.collateral_id.clone(),
-					&who,
-					amount,
-					Provenance::Extant,
-				)
-				.into_result()
-				.is_err()
+				|| T::Collaterals::can_deposit(pool_details.collateral_id.clone(), &who, amount, Provenance::Extant)
+					.into_result()
+					.is_err()
 			{
 				// Funds are burnt but the collateral received is not sufficient to be deposited
 				// to the account. This is tolerated as otherwise we could have edge cases where
@@ -1085,13 +1104,13 @@ pub mod pallet {
 				return Ok(Some(T::WeightInfo::refund_account(currency_count.to_owned())).into());
 			}
 
-			let transferred = T::CollateralCurrencies::transfer(
+			let transferred = T::Collaterals::transfer(
 				pool_details.collateral_id,
 				&pool_account,
 				&who,
 				amount,
 				Preservation::Expendable,
-			)?; // TODO: check edge cases around existential deposit
+			)?;
 
 			// if collateral or total supply drops to zero, refunding is complete
 			// -> emit event
@@ -1223,10 +1242,10 @@ pub mod pallet {
 			let pool_account = pool_id.clone().into();
 
 			let total_collateral_issuance =
-				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_account);
+				T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_account);
 
-			if total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero() {
-				T::CollateralCurrencies::transfer(
+			if total_collateral_issuance > CollateralBalanceOf::<T>::zero() {
+				T::Collaterals::transfer(
 					pool_details.collateral_id,
 					&pool_account,
 					&pool_details.owner,
@@ -1240,7 +1259,7 @@ pub mod pallet {
 			T::DepositCurrency::release(
 				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&pool_details.owner,
-				Self::calculate_pool_deposit(n_currencies),
+				pool_details.deposit,
 				WithdrawalPrecision::Exact,
 			)?;
 
@@ -1254,7 +1273,7 @@ pub mod pallet {
 	where
 		<CurveParameterTypeOf<T> as Fixed>::Bits:
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
-		CollateralCurrenciesBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
+		CollateralBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
 		FungiblesBalanceOf<T>: TryFrom<U256> + TryInto<U256>,
 	{
 		/// Calculates the collateral by the given curve and the normalized
@@ -1271,8 +1290,8 @@ pub mod pallet {
 		/// - `collateral_currency_id`: The ID of the collateral currency.
 		///
 		/// # Returns
-		/// - `Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError>`: The
-		///   calculated collateral or an error.
+		/// - `Result<CollateralBalanceOf<T>, ArithmeticError>`: The calculated
+		///   collateral or an error.
 		///
 		/// # Errors
 		/// - `ArithmeticError`: If there is an operation overflowing,
@@ -1283,11 +1302,11 @@ pub mod pallet {
 			passive_supply: PassiveSupply<CurveParameterTypeOf<T>>,
 			curve: &Curve<CurveParameterTypeOf<T>>,
 			collateral_currency_id: CollateralAssetIdOf<T>,
-			round_kind: &Round,
-		) -> Result<CollateralCurrenciesBalanceOf<T>, ArithmeticError> {
+			round_kind: Round,
+		) -> Result<CollateralBalanceOf<T>, ArithmeticError> {
 			let normalized_costs = curve.calculate_costs(low, high, passive_supply)?;
 
-			let denomination = T::CollateralCurrencies::decimals(collateral_currency_id);
+			let denomination = T::Collaterals::decimals(collateral_currency_id);
 
 			fixed_to_balance(normalized_costs, denomination, round_kind)
 		}
@@ -1315,7 +1334,7 @@ pub mod pallet {
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
 			currency_idx: usize,
-			round_kind: &Round,
+			round_kind: Round,
 		) -> Result<(CurveParameterTypeOf<T>, PassiveSupply<CurveParameterTypeOf<T>>), DispatchError> {
 			let mut normalized_total_issuances = bonded_currencies
 				.iter()
@@ -1379,10 +1398,10 @@ pub mod pallet {
 			}
 
 			let total_collateral_issuance =
-				T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
+				T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 			// nothing to distribute
 			ensure!(
-				total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero(),
+				total_collateral_issuance > CollateralBalanceOf::<T>::zero(),
 				Error::<T>::NothingToRefund
 			);
 
@@ -1456,9 +1475,9 @@ pub mod pallet {
 
 			if !force_skip_refund {
 				let total_collateral_issuance =
-					T::CollateralCurrencies::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
+					T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
 
-				if total_collateral_issuance > CollateralCurrenciesBalanceOf::<T>::zero() {
+				if total_collateral_issuance > CollateralBalanceOf::<T>::zero() {
 					let has_holders = pool_details.bonded_currencies.iter().any(|asset_id| {
 						T::Fungibles::total_issuance(asset_id.clone()) > FungiblesBalanceOf::<T>::zero()
 					});
@@ -1499,8 +1518,8 @@ pub mod pallet {
 		/// # Returns
 		/// - `u32`: The number of bonded currencies in the pool.
 		pub(crate) fn get_currencies_number(pool_details: &PoolDetailsOf<T>) -> u32 {
-			// bonded_currencies is a BoundedVec with maximum length MaxCurrencies, which is
-			// a u32; conversion to u32 must thus be lossless.
+			// bonded_currencies is a BoundedVec with maximum length MaxCurrenciesPerPool,
+			// which is a u32; conversion to u32 must thus be lossless.
 			pool_details.bonded_currencies.len().saturated_into()
 		}
 
@@ -1512,11 +1531,10 @@ pub mod pallet {
 		/// - `n_currencies`: The number of currencies in the pool.
 		///
 		/// # Returns
-		/// - `DepositCurrencyBalanceOf<T>`: The total deposit required for the
-		///   pool.
-		pub(crate) fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositCurrencyBalanceOf<T>>>(
+		/// - `DepositBalanceOf<T>`: The total deposit required for the pool.
+		pub(crate) fn calculate_pool_deposit<N: UniqueSaturatedInto<DepositBalanceOf<T>>>(
 			n_currencies: N,
-		) -> DepositCurrencyBalanceOf<T> {
+		) -> DepositBalanceOf<T> {
 			T::BaseDeposit::get()
 				.saturating_add(T::DepositPerCurrency::get().saturating_mul(n_currencies.saturated_into()))
 		}

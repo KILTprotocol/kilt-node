@@ -1,3 +1,20 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2024 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
 use frame_support::{
 	assert_err, assert_ok,
 	traits::{
@@ -290,7 +307,11 @@ fn mint_large_supply() {
 
 	let curve = get_linear_bonding_curve();
 
-	let initial_supply = (2_u128.pow(127) as f64).sqrt() as u128; // TODO: what exactly is the theoretical maximum?
+	// the bottleneck is the fixed type with a capacity of 2^74 = 1.89 * 10^22; as
+	// part of the calculations, the (denomination-scaled) supply is squared.
+	// (2^69 / 10^10)^2 = 3.48 * 10^21, which leaves around one magnitude of room
+	// for multiplications & additions.
+	let initial_supply = 2_u128.pow(69);
 
 	let amount_to_mint = 1u128;
 	let expected_price = mocks_curve_get_collateral_at_supply(initial_supply + amount_to_mint)

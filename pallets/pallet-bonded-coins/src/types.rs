@@ -1,3 +1,20 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2024 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
@@ -57,7 +74,7 @@ impl<LockType> PoolStatus<LockType> {
 
 /// Details of a pool.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
-pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId> {
+pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance> {
 	/// The owner of the pool.
 	pub owner: AccountId,
 	/// The manager of the pool. If a manager is set, the pool is permissioned.
@@ -74,14 +91,18 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
 	pub transferable: bool,
 	/// The denomination of the pool.
 	pub denomination: u8,
+	/// The minimum amount that can be minted/burnt.
 	pub min_operation_balance: u128,
+	/// The deposit to be returned upon destruction of this pool.
+	pub deposit: DepositBalance,
 }
 
-impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
-	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId>
+impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance>
+	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance>
 where
 	AccountId: PartialEq + Clone,
 {
+	#[allow(clippy::too_many_arguments)]
 	/// Creates a new pool with the given parameters.
 	pub fn new(
 		owner: AccountId,
@@ -91,6 +112,7 @@ where
 		transferable: bool,
 		denomination: u8,
 		min_operation_balance: u128,
+		deposit: DepositBalance,
 	) -> Self {
 		Self {
 			manager: Some(owner.clone()),
@@ -102,6 +124,7 @@ where
 			state: PoolStatus::default(),
 			denomination,
 			min_operation_balance,
+			deposit,
 		}
 	}
 
@@ -157,7 +180,7 @@ pub struct PoolManagingTeam<AccountId> {
 }
 
 /// Enum, to specify the rounding direction.
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub(crate) enum Round {
 	/// Round up.
 	Up,

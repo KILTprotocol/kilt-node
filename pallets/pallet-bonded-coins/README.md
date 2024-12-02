@@ -89,15 +89,15 @@ The `Config` trait defines the configuration parameters and associated types req
                            Signed operations are still necessary for some transcendental functions in the bonding curves. 
                            Therefore, the input parameters are used to take unsigned parameters and translate them to the signed equivalent.
 - `Fungibles`: Implementation of creating and managing new bonded fungibles.
-- `CollateralCurrencies`: Implementation to withdraw and deposit collateral currencies.
+- `Collaterals`: Implementation to withdraw and deposit collateral currencies.
 
 ### Constants
 
 - `MaxDenomination`: The maximum denomination allowed.
 - `DepositPerCurrency`: The deposit required per currency.
 - `BaseDeposit`: The base deposit amount to create a new pool.
-- `MaxStringLength`: The maximum length of strings for the currencies symbol and name.
-- `MaxCurrencies`: The maximum number of currencies allowed per pool.
+- `MaxStringInputLength`: The maximum length of strings for the currencies symbol and name.
+- `MaxCurrenciesPerPool`: The maximum number of currencies allowed per pool.
 
 ### Origins 
 
