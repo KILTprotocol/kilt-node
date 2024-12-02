@@ -88,7 +88,7 @@ pub mod runtime {
 		owner: Option<AccountId>,
 		min_operation_balance: Option<u128>,
 	) -> PoolDetailsOf<Test> {
-		let bonded_currencies = BoundedVec::truncate_from(currencies);
+		let bonded_currencies = BoundedVec::truncate_from(currencies.clone());
 		let state = state.unwrap_or(PoolStatus::Active);
 		let owner = owner.unwrap_or(ACCOUNT_99);
 		let collateral_id = collateral_id.unwrap_or(DEFAULT_COLLATERAL_CURRENCY_ID);
@@ -103,6 +103,7 @@ pub mod runtime {
 			denomination: DEFAULT_BONDED_DENOMINATION,
 			owner,
 			min_operation_balance,
+			deposit: BondingPallet::calculate_pool_deposit(currencies.len()),
 		}
 	}
 

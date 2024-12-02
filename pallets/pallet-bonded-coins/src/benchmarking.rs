@@ -205,6 +205,7 @@ mod benchmarks {
 			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids),
 			transferable: true,
 			min_operation_balance: 1u128.saturated_into(),
+			deposit: Pallet::<T>::calculate_pool_deposit(bonded_coin_ids.len()),
 		};
 		Pools::<T>::insert(&pool_id, pool_details);
 

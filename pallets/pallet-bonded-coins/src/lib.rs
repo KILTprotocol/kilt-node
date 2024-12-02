@@ -106,6 +106,7 @@ pub mod pallet {
 		Curve<CurveParameterTypeOf<T>>,
 		BoundedCurrencyVec<T>,
 		CollateralAssetIdOf<T>,
+		DepositBalanceOf<T>,
 	>;
 
 	pub(crate) type Precision = I9F23;
@@ -360,11 +361,9 @@ pub mod pallet {
 				return Err(Error::<T>::Internal.into());
 			};
 
-			T::DepositCurrency::hold(
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-				&who,
-				Self::calculate_pool_deposit(currency_length),
-			)?;
+			let deposit_amount = Self::calculate_pool_deposit(currency_length);
+
+			T::DepositCurrency::hold(&T::RuntimeHoldReason::from(HoldReason::Deposit), &who, deposit_amount)?;
 
 			let pool_account = &pool_id.clone().into();
 
@@ -405,6 +404,7 @@ pub mod pallet {
 					transferable,
 					denomination,
 					min_operation_balance,
+					deposit_amount,
 				)),
 			);
 
@@ -1255,7 +1255,7 @@ pub mod pallet {
 			T::DepositCurrency::release(
 				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&pool_details.owner,
-				Self::calculate_pool_deposit(n_currencies),
+				pool_details.deposit,
 				WithdrawalPrecision::Exact,
 			)?;
 

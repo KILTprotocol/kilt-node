@@ -45,6 +45,7 @@ fn burn_first_coin() {
 				denomination: 0,
 				owner: ACCOUNT_99,
 				min_operation_balance: 1,
+				deposit: BondingPallet::calculate_pool_deposit(1),
 			},
 		)])
 		.build()
