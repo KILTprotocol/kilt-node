@@ -82,7 +82,6 @@ The `Config` trait defines the configuration parameters and associated types req
 
 - `DepositCurrency`: The currency used for storage deposits.
 - `PoolId`: The type representing the identifier for a pool.
-- `AssetId`: The type representing the identifier for an asset.
 - `CurveParameterType`:    The type representing the parameters for the curve.
                            Used for the actual bonding curve calculation and stored on chain.
 - `CurveParameterInput`:   The type representing the unchecked input for the curve parameters. 
