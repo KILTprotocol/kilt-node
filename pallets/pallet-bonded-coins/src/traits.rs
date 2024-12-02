@@ -83,7 +83,10 @@ where
 	}
 }
 
+/// A trait for getting the next n asset ids to be used during pool creation.
 pub trait NextAssetIds<T: Config> {
-	type Error: Into<DispatchError> + Debug;
-	fn get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies>, Self::Error>;
+	/// Generic error type.
+	type Error: Into<DispatchError>;
+	/// Get the next `n` asset ids.
+	fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies>, Self::Error>;
 }

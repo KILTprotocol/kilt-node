@@ -147,20 +147,21 @@ pub mod runtime {
 			.expect("expected collateral too large for balance type")
 	}
 
+	/// Store the next asset id in the storage.
 	#[storage_alias]
 	pub type NextAssetId<BondingPallet: PalletInfoAccess> =
 		StorageValue<BondingPallet, FungiblesAssetIdOf<Test>, ValueQuery>;
-	/// Stored information about the allowed claimer inside the DotNames pallet,
-	/// without the pallet knowing about it.
 
-	pub struct GetNextAssetIdStruct;
+	/// Struct to implement desired traits for [NextAssetId].
+	pub struct NextAssetIdGenerator;
 
-	impl<T: Config> NextAssetIds<T> for GetNextAssetIdStruct
+	/// impl NetAssetId for GetNextAssetIdStruct
+	impl<T: Config> NextAssetIds<T> for NextAssetIdGenerator
 	where
 		FungiblesAssetIdOf<T>: From<AssetId>,
 	{
 		type Error = DispatchError;
-		fn get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies>, Self::Error> {
+		fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies>, Self::Error> {
 			let next_asset_id = NextAssetId::<BondingPallet>::get();
 
 			let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
@@ -285,7 +286,7 @@ pub mod runtime {
 		type MaxCurrencies = MaxCurrencies;
 		type MaxDenomination = MaxDenomination;
 		type MaxStringLength = StringLimit;
-		type NextAssetIds = GetNextAssetIdStruct;
+		type NextAssetIds = NextAssetIdGenerator;
 		type PoolCreateOrigin = EnsureSigned<AccountId>;
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;

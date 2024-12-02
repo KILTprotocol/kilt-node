@@ -343,7 +343,7 @@ pub mod pallet {
 			let currency_length = currencies.len();
 
 			let currency_ids: BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrencies> =
-				T::NextAssetIds::get(currency_length.saturated_into()).map_err(|err| err.into())?;
+				T::NextAssetIds::try_get(currency_length.saturated_into()).map_err(|err| err.into())?;
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());
 
