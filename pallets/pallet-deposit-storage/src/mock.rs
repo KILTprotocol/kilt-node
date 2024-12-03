@@ -30,7 +30,10 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
-use crate::{self as storage_deposit_pallet, DepositEntryOf, DepositKeyOf, Pallet};
+use crate::{
+	self as storage_deposit_pallet, fungible::PalletDepositStorageReason, DepositEntryOf, DepositKeyOf, HoldReason,
+	Pallet,
+};
 
 pub(crate) type Balance = u128;
 
@@ -96,6 +99,12 @@ impl pallet_balances::Config for TestRuntime {
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
+}
+
+impl From<PalletDepositStorageReason<DepositNamespace, DepositKeyOf<TestRuntime>>> for RuntimeHoldReason {
+	fn from(_value: PalletDepositStorageReason<DepositNamespace, DepositKeyOf<TestRuntime>>) -> Self {
+		HoldReason::Deposit.into()
+	}
 }
 
 impl crate::Config for TestRuntime {
