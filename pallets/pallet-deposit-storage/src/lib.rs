@@ -41,7 +41,7 @@ mod benchmarking;
 
 pub use crate::{default_weights::WeightInfo, deposit::FixedDepositCollectorViaDepositsPallet, pallet::*};
 
-const LOG_TARGET: &str = "pallet_deposit_storage";
+pub(crate) const LOG_TARGET: &str = "runtime::pallet_deposit_storage";
 
 #[frame_support::pallet]
 // `.expect()` is used in the macro-generated code, and we have to ignore it.
