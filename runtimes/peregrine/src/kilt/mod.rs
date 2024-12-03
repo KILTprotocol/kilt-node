@@ -21,7 +21,9 @@ use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use runtime_common::{
 	asset_switch::hooks::RestrictSwitchDestinationToSelf,
-	bonded_currencies::{AssetId, Float, FloatInput, TargetFromLeft, WrapperNativeAndForeignAssets},
+	bonded_currencies::{
+		hooks::NextAssetIdGenerator, Float, FloatInput, TargetFromLeft, WrapperNativeAndForeignAssets,
+	},
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
 use xcm::v4::{Junctions, Location};
@@ -30,7 +32,8 @@ use xcm_builder::{FungiblesAdapter, NoChecking};
 use crate::{
 	constants, weights,
 	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
-	Balances, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason,
+	Balances, BondedCurrencies, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
+	RuntimeHoldReason,
 };
 
 pub(crate) mod credential;
@@ -109,9 +112,8 @@ parameter_types! {
 }
 
 impl pallet_bonded_coins::Config for Runtime {
-	type AssetId = AssetId;
 	type BaseDeposit = runtime_common::constants::bonded_coins::BaseDeposit;
-	type CollateralCurrencies =
+	type Collaterals =
 		WrapperNativeAndForeignAssets<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId>;
 	type CurveParameterInput = FloatInput;
 	type CurveParameterType = Float;
@@ -120,9 +122,10 @@ impl pallet_bonded_coins::Config for Runtime {
 	type DepositPerCurrency = runtime_common::constants::bonded_coins::DepositPerCurrency;
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Fungibles = BondedFungibles;
-	type MaxCurrencies = runtime_common::constants::bonded_coins::MaxCurrencies;
+	type MaxCurrenciesPerPool = runtime_common::constants::bonded_coins::MaxCurrencies;
 	type MaxDenomination = runtime_common::constants::bonded_coins::MaxDenomination;
-	type MaxStringLength = runtime_common::constants::bonded_coins::MaxStringLength;
+	type MaxStringInputLength = runtime_common::constants::bonded_coins::MaxStringLength;
+	type NextAssetIds = NextAssetIdGenerator<BondedCurrencies>;
 	type PoolCreateOrigin = EnsureSigned<AccountId>;
 	type PoolId = AccountId;
 	type RuntimeEvent = RuntimeEvent;
