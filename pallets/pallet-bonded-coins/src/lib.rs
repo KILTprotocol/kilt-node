@@ -111,13 +111,8 @@ pub mod pallet {
 	pub type FungiblesAssetIdOf<T> =
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
-<<<<<<< HEAD
-	pub(crate) type CollateralAssetIdOf<T> =
-		<<T as Config>::Collaterals as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
-=======
 	pub type CollateralAssetIdOf<T> =
-		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
->>>>>>> finished
+		<<T as Config>::Collaterals as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrenciesPerPool>;
 
@@ -159,11 +154,8 @@ pub mod pallet {
 		/// can be used as collateral for minting bonded tokens.
 		type Collaterals: MutateFungibles<Self::AccountId>
 			+ AccountTouch<CollateralAssetIdOf<Self>, Self::AccountId>
-<<<<<<< HEAD
 			+ InspectMetadata<Self::AccountId>;
-=======
-			+ FungiblesInspect<Self::AccountId>;
->>>>>>> finished
+
 		/// Implementation of creating and managing new fungibles
 		type Fungibles: CreateFungibles<Self::AccountId>
 			+ DestroyFungibles<Self::AccountId>
