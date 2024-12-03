@@ -27,10 +27,10 @@ use kilt_support::Deposit;
 use pallet_dip_provider::{traits::ProviderHooks as DipProviderHooks, IdentityCommitmentOf, IdentityCommitmentVersion};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::traits::Get;
+use sp_runtime::{traits::Get, BoundedVec};
 use sp_std::marker::PhantomData;
 
-use crate::{BalanceOf, Config, Error, HoldReason, Pallet};
+use crate::{fungible::PalletDepositStorageReason, BalanceOf, Config, Error, Pallet};
 
 #[cfg(test)]
 mod mock;
@@ -96,7 +96,7 @@ where
 		version: IdentityCommitmentVersion,
 	) -> Result<(), Self::Error> {
 		let namespace = DepositsNamespace::get();
-		let key = DepositKey::from((identifier.clone(), submitter.clone(), version))
+		let key: BoundedVec<_, _> = DepositKey::from((identifier.clone(), submitter.clone(), version))
 			.encode()
 			.try_into()
 			.map_err(|_| {
@@ -113,7 +113,7 @@ where
 				amount: FixedDepositAmount::get(),
 				owner: submitter.clone(),
 			},
-			reason: HoldReason::Deposit.into(),
+			reason: PalletDepositStorageReason(namespace.clone(), key.clone()).into(),
 		};
 		Pallet::<Runtime>::add_deposit(namespace, key, deposit_entry).map_err(|e| {
 			if e == DispatchError::from(Error::<Runtime>::DepositExisting) {
