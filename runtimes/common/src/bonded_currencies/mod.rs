@@ -149,7 +149,7 @@ impl<
 	) -> Result<Option<Self::Balance>, DispatchError> {
 		NativeAndForeignAssets::<Left, Right, Criterion, AssetKind, AccountId>::write_balance(asset, who, amount)
 	}
-	fn set_total_issuance(asset: Self::AssetId, amount: Self::Balance) -> () {
+	fn set_total_issuance(asset: Self::AssetId, amount: Self::Balance) {
 		NativeAndForeignAssets::<Left, Right, Criterion, AssetKind, AccountId>::set_total_issuance(asset, amount);
 	}
 	fn decrease_balance(
