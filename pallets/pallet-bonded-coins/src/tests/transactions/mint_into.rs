@@ -60,8 +60,7 @@ fn mint_first_coin() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::mint_into(
@@ -133,8 +132,7 @@ fn mint_large_quantity() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::mint_into(
@@ -184,8 +182,7 @@ fn mint_to_other() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let holder_origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let broke_origin = RawOrigin::Signed(ACCOUNT_01).into();
 
@@ -258,8 +255,7 @@ fn mint_multiple_currencies() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::mint_into(
@@ -338,8 +334,7 @@ fn mint_large_supply() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::mint_into(
@@ -379,7 +374,7 @@ fn multiple_mints_vs_combined_mint() {
 	let account_collateral = 10u128.pow(20);
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, account_collateral)])
 		.with_pools(vec![
@@ -410,8 +405,7 @@ fn multiple_mints_vs_combined_mint() {
 				),
 			),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// pool 1: 1 mint of 10 * amount
@@ -476,8 +470,7 @@ fn mint_with_frozen_balance() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::mint_into(
@@ -560,8 +553,7 @@ fn mint_on_locked_pool() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 			let manager_origin = RawOrigin::Signed(ACCOUNT_00).into();
 
@@ -594,8 +586,7 @@ fn mint_on_locked_pool() {
 fn mint_invalid_pool_id() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let invalid_pool_id = calculate_pool_id(&[999]); // Assume 999 is an invalid currency ID
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
@@ -624,8 +615,9 @@ fn mint_in_refunding_pool() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			assert_err!(
 				BondingPallet::mint_into(origin, pool_id, 0, ACCOUNT_00, 1, 2, 1),
@@ -654,8 +646,7 @@ fn mint_exceeding_max_collateral_cost() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Mint operation would cost more than allowed max_cost
@@ -695,8 +686,7 @@ fn mint_with_zero_cost() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_err!(
@@ -724,8 +714,8 @@ fn mint_invalid_currency_index() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Index beyond array length
@@ -757,8 +747,7 @@ fn mint_without_collateral() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_err!(
@@ -806,8 +795,7 @@ fn mint_more_than_fixed_can_represent() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// repeatedly mint until we hit balance that cannot be represented

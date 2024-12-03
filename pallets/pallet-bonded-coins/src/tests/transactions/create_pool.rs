@@ -38,8 +38,7 @@ fn single_currency() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
 
@@ -109,8 +108,7 @@ fn multi_currency() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
 
@@ -162,8 +160,7 @@ fn can_create_identical_pools() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
 
@@ -214,8 +211,7 @@ fn can_create_identical_pools() {
 fn fails_if_collateral_not_exists() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
 
@@ -244,8 +240,7 @@ fn fails_if_collateral_not_exists() {
 fn cannot_create_circular_pool() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
 
@@ -279,8 +274,7 @@ fn handles_asset_id_overflow() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			NextAssetId::<BondingPallet>::set(u32::MAX);
 
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();

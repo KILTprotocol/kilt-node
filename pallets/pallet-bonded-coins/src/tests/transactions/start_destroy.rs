@@ -43,8 +43,7 @@ fn start_destroy_works() {
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::start_destroy(origin, pool_id.clone(), 1));
@@ -85,8 +84,7 @@ fn start_destroy_works_when_nothing_to_refund() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::start_destroy(origin, pool_id.clone(), 1));
@@ -119,8 +117,7 @@ fn start_destroy_works_when_no_collateral() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::start_destroy(origin, pool_id.clone(), 1));
@@ -153,8 +150,7 @@ fn start_destroy_works_when_refunding() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::start_destroy(origin, pool_id.clone(), 1));
@@ -190,8 +186,7 @@ fn start_destroy_fails_when_pool_has_active_currencies() {
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), ONE_HUNDRED_KILT),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, ONE_HUNDRED_KILT),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Ensure the start_destroy call fails due to pool being actively used
@@ -222,8 +217,7 @@ fn start_destroy_fails_when_pool_destroying() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Ensure the start_destroy call fails due to pool not being active
@@ -262,8 +256,7 @@ fn start_destroy_fails_when_currency_no_low() {
 			pool_id.clone(),
 			ONE_HUNDRED_KILT,
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_err!(
@@ -303,8 +296,7 @@ fn force_start_destroy_works() {
 			pool_id.clone(),
 			ONE_HUNDRED_KILT,
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Root.into();
 
 			assert_ok!(BondingPallet::force_start_destroy(origin, pool_id.clone(), 1));
@@ -340,8 +332,7 @@ fn force_start_destroy_works_even_with_nonzero_supply() {
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), ONE_HUNDRED_KILT),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, ONE_HUNDRED_KILT),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Root.into();
 
 			assert_ok!(BondingPallet::force_start_destroy(origin, pool_id.clone(), 1));
@@ -377,8 +368,7 @@ fn force_start_destroy_fails_when_not_root() {
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), ONE_HUNDRED_KILT),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, ONE_HUNDRED_KILT),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Ensure the force_start_destroy call fails due to non-root origin
@@ -414,8 +404,7 @@ fn force_start_destroy_fails_when_currency_no_low() {
 			pool_id.clone(),
 			ONE_HUNDRED_KILT,
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Root.into();
 
 			assert_err!(
