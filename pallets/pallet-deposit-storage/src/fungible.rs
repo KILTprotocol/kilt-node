@@ -18,44 +18,15 @@
 
 use frame_support::traits::{
 	fungible::{Dust, Inspect, InspectHold, MutateHold, Unbalanced, UnbalancedHold},
-	tokens::{Fortitude, Precision, Preservation, Provenance, WithdrawConsequence},
+	tokens::{Fortitude, Preservation, Provenance, WithdrawConsequence},
+	DefensiveSaturating,
 };
 use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{DispatchError, DispatchResult};
 
-use crate::{deposit::DepositEntry, Config, DepositKeyOf, Pallet};
-
-// TODO: This impl must override all the trait impls to update storage entries.
-impl<T> MutateHold<T::AccountId> for Pallet<T>
-where
-	T: Config,
-{
-	fn hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
-		Pallet::<T>::add_deposit(
-			reason.0.clone(),
-			reason.1.clone(),
-			DepositEntry {
-				deposit: Deposit {
-					amount,
-					owner: who.clone(),
-				},
-				reason: reason.clone().into(),
-			},
-		)
-	}
-
-	fn release(
-		reason: &Self::Reason,
-		who: &T::AccountId,
-		_amount: Self::Balance,
-		_precision: Precision,
-	) -> Result<Self::Balance, DispatchError> {
-		let deposit_entry = Pallet::<T>::remove_deposit(&reason.0, &reason.1, Some(who))?;
-		Ok(deposit_entry.deposit.amount)
-	}
-}
+use crate::{deposit::DepositEntry, Config, DepositEntryOf, DepositKeyOf, Deposits, Pallet, LOG_TARGET};
 
 impl<T> Inspect<T::AccountId> for Pallet<T>
 where
@@ -96,17 +67,11 @@ where
 	}
 }
 
-impl<T> UnbalancedHold<T::AccountId> for Pallet<T>
-where
-	T: Config,
-{
-	fn set_balance_on_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
-		<T::Currency as UnbalancedHold<T::AccountId>>::set_balance_on_hold(&reason.clone().into(), who, amount)
-	}
+#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, Copy, Debug)]
+pub struct PalletDepositStorageReason<Namespace, Key> {
+	pub(crate) namespace: Namespace,
+	pub(crate) key: Key,
 }
-
-#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, Copy)]
-pub struct PalletDepositStorageReason<Namespace, Key>(pub(crate) Namespace, pub(crate) Key);
 
 impl<T> InspectHold<T::AccountId> for Pallet<T>
 where
@@ -137,5 +102,75 @@ where
 
 	fn set_total_issuance(amount: Self::Balance) {
 		<T::Currency as Unbalanced<T::AccountId>>::set_total_issuance(amount);
+	}
+}
+
+impl<T> UnbalancedHold<T::AccountId> for Pallet<T>
+where
+	T: Config,
+{
+	// Implements this trait function by first dispatching to the underlying
+	// `Currency` and then overriding the relevant storage entry.
+	fn set_balance_on_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
+		<T::Currency as UnbalancedHold<T::AccountId>>::set_balance_on_hold(&reason.clone().into(), who, amount)?;
+		Deposits::<T>::insert(
+			&reason.namespace,
+			&reason.key,
+			DepositEntryOf::<T> {
+				deposit: Deposit {
+					amount,
+					owner: who.clone(),
+				},
+				reason: reason.clone().into(),
+			},
+		);
+		Ok(())
+	}
+}
+
+impl<T> MutateHold<T::AccountId> for Pallet<T>
+where
+	T: Config,
+{
+	// Implements this trait function by first dispatching to the underlying
+	// `Currency` and then either writing the storage entry or updating the existing
+	// one with the new amount.
+	fn done_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) {
+		<T::Currency as MutateHold<T::AccountId>>::done_hold(&reason.clone().into(), who, amount);
+		Deposits::<T>::mutate(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
+			if let Some(existing_deposit_entry) = maybe_existing_deposit_entry {
+				let new_amount = existing_deposit_entry.deposit.amount.defensive_saturating_add(amount);
+				existing_deposit_entry.deposit.amount = new_amount;
+			} else {
+				*maybe_existing_deposit_entry = Some(DepositEntry {
+					deposit: Deposit {
+						amount,
+						owner: who.clone(),
+					},
+					reason: reason.clone().into(),
+				});
+			}
+		});
+	}
+
+	// Implements this trait function by first dispatching to the underlying
+	// `Currency` and then by either deleting the storage entry if all balance on
+	// hold is released or updating the existing one with the new amount.
+	fn done_release(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) {
+		<T::Currency as MutateHold<T::AccountId>>::done_hold(&reason.clone().into(), who, amount);
+		Deposits::<T>::mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
+			let Some(existing_deposit_entry) = maybe_existing_deposit_entry else {
+				log::warn!(target: LOG_TARGET, "Failed to call `done_release` for reason {:?}, who {:?} and amount {:?}. Entry not found in storage.", reason, who, amount);
+				return;
+			};
+			// If the whole amount is released, remove from storage.
+			if existing_deposit_entry.deposit.amount == amount {
+				*maybe_existing_deposit_entry = None;
+			// Else, update the storage entry accordingly.
+			} else {
+				let new_amount = existing_deposit_entry.deposit.amount.defensive_saturating_sub(amount);
+				existing_deposit_entry.deposit.amount = new_amount;
+			}
+		});
 	}
 }

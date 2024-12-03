@@ -113,7 +113,11 @@ where
 				amount: FixedDepositAmount::get(),
 				owner: submitter.clone(),
 			},
-			reason: PalletDepositStorageReason(namespace.clone(), key.clone()).into(),
+			reason: PalletDepositStorageReason {
+				namespace: namespace.clone(),
+				key: key.clone(),
+			}
+			.into(),
 		};
 		Pallet::<Runtime>::add_deposit(namespace, key, deposit_entry).map_err(|e| {
 			if e == DispatchError::from(Error::<Runtime>::DepositExisting) {
