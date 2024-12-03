@@ -35,7 +35,7 @@ pub fn calculate_key_id<T: Config>(key: &DidPublicKey<AccountIdOf<T>>) -> KeyIdO
 /// Verifies that an input string contains only traditional (non-extended) ASCII
 /// characters.
 pub(crate) fn is_valid_ascii_string(input: &str) -> bool {
-	input.chars().all(|c| c.is_ascii())
+	input.is_ascii()
 }
 
 /// Verifies that an input is a valid URI according to W3C RFC3986.
