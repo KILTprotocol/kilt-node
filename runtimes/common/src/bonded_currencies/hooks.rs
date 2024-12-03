@@ -22,7 +22,7 @@ use frame_support::{
 };
 use pallet_bonded_coins::{traits::NextAssetIds, FungiblesAssetIdOf};
 use sp_runtime::{ArithmeticError, BoundedVec, DispatchError};
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::bonded_currencies::AssetId;
 
@@ -45,7 +45,7 @@ where
 
 		let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
 
-		let asset_ids = (next_asset_id..(next_asset_id + n))
+		let asset_ids = (next_asset_id..new_next_asset_id)
 			.map(FungiblesAssetIdOf::<T>::from)
 			.collect::<Vec<FungiblesAssetIdOf<T>>>();
 
