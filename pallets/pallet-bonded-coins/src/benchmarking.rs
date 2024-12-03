@@ -867,8 +867,7 @@ mod benchmarks {
 		// give the pool account some funds.
 		make_free_for_deposit::<T>(&pool_account);
 		let collateral_id = create_default_collateral_asset::<T>();
-		T::CollateralCurrencies::touch(collateral_id.clone(), &pool_account, &pool_account)
-			.expect("Touching should work");
+		T::Collaterals::touch(collateral_id.clone(), &pool_account, &pool_account).expect("Touching should work");
 		set_collateral_balance::<T>(collateral_id.clone(), &pool_account, 10000u128);
 
 		let holder: T::AccountId = account("holder", 0, 0);

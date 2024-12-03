@@ -109,7 +109,7 @@ pub mod pallet {
 		<<T as Config>::Fungibles as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub type CollateralAssetIdOf<T> =
-		<<T as Config>::CollateralCurrencies as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
+		<<T as Config>::Collaterals as InspectFungibles<<T as frame_system::Config>::AccountId>>::AssetId;
 
 	pub(crate) type BoundedCurrencyVec<T> = BoundedVec<FungiblesAssetIdOf<T>, <T as Config>::MaxCurrenciesPerPool>;
 
