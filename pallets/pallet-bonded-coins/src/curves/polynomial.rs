@@ -1,3 +1,21 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2024 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 /// Polynomial Bonding Curve Implementation.
 ///
 /// This module provides an implementation of a polynomial bonding curve.
@@ -74,26 +92,26 @@ use crate::PassiveSupply;
 /// }
 /// ```
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct PolynomialParametersInput<Parameter> {
+pub struct PolynomialParametersInput<Coefficient> {
 	/// Coefficient for the cubic part.
-	pub m: Parameter,
+	pub m: Coefficient,
 	/// Coefficient for the quadratic part.
-	pub n: Parameter,
+	pub n: Coefficient,
 	/// Coefficient for the linear part.
-	pub o: Parameter,
+	pub o: Coefficient,
 }
 
 /// A struct representing the validated parameters for a polynomial bonding
 /// curve. This struct is used to store the parameters for a polynomial bonding
 /// curve and to perform calculations using the polynomial bonding curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct PolynomialParameters<Parameter> {
+pub struct PolynomialParameters<Coefficient> {
 	/// Coefficient for the cubic part.
-	pub m: Parameter,
+	pub m: Coefficient,
 	/// Coefficient for the quadratic part.
-	pub n: Parameter,
+	pub n: Coefficient,
 	/// Coefficient for the linear part.
-	pub o: Parameter,
+	pub o: Coefficient,
 }
 
 /// Implementation of the TryFrom trait for `PolynomialParametersInput` to
@@ -111,18 +129,18 @@ impl<I: FixedUnsigned, C: FixedSigned> TryFrom<PolynomialParametersInput<I>> for
 	}
 }
 
-impl<Parameter> BondingFunction<Parameter> for PolynomialParameters<Parameter>
+impl<Coefficient> BondingFunction<Coefficient> for PolynomialParameters<Coefficient>
 where
-	Parameter: FixedSigned,
+	Coefficient: FixedSigned,
 {
 	/// Calculate the cost of purchasing/selling assets using the polynomial
 	/// bonding curve.
 	fn calculate_costs(
 		&self,
-		low_without_passive: Parameter,
-		high_without_passive: Parameter,
-		passive_supply: PassiveSupply<Parameter>,
-	) -> Result<Parameter, ArithmeticError> {
+		low_without_passive: Coefficient,
+		high_without_passive: Coefficient,
+		passive_supply: PassiveSupply<Coefficient>,
+	) -> Result<Coefficient, ArithmeticError> {
 		let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
 
 		// reassign high and low to include the accumulated passive issuance

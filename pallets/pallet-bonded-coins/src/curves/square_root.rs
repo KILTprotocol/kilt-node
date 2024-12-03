@@ -1,3 +1,21 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2024 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 /// Square Root Bonding Curve Implementation.
 ///
 /// This module provides an implementation of a square root bonding curve, with
@@ -43,7 +61,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_arithmetic::ArithmeticError;
 use substrate_fixed::{
-	traits::{FixedSigned, FixedUnsigned, ToFixed},
+	traits::{FixedSigned, FixedUnsigned},
 	transcendental::sqrt,
 };
 
@@ -69,22 +87,22 @@ use crate::{PassiveSupply, Precision};
 /// }
 /// ```
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct SquareRootParametersInput<Parameter> {
+pub struct SquareRootParametersInput<Coefficient> {
 	/// Coefficient for the square root part.
-	pub m: Parameter,
+	pub m: Coefficient,
 	/// Coefficient for the linear part.
-	pub n: Parameter,
+	pub n: Coefficient,
 }
 
 /// A struct representing the validated parameters for a square root bonding
 /// curve. This struct is used to store the parameters for a square root bonding
 /// curve and to perform calculations using the square root bonding curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct SquareRootParameters<Parameter> {
+pub struct SquareRootParameters<Coefficient> {
 	/// Coefficient for the square root part.
-	pub m: Parameter,
+	pub m: Coefficient,
 	/// Coefficient for the linear part.
-	pub n: Parameter,
+	pub n: Coefficient,
 }
 
 /// Implementation of the TryFrom trait for `SquareRootParametersInput` to
@@ -101,18 +119,18 @@ impl<I: FixedUnsigned, C: FixedSigned> TryFrom<SquareRootParametersInput<I>> for
 	}
 }
 
-impl<Parameter> BondingFunction<Parameter> for SquareRootParameters<Parameter>
+impl<Coefficient> BondingFunction<Coefficient> for SquareRootParameters<Coefficient>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
+	Coefficient: FixedSigned + PartialOrd<Precision> + From<Precision>,
 {
 	/// Calculate the cost of purchasing/selling assets using the square root
 	/// bonding curve.
 	fn calculate_costs(
 		&self,
-		low_without_passive: Parameter,
-		high_without_passive: Parameter,
-		passive_supply: PassiveSupply<Parameter>,
-	) -> Result<Parameter, ArithmeticError> {
+		low_without_passive: Coefficient,
+		high_without_passive: Coefficient,
+		passive_supply: PassiveSupply<Coefficient>,
+	) -> Result<Coefficient, ArithmeticError> {
 		let accumulated_passive_issuance = calculate_accumulated_passive_issuance(&passive_supply);
 
 		// reassign high and low to include the accumulated passive issuance
@@ -125,12 +143,12 @@ where
 			.ok_or(ArithmeticError::Overflow)?;
 
 		// Calculate sqrt(high^3) and sqrt(low^3)
-		let sqrt_x3_high: Parameter = sqrt::<Parameter, Parameter>(high)
+		let sqrt_x3_high: Coefficient = sqrt::<Coefficient, Coefficient>(high)
 			.map_err(|_| ArithmeticError::Underflow)?
 			.checked_mul(high)
 			.ok_or(ArithmeticError::Overflow)?;
 
-		let sqrt_x3_low: Parameter = sqrt::<Parameter, Parameter>(low)
+		let sqrt_x3_low: Coefficient = sqrt::<Coefficient, Coefficient>(low)
 			.map_err(|_| ArithmeticError::Underflow)?
 			.checked_mul(low)
 			.ok_or(ArithmeticError::Overflow)?;

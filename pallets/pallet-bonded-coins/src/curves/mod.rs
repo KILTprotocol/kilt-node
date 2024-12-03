@@ -1,3 +1,21 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2024 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 ///  Curve Module
 ///
 /// This module defines various curve types and their associated parameters used
@@ -30,19 +48,19 @@ use crate::{
 /// An enum representing different types of curves with their respective
 /// parameters. Used to store curve parameters and perform calculations.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum Curve<Parameter> {
-	Polynomial(PolynomialParameters<Parameter>),
-	SquareRoot(SquareRootParameters<Parameter>),
-	Lmsr(LMSRParameters<Parameter>),
+pub enum Curve<Coefficient> {
+	Polynomial(PolynomialParameters<Coefficient>),
+	SquareRoot(SquareRootParameters<Coefficient>),
+	Lmsr(LMSRParameters<Coefficient>),
 }
 
 /// An enum representing input parameters for different types of curves.
 /// Used to convert into Curve.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub enum CurveInput<Parameter> {
-	Polynomial(PolynomialParametersInput<Parameter>),
-	SquareRoot(SquareRootParametersInput<Parameter>),
-	Lmsr(LMSRParametersInput<Parameter>),
+pub enum CurveInput<Coefficient> {
+	Polynomial(PolynomialParametersInput<Coefficient>),
+	SquareRoot(SquareRootParametersInput<Coefficient>),
+	Lmsr(LMSRParametersInput<Coefficient>),
 }
 
 /// Implementation of the TryFrom trait for `CurveInput` to convert the input
@@ -76,12 +94,12 @@ where
 	}
 }
 
-impl<Parameter> Curve<Parameter>
+impl<Coefficient> Curve<Coefficient>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
-	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	Coefficient: FixedSigned + PartialOrd<Precision> + From<Precision>,
+	<Coefficient as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
-	fn as_inner(&self) -> &dyn BondingFunction<Parameter> {
+	fn as_inner(&self) -> &dyn BondingFunction<Coefficient> {
 		match self {
 			Curve::Polynomial(params) => params,
 			Curve::SquareRoot(params) => params,
@@ -95,17 +113,17 @@ where
 /// selling assets using the curve.
 ///
 /// The implementation forwards the call to the inner bonding function.
-impl<Parameter> BondingFunction<Parameter> for Curve<Parameter>
+impl<Coefficient> BondingFunction<Coefficient> for Curve<Coefficient>
 where
-	Parameter: FixedSigned + PartialOrd<Precision> + From<Precision> + ToFixed,
-	<Parameter as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
+	Coefficient: FixedSigned + PartialOrd<Precision> + From<Precision>,
+	<Coefficient as Fixed>::Bits: Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign,
 {
 	fn calculate_costs(
 		&self,
-		low: Parameter,
-		high: Parameter,
-		passive_supply: PassiveSupply<Parameter>,
-	) -> Result<Parameter, ArithmeticError> {
+		low: Coefficient,
+		high: Coefficient,
+		passive_supply: PassiveSupply<Coefficient>,
+	) -> Result<Coefficient, ArithmeticError> {
 		self.as_inner().calculate_costs(low, high, passive_supply)
 	}
 }
@@ -145,7 +163,7 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 pub(crate) fn balance_to_fixed<Balance, FixedType: Fixed>(
 	balance: Balance,
 	denomination: u8,
-	round_kind: &Round,
+	round_kind: Round,
 ) -> Result<FixedType, ArithmeticError>
 where
 	FixedType::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
@@ -164,7 +182,7 @@ where
 
 	// adding the scaling factor (decimal) - 1 ensures the result of the division
 	// below is rounded up
-	if round_kind == &Round::Up {
+	if round_kind == Round::Up {
 		x_u256 = x_u256
 			.checked_add(decimals.saturating_sub(1u8.into()))
 			.ok_or(ArithmeticError::Overflow)?;
@@ -189,7 +207,7 @@ where
 pub(crate) fn fixed_to_balance<Balance, FixedType: Fixed>(
 	fixed: FixedType,
 	denomination: u8,
-	round_kind: &Round,
+	round_kind: Round,
 ) -> Result<Balance, ArithmeticError>
 where
 	FixedType::Bits: TryInto<U256>,
@@ -217,7 +235,7 @@ where
 
 	// If the number of trailing zeros is less than the number of fractional bits,
 	// the value is not rounded and we can return it directly.
-	if round_kind == &Round::Up && trailing_zeros < frac_bits {
+	if round_kind == Round::Up && trailing_zeros < frac_bits {
 		value_u256 = value_u256
 			.checked_add(U256::from(1u8))
 			.ok_or(ArithmeticError::Overflow)?;
