@@ -32,7 +32,8 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
 use crate::{
-	self as storage_deposit_pallet, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet, Pallet,
+	self as storage_deposit_pallet, fungible::PalletDepositStorageReason, DepositEntryOf, DepositKeyOf,
+	FixedDepositCollectorViaDepositsPallet, HoldReason, Pallet,
 };
 
 pub(crate) type Balance = u128;
@@ -123,6 +124,12 @@ impl pallet_dip_provider::Config for TestRuntime {
 	type ProviderHooks = DepositCollectorHook<Self>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
+}
+
+impl From<PalletDepositStorageReason<DepositNamespaces, DepositKeyOf<TestRuntime>>> for RuntimeHoldReason {
+	fn from(_value: PalletDepositStorageReason<DepositNamespaces, DepositKeyOf<TestRuntime>>) -> Self {
+		HoldReason::Deposit.into()
+	}
 }
 
 impl crate::Config for TestRuntime {
