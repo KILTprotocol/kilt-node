@@ -41,14 +41,12 @@ where
 {
 	type Error = DispatchError;
 	fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>, Self::Error> {
-		let next_asset_id: AssetId = NextAssetId::<BondingPallet, T>::get()
-			.unwrap_or(FungiblesAssetIdOf::<T>::default())
-			.into();
+		let next_asset_id: AssetId = NextAssetId::<BondingPallet, T>::get().unwrap_or_default().into();
 
 		let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
 
 		let asset_ids = (next_asset_id..(next_asset_id + n))
-			.map(|id| FungiblesAssetIdOf::<T>::from(id))
+			.map(FungiblesAssetIdOf::<T>::from)
 			.collect::<Vec<FungiblesAssetIdOf<T>>>();
 
 		NextAssetId::<BondingPallet, T>::set(Some(new_next_asset_id.into()));
