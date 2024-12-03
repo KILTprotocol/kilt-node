@@ -689,7 +689,6 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-
 	fn burn_into_lmsr(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
@@ -854,8 +853,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-
-	fn force_start_refund(c: Linear<1, { T::MaxCurrencies::get() }>) {
+	fn force_start_refund(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 		let target_asset_id = bonded_currencies[0].clone();
 
