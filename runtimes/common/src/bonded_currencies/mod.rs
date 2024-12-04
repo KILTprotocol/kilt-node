@@ -48,7 +48,7 @@ pub type FloatInput = U75F53;
 pub type Float = I75F53;
 
 /// Struct to implement the desired [Convert] trait needed for the
-/// [WrapperNativeAndForeignAssets] type.
+/// [NativeAndForeignAssets] type.
 /// The generic type [Target] is used to determine the type of the asset id for
 /// the Either::Left variant.
 pub struct TargetFromLeft<Target>(PhantomData<Target>);
@@ -65,12 +65,12 @@ impl<Target: Get<L>, L: PartialEq + Eq> Convert<L, Either<(), L>> for TargetFrom
 
 /// Wrapper struct for [UnionOf] to implement the [metadata::Inspect] trait,
 /// needed for the pallet_bonded_coins module.
-pub struct WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>(
+pub struct NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>(
 	sp_std::marker::PhantomData<(Left, Right, Criterion, AssetKind, AccountId)>,
 );
 
 impl<Left, Right, Criterion, AssetKind, AccountId> fungibles::Inspect<AccountId>
-	for WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
 where
 	Left: fungible::Inspect<AccountId>,
 	Right: fungibles::Inspect<AccountId, Balance = Left::Balance>,
@@ -131,7 +131,7 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> fungibles::Unbalanced<AccountId> for WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> fungibles::Unbalanced<AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
 {
 	fn handle_dust(dust: fungibles::Dust<AccountId, Self>)
 	where
@@ -186,7 +186,7 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId: Eq,
-	> fungibles::Mutate<AccountId> for WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> fungibles::Mutate<AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
 {
 	fn mint_into(asset: Self::AssetId, who: &AccountId, amount: Self::Balance) -> Result<Self::Balance, DispatchError> {
 		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::mint_into(asset, who, amount)
@@ -229,7 +229,7 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> AccountTouch<AssetKind, AccountId> for WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> AccountTouch<AssetKind, AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
 {
 	type Balance = <Left as fungible::Inspect<AccountId>>::Balance;
 
@@ -252,7 +252,7 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> Inspect<AccountId> for WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> Inspect<AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
 {
 	fn decimals(asset: Self::AssetId) -> u8 {
 		match Criterion::convert(asset) {
@@ -283,7 +283,7 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> fungibles::Create<AccountId> for WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> fungibles::Create<AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
 {
 	fn create(asset: AssetKind, admin: AccountId, is_sufficient: bool, min_balance: Self::Balance) -> DispatchResult {
 		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::create(asset, admin, is_sufficient, min_balance)
