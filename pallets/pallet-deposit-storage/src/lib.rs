@@ -28,6 +28,7 @@
 mod default_weights;
 mod deposit;
 mod fungible;
+pub use fungible::PalletDepositStorageReason;
 pub mod traits;
 
 #[cfg(test)]
