@@ -79,11 +79,10 @@ pub struct PalletDepositStorageReason<Namespace, Key> {
 	pub(crate) key: Key,
 }
 
-// Always return a dedicated `HoldReason` specific for the `MutateHold`
-// implementation.
 impl<Namespace, Key> From<PalletDepositStorageReason<Namespace, Key>> for HoldReason {
 	fn from(_value: PalletDepositStorageReason<Namespace, Key>) -> Self {
-		Self::FungbileImpl
+		// All the deposits ever taken like this will count towards the same hold reason.
+		Self::Deposit
 	}
 }
 

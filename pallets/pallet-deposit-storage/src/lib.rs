@@ -115,7 +115,6 @@ pub mod pallet {
 	#[pallet::composite_enum]
 	pub enum HoldReason {
 		Deposit,
-		FungbileImpl,
 	}
 
 	#[pallet::error]
