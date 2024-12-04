@@ -52,6 +52,8 @@ pub(crate) mod web3_names;
 /// Workaround for a bug in the benchmarking code around instances.
 /// Upstream fix PR: https://github.com/paritytech/polkadot-sdk/pull/6435
 #[allow(unused_imports)]
+use pallet_assets as pallet_bonded_assets;
+#[allow(unused_imports)]
 use pallet_collective as pallet_technical_committee_collective;
 #[allow(unused_imports)]
 use pallet_did_lookup as pallet_unique_linking;
@@ -59,9 +61,6 @@ use pallet_did_lookup as pallet_unique_linking;
 use pallet_membership as pallet_technical_membership;
 #[allow(unused_imports)]
 use pallet_web3_names as pallet_dot_names;
-
-#[allow(unused_imports)]
-use pallet_assets as pallet_bonded_assets;
 
 define_benchmarks!(
 	[frame_system, frame_system_benchmarking::Pallet::<Runtime>]
