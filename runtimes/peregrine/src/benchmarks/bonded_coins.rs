@@ -19,10 +19,10 @@
 use pallet_bonded_coins::{BenchmarkHelper, CollateralAssetIdOf, Config, FungiblesAssetIdOf};
 use xcm::v4::{Junction, Junctions, Location};
 
-use crate::system::BondedFungibles;
+use crate::kilt::BondedFungiblesInstance;
 pub struct BondedFungiblesBenchmarkHelper<T>(sp_std::marker::PhantomData<T>);
 
-impl<T: Config + pallet_assets::Config + pallet_assets::Config<BondedFungibles>> BenchmarkHelper<T>
+impl<T: Config + pallet_assets::Config + pallet_assets::Config<BondedFungiblesInstance>> BenchmarkHelper<T>
 	for BondedFungiblesBenchmarkHelper<T>
 where
 	FungiblesAssetIdOf<T>: From<u32>,
