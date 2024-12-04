@@ -24,10 +24,12 @@ use frame_support::traits::{
 use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::{DispatchError, DispatchResult};
+use sp_runtime::{traits::Zero, DispatchError, DispatchResult};
 
 use crate::{deposit::DepositEntry, Config, DepositEntryOf, DepositKeyOf, Deposits, Pallet, LOG_TARGET};
 
+// This trait is implemented by forwarding everything to the `Currency`
+// implementation.
 impl<T> Inspect<T::AccountId> for Pallet<T>
 where
 	T: Config,
@@ -73,6 +75,8 @@ pub struct PalletDepositStorageReason<Namespace, Key> {
 	pub(crate) key: Key,
 }
 
+// This trait is implemented by forwarding everything to the `Currency`
+// implementation.
 impl<T> InspectHold<T::AccountId> for Pallet<T>
 where
 	T: Config,
@@ -88,6 +92,8 @@ where
 	}
 }
 
+// This trait is implemented by forwarding everything to the `Currency`
+// implementation.
 impl<T> Unbalanced<T::AccountId> for Pallet<T>
 where
 	T: Config,
@@ -113,17 +119,19 @@ where
 	// `Currency` and then overriding the relevant storage entry.
 	fn set_balance_on_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
 		<T::Currency as UnbalancedHold<T::AccountId>>::set_balance_on_hold(&reason.clone().into(), who, amount)?;
-		Deposits::<T>::insert(
-			&reason.namespace,
-			&reason.key,
-			DepositEntryOf::<T> {
-				deposit: Deposit {
-					amount,
-					owner: who.clone(),
+		if amount > Zero::zero() {
+			Deposits::<T>::insert(
+				&reason.namespace,
+				&reason.key,
+				DepositEntryOf::<T> {
+					deposit: Deposit {
+						amount,
+						owner: who.clone(),
+					},
+					reason: reason.clone().into(),
 				},
-				reason: reason.clone().into(),
-			},
-		);
+			);
+		}
 		Ok(())
 	}
 }
@@ -137,20 +145,22 @@ where
 	// one with the new amount.
 	fn done_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) {
 		<T::Currency as MutateHold<T::AccountId>>::done_hold(&reason.clone().into(), who, amount);
-		Deposits::<T>::mutate(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
-			if let Some(existing_deposit_entry) = maybe_existing_deposit_entry {
-				let new_amount = existing_deposit_entry.deposit.amount.defensive_saturating_add(amount);
-				existing_deposit_entry.deposit.amount = new_amount;
-			} else {
-				*maybe_existing_deposit_entry = Some(DepositEntry {
-					deposit: Deposit {
-						amount,
-						owner: who.clone(),
-					},
-					reason: reason.clone().into(),
-				});
-			}
-		});
+		if amount > Zero::zero() {
+			Deposits::<T>::mutate(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
+				if let Some(existing_deposit_entry) = maybe_existing_deposit_entry {
+					let new_amount = existing_deposit_entry.deposit.amount.defensive_saturating_add(amount);
+					existing_deposit_entry.deposit.amount = new_amount;
+				} else {
+					*maybe_existing_deposit_entry = Some(DepositEntry {
+						deposit: Deposit {
+							amount,
+							owner: who.clone(),
+						},
+						reason: reason.clone().into(),
+					});
+				}
+			});
+		}
 	}
 
 	// Implements this trait function by first dispatching to the underlying
@@ -158,19 +168,22 @@ where
 	// hold is released or updating the existing one with the new amount.
 	fn done_release(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) {
 		<T::Currency as MutateHold<T::AccountId>>::done_hold(&reason.clone().into(), who, amount);
-		Deposits::<T>::mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
-			let Some(existing_deposit_entry) = maybe_existing_deposit_entry else {
-				log::warn!(target: LOG_TARGET, "Failed to call `done_release` for reason {:?}, who {:?} and amount {:?}. Entry not found in storage.", reason, who, amount);
-				return;
-			};
-			// If the whole amount is released, remove from storage.
-			if existing_deposit_entry.deposit.amount == amount {
-				*maybe_existing_deposit_entry = None;
-			// Else, update the storage entry accordingly.
-			} else {
-				let new_amount = existing_deposit_entry.deposit.amount.defensive_saturating_sub(amount);
-				existing_deposit_entry.deposit.amount = new_amount;
-			}
-		});
+		if amount > Zero::zero() {
+			Deposits::<T>::mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
+				let Some(existing_deposit_entry) = maybe_existing_deposit_entry else {
+					// This function cannot fail, so this is the best we can do.
+					log::warn!(target: LOG_TARGET, "Failed to call `done_release` for reason {:?}, who {:?} and amount {:?}. Entry not found in storage.", reason, who, amount);
+					return;
+				};
+				// If the whole amount is released, remove from storage.
+				if existing_deposit_entry.deposit.amount == amount {
+					*maybe_existing_deposit_entry = None;
+				// Else, update the storage entry accordingly.
+				} else {
+					let new_amount = existing_deposit_entry.deposit.amount.defensive_saturating_sub(amount);
+					existing_deposit_entry.deposit.amount = new_amount;
+				}
+			});
+		}
 	}
 }
