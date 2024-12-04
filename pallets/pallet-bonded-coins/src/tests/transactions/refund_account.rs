@@ -358,7 +358,8 @@ fn nothing_to_refund() {
 			(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, 100_000),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, 100_000),
 		])
-		.build_and_execute_with_sanity_tests(|| {
+		.build()
+		.execute_with(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 
 			assert_err!(
