@@ -132,7 +132,7 @@ where
 								owner: who.clone(),
 							},
 							reason: reason.clone().into(),
-							reclaimable: false,
+							reclaim_locked: true,
 						})
 					}
 				}

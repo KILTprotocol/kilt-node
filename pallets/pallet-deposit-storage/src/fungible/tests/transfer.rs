@@ -67,7 +67,7 @@ fn transfer_on_hold() {
 						owner: OTHER_ACCOUNT
 					},
 					reason: reason.into(),
-					reclaimable: true,
+					reclaim_locked: true,
 				}
 			);
 		});
@@ -101,7 +101,7 @@ fn transfer_and_hold() {
 						owner: OTHER_ACCOUNT
 					},
 					reason: reason.into(),
-					reclaimable: true,
+					reclaim_locked: true,
 				}
 			);
 		});

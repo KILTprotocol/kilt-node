@@ -34,7 +34,7 @@ fn reclaim_deposit_successful() {
 			amount: 10_000,
 			owner: OWNER,
 		},
-		reclaimable: true,
+		reclaim_locked: false,
 	};
 	let namespace = DepositNamespace::ExampleNamespace;
 	let key = DepositKeyOf::<TestRuntime>::default();
@@ -78,7 +78,7 @@ fn reclaim_deposit_unauthorized() {
 			amount: 10_000,
 			owner: OWNER,
 		},
-		reclaimable: true,
+		reclaim_locked: false,
 	};
 	let namespace = DepositNamespace::ExampleNamespace;
 	let key = DepositKeyOf::<TestRuntime>::default();

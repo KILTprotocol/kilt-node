@@ -44,7 +44,9 @@ pub struct DepositEntry<AccountId, Balance, Reason> {
 	pub deposit: Deposit<AccountId, Balance>,
 	/// The `Reason` for the deposit.
 	pub reason: Reason,
-	pub reclaimable: bool,
+	/// Flag indicating whether the deposit can be claimed back by the original
+	/// payer directly (lock = `false`) or not (lock = `true`).
+	pub reclaim_locked: bool,
 }
 
 const LOG_TARGET: &str = "pallet_deposit_storage::FixedDepositCollectorViaDepositsPallet";
@@ -119,7 +121,7 @@ where
 				key: key.clone(),
 			}
 			.into(),
-			reclaimable: true,
+			reclaim_locked: false,
 		};
 		Pallet::<Runtime>::add_deposit(namespace, key, deposit_entry).map_err(|e| {
 			if e == DispatchError::from(Error::<Runtime>::DepositExisting) {
