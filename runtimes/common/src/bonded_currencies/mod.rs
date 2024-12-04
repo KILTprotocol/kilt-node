@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-pub mod hooks;
 
 use frame_support::{
 	dispatch::DispatchResult,
@@ -37,6 +36,8 @@ use sp_runtime::{
 use sp_std::{marker::PhantomData, vec::Vec};
 use substrate_fixed::types::{I75F53, U75F53};
 use xcm::v4::Location;
+
+pub mod hooks;
 
 /// The AssetId for bonded assets.
 pub type AssetId = u32;
