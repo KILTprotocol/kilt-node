@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	pallet_prelude::{OptionQuery, PalletInfoAccess},
+	pallet_prelude::{PalletInfoAccess, ValueQuery},
 	storage_alias,
 };
 use pallet_bonded_coins::{traits::NextAssetIds, Error, FungiblesAssetIdOf};
@@ -28,7 +28,7 @@ use crate::bonded_currencies::AssetId;
 
 #[storage_alias]
 pub type NextAssetId<BondingPallet: PalletInfoAccess, T> =
-	StorageValue<BondingPallet, FungiblesAssetIdOf<T>, OptionQuery>;
+	StorageValue<BondingPallet, FungiblesAssetIdOf<T>, ValueQuery>;
 
 const LOG_TARGET: &'static str = "runtime::pallet_bonded_coins::hooks";
 
@@ -43,7 +43,7 @@ where
 {
 	type Error = DispatchError;
 	fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>, Self::Error> {
-		let next_asset_id: AssetId = NextAssetId::<BondingPallet, T>::get().unwrap_or_default().into();
+		let next_asset_id: AssetId = NextAssetId::<BondingPallet, T>::get().into();
 
 		let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
 
@@ -51,7 +51,7 @@ where
 			.map(FungiblesAssetIdOf::<T>::from)
 			.collect::<Vec<FungiblesAssetIdOf<T>>>();
 
-		NextAssetId::<BondingPallet, T>::set(Some(new_next_asset_id.into()));
+		NextAssetId::<BondingPallet, T>::set(new_next_asset_id.into());
 		BoundedVec::try_from(asset_ids.clone()).map_err(|_| {
 			log::error!(target: LOG_TARGET, "Failed to convert asset ids to bounded vec {:?}", asset_ids);
 			Error::<T>::Internal.into()
