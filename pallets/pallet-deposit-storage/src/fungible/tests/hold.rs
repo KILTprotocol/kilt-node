@@ -18,16 +18,15 @@
 
 use frame_support::{assert_err, traits::fungible::MutateHold};
 use kilt_support::Deposit;
-// use kilt_support::Deposit;
 use sp_runtime::AccountId32;
 
 use crate::{
-	// deposit::DepositEntry,
 	deposit::DepositEntry,
 	fungible::{
-		tests::mock::{Balances, ExtBuilder, TestRuntime, TestRuntimeHoldReason, OWNER},
+		tests::mock::{Balances, ExtBuilder, TestRuntime, OWNER, TestRuntimeHoldReason},
 		PalletDepositStorageReason,
 	},
+	HoldReason,
 	Pallet,
 	SystemDeposits,
 };
@@ -51,7 +50,7 @@ fn hold() {
 						amount: 10,
 						owner: OWNER
 					},
-					reason: reason.clone().into(),
+					reason: TestRuntimeHoldReason::from(HoldReason::from(reason.clone())),
 				}
 			);
 
@@ -66,7 +65,7 @@ fn hold() {
 						amount: 15,
 						owner: OWNER
 					},
-					reason: reason.into(),
+					reason: TestRuntimeHoldReason::from(HoldReason::from(reason)),
 				}
 			);
 		});
@@ -93,7 +92,7 @@ fn too_many_holds() {
 		.build()
 		.execute_with(|| {
 			// Occupy the only hold available with a different reason.
-			<Balances as MutateHold<AccountId32>>::hold(&TestRuntimeHoldReason::Else, &OWNER, 1)
+			<Balances as MutateHold<AccountId32>>::hold(&HoldReason::Deposit.into(), &OWNER, 1)
 				.expect("Failed to hold amount for user.");
 			// Try to hold a second time, hitting the mock limit of 1.
 			assert_err!(

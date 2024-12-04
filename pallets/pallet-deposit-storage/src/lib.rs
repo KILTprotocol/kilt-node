@@ -60,7 +60,6 @@ pub mod pallet {
 	use crate::{
 		default_weights::WeightInfo,
 		deposit::{free_deposit, reserve_deposit, DepositEntry},
-		fungible::PalletDepositStorageReason,
 		traits::DepositStorageHooks,
 	};
 
@@ -108,13 +107,7 @@ pub mod pallet {
 		/// The aggregated `Event` type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The aggregated `HoldReason` type.
-		type RuntimeHoldReason: From<PalletDepositStorageReason<Self::Namespace, DepositKeyOf<Self>>>
-			+ Clone
-			+ PartialEq
-			+ Debug
-			+ FullCodec
-			+ MaxEncodedLen
-			+ TypeInfo;
+		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -122,6 +115,7 @@ pub mod pallet {
 	#[pallet::composite_enum]
 	pub enum HoldReason {
 		Deposit,
+		FungbileImpl,
 	}
 
 	#[pallet::error]

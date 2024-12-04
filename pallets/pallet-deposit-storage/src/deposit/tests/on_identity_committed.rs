@@ -67,7 +67,7 @@ fn on_identity_committed_successful() {
 					deposit: Deposit {
 						amount: 1_000,
 						owner: SUBMITTER
-					},
+					}
 				})
 			);
 			assert_eq!(

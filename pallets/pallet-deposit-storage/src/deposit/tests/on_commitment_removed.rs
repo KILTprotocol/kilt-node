@@ -60,7 +60,7 @@ fn on_commitment_removed_successful() {
 					deposit: Deposit {
 						amount: 1_000,
 						owner: SUBMITTER
-					},
+					}
 				})
 			);
 			assert_eq!(
@@ -112,7 +112,7 @@ fn on_commitment_removed_different_owner_successful() {
 					deposit: Deposit {
 						amount: 1_000,
 						owner: SUBJECT
-					},
+					}
 				})
 			);
 			assert_eq!(
