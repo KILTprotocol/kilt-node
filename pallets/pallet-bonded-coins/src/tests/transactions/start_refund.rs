@@ -294,6 +294,38 @@ fn start_refund_fails_when_nothing_to_refund() {
 }
 
 #[test]
+fn start_refund_fails_when_no_collateral() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		false,
+		Some(PoolStatus::Active),
+		Some(ACCOUNT_00),
+		None,
+		None,
+		None,
+	);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	let currency_count = 10;
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
+		.build()
+		.execute_with(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			// Ensure the start_refund call fails due to nothing to refund
+			assert_err!(
+				BondingPallet::start_refund(origin, pool_id, currency_count),
+				Error::<Test>::NothingToRefund
+			);
+		});
+}
+
+#[test]
 fn pool_does_not_exist() {
 	let pool_details = generate_pool_details(
 		vec![DEFAULT_BONDED_CURRENCY_ID],
