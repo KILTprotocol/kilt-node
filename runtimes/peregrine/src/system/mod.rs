@@ -24,7 +24,6 @@ use frame_support::{
 use frame_system::EnsureRoot;
 use runtime_common::{
 	asset_switch::EnsureRootAsTreasury,
-	bonded_currencies::AssetId,
 	constants,
 	fees::{ToAuthorCredit, WeightToFee},
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
@@ -234,31 +233,6 @@ impl pallet_assets::Config for Runtime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = runtime_common::asset_switch::NoopBenchmarkHelper;
-}
-
-pub(crate) type BondedFungibles = pallet_assets::Instance1;
-impl pallet_assets::Config<BondedFungibles> for Runtime {
-	type ApprovalDeposit = constants::assets::ApprovalDeposit;
-	type AssetAccountDeposit = constants::assets::AssetAccountDeposit;
-	type AssetDeposit = constants::assets::AssetDeposit;
-	type AssetId = AssetId;
-	type AssetIdParameter = AssetId;
-	type Balance = Balance;
-	type CallbackHandle = ();
-	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
-	type Currency = Balances;
-	type Extra = ();
-	type ForceOrigin = EnsureRoot<AccountId>;
-	type Freezer = ();
-	type MetadataDepositBase = constants::assets::MetaDepositBase;
-	type MetadataDepositPerByte = constants::assets::MetaDepositPerByte;
-	type RemoveItemsLimit = constants::assets::RemoveItemsLimit;
-	type RuntimeEvent = RuntimeEvent;
-	type StringLimit = constants::assets::StringLimit;
-	type WeightInfo = weights::pallet_bonded_assets::WeightInfo<Runtime>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
 }
 
 #[allow(clippy::arithmetic_side_effects)]

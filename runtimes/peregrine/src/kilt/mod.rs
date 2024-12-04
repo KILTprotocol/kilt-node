@@ -16,13 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::parameter_types;
+use frame_support::{parameter_types, traits::AsEnsureOriginWithArg};
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use runtime_common::{
-	asset_switch::hooks::RestrictSwitchDestinationToSelf,
+	asset_switch::{hooks::RestrictSwitchDestinationToSelf, EnsureRootAsTreasury},
 	bonded_currencies::{
-		hooks::NextAssetIdGenerator, Float, FloatInput, TargetFromLeft, WrapperNativeAndForeignAssets,
+		hooks::NextAssetIdGenerator, AssetId, Float, FloatInput, TargetFromLeft, WrapperNativeAndForeignAssets,
 	},
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
@@ -134,4 +134,29 @@ impl pallet_bonded_coins::Config for Runtime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = crate::benchmarks::bonded_coins::BondedFungiblesBenchmarkHelper<Runtime>;
+}
+
+pub(crate) type BondedFungiblesInstance = pallet_assets::Instance1;
+impl pallet_assets::Config<BondedFungiblesInstance> for Runtime {
+	type ApprovalDeposit = constants::assets::ApprovalDeposit;
+	type AssetAccountDeposit = constants::assets::AssetAccountDeposit;
+	type AssetDeposit = constants::assets::AssetDeposit;
+	type AssetId = AssetId;
+	type AssetIdParameter = AssetId;
+	type Balance = Balance;
+	type CallbackHandle = ();
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
+	type Currency = Balances;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
+	type MetadataDepositBase = constants::assets::MetaDepositBase;
+	type MetadataDepositPerByte = constants::assets::MetaDepositPerByte;
+	type RemoveItemsLimit = constants::assets::RemoveItemsLimit;
+	type RuntimeEvent = RuntimeEvent;
+	type StringLimit = constants::assets::StringLimit;
+	type WeightInfo = weights::pallet_bonded_assets::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
