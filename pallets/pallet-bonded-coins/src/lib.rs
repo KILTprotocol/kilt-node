@@ -192,7 +192,11 @@ pub mod pallet {
 		/// The type used for pool ids
 		type PoolId: Parameter + MaxEncodedLen + From<[u8; 32]> + Into<Self::AccountId>;
 
-		type RuntimeHoldReason: From<HoldReason>;
+		/// Reason for each deposit. The combination of (pool ID, account ID)
+		/// must be unique for each individual deposit across all the bonding
+		/// curves.
+		type HoldReason: From<(Self::PoolId, Self::AccountId)>;
+		type RuntimeHoldReason: From<Self::HoldReason>;
 
 		/// The type used for the curve parameters. This is the type used in the
 		/// calculation steps and stored in the pool details.
@@ -393,7 +397,8 @@ pub mod pallet {
 
 			let deposit_amount = Self::calculate_pool_deposit(currency_length);
 
-			T::DepositCurrency::hold(&T::RuntimeHoldReason::from(HoldReason::Deposit), &who, deposit_amount)?;
+			let hold_reason = T::HoldReason::from((pool_id.clone(), who.clone()));
+			T::DepositCurrency::hold(&T::RuntimeHoldReason::from(hold_reason), &who, deposit_amount)?;
 
 			let pool_account = &pool_id.clone().into();
 
@@ -1274,8 +1279,9 @@ pub mod pallet {
 
 			Pools::<T>::remove(&pool_id);
 
+			let hold_reason = T::HoldReason::from((pool_id.clone(), pool_details.owner.clone()));
 			T::DepositCurrency::release(
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
+				&T::RuntimeHoldReason::from(hold_reason),
 				&pool_details.owner,
 				pool_details.deposit,
 				WithdrawalPrecision::Exact,

@@ -288,6 +288,13 @@ pub mod runtime {
 		pub const MaxDenomination: u8 = 15;
 	}
 
+	// Used just for compiling the mock.
+	impl From<(AccountId, AccountId)> for HoldReason {
+		fn from(_value: (AccountId, AccountId)) -> Self {
+			HoldReason::Deposit
+		}
+	}
+
 	impl pallet_bonded_coins::Config for Test {
 		type BaseDeposit = ExistentialDeposit;
 		type Collaterals = Assets;
@@ -305,6 +312,7 @@ pub mod runtime {
 		type PoolCreateOrigin = EnsureSigned<AccountId>;
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;
+		type HoldReason = HoldReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type WeightInfo = ();
 
