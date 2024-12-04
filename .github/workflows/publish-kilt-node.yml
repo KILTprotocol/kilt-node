@@ -1,0 +1,31 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - docker-image
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          build-args: NODE_TYPE=standalone-node
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          tags: |
+            kiltprotocol/kilt-node:latest-develop
+            kiltprotocol/kilt-node:${{ github.sha }}

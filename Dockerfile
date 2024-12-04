@@ -13,7 +13,7 @@ RUN cargo build --locked --release --features $FEATURES
 
 # ===== SECOND STAGE ======
 
-FROM docker.io/library/ubuntu:20.04
+FROM docker.io/library/ubuntu:22.04
 LABEL description="This is the 2nd stage: a very small image where we copy the kilt-parachain binary."
 
 ARG NODE_TYPE=kilt-parachain
