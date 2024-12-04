@@ -164,10 +164,10 @@ pub mod bonded_coins {
 	/// The size is checked in the runtime by a test.
 	pub const MAX_POOL_BYTE_LENGTH: u32 = 970;
 	pub const BASE_DEPOSIT: Balance = deposit(1, MAX_POOL_BYTE_LENGTH);
-	pub const ASSET_ID_BYTE_LENGTH: u32 = 16;
+	pub const ASSET_ID_BYTE_LENGTH: u32 = 8;
 	/// https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/assets/src/types.rs#L188
 	pub const ASSET_METADATA_BYTE_LENGTH: u32 = 26;
-	pub const DEPOSIT_PER_CURRENCY: Balance = deposit(1, ASSET_ID_BYTE_LENGTH + ASSET_METADATA_BYTE_LENGTH);
+	pub const DEPOSIT_PER_CURRENCY: Balance = deposit(1, ASSET_ID_BYTE_LENGTH + (2 * ASSET_METADATA_BYTE_LENGTH));
 	pub const MAX_CURRENCIES: u32 = 50;
 	pub const MAX_DENOMINATION: u8 = 16;
 	pub const MAX_STRING_LENGTH: u32 = crate::constants::assets::STRING_LIMIT;
