@@ -28,8 +28,8 @@ use crate::{
 		tests::mock::{Balances, ExtBuilder, TestRuntime, TestRuntimeHoldReason, OWNER},
 		PalletDepositStorageReason,
 	},
-	Deposits,
 	Pallet,
+	SystemDeposits,
 };
 
 #[test]
@@ -42,7 +42,7 @@ fn hold() {
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 10)
 				.expect("Failed to hold amount for user.");
-			let deposit_entry = Deposits::<TestRuntime>::get(&reason.namespace, &reason.key)
+			let deposit_entry = SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key)
 				.expect("Deposit entry should not be None.");
 			assert_eq!(
 				deposit_entry,
@@ -52,13 +52,12 @@ fn hold() {
 						owner: OWNER
 					},
 					reason: reason.clone().into(),
-					reclaim_locked: true,
 				}
 			);
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 5)
 				.expect("Failed to hold amount for user.");
-			let deposit_entry = Deposits::<TestRuntime>::get(&reason.namespace, &reason.key)
+			let deposit_entry = SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key)
 				.expect("Deposit entry should not be None.");
 			assert_eq!(
 				deposit_entry,
@@ -68,7 +67,6 @@ fn hold() {
 						owner: OWNER
 					},
 					reason: reason.into(),
-					reclaim_locked: true,
 				}
 			);
 		});
@@ -84,7 +82,7 @@ fn zero_hold() {
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 0)
 				.expect("Failed to hold amount for user.");
 			// A hold of zero for a new deposit should not create any new storage entry.
-			assert!(Deposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
+			assert!(SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
 		});
 }
 

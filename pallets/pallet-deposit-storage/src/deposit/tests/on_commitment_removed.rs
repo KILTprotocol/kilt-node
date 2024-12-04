@@ -49,7 +49,6 @@ fn on_commitment_removed_successful() {
 					owner: SUBMITTER,
 				},
 				reason: HoldReason::Deposit.into(),
-				reclaim_locked: false,
 			},
 		)])
 		.build()
@@ -62,7 +61,6 @@ fn on_commitment_removed_successful() {
 						amount: 1_000,
 						owner: SUBMITTER
 					},
-					reclaim_locked: false,
 				})
 			);
 			assert_eq!(
@@ -103,7 +101,6 @@ fn on_commitment_removed_different_owner_successful() {
 					owner: SUBJECT,
 				},
 				reason: HoldReason::Deposit.into(),
-				reclaim_locked: false,
 			},
 		)])
 		.build()
@@ -116,7 +113,6 @@ fn on_commitment_removed_different_owner_successful() {
 						amount: 1_000,
 						owner: SUBJECT
 					},
-					reclaim_locked: false,
 				})
 			);
 			assert_eq!(

@@ -28,8 +28,8 @@ use crate::{
 		tests::mock::{ExtBuilder, TestRuntime, OWNER},
 		PalletDepositStorageReason,
 	},
-	Deposits,
 	Pallet,
+	SystemDeposits,
 };
 
 #[test]
@@ -45,7 +45,7 @@ fn release() {
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::release(&reason, &OWNER, 5, Precision::Exact)
 				.expect("Failed to release partial amount for user.");
-			let deposit_entry = Deposits::<TestRuntime>::get(&reason.namespace, &reason.key)
+			let deposit_entry = SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key)
 				.expect("Deposit entry should not be None.");
 			assert_eq!(
 				deposit_entry,
@@ -55,14 +55,13 @@ fn release() {
 						owner: OWNER
 					},
 					reason: reason.clone().into(),
-					reclaim_locked: true,
 				}
 			);
 
 			// Remove the outstanding holds.
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::release(&reason, &OWNER, 5, Precision::Exact)
 				.expect("Failed to release remaining amount for user.");
-			assert!(Deposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
+			assert!(SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
 		});
 }
 
@@ -79,6 +78,6 @@ fn release_all() {
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::release_all(&reason, &OWNER, Precision::Exact)
 				.expect("Failed to release all amount for user.");
-			assert!(Deposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
+			assert!(SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
 		});
 }

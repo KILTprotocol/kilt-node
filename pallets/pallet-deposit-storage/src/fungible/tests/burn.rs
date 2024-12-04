@@ -31,8 +31,8 @@ use crate::{
 		tests::mock::{ExtBuilder, TestRuntime, OWNER},
 		PalletDepositStorageReason,
 	},
-	Deposits,
 	Pallet,
+	SystemDeposits,
 };
 
 #[test]
@@ -54,7 +54,7 @@ fn burn_held() {
 				Fortitude::Polite,
 			)
 			.expect("Failed to burn partial amount for user.");
-			let deposit_entry = Deposits::<TestRuntime>::get(&reason.namespace, &reason.key)
+			let deposit_entry = SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key)
 				.expect("Deposit entry should not be None.");
 			assert_eq!(
 				deposit_entry,
@@ -64,7 +64,6 @@ fn burn_held() {
 						owner: OWNER
 					},
 					reason: reason.clone().into(),
-					reclaim_locked: true,
 				}
 			);
 
@@ -77,7 +76,7 @@ fn burn_held() {
 				Fortitude::Polite,
 			)
 			.expect("Failed to burn remaining amount for user.");
-			assert!(Deposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
+			assert!(SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
 		});
 }
 
@@ -99,6 +98,6 @@ fn burn_all_held() {
 				Fortitude::Polite,
 			)
 			.expect("Failed to burn all amount for user.");
-			assert!(Deposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
+			assert!(SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
 		});
 }

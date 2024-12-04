@@ -139,9 +139,6 @@ pub mod pallet {
 		FailedToHold,
 		/// Error when trying to release a previously-reserved deposit.
 		FailedToRelease,
-		/// The deposit was reserved by some on-chain logic that does not let
-		/// the original payer claim it back.
-		Unclaimable,
 		/// The external hook failed.
 		Hook(u16),
 	}
@@ -175,6 +172,20 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn deposits)]
 	pub(crate) type Deposits<T> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		<T as Config>::Namespace,
+		Blake2_128Concat,
+		DepositKeyOf<T>,
+		DepositEntryOf<T>,
+	>;
+
+	/// Storage of all system deposits. They are the same as user deposits, but
+	/// cannot be claimed back by the payers. Instead, some on chain logic must
+	/// trigger their release.
+	#[pallet::storage]
+	#[pallet::getter(fn system_deposits)]
+	pub(crate) type SystemDeposits<T> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		<T as Config>::Namespace,
@@ -258,7 +269,6 @@ pub mod pallet {
 					existing_entry.deposit.owner == *expected_owner,
 					Error::<T>::Unauthorized
 				);
-				ensure!(!existing_entry.reclaim_locked, Error::<T>::Unclaimable);
 			}
 			free_deposit::<AccountIdOf<T>, T::Currency>(&existing_entry.deposit, &existing_entry.reason)
 				.map_err(|_| Error::<T>::FailedToRelease)?;

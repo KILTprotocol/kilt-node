@@ -32,8 +32,8 @@ use crate::{
 		PalletDepositStorageReason,
 	},
 	mock::OTHER_ACCOUNT,
-	Deposits,
 	Pallet,
+	SystemDeposits,
 };
 
 #[test]
@@ -57,7 +57,7 @@ fn transfer_on_hold() {
 				Fortitude::Polite,
 			)
 			.expect("Failed to transfer held tokens.");
-			let deposit_entry = Deposits::<TestRuntime>::get(&reason.namespace, &reason.key)
+			let deposit_entry = SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key)
 				.expect("Deposit entry should not be None.");
 			assert_eq!(
 				deposit_entry,
@@ -67,7 +67,6 @@ fn transfer_on_hold() {
 						owner: OTHER_ACCOUNT
 					},
 					reason: reason.into(),
-					reclaim_locked: true,
 				}
 			);
 		});
@@ -91,7 +90,7 @@ fn transfer_and_hold() {
 				Fortitude::Polite,
 			)
 			.expect("Failed to transfer free tokens to be held.");
-			let deposit_entry = Deposits::<TestRuntime>::get(&reason.namespace, &reason.key)
+			let deposit_entry = SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key)
 				.expect("Deposit entry should not be None.");
 			assert_eq!(
 				deposit_entry,
@@ -101,7 +100,6 @@ fn transfer_and_hold() {
 						owner: OTHER_ACCOUNT
 					},
 					reason: reason.into(),
-					reclaim_locked: true,
 				}
 			);
 		});
