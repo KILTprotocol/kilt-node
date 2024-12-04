@@ -38,7 +38,6 @@ fn add_deposit_new() {
 					amount: 10_000,
 					owner: OWNER,
 				},
-				reclaim_locked: false,
 			};
 			let namespace = DepositNamespace::ExampleNamespace;
 			let key = DepositKeyOf::<TestRuntime>::default();
@@ -65,7 +64,6 @@ fn add_deposit_existing() {
 			amount: 10_000,
 			owner: OWNER,
 		},
-		reclaim_locked: false,
 	};
 	let namespace = DepositNamespace::ExampleNamespace;
 	let key = DepositKeyOf::<TestRuntime>::default();
@@ -89,7 +87,6 @@ fn add_deposit_failed_to_hold() {
 				amount: 10_000,
 				owner: OWNER,
 			},
-			reclaim_locked: false,
 		};
 
 		assert_noop!(

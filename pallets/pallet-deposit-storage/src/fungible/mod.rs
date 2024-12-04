@@ -25,7 +25,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, DispatchError, DispatchResult};
 
-use crate::{deposit::DepositEntry, Config, DepositKeyOf, Deposits, Pallet};
+use crate::{deposit::DepositEntry, Config, DepositKeyOf, Pallet, SystemDeposits};
 
 #[cfg(test)]
 mod tests;
@@ -121,7 +121,7 @@ where
 	// `Currency` and then overriding the relevant storage entry.
 	fn set_balance_on_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
 		<T::Currency as UnbalancedHold<T::AccountId>>::set_balance_on_hold(&reason.clone().into(), who, amount)?;
-		Deposits::<T>::mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
+		SystemDeposits::<T>::mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
 			match maybe_existing_deposit_entry {
 				// If this is the first registered deposit, create a new storage entry.
 				None => {
@@ -132,7 +132,6 @@ where
 								owner: who.clone(),
 							},
 							reason: reason.clone().into(),
-							reclaim_locked: true,
 						})
 					}
 				}
