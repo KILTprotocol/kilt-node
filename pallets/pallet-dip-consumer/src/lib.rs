@@ -202,10 +202,10 @@ pub mod pallet {
 			// benchmarks while making sure the call is actually dispatched and passes any
 			// filters the consumer proof verifier has set.
 			cfg_if::cfg_if! {
-				if #[cfg(not(feature = "runtime-benchmark"))] {
+				if #[cfg(not(feature = "runtime-benchmarks"))] {
 					call.dispatch(did_origin.into())
 				} else {
-					().into()
+					Ok(())
 				}
 			}
 		}
