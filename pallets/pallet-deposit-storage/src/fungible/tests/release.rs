@@ -55,7 +55,7 @@ fn release() {
 						owner: OWNER
 					},
 					reason: reason.clone().into(),
-					reclaimable: true,
+					reclaim_locked: true,
 				}
 			);
 

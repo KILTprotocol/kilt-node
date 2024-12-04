@@ -52,7 +52,7 @@ fn hold() {
 						owner: OWNER
 					},
 					reason: reason.clone().into(),
-					reclaimable: true,
+					reclaim_locked: true,
 				}
 			);
 
@@ -68,7 +68,7 @@ fn hold() {
 						owner: OWNER
 					},
 					reason: reason.into(),
-					reclaimable: true,
+					reclaim_locked: true,
 				}
 			);
 		});
