@@ -63,7 +63,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 			ProxyType::NonTransfer => matches!(
 				c,
 				RuntimeCall::Attestation(..)
-					// Excludes `Balances`
+					// Excludes `Balances`, `Fungibles` and `BondedFungibles` 
 					| RuntimeCall::Council(..)
 					| RuntimeCall::Ctype(..)
 					| RuntimeCall::Delegation(..)
@@ -100,7 +100,19 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 						pallet_vesting::Call::vest { .. }
 							| pallet_vesting::Call::vest_other { .. }
 					)
-					| RuntimeCall::Web3Names(..),
+					| RuntimeCall::Web3Names(..)
+					| RuntimeCall::BondedCurrencies(
+						// Excludes `mint_into`, `burn_into`, 
+						pallet_bonded_coins::Call::create_pool { .. }
+							| pallet_bonded_coins::Call::reset_team { .. }
+							| pallet_bonded_coins::Call::reset_manager { .. }
+							| pallet_bonded_coins::Call::set_lock { .. }
+							| pallet_bonded_coins::Call::unlock { .. }
+							| pallet_bonded_coins::Call::start_refund { .. }
+							| pallet_bonded_coins::Call::refund_account { .. }
+							| pallet_bonded_coins::Call::start_destroy { .. }
+							| pallet_bonded_coins::Call::finish_destroy { .. }
+					)
 			),
 			ProxyType::NonDepositClaiming => matches!(
 				c,
@@ -205,7 +217,20 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_web3_names::Call::unban { .. }
 							| pallet_web3_names::Call::update_deposit { .. }
 							| pallet_web3_names::Call::change_deposit_owner { .. }
-					),
+					)
+					| RuntimeCall::BondedCurrencies(
+						// Excludes `finish_destroy`
+						pallet_bonded_coins::Call::create_pool { .. }
+							| pallet_bonded_coins::Call::reset_team { .. }
+							| pallet_bonded_coins::Call::reset_manager { .. }
+							| pallet_bonded_coins::Call::set_lock { .. }
+							| pallet_bonded_coins::Call::unlock { .. }
+							| pallet_bonded_coins::Call::mint_into { .. }
+							| pallet_bonded_coins::Call::burn_into { .. }
+							| pallet_bonded_coins::Call::start_refund { .. }
+							| pallet_bonded_coins::Call::refund_account { .. }
+							| pallet_bonded_coins::Call::start_destroy { .. }
+					)
 			),
 			ProxyType::Governance => matches!(
 				c,
