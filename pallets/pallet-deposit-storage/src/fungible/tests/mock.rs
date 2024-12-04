@@ -30,7 +30,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
-use crate::{self as storage_deposit_pallet, fungible::PalletDepositStorageReason, DepositKeyOf};
+use crate::{self as storage_deposit_pallet, HoldReason};
 
 construct_runtime!(
 	pub struct TestRuntime {
@@ -48,6 +48,15 @@ pub(crate) type Balance = u128;
 pub enum TestRuntimeHoldReason {
 	Deposit,
 	Else,
+}
+
+impl From<HoldReason> for TestRuntimeHoldReason {
+	fn from(value: HoldReason) -> Self {
+		match value {
+			HoldReason::Deposit => Self::Deposit,
+			_ => Self::Else
+		}
+	}
 }
 
 // This value is used by the `Balances` pallet to create the limit for the
@@ -106,21 +115,6 @@ pub enum DepositNamespace {
 	ExampleNamespace,
 }
 
-impl From<PalletDepositStorageReason<DepositNamespace, DepositKeyOf<TestRuntime>>> for TestRuntimeHoldReason {
-	fn from(_value: PalletDepositStorageReason<DepositNamespace, DepositKeyOf<TestRuntime>>) -> Self {
-		TestRuntimeHoldReason::Deposit
-	}
-}
-
-impl Default for PalletDepositStorageReason<DepositNamespace, DepositKeyOf<TestRuntime>> {
-	fn default() -> Self {
-		Self {
-			namespace: Default::default(),
-			key: Default::default(),
-		}
-	}
-}
-
 impl crate::Config for TestRuntime {
 	type CheckOrigin = EnsureSigned<Self::AccountId>;
 	type Currency = Balances;
@@ -135,6 +129,7 @@ impl crate::Config for TestRuntime {
 }
 
 pub(crate) const OWNER: AccountId32 = AccountId32::new([100u8; 32]);
+pub(crate) const OTHER_ACCOUNT: AccountId32 = AccountId32::new([101u8; 32]);
 
 #[derive(Default)]
 pub(crate) struct ExtBuilder(Vec<(AccountId32, Balance)>);

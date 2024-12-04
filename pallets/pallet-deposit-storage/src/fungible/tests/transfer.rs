@@ -21,17 +21,15 @@ use frame_support::traits::{
 	tokens::{Fortitude, Precision, Preservation, Restriction},
 };
 use kilt_support::Deposit;
-// use kilt_support::Deposit;
 use sp_runtime::AccountId32;
 
 use crate::{
-	// deposit::DepositEntry,
 	deposit::DepositEntry,
 	fungible::{
-		tests::mock::{ExtBuilder, TestRuntime, OWNER},
+		tests::mock::{ExtBuilder, TestRuntime, OTHER_ACCOUNT, OWNER, TestRuntimeHoldReason},
 		PalletDepositStorageReason,
 	},
-	mock::OTHER_ACCOUNT,
+	HoldReason,
 	Pallet,
 	SystemDeposits,
 };
@@ -66,7 +64,7 @@ fn transfer_on_hold() {
 						amount: 10,
 						owner: OTHER_ACCOUNT
 					},
-					reason: reason.into(),
+					reason: TestRuntimeHoldReason::from(HoldReason::from(reason)),
 				}
 			);
 		});
@@ -99,7 +97,7 @@ fn transfer_and_hold() {
 						amount: 10,
 						owner: OTHER_ACCOUNT
 					},
-					reason: reason.into(),
+					reason: TestRuntimeHoldReason::from(HoldReason::from(reason)),
 				}
 			);
 		});

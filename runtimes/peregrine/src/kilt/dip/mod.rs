@@ -18,7 +18,6 @@
 
 use did::{DidRawOrigin, EnsureDidOrigin};
 use frame_system::EnsureSigned;
-use pallet_deposit_storage::{DepositKeyOf, PalletDepositStorageReason};
 use runtime_common::{
 	constants::{deposit_storage::MAX_DEPOSIT_PALLET_KEY_LENGTH, dip_provider::MAX_LINKED_ACCOUNTS},
 	dip::{
@@ -50,12 +49,6 @@ impl pallet_dip_provider::Config for Runtime {
 	type ProviderHooks = DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pallet_dip_provider::WeightInfo<Runtime>;
-}
-
-impl From<PalletDepositStorageReason<DepositNamespace, DepositKeyOf<Runtime>>> for RuntimeHoldReason {
-	fn from(_value: PalletDepositStorageReason<DepositNamespace, DepositKeyOf<Runtime>>) -> Self {
-		pallet_deposit_storage::HoldReason::Deposit.into()
-	}
 }
 
 impl pallet_deposit_storage::Config for Runtime {

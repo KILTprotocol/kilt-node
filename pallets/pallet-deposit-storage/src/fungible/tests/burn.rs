@@ -21,16 +21,15 @@ use frame_support::traits::{
 	tokens::{Fortitude, Precision},
 };
 use kilt_support::Deposit;
-// use kilt_support::Deposit;
 use sp_runtime::AccountId32;
 
 use crate::{
-	// deposit::DepositEntry,
 	deposit::DepositEntry,
 	fungible::{
-		tests::mock::{ExtBuilder, TestRuntime, OWNER},
+		tests::mock::{ExtBuilder, TestRuntime, OWNER, TestRuntimeHoldReason},
 		PalletDepositStorageReason,
 	},
+	HoldReason,
 	Pallet,
 	SystemDeposits,
 };
@@ -63,7 +62,7 @@ fn burn_held() {
 						amount: 1,
 						owner: OWNER
 					},
-					reason: reason.clone().into(),
+					reason: TestRuntimeHoldReason::from(HoldReason::from(reason.clone())),
 				}
 			);
 
