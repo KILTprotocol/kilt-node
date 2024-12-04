@@ -23,33 +23,27 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 
 		let pool_account = pool_id.into();
 
-		// Collateral checks
-		let collateral_exists = T::Collaterals::asset_exists(collateral_id.clone());
-		assert!(collateral_exists);
-		let collateral_issuance = T::Collaterals::total_issuance(collateral_id);
-
 		// Deposit checks
 		let balance_on_hold_user =
 			T::DepositCurrency::balance_on_hold(&T::RuntimeHoldReason::from(HoldReason::Deposit), &owner);
 		assert!(balance_on_hold_user >= deposit);
+
+		// Collateral checks
+		assert!(T::Collaterals::asset_exists(collateral_id.clone()));
+		let collateral_issuance = T::Collaterals::total_issuance(collateral_id);
 
 		// Bonded currencies checks
 		bonded_currencies
 			.iter()
 			.try_for_each(|currency_id| -> Result<(), TryRuntimeError> {
 				// check if currency is already associated with another pool
-				if checked_currency_ids.contains(currency_id) {
-					return Err(TryRuntimeError::Other(
-						"Currency is already associated with another pool",
-					));
-				}
-
+				assert!(!checked_currency_ids.contains(currency_id));
 				checked_currency_ids.push(currency_id.clone());
 
-				// if Pool is live, all underlying assets should be live too
+				// if Pool is live or refunding, all underlying assets should be live.
 				// Other states are not checked because there is no trait to gather the
 				// information.
-				if state.is_live() {
+				if state.is_live() || state.is_refunding() {
 					let asset_exists = T::Fungibles::asset_exists(currency_id.clone());
 					assert!(asset_exists);
 
