@@ -863,7 +863,7 @@ pub mod pallet {
 
 			if !pool_details.transferable && account_exists {
 				// Restore locks.
-				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
+				T::Fungibles::freeze(target_currency_id, &who).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
 					freeze_error.into()
 				})?;
