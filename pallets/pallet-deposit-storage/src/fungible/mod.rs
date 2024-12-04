@@ -19,14 +19,16 @@
 use frame_support::traits::{
 	fungible::{Dust, Inspect, InspectHold, MutateHold, Unbalanced, UnbalancedHold},
 	tokens::{Fortitude, Preservation, Provenance, WithdrawConsequence},
-	DefensiveSaturating,
 };
 use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, DispatchError, DispatchResult};
 
-use crate::{deposit::DepositEntry, Config, DepositEntryOf, DepositKeyOf, Deposits, Pallet, LOG_TARGET};
+use crate::{deposit::DepositEntry, Config, DepositKeyOf, Deposits, Pallet};
+
+#[cfg(test)]
+mod tests;
 
 // This trait is implemented by forwarding everything to the `Currency`
 // implementation.
@@ -119,71 +121,33 @@ where
 	// `Currency` and then overriding the relevant storage entry.
 	fn set_balance_on_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
 		<T::Currency as UnbalancedHold<T::AccountId>>::set_balance_on_hold(&reason.clone().into(), who, amount)?;
-		if amount > Zero::zero() {
-			Deposits::<T>::insert(
-				&reason.namespace,
-				&reason.key,
-				DepositEntryOf::<T> {
-					deposit: Deposit {
-						amount,
-						owner: who.clone(),
-					},
-					reason: reason.clone().into(),
-				},
-			);
-		}
+		Deposits::<T>::mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
+			match maybe_existing_deposit_entry {
+				// If this is the first registered deposit, create a new storage entry.
+				None => {
+					if amount > Zero::zero() {
+						*maybe_existing_deposit_entry = Some(DepositEntry {
+							deposit: Deposit {
+								amount: amount,
+								owner: who.clone(),
+							},
+							reason: reason.clone().into(),
+						})
+					}
+				}
+				// If this is a previous deposit, update the storage entry or remove completely if balance on hold is
+				// set to `0`.
+				Some(existing_deposit_entry) => {
+					if amount.is_zero() {
+						*maybe_existing_deposit_entry = None;
+					} else {
+						existing_deposit_entry.deposit.amount = amount;
+					}
+				}
+			}
+		});
 		Ok(())
 	}
 }
 
-impl<T> MutateHold<T::AccountId> for Pallet<T>
-where
-	T: Config,
-{
-	// Implements this trait function by first dispatching to the underlying
-	// `Currency` and then either writing the storage entry or updating the existing
-	// one with the new amount.
-	fn done_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) {
-		<T::Currency as MutateHold<T::AccountId>>::done_hold(&reason.clone().into(), who, amount);
-		if amount > Zero::zero() {
-			Deposits::<T>::mutate(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
-				if let Some(existing_deposit_entry) = maybe_existing_deposit_entry {
-					let new_amount = existing_deposit_entry.deposit.amount.defensive_saturating_add(amount);
-					existing_deposit_entry.deposit.amount = new_amount;
-				} else {
-					*maybe_existing_deposit_entry = Some(DepositEntry {
-						deposit: Deposit {
-							amount,
-							owner: who.clone(),
-						},
-						reason: reason.clone().into(),
-					});
-				}
-			});
-		}
-	}
-
-	// Implements this trait function by first dispatching to the underlying
-	// `Currency` and then by either deleting the storage entry if all balance on
-	// hold is released or updating the existing one with the new amount.
-	fn done_release(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) {
-		<T::Currency as MutateHold<T::AccountId>>::done_hold(&reason.clone().into(), who, amount);
-		if amount > Zero::zero() {
-			Deposits::<T>::mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
-				let Some(existing_deposit_entry) = maybe_existing_deposit_entry else {
-					// This function cannot fail, so this is the best we can do.
-					log::warn!(target: LOG_TARGET, "Failed to call `done_release` for reason {:?}, who {:?} and amount {:?}. Entry not found in storage.", reason, who, amount);
-					return;
-				};
-				// If the whole amount is released, remove from storage.
-				if existing_deposit_entry.deposit.amount == amount {
-					*maybe_existing_deposit_entry = None;
-				// Else, update the storage entry accordingly.
-				} else {
-					let new_amount = existing_deposit_entry.deposit.amount.defensive_saturating_sub(amount);
-					existing_deposit_entry.deposit.amount = new_amount;
-				}
-			});
-		}
-	}
-}
+impl<T> MutateHold<T::AccountId> for Pallet<T> where T: Config {}
