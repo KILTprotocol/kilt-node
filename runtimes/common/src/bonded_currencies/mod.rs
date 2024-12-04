@@ -63,10 +63,6 @@ impl<Target: Get<L>, L: PartialEq + Eq> Convert<L, Either<(), L>> for TargetFrom
 	}
 }
 
-/// Inner
-pub type NativeAndForeignAssets<Balances, Fungibles, Criterion, AssetKind, AccountId> =
-	UnionOf<Balances, Fungibles, Criterion, AssetKind, AccountId>;
-
 /// Wrapper struct for [UnionOf] to implement the [metadata::Inspect] trait,
 /// needed for the pallet_bonded_coins module.
 pub struct WrapperNativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>(
