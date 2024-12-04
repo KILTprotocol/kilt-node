@@ -20,7 +20,7 @@ use frame_support::{
 	pallet_prelude::{OptionQuery, PalletInfoAccess},
 	storage_alias,
 };
-use pallet_bonded_coins::{traits::NextAssetIds, FungiblesAssetIdOf};
+use pallet_bonded_coins::{traits::NextAssetIds, Error, FungiblesAssetIdOf};
 use sp_runtime::{ArithmeticError, BoundedVec, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
 
@@ -29,6 +29,8 @@ use crate::bonded_currencies::AssetId;
 #[storage_alias]
 pub type NextAssetId<BondingPallet: PalletInfoAccess, T> =
 	StorageValue<BondingPallet, FungiblesAssetIdOf<T>, OptionQuery>;
+
+const LOG_TARGET: &'static str = "runtime::pallet_bonded_coins::hooks";
 
 /// Struct to implement desired traits for [NextAssetId].
 pub struct NextAssetIdGenerator<T>(PhantomData<T>);
@@ -50,7 +52,9 @@ where
 			.collect::<Vec<FungiblesAssetIdOf<T>>>();
 
 		NextAssetId::<BondingPallet, T>::set(Some(new_next_asset_id.into()));
-		BoundedVec::try_from(asset_ids)
-			.map_err(|_| DispatchError::Other("Could not create Bounded vec in NextAssetIdGenerator"))
+		BoundedVec::try_from(asset_ids.clone()).map_err(|_| {
+			log::error!(target: LOG_TARGET, "Failed to convert asset ids to bounded vec {:?}", asset_ids);
+			Error::<T>::Internal.into()
+		})
 	}
 }

@@ -136,7 +136,7 @@ impl pallet_bonded_coins::Config for Runtime {
 	type BenchmarkHelper = crate::benchmarks::bonded_coins::BondedFungiblesBenchmarkHelper<Runtime>;
 }
 
-pub(crate) type BondedFungiblesInstance = pallet_assets::Instance1;
+pub(crate) type BondedFungiblesInstance = pallet_assets::Instance2;
 impl pallet_assets::Config<BondedFungiblesInstance> for Runtime {
 	type ApprovalDeposit = constants::assets::ApprovalDeposit;
 	type AssetAccountDeposit = constants::assets::AssetAccountDeposit;
