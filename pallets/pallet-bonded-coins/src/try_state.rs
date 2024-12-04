@@ -29,7 +29,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 
 		// Collateral checks
 		assert!(T::Collaterals::asset_exists(collateral_id.clone()));
-		let collateral_issuance = T::Collaterals::total_issuance(collateral_id);
+		let collateral_issuance_pool = T::Collaterals::total_balance(collateral_id, &pool_account);
 
 		// Bonded currencies checks
 		bonded_currencies
@@ -43,8 +43,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 				// Other states are not checked because there is no trait to gather the
 				// information.
 				if state.is_live() || state.is_refunding() {
-					let asset_exists = T::Fungibles::asset_exists(currency_id.clone());
-					assert!(asset_exists);
+					assert!(T::Fungibles::asset_exists(currency_id.clone()));
 
 					// the owner and issuer should always be the pool account. Admins and Freezer
 					// can be changed.
@@ -59,11 +58,12 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 					let currency_denomination = T::Fungibles::decimals(currency_id.clone());
 					assert_eq!(currency_denomination, denomination);
 
-					// if currency has issuance -> collateral issuance must exists.
+					// if currency has on-zero supply -> collateral in pool account must be
+					// non-zero.
 					let bonded_issuance = T::Fungibles::total_issuance(currency_id.clone());
-					if bonded_issuance > Zero::zero() && collateral_issuance == Zero::zero() {
+					if bonded_issuance > Zero::zero() && collateral_issuance_pool == Zero::zero() {
 						return Err(TryRuntimeError::Other(
-							"Collateral issuance must exists if bonded currency has issuance",
+							"Pool account must hold collateral if bonded currency has issuance",
 						));
 					}
 				}
