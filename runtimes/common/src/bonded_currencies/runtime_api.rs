@@ -20,7 +20,7 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
 /// Enum to represent the operation of minting or burning tokens.
-#[derive(Decode, Encode)]
+#[derive(Decode, Encode, TypeInfo)]
 pub enum Operation {
 	Mint,
 	Burn,
@@ -30,5 +30,7 @@ pub enum Operation {
 pub enum Error {
 	PoolNotFound,
 	CurrencyNotFound,
+	BalanceConversion,
+	CalculationError,
 	Internal,
 }
