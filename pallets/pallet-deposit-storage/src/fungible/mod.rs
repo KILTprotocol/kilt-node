@@ -39,7 +39,7 @@ where
 	type Balance = <T::Currency as Inspect<T::AccountId>>::Balance;
 
 	fn total_issuance() -> Self::Balance {
-		<T::Currency as Inspect<T::AccountId>>::minimum_balance()
+		<T::Currency as Inspect<T::AccountId>>::total_issuance()
 	}
 
 	fn minimum_balance() -> Self::Balance {
