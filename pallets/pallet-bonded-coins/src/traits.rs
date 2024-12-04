@@ -18,8 +18,8 @@
 use frame_support::{dispatch::DispatchResult, traits::fungibles::roles::Inspect};
 use frame_system::RawOrigin;
 use pallet_assets::{Config as AssetConfig, Pallet as AssetsPallet};
-use sp_runtime::{traits::StaticLookup, BoundedVec, DispatchError};
-use sp_std::{fmt::Debug, prelude::*};
+use sp_runtime::{traits::StaticLookup, DispatchError};
+use sp_std::{fmt::Debug, prelude::*, vec::Vec};
 
 use crate::{AccountIdOf, Config, FungiblesAssetIdOf};
 
@@ -103,5 +103,5 @@ pub trait NextAssetIds<T: Config> {
 	/// Generic error type.
 	type Error: Into<DispatchError>;
 	/// Get the next `n` asset ids.
-	fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>, Self::Error>;
+	fn try_get(n: u32) -> Result<Vec<FungiblesAssetIdOf<T>>, Self::Error>;
 }

@@ -69,7 +69,7 @@ pub mod pallet {
 		traits::{
 			Bounded, CheckedConversion, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto, Zero,
 		},
-		BoundedVec, TokenError,
+		BoundedVec, DispatchError, TokenError,
 	};
 	use sp_std::{
 		ops::{AddAssign, BitOrAssign, ShlAssign},
@@ -364,13 +364,16 @@ pub mod pallet {
 			let currency_length = currencies.len();
 
 			let currency_ids = T::NextAssetIds::try_get(currency_length.saturated_into())
-				.map_err(|_| Error::<T>::Internal)
-				.and_then(|ids| {
+				.map_err(|e| e.into())
+				.and_then(|ids| -> Result<BoundedCurrencyVec<T>, DispatchError> {
 					if ids.len() != currency_length {
 						log::error!(target: LOG_TARGET, "NextAssetIds::try_get returned wrong number of ids");
-						return Err(Error::<T>::Internal);
+						return Err(Error::<T>::Internal.into());
 					}
-					Ok(ids)
+					BoundedCurrencyVec::<T>::try_from(ids).map_err(|_| {
+						log::error!(target: LOG_TARGET, "Creating boundedVec from ids failed");
+						Error::<T>::Internal.into()
+					})
 				})?;
 
 			let pool_id = T::PoolId::from(currency_ids.blake2_256());

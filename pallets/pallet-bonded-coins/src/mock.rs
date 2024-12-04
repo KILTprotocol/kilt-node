@@ -179,17 +179,12 @@ pub mod runtime {
 		FungiblesAssetIdOf<T>: From<AssetId>,
 	{
 		type Error = DispatchError;
-		fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>, Self::Error> {
+		fn try_get(n: u32) -> Result<Vec<FungiblesAssetIdOf<T>>, Self::Error> {
 			let next_asset_id = NextAssetId::<BondingPallet>::get();
 
 			let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
-
-			let asset_ids = (next_asset_id..(next_asset_id + n))
-				.map(|id| id.into())
-				.collect::<Vec<FungiblesAssetIdOf<T>>>();
-
 			NextAssetId::<BondingPallet>::set(new_next_asset_id);
-			Ok(BoundedVec::try_from(asset_ids).expect("should be able to create bounded vec"))
+			Ok((next_asset_id..new_next_asset_id).map(|id| id.into()).collect())
 		}
 	}
 
