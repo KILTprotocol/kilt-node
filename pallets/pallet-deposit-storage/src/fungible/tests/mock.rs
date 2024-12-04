@@ -54,7 +54,7 @@ impl From<HoldReason> for TestRuntimeHoldReason {
 	fn from(value: HoldReason) -> Self {
 		match value {
 			HoldReason::Deposit => Self::Deposit,
-			_ => Self::Else
+			_ => Self::Else,
 		}
 	}
 }

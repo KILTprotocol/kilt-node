@@ -71,14 +71,16 @@ where
 	}
 }
 
-/// The `HoldReason` consumers must use in order to rely on this pallet's implementation of `MutateHold`.
+/// The `HoldReason` consumers must use in order to rely on this pallet's
+/// implementation of `MutateHold`.
 #[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, Copy, Debug, Default)]
 pub struct PalletDepositStorageReason<Namespace, Key> {
 	pub(crate) namespace: Namespace,
 	pub(crate) key: Key,
 }
 
-// Always return a dedicated `HoldReason` specific for the `MutateHold` implementation.
+// Always return a dedicated `HoldReason` specific for the `MutateHold`
+// implementation.
 impl<Namespace, Key> From<PalletDepositStorageReason<Namespace, Key>> for HoldReason {
 	fn from(_value: PalletDepositStorageReason<Namespace, Key>) -> Self {
 		Self::FungbileImpl
@@ -98,7 +100,10 @@ where
 	}
 
 	fn balance_on_hold(reason: &Self::Reason, who: &T::AccountId) -> Self::Balance {
-		<T::Currency as InspectHold<T::AccountId>>::balance_on_hold(&T::RuntimeHoldReason::from(reason.clone().into()), who)
+		<T::Currency as InspectHold<T::AccountId>>::balance_on_hold(
+			&T::RuntimeHoldReason::from(reason.clone().into()),
+			who,
+		)
 	}
 }
 
@@ -128,7 +133,11 @@ where
 	// Implements this trait function by first dispatching to the underlying
 	// `Currency` and then overriding the relevant storage entry.
 	fn set_balance_on_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
-		<T::Currency as UnbalancedHold<T::AccountId>>::set_balance_on_hold(&T::RuntimeHoldReason::from(reason.clone().into()), who, amount)?;
+		<T::Currency as UnbalancedHold<T::AccountId>>::set_balance_on_hold(
+			&T::RuntimeHoldReason::from(reason.clone().into()),
+			who,
+			amount,
+		)?;
 		SystemDeposits::<T>::mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
 			match maybe_existing_deposit_entry {
 				// If this is the first registered deposit, create a new storage entry.

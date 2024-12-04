@@ -23,12 +23,10 @@ use sp_runtime::AccountId32;
 use crate::{
 	deposit::DepositEntry,
 	fungible::{
-		tests::mock::{Balances, ExtBuilder, TestRuntime, OWNER, TestRuntimeHoldReason},
+		tests::mock::{Balances, ExtBuilder, TestRuntime, TestRuntimeHoldReason, OWNER},
 		PalletDepositStorageReason,
 	},
-	HoldReason,
-	Pallet,
-	SystemDeposits,
+	HoldReason, Pallet, SystemDeposits,
 };
 
 #[test]
