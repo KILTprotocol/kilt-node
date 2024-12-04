@@ -128,10 +128,11 @@ where
 					if amount > Zero::zero() {
 						*maybe_existing_deposit_entry = Some(DepositEntry {
 							deposit: Deposit {
-								amount: amount,
+								amount,
 								owner: who.clone(),
 							},
 							reason: reason.clone().into(),
+							reclaimable: false,
 						})
 					}
 				}

@@ -66,7 +66,8 @@ fn transfer_on_hold() {
 						amount: 10,
 						owner: OTHER_ACCOUNT
 					},
-					reason: reason.clone().into()
+					reason: reason.into(),
+					reclaimable: true,
 				}
 			);
 		});
@@ -99,7 +100,8 @@ fn transfer_and_hold() {
 						amount: 10,
 						owner: OTHER_ACCOUNT
 					},
-					reason: reason.clone().into()
+					reason: reason.into(),
+					reclaimable: true,
 				}
 			);
 		});
