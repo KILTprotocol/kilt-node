@@ -27,8 +27,8 @@ use sp_std::{marker::PhantomData, vec::Vec};
 use crate::bonded_currencies::AssetId;
 
 #[storage_alias]
-pub type NextAssetId<BondingPallet: PalletInfoAccess, T> =
-	StorageValue<BondingPallet, FungiblesAssetIdOf<T>, ValueQuery>;
+pub type NextAssetId<BondedFungibles: PalletInfoAccess, T> =
+	StorageValue<BondedFungibles, FungiblesAssetIdOf<T>, ValueQuery>;
 
 const LOG_TARGET: &'static str = "runtime::pallet_bonded_coins::hooks";
 
@@ -36,14 +36,14 @@ const LOG_TARGET: &'static str = "runtime::pallet_bonded_coins::hooks";
 pub struct NextAssetIdGenerator<T>(PhantomData<T>);
 
 /// impl NetAssetId for GetNextAssetIdStruct
-impl<T: pallet_bonded_coins::Config, BondingPallet: PalletInfoAccess> NextAssetIds<T>
-	for NextAssetIdGenerator<BondingPallet>
+impl<T: pallet_bonded_coins::Config, BondedFungibles: PalletInfoAccess> NextAssetIds<T>
+	for NextAssetIdGenerator<BondedFungibles>
 where
 	FungiblesAssetIdOf<T>: From<AssetId> + Into<AssetId> + Default,
 {
 	type Error = DispatchError;
 	fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>, Self::Error> {
-		let next_asset_id: AssetId = NextAssetId::<BondingPallet, T>::get().into();
+		let next_asset_id: AssetId = NextAssetId::<BondedFungibles, T>::get().into();
 
 		let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
 
@@ -51,7 +51,7 @@ where
 			.map(FungiblesAssetIdOf::<T>::from)
 			.collect::<Vec<FungiblesAssetIdOf<T>>>();
 
-		NextAssetId::<BondingPallet, T>::set(new_next_asset_id.into());
+		NextAssetId::<BondedFungibles, T>::set(new_next_asset_id.into());
 		BoundedVec::try_from(asset_ids.clone()).map_err(|_| {
 			log::error!(target: LOG_TARGET, "Failed to convert asset ids to bounded vec {:?}", asset_ids);
 			Error::<T>::Internal.into()
