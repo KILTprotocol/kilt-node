@@ -33,6 +33,8 @@ pub mod traits;
 mod types;
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarking::BenchmarkHelper;
+pub use curves::{balance_to_fixed, fixed_to_balance, BondingFunction};
+pub use types::Round;
 
 pub use default_weights::WeightInfo;
 
@@ -241,7 +243,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn pool_with_id)]
-	pub(crate) type Pools<T: Config> = StorageMap<_, Twox64Concat, T::PoolId, PoolDetailsOf<T>, OptionQuery>;
+	pub type Pools<T: Config> = StorageMap<_, Twox64Concat, T::PoolId, PoolDetailsOf<T>, OptionQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]

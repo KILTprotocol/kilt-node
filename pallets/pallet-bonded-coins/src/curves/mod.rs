@@ -160,7 +160,7 @@ fn calculate_accumulated_passive_issuance<Balance: Fixed>(passive_issuance: &[Ba
 
 /// Converts an integer balance type to a fixed type by scaling the balance down
 /// by its denomination.
-pub(crate) fn balance_to_fixed<Balance, FixedType: Fixed>(
+pub fn balance_to_fixed<Balance, FixedType: Fixed>(
 	balance: Balance,
 	denomination: u8,
 	round_kind: Round,
@@ -204,7 +204,7 @@ where
 
 /// Converts a fixed type representation of a balance back to an integer type
 /// via scaling up by its denomination.
-pub(crate) fn fixed_to_balance<Balance, FixedType: Fixed>(
+pub fn fixed_to_balance<Balance, FixedType: Fixed>(
 	fixed: FixedType,
 	denomination: u8,
 	round_kind: Round,
