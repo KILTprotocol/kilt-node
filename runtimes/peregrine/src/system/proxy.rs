@@ -218,19 +218,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_web3_names::Call::update_deposit { .. }
 							| pallet_web3_names::Call::change_deposit_owner { .. }
 					)
-					| RuntimeCall::BondedCurrencies(
-						// Excludes `finish_destroy`
-						pallet_bonded_coins::Call::create_pool { .. }
-							| pallet_bonded_coins::Call::reset_team { .. }
-							| pallet_bonded_coins::Call::reset_manager { .. }
-							| pallet_bonded_coins::Call::set_lock { .. }
-							| pallet_bonded_coins::Call::unlock { .. }
-							| pallet_bonded_coins::Call::mint_into { .. }
-							| pallet_bonded_coins::Call::burn_into { .. }
-							| pallet_bonded_coins::Call::start_refund { .. }
-							| pallet_bonded_coins::Call::refund_account { .. }
-							| pallet_bonded_coins::Call::start_destroy { .. }
-					)
+					| RuntimeCall::BondedCurrencies(..)
 			),
 			ProxyType::Governance => matches!(
 				c,
