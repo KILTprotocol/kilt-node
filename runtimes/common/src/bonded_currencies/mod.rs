@@ -36,6 +36,8 @@ use sp_runtime::{
 use sp_std::{marker::PhantomData, vec::Vec};
 use substrate_fixed::types::{I75F53, U75F53};
 
+use crate::constants::DENOMINATION;
+
 pub mod hooks;
 
 /// The AssetId for bonded assets.
@@ -256,7 +258,7 @@ impl<
 {
 	fn decimals(asset: Self::AssetId) -> u8 {
 		match Criterion::convert(asset) {
-			Left(()) => 15u8,
+			Left(()) => DENOMINATION,
 			Right(a) => Right::decimals(a),
 		}
 	}
