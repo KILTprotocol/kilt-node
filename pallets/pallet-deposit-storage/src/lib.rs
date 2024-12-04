@@ -138,6 +138,9 @@ pub mod pallet {
 		FailedToHold,
 		/// Error when trying to release a previously-reserved deposit.
 		FailedToRelease,
+		/// The deposit was reserved by some on-chain logic that does not let
+		/// the original payer claim it back.
+		Unclaimable,
 		/// The external hook failed.
 		Hook(u16),
 	}
@@ -254,6 +257,7 @@ pub mod pallet {
 					existing_entry.deposit.owner == *expected_owner,
 					Error::<T>::Unauthorized
 				);
+				ensure!(!existing_entry.reclaim_locked, Error::<T>::Unclaimable);
 			}
 			free_deposit::<AccountIdOf<T>, T::Currency>(&existing_entry.deposit, &existing_entry.reason)
 				.map_err(|_| Error::<T>::FailedToRelease)?;

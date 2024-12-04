@@ -96,3 +96,26 @@ fn reclaim_deposit_unauthorized() {
 			);
 		});
 }
+
+#[test]
+fn reclaim_deposit_unclaimable() {
+	let deposit = DepositEntryOf::<TestRuntime> {
+		reason: HoldReason::Deposit.into(),
+		deposit: Deposit {
+			amount: 10_000,
+			owner: OWNER,
+		},
+		reclaim_locked: true,
+	};
+	let namespace = DepositNamespace::ExampleNamespace;
+	let key = DepositKeyOf::<TestRuntime>::default();
+	ExtBuilder::default()
+		.with_deposits(vec![(namespace.clone(), key.clone(), deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Pallet::<TestRuntime>::reclaim_deposit(RawOrigin::Signed(OWNER).into(), namespace.clone(), key.clone()),
+				Error::<TestRuntime>::Unclaimable
+			);
+		});
+}
