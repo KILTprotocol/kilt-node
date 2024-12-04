@@ -30,7 +30,7 @@ use crate::bonded_currencies::AssetId;
 pub type NextAssetId<BondedFungibles: PalletInfoAccess, T> =
 	StorageValue<BondedFungibles, FungiblesAssetIdOf<T>, ValueQuery>;
 
-const LOG_TARGET: &'static str = "runtime::pallet_bonded_coins::hooks";
+const LOG_TARGET: &str = "runtime::pallet_bonded_coins::hooks";
 
 /// Struct to implement desired traits for [NextAssetId].
 pub struct NextAssetIdGenerator<T>(PhantomData<T>);
