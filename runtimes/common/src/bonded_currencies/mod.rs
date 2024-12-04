@@ -44,10 +44,10 @@ pub mod hooks;
 pub type AssetId = u32;
 
 /// Fixed point number used for creating bonding curves.
-pub type FloatInput = U75F53;
+pub type FixedPointInput = U75F53;
 
 /// Fixed point number used for doing calculation steps in the bonding curves.
-pub type Float = I75F53;
+pub type FixedPoint = I75F53;
 
 /// Struct to implement the desired [Convert] trait needed for the
 /// [NativeAndForeignAssets] type.

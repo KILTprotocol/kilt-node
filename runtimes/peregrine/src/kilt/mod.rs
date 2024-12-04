@@ -22,7 +22,7 @@ use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, Matche
 use runtime_common::{
 	asset_switch::{hooks::RestrictSwitchDestinationToSelf, EnsureRootAsTreasury},
 	bonded_currencies::{
-		hooks::NextAssetIdGenerator, AssetId, Float, FloatInput, NativeAndForeignAssets, TargetFromLeft,
+		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput, NativeAndForeignAssets, TargetFromLeft,
 	},
 	constants::bonded_coins::*,
 	AccountId, Balance, SendDustAndFeesToTreasury,
@@ -116,8 +116,8 @@ parameter_types! {
 impl pallet_bonded_coins::Config for Runtime {
 	type BaseDeposit = ConstU128<{ BASE_DEPOSIT }>;
 	type Collaterals = NativeAndForeignAssets<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId>;
-	type CurveParameterInput = FloatInput;
-	type CurveParameterType = Float;
+	type CurveParameterInput = FixedPointInput;
+	type CurveParameterType = FixedPoint;
 	type DefaultOrigin = EnsureSigned<AccountId>;
 	type DepositCurrency = Balances;
 	type DepositPerCurrency = ConstU128<{ DEPOSIT_PER_CURRENCY }>;
