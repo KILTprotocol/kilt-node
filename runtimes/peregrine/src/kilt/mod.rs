@@ -24,8 +24,10 @@ use runtime_common::{
 	bonded_currencies::{
 		hooks::NextAssetIdGenerator, AssetId, Float, FloatInput, TargetFromLeft, WrapperNativeAndForeignAssets,
 	},
+	constants::bonded_coins::*,
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
+use sp_core::{ConstU128, ConstU32, ConstU8};
 use xcm::v4::{Junctions, Location};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
@@ -112,19 +114,19 @@ parameter_types! {
 }
 
 impl pallet_bonded_coins::Config for Runtime {
-	type BaseDeposit = runtime_common::constants::bonded_coins::BaseDeposit;
+	type BaseDeposit = ConstU128<{ BASE_DEPOSIT }>;
 	type Collaterals =
 		WrapperNativeAndForeignAssets<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId>;
 	type CurveParameterInput = FloatInput;
 	type CurveParameterType = Float;
 	type DefaultOrigin = EnsureSigned<AccountId>;
 	type DepositCurrency = Balances;
-	type DepositPerCurrency = runtime_common::constants::bonded_coins::DepositPerCurrency;
+	type DepositPerCurrency = ConstU128<{ DEPOSIT_PER_CURRENCY }>;
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Fungibles = BondedFungibles;
-	type MaxCurrenciesPerPool = runtime_common::constants::bonded_coins::MaxCurrencies;
-	type MaxDenomination = runtime_common::constants::bonded_coins::MaxDenomination;
-	type MaxStringInputLength = runtime_common::constants::bonded_coins::MaxStringLength;
+	type MaxCurrenciesPerPool = ConstU32<{ MAX_CURRENCIES }>;
+	type MaxDenomination = ConstU8<{ MAX_DENOMINATION }>;
+	type MaxStringInputLength = ConstU32<{ MAX_STRING_LENGTH }>;
 	type NextAssetIds = NextAssetIdGenerator<BondedCurrencies>;
 	type PoolCreateOrigin = EnsureSigned<AccountId>;
 	type PoolId = AccountId;

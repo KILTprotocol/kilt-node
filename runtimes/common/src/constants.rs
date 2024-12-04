@@ -171,15 +171,6 @@ pub mod bonded_coins {
 	pub const MAX_CURRENCIES: u32 = 50;
 	pub const MAX_DENOMINATION: u8 = 16;
 	pub const MAX_STRING_LENGTH: u32 = crate::constants::assets::STRING_LIMIT;
-
-	parameter_types! {
-		pub const BaseDeposit: Balance = BASE_DEPOSIT;
-		pub const DepositPerCurrency: Balance = DEPOSIT_PER_CURRENCY;
-		pub const MaxCurrencies: u32 = MAX_CURRENCIES;
-		pub const MaxDenomination: u8 = MAX_DENOMINATION;
-		pub const MaxStringLength: u32 = MAX_STRING_LENGTH;
-
-	}
 }
 
 pub mod assets {
