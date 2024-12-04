@@ -67,7 +67,8 @@ fn on_identity_committed_successful() {
 					deposit: Deposit {
 						amount: 1_000,
 						owner: SUBMITTER
-					}
+					},
+					reclaimable: true,
 				})
 			);
 			assert_eq!(
@@ -92,6 +93,7 @@ fn on_identity_committed_existing_deposit() {
 					amount: 1_000,
 					owner: SUBMITTER,
 				},
+				reclaimable: true,
 			},
 		)])
 		.build()

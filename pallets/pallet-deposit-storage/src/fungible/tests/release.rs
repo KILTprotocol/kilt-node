@@ -54,7 +54,8 @@ fn release() {
 						amount: 5,
 						owner: OWNER
 					},
-					reason: reason.clone().into()
+					reason: reason.clone().into(),
+					reclaimable: true,
 				}
 			);
 

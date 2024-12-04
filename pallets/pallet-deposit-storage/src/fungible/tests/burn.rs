@@ -63,7 +63,8 @@ fn burn_held() {
 						amount: 1,
 						owner: OWNER
 					},
-					reason: reason.clone().into()
+					reason: reason.clone().into(),
+					reclaimable: true,
 				}
 			);
 

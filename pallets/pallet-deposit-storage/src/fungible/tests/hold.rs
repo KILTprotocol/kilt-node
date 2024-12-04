@@ -51,7 +51,8 @@ fn hold() {
 						amount: 10,
 						owner: OWNER
 					},
-					reason: reason.clone().into()
+					reason: reason.clone().into(),
+					reclaimable: true,
 				}
 			);
 
@@ -66,7 +67,8 @@ fn hold() {
 						amount: 15,
 						owner: OWNER
 					},
-					reason: reason.clone().into()
+					reason: reason.into(),
+					reclaimable: true,
 				}
 			);
 		});
