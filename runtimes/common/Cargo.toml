@@ -91,7 +91,6 @@ runtime-benchmarks = [
   "pallet-multisig/runtime-benchmarks",
   "pallet-tips/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
-  "pallet-web3-names/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "polkadot-runtime-common/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
