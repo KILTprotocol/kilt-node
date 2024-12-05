@@ -55,10 +55,7 @@ impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> TryFrom<Vec<u8>> for Web3Name
 	type Error = Web3NameValidationError;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		ensure!(
-			value.len() >= MIN_LENGTH.saturated_into::<usize>(),
-			Self::Error::TooShort
-		);
+		ensure!(value.len() >= MIN_LENGTH.saturated_into(), Self::Error::TooShort);
 		let bounded_vec: BoundedVec<u8, ConstU32<MAX_LENGTH>> =
 			BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
 		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);
