@@ -29,7 +29,7 @@ use crate::{
 		tests::mock::{ExtBuilder, TestRuntime, TestRuntimeHoldReason, OWNER},
 		PalletDepositStorageReason,
 	},
-	HoldReason, Pallet, SystemDeposits,
+	Pallet, SystemDeposits,
 };
 
 #[test]
@@ -60,7 +60,7 @@ fn burn_held() {
 						amount: 1,
 						owner: OWNER
 					},
-					reason: TestRuntimeHoldReason::from(HoldReason::from(reason.clone())),
+					reason: TestRuntimeHoldReason::Deposit,
 				}
 			);
 

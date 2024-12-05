@@ -29,7 +29,7 @@ use crate::{
 		tests::mock::{ExtBuilder, TestRuntime, TestRuntimeHoldReason, OTHER_ACCOUNT, OWNER},
 		PalletDepositStorageReason,
 	},
-	HoldReason, Pallet, SystemDeposits,
+	Pallet, SystemDeposits,
 };
 
 #[test]
@@ -62,7 +62,7 @@ fn transfer_on_hold() {
 						amount: 10,
 						owner: OTHER_ACCOUNT
 					},
-					reason: TestRuntimeHoldReason::from(HoldReason::from(reason)),
+					reason: TestRuntimeHoldReason::Deposit,
 				}
 			);
 		});
@@ -95,7 +95,7 @@ fn transfer_and_hold() {
 						amount: 10,
 						owner: OTHER_ACCOUNT
 					},
-					reason: TestRuntimeHoldReason::from(HoldReason::from(reason)),
+					reason: TestRuntimeHoldReason::Deposit,
 				}
 			);
 		});

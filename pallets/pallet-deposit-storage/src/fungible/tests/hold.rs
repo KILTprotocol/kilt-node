@@ -26,7 +26,7 @@ use crate::{
 		tests::mock::{Balances, ExtBuilder, TestRuntime, TestRuntimeHoldReason, OTHER_ACCOUNT, OWNER},
 		PalletDepositStorageReason,
 	},
-	Error, HoldReason, Pallet, SystemDeposits,
+	Error, Pallet, SystemDeposits,
 };
 
 #[test]
@@ -48,7 +48,7 @@ fn hold() {
 						amount: 10,
 						owner: OWNER
 					},
-					reason: TestRuntimeHoldReason::from(HoldReason::from(reason.clone())),
+					reason: TestRuntimeHoldReason::Deposit,
 				}
 			);
 
@@ -63,7 +63,7 @@ fn hold() {
 						amount: 15,
 						owner: OWNER
 					},
-					reason: TestRuntimeHoldReason::from(HoldReason::from(reason)),
+					reason: TestRuntimeHoldReason::Deposit,
 				}
 			);
 		});
