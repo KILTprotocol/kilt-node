@@ -18,18 +18,20 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use parity_scale_codec::Codec;
+use parity_scale_codec::{alloc::string::String, Codec};
 use sp_std::vec::Vec;
 
 sp_api::decl_runtime_apis! {
 	/// Runtime API to compute the collateral for a given amount and pool ID
 	/// and to query all pool IDs where the given account is the manager or owner.
 	#[api_version(1)]
-	pub trait BondedCurrency<Balance, PoolId, Operation, AccountId, Error> where
+	pub trait BondedCurrency<Balance, PoolId, Operation, AccountId, BitType, PoolDetails, Error> where
 		Balance: Codec,
 		PoolId: Codec,
 		Operation: Codec,
 		AccountId: Codec,
+		BitType: Codec,
+		PoolDetails: Codec,
 		Error: Codec
 		{
 			/// Calculates the collateral for the given amount.
@@ -57,5 +59,17 @@ sp_api::decl_runtime_apis! {
 
 			/// Query all pool IDs where the given account is the owner.
 			fn query_pools_by_owner(account : AccountId) -> Result<Vec<PoolId>, Error>;
+
+			/// Calculates the bit representation for the coefficient.
+			/// The coefficient is constructed by `coefficient_int.coefficient_frac`.
+			/// The first value in the tuple is the internal calculated coefficient, represented as a string.
+			/// The second value is the bit representation.
+			fn calculate_pool_parameter(coefficient: String) -> Result<(String, BitType), Error>;
+
+			/// Parses the bit representation for the coefficient to a human readable format.
+			fn parse_pool_parameter(bit_representation: BitType) -> Result<String, Error>;
+
+			/// Query the pool status in a human readable format.
+			fn query_pool_by_id(pool_id: PoolId) -> Result<PoolDetails, Error>;
 		}
 }

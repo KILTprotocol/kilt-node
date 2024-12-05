@@ -52,6 +52,9 @@ pub type FixedPointInput = U75F53;
 /// Fixed point number used for doing calculation steps in the bonding curves.
 pub type FixedPoint = I75F53;
 
+/// For a I75F53, the underlying type is a i128.
+pub type FixedPointUnderlyingType = i128;
+
 /// Struct to implement the desired [Convert] trait needed for the
 /// [NativeAndForeignAssets] type.
 /// The generic type [Target] is used to determine the type of the asset id for

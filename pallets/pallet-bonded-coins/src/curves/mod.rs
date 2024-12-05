@@ -23,9 +23,9 @@
 /// - Polynomial
 /// - SquareRoot
 /// - LMSR (Logarithmic Market Scoring Rule)
-pub(crate) mod lmsr;
-pub(crate) mod polynomial;
-pub(crate) mod square_root;
+pub mod lmsr;
+pub mod polynomial;
+pub mod square_root;
 
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;

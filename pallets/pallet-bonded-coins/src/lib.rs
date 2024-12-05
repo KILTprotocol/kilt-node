@@ -27,14 +27,13 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-mod curves;
+pub mod curves;
 mod default_weights;
 pub mod traits;
 mod types;
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarking::BenchmarkHelper;
-pub use curves::{balance_to_fixed, fixed_to_balance, BondingFunction};
-pub use types::Round;
+pub use types::{PoolDetails, Round};
 
 pub use default_weights::WeightInfo;
 

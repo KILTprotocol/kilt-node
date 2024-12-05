@@ -180,7 +180,7 @@ pub struct PoolManagingTeam<AccountId> {
 }
 
 /// Enum, to specify the rounding direction.
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Eq)]
 pub enum Round {
 	/// Round up.
 	Up,
