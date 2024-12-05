@@ -40,39 +40,39 @@ sp_api::decl_runtime_apis! {
 			/// Calculates the collateral for the given amount.
 			/// The operation is determining whether the amount is minted or burned.
 			/// The calculated collateral amount is based on the current state of the pool.
-			fn calculate_collateral_for_amount(
-				amount: Balance,
+			fn get_quota(
 				pool_id: PoolId,
-				operation: Operation,
 				currency_idx: u8,
+				operation: Operation,
+				amount: Balance,
 			) -> Result<Balance, Error>;
 
 			/// Calculates the collateral for the given lower and upper bounds.
 			/// This function computes the collateral amount based on the provided lower and upper bounds,
 			/// regardless of the current state.
 			fn calculate_collateral_for_low_and_high(
-				low: Balance,
-				high: Balance,
 				pool_id: PoolId,
 				currency_idx: u8,
+				low: Balance,
+				high: Balance,
 			) -> Result<Balance, Error>;
 
 			/// Query all pool IDs where the given account is the manager.
-			fn query_pools_by_manager(account : AccountId) -> Result<Vec<PoolId>, Error>;
+			fn query_pools_by_manager(account : AccountId) -> Vec<PoolId>;
 
 			/// Query all pool IDs where the given account is the owner.
-			fn query_pools_by_owner(account : AccountId) -> Result<Vec<PoolId>, Error>;
+			fn query_pools_by_owner(account : AccountId) -> Vec<PoolId>;
 
 			/// Calculates the bit representation for the coefficient.
 			/// The coefficient is constructed by `coefficient_int.coefficient_frac`.
 			/// The first value in the tuple is the internal calculated coefficient, represented as a string.
 			/// The second value is the bit representation.
-			fn calculate_pool_parameter(coefficient: String) -> Result<(String, BitType), Error>;
+			fn encode_curve_coefficient(coefficient: String) -> Result<(String, BitType), Error>;
 
 			/// Parses the bit representation for the coefficient to a human readable format.
-			fn parse_pool_parameter(bit_representation: BitType) -> Result<String, Error>;
+			fn decode_curve_coefficient(bit_representation: BitType) -> Result<String, Error>;
 
 			/// Query the pool status in a human readable format.
-			fn query_pool_by_id(pool_id: PoolId) -> Result<PoolDetails, Error>;
+			fn pool_info(pool_id: PoolId) -> Result<PoolDetails, Error>;
 		}
 }
