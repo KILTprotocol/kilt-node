@@ -47,14 +47,13 @@ fn refund_account_works() {
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT), (ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), total_collateral),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, total_collateral * 10),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 
 			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1));
@@ -89,14 +88,13 @@ fn refund_account_works_on_frozen() {
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT), (ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), total_collateral),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, total_collateral * 10),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			<Assets as FreezeAccounts<_, _>>::freeze(&DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01)
 				.expect("failed to freeze account prior to testing");
 
@@ -135,15 +133,14 @@ fn refund_account_works_with_large_supply() {
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT), (ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), total_collateral),
 			(currencies[0], ACCOUNT_01, u128::MAX / 3 * 2),
 			(currencies[1], ACCOUNT_01, u128::MAX / 3 * 2),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_01).into();
 
 			assert_ok!(BondingPallet::refund_account(
@@ -204,8 +201,7 @@ fn balance_is_burnt_even_if_no_collateral_received() {
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, 20),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, 1), // 10 / 21 = 0.48 -> no collateral for you
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 
 			assert_ok!(BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1));
@@ -246,8 +242,7 @@ fn refund_below_min_balance() {
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, 2000),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, 2000),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// change collateral to one that has a minimum balance
 			let collateral_id = 101;
 			assert_ok!(<Assets as Create<_>>::create(
@@ -295,8 +290,7 @@ fn refund_account_fails_when_pool_not_refunding() {
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), ONE_HUNDRED_KILT),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, ONE_HUNDRED_KILT),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_01).into();
 
 			// Ensure the refund_account call fails due to pool not being in refunding state
@@ -329,8 +323,7 @@ fn refund_account_no_balance() {
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), ONE_HUNDRED_KILT),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, ONE_HUNDRED_KILT),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 
 			// Ensure the refund_account call fails when there is no balance to be
@@ -359,7 +352,7 @@ fn nothing_to_refund() {
 	// no collateral left
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT), (ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_00, 100_000),
@@ -395,14 +388,13 @@ fn unknown_pool_or_currency() {
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT), (ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), total_collateral),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, total_collateral * 10),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_01).into();
 
 			// using some other pool id

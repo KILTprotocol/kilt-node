@@ -44,7 +44,7 @@ fn burn_first_coin() {
 		(2 * amount_to_burn.pow(2) + 3 * amount_to_burn) * 10u128.pow(DEFAULT_COLLATERAL_DENOMINATION.into());
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_99, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), LARGE_BALANCE),
@@ -65,8 +65,7 @@ fn burn_first_coin() {
 				deposit: BondingPallet::calculate_pool_deposit(1),
 			},
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::burn_into(
@@ -119,8 +118,7 @@ fn burn_to_other() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let holder_origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let broke_origin = RawOrigin::Signed(ACCOUNT_01).into();
 
@@ -188,8 +186,7 @@ fn burn_large_supply() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::burn_into(
@@ -246,8 +243,7 @@ fn burn_large_quantity() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::burn_into(
@@ -306,8 +302,7 @@ fn burn_multiple_currencies() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::burn_into(
@@ -396,8 +391,7 @@ fn multiple_burns_vs_combined_burn() {
 				),
 			),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// pool 1: 1 burn of 10 * amount
@@ -472,8 +466,7 @@ fn multiple_mints_vs_combined_burn() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// step one: 10 mints of amount
@@ -536,8 +529,7 @@ fn burn_with_frozen_balance() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::burn_into(
@@ -625,8 +617,7 @@ fn burn_on_locked_pool() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 			let manager_origin = RawOrigin::Signed(ACCOUNT_00).into();
 
@@ -651,8 +642,7 @@ fn burn_on_locked_pool() {
 fn burn_invalid_pool_id() {
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let invalid_pool_id = calculate_pool_id(&[999]); // Nonexistent pool
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
@@ -681,8 +671,9 @@ fn burn_in_refunding_pool() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			assert_err!(
 				BondingPallet::burn_into(origin, pool_id, 0, ACCOUNT_00, 1, 2, 1),
@@ -711,8 +702,7 @@ fn burn_not_hitting_minimum() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// burn operation would return less than minimum return
@@ -741,8 +731,8 @@ fn burn_invalid_currency_index() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Index beyond array length
@@ -777,8 +767,7 @@ fn burn_beyond_balance() {
 				None,
 			),
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_err!(

@@ -41,6 +41,7 @@ use substrate_fixed::types::{I75F53, U75F53};
 use crate::constants::{CURRENCY_NAME, CURRENCY_SYMBOL, DENOMINATION};
 
 pub mod hooks;
+
 pub mod runtime_api;
 
 /// The AssetId for bonded assets.

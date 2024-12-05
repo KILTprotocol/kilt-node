@@ -20,8 +20,8 @@ use frame_support::{
 	pallet_prelude::{PalletInfoAccess, ValueQuery},
 	storage_alias,
 };
-use pallet_bonded_coins::{traits::NextAssetIds, Error, FungiblesAssetIdOf};
-use sp_runtime::{ArithmeticError, BoundedVec, DispatchError};
+use pallet_bonded_coins::{traits::NextAssetIds, FungiblesAssetIdOf};
+use sp_runtime::{ArithmeticError, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::bonded_currencies::AssetId;
@@ -42,7 +42,8 @@ where
 	FungiblesAssetIdOf<T>: From<AssetId> + Into<AssetId> + Default,
 {
 	type Error = DispatchError;
-	fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>, Self::Error> {
+
+	fn try_get(n: u32) -> Result<Vec<FungiblesAssetIdOf<T>>, Self::Error> {
 		let next_asset_id: AssetId = NextAssetId::<BondedFungibles, T>::get().into();
 
 		let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
@@ -52,9 +53,7 @@ where
 			.collect::<Vec<FungiblesAssetIdOf<T>>>();
 
 		NextAssetId::<BondedFungibles, T>::set(new_next_asset_id.into());
-		BoundedVec::try_from(asset_ids.clone()).map_err(|_| {
-			log::error!(target: LOG_TARGET, "Failed to convert asset ids to bounded vec {:?}", asset_ids);
-			Error::<T>::Internal.into()
-		})
+
+		Ok(asset_ids)
 	}
 }

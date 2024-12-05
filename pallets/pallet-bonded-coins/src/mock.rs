@@ -83,6 +83,8 @@ pub mod runtime {
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([0u8; 32]);
 	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([1u8; 32]);
 	pub(crate) const ACCOUNT_99: AccountId = AccountId::new([99u8; 32]);
+	// Only used internally for setting up the test instance.
+	const ACCOUNT_100: AccountId = AccountId::new([100u8; 32]);
 	// assets
 	pub(crate) const DEFAULT_BONDED_CURRENCY_ID: AssetId = 1;
 	pub(crate) const DEFAULT_COLLATERAL_CURRENCY_ID: AssetId = 0;
@@ -109,7 +111,7 @@ pub mod runtime {
 	) -> PoolDetailsOf<Test> {
 		let bonded_currencies = BoundedVec::truncate_from(currencies.clone());
 		let state = state.unwrap_or(PoolStatus::Active);
-		let owner = owner.unwrap_or(ACCOUNT_99);
+		let owner = owner.unwrap_or(ACCOUNT_100);
 		let collateral_id = collateral_id.unwrap_or(DEFAULT_COLLATERAL_CURRENCY_ID);
 		let min_operation_balance = min_operation_balance.unwrap_or(1);
 		PoolDetailsOf::<Test> {
@@ -179,17 +181,12 @@ pub mod runtime {
 		FungiblesAssetIdOf<T>: From<AssetId>,
 	{
 		type Error = DispatchError;
-		fn try_get(n: u32) -> Result<BoundedVec<FungiblesAssetIdOf<T>, T::MaxCurrenciesPerPool>, Self::Error> {
+		fn try_get(n: u32) -> Result<Vec<FungiblesAssetIdOf<T>>, Self::Error> {
 			let next_asset_id = NextAssetId::<BondingPallet>::get();
 
 			let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
-
-			let asset_ids = (next_asset_id..(next_asset_id + n))
-				.map(|id| id.into())
-				.collect::<Vec<FungiblesAssetIdOf<T>>>();
-
 			NextAssetId::<BondingPallet>::set(new_next_asset_id);
-			Ok(BoundedVec::try_from(asset_ids).expect("should be able to create bounded vec"))
+			Ok((next_asset_id..new_next_asset_id).map(|id| id.into()).collect())
 		}
 	}
 
@@ -347,11 +344,14 @@ pub mod runtime {
 
 		pub(crate) fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
-			pallet_balances::GenesisConfig::<Test> {
-				balances: self.native_assets.clone(),
-			}
-			.assimilate_storage(&mut storage)
-			.expect("assimilate should not fail");
+
+			// Add default account with balance
+			let mut balances = self.native_assets.clone();
+			balances.push((ACCOUNT_100, ONE_HUNDRED_KILT));
+
+			pallet_balances::GenesisConfig::<Test> { balances }
+				.assimilate_storage(&mut storage)
+				.expect("assimilate should not fail");
 
 			let collateral_assets = self.collaterals.iter().map(|id| (*id, ACCOUNT_99, true, 1));
 
@@ -400,13 +400,12 @@ pub mod runtime {
 				System::set_block_number(System::block_number() + 1);
 
 				self.pools.into_iter().for_each(|(pool_id, pool)| {
-					// try to continue if we can't create the hold - might not be needed for all
-					// tests
-					let _ = <Test as crate::Config>::DepositCurrency::hold(
+					<Test as crate::Config>::DepositCurrency::hold(
 						&HoldReason::Deposit.into(),
 						&pool.owner,
 						BondingPallet::calculate_pool_deposit(pool.bonded_currencies.len()),
-					);
+					)
+					.expect("Creating deposit should not fail.");
 					crate::Pools::<Test>::insert(pool_id, pool);
 				});
 
@@ -414,6 +413,13 @@ pub mod runtime {
 			});
 
 			ext
+		}
+
+		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+			self.build().execute_with(|| {
+				test();
+				crate::try_state::do_try_state::<Test>().expect("Sanity test for pallet-bonded-coins failed.");
+			})
 		}
 
 		#[cfg(feature = "runtime-benchmarks")]

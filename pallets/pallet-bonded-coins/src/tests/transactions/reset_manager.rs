@@ -41,8 +41,8 @@ fn changes_manager() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details.clone())])
-		.build()
-		.execute_with(|| {
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			assert_ok!(BondingPallet::reset_manager(origin, pool_id.clone(), Some(ACCOUNT_01)));
 
@@ -78,8 +78,9 @@ fn only_manager_can_change_manager() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.build()
-		.execute_with(|| {
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.build_and_execute_with_sanity_tests(|| {
 			let owner_origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let other_origin = RawOrigin::Signed(ACCOUNT_01).into();
 

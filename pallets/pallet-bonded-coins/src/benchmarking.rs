@@ -689,7 +689,6 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-
 	fn burn_into_lmsr(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin

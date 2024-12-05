@@ -42,14 +42,13 @@ fn start_refund_works() {
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::start_refund(origin, pool_id.clone(), currency_count));
@@ -79,15 +78,14 @@ fn start_refund_fails_when_pool_not_live() {
 	let currency_count = 1;
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Ensure the start_refund call fails due to pool not being live
@@ -131,15 +129,14 @@ fn start_refund_fails_when_currency_no_low() {
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&currencies);
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_err!(
@@ -172,15 +169,14 @@ fn force_start_refund_works() {
 	let currency_count = 10;
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Root.into();
 
 			assert_ok!(BondingPallet::force_start_refund(
@@ -214,15 +210,14 @@ fn force_start_refund_fails_when_not_root() {
 	let currency_count = 10;
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Ensure the force_start_refund call fails due to non-root origin
@@ -249,15 +244,14 @@ fn start_refund_fails_when_no_permission() {
 	let currency_count = 10;
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_01).into();
 
 			// Ensure the start_refund call fails due to ALICE not having permission
@@ -284,12 +278,11 @@ fn start_refund_fails_when_nothing_to_refund() {
 	let currency_count = 10;
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Ensure the start_refund call fails due to nothing to refund
@@ -316,7 +309,7 @@ fn start_refund_fails_when_no_collateral() {
 	let currency_count = 10;
 
 	ExtBuilder::default()
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX)])
@@ -349,14 +342,13 @@ fn pool_does_not_exist() {
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id, u128::MAX / 10),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_err!(

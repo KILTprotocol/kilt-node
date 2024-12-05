@@ -48,8 +48,7 @@ fn anyone_can_call_finish_destroy() {
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Assets need to be in destroying state if pool is in destroying state
 			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
 				.expect("failed to set up test state: asset cannot be set to destroying");
@@ -100,8 +99,7 @@ fn owner_receives_collateral() {
 			pool_id.clone(),
 			remaining_collateral,
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Assets need to be in destroying state if pool is in destroying state
 			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
 				.expect("failed to set up test state: asset cannot be set to destroying");
@@ -136,8 +134,7 @@ fn works_if_asset_is_gone() {
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT), (ACCOUNT_01, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Assets need to be in destroying state if pool is in destroying state
 			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
 				.expect("failed to set up test state: asset cannot be set to destroying");
@@ -176,8 +173,7 @@ fn fails_on_incorrect_state() {
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Assets need to be in destroying state if pool is in destroying state
 			<Assets as Destroy<_>>::start_destroy(DEFAULT_BONDED_CURRENCY_ID, None)
 				.expect("failed to set up test state: asset cannot be set to destroying");
@@ -224,8 +220,7 @@ fn fails_if_assets_cannot_be_destroyed() {
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Fails because asset is not in destroying state
 			BondingPallet::finish_destroy(origin.clone(), pool_id.clone(), 1)
 				.expect_err("Pool destruction should fail if any asset is not in destroying state.");
@@ -272,8 +267,7 @@ fn fails_on_invalid_arguments() {
 		.with_pools(vec![(pool_id.clone(), pool_details)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		// .with_bonded_balance(vec![(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// All assets need to be in destroying state if pool is in destroying state
 			currencies.into_iter().for_each(|id| {
 				<Assets as Destroy<_>>::start_destroy(id, None)

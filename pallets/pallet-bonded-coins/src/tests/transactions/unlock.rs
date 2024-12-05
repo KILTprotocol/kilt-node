@@ -46,8 +46,7 @@ fn unlock_works() {
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 
 			assert_ok!(BondingPallet::unlock(origin, pool_id.clone()));
@@ -77,14 +76,13 @@ fn unlock_works_only_for_manager() {
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX / 2)])
+		.with_native_balances(vec![(ACCOUNT_00, u128::MAX / 3), (ACCOUNT_01, u128::MAX / 3)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Does not work for owner
 			assert_err!(
 				BondingPallet::unlock(RawOrigin::Signed(ACCOUNT_01).into(), pool_id.clone()),
@@ -114,14 +112,13 @@ fn unlock_fails_when_not_live() {
 
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])
-		.with_native_balances(vec![(ACCOUNT_00, u128::MAX)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
 		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
 		.with_bonded_balance(vec![
 			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10),
 			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
 			// Ensure the unlock call fails due to the pool not being in a 'live' state
