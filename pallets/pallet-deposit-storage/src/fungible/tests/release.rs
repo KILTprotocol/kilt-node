@@ -29,7 +29,7 @@ use crate::{
 		tests::mock::{DepositNamespace, ExtBuilder, TestRuntime, TestRuntimeHoldReason, OWNER},
 		PalletDepositStorageReason,
 	},
-	HoldReason, Pallet, SystemDeposits,
+	Pallet, SystemDeposits,
 };
 
 #[test]
@@ -54,7 +54,7 @@ fn release() {
 						amount: 5,
 						owner: OWNER
 					},
-					reason: TestRuntimeHoldReason::from(HoldReason::from(reason.clone())),
+					reason: TestRuntimeHoldReason::Deposit,
 				}
 			);
 
