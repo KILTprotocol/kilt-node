@@ -17,8 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use pallet_bonded_coins::{curves::Curve, PoolDetails};
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{alloc::string::String, Decode, Encode};
 use scale_info::TypeInfo;
+use sp_std::vec::Vec;
 
 /// Enum to represent the operation of minting or burning tokens.
 #[derive(Decode, Encode, TypeInfo)]

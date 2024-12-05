@@ -27,6 +27,7 @@ default = ["std"]
 std = [
     "pallet-bonded-coins/std",
     "parity-scale-codec/std",
+    "scale-info/std",
     "sp-api/std",
     "sp-std/std",
 ]
