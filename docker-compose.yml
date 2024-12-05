@@ -4,7 +4,7 @@ services:
   dev-node:
     build: .
     image: local/standalone-node
-    command: ./target/release/standalone-node --dev --rps-port 9944 --rps-external
+    command: ./target/release/standalone-node --dev --rpc-port 9944 --rpc-external
     ports:
       - 9944:9944
   sdk:
