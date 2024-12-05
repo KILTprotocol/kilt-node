@@ -18,6 +18,7 @@
 
 mod burn;
 mod hold;
+mod inspect_hold;
 mod mock;
 mod release;
 mod transfer;

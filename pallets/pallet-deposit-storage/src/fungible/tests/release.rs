@@ -16,14 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{fungible::MutateHold, tokens::Precision};
+use frame_support::{
+	assert_err,
+	traits::{fungible::MutateHold, tokens::Precision},
+};
 use kilt_support::Deposit;
-use sp_runtime::AccountId32;
+use sp_runtime::{AccountId32, TokenError};
 
 use crate::{
 	deposit::DepositEntry,
 	fungible::{
-		tests::mock::{ExtBuilder, TestRuntime, TestRuntimeHoldReason, OWNER},
+		tests::mock::{DepositNamespace, ExtBuilder, TestRuntime, TestRuntimeHoldReason, OWNER},
 		PalletDepositStorageReason,
 	},
 	HoldReason, Pallet, SystemDeposits,
@@ -59,6 +62,30 @@ fn release() {
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::release(&reason, &OWNER, 5, Precision::Exact)
 				.expect("Failed to release remaining amount for user.");
 			assert!(SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
+		});
+}
+
+#[test]
+fn release_different_reason() {
+	ExtBuilder::default()
+		.with_balances(vec![(OWNER, 100_000)])
+		.build()
+		.execute_with(|| {
+			let reason = PalletDepositStorageReason {
+				namespace: DepositNamespace::ExampleNamespace,
+				key: [0].to_vec().try_into().unwrap(),
+			};
+			let other_reason = PalletDepositStorageReason {
+				namespace: DepositNamespace::ExampleNamespace,
+				key: [1].to_vec().try_into().unwrap(),
+			};
+
+			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 10)
+				.expect("Failed to hold amount for user.");
+			assert_err!(
+				<Pallet<TestRuntime> as MutateHold<AccountId32>>::release(&other_reason, &OWNER, 10, Precision::Exact),
+				TokenError::FundsUnavailable
+			);
 		});
 }
 

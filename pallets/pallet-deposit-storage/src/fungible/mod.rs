@@ -25,7 +25,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, DispatchError, DispatchResult};
 
-use crate::{deposit::DepositEntry, Config, DepositKeyOf, HoldReason, Pallet, SystemDeposits};
+use crate::{deposit::DepositEntry, Config, DepositKeyOf, Error, HoldReason, Pallet, SystemDeposits};
 
 #[cfg(test)]
 mod tests;
@@ -81,13 +81,12 @@ pub struct PalletDepositStorageReason<Namespace, Key> {
 
 impl<Namespace, Key> From<PalletDepositStorageReason<Namespace, Key>> for HoldReason {
 	fn from(_value: PalletDepositStorageReason<Namespace, Key>) -> Self {
-		// All the deposits ever taken like this will count towards the same hold reason.
+		// All the deposits ever taken like this will count towards the same hold
+		// reason.
 		Self::Deposit
 	}
 }
 
-// This trait is implemented by forwarding everything to the `Currency`
-// implementation.
 impl<T> InspectHold<T::AccountId> for Pallet<T>
 where
 	T: Config,
@@ -98,11 +97,17 @@ where
 		<T::Currency as InspectHold<T::AccountId>>::total_balance_on_hold(who)
 	}
 
+	// We return the balance of hold of a specific (namespace, key), which prevents
+	// mistakes since everything in the end is converted to `HoldReason`.
 	fn balance_on_hold(reason: &Self::Reason, who: &T::AccountId) -> Self::Balance {
-		<T::Currency as InspectHold<T::AccountId>>::balance_on_hold(
-			&T::RuntimeHoldReason::from(reason.clone().into()),
-			who,
-		)
+		let Some(deposit_entry) = SystemDeposits::<T>::get(&reason.namespace, &reason.key) else {
+			return 0u32.into();
+		};
+		if deposit_entry.deposit.owner == *who {
+			deposit_entry.deposit.amount
+		} else {
+			0u32.into()
+		}
 	}
 }
 
@@ -137,7 +142,7 @@ where
 			who,
 			amount,
 		)?;
-		SystemDeposits::<T>::mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
+		SystemDeposits::<T>::try_mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
 			match maybe_existing_deposit_entry {
 				// If this is the first registered deposit, create a new storage entry.
 				None => {
@@ -150,18 +155,23 @@ where
 							reason: T::RuntimeHoldReason::from(reason.clone().into()),
 						})
 					}
+					Ok(())
 				}
-				// If this is a previous deposit, update the storage entry or remove completely if balance on hold is
-				// set to `0`.
 				Some(existing_deposit_entry) => {
+					// The pallet assumes each (namespace, key) points to a unique deposit, so the
+					// same combination cannot be used for a different account.
+					if existing_deposit_entry.deposit.owner != *who {
+						return Err(Error::<T>::DepositExisting);
+					}
 					if amount.is_zero() {
 						*maybe_existing_deposit_entry = None;
 					} else {
 						existing_deposit_entry.deposit.amount = amount;
 					}
+					Ok(())
 				}
 			}
-		});
+		})?;
 		Ok(())
 	}
 }

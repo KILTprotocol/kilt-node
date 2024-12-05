@@ -16,17 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, traits::fungible::MutateHold};
+use frame_support::{assert_err, assert_ok, traits::fungible::MutateHold};
 use kilt_support::Deposit;
 use sp_runtime::AccountId32;
 
 use crate::{
 	deposit::DepositEntry,
 	fungible::{
-		tests::mock::{Balances, ExtBuilder, TestRuntime, TestRuntimeHoldReason, OWNER},
+		tests::mock::{Balances, ExtBuilder, TestRuntime, TestRuntimeHoldReason, OTHER_ACCOUNT, OWNER},
 		PalletDepositStorageReason,
 	},
-	HoldReason, Pallet, SystemDeposits,
+	Error, HoldReason, Pallet, SystemDeposits,
 };
 
 #[test]
@@ -80,6 +80,23 @@ fn zero_hold() {
 				.expect("Failed to hold amount for user.");
 			// A hold of zero for a new deposit should not create any new storage entry.
 			assert!(SystemDeposits::<TestRuntime>::get(&reason.namespace, &reason.key).is_none());
+		});
+}
+
+#[test]
+fn hold_same_reason_different_user() {
+	ExtBuilder::default()
+		.with_balances(vec![(OWNER, 100_000), (OTHER_ACCOUNT, 100_000)])
+		.build()
+		.execute_with(|| {
+			let reason = PalletDepositStorageReason::default();
+			assert_ok!(<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(
+				&reason, &OWNER, 10
+			));
+			assert_err!(
+				<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OTHER_ACCOUNT, 10),
+				Error::<TestRuntime>::DepositExisting
+			);
 		});
 }
 
