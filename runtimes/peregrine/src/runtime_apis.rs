@@ -25,6 +25,9 @@ use pallet_bonded_coins::{
 	},
 	PoolDetailsOf, Pools, Round,
 };
+use pallet_bonded_currency_runtime_api::{
+	BondedCurrencyDetails, CollateralDetails, HumanReadablePoolDetails, Operation,
+};
 use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
 use pallet_dip_provider::traits::IdentityProvider;
 use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
@@ -35,12 +38,7 @@ use runtime_common::{
 	asset_switch::runtime_api::Error as AssetSwitchApiError,
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::AuthorizationId,
-	bonded_currencies::{
-		runtime_api::{
-			BondedCurrencyDetails, CollateralDetails, Error as BondedCurrencyError, HumanReadablePoolDetails, Operation,
-		},
-		FixedPoint, FixedPointUnderlyingType,
-	},
+	bonded_currencies::{self, runtime_api::Error as BondedCurrencyError, FixedPoint, FixedPointUnderlyingType},
 	constants::SLOT_DURATION,
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
@@ -492,7 +490,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_bonded_currency_runtime_api::BondedCurrency<Block, Balance, AccountId, Operation, AccountId, FixedPointUnderlyingType, HumanReadablePoolDetails, BondedCurrencyError> for Runtime {
+	impl pallet_bonded_currency_runtime_api::BondedCurrency<Block, Balance, AccountId, Operation, AccountId, FixedPointUnderlyingType, HumanReadablePoolDetails<AccountId, Balance, bonded_currencies::AssetId, AssetId>, BondedCurrencyError> for Runtime {
 		fn calculate_collateral_for_amount(
 			amount: Balance,
 			pool_id: AccountId,
@@ -581,7 +579,7 @@ impl_runtime_apis! {
 			Ok(coefficient.to_string())
 		}
 
-		fn query_pool_by_id(pool_id: AccountId) -> Result<HumanReadablePoolDetails, BondedCurrencyError> {
+		fn query_pool_by_id(pool_id: AccountId) -> Result<HumanReadablePoolDetails<AccountId, Balance, bonded_currencies::AssetId, AssetId>, BondedCurrencyError> {
 			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
 			let PoolDetailsOf::<Runtime> {
 				curve,
@@ -595,7 +593,7 @@ impl_runtime_apis! {
 				state,
 				transferable } = pool;
 
-			let currencies = bonded_currencies.iter().map(|currency_id| -> Result<BondedCurrencyDetails, BondedCurrencyError> {
+			let currencies = bonded_currencies.iter().map(|currency_id| -> Result<BondedCurrencyDetails<bonded_currencies::AssetId, Balance>, BondedCurrencyError> {
 				// String conversation should never fail.
 				let symbol = String::from_utf8(BondedFungibles::symbol(currency_id.to_owned())).map_err(|_| BondedCurrencyError::Internal)?;
 				let name = String::from_utf8(<BondedFungibles as MetadataInspect<AccountId>>::name(currency_id.to_owned())).map_err(|_| BondedCurrencyError::Internal)?;

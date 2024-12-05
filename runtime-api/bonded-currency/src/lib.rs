@@ -21,6 +21,9 @@
 use parity_scale_codec::{alloc::string::String, Codec};
 use sp_std::vec::Vec;
 
+mod pool_details;
+pub use pool_details::*;
+
 sp_api::decl_runtime_apis! {
 	/// Runtime API to compute the collateral for a given amount and pool ID
 	/// and to query all pool IDs where the given account is the manager or owner.

@@ -7138,7 +7138,9 @@ dependencies = [
 name = "pallet-bonded-currency-runtime-api"
 version = "1.15.0-dev"
 dependencies = [
+ "pallet-bonded-coins",
  "parity-scale-codec",
+ "scale-info",
  "sp-api",
  "sp-std",
 ]

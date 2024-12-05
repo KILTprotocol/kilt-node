@@ -13,6 +13,10 @@ version       = { workspace = true }
 [dependencies]
 # External dependencies
 parity-scale-codec = { workspace = true }
+scale-info         = { workspace = true }
+
+# Internal dependencies
+pallet-bonded-coins = { workspace = true }
 
 # Substrate dependencies
 sp-api = { workspace = true }
@@ -20,4 +24,9 @@ sp-std = { workspace = true }
 
 [features]
 default = ["std"]
-std     = ["parity-scale-codec/std", "sp-api/std", "sp-std/std"]
+std = [
+    "pallet-bonded-coins/std",
+    "parity-scale-codec/std",
+    "sp-api/std",
+    "sp-std/std",
+]
