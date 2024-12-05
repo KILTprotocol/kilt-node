@@ -38,7 +38,7 @@ use sp_runtime::{
 use sp_std::{marker::PhantomData, vec::Vec};
 use substrate_fixed::types::{I75F53, U75F53};
 
-use crate::constants::DENOMINATION;
+use crate::constants::{CURRENCY_NAME, CURRENCY_SYMBOL, DENOMINATION};
 
 pub mod hooks;
 
@@ -288,14 +288,14 @@ impl<
 
 	fn name(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
-			Left(()) => Vec::new(),
+			Left(()) => CURRENCY_NAME.to_vec(),
 			Right(a) => ForeignAssets::name(a),
 		}
 	}
 
 	fn symbol(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
-			Left(()) => Vec::new(),
+			Left(()) => CURRENCY_SYMBOL.to_vec(),
 			Right(a) => ForeignAssets::symbol(a),
 		}
 	}
