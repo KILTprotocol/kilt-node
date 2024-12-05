@@ -7,10 +7,10 @@ target_tag=$1
 # Build the builder image and push it in the background
 docker build \
     --target builder \
-    --cache-from $AWS_REGISTRY/kilt-node:builder \
-    -t $AWS_REGISTRY/kilt-node:builder \
+    --cache-from $CI_REGISTRY/kilt-node:builder \
+    -t $CI_REGISTRY/kilt-node:builder \
     . &
-docker push $AWS_REGISTRY/kilt-node:builder &
+docker push $CI_REGISTRY/kilt-node:builder &
 
 wait
 
@@ -21,8 +21,8 @@ build_and_tag() {
     local cache_image=$3
 
     docker build \
-        --cache-from $AWS_REGISTRY/kilt-node:builder \
-        --cache-from $AWS_REGISTRY/$cache_image:$target_tag \
+        --cache-from $CI_REGISTRY/kilt-node:builder \
+        --cache-from $CI_REGISTRY/$cache_image:$target_tag \
         --build-arg NODE_TYPE=$node_type \
         -t local/$image_name:$target_tag \
         .
