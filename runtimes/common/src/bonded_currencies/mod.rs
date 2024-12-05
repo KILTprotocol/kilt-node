@@ -36,7 +36,10 @@ use sp_runtime::{
 	Either::{Left, Right},
 };
 use sp_std::{marker::PhantomData, vec::Vec};
-use substrate_fixed::types::{I75F53, U75F53};
+use substrate_fixed::{
+	traits::Fixed,
+	types::{I75F53, U75F53},
+};
 
 use crate::constants::{CURRENCY_NAME, CURRENCY_SYMBOL, DENOMINATION};
 
@@ -54,7 +57,7 @@ pub type FixedPointInput = U75F53;
 pub type FixedPoint = I75F53;
 
 /// For a I75F53, the underlying type is a i128.
-pub type FixedPointUnderlyingType = i128;
+pub type FixedPointUnderlyingType = <FixedPoint as Fixed>::Bits;
 
 /// Struct to implement the desired [Convert] trait needed for the
 /// [NativeAndForeignAssets] type.
