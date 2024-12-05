@@ -27,6 +27,9 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 mod curves;
 mod default_weights;
 pub mod traits;
@@ -232,6 +235,11 @@ pub mod pallet {
 				that the maximum scaling factor `10^MaxDenomination` is smaller than the fractional \
 				capacity `2^frac_nbits` of `CurveParameterType`",
 			);
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
