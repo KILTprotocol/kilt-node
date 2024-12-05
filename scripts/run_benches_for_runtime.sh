@@ -40,8 +40,8 @@ pallets=(
 	pallet-message-queue
 	cumulus-pallet-parachain-system
 	pallet_multisig
-	pallet-asset-switch
 	pallet-assets
+	pallet-asset-switch
 	# `pallet-membership` instances
 	pallet-membership
 	pallet-technical-membership
