@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+/// Wrapper struct for [UnionOf] to implement the [metadata::Inspect] trait,
+/// needed for the pallet_bonded_coins module.
 use frame_support::{
 	dispatch::DispatchResult,
 	traits::{
@@ -65,38 +67,36 @@ impl<Target: Get<L>, L: PartialEq + Eq> Convert<L, Either<(), L>> for TargetFrom
 	}
 }
 
-/// Wrapper struct for [UnionOf] to implement the [metadata::Inspect] trait,
-/// needed for the pallet_bonded_coins module.
-pub struct NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>(
-	sp_std::marker::PhantomData<(Left, Right, Criterion, AssetKind, AccountId)>,
+pub struct NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>(
+	sp_std::marker::PhantomData<(NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId)>,
 );
 
-impl<Left, Right, Criterion, AssetKind, AccountId> fungibles::Inspect<AccountId>
-	for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+impl<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId> fungibles::Inspect<AccountId>
+	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
 where
-	Left: fungible::Inspect<AccountId>,
-	Right: fungibles::Inspect<AccountId, Balance = Left::Balance>,
-	Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
+	NativeAsset: fungible::Inspect<AccountId>,
+	ForeignAssets: fungibles::Inspect<AccountId, Balance = NativeAsset::Balance>,
+	Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 	AssetKind: AssetIdTraits,
 {
 	type AssetId = AssetKind;
-	type Balance = Left::Balance;
+	type Balance = NativeAsset::Balance;
 
 	fn total_issuance(asset: Self::AssetId) -> Self::Balance {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::total_issuance(asset)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::total_issuance(asset)
 	}
 
 	fn active_issuance(asset: Self::AssetId) -> Self::Balance {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::active_issuance(asset)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::active_issuance(asset)
 	}
 	fn minimum_balance(asset: Self::AssetId) -> Self::Balance {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::minimum_balance(asset)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::minimum_balance(asset)
 	}
 	fn balance(asset: Self::AssetId, who: &AccountId) -> Self::Balance {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::balance(asset, who)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::balance(asset, who)
 	}
 	fn total_balance(asset: Self::AssetId, who: &AccountId) -> Self::Balance {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::total_balance(asset, who)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::total_balance(asset, who)
 	}
 	fn reducible_balance(
 		asset: Self::AssetId,
@@ -104,7 +104,12 @@ where
 		preservation: Preservation,
 		force: Fortitude,
 	) -> Self::Balance {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::reducible_balance(asset, who, preservation, force)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::reducible_balance(
+			asset,
+			who,
+			preservation,
+			force,
+		)
 	}
 	fn can_deposit(
 		asset: Self::AssetId,
@@ -112,36 +117,39 @@ where
 		amount: Self::Balance,
 		provenance: Provenance,
 	) -> DepositConsequence {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::can_deposit(asset, who, amount, provenance)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::can_deposit(
+			asset, who, amount, provenance,
+		)
 	}
 	fn can_withdraw(
 		asset: Self::AssetId,
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> WithdrawConsequence<Self::Balance> {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::can_withdraw(asset, who, amount)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::can_withdraw(asset, who, amount)
 	}
 
 	fn asset_exists(asset: Self::AssetId) -> bool {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::asset_exists(asset)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::asset_exists(asset)
 	}
 }
 
 impl<
-		Left: fungible::Unbalanced<AccountId>,
-		Right: fungibles::Unbalanced<AccountId, Balance = Left::Balance>,
-		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
+		NativeAsset: fungible::Unbalanced<AccountId>,
+		ForeignAssets: fungibles::Unbalanced<AccountId, Balance = NativeAsset::Balance>,
+		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> fungibles::Unbalanced<AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> fungibles::Unbalanced<AccountId>
+	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
 {
 	fn handle_dust(dust: fungibles::Dust<AccountId, Self>)
 	where
 		Self: Sized,
 	{
 		match Criterion::convert(dust.0) {
-			Left(()) => <Left as fungible::Unbalanced<AccountId>>::handle_dust(fungible::Dust(dust.1)),
-			Right(a) => <Right as fungibles::Unbalanced<AccountId>>::handle_dust(fungibles::Dust(a, dust.1)),
+			Left(()) => <NativeAsset as fungible::Unbalanced<AccountId>>::handle_dust(fungible::Dust(dust.1)),
+			Right(a) => <ForeignAssets as fungibles::Unbalanced<AccountId>>::handle_dust(fungibles::Dust(a, dust.1)),
 		}
 	}
 
@@ -150,10 +158,10 @@ impl<
 		who: &AccountId,
 		amount: Self::Balance,
 	) -> Result<Option<Self::Balance>, DispatchError> {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::write_balance(asset, who, amount)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::write_balance(asset, who, amount)
 	}
 	fn set_total_issuance(asset: Self::AssetId, amount: Self::Balance) {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::set_total_issuance(asset, amount);
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::set_total_issuance(asset, amount);
 	}
 	fn decrease_balance(
 		asset: Self::AssetId,
@@ -163,7 +171,7 @@ impl<
 		preservation: Preservation,
 		force: Fortitude,
 	) -> Result<Self::Balance, DispatchError> {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::decrease_balance(
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::decrease_balance(
 			asset,
 			who,
 			amount,
@@ -178,20 +186,22 @@ impl<
 		amount: Self::Balance,
 		precision: Precision,
 	) -> Result<Self::Balance, DispatchError> {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::increase_balance(asset, who, amount, precision)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::increase_balance(
+			asset, who, amount, precision,
+		)
 	}
 }
 
 impl<
-		Left: fungible::Mutate<AccountId>,
-		Right: fungibles::Mutate<AccountId, Balance = Left::Balance>,
-		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
+		NativeAsset: fungible::Mutate<AccountId>,
+		ForeignAssets: fungibles::Mutate<AccountId, Balance = NativeAsset::Balance>,
+		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId: Eq,
-	> fungibles::Mutate<AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> fungibles::Mutate<AccountId> for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
 {
 	fn mint_into(asset: Self::AssetId, who: &AccountId, amount: Self::Balance) -> Result<Self::Balance, DispatchError> {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::mint_into(asset, who, amount)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::mint_into(asset, who, amount)
 	}
 	fn burn_from(
 		asset: Self::AssetId,
@@ -200,13 +210,15 @@ impl<
 		precision: Precision,
 		force: Fortitude,
 	) -> Result<Self::Balance, DispatchError> {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::burn_from(asset, who, amount, precision, force)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::burn_from(
+			asset, who, amount, precision, force,
+		)
 	}
 	fn shelve(asset: Self::AssetId, who: &AccountId, amount: Self::Balance) -> Result<Self::Balance, DispatchError> {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::shelve(asset, who, amount)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::shelve(asset, who, amount)
 	}
 	fn restore(asset: Self::AssetId, who: &AccountId, amount: Self::Balance) -> Result<Self::Balance, DispatchError> {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::restore(asset, who, amount)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::restore(asset, who, amount)
 	}
 	fn transfer(
 		asset: Self::AssetId,
@@ -215,79 +227,95 @@ impl<
 		amount: Self::Balance,
 		preservation: Preservation,
 	) -> Result<Self::Balance, DispatchError> {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::transfer(asset, source, dest, amount, preservation)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::transfer(
+			asset,
+			source,
+			dest,
+			amount,
+			preservation,
+		)
 	}
 
 	fn set_balance(asset: Self::AssetId, who: &AccountId, amount: Self::Balance) -> Self::Balance {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::set_balance(asset, who, amount)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::set_balance(asset, who, amount)
 	}
 }
 
 impl<
-		Left: fungible::Inspect<AccountId>
-			+ AccountTouch<(), AccountId, Balance = <Left as fungible::Inspect<AccountId>>::Balance>,
-		Right: fungibles::Inspect<AccountId>
-			+ AccountTouch<Right::AssetId, AccountId, Balance = <Left as fungible::Inspect<AccountId>>::Balance>,
-		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
+		NativeAsset: fungible::Inspect<AccountId>
+			+ AccountTouch<(), AccountId, Balance = <NativeAsset as fungible::Inspect<AccountId>>::Balance>,
+		ForeignAssets: fungibles::Inspect<AccountId>
+			+ AccountTouch<
+				ForeignAssets::AssetId,
+				AccountId,
+				Balance = <NativeAsset as fungible::Inspect<AccountId>>::Balance,
+			>,
+		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> AccountTouch<AssetKind, AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> AccountTouch<AssetKind, AccountId>
+	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
 {
-	type Balance = <Left as fungible::Inspect<AccountId>>::Balance;
+	type Balance = <NativeAsset as fungible::Inspect<AccountId>>::Balance;
 
 	fn deposit_required(asset: AssetKind) -> Self::Balance {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::deposit_required(asset)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::deposit_required(asset)
 	}
 
 	fn should_touch(asset: AssetKind, who: &AccountId) -> bool {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::should_touch(asset, who)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::should_touch(asset, who)
 	}
 
 	fn touch(asset: AssetKind, who: &AccountId, depositor: &AccountId) -> DispatchResult {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::touch(asset, who, depositor)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::touch(asset, who, depositor)
 	}
 }
 
 impl<
-		Left: fungible::Inspect<AccountId>,
-		Right: Inspect<AccountId, Balance = <Left as fungible::Inspect<AccountId>>::Balance>,
-		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
+		NativeAsset: fungible::Inspect<AccountId>,
+		ForeignAssets: Inspect<AccountId, Balance = <NativeAsset as fungible::Inspect<AccountId>>::Balance>,
+		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> Inspect<AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> Inspect<AccountId> for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
 {
 	fn decimals(asset: Self::AssetId) -> u8 {
 		match Criterion::convert(asset) {
 			Left(()) => DENOMINATION,
-			Right(a) => Right::decimals(a),
+			Right(a) => ForeignAssets::decimals(a),
 		}
 	}
 
 	fn name(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
 			Left(()) => Vec::new(),
-			Right(a) => Right::name(a),
+			Right(a) => ForeignAssets::name(a),
 		}
 	}
 
 	fn symbol(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
 			Left(()) => Vec::new(),
-			Right(a) => Right::symbol(a),
+			Right(a) => ForeignAssets::symbol(a),
 		}
 	}
 }
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<
-		Left: fungible::Inspect<AccountId>,
-		Right: fungibles::Inspect<AccountId, Balance = Left::Balance> + fungibles::Create<AccountId>,
-		Criterion: Convert<AssetKind, Either<(), Right::AssetId>>,
+		NativeAsset: fungible::Inspect<AccountId>,
+		ForeignAssets: fungibles::Inspect<AccountId, Balance = NativeAsset::Balance> + fungibles::Create<AccountId>,
+		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> fungibles::Create<AccountId> for NativeAndForeignAssets<Left, Right, Criterion, AssetKind, AccountId>
+	> fungibles::Create<AccountId> for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
 {
 	fn create(asset: AssetKind, admin: AccountId, is_sufficient: bool, min_balance: Self::Balance) -> DispatchResult {
-		UnionOf::<Left, Right, Criterion, AssetKind, AccountId>::create(asset, admin, is_sufficient, min_balance)
+		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::create(
+			asset,
+			admin,
+			is_sufficient,
+			min_balance,
+		)
 	}
 }
