@@ -105,14 +105,14 @@ pub mod runtime {
 		transferable: bool,
 		state: Option<PoolStatus<Locks>>,
 		manager: Option<AccountId>,
-		collateral_id: Option<AssetId>,
+		collateral: Option<AssetId>,
 		owner: Option<AccountId>,
 		min_operation_balance: Option<u128>,
 	) -> PoolDetailsOf<Test> {
 		let bonded_currencies = BoundedVec::truncate_from(currencies.clone());
 		let state = state.unwrap_or(PoolStatus::Active);
 		let owner = owner.unwrap_or(ACCOUNT_100);
-		let collateral_id = collateral_id.unwrap_or(DEFAULT_COLLATERAL_CURRENCY_ID);
+		let collateral = collateral.unwrap_or(DEFAULT_COLLATERAL_CURRENCY_ID);
 		let min_operation_balance = min_operation_balance.unwrap_or(1);
 		PoolDetailsOf::<Test> {
 			curve,
@@ -120,7 +120,7 @@ pub mod runtime {
 			transferable,
 			bonded_currencies,
 			state,
-			collateral_id,
+			collateral,
 			denomination: DEFAULT_BONDED_DENOMINATION,
 			owner,
 			min_operation_balance,

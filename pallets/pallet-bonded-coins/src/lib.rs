@@ -723,7 +723,7 @@ pub mod pallet {
 				active_post,
 				passive,
 				&pool_details.curve,
-				pool_details.collateral_id.clone(),
+				pool_details.collateral.clone(),
 				round_kind,
 			)?;
 
@@ -734,7 +734,7 @@ pub mod pallet {
 			// Transfer the collateral. We do not want to kill the minter, so this operation
 			// can fail if the account is being reaped.
 			T::Collaterals::transfer(
-				pool_details.collateral_id,
+				pool_details.collateral,
 				&who,
 				&pool_id.into(),
 				cost,
@@ -849,7 +849,7 @@ pub mod pallet {
 				high,
 				passive,
 				&pool_details.curve,
-				pool_details.collateral_id.clone(),
+				pool_details.collateral.clone(),
 				round_kind,
 			)?;
 
@@ -858,7 +858,7 @@ pub mod pallet {
 
 			// Transfer the collateral to the beneficiary.
 			T::Collaterals::transfer(
-				pool_details.collateral_id,
+				pool_details.collateral,
 				&pool_id.into(),
 				&beneficiary,
 				collateral_return,
@@ -1038,7 +1038,7 @@ pub mod pallet {
 			// resolved by governance, either by removing locks or force_destroying the
 			// pool.
 			let total_collateral_issuance =
-				T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_account);
+				T::Collaterals::total_balance(pool_details.collateral.clone(), &pool_account);
 
 			// nothing to distribute; refunding is complete, user should call start_destroy
 			ensure!(
@@ -1117,7 +1117,7 @@ pub mod pallet {
 				})?;
 
 			if amount.is_zero()
-				|| T::Collaterals::can_deposit(pool_details.collateral_id.clone(), &who, amount, Provenance::Extant)
+				|| T::Collaterals::can_deposit(pool_details.collateral.clone(), &who, amount, Provenance::Extant)
 					.into_result()
 					.is_err()
 			{
@@ -1128,7 +1128,7 @@ pub mod pallet {
 			}
 
 			let transferred = T::Collaterals::transfer(
-				pool_details.collateral_id,
+				pool_details.collateral,
 				&pool_account,
 				&who,
 				amount,
@@ -1265,11 +1265,11 @@ pub mod pallet {
 			let pool_account = pool_id.clone().into();
 
 			let total_collateral_issuance =
-				T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_account);
+				T::Collaterals::total_balance(pool_details.collateral.clone(), &pool_account);
 
 			if total_collateral_issuance > CollateralBalanceOf::<T>::zero() {
 				T::Collaterals::transfer(
-					pool_details.collateral_id,
+					pool_details.collateral,
 					&pool_account,
 					&pool_details.owner,
 					total_collateral_issuance,
@@ -1421,7 +1421,7 @@ pub mod pallet {
 			}
 
 			let total_collateral_issuance =
-				T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
+				T::Collaterals::total_balance(pool_details.collateral.clone(), &pool_id.clone().into());
 			// nothing to distribute
 			ensure!(
 				total_collateral_issuance > CollateralBalanceOf::<T>::zero(),
@@ -1498,7 +1498,7 @@ pub mod pallet {
 
 			if !force_skip_refund {
 				let total_collateral_issuance =
-					T::Collaterals::total_balance(pool_details.collateral_id.clone(), &pool_id.clone().into());
+					T::Collaterals::total_balance(pool_details.collateral.clone(), &pool_id.clone().into());
 
 				if total_collateral_issuance > CollateralBalanceOf::<T>::zero() {
 					let has_holders = pool_details.bonded_currencies.iter().any(|asset_id| {

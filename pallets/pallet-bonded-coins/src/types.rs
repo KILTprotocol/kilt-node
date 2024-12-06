@@ -82,7 +82,7 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId,
 	/// The curve of the pool.
 	pub curve: ParametrizedCurve,
 	/// The collateral currency of the pool.
-	pub collateral_id: BaseCurrencyId,
+	pub collateral: BaseCurrencyId,
 	/// The bonded currencies of the pool.
 	pub bonded_currencies: Currencies,
 	/// The status of the pool.
@@ -107,7 +107,7 @@ where
 	pub fn new(
 		owner: AccountId,
 		curve: ParametrizedCurve,
-		collateral_id: BaseCurrencyId,
+		collateral: BaseCurrencyId,
 		bonded_currencies: Currencies,
 		transferable: bool,
 		denomination: u8,
@@ -118,7 +118,7 @@ where
 			manager: Some(owner.clone()),
 			owner,
 			curve,
-			collateral_id,
+			collateral,
 			bonded_currencies,
 			transferable,
 			state: PoolStatus::default(),

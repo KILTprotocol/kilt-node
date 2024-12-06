@@ -214,7 +214,7 @@ mod benchmarks {
 	{
 		let owner = account("owner", 0, 0);
 		let state = state.unwrap_or(PoolStatus::Active);
-		let collateral_id = calculate_default_collateral_asset_id::<T>();
+		let collateral = calculate_default_collateral_asset_id::<T>();
 		let denomination = denomination.unwrap_or(10);
 
 		let pool_id: T::PoolId = calculate_pool_id(&bonded_coin_ids);
@@ -223,7 +223,7 @@ mod benchmarks {
 			manager,
 			owner,
 			state,
-			collateral_id,
+			collateral,
 			denomination,
 			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids.clone()),
 			transferable: true,
