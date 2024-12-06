@@ -64,7 +64,7 @@ sp_api::decl_runtime_apis! {
 			/// Calculates the collateral for the given integral bounds lower and upper.
 			/// This function computes the collateral amount based on the provided lower and upper bounds,
 			/// regardless of the current state.
-			fn calculate_collateral_for_low_and_high(
+			fn calculate_collateral_for_low_and_high_bounds(
 				pool_id: PoolId,
 				currency_idx: u8,
 				low: Balance,
