@@ -28,3 +28,10 @@ pub enum Error {
 	Internal,
 	InvalidInput,
 }
+
+/// Enum to represent the operation of minting or burning tokens.
+#[derive(Decode, Encode, TypeInfo)]
+pub enum Operation<Balance> {
+	Mint(Balance),
+	Burn(Balance),
+}

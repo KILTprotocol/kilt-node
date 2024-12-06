@@ -34,6 +34,10 @@ pub struct Coefficient<BitType> {
 	bits: BitType,
 }
 
+pub trait OperationValue<Balance> {
+	fn value(&self) -> Balance;
+}
+
 sp_api::decl_runtime_apis! {
 	/// Runtime API to compute the collateral for a given amount and pool ID
 	/// and to query all pool IDs where the given account is the manager or owner.
@@ -41,7 +45,7 @@ sp_api::decl_runtime_apis! {
 	pub trait BondedCurrency<Balance, PoolId, Operation, AccountId, BondedAssetId, CollateralAssetId, BitType, Error> where
 		Balance: Codec,
 		PoolId: Codec,
-		Operation: Codec,
+		Operation: Codec + OperationValue<Balance>,
 		AccountId: Codec,
 		BondedAssetId: Codec,
 		CollateralAssetId: Codec,
@@ -51,7 +55,7 @@ sp_api::decl_runtime_apis! {
 			/// Calculates the collateral for the given amount.
 			/// The operation is determining whether the amount is minted or burned.
 			/// The calculated collateral amount is based on the current state of the pool.
-			fn get_quota(
+			fn get_collateral(
 				pool_id: PoolId,
 				currency_idx: u8,
 				operation: Operation,

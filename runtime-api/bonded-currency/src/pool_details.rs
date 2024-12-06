@@ -21,13 +21,6 @@ use parity_scale_codec::{alloc::string::String, Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
-/// Enum to represent the operation of minting or burning tokens.
-#[derive(Decode, Encode, TypeInfo)]
-pub enum Operation<Balance> {
-	Mint(Balance),
-	Burn(Balance),
-}
-
 /// Curve representation
 pub type CurveOf = Curve<String>;
 
