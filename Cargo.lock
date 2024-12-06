@@ -7135,7 +7135,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-bonded-currency-runtime-api"
+name = "pallet-bonded-coins-runtime-api"
 version = "1.15.0-dev"
 dependencies = [
  "pallet-bonded-coins",
@@ -8742,7 +8742,7 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-bonded-coins",
- "pallet-bonded-currency-runtime-api",
+ "pallet-bonded-coins-runtime-api",
  "pallet-collective",
  "pallet-democracy",
  "pallet-deposit-storage",
