@@ -26,12 +26,14 @@ use runtime_common::{
 	},
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
-use sp_core::{ConstU128, ConstU32, ConstU8};
+use sp_core::{ConstU128, ConstU32, ConstU8, Get};
 use xcm::v4::{Junctions, Location};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use crate::{
-	constants, weights,
+	constants,
+	system::CURRENCY_SYMBOL,
+	weights,
 	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
 	Balances, BondedCurrencies, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
 	RuntimeHoldReason,
@@ -112,9 +114,21 @@ parameter_types! {
 	pub const NativeAsset: Location = Junctions::Here.into_location();
 }
 
+pub struct MetadataProvider;
+impl Get<(u8, Vec<u8>, Vec<u8>)> for MetadataProvider {
+	fn get() -> (u8, Vec<u8>, Vec<u8>) {
+		(
+			constants::DENOMINATION,
+			constants::CURRENCY_NAME.to_vec(),
+			CURRENCY_SYMBOL.to_vec(),
+		)
+	}
+}
+
 impl pallet_bonded_coins::Config for Runtime {
 	type BaseDeposit = ConstU128<{ constants::bonded_coins::BASE_DEPOSIT }>;
-	type Collaterals = NativeAndForeignAssets<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId>;
+	type Collaterals =
+		NativeAndForeignAssets<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId, MetadataProvider>;
 	type CurveParameterInput = FixedPointInput;
 	type CurveParameterType = FixedPoint;
 	type DefaultOrigin = EnsureSigned<AccountId>;
