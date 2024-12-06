@@ -18,11 +18,18 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use parity_scale_codec::{alloc::string::String, Codec};
+use parity_scale_codec::{alloc::string::String, Codec, Decode, Encode};
+use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
 mod pool_details;
 pub use pool_details::*;
+
+#[derive(Decode, Encode, TypeInfo)]
+pub struct Coefficient<BitType> {
+	representation: String,
+	bits: BitType,
+}
 
 sp_api::decl_runtime_apis! {
 	/// Runtime API to compute the collateral for a given amount and pool ID
@@ -47,7 +54,7 @@ sp_api::decl_runtime_apis! {
 				amount: Balance,
 			) -> Result<Balance, Error>;
 
-			/// Calculates the collateral for the given lower and upper bounds.
+			/// Calculates the collateral for the given integral bounds lower and upper.
 			/// This function computes the collateral amount based on the provided lower and upper bounds,
 			/// regardless of the current state.
 			fn calculate_collateral_for_low_and_high(
@@ -58,16 +65,16 @@ sp_api::decl_runtime_apis! {
 			) -> Result<Balance, Error>;
 
 			/// Query all pool IDs where the given account is the manager.
-			fn query_pools_by_manager(account : AccountId) -> Vec<PoolId>;
+			fn query_pools_by_manager(account : AccountId) -> Vec<PoolDetails>;
 
 			/// Query all pool IDs where the given account is the owner.
-			fn query_pools_by_owner(account : AccountId) -> Vec<PoolId>;
+			fn query_pools_by_owner(account : AccountId) -> Vec<PoolDetails>;
 
 			/// Calculates the bit representation for the coefficient.
 			/// The coefficient is constructed by `coefficient_int.coefficient_frac`.
 			/// The first value in the tuple is the internal calculated coefficient, represented as a string.
 			/// The second value is the bit representation.
-			fn encode_curve_coefficient(coefficient: String) -> Result<(String, BitType), Error>;
+			fn encode_curve_coefficient(coefficient: String) -> Result<Coefficient<BitType>, Error>;
 
 			/// Parses the bit representation for the coefficient to a human readable format.
 			fn decode_curve_coefficient(bit_representation: BitType) -> Result<String, Error>;
