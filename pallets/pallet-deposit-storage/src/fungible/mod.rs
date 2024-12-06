@@ -101,12 +101,12 @@ where
 	// mistakes since everything in the end is converted to `HoldReason`.
 	fn balance_on_hold(reason: &Self::Reason, who: &T::AccountId) -> Self::Balance {
 		let Some(deposit_entry) = SystemDeposits::<T>::get(&reason.namespace, &reason.key) else {
-			return 0u32.into();
+			return Zero::zero();
 		};
 		if deposit_entry.deposit.owner == *who {
 			deposit_entry.deposit.amount
 		} else {
-			0u32.into()
+			Zero::zero()
 		}
 	}
 }
