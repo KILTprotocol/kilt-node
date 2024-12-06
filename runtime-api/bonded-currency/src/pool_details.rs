@@ -23,25 +23,20 @@ use sp_std::vec::Vec;
 
 /// Enum to represent the operation of minting or burning tokens.
 #[derive(Decode, Encode, TypeInfo)]
-pub enum Operation {
-	Mint,
-	Burn,
+pub enum Operation<Balance> {
+	Mint(Balance),
+	Burn(Balance),
 }
 
-/// Human readable curve type.
-pub type HumanReadableCurve = Curve<String>;
+/// Curve representation
+pub type CurveOf = Curve<String>;
 
-/// Human readable bonded currencies
-pub type HumanReadableCurrencies<AssetId, Balance> = Vec<BondedCurrencyDetails<AssetId, Balance>>;
+/// Currencies representation
+pub type CurrenciesOf<AssetId, Balance> = Vec<BondedCurrencyDetails<AssetId, Balance>>;
 
 /// Human readable pool details.
-pub type HumanReadablePoolDetails<AccountId, Balance, AssetId, CollateralAssetId> = PoolDetails<
-	AccountId,
-	HumanReadableCurve,
-	HumanReadableCurrencies<AssetId, Balance>,
-	CollateralDetails<CollateralAssetId>,
-	Balance,
->;
+pub type PoolDetailsOf<AccountId, Balance, AssetId, CollateralAssetId> =
+	PoolDetails<AccountId, CurveOf, CurrenciesOf<AssetId, Balance>, CollateralDetails<CollateralAssetId>, Balance>;
 
 /// Collateral currency details used for the runtime API.
 #[derive(Decode, Encode, TypeInfo)]

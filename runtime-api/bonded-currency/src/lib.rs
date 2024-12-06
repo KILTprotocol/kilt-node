@@ -25,6 +25,7 @@ use sp_std::vec::Vec;
 mod pool_details;
 pub use pool_details::*;
 
+/// Coefficient representation.
 #[derive(Decode, Encode, TypeInfo)]
 pub struct Coefficient<BitType> {
 	/// The internal calculated coefficient, represented as a string.
@@ -37,13 +38,14 @@ sp_api::decl_runtime_apis! {
 	/// Runtime API to compute the collateral for a given amount and pool ID
 	/// and to query all pool IDs where the given account is the manager or owner.
 	#[api_version(1)]
-	pub trait BondedCurrency<Balance, PoolId, Operation, AccountId, BitType, PoolDetails, Error> where
+	pub trait BondedCurrency<Balance, PoolId, Operation, AccountId, BondedAssetId, CollateralAssetId, BitType, Error> where
 		Balance: Codec,
 		PoolId: Codec,
 		Operation: Codec,
 		AccountId: Codec,
+		BondedAssetId: Codec,
+		CollateralAssetId: Codec,
 		BitType: Codec,
-		PoolDetails: Codec,
 		Error: Codec
 		{
 			/// Calculates the collateral for the given amount.
@@ -53,7 +55,6 @@ sp_api::decl_runtime_apis! {
 				pool_id: PoolId,
 				currency_idx: u8,
 				operation: Operation,
-				amount: Balance,
 			) -> Result<Balance, Error>;
 
 			/// Calculates the collateral for the given integral bounds lower and upper.
@@ -67,10 +68,10 @@ sp_api::decl_runtime_apis! {
 			) -> Result<Balance, Error>;
 
 			/// Query all pool IDs where the given account is the manager.
-			fn query_pools_by_manager(account : AccountId) -> Vec<PoolDetails>;
+			fn query_pools_by_manager(account : AccountId) -> Vec<PoolDetailsOf<AccountId, Balance, BondedAssetId, CollateralAssetId>>;
 
 			/// Query all pool IDs where the given account is the owner.
-			fn query_pools_by_owner(account : AccountId) -> Vec<PoolDetails>;
+			fn query_pools_by_owner(account : AccountId) -> Vec<PoolDetailsOf<AccountId, Balance, BondedAssetId, CollateralAssetId>>;
 
 			/// Calculates the bit representation for the coefficient.
 			/// The coefficient is constructed by `coefficient_int.coefficient_frac`.
@@ -82,6 +83,6 @@ sp_api::decl_runtime_apis! {
 			fn decode_curve_coefficient(bit_representation: BitType) -> Result<String, Error>;
 
 			/// Query the pool status in a human readable format.
-			fn pool_info(pool_id: PoolId) -> Result<PoolDetails, Error>;
+			fn pool_info(pool_id: PoolId) -> Result<PoolDetailsOf<AccountId, Balance, BondedAssetId, CollateralAssetId>, Error>;
 		}
 }
