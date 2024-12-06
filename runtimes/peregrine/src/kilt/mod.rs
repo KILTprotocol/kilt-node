@@ -113,18 +113,18 @@ parameter_types! {
 }
 
 impl pallet_bonded_coins::Config for Runtime {
-	type BaseDeposit = ConstU128<{ runtime_common::constants::bonded_coins::BASE_DEPOSIT }>;
+	type BaseDeposit = ConstU128<{ constants::bonded_coins::BASE_DEPOSIT }>;
 	type Collaterals = NativeAndForeignAssets<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId>;
 	type CurveParameterInput = FixedPointInput;
 	type CurveParameterType = FixedPoint;
 	type DefaultOrigin = EnsureSigned<AccountId>;
 	type DepositCurrency = Balances;
-	type DepositPerCurrency = ConstU128<{ runtime_common::constants::bonded_coins::DEPOSIT_PER_CURRENCY }>;
+	type DepositPerCurrency = ConstU128<{ constants::bonded_coins::DEPOSIT_PER_CURRENCY }>;
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Fungibles = BondedFungibles;
-	type MaxCurrenciesPerPool = ConstU32<{ runtime_common::constants::bonded_coins::MAX_CURRENCIES }>;
-	type MaxDenomination = ConstU8<{ runtime_common::constants::bonded_coins::MAX_DENOMINATION }>;
-	type MaxStringInputLength = ConstU32<{ runtime_common::constants::bonded_coins::MAX_STRING_LENGTH }>;
+	type MaxCurrenciesPerPool = ConstU32<{ constants::bonded_coins::MAX_CURRENCIES }>;
+	type MaxDenomination = ConstU8<{ constants::bonded_coins::MAX_DENOMINATION }>;
+	type MaxStringInputLength = ConstU32<{ constants::bonded_coins::MAX_STRING_LENGTH }>;
 	type NextAssetIds = NextAssetIdGenerator<BondedCurrencies>;
 	type PoolCreateOrigin = EnsureSigned<AccountId>;
 	type PoolId = AccountId;
