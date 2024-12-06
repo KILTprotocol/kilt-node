@@ -41,8 +41,6 @@ use substrate_fixed::{
 	types::{I75F53, U75F53},
 };
 
-use crate::constants::{CURRENCY_NAME, CURRENCY_SYMBOL, DENOMINATION};
-
 pub mod hooks;
 
 pub mod runtime_api;
@@ -75,12 +73,19 @@ impl<Target: Get<L>, L: PartialEq + Eq> Convert<L, Either<(), L>> for TargetFrom
 	}
 }
 
-pub struct NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>(
-	sp_std::marker::PhantomData<(NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId)>,
+pub struct NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider = ()>(
+	sp_std::marker::PhantomData<(
+		NativeAsset,
+		ForeignAssets,
+		Criterion,
+		AssetKind,
+		AccountId,
+		MetadataProvider,
+	)>,
 );
 
-impl<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId> fungibles::Inspect<AccountId>
-	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
+impl<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider> fungibles::Inspect<AccountId>
+	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider>
 where
 	NativeAsset: fungible::Inspect<AccountId>,
 	ForeignAssets: fungibles::Inspect<AccountId, Balance = NativeAsset::Balance>,
@@ -148,8 +153,9 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
+		MetadataProvider,
 	> fungibles::Unbalanced<AccountId>
-	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
+	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider>
 {
 	fn handle_dust(dust: fungibles::Dust<AccountId, Self>)
 	where
@@ -206,7 +212,9 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId: Eq,
-	> fungibles::Mutate<AccountId> for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
+		MetadataProvider,
+	> fungibles::Mutate<AccountId>
+	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider>
 {
 	fn mint_into(asset: Self::AssetId, who: &AccountId, amount: Self::Balance) -> Result<Self::Balance, DispatchError> {
 		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::mint_into(asset, who, amount)
@@ -261,8 +269,9 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
+		MetadataProvider,
 	> AccountTouch<AssetKind, AccountId>
-	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
+	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider>
 {
 	type Balance = <NativeAsset as fungible::Inspect<AccountId>>::Balance;
 
@@ -285,25 +294,27 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> Inspect<AccountId> for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
+		MetadataProvider: Get<(u8, Vec<u8>, Vec<u8>)>,
+	> Inspect<AccountId>
+	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider>
 {
 	fn decimals(asset: Self::AssetId) -> u8 {
 		match Criterion::convert(asset) {
-			Left(()) => DENOMINATION,
+			Left(()) => MetadataProvider::get().0,
 			Right(a) => ForeignAssets::decimals(a),
 		}
 	}
 
 	fn name(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
-			Left(()) => CURRENCY_NAME.to_vec(),
+			Left(()) => MetadataProvider::get().1,
 			Right(a) => ForeignAssets::name(a),
 		}
 	}
 
 	fn symbol(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
-			Left(()) => CURRENCY_SYMBOL.to_vec(),
+			Left(()) => MetadataProvider::get().2,
 			Right(a) => ForeignAssets::symbol(a),
 		}
 	}
@@ -316,7 +327,9 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-	> fungibles::Create<AccountId> for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>
+		MetadataProvider,
+	> fungibles::Create<AccountId>
+	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider>
 {
 	fn create(asset: AssetKind, admin: AccountId, is_sufficient: bool, min_balance: Self::Balance) -> DispatchResult {
 		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::create(

@@ -50,6 +50,9 @@ pub(crate) mod proxy;
 
 pub const SS_58_PREFIX: u16 = 38;
 
+/// Currency Symbol
+pub const CURRENCY_SYMBOL: &[u8] = b"PILT";
+
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 }

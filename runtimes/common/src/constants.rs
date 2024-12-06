@@ -64,9 +64,6 @@ pub const DENOMINATION: u8 = 15;
 /// Currency Name
 pub const CURRENCY_NAME: &[u8] = b"KILT";
 
-/// Currency Symbol
-pub const CURRENCY_SYMBOL: &[u8] = b"KILT";
-
 /// One KILT
 pub const KILT: Balance = 10u128.pow(15);
 
