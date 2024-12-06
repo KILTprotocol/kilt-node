@@ -21,7 +21,10 @@ use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use runtime_common::{
 	asset_switch::{hooks::RestrictSwitchDestinationToSelf, EnsureRootAsTreasury},
-	bonded_currencies::{self, hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput, TargetFromLeft},
+	bonded_currencies::{
+		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput,
+		NativeAndForeignAssets as NativeAndForeignAssetsType, TargetFromLeft,
+	},
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
 use sp_core::{ConstU128, ConstU32, ConstU8};
@@ -111,7 +114,7 @@ parameter_types! {
 }
 
 pub type NativeAndForeignAssets =
-	bonded_currencies::NativeAndForeignAssets<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId>;
+	NativeAndForeignAssetsType<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId>;
 impl pallet_bonded_coins::Config for Runtime {
 	type BaseDeposit = ConstU128<{ runtime_common::constants::bonded_coins::BASE_DEPOSIT }>;
 	type Collaterals = NativeAndForeignAssets;

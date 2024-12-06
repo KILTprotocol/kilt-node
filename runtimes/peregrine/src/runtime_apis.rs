@@ -38,7 +38,9 @@ use runtime_common::{
 	asset_switch::runtime_api::Error as AssetSwitchApiError,
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::AuthorizationId,
-	bonded_currencies::{self, runtime_api::Error as BondedCurrencyError, FixedPoint, FixedPointUnderlyingType},
+	bonded_currencies::{
+		runtime_api::Error as BondedCurrencyError, AssetId as BondedAssetId, FixedPoint, FixedPointUnderlyingType,
+	},
 	constants::SLOT_DURATION,
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
@@ -490,7 +492,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_bonded_currency_runtime_api::BondedCurrency<Block, Balance, AccountId, Operation, AccountId, FixedPointUnderlyingType, HumanReadablePoolDetails<AccountId, Balance, bonded_currencies::AssetId, AssetId>, BondedCurrencyError> for Runtime {
+	impl pallet_bonded_currency_runtime_api::BondedCurrency<Block, Balance, AccountId, Operation, AccountId, FixedPointUnderlyingType, HumanReadablePoolDetails<AccountId, Balance, BondedAssetId, AssetId>, BondedCurrencyError> for Runtime {
 		fn calculate_collateral_for_amount(
 			amount: Balance,
 			pool_id: AccountId,
