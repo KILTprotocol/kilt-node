@@ -29,9 +29,9 @@ pub use pool_details::*;
 #[derive(Decode, Encode, TypeInfo)]
 pub struct Coefficient<BitType> {
 	/// The internal calculated coefficient, represented as a string.
-	representation: String,
+	pub representation: String,
 	/// The bit representation.
-	bits: BitType,
+	pub bits: BitType,
 }
 
 pub trait OperationValue<Balance> {
@@ -45,7 +45,7 @@ sp_api::decl_runtime_apis! {
 	pub trait BondedCurrency<Balance, PoolId, Operation, AccountId, BondedAssetId, CollateralAssetId, BitType, Error> where
 		Balance: Codec,
 		PoolId: Codec,
-		Operation: Codec + OperationValue<Balance>,
+		Operation: Codec,
 		AccountId: Codec,
 		BondedAssetId: Codec,
 		CollateralAssetId: Codec,

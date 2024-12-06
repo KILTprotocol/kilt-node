@@ -24,13 +24,11 @@ use pallet_bonded_coins::{traits::NextAssetIds, FungiblesAssetIdOf};
 use sp_runtime::{ArithmeticError, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
 
-use crate::bonded_currencies::AssetId;
+use crate::bonded_coins::AssetId;
 
 #[storage_alias]
 pub type NextAssetId<BondedFungibles: PalletInfoAccess, T> =
 	StorageValue<BondedFungibles, FungiblesAssetIdOf<T>, ValueQuery>;
-
-const LOG_TARGET: &str = "runtime::pallet_bonded_coins::hooks";
 
 /// Struct to implement desired traits for [NextAssetId].
 pub struct NextAssetIdGenerator<T>(PhantomData<T>);

@@ -25,8 +25,8 @@ use pallet_bonded_coins::{
 	},
 	PoolDetailsOf, Pools, Round,
 };
-use pallet_bonded_currency_runtime_api::{
-	BondedCurrencyDetails, CollateralDetails, HumanReadablePoolDetails, Operation,
+use pallet_bonded_coins_runtime_api::{
+	BondedCurrencyDetails, Coefficient, CollateralDetails, PoolDetailsOf as PoolDetails,
 };
 use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
 use pallet_dip_provider::traits::IdentityProvider;
@@ -38,8 +38,9 @@ use runtime_common::{
 	asset_switch::runtime_api::Error as AssetSwitchApiError,
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::AuthorizationId,
-	bonded_currencies::{
-		runtime_api::Error as BondedCurrencyError, AssetId as BondedAssetId, FixedPoint, FixedPointUnderlyingType,
+	bonded_coins::{
+		runtime_api::{Error as BondedCurrencyError, Operation},
+		AssetId as BondedAssetId, FixedPoint, FixedPointUnderlyingType,
 	},
 	constants::SLOT_DURATION,
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
@@ -492,23 +493,22 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_bonded_currency_runtime_api::BondedCurrency<Block, Balance, AccountId, Operation, AccountId, FixedPointUnderlyingType, HumanReadablePoolDetails<AccountId, Balance, BondedAssetId, AssetId>, BondedCurrencyError> for Runtime {
-		fn calculate_collateral_for_amount(
-			amount: Balance,
+	impl pallet_bonded_coins_runtime_api::BondedCurrency<Block, Balance, AccountId, Operation<Balance>, AccountId, BondedAssetId, AssetId, FixedPointUnderlyingType, BondedCurrencyError> for Runtime {
+		fn get_collateral(
 			pool_id: AccountId,
-			operation: Operation,
 			currency_idx: u8,
+			operation: Operation<Balance>,
 		) -> Result<Balance, BondedCurrencyError> {
 			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
-			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, denomination, collateral_id, .. } = pool;
+			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, denomination, collateral, .. } = pool;
 			let currency_id = bonded_currencies.get(currency_idx as usize).ok_or(BondedCurrencyError::CurrencyNotFound)?;
-			let collateral_denomination = NativeAndForeignAssets::decimals(collateral_id);
+			let collateral_denomination = NativeAndForeignAssets::decimals(collateral);
 
 			let currency_supply = BondedFungibles::total_issuance(currency_id.to_owned());
 
 			let (low, high, round_kind) = match operation {
-				Operation::Mint => (currency_supply,  currency_supply.saturating_add(amount), Round::Up),
-				Operation::Burn => (currency_supply.saturating_sub(amount), currency_supply, Round::Down)
+				Operation::Mint(amount) => (currency_supply, currency_supply.saturating_add(amount), Round::Up),
+				Operation::Burn(amount) => (currency_supply.saturating_sub(amount), currency_supply, Round::Down),
 			};
 
 			let normalized_low = balance_to_fixed(low, denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion)?;
@@ -516,9 +516,7 @@ impl_runtime_apis! {
 
 			let passive_supply = bonded_currencies
 				.iter()
-				.filter_map(|id| {
-					 (id != currency_id).then_some(BondedFungibles::total_issuance(id.to_owned()))
-				})
+				.filter_map(|id| (id != currency_id).then_some(BondedFungibles::total_issuance(id.to_owned())))
 				.map(|supply| balance_to_fixed(supply, denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion))
 				.collect::<Result<Vec<FixedPoint>, BondedCurrencyError>>()?;
 
@@ -526,26 +524,24 @@ impl_runtime_apis! {
 			fixed_to_balance(collateral, collateral_denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion)
 		}
 
-		fn calculate_collateral_for_low_and_high(
-			low: Balance,
-			high: Balance,
+		fn calculate_collateral_for_low_and_high_bounds(
 			pool_id: AccountId,
 			currency_idx: u8,
+			low: Balance,
+			high: Balance,
 		) -> Result<Balance, BondedCurrencyError> {
 			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
-			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, denomination, collateral_id, .. } = pool;
+			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, denomination, collateral, .. } = pool;
 			let currency_id = bonded_currencies.get(currency_idx as usize).ok_or(BondedCurrencyError::CurrencyNotFound)?;
 
-			let collateral_denomination = NativeAndForeignAssets::decimals(collateral_id);
+			let collateral_denomination = NativeAndForeignAssets::decimals(collateral);
 
 			let normalized_low = balance_to_fixed(low, denomination, Round::Down).map_err(|_| BondedCurrencyError::BalanceConversion)?;
 			let normalized_high = balance_to_fixed(high, denomination, Round::Up).map_err(|_| BondedCurrencyError::BalanceConversion)?;
 
 			let passive_supply = bonded_currencies
 				.iter()
-				.filter_map(|id| {
-					(id != currency_id).then_some(BondedFungibles::total_issuance(id.to_owned()))
-				})
+				.filter_map(|id| (id != currency_id).then_some(BondedFungibles::total_issuance(id.to_owned())))
 				.map(|supply| balance_to_fixed(supply, denomination, Round::Up).map_err(|_| BondedCurrencyError::BalanceConversion))
 				.collect::<Result<Vec<FixedPoint>, BondedCurrencyError>>()?;
 
@@ -553,49 +549,61 @@ impl_runtime_apis! {
 			fixed_to_balance(collateral, collateral_denomination, Round::Up).map_err(|_| BondedCurrencyError::BalanceConversion)
 		}
 
-		fn query_pools_by_manager(account: AccountId) -> Result<Vec<AccountId>, BondedCurrencyError> {
-			Ok(
-				Pools::<Runtime>::iter().filter_map(|(pool_id, pool)|
-					(pool.manager == Some(account.clone())).then_some(pool_id)
-				).collect()
-			)
+		fn query_pools_by_manager(account: AccountId) -> Vec<PoolDetails<AccountId, Balance, BondedAssetId, AssetId>> {
+			Pools::<Runtime>::iter().filter_map(|(pool_id, pool)| {
+				if pool.manager == Some(account.clone()) {
+					// we can safe unwrap here. The pool was iterated over and is guaranteed to exist.
+					let details = Self::pool_info(pool_id).unwrap();
+					Some(details)
+				} else {
+					None
+				}
+			}).collect()
 		}
 
-		fn query_pools_by_owner(account: AccountId) -> Result<Vec<AccountId>, BondedCurrencyError> {
-			Ok(
-				Pools::<Runtime>::iter().filter_map(|(pool_id, pool)|
-					(pool.owner == account).then_some(pool_id)
-				).collect()
-			)
+		fn query_pools_by_owner(account: AccountId) -> Vec<PoolDetails<AccountId, Balance, BondedAssetId, AssetId>> {
+			Pools::<Runtime>::iter().filter_map(|(pool_id, pool)| {
+				if pool.owner == account.clone() {
+					// we can safe unwrap here. The pool was iterated over and is guaranteed to exist.
+					let details = Self::pool_info(pool_id).unwrap();
+					Some(details)
+				} else {
+					None
+				}
+			}).collect()
 		}
 
-		fn calculate_pool_parameter(coefficient: String) -> Result<(String, FixedPointUnderlyingType), BondedCurrencyError> {
+		fn encode_curve_coefficient(coefficient: String) -> Result<Coefficient<FixedPointUnderlyingType>, BondedCurrencyError> {
 			let coefficient = FixedPoint::from_str(&coefficient).map_err(|_| BondedCurrencyError::InvalidInput)?;
 			let actual_coefficient = coefficient.to_string();
 			let coefficient_bits = coefficient.to_bits();
-			Ok((actual_coefficient, coefficient_bits))
+			Ok(Coefficient {
+				representation: actual_coefficient,
+				bits: coefficient_bits,
+			})
 		}
 
-		fn parse_pool_parameter(bit_representation: FixedPointUnderlyingType) -> Result<String, BondedCurrencyError> {
+		fn decode_curve_coefficient(bit_representation: FixedPointUnderlyingType) -> Result<String, BondedCurrencyError> {
 			let coefficient = FixedPoint::from_bits(bit_representation);
 			Ok(coefficient.to_string())
 		}
 
-		fn query_pool_by_id(pool_id: AccountId) -> Result<HumanReadablePoolDetails<AccountId, Balance, bonded_currencies::AssetId, AssetId>, BondedCurrencyError> {
+		fn pool_info(pool_id: AccountId) -> Result<PoolDetails<AccountId, Balance, BondedAssetId, AssetId>, BondedCurrencyError> {
 			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
 			let PoolDetailsOf::<Runtime> {
 				curve,
 				bonded_currencies,
 				owner,
-				collateral_id,
+				collateral,
 				denomination,
 				deposit,
 				min_operation_balance,
 				manager,
 				state,
-				transferable } = pool;
+				transferable,
+			} = pool;
 
-			let currencies = bonded_currencies.iter().map(|currency_id| -> Result<BondedCurrencyDetails<bonded_currencies::AssetId, Balance>, BondedCurrencyError> {
+			let currencies = bonded_currencies.iter().map(|currency_id| -> Result<BondedCurrencyDetails<BondedAssetId, Balance>, BondedCurrencyError> {
 				// String conversation should never fail.
 				let symbol = String::from_utf8(BondedFungibles::symbol(currency_id.to_owned())).map_err(|_| BondedCurrencyError::Internal)?;
 				let name = String::from_utf8(<BondedFungibles as MetadataInspect<AccountId>>::name(currency_id.to_owned())).map_err(|_| BondedCurrencyError::Internal)?;
@@ -606,13 +614,13 @@ impl_runtime_apis! {
 					name,
 					supply,
 				})
-			}).collect::<Result<Vec<_>,BondedCurrencyError>>()?;
+			}).collect::<Result<Vec<_>, BondedCurrencyError>>()?;
 
 			let collateral_details = CollateralDetails {
-				id: AssetId(collateral_id.to_owned()),
-				symbol: String::from_utf8(NativeAndForeignAssets::symbol(collateral_id.to_owned())).map_err(|_| BondedCurrencyError::Internal)?,
-				name: String::from_utf8(NativeAndForeignAssets::name(collateral_id.to_owned())).map_err(|_| BondedCurrencyError::Internal)?,
-				denomination: NativeAndForeignAssets::decimals(collateral_id),
+				id: AssetId(collateral.to_owned()),
+				symbol: String::from_utf8(NativeAndForeignAssets::symbol(collateral.to_owned())).map_err(|_| BondedCurrencyError::Internal)?,
+				name: String::from_utf8(NativeAndForeignAssets::name(collateral.to_owned())).map_err(|_| BondedCurrencyError::Internal)?,
+				denomination: NativeAndForeignAssets::decimals(collateral),
 			};
 
 			let fmt_curve = match curve {
@@ -630,11 +638,10 @@ impl_runtime_apis! {
 				}),
 			};
 
-			Ok(
-				HumanReadablePoolDetails {
+			Ok(PoolDetails {
 				bonded_currencies: currencies,
 				curve: fmt_curve,
-				collateral_id: collateral_details,
+				collateral: collateral_details,
 				owner,
 				denomination,
 				deposit,
@@ -644,7 +651,6 @@ impl_runtime_apis! {
 				transferable,
 			})
 		}
-
 	}
 
 

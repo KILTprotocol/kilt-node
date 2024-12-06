@@ -21,7 +21,7 @@ use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use runtime_common::{
 	asset_switch::{hooks::RestrictSwitchDestinationToSelf, EnsureRootAsTreasury},
-	bonded_currencies::{
+	bonded_coins::{
 		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput,
 		NativeAndForeignAssets as NativeAndForeignAssetsType, TargetFromLeft,
 	},
