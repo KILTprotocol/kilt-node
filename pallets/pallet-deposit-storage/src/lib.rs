@@ -134,6 +134,8 @@ pub mod pallet {
 		FailedToRelease,
 		/// The external hook failed.
 		Hook(u16),
+		/// Internal error.
+		Internal,
 	}
 
 	#[pallet::event]

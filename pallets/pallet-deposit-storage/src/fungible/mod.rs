@@ -18,14 +18,19 @@
 
 use frame_support::traits::{
 	fungible::{Dust, Inspect, InspectHold, MutateHold, Unbalanced, UnbalancedHold},
-	tokens::{Fortitude, Preservation, Provenance, WithdrawConsequence},
+	tokens::{Fortitude, Precision, Preservation, Provenance, WithdrawConsequence},
 };
 use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::{traits::Zero, DispatchError, DispatchResult};
+use sp_runtime::{
+	traits::{CheckedSub, Zero},
+	DispatchError, DispatchResult,
+};
 
 use crate::{deposit::DepositEntry, Config, DepositKeyOf, Error, HoldReason, Pallet, SystemDeposits};
+
+const LOG_TARGET: &str = "runtime::pallet_deposit_storage::mutate-hold";
 
 #[cfg(test)]
 mod tests;
@@ -134,19 +139,26 @@ impl<T> UnbalancedHold<T::AccountId> for Pallet<T>
 where
 	T: Config,
 {
-	// Implements this trait function by first dispatching to the underlying
-	// `Currency` and then overriding the relevant storage entry.
+	/// This function gets called inside all invocations of `hold`, `release`,
+	/// and `release_all`. The value of `amount` is always the final amount that
+	/// should be kept on hold, meaning that a `release_all` will result in a
+	/// value of `0`. An hold increase from `1` to `2` will imply a value of
+	/// `amount` of `2`, i.e., the total amount held at the end of the
+	/// evaluation. Similarly, a decrease from `3` to `1` will imply a `amount`
+	/// value of `1`.
 	fn set_balance_on_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
-		<T::Currency as UnbalancedHold<T::AccountId>>::set_balance_on_hold(
-			&T::RuntimeHoldReason::from(reason.clone().into()),
-			who,
-			amount,
-		)?;
 		SystemDeposits::<T>::try_mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
 			match maybe_existing_deposit_entry {
-				// If this is the first registered deposit, create a new storage entry.
+				// If this is the first registered deposit for this reason, create a new storage entry.
 				None => {
 					if amount > Zero::zero() {
+						// Increase the held amount for the final runtime hold reason by `amount`.
+						<T::Currency as UnbalancedHold<T::AccountId>>::increase_balance_on_hold(
+							&T::RuntimeHoldReason::from(reason.clone().into()),
+							who,
+							amount,
+							Precision::Exact,
+						)?;
 						*maybe_existing_deposit_entry = Some(DepositEntry {
 							deposit: Deposit {
 								amount,
@@ -161,11 +173,58 @@ where
 					// The pallet assumes each (namespace, key) points to a unique deposit, so the
 					// same combination cannot be used for a different account.
 					if existing_deposit_entry.deposit.owner != *who {
-						return Err(Error::<T>::DepositExisting);
+						return Err(DispatchError::from(Error::<T>::DepositExisting));
 					}
 					if amount.is_zero() {
+						// If trying to remove all holds for this reason (`amount` == 0), decrease the
+						// held amount for the final runtime hold reason by the amount that was held by
+						// this reason.
+						<T::Currency as UnbalancedHold<T::AccountId>>::decrease_balance_on_hold(
+							&T::RuntimeHoldReason::from(reason.clone().into()),
+							who,
+							existing_deposit_entry.deposit.amount,
+							Precision::Exact,
+						)?;
+						// Since we're setting the held amount to `0`, remove the storage entry.
 						*maybe_existing_deposit_entry = None;
+					// We're trying to update (i.e., not creating, not deleting)
+					// the held amount for this hold reason.
 					} else {
+						// If trying to increase the amount held, increase the held amount for the final
+						// runtime hold reason by the (amount - stored amount) difference.
+						if amount >= existing_deposit_entry.deposit.amount {
+							let amount_to_hold = amount
+								.checked_sub(&existing_deposit_entry.deposit.amount)
+								.ok_or_else(|| {
+									log::error!(target: LOG_TARGET, "Failed to evaluate {:?} - {:?}", amount, existing_deposit_entry.deposit.amount);
+									Error::<T>::Internal
+								})?;
+							<T::Currency as UnbalancedHold<T::AccountId>>::increase_balance_on_hold(
+								&T::RuntimeHoldReason::from(reason.clone().into()),
+								who,
+								amount_to_hold,
+								Precision::Exact,
+							)?;
+						// Else, decrease the held amount for the final runtime
+						// hold reason by the (stored amount - amount)
+						// difference.
+						} else {
+							let amount_to_release = existing_deposit_entry
+								.deposit
+								.amount
+								.checked_sub(&amount)
+								.ok_or_else(|| {
+									log::error!(target: LOG_TARGET, "Failed to evaluate {:?} - {:?}", existing_deposit_entry.deposit.amount, amount);
+									Error::<T>::Internal
+								})?;
+							<T::Currency as UnbalancedHold<T::AccountId>>::decrease_balance_on_hold(
+								&T::RuntimeHoldReason::from(reason.clone().into()),
+								who,
+								amount_to_release,
+								Precision::Exact,
+							)?;
+						}
+						// In either case, update the storage entry with the specified amount.
 						existing_deposit_entry.deposit.amount = amount;
 					}
 					Ok(())
