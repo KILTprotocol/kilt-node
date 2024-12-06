@@ -27,7 +27,9 @@ pub use pool_details::*;
 
 #[derive(Decode, Encode, TypeInfo)]
 pub struct Coefficient<BitType> {
+	/// The internal calculated coefficient, represented as a string.
 	representation: String,
+	/// The bit representation.
 	bits: BitType,
 }
 
