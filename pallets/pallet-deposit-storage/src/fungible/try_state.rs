@@ -16,12 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::collections::BTreeMap;
-
 use frame_support::{ensure, traits::fungible::InspectHold};
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::Deposit;
 use sp_runtime::{traits::CheckedAdd, TryRuntimeError};
+use sp_std::collections::btree_map::BTreeMap;
 
 use crate::{deposit::DepositEntry, AccountIdOf, BalanceOf, Config, HoldReason, SystemDeposits};
 
