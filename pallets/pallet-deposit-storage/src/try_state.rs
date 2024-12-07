@@ -67,8 +67,8 @@ where
 			);
 
 			// Fold the deposit amount for the current user.
-			sum.entry((owner, reason.encode()))
-				.and_modify(|s| *s = s.checked_add(&amount).expect("Failed to fold deposits for user."));
+			let entry = sum.entry((owner, reason.encode())).or_default();
+			*entry = entry.checked_add(&amount).expect("Failed to fold deposits for user.");
 
 			Ok::<_, TryRuntimeError>(sum)
 		},
