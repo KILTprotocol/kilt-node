@@ -23,14 +23,69 @@
 //! equal keys under the same namespace, but the same key can be present under
 //! different namespaces.
 
+use frame_support::{ensure, traits::fungible::InspectHold};
 use frame_system::pallet_prelude::BlockNumberFor;
-use sp_runtime::TryRuntimeError;
+use kilt_support::Deposit;
+use parity_scale_codec::{Decode, Encode};
+use sp_runtime::{traits::CheckedAdd, TryRuntimeError};
+use sp_std::collections::btree_map::BTreeMap;
 
-use crate::Config;
+use crate::{deposit::DepositEntry, AccountIdOf, BalanceOf, Config, Deposits, HoldReason};
 
 pub(crate) fn try_state<T>(n: BlockNumberFor<T>) -> Result<(), TryRuntimeError>
 where
 	T: Config,
 {
-	crate::fungible::try_state::check_fungible_consistency::<T>(n)
+	crate::fungible::try_state::check_fungible_consistency::<T>(n)?;
+	check_regular_deposits_consistency::<T>(n)?;
+
+	Ok(())
+}
+
+// Verify the state outside of the `MutateHold` implementation does not
+// interfere with the `MutateHold` state.
+fn check_regular_deposits_consistency<T>(_n: BlockNumberFor<T>) -> Result<(), TryRuntimeError>
+where
+	T: Config,
+{
+	// Sum together all the deposits stored not part of the `MutateHold`
+	// implementation, and fail if any of them has the unexpected
+	// `crate::HoldReason::FungibleImpl` reason.
+	let sum_of_deposits = Deposits::<T>::iter_values().try_fold(
+		// We can't use `T::RuntimeHoldReason` as a key because it does not implement `Ord`, so we `.encode()` it here.
+		BTreeMap::<(AccountIdOf<T>, Vec<u8>), BalanceOf<T>>::new(),
+		|mut sum,
+		 DepositEntry {
+		     reason,
+		     deposit: Deposit { amount, owner },
+		 }| {
+			// Regular deposits should not interfere with the `MutateHold` implementation
+			// state.
+			ensure!(
+				reason != HoldReason::FungibleImpl.into(),
+				TryRuntimeError::Other("Found a deposit reason `HoldReason::FungibleImpl`, which is unexpected.")
+			);
+
+			// Fold the deposit amount for the current user.
+			sum.entry((owner, reason.encode()))
+				.and_modify(|s| *s = s.checked_add(&amount).expect("Failed to fold deposits for user."));
+
+			Ok::<_, TryRuntimeError>(sum)
+		},
+	)?;
+	// We verify that the total balance on hold for each hold reason matches the
+	// amount of deposits stored in this pallet.
+	sum_of_deposits
+		.into_iter()
+		.try_for_each(|((owner, encoded_runtime_hold_reason), deposit_sum)| {
+			let runtime_hold_reason =
+				T::RuntimeHoldReason::decode(&mut encoded_runtime_hold_reason.as_slice()).unwrap();
+			ensure!(
+				<T::Currency as InspectHold<AccountIdOf<T>>>::balance_on_hold(&runtime_hold_reason, &owner)
+					== deposit_sum,
+				TryRuntimeError::Other("Deposit sum for user less than the expected amount")
+			);
+			Ok::<_, TryRuntimeError>(())
+		})?;
+	Ok(())
 }

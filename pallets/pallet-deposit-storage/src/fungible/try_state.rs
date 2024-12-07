@@ -25,6 +25,8 @@ use sp_runtime::{traits::CheckedAdd, TryRuntimeError};
 
 use crate::{deposit::DepositEntry, AccountIdOf, BalanceOf, Config, HoldReason, SystemDeposits};
 
+// Verify the state kept as part of the `MutateHold` implementation is
+// consistent with the state of the `Currency` type.
 pub(crate) fn check_fungible_consistency<T>(_n: BlockNumberFor<T>) -> Result<(), TryRuntimeError>
 where
 	T: Config,
