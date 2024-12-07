@@ -83,7 +83,7 @@ where
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::balance_on_hold(&runtime_hold_reason, &owner)
 					== deposit_sum,
-				TryRuntimeError::Other("Deposit sum for user less than the expected amount")
+				TryRuntimeError::Other("Deposit sum for user different than the expected amount")
 			);
 			Ok::<_, TryRuntimeError>(())
 		})?;
