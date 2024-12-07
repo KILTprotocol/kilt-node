@@ -36,8 +36,7 @@ use crate::{
 fn transfer_on_hold() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000), (OTHER_ACCOUNT, 1)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason::default();
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 10)
@@ -72,8 +71,7 @@ fn transfer_on_hold() {
 fn transfer_and_hold() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000), (OTHER_ACCOUNT, 1)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason::default();
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::transfer_and_hold(

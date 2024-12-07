@@ -51,8 +51,7 @@ fn on_commitment_removed_successful() {
 				reason: HoldReason::Deposit.into(),
 			},
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
 				Pallet::<TestRuntime>::deposits(&namespace, &key),
 				Some(DepositEntry {
@@ -103,8 +102,7 @@ fn on_commitment_removed_different_owner_successful() {
 				reason: HoldReason::Deposit.into(),
 			},
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
 				Pallet::<TestRuntime>::deposits(&namespace, &key),
 				Some(DepositEntry {
@@ -139,7 +137,7 @@ fn on_commitment_removed_different_owner_successful() {
 
 #[test]
 fn on_commitment_removed_deposit_not_found() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_commitment_removed(
 				&SUBJECT,

@@ -36,8 +36,7 @@ use crate::{
 fn release() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason::default();
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 10)
@@ -69,8 +68,7 @@ fn release() {
 fn release_different_reason() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason {
 				namespace: DepositNamespace::ExampleNamespace,
 				key: [0].to_vec().try_into().unwrap(),
@@ -93,8 +91,7 @@ fn release_different_reason() {
 fn release_all() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason::default();
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 10)

@@ -36,8 +36,7 @@ use crate::{
 fn burn_held() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason::default();
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 10)
@@ -81,8 +80,7 @@ fn burn_held() {
 fn burn_all_held() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason::default();
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 10)

@@ -158,6 +158,14 @@ impl ExtBuilder {
 		self
 	}
 
+	pub(crate) fn build_and_execute_with_sanity_tests(self, run: impl FnOnce()) {
+		let mut ext = self.build();
+		ext.execute_with(|| {
+			run();
+			crate::try_state::try_state::<TestRuntime>(System::block_number()).unwrap();
+		});
+	}
+
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
 		let mut ext = sp_io::TestExternalities::default();
 
