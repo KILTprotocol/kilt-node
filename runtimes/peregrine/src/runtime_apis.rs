@@ -532,7 +532,7 @@ impl_runtime_apis! {
 		) -> Result<Balance, BondedCurrencyError> {
 			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
 			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, denomination, collateral, .. } = pool;
-			let currency_id = bonded_currencies.get(currency_idx as usize).ok_or(BondedCurrencyError::CurrencyNotFound)?;
+			let currency_id = bonded_currencies.get(currency_idx.saturated_into::<usize>()).ok_or(BondedCurrencyError::CurrencyNotFound)?;
 
 			let collateral_denomination = NativeAndForeignAssets::decimals(collateral);
 
