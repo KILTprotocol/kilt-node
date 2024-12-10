@@ -130,7 +130,7 @@ impl InspectMetadata<Location> for MetadataProvider {
 }
 
 pub type NativeAndForeignAssets =
-	NativeAndForeignAssetsType<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId>;
+	NativeAndForeignAssetsType<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId, MetadataProvider>;
 
 impl pallet_bonded_coins::Config for Runtime {
 	type BaseDeposit = ConstU128<{ constants::bonded_coins::BASE_DEPOSIT }>;
