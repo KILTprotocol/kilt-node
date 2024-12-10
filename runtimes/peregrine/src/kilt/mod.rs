@@ -22,7 +22,7 @@ use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, Matche
 use runtime_common::{
 	asset_switch::{hooks::RestrictSwitchDestinationToSelf, EnsureRootAsTreasury},
 	bonded_coins::{
-		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput,
+		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput, InspectMetadata,
 		NativeAndForeignAssets as NativeAndForeignAssetsType, TargetFromLeft,
 	},
 	AccountId, Balance, SendDustAndFeesToTreasury,

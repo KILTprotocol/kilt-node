@@ -34,8 +34,10 @@ pub struct Coefficient<BitType> {
 	pub bits: BitType,
 }
 
-pub trait OperationValue<Balance> {
-	fn value(&self) -> Balance;
+pub trait OperationValue {
+	type Balance;
+
+	fn value(&self) -> Self::Balance;
 }
 
 sp_api::decl_runtime_apis! {
