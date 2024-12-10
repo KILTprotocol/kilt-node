@@ -88,5 +88,8 @@ sp_api::decl_runtime_apis! {
 
 			/// Query the pool status in a human readable format.
 			fn pool_info(pool_id: PoolId) -> Result<PoolDetailsOf<AccountId, Balance, BondedAssetId, CollateralAssetId>, Error>;
+
+			/// Query the pools status in a human readable format.
+			fn pool_infos(pool_ids: Vec<PoolId>) -> Result<Vec<PoolDetailsOf<AccountId, Balance, BondedAssetId, CollateralAssetId>>, Error>;
 		}
 }

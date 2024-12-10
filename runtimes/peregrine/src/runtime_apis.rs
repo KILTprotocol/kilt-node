@@ -551,25 +551,19 @@ impl_runtime_apis! {
 
 		fn query_pools_by_manager(account: AccountId) -> Vec<PoolDetails<AccountId, Balance, BondedAssetId, AssetId>> {
 			Pools::<Runtime>::iter().filter_map(|(pool_id, pool)| {
-				if pool.manager == Some(account.clone()) {
+				(pool.manager == Some(account.clone())).then(|| {
 					// we can safe unwrap here. The pool was iterated over and is guaranteed to exist.
-					let details = Self::pool_info(pool_id).unwrap();
-					Some(details)
-				} else {
-					None
-				}
+					Self::pool_info(pool_id).unwrap()
+				})
 			}).collect()
 		}
 
 		fn query_pools_by_owner(account: AccountId) -> Vec<PoolDetails<AccountId, Balance, BondedAssetId, AssetId>> {
 			Pools::<Runtime>::iter().filter_map(|(pool_id, pool)| {
-				if pool.owner == account.clone() {
+				(pool.owner == account.clone()).then(|| {
 					// we can safe unwrap here. The pool was iterated over and is guaranteed to exist.
-					let details = Self::pool_info(pool_id).unwrap();
-					Some(details)
-				} else {
-					None
-				}
+					Self::pool_info(pool_id).unwrap()
+				})
 			}).collect()
 		}
 
@@ -650,6 +644,10 @@ impl_runtime_apis! {
 				state,
 				transferable,
 			})
+		}
+
+		fn pool_infos(ids: Vec<AccountId>) -> Result<Vec<PoolDetails<AccountId, Balance, BondedAssetId, AssetId>>, BondedCurrencyError> {
+			ids.into_iter().map(Self::pool_info).collect()
 		}
 	}
 
