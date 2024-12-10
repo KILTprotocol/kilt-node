@@ -27,13 +27,14 @@ use runtime_common::{
 	},
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
-use sp_core::{ConstU128, ConstU32, ConstU8, Get};
+use sp_core::{ConstU128, ConstU32, ConstU8};
+use sp_std::vec::Vec;
 use xcm::v4::{Junctions, Location};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use crate::{
 	constants,
-	system::CURRENCY_SYMBOL,
+	system::{CURRENCY_NAME, CURRENCY_SYMBOL, DENOMINATION},
 	weights,
 	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
 	Balances, BondedCurrencies, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
@@ -116,13 +117,15 @@ parameter_types! {
 }
 
 pub struct MetadataProvider;
-impl Get<(u8, Vec<u8>, Vec<u8>)> for MetadataProvider {
-	fn get() -> (u8, Vec<u8>, Vec<u8>) {
-		(
-			constants::DENOMINATION,
-			constants::CURRENCY_NAME.to_vec(),
-			CURRENCY_SYMBOL.to_vec(),
-		)
+impl InspectMetadata<Location> for MetadataProvider {
+	fn decimals() -> u8 {
+		DENOMINATION
+	}
+	fn name() -> Vec<u8> {
+		CURRENCY_NAME.to_vec()
+	}
+	fn symbol() -> Vec<u8> {
+		CURRENCY_SYMBOL.to_vec()
 	}
 }
 

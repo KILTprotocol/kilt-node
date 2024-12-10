@@ -63,6 +63,16 @@ pub type FixedPointUnderlyingType = <FixedPoint as Fixed>::Bits;
 /// the Either::Left variant.
 pub struct TargetFromLeft<Target>(PhantomData<Target>);
 
+/// Metadata trait for native asset.
+pub trait InspectMetadata<AssetId> {
+	// Get name for native asset.
+	fn name() -> Vec<u8>;
+	// Get symbol for native asset.
+	fn symbol() -> Vec<u8>;
+	// Get decimals for native asset.
+	fn decimals() -> u8;
+}
+
 /// Implements the Convert trait for the [TargetFromLeft] struct.
 /// This is used to convert an asset id of type [L] to an [Either] type.
 impl<Target: Get<L>, L: PartialEq + Eq> Convert<L, Either<(), L>> for TargetFromLeft<Target> {
@@ -294,27 +304,27 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-		MetadataProvider: Get<(u8, Vec<u8>, Vec<u8>)>,
+		MetadataProvider: InspectMetadata<AssetKind>,
 	> Inspect<AccountId>
 	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider>
 {
 	fn decimals(asset: Self::AssetId) -> u8 {
 		match Criterion::convert(asset) {
-			Left(()) => MetadataProvider::get().0,
+			Left(()) => MetadataProvider::decimals(),
 			Right(a) => ForeignAssets::decimals(a),
 		}
 	}
 
 	fn name(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
-			Left(()) => MetadataProvider::get().1,
+			Left(()) => MetadataProvider::name(),
 			Right(a) => ForeignAssets::name(a),
 		}
 	}
 
 	fn symbol(asset: Self::AssetId) -> Vec<u8> {
 		match Criterion::convert(asset) {
-			Left(()) => MetadataProvider::get().2,
+			Left(()) => MetadataProvider::symbol(),
 			Right(a) => ForeignAssets::symbol(a),
 		}
 	}

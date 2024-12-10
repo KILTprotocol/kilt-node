@@ -53,6 +53,12 @@ pub const SS_58_PREFIX: u16 = 38;
 /// Currency Symbol
 pub const CURRENCY_SYMBOL: &[u8] = b"PILT";
 
+/// The denomination of native currency.
+pub const DENOMINATION: u8 = 15;
+
+/// Currency Name
+pub const CURRENCY_NAME: &[u8] = b"KILT";
+
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 }

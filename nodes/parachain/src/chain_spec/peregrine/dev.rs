@@ -21,10 +21,10 @@
 use peregrine_runtime::{
 	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
 	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, TechnicalCommitteeConfig, CURRENCY_SYMBOL,
-	SS_58_PREFIX, WASM_BINARY,
+	DENOMINATION, SS_58_PREFIX, WASM_BINARY,
 };
 use runtime_common::{
-	constants::{kilt_inflation_config, staking::MinCollatorStake, DENOMINATION, KILT, MAX_COLLATOR_STAKE},
+	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance,
 };
 use sc_service::ChainType;
