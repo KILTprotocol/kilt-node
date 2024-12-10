@@ -51,8 +51,8 @@ pub type FixedPoint = I75F53;
 
 /// Struct to implement the desired [Convert] trait needed for the
 /// [NativeAndForeignAssets] type.
-/// The generic type [Target] is used to determine the type of the asset id for
-/// the Either::Left variant.
+/// The generic type Target is used to determine the type of the asset id
+/// for the Either::Left variant.
 pub struct TargetFromLeft<Target>(PhantomData<Target>);
 
 /// Metadata trait for native asset.
@@ -66,7 +66,7 @@ pub trait InspectMetadata<AssetId> {
 }
 
 /// Implements the Convert trait for the [TargetFromLeft] struct.
-/// This is used to convert an asset id of type [L] to an [Either] type.
+/// This is used to convert an asset id of type L to an [Either] type.
 impl<Target: Get<L>, L: PartialEq + Eq> Convert<L, Either<(), L>> for TargetFromLeft<Target> {
 	fn convert(l: L) -> Either<(), L> {
 		// If l equals the target asset id, return Left(()), otherwise return
