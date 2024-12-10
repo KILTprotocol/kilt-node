@@ -28,6 +28,7 @@ use runtime_common::{
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
 use sp_core::{ConstU128, ConstU32, ConstU8};
+use sp_std::vec::Vec;
 use xcm::v4::{Junctions, Location};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
