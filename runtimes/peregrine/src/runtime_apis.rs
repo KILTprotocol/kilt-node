@@ -494,37 +494,27 @@ impl_runtime_apis! {
 	}
 
 	impl pallet_bonded_coins_runtime_api::BondedCurrency<Block, Balance, AccountId, Operation<Balance>, AccountId, BondedAssetId, AssetId, FixedPointUnderlyingType, BondedCurrencyError> for Runtime {
-		fn get_collateral(
+		fn quote_for(
 			pool_id: AccountId,
 			currency_idx: u8,
 			operation: Operation<Balance>,
 		) -> Result<Balance, BondedCurrencyError> {
-			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
-			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, denomination, collateral, .. } = pool;
+			let pool = Pools::<Runtime>::get(&pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
+			let PoolDetailsOf::<Runtime> { bonded_currencies, .. } = pool;
 			let currency_id = bonded_currencies.get(currency_idx.saturated_into::<usize>()).ok_or(BondedCurrencyError::CurrencyNotFound)?;
-			let collateral_denomination = NativeAndForeignAssets::decimals(collateral);
+
 
 			let currency_supply = BondedFungibles::total_issuance(currency_id.to_owned());
 
-			let (low, high, round_kind) = match operation {
+			let (low, high, _) = match operation {
 				Operation::Mint(amount) => (currency_supply, currency_supply.saturating_add(amount), Round::Up),
 				Operation::Burn(amount) => (currency_supply.saturating_sub(amount), currency_supply, Round::Down),
 			};
 
-			let normalized_low = balance_to_fixed(low, denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion)?;
-			let normalized_high = balance_to_fixed(high, denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion)?;
-
-			let passive_supply = bonded_currencies
-				.iter()
-				.filter_map(|id| (id != currency_id).then_some(BondedFungibles::total_issuance(id.to_owned())))
-				.map(|supply| balance_to_fixed(supply, denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion))
-				.collect::<Result<Vec<FixedPoint>, BondedCurrencyError>>()?;
-
-			let normalized_collateral = curve.calculate_costs(normalized_low, normalized_high, passive_supply).map_err(|_| BondedCurrencyError::CalculationError)?;
-			fixed_to_balance(normalized_collateral, collateral_denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion)
+			Self::quote_for_low_and_high_bounds(pool_id, currency_idx, low, high)
 		}
 
-		fn calculate_collateral_for_low_and_high_bounds(
+		fn quote_for_low_and_high_bounds(
 			pool_id: AccountId,
 			currency_idx: u8,
 			low: Balance,
