@@ -19,9 +19,9 @@
 //! KILT chain specification
 
 use peregrine_runtime::{
-	ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, CURRENCY_SYMBOL, SS_58_PREFIX, WASM_BINARY,
+	ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, CURRENCY_SYMBOL, DENOMINATION, SS_58_PREFIX,
+	WASM_BINARY,
 };
-use runtime_common::constants::DENOMINATION;
 use sc_service::ChainType;
 use serde_json::to_value;
 

@@ -58,12 +58,6 @@ pub const BLOCKS_PER_YEAR: BlockNumber = DAYS * 36525 / 100;
 
 pub const MAX_COLLATOR_STAKE: Balance = 200_000 * KILT;
 
-/// The denomination of native currency.
-pub const DENOMINATION: u8 = 15;
-
-/// Currency Name
-pub const CURRENCY_NAME: &[u8] = b"KILT";
-
 /// One KILT
 pub const KILT: Balance = 10u128.pow(15);
 
