@@ -24,7 +24,7 @@ use pallet_bonded_coins::{traits::NextAssetIds, FungiblesAssetIdOf};
 use sp_runtime::{ArithmeticError, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
 
-use crate::bonded_currencies::AssetId;
+use crate::bonded_coins::AssetId;
 
 #[storage_alias]
 pub type NextAssetId<BondedFungibles: PalletInfoAccess, T> =
@@ -40,6 +40,7 @@ where
 	FungiblesAssetIdOf<T>: From<AssetId> + Into<AssetId> + Default,
 {
 	type Error = DispatchError;
+
 	fn try_get(n: u32) -> Result<Vec<FungiblesAssetIdOf<T>>, Self::Error> {
 		let next_asset_id: AssetId = NextAssetId::<BondedFungibles, T>::get().into();
 
@@ -50,6 +51,7 @@ where
 			.collect::<Vec<FungiblesAssetIdOf<T>>>();
 
 		NextAssetId::<BondedFungibles, T>::set(new_next_asset_id.into());
+
 		Ok(asset_ids)
 	}
 }

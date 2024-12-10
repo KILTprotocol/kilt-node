@@ -21,9 +21,9 @@ use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use runtime_common::{
 	asset_switch::{hooks::RestrictSwitchDestinationToSelf, EnsureRootAsTreasury},
-	bonded_currencies::{
-		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput, InspectMetadata, NativeAndForeignAssets,
-		TargetFromLeft,
+	bonded_coins::{
+		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput, InspectMetadata,
+		NativeAndForeignAssets as NativeAndForeignAssetsType, TargetFromLeft,
 	},
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
@@ -129,10 +129,12 @@ impl InspectMetadata<Location> for MetadataProvider {
 	}
 }
 
+pub type NativeAndForeignAssets =
+	NativeAndForeignAssetsType<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId, MetadataProvider>;
+
 impl pallet_bonded_coins::Config for Runtime {
 	type BaseDeposit = ConstU128<{ constants::bonded_coins::BASE_DEPOSIT }>;
-	type Collaterals =
-		NativeAndForeignAssets<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId, MetadataProvider>;
+	type Collaterals = NativeAndForeignAssets;
 	type CurveParameterInput = FixedPointInput;
 	type CurveParameterType = FixedPoint;
 	type DefaultOrigin = EnsureSigned<AccountId>;
