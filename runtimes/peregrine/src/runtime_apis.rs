@@ -53,7 +53,7 @@ use sp_inherents::{CheckInherentsResult, InherentData};
 use sp_metadata_ir::RuntimeApiMetadataIR;
 use sp_runtime::{
 	traits::{Block as BlockT, TryConvert},
-	ApplyExtrinsicResult, KeyTypeId,
+	ApplyExtrinsicResult, KeyTypeId, SaturatedConversion,
 };
 use sp_std::{prelude::*, str::FromStr, vec::Vec};
 use sp_version::{ApisVec, RuntimeVersion};
@@ -501,7 +501,7 @@ impl_runtime_apis! {
 		) -> Result<Balance, BondedCurrencyError> {
 			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
 			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, denomination, collateral, .. } = pool;
-			let currency_id = bonded_currencies.get(currency_idx as usize).ok_or(BondedCurrencyError::CurrencyNotFound)?;
+			let currency_id = bonded_currencies.get(currency_idx.saturated_into::<usize>()).ok_or(BondedCurrencyError::CurrencyNotFound)?;
 			let collateral_denomination = NativeAndForeignAssets::decimals(collateral);
 
 			let currency_supply = BondedFungibles::total_issuance(currency_id.to_owned());
@@ -520,8 +520,8 @@ impl_runtime_apis! {
 				.map(|supply| balance_to_fixed(supply, denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion))
 				.collect::<Result<Vec<FixedPoint>, BondedCurrencyError>>()?;
 
-			let collateral = curve.calculate_costs(normalized_low, normalized_high, passive_supply).map_err(|_| BondedCurrencyError::CalculationError)?;
-			fixed_to_balance(collateral, collateral_denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion)
+			let normalized_collateral = curve.calculate_costs(normalized_low, normalized_high, passive_supply).map_err(|_| BondedCurrencyError::CalculationError)?;
+			fixed_to_balance(normalized_collateral, collateral_denomination, round_kind).map_err(|_| BondedCurrencyError::BalanceConversion)
 		}
 
 		fn calculate_collateral_for_low_and_high_bounds(
@@ -545,14 +545,15 @@ impl_runtime_apis! {
 				.map(|supply| balance_to_fixed(supply, denomination, Round::Up).map_err(|_| BondedCurrencyError::BalanceConversion))
 				.collect::<Result<Vec<FixedPoint>, BondedCurrencyError>>()?;
 
-			let collateral = curve.calculate_costs(normalized_low, normalized_high, passive_supply).map_err(|_| BondedCurrencyError::CalculationError)?;
-			fixed_to_balance(collateral, collateral_denomination, Round::Up).map_err(|_| BondedCurrencyError::BalanceConversion)
+			let normalized_collateral = curve.calculate_costs(normalized_low, normalized_high, passive_supply).map_err(|_| BondedCurrencyError::CalculationError)?;
+			fixed_to_balance(normalized_collateral, collateral_denomination, Round::Up).map_err(|_| BondedCurrencyError::BalanceConversion)
 		}
 
 		fn query_pools_by_manager(account: AccountId) -> Vec<PoolDetails<AccountId, Balance, BondedAssetId, AssetId>> {
 			Pools::<Runtime>::iter().filter_map(|(pool_id, pool)| {
 				(pool.manager == Some(account.clone())).then(|| {
 					// we can safe unwrap here. The pool was iterated over and is guaranteed to exist.
+					#[allow(clippy::unwrap_used)]
 					Self::pool_info(pool_id).unwrap()
 				})
 			}).collect()
@@ -562,13 +563,14 @@ impl_runtime_apis! {
 			Pools::<Runtime>::iter().filter_map(|(pool_id, pool)| {
 				(pool.owner == account.clone()).then(|| {
 					// we can safe unwrap here. The pool was iterated over and is guaranteed to exist.
+					#[allow(clippy::unwrap_used)]
 					Self::pool_info(pool_id).unwrap()
 				})
 			}).collect()
 		}
 
-		fn encode_curve_coefficient(coefficient: String) -> Result<Coefficient<FixedPointUnderlyingType>, BondedCurrencyError> {
-			let coefficient = FixedPoint::from_str(&coefficient).map_err(|_| BondedCurrencyError::InvalidInput)?;
+		fn encode_curve_coefficient(coefficient_input: String) -> Result<Coefficient<FixedPointUnderlyingType>, BondedCurrencyError> {
+			let coefficient = FixedPoint::from_str(&coefficient_input).map_err(|_| BondedCurrencyError::InvalidInput)?;
 			let actual_coefficient = coefficient.to_string();
 			let coefficient_bits = coefficient.to_bits();
 			Ok(Coefficient {

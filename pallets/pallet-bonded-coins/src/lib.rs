@@ -79,6 +79,7 @@ pub mod pallet {
 		BoundedVec, DispatchError, TokenError,
 	};
 	use sp_std::{
+		iter::Iterator,
 		ops::{AddAssign, BitOrAssign, ShlAssign},
 		prelude::*,
 		vec::Vec,
