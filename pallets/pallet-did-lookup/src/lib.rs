@@ -107,6 +107,9 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The origin that can associate accounts to itself.
+		type AssociateOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
+		/// The origin that can do other regular operations, except what
+		/// `AssociateOrigin` allows.
 		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 
 		/// The information that is returned by the origin check.
@@ -272,7 +275,7 @@ pub mod pallet {
 			req: AssociateAccountRequest,
 			expiration: BlockNumberFor<T>,
 		) -> DispatchResult {
-			let source = <T as Config<I>>::EnsureOrigin::ensure_origin(origin)?;
+			let source = <T as Config<I>>::AssociateOrigin::ensure_origin(origin)?;
 			let did_identifier = source.subject();
 			let sender = source.sender();
 
@@ -314,7 +317,7 @@ pub mod pallet {
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config<I>>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
-			let source = <T as Config<I>>::EnsureOrigin::ensure_origin(origin)?;
+			let source = <T as Config<I>>::AssociateOrigin::ensure_origin(origin)?;
 
 			ensure!(
 				<<T as Config<I>>::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
