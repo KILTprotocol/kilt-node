@@ -3,6 +3,7 @@ use frame_support::traits::{
 	fungibles::{metadata::Inspect as InspectMetadata, roles::Inspect as InspectRoles, Inspect},
 };
 use sp_runtime::{traits::Zero, TryRuntimeError};
+use sp_std::vec::Vec;
 
 use crate::{types::PoolDetails, Config, FungiblesAssetIdOf, HoldReason, Pools};
 
