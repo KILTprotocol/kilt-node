@@ -18,10 +18,10 @@
 
 //! KILT chain specification
 
+use kilt_support::traits::InspectMetadata;
 use peregrine_runtime::{
 	MetadataProvider, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SS_58_PREFIX, WASM_BINARY,
 };
-use runtime_common::bonded_currencies::InspectMetadata;
 use sc_service::ChainType;
 use serde_json::to_value;
 

@@ -18,12 +18,12 @@
 
 //! KILT chain specification
 
+use kilt_support::traits::InspectMetadata;
 use peregrine_runtime::{
 	BalancesConfig, CouncilConfig, MetadataProvider, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
 	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, TechnicalCommitteeConfig, SS_58_PREFIX, WASM_BINARY,
 };
 use runtime_common::{
-	bonded_currencies::InspectMetadata,
 	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance,
 };

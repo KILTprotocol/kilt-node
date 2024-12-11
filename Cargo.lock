@@ -5251,6 +5251,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "hex-literal 0.3.4",
  "jsonrpsee",
+ "kilt-support",
  "log",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",

@@ -30,6 +30,7 @@ use frame_support::{
 		AccountTouch, Get,
 	},
 };
+use kilt_support::traits::InspectMetadata;
 use sp_runtime::{
 	traits::Convert,
 	DispatchError, Either,
@@ -62,16 +63,6 @@ pub type FixedPointUnderlyingType = <FixedPoint as Fixed>::Bits;
 /// The generic type Target is used to determine the type of the asset id
 /// for the Either::Left variant.
 pub struct TargetFromLeft<Target>(PhantomData<Target>);
-
-/// Metadata trait for native asset.
-pub trait InspectMetadata<AssetId> {
-	// Get name for native asset.
-	fn name() -> Vec<u8>;
-	// Get symbol for native asset.
-	fn symbol() -> Vec<u8>;
-	// Get decimals for native asset.
-	fn decimals() -> u8;
-}
 
 /// Implements the Convert trait for the [TargetFromLeft] struct.
 /// This is used to convert an asset id of type L to an [Either] type.
@@ -304,7 +295,7 @@ impl<
 		Criterion: Convert<AssetKind, Either<(), ForeignAssets::AssetId>>,
 		AssetKind: AssetIdTraits,
 		AccountId,
-		MetadataProvider: InspectMetadata<AssetKind>,
+		MetadataProvider: InspectMetadata,
 	> Inspect<AccountId>
 	for NativeAndForeignAssets<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId, MetadataProvider>
 {

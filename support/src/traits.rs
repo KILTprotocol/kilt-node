@@ -276,3 +276,13 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		Ok(())
 	}
 }
+
+/// Metadata trait for native asset.
+pub trait InspectMetadata {
+	// Get name for native asset.
+	fn name() -> Vec<u8>;
+	// Get symbol for native asset.
+	fn symbol() -> Vec<u8>;
+	// Get decimals for native asset.
+	fn decimals() -> u8;
+}

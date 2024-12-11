@@ -18,11 +18,12 @@
 
 use frame_support::{parameter_types, traits::AsEnsureOriginWithArg};
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
+use kilt_support::traits::InspectMetadata;
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use runtime_common::{
 	asset_switch::{hooks::RestrictSwitchDestinationToSelf, EnsureRootAsTreasury},
 	bonded_coins::{
-		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput, InspectMetadata,
+		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput,
 		NativeAndForeignAssets as NativeAndForeignAssetsType, TargetFromLeft,
 	},
 	AccountId, Balance, SendDustAndFeesToTreasury,
@@ -115,7 +116,7 @@ parameter_types! {
 }
 
 pub struct MetadataProvider;
-impl InspectMetadata<Location> for MetadataProvider {
+impl InspectMetadata for MetadataProvider {
 	fn decimals() -> u8 {
 		15u8
 	}
