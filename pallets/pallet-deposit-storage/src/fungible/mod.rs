@@ -150,6 +150,7 @@ where
 	/// evaluation. Similarly, a decrease from `3` to `1` will imply a `amount`
 	/// value of `1`.
 	fn set_balance_on_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
+		let runtime_reason = T::RuntimeHoldReason::from(reason.clone().into());
 		SystemDeposits::<T>::try_mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
 			match maybe_existing_deposit_entry {
 				// If this is the first registered deposit for this reason, create a new storage entry.
@@ -157,7 +158,7 @@ where
 					if amount > Zero::zero() {
 						// Increase the held amount for the final runtime hold reason by `amount`.
 						<T::Currency as UnbalancedHold<T::AccountId>>::increase_balance_on_hold(
-							&T::RuntimeHoldReason::from(reason.clone().into()),
+							&runtime_reason,
 							who,
 							amount,
 							Precision::Exact,
@@ -167,7 +168,7 @@ where
 								amount,
 								owner: who.clone(),
 							},
-							reason: T::RuntimeHoldReason::from(reason.clone().into()),
+							reason: runtime_reason,
 						})
 					}
 					Ok(())
@@ -183,7 +184,7 @@ where
 						// held amount for the final runtime hold reason by the amount that was held by
 						// this reason.
 						<T::Currency as UnbalancedHold<T::AccountId>>::decrease_balance_on_hold(
-							&T::RuntimeHoldReason::from(reason.clone().into()),
+							&runtime_reason,
 							who,
 							existing_deposit_entry.deposit.amount,
 							Precision::Exact,
@@ -203,7 +204,7 @@ where
 									Error::<T>::Internal
 								})?;
 							<T::Currency as UnbalancedHold<T::AccountId>>::increase_balance_on_hold(
-								&T::RuntimeHoldReason::from(reason.clone().into()),
+								&runtime_reason,
 								who,
 								amount_to_hold,
 								Precision::Exact,
@@ -221,7 +222,7 @@ where
 									Error::<T>::Internal
 								})?;
 							<T::Currency as UnbalancedHold<T::AccountId>>::decrease_balance_on_hold(
-								&T::RuntimeHoldReason::from(reason.clone().into()),
+								&runtime_reason,
 								who,
 								amount_to_release,
 								Precision::Exact,
