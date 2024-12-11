@@ -39,7 +39,8 @@ where
 		 DepositEntry {
 		     reason,
 		     deposit: Deposit { amount, owner },
-		 }| {
+		 }|
+		 -> Result<_, TryRuntimeError> {
 			ensure!(
 				reason == HoldReason::FungibleImpl.into(),
 				TryRuntimeError::Other("Found a deposit reason different than the expected `HoldReason::FungibleImpl`")
@@ -49,18 +50,20 @@ where
 			let entry = sum.entry(owner).or_default();
 			*entry = entry.checked_add(&amount).expect("Failed to fold deposits for user.");
 
-			Ok::<_, TryRuntimeError>(sum)
+			Ok(sum)
 		},
 	)?;
 	// We verify that the total balance on hold for the `HoldReason::FungibleImpl`
 	// matches the amount of deposits stored in this pallet.
-	sum_of_deposits.into_iter().try_for_each(|(owner, deposit_sum)| {
-		ensure!(
-			<T::Currency as InspectHold<AccountIdOf<T>>>::balance_on_hold(&HoldReason::FungibleImpl.into(), &owner)
-				== deposit_sum,
-			TryRuntimeError::Other("Deposit sum for user different than the expected amount")
-		);
-		Ok::<_, TryRuntimeError>(())
-	})?;
+	sum_of_deposits
+		.into_iter()
+		.try_for_each(|(owner, deposit_sum)| -> Result<_, TryRuntimeError> {
+			ensure!(
+				<T::Currency as InspectHold<AccountIdOf<T>>>::balance_on_hold(&HoldReason::FungibleImpl.into(), &owner)
+					== deposit_sum,
+				TryRuntimeError::Other("Deposit sum for user different than the expected amount")
+			);
+			Ok(())
+		})?;
 	Ok(())
 }
