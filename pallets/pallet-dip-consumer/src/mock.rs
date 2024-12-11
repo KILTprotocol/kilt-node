@@ -86,6 +86,7 @@ impl pallet_balances::Config for TestRuntime {
 }
 
 impl pallet_did_lookup::Config for TestRuntime {
+	type AssociateOrigin = Self::EnsureOrigin;
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = ConstU64<1>;

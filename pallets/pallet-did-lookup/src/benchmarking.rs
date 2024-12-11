@@ -66,6 +66,7 @@ benchmarks_instance_pallet! {
 		T::AccountId: From<sr25519::Public> + From<ed25519::Public> + Into<LinkableAccountId> + Into<AccountId32> + From<sp_runtime::AccountId32>,
 		<T as Config<I>>::DidIdentifier: From<T::AccountId>,
 		<T as Config<I>>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, <T as Config<I>>::DidIdentifier>,
+		<T as Config<I>>::AssociateOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, <T as Config<I>>::DidIdentifier>,
 		<T as Config<I>>::Currency: Mutate<T::AccountId>,
 	}
 
@@ -92,7 +93,7 @@ benchmarks_instance_pallet! {
 		// Add existing connected_acc -> previous_did connection that will be replaced
 		Pallet::<T, I>::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect("should create previous association");
 		assert!(ConnectedAccounts::<T, I>::get(&previous_did, linkable_id.clone()).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		let origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
 		let req = AssociateAccountRequest::Polkadot(connected_acc_id.into(), sig.into());
 	}: associate_account<T::RuntimeOrigin>(origin, req, expire_at)
@@ -125,7 +126,7 @@ benchmarks_instance_pallet! {
 		// Add existing connected_acc -> previous_did connection that will be replaced
 		Pallet::<T, I>::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect("should create previous association");
 		assert!(ConnectedAccounts::<T, I>::get(&previous_did, linkable_id.clone()).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		let origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
 		let req = AssociateAccountRequest::Polkadot(connected_acc_id.into(), sig.into());
 	}: associate_account<T::RuntimeOrigin>(origin, req, expire_at)
@@ -158,7 +159,7 @@ benchmarks_instance_pallet! {
 		// Add existing connected_acc -> previous_did connection that will be replaced
 		Pallet::<T, I>::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect("should create previous association");
 		assert!(ConnectedAccounts::<T, I>::get(&previous_did, linkable_id.clone()).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		let origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
 		let req = AssociateAccountRequest::Polkadot(connected_acc_id, sig.into());
 	}: associate_account<T::RuntimeOrigin>(origin, req, expire_at)
@@ -193,7 +194,7 @@ benchmarks_instance_pallet! {
 		// Add existing connected_acc -> previous_did connection that will be replaced
 		Pallet::<T, I>::add_association(caller.clone(), previous_did.clone(), eth_account.into()).expect("should create previous association");
 		assert!(ConnectedAccounts::<T, I>::get(&previous_did, LinkableAccountId::from(eth_account)).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		let origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 		let req = AssociateAccountRequest::Ethereum(eth_account, sig.into());
 	}: associate_account<T::RuntimeOrigin>(origin, req, expire_at)
 	verify {
@@ -213,7 +214,7 @@ benchmarks_instance_pallet! {
 		// Add existing sender -> previous_did connection that will be replaced
 		Pallet::<T, I>::add_association(caller.clone(), previous_did.clone(), caller.clone().into()).expect("should create previous association");
 		assert!(ConnectedAccounts::<T, I>::get(&previous_did, &linkable_id).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		let origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 	}: _<T::RuntimeOrigin>(origin)
 	verify {
 		assert!(ConnectedDids::<T, I>::get(&linkable_id).is_some());

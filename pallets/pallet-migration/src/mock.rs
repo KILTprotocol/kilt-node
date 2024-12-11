@@ -283,6 +283,7 @@ impl pallet_did_lookup::Config for Test {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
+	type AssociateOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
 	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 	type DidIdentifier = SubjectId;
@@ -329,6 +330,7 @@ parameter_types! {
 
 impl pallet_web3_names::Config for Test {
 	type BanOrigin = TestBanOrigin;
+	type ClaimOrigin = TestOwnerOrigin;
 	type OwnerOrigin = TestOwnerOrigin;
 	type OriginSuccess = TestOriginSuccess;
 	type Currency = Balances;

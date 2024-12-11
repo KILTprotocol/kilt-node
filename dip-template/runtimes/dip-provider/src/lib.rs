@@ -425,6 +425,7 @@ impl did::Config for Runtime {
 }
 
 impl pallet_did_lookup::Config for Runtime {
+	type AssociateOrigin = Self::EnsureOrigin;
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
@@ -441,6 +442,7 @@ pub type Web3Name = runtime_common::Web3Name<3, 32>;
 impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
+	type ClaimOrigin = Self::OwnerOrigin;
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
 	type MaxNameLength = ConstU32<32>;
