@@ -69,7 +69,9 @@ where
 
 			// Fold the deposit amount for the current user.
 			let entry = sum.entry((owner, reason.encode())).or_default();
-			*entry = entry.checked_add(&amount).expect("Failed to fold deposits for user.");
+			*entry = entry
+				.checked_add(&amount)
+				.ok_or(TryRuntimeError::Other("Failed to fold deposits for user."))?;
 
 			Ok(sum)
 		},
@@ -78,8 +80,9 @@ where
 	// amount of deposits stored in this pallet.
 	sum_of_deposits.into_iter().try_for_each(
 		|((owner, encoded_runtime_hold_reason), deposit_sum)| -> Result<_, TryRuntimeError> {
-			let runtime_hold_reason =
-				T::RuntimeHoldReason::decode(&mut encoded_runtime_hold_reason.as_slice()).unwrap();
+			let runtime_hold_reason = T::RuntimeHoldReason::decode(&mut encoded_runtime_hold_reason.as_slice()).or(
+				Err(TryRuntimeError::Other("Failed to decode stored `RuntimeHoldReason`.")),
+			)?;
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::balance_on_hold(&runtime_hold_reason, &owner)
 					== deposit_sum,
