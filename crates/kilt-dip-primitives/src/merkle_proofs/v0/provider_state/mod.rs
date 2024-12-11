@@ -455,7 +455,7 @@ impl<
 		DidMerkleHasher: Hash<Output = Commitment>,
 	{
 		ensure!(
-			self.dip_proof.revealed.len() <= MAX_REVEALED_LEAVES_COUNT.saturated_into(),
+			self.dip_proof.revealed.len() <= MAX_REVEALED_LEAVES_COUNT.saturated_into::<usize>(),
 			Error::TooManyLeavesRevealed
 		);
 

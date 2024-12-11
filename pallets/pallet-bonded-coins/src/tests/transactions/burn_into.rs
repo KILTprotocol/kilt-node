@@ -58,7 +58,7 @@ fn burn_first_coin() {
 				transferable: true,
 				bonded_currencies: bounded_vec![DEFAULT_BONDED_CURRENCY_ID],
 				state: PoolStatus::Active,
-				collateral_id: DEFAULT_COLLATERAL_CURRENCY_ID,
+				collateral: DEFAULT_COLLATERAL_CURRENCY_ID,
 				denomination: 0,
 				owner: ACCOUNT_99,
 				min_operation_balance: 1,

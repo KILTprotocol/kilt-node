@@ -16,18 +16,28 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::parameter_types;
+use frame_support::{parameter_types, traits::AsEnsureOriginWithArg};
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
+use kilt_support::traits::InspectMetadata;
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
 use runtime_common::{
-	asset_switch::hooks::RestrictSwitchDestinationToSelf, AccountId, Balance, SendDustAndFeesToTreasury,
+	asset_switch::{hooks::RestrictSwitchDestinationToSelf, EnsureRootAsTreasury},
+	bonded_coins::{
+		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput,
+		NativeAndForeignAssets as NativeAndForeignAssetsType, TargetFromLeft,
+	},
+	AccountId, Balance, SendDustAndFeesToTreasury,
 };
+use sp_core::{ConstU128, ConstU32, ConstU8};
+use sp_std::vec::Vec;
+use xcm::v4::{Junctions, Location};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use crate::{
 	constants, weights,
 	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
-	Balances, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
+	Balances, BondedCurrencies, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
+	RuntimeHoldReason,
 };
 
 pub(crate) mod credential;
@@ -99,4 +109,73 @@ impl pallet_asset_switch::Config<KiltToEKiltSwitchPallet> for Runtime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = crate::benchmarks::asset_switch::CreateFungibleForAssetSwitchPool1;
+}
+
+parameter_types! {
+	pub const NativeAsset: Location = Junctions::Here.into_location();
+}
+
+pub struct MetadataProvider;
+impl InspectMetadata for MetadataProvider {
+	fn decimals() -> u8 {
+		15u8
+	}
+	fn name() -> Vec<u8> {
+		b"KILT".to_vec()
+	}
+	fn symbol() -> Vec<u8> {
+		b"PILT".to_vec()
+	}
+}
+
+pub type NativeAndForeignAssets =
+	NativeAndForeignAssetsType<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId, MetadataProvider>;
+
+impl pallet_bonded_coins::Config for Runtime {
+	type BaseDeposit = ConstU128<{ constants::bonded_coins::BASE_DEPOSIT }>;
+	type Collaterals = NativeAndForeignAssets;
+	type CurveParameterInput = FixedPointInput;
+	type CurveParameterType = FixedPoint;
+	type DefaultOrigin = EnsureSigned<AccountId>;
+	type DepositCurrency = Balances;
+	type DepositPerCurrency = ConstU128<{ constants::bonded_coins::DEPOSIT_PER_CURRENCY }>;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Fungibles = BondedFungibles;
+	type MaxCurrenciesPerPool = ConstU32<{ constants::bonded_coins::MAX_CURRENCIES }>;
+	type MaxDenomination = ConstU8<{ constants::bonded_coins::MAX_DENOMINATION }>;
+	type MaxStringInputLength = ConstU32<{ constants::bonded_coins::MAX_STRING_LENGTH }>;
+	type NextAssetIds = NextAssetIdGenerator<BondedCurrencies>;
+	type PoolCreateOrigin = EnsureSigned<AccountId>;
+	type PoolId = AccountId;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type WeightInfo = weights::pallet_bonded_coins::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = crate::benchmarks::bonded_coins::BondedFungiblesBenchmarkHelper<Runtime>;
+}
+
+pub(crate) type BondedFungiblesInstance = pallet_assets::Instance2;
+impl pallet_assets::Config<BondedFungiblesInstance> for Runtime {
+	type ApprovalDeposit = constants::assets::ApprovalDeposit;
+	type AssetAccountDeposit = constants::assets::AssetAccountDeposit;
+	type AssetDeposit = constants::assets::AssetDeposit;
+	type AssetId = AssetId;
+	type AssetIdParameter = AssetId;
+	type Balance = Balance;
+	type CallbackHandle = ();
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureRootAsTreasury<Runtime>>;
+	type Currency = Balances;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
+	type MetadataDepositBase = constants::assets::MetaDepositBase;
+	type MetadataDepositPerByte = constants::assets::MetaDepositPerByte;
+	type RemoveItemsLimit = constants::assets::RemoveItemsLimit;
+	type RuntimeEvent = RuntimeEvent;
+	type StringLimit = constants::assets::StringLimit;
+	type WeightInfo = weights::pallet_bonded_assets::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }

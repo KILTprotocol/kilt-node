@@ -5251,6 +5251,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "hex-literal 0.3.4",
  "jsonrpsee",
+ "kilt-support",
  "log",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
@@ -7135,6 +7136,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-bonded-coins-runtime-api"
+version = "1.15.0-dev"
+dependencies = [
+ "pallet-bonded-coins",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-bounties"
 version = "28.0.0"
 source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.7.0#e046d3b2caaca6c43a60f26594052c5c806b980e"
@@ -8730,6 +8742,8 @@ dependencies = [
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-bonded-coins",
+ "pallet-bonded-coins-runtime-api",
  "pallet-collective",
  "pallet-democracy",
  "pallet-deposit-storage",
@@ -10920,6 +10934,7 @@ dependencies = [
  "pallet-assets",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-bonded-coins",
  "pallet-deposit-storage",
  "pallet-did-lookup",
  "pallet-dip-provider",
@@ -10946,6 +10961,7 @@ dependencies = [
  "staging-xcm",
  "staging-xcm-builder",
  "staging-xcm-executor",
+ "substrate-fixed",
 ]
 
 [[package]]

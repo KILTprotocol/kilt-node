@@ -180,6 +180,7 @@ pub(crate) mod runtime {
 
 	impl pallet_web3_names::Config for Test {
 		type BanOrigin = TestBanOrigin;
+		type ClaimOrigin = TestOwnerOrigin;
 		type OwnerOrigin = TestOwnerOrigin;
 		type OriginSuccess = TestOriginSuccess;
 		type Currency = Balances;

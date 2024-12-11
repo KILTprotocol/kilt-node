@@ -283,6 +283,7 @@ impl pallet_did_lookup::Config for Test {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
+	type AssociateOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
 	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 	type DidIdentifier = SubjectId;
@@ -299,7 +300,7 @@ impl TryFrom<Vec<u8>> for TestWeb3Name {
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		ensure!(
-			value.len() >= <Test as pallet_web3_names::Config>::MinNameLength::get().saturated_into(),
+			value.len() >= <Test as pallet_web3_names::Config>::MinNameLength::get().saturated_into::<usize>(),
 			Self::Error::TooShort
 		);
 		let bounded_vec: BoundedVec<u8, <Test as pallet_web3_names::Config>::MaxNameLength> =
@@ -329,6 +330,7 @@ parameter_types! {
 
 impl pallet_web3_names::Config for Test {
 	type BanOrigin = TestBanOrigin;
+	type ClaimOrigin = TestOwnerOrigin;
 	type OwnerOrigin = TestOwnerOrigin;
 	type OriginSuccess = TestOriginSuccess;
 	type Currency = Balances;

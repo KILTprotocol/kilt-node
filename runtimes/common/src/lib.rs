@@ -46,6 +46,7 @@ use sp_weights::Weight;
 pub mod asset_switch;
 pub mod assets;
 pub mod authorization;
+pub mod bonded_coins;
 pub mod constants;
 pub mod dip;
 pub mod dot_names;

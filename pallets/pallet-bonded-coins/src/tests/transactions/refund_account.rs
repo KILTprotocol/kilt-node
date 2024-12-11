@@ -251,9 +251,7 @@ fn refund_below_min_balance() {
 				true,
 				1000
 			));
-			Pools::<Test>::mutate(&pool_id, |details| {
-				details.as_mut().unwrap().collateral_id = collateral_id
-			});
+			Pools::<Test>::mutate(&pool_id, |details| details.as_mut().unwrap().collateral = collateral_id);
 			// put less than 2*min balance in pool account
 			let total_collateral = 1500;
 			assert_ok!(Assets::mint_into(collateral_id, &pool_id.clone(), total_collateral));

@@ -214,7 +214,7 @@ mod benchmarks {
 	{
 		let owner = account("owner", 0, 0);
 		let state = state.unwrap_or(PoolStatus::Active);
-		let collateral_id = calculate_default_collateral_asset_id::<T>();
+		let collateral = calculate_default_collateral_asset_id::<T>();
 		let denomination = denomination.unwrap_or(10);
 
 		let pool_id: T::PoolId = calculate_pool_id(&bonded_coin_ids);
@@ -223,7 +223,7 @@ mod benchmarks {
 			manager,
 			owner,
 			state,
-			collateral_id,
+			collateral,
 			denomination,
 			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids.clone()),
 			transferable: true,
@@ -689,7 +689,6 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-
 	fn burn_into_lmsr(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::PoolCreateOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
@@ -868,7 +867,6 @@ mod benchmarks {
 		make_free_for_deposit::<T>(&pool_account);
 		let collateral_id = create_default_collateral_asset::<T>();
 		T::Collaterals::touch(collateral_id.clone(), &pool_account, &pool_account).expect("Touching should work");
-
 		set_collateral_balance::<T>(collateral_id, &pool_account, 10000u128);
 
 		let holder: T::AccountId = account("holder", 0, 0);

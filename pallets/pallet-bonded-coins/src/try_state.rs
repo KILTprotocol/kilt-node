@@ -3,6 +3,7 @@ use frame_support::traits::{
 	fungibles::{metadata::Inspect as InspectMetadata, roles::Inspect as InspectRoles, Inspect},
 };
 use sp_runtime::{traits::Zero, TryRuntimeError};
+use sp_std::vec::Vec;
 
 use crate::{types::PoolDetails, Config, FungiblesAssetIdOf, HoldReason, Pools};
 
@@ -12,7 +13,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 
 	Pools::<T>::iter().try_for_each(|(pool_id, pool_details)| {
 		let PoolDetails {
-			collateral_id,
+			collateral,
 			deposit,
 			owner,
 			bonded_currencies,
@@ -28,8 +29,8 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 		assert!(balance_on_hold_user >= deposit);
 
 		// Collateral checks
-		assert!(T::Collaterals::asset_exists(collateral_id.clone()));
-		let collateral_issuance_pool = T::Collaterals::total_balance(collateral_id, &pool_account);
+		assert!(T::Collaterals::asset_exists(collateral.clone()));
+		let collateral_issuance_pool = T::Collaterals::total_balance(collateral, &pool_account);
 
 		// Bonded currencies checks
 		bonded_currencies
