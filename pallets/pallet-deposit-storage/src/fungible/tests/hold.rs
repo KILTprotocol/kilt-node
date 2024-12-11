@@ -33,8 +33,7 @@ use crate::{
 fn hold() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason::default();
 
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 10)
@@ -73,8 +72,7 @@ fn hold() {
 fn zero_hold() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason::default();
 			<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(&reason, &OWNER, 0)
 				.expect("Failed to hold amount for user.");
@@ -87,8 +85,7 @@ fn zero_hold() {
 fn hold_same_reason_different_user() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000), (OTHER_ACCOUNT, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason::default();
 			assert_ok!(<Pallet<TestRuntime> as MutateHold<AccountId32>>::hold(
 				&reason, &OWNER, 10
@@ -104,8 +101,7 @@ fn hold_same_reason_different_user() {
 fn too_many_holds() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Occupy the only hold available with a different reason.
 			<Balances as MutateHold<AccountId32>>::hold(&TestRuntimeHoldReason::Else, &OWNER, 1)
 				.expect("Failed to hold amount for user.");

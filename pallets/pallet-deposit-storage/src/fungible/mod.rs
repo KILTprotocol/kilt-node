@@ -35,6 +35,9 @@ const LOG_TARGET: &str = "runtime::pallet_deposit_storage::mutate-hold";
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(test, feature = "try-runtime"))]
+pub(super) mod try_state;
+
 // This trait is implemented by forwarding everything to the `Currency`
 // implementation.
 impl<T> Inspect<T::AccountId> for Pallet<T>
@@ -88,7 +91,7 @@ impl<Namespace, Key> From<PalletDepositStorageReason<Namespace, Key>> for HoldRe
 	fn from(_value: PalletDepositStorageReason<Namespace, Key>) -> Self {
 		// All the deposits ever taken like this will count towards the same hold
 		// reason.
-		Self::Deposit
+		Self::FungibleImpl
 	}
 }
 

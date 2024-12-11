@@ -152,6 +152,14 @@ impl ExtBuilder {
 		ext
 	}
 
+	pub(crate) fn build_and_execute_with_sanity_tests(self, run: impl FnOnce()) {
+		let mut ext = self.build();
+		ext.execute_with(|| {
+			run();
+			crate::try_state::try_state::<TestRuntime>(System::block_number()).unwrap();
+		});
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
 		let mut ext = self.build();

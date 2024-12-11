@@ -31,8 +31,7 @@ use crate::{
 fn balance_on_hold() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason {
 				namespace: DepositNamespace::ExampleNamespace,
 				key: [0].to_vec().try_into().unwrap(),
@@ -66,8 +65,7 @@ fn balance_on_hold() {
 fn multiple_holds() {
 	ExtBuilder::default()
 		.with_balances(vec![(OWNER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let reason = PalletDepositStorageReason {
 				namespace: DepositNamespace::ExampleNamespace,
 				key: [0].to_vec().try_into().unwrap(),

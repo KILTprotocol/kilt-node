@@ -37,6 +37,9 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(test, feature = "try-runtime"))]
+mod try_state;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
@@ -69,7 +72,7 @@ pub mod pallet {
 		pallet_prelude::*,
 		traits::{
 			fungible::{hold::Mutate, Inspect},
-			EnsureOrigin,
+			EnsureOrigin, Hooks,
 		},
 	};
 	use frame_system::pallet_prelude::*;
@@ -115,6 +118,7 @@ pub mod pallet {
 	#[pallet::composite_enum]
 	pub enum HoldReason {
 		Deposit,
+		FungibleImpl,
 	}
 
 	#[pallet::error]
@@ -192,6 +196,14 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+			crate::try_state::try_state::<T>(n)
+		}
+	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
