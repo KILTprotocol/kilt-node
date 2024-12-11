@@ -33,7 +33,7 @@ where
 	// Sum together all the deposits stored as part of the `MutateHold`
 	// implementation, and fail if any of them does not have the expected
 	// `crate::HoldReason::FungibleImpl` reason.
-	let sum_of_deposits = SystemDeposits::<T>::iter_values().try_fold(
+	let users_deposits = SystemDeposits::<T>::iter_values().try_fold(
 		BTreeMap::<AccountIdOf<T>, BalanceOf<T>>::new(),
 		|mut sum,
 		 DepositEntry {
@@ -57,7 +57,7 @@ where
 	)?;
 	// We verify that the total balance on hold for the `HoldReason::FungibleImpl`
 	// matches the amount of deposits stored in this pallet.
-	sum_of_deposits
+	users_deposits
 		.into_iter()
 		.try_for_each(|(owner, deposit_sum)| -> Result<_, TryRuntimeError> {
 			ensure!(

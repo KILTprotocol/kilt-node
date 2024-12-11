@@ -51,7 +51,7 @@ where
 	// Sum together all the deposits stored not part of the `MutateHold`
 	// implementation, and fail if any of them has the unexpected
 	// `crate::HoldReason::FungibleImpl` reason.
-	let sum_of_deposits = Deposits::<T>::iter_values().try_fold(
+	let users_deposits = Deposits::<T>::iter_values().try_fold(
 		// We can't use `T::RuntimeHoldReason` as a key because it does not implement `Ord`, so we `.encode()` it here.
 		BTreeMap::<(AccountIdOf<T>, Vec<u8>), BalanceOf<T>>::new(),
 		|mut sum,
@@ -78,7 +78,7 @@ where
 	)?;
 	// We verify that the total balance on hold for each hold reason matches the
 	// amount of deposits stored in this pallet.
-	sum_of_deposits.into_iter().try_for_each(
+	users_deposits.into_iter().try_for_each(
 		|((owner, encoded_runtime_hold_reason), deposit_sum)| -> Result<_, TryRuntimeError> {
 			let runtime_hold_reason = T::RuntimeHoldReason::decode(&mut encoded_runtime_hold_reason.as_slice()).or(
 				Err(TryRuntimeError::Other("Failed to decode stored `RuntimeHoldReason`.")),
