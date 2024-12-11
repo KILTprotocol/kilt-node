@@ -30,8 +30,7 @@ fn add_deposit_new() {
 	ExtBuilder::default()
 		//	Deposit amount + existential deposit
 		.with_balances(vec![(OWNER, 500 + 10_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let deposit = DepositEntryOf::<TestRuntime> {
 				reason: HoldReason::Deposit.into(),
 				deposit: Deposit {
@@ -69,8 +68,7 @@ fn add_deposit_existing() {
 	let key = DepositKeyOf::<TestRuntime>::default();
 	ExtBuilder::default()
 		.with_deposits(vec![(namespace.clone(), key.clone(), deposit.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<TestRuntime>::add_deposit(namespace.clone(), key.clone(), deposit),
 				Error::<TestRuntime>::DepositExisting
@@ -80,7 +78,7 @@ fn add_deposit_existing() {
 
 #[test]
 fn add_deposit_failed_to_hold() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		let deposit = DepositEntryOf::<TestRuntime> {
 			reason: HoldReason::Deposit.into(),
 			deposit: Deposit {
