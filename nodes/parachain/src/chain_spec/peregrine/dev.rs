@@ -19,11 +19,11 @@
 //! KILT chain specification
 
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
-	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, TechnicalCommitteeConfig, CURRENCY_SYMBOL,
-	DENOMINATION, SS_58_PREFIX, WASM_BINARY,
+	BalancesConfig, CouncilConfig, MetadataProvider, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
+	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, TechnicalCommitteeConfig, SS_58_PREFIX, WASM_BINARY,
 };
 use runtime_common::{
+	bonded_currencies::InspectMetadata,
 	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance,
 };
@@ -40,7 +40,8 @@ use crate::chain_spec::{
 pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
 	let genesis_config = to_value(generate_genesis_state()).expect("Creating genesis state failed");
-	let currency_symbol = String::from_utf8(CURRENCY_SYMBOL.to_vec()).expect("Creating currency symbol failed");
+	let currency_symbol = String::from_utf8(MetadataProvider::symbol()).expect("Creating currency symbol failed");
+	let denomination = MetadataProvider::decimals();
 
 	ChainSpec::builder(
 		wasm_binary,
@@ -54,7 +55,7 @@ pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 	.with_chain_type(ChainType::Development)
 	.with_properties(get_properties(
 		&currency_symbol,
-		DENOMINATION.into(),
+		denomination.into(),
 		SS_58_PREFIX.into(),
 	))
 	.with_genesis_config(genesis_config)

@@ -43,6 +43,7 @@ use sp_runtime::{create_runtime_str, generic};
 use sp_std::{prelude::*, vec::Vec};
 
 // Internal crates
+pub use kilt::MetadataProvider;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 use runtime_common::{constants, fees::WeightToFee, Address, Signature};
@@ -58,7 +59,7 @@ use runtime_apis::_InternalImplRuntimeApis;
 pub use runtime_apis::{api, RuntimeApi};
 mod system;
 use sp_version::RuntimeVersion;
-pub use system::{SessionKeys, CURRENCY_NAME, CURRENCY_SYMBOL, DENOMINATION, SS_58_PREFIX};
+pub use system::{SessionKeys, SS_58_PREFIX};
 
 use crate::runtime_apis::RUNTIME_API_VERSION;
 mod weights;

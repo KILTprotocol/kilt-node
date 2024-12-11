@@ -33,9 +33,7 @@ use xcm::v4::{Junctions, Location};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use crate::{
-	constants,
-	system::{CURRENCY_NAME, CURRENCY_SYMBOL, DENOMINATION},
-	weights,
+	constants, weights,
 	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
 	Balances, BondedCurrencies, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
 	RuntimeHoldReason,
@@ -119,13 +117,13 @@ parameter_types! {
 pub struct MetadataProvider;
 impl InspectMetadata<Location> for MetadataProvider {
 	fn decimals() -> u8 {
-		DENOMINATION
+		15u8
 	}
 	fn name() -> Vec<u8> {
-		CURRENCY_NAME.to_vec()
+		b"KILT".to_vec()
 	}
 	fn symbol() -> Vec<u8> {
-		CURRENCY_SYMBOL.to_vec()
+		b"PILT".to_vec()
 	}
 }
 
