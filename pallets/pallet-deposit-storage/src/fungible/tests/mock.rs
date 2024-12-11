@@ -17,28 +17,20 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	construct_runtime, parameter_types,
+	construct_runtime,
 	sp_runtime::{
 		testing::H256,
 		traits::{BlakeTwo256, IdentityLookup},
 		AccountId32,
 	},
-	traits::{ConstU16, ConstU32, ConstU64, Currency, Everything},
+	traits::{ConstU128, ConstU16, ConstU32, ConstU64, Currency, Everything, VariantCount},
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
-use crate::{self as storage_deposit_pallet, DepositEntryOf, DepositKeyOf, Pallet};
-
-pub(crate) type Balance = u128;
-
-#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug, Default)]
-pub enum DepositNamespace {
-	#[default]
-	ExampleNamespace,
-}
+use crate::{self as storage_deposit_pallet, HoldReason};
 
 construct_runtime!(
 	pub struct TestRuntime {
@@ -47,6 +39,29 @@ construct_runtime!(
 		Balances: pallet_balances,
 	}
 );
+
+pub(crate) type Balance = u128;
+
+// Required to test more than a single hold reason without introducing any new
+// pallets.
+#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum TestRuntimeHoldReason {
+	Deposit,
+	Else,
+}
+
+impl From<HoldReason> for TestRuntimeHoldReason {
+	fn from(_value: HoldReason) -> Self {
+		Self::Deposit
+	}
+}
+
+// This value is used by the `Balances` pallet to create the limit for the
+// `BoundedVec` of holds. By returning `1` here, we make it possible to hit to
+// hold limit.
+impl VariantCount for TestRuntimeHoldReason {
+	const VARIANT_COUNT: u32 = 1;
+}
 
 impl frame_system::Config for TestRuntime {
 	type AccountData = pallet_balances::AccountData<Balance>;
@@ -75,27 +90,26 @@ impl frame_system::Config for TestRuntime {
 	type Version = ();
 }
 
-parameter_types! {
-	pub const ExistentialDeposit: Balance = 500;
-	pub const MaxLocks: u32 = 50;
-	pub const MaxReserves: u32 = 50;
-	pub const MaxFreezes: u32 = 50;
-}
-
 impl pallet_balances::Config for TestRuntime {
 	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type FreezeIdentifier = RuntimeFreezeReason;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type MaxFreezes = MaxFreezes;
+	type RuntimeHoldReason = TestRuntimeHoldReason;
+	type MaxFreezes = ConstU32<1>;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;
-	type ExistentialDeposit = ExistentialDeposit;
+	type ExistentialDeposit = ConstU128<1>;
 	type AccountStore = System;
 	type WeightInfo = ();
-	type MaxLocks = MaxLocks;
-	type MaxReserves = MaxReserves;
+	type MaxLocks = ConstU32<1>;
+	type MaxReserves = ConstU32<1>;
 	type ReserveIdentifier = [u8; 8];
+}
+
+#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug, Default)]
+pub enum DepositNamespace {
+	#[default]
+	ExampleNamespace,
 }
 
 impl crate::Config for TestRuntime {
@@ -103,7 +117,7 @@ impl crate::Config for TestRuntime {
 	type Currency = Balances;
 	type DepositHooks = ();
 	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeHoldReason = TestRuntimeHoldReason;
 	type MaxKeyLength = ConstU32<256>;
 	type Namespace = DepositNamespace;
 	#[cfg(feature = "runtime-benchmarks")]
@@ -115,22 +129,11 @@ pub(crate) const OWNER: AccountId32 = AccountId32::new([100u8; 32]);
 pub(crate) const OTHER_ACCOUNT: AccountId32 = AccountId32::new([101u8; 32]);
 
 #[derive(Default)]
-pub(crate) struct ExtBuilder(
-	Vec<(AccountId32, Balance)>,
-	Vec<(DepositNamespace, DepositKeyOf<TestRuntime>, DepositEntryOf<TestRuntime>)>,
-);
+pub(crate) struct ExtBuilder(Vec<(AccountId32, Balance)>);
 
 impl ExtBuilder {
 	pub(crate) fn with_balances(mut self, balances: Vec<(AccountId32, Balance)>) -> Self {
 		self.0 = balances;
-		self
-	}
-
-	pub(crate) fn with_deposits(
-		mut self,
-		deposits: Vec<(DepositNamespace, DepositKeyOf<TestRuntime>, DepositEntryOf<TestRuntime>)>,
-	) -> Self {
-		self.1 = deposits;
 		self
 	}
 
@@ -140,12 +143,6 @@ impl ExtBuilder {
 		ext.execute_with(|| {
 			for (account_id, amount) in self.0 {
 				Balances::make_free_balance_be(&account_id, amount);
-			}
-
-			for (namespace, key, entry) in self.1 {
-				// Fund each account with ED + deposit amount
-				Balances::make_free_balance_be(&entry.deposit.owner, 500 + entry.deposit.amount);
-				Pallet::<TestRuntime>::add_deposit(namespace, key, entry).unwrap();
 			}
 		});
 
@@ -158,13 +155,5 @@ impl ExtBuilder {
 			run();
 			crate::try_state::try_state::<TestRuntime>(System::block_number()).unwrap();
 		});
-	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
-		let mut ext = self.build();
-		let keystore = sp_keystore::testing::MemoryKeystore::new();
-		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
-		ext
 	}
 }

@@ -27,6 +27,8 @@
 
 mod default_weights;
 mod deposit;
+mod fungible;
+pub use fungible::PalletDepositStorageReason;
 pub mod traits;
 
 #[cfg(test)]
@@ -35,12 +37,15 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(test, feature = "try-runtime"))]
+mod try_state;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
 pub use crate::{default_weights::WeightInfo, deposit::FixedDepositCollectorViaDepositsPallet, pallet::*};
 
-const LOG_TARGET: &str = "pallet_deposit_storage";
+const LOG_TARGET: &str = "runtime::pallet_deposit_storage";
 
 #[frame_support::pallet]
 // `.expect()` is used in the macro-generated code, and we have to ignore it.
@@ -67,7 +72,7 @@ pub mod pallet {
 		pallet_prelude::*,
 		traits::{
 			fungible::{hold::Mutate, Inspect},
-			EnsureOrigin,
+			EnsureOrigin, Hooks,
 		},
 	};
 	use frame_system::pallet_prelude::*;
@@ -113,6 +118,7 @@ pub mod pallet {
 	#[pallet::composite_enum]
 	pub enum HoldReason {
 		Deposit,
+		FungibleImpl,
 	}
 
 	#[pallet::error]
@@ -132,6 +138,8 @@ pub mod pallet {
 		FailedToRelease,
 		/// The external hook failed.
 		Hook(u16),
+		/// Internal error.
+		Internal,
 	}
 
 	#[pallet::event]
@@ -171,9 +179,31 @@ pub mod pallet {
 		DepositEntryOf<T>,
 	>;
 
+	/// Storage of all system deposits. They are the same as user deposits, but
+	/// cannot be claimed back by the payers. Instead, some on chain logic must
+	/// trigger their release.
+	#[pallet::storage]
+	#[pallet::getter(fn system_deposits)]
+	pub(crate) type SystemDeposits<T> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		<T as Config>::Namespace,
+		Blake2_128Concat,
+		DepositKeyOf<T>,
+		DepositEntryOf<T>,
+	>;
+
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+			crate::try_state::try_state::<T>(n)
+		}
+	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
