@@ -75,7 +75,7 @@ fn single_currency() {
 				})
 			);
 			assert_eq!(details.denomination, DEFAULT_BONDED_DENOMINATION);
-			assert_eq!(details.collateral_id, DEFAULT_COLLATERAL_CURRENCY_ID);
+			assert_eq!(details.collateral, DEFAULT_COLLATERAL_CURRENCY_ID);
 			assert_eq!(details.bonded_currencies, vec![new_asset_id]);
 
 			// collateral is id 0, new bonded currency should be 1, next is 2

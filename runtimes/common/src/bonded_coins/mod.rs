@@ -36,9 +36,14 @@ use sp_runtime::{
 	Either::{Left, Right},
 };
 use sp_std::{marker::PhantomData, vec::Vec};
-use substrate_fixed::types::{I75F53, U75F53};
+use substrate_fixed::{
+	traits::Fixed,
+	types::{I75F53, U75F53},
+};
 
 pub mod hooks;
+
+pub mod runtime_api;
 
 /// The AssetId for bonded assets.
 pub type AssetId = u32;
@@ -48,6 +53,9 @@ pub type FixedPointInput = U75F53;
 
 /// Fixed point number used for doing calculation steps in the bonding curves.
 pub type FixedPoint = I75F53;
+
+/// For a I75F53, the underlying type is a i128.
+pub type FixedPointUnderlyingType = <FixedPoint as Fixed>::Bits;
 
 /// Struct to implement the desired [Convert] trait needed for the
 /// [NativeAndForeignAssets] type.

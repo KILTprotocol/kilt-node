@@ -32,6 +32,7 @@ kilt-runtime-api-did                       = { workspace = true }
 kilt-runtime-api-public-credentials        = { workspace = true }
 kilt-runtime-api-staking                   = { workspace = true }
 pallet-asset-switch-runtime-api            = { workspace = true }
+pallet-bonded-coins-runtime-api            = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 unique-linking-runtime-api                 = { workspace = true }
 
@@ -206,6 +207,7 @@ std = [
   "pallet-aura/std",
   "pallet-authorship/std",
   "pallet-balances/std",
+  "pallet-bonded-coins-runtime-api/std",
   "pallet-bonded-coins/std",
   "pallet-collective/std",
   "pallet-democracy/std",
