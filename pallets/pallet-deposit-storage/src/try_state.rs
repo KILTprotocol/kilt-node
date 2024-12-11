@@ -28,7 +28,7 @@ use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::{traits::CheckedAdd, TryRuntimeError};
-use sp_std::collections::btree_map::BTreeMap;
+use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
 
 use crate::{deposit::DepositEntry, AccountIdOf, BalanceOf, Config, Deposits, HoldReason};
 
@@ -58,7 +58,8 @@ where
 		 DepositEntry {
 		     reason,
 		     deposit: Deposit { amount, owner },
-		 }| {
+		 }|
+		 -> Result<_, TryRuntimeError> {
 			// Regular deposits should not interfere with the `MutateHold` implementation
 			// state.
 			ensure!(
@@ -70,14 +71,13 @@ where
 			let entry = sum.entry((owner, reason.encode())).or_default();
 			*entry = entry.checked_add(&amount).expect("Failed to fold deposits for user.");
 
-			Ok::<_, TryRuntimeError>(sum)
+			Ok(sum)
 		},
 	)?;
 	// We verify that the total balance on hold for each hold reason matches the
 	// amount of deposits stored in this pallet.
-	sum_of_deposits
-		.into_iter()
-		.try_for_each(|((owner, encoded_runtime_hold_reason), deposit_sum)| {
+	sum_of_deposits.into_iter().try_for_each(
+		|((owner, encoded_runtime_hold_reason), deposit_sum)| -> Result<_, TryRuntimeError> {
 			let runtime_hold_reason =
 				T::RuntimeHoldReason::decode(&mut encoded_runtime_hold_reason.as_slice()).unwrap();
 			ensure!(
@@ -85,7 +85,8 @@ where
 					== deposit_sum,
 				TryRuntimeError::Other("Deposit sum for user different than the expected amount")
 			);
-			Ok::<_, TryRuntimeError>(())
-		})?;
+			Ok(())
+		},
+	)?;
 	Ok(())
 }
