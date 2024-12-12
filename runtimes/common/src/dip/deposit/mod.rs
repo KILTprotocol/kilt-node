@@ -24,7 +24,7 @@ use pallet_dip_provider::IdentityCommitmentVersion;
 use parity_scale_codec::Decode;
 use sp_core::ConstU128;
 
-use crate::{
+pub use crate::{
 	constants::dip_provider::COMMITMENT_DEPOSIT,
 	deposits::{DepositKey, DepositNamespace},
 	AccountId, DidIdentifier,

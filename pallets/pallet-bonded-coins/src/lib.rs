@@ -395,11 +395,8 @@ pub mod pallet {
 
 			let deposit_amount = Self::calculate_pool_deposit(currency_length);
 
-			let hold_reason = T::HoldReason::try_from(pool_id.clone()).map_err(|_| {
-				log::error!(target: LOG_TARGET, "Failed to convert pool ID into a valid hold reason.");
-				Error::<T>::Internal
-			})?;
-			T::DepositCurrency::hold(&T::RuntimeHoldReason::from(hold_reason), &who, deposit_amount)?;
+			let hold_reason = Self::calculate_hold_reason(&pool_id)?;
+			T::DepositCurrency::hold(&hold_reason, &who, deposit_amount)?;
 
 			let pool_account = &pool_id.clone().into();
 
@@ -1280,12 +1277,9 @@ pub mod pallet {
 
 			Pools::<T>::remove(&pool_id);
 
-			let hold_reason = T::HoldReason::try_from(pool_id.clone()).map_err(|_| {
-				log::error!(target: LOG_TARGET, "Failed to convert pool ID into a valid hold reason.");
-				Error::<T>::Internal
-			})?;
+			let hold_reason = Self::calculate_hold_reason(&pool_id)?;
 			T::DepositCurrency::release(
-				&T::RuntimeHoldReason::from(hold_reason),
+				&hold_reason,
 				&pool_details.owner,
 				pool_details.deposit,
 				WithdrawalPrecision::Exact,
@@ -1565,6 +1559,16 @@ pub mod pallet {
 		) -> DepositBalanceOf<T> {
 			T::BaseDeposit::get()
 				.saturating_add(T::DepositPerCurrency::get().saturating_mul(n_currencies.saturated_into()))
+		}
+
+		/// Calculates the hold reason for a pool.
+		pub(crate) fn calculate_hold_reason(pool_id: &T::PoolId) -> Result<T::RuntimeHoldReason, Error<T>> {
+			let hold_reason = T::HoldReason::try_from(pool_id.to_owned()).map_err(|_| {
+				log::error!(target: LOG_TARGET, "Failed to convert pool ID into a valid hold reason.");
+				Error::<T>::Internal
+			})?;
+
+			Ok(T::RuntimeHoldReason::from(hold_reason))
 		}
 	}
 }

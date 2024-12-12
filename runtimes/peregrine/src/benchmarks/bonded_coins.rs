@@ -16,14 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::traits::fungible::Mutate;
 use pallet_bonded_coins::{BenchmarkHelper, CollateralAssetIdOf, Config, FungiblesAssetIdOf};
+use sp_runtime::SaturatedConversion;
 use xcm::v4::{Junction, Junctions, Location};
 
 use crate::kilt::BondedFungiblesInstance;
 pub struct BondedFungiblesBenchmarkHelper<T>(sp_std::marker::PhantomData<T>);
 
-impl<T: Config + pallet_assets::Config + pallet_assets::Config<BondedFungiblesInstance>> BenchmarkHelper<T>
-	for BondedFungiblesBenchmarkHelper<T>
+impl<T: Config + pallet_assets::Config + pallet_assets::Config<BondedFungiblesInstance> + pallet_balances::Config>
+	BenchmarkHelper<T> for BondedFungiblesBenchmarkHelper<T>
 where
 	FungiblesAssetIdOf<T>: From<u32>,
 	CollateralAssetIdOf<T>: From<Location>,
@@ -37,5 +39,9 @@ where
 			parents: 0,
 			interior: Junctions::X1([Junction::GeneralIndex(seed.into())].into()),
 		})
+	}
+
+	fn set_native_balance(who: &<T as frame_system::Config>::AccountId, amount: u128) {
+		pallet_balances::Pallet::<T>::set_balance(who, amount.saturated_into());
 	}
 }

@@ -24,11 +24,12 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 
 		let pool_account = pool_id.clone().into();
 
+		let hold_reason = T::HoldReason::try_from(pool_id)
+			.map_err(|_| TryRuntimeError::Other("Failed to convert pool_id to HoldReason"))
+			.and_then(|reason| Ok(T::RuntimeHoldReason::from(reason)))?;
+
 		// Deposit checks
-		let balance_on_hold_user = T::DepositCurrency::balance_on_hold(
-			&T::RuntimeHoldReason::from(T::HoldReason::try_from(pool_id).unwrap()),
-			&owner,
-		);
+		let balance_on_hold_user = T::DepositCurrency::balance_on_hold(&hold_reason, &owner);
 		assert!(balance_on_hold_user >= deposit);
 
 		// Collateral checks

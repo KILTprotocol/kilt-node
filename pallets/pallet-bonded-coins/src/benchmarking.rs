@@ -42,6 +42,8 @@ pub trait BenchmarkHelper<T: Config> {
 
 	/// Calculate the asset id for the bonded asset.
 	fn calculate_bonded_asset_id(seed: u32) -> FungiblesAssetIdOf<T>;
+
+	fn set_native_balance(account: &T::AccountId, amount: u128);
 }
 
 impl<T> BenchmarkHelper<T> for ()
@@ -57,6 +59,8 @@ where
 	fn calculate_bonded_asset_id(seed: u32) -> FungiblesAssetIdOf<T> {
 		seed.into()
 	}
+
+	fn set_native_balance(_account: &<T>::AccountId, _amount: u128) {}
 }
 
 fn get_square_root_curve<Float: FixedSigned>() -> Curve<Float> {
@@ -87,13 +91,12 @@ fn get_lmsr_curve_input<Float: FixedUnsigned>() -> CurveInput<Float> {
 	FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
 	T::Collaterals: Create<T::AccountId> ,
 	T::Fungibles: InspectRoles<T::AccountId> + AccountTouch<FungiblesAssetIdOf<T>, AccountIdOf<T>>,
-	T::DepositCurrency: Mutate<T::AccountId>,
 	T::Collaterals: MutateFungibles<T::AccountId>,
 	AccountIdLookupOf<T>: From<T::AccountId>,
 )]
 mod benchmarks {
 	use frame_support::traits::{
-		fungible::{Inspect, Mutate, MutateHold},
+		fungible::{Inspect, MutateHold},
 		fungibles::{Create, Destroy, Inspect as InspectFungibles, Mutate as MutateFungibles},
 		AccountTouch, EnsureOrigin, Get, OriginTrait,
 	};
@@ -177,21 +180,15 @@ mod benchmarks {
 
 	// native currency
 
-	fn make_free_for_deposit<T: Config>(account: &AccountIdOf<T>)
-	where
-		T::DepositCurrency: Mutate<T::AccountId>,
-	{
+	fn make_free_for_deposit<T: Config>(account: &AccountIdOf<T>) {
 		let balance = <T::DepositCurrency as Inspect<AccountIdOf<T>>>::minimum_balance()
 			+ T::BaseDeposit::get().mul(1000u32.into())
 			+ T::DepositPerCurrency::get().mul(T::MaxCurrenciesPerPool::get().into());
 		set_native_balance::<T>(account, balance.saturated_into());
 	}
 
-	fn set_native_balance<T: Config>(account: &AccountIdOf<T>, amount: u128)
-	where
-		T::DepositCurrency: Mutate<T::AccountId>,
-	{
-		<T::DepositCurrency as Mutate<AccountIdOf<T>>>::set_balance(account, amount.saturated_into());
+	fn set_native_balance<T: Config>(account: &AccountIdOf<T>, amount: u128) {
+		T::BenchmarkHelper::set_native_balance(account, amount.saturated_into());
 		let balance = <T::DepositCurrency as Inspect<AccountIdOf<T>>>::balance(account);
 		assert_eq!(balance, amount.saturated_into());
 	}
@@ -794,8 +791,10 @@ mod benchmarks {
 
 		make_free_for_deposit::<T>(&owner);
 
+		let hold_reason = Pallet::<T>::calculate_hold_reason(&pool_id).expect("Generating HoldReason should not fail");
+
 		T::DepositCurrency::hold(
-			&T::RuntimeHoldReason::from(T::HoldReason::from(pool_id.clone())),
+			&hold_reason,
 			&owner,
 			Pallet::<T>::calculate_pool_deposit(bonded_currencies.len()),
 		)
