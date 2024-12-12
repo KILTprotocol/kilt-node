@@ -26,7 +26,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 
 		let hold_reason = T::HoldReason::try_from(pool_id)
 			.map_err(|_| TryRuntimeError::Other("Failed to convert pool_id to HoldReason"))
-			.map(|reason| T::RuntimeHoldReason::from(reason))?;
+			.map(T::RuntimeHoldReason::from)?;
 
 		// Deposit checks
 		let balance_on_hold_user = T::DepositCurrency::balance_on_hold(&hold_reason, &owner);
