@@ -163,6 +163,17 @@ pub mod pallet {
 			/// The deposit details.
 			deposit_entry: DepositEntryOf<T>,
 		},
+		/// An existing deposit has been updated.
+		DepositUpdated {
+			/// The deposit namespace.
+			namespace: T::Namespace,
+			/// The deposit key.
+			key: DepositKeyOf<T>,
+			/// The old deposit amount.
+			old: BalanceOf<T>,
+			/// The new deposit amount.
+			new: BalanceOf<T>,
+		},
 	}
 
 	/// Storage of all deposits. Its first key is a namespace, and the second

@@ -28,7 +28,7 @@ use sp_runtime::{
 	DispatchError, DispatchResult,
 };
 
-use crate::{deposit::DepositEntry, Config, DepositKeyOf, Error, HoldReason, Pallet, SystemDeposits};
+use crate::{deposit::DepositEntry, Config, DepositKeyOf, Error, Event, HoldReason, Pallet, SystemDeposits};
 
 const LOG_TARGET: &str = "runtime::pallet_deposit_storage::mutate-hold";
 
@@ -85,6 +85,12 @@ where
 pub struct PalletDepositStorageReason<Namespace, Key> {
 	pub(crate) namespace: Namespace,
 	pub(crate) key: Key,
+}
+
+impl<Namespace, Key> PalletDepositStorageReason<Namespace, Key> {
+	pub fn new(namespace: Namespace, key: Key) -> Self {
+		Self { namespace, key }
+	}
 }
 
 impl<Namespace, Key> From<PalletDepositStorageReason<Namespace, Key>> for HoldReason {
@@ -150,7 +156,11 @@ where
 	/// evaluation. Similarly, a decrease from `3` to `1` will imply a `amount`
 	/// value of `1`.
 	fn set_balance_on_hold(reason: &Self::Reason, who: &T::AccountId, amount: Self::Balance) -> DispatchResult {
+		log::info!(target: LOG_TARGET, "set_balance_on_hold(reason, who, amount) - {:?}, {:?}, {:?}", reason, who, amount);
+
 		let runtime_reason = T::RuntimeHoldReason::from(reason.clone().into());
+		// Required because the reason does not implement `Copy`.
+		let cloned_reason = reason.clone();
 		SystemDeposits::<T>::try_mutate_exists(&reason.namespace, &reason.key, |maybe_existing_deposit_entry| {
 			match maybe_existing_deposit_entry {
 				// If this is the first registered deposit for this reason, create a new storage entry.
@@ -163,13 +173,19 @@ where
 							amount,
 							Precision::Exact,
 						)?;
-						*maybe_existing_deposit_entry = Some(DepositEntry {
+						let new_deposit_entry = DepositEntry {
 							deposit: Deposit {
 								amount,
 								owner: who.clone(),
 							},
 							reason: runtime_reason,
-						})
+						};
+						*maybe_existing_deposit_entry = Some(new_deposit_entry.clone());
+						Pallet::<T>::deposit_event(Event::<T>::DepositAdded {
+							namespace: cloned_reason.namespace,
+							key: cloned_reason.key,
+							deposit_entry: new_deposit_entry,
+						});
 					}
 					Ok(())
 				}
@@ -190,19 +206,26 @@ where
 							Precision::Exact,
 						)?;
 						// Since we're setting the held amount to `0`, remove the storage entry.
-						*maybe_existing_deposit_entry = None;
+						let old_entry = maybe_existing_deposit_entry.take().ok_or_else(|| {
+							log::error!(target: LOG_TARGET, "Existing entry should not be `None`.");
+							Error::<T>::Internal
+						})?;
+						Pallet::<T>::deposit_event(Event::<T>::DepositReclaimed {
+							namespace: cloned_reason.namespace,
+							key: cloned_reason.key,
+							deposit_entry: old_entry,
+						});
 					// We're trying to update (i.e., not creating, not deleting)
 					// the held amount for this hold reason.
 					} else {
+						let existing_held_amount = existing_deposit_entry.deposit.amount;
 						// If trying to increase the amount held, increase the held amount for the final
 						// runtime hold reason by the (amount - stored amount) difference.
-						if amount >= existing_deposit_entry.deposit.amount {
-							let amount_to_hold = amount
-								.checked_sub(&existing_deposit_entry.deposit.amount)
-								.ok_or_else(|| {
-									log::error!(target: LOG_TARGET, "Failed to evaluate {:?} - {:?}", amount, existing_deposit_entry.deposit.amount);
-									Error::<T>::Internal
-								})?;
+						if amount >= existing_held_amount {
+							let amount_to_hold = amount.checked_sub(&existing_held_amount).ok_or_else(|| {
+								log::error!(target: LOG_TARGET, "Failed to evaluate {:?} - {:?}", amount, existing_held_amount);
+								Error::<T>::Internal
+							})?;
 							<T::Currency as UnbalancedHold<T::AccountId>>::increase_balance_on_hold(
 								&runtime_reason,
 								who,
@@ -213,14 +236,10 @@ where
 						// hold reason by the (stored amount - amount)
 						// difference.
 						} else {
-							let amount_to_release = existing_deposit_entry
-								.deposit
-								.amount
-								.checked_sub(&amount)
-								.ok_or_else(|| {
-									log::error!(target: LOG_TARGET, "Failed to evaluate {:?} - {:?}", existing_deposit_entry.deposit.amount, amount);
-									Error::<T>::Internal
-								})?;
+							let amount_to_release = existing_held_amount.checked_sub(&amount).ok_or_else(|| {
+								log::error!(target: LOG_TARGET, "Failed to evaluate {:?} - {:?}", existing_held_amount, amount);
+								Error::<T>::Internal
+							})?;
 							<T::Currency as UnbalancedHold<T::AccountId>>::decrease_balance_on_hold(
 								&runtime_reason,
 								who,
@@ -230,6 +249,12 @@ where
 						}
 						// In either case, update the storage entry with the specified amount.
 						existing_deposit_entry.deposit.amount = amount;
+						Pallet::<T>::deposit_event(Event::<T>::DepositUpdated {
+							namespace: cloned_reason.namespace,
+							key: cloned_reason.key,
+							old: existing_held_amount,
+							new: amount,
+						});
 					}
 					Ok(())
 				}
