@@ -25,8 +25,10 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 		let pool_account = pool_id.clone().into();
 
 		// Deposit checks
-		let balance_on_hold_user =
-			T::DepositCurrency::balance_on_hold(&T::RuntimeHoldReason::from(T::HoldReason::from(pool_id)), &owner);
+		let balance_on_hold_user = T::DepositCurrency::balance_on_hold(
+			&T::RuntimeHoldReason::from(T::HoldReason::try_from(pool_id).unwrap()),
+			&owner,
+		);
 		assert!(balance_on_hold_user >= deposit);
 
 		// Collateral checks
