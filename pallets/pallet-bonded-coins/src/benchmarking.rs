@@ -104,8 +104,7 @@ mod benchmarks {
 		curves::Curve,
 		mock::*,
 		types::{Locks, PoolManagingTeam, PoolStatus},
-		AccountIdLookupOf, AccountIdOf, CollateralAssetIdOf, CurveParameterInputOf, HoldReason, PoolDetailsOf, Pools,
-		TokenMetaOf,
+		AccountIdLookupOf, AccountIdOf, CollateralAssetIdOf, CurveParameterInputOf, PoolDetailsOf, Pools, TokenMetaOf,
 	};
 
 	use super::*;
@@ -796,7 +795,7 @@ mod benchmarks {
 		make_free_for_deposit::<T>(&owner);
 
 		T::DepositCurrency::hold(
-			&T::RuntimeHoldReason::from(HoldReason::Deposit),
+			&T::RuntimeHoldReason::from(T::HoldReason::from(pool_id.clone())),
 			&owner,
 			Pallet::<T>::calculate_pool_deposit(bonded_currencies.len()),
 		)

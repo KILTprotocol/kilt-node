@@ -48,6 +48,7 @@ pub mod assets;
 pub mod authorization;
 pub mod bonded_coins;
 pub mod constants;
+pub mod deposits;
 pub mod dip;
 pub mod dot_names;
 pub use dot_names::DotName;

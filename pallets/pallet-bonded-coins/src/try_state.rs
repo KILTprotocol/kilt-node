@@ -5,7 +5,7 @@ use frame_support::traits::{
 use sp_runtime::{traits::Zero, TryRuntimeError};
 use sp_std::vec::Vec;
 
-use crate::{types::PoolDetails, Config, FungiblesAssetIdOf, HoldReason, Pools};
+use crate::{types::PoolDetails, Config, FungiblesAssetIdOf, Pools};
 
 pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 	// checked currency ids. Each Currency should only be associated with one pool.
@@ -22,10 +22,11 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 			..
 		} = pool_details;
 
-		let pool_account = pool_id.into();
+		let pool_account = pool_id.clone().into();
 
 		// Deposit checks
-		let balance_on_hold_user = T::DepositCurrency::balance_on_hold(&HoldReason::Deposit.into(), &owner);
+		let balance_on_hold_user =
+			T::DepositCurrency::balance_on_hold(&T::RuntimeHoldReason::from(T::HoldReason::from(pool_id)), &owner);
 		assert!(balance_on_hold_user >= deposit);
 
 		// Collateral checks
