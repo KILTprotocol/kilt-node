@@ -20,15 +20,18 @@ use frame_support::{parameter_types, traits::AsEnsureOriginWithArg};
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use kilt_support::traits::InspectMetadata;
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
+use pallet_deposit_storage::{DepositKeyOf, PalletDepositStorageReason};
 use runtime_common::{
 	asset_switch::{hooks::RestrictSwitchDestinationToSelf, EnsureRootAsTreasury},
 	bonded_coins::{
 		hooks::NextAssetIdGenerator, AssetId, FixedPoint, FixedPointInput,
 		NativeAndForeignAssets as NativeAndForeignAssetsType, TargetFromLeft,
 	},
+	deposits::DepositNamespace,
 	AccountId, Balance, SendDustAndFeesToTreasury,
 };
-use sp_core::{ConstU128, ConstU32, ConstU8};
+use sp_core::{crypto::ByteArray, ConstU128, ConstU32, ConstU8};
+use sp_runtime::AccountId32;
 use sp_std::vec::Vec;
 use xcm::v4::{Junctions, Location};
 use xcm_builder::{FungiblesAdapter, NoChecking};
@@ -36,8 +39,8 @@ use xcm_builder::{FungiblesAdapter, NoChecking};
 use crate::{
 	constants, weights,
 	xcm::{LocationToAccountIdConverter, UniversalLocation, XcmRouter},
-	Balances, BondedCurrencies, BondedFungibles, Fungibles, PolkadotXcm, Runtime, RuntimeEvent, RuntimeFreezeReason,
-	RuntimeHoldReason,
+	Balances, BondedCurrencies, BondedFungibles, DepositStorage, Fungibles, PolkadotXcm, Runtime, RuntimeEvent,
+	RuntimeFreezeReason, RuntimeHoldReason,
 };
 
 pub(crate) mod credential;
@@ -131,13 +134,48 @@ impl InspectMetadata for MetadataProvider {
 pub type NativeAndForeignAssets =
 	NativeAndForeignAssetsType<Balances, Fungibles, TargetFromLeft<NativeAsset>, Location, AccountId, MetadataProvider>;
 
+/// Wrapper around the `PalletDepositStorageReason` that returns a specific
+/// `DepositNamespace` for the bonded coins deposits.
+#[derive(Debug, Clone)]
+pub struct BondedCoinsHoldReason(PalletDepositStorageReason<DepositNamespace, AccountId>);
+
+impl From<AccountId32> for BondedCoinsHoldReason {
+	fn from(value: AccountId32) -> Self {
+		Self(PalletDepositStorageReason::new(DepositNamespace::BondedTokens, value))
+	}
+}
+
+impl From<BondedCoinsHoldReason> for RuntimeHoldReason {
+	fn from(value: BondedCoinsHoldReason) -> Self {
+		pallet_deposit_storage::HoldReason::from(value.0).into()
+	}
+}
+
+pub struct LocalHoldReason(DepositKeyOf<Runtime>);
+
+impl TryFrom<AccountId32> for LocalHoldReason {
+	type Error = ();
+
+	fn try_from(value: AccountId32) -> Result<Self, Self::Error> {
+		DepositKeyOf::<Runtime>::try_from(value.to_raw_vec())
+			.map(Self)
+			.map_err(|_| ())
+	}
+}
+
+impl From<LocalHoldReason> for PalletDepositStorageReason<DepositNamespace, DepositKeyOf<Runtime>> {
+	fn from(value: LocalHoldReason) -> Self {
+		Self::new(DepositNamespace::BondedTokens, value.0)
+	}
+}
+
 impl pallet_bonded_coins::Config for Runtime {
 	type BaseDeposit = ConstU128<{ constants::bonded_coins::BASE_DEPOSIT }>;
 	type Collaterals = NativeAndForeignAssets;
 	type CurveParameterInput = FixedPointInput;
 	type CurveParameterType = FixedPoint;
 	type DefaultOrigin = EnsureSigned<AccountId>;
-	type DepositCurrency = Balances;
+	type DepositCurrency = DepositStorage;
 	type DepositPerCurrency = ConstU128<{ constants::bonded_coins::DEPOSIT_PER_CURRENCY }>;
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Fungibles = BondedFungibles;
@@ -148,7 +186,8 @@ impl pallet_bonded_coins::Config for Runtime {
 	type PoolCreateOrigin = EnsureSigned<AccountId>;
 	type PoolId = AccountId;
 	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
+	type HoldReason = LocalHoldReason;
+	type RuntimeHoldReason = PalletDepositStorageReason<DepositNamespace, DepositKeyOf<Runtime>>;
 	type WeightInfo = weights::pallet_bonded_coins::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]

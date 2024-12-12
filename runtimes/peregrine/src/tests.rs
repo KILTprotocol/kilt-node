@@ -35,7 +35,7 @@ use runtime_common::{
 		public_credentials::MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH,
 		MAX_INDICES_BYTE_LENGTH,
 	},
-	dip::deposit::DepositKey,
+	deposits::DepositKey,
 	AccountId, BlockNumber,
 };
 
