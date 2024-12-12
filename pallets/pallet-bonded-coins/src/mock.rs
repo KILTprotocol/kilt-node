@@ -304,7 +304,7 @@ pub mod runtime {
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	struct BenchmarkHelper;
+	pub struct BenchmarkHelper;
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl crate::BenchmarkHelper<Test> for BenchmarkHelper {
@@ -345,7 +345,7 @@ pub mod runtime {
 		type WeightInfo = ();
 
 		#[cfg(feature = "runtime-benchmarks")]
-		type BenchmarkHelper = ();
+		type BenchmarkHelper = BenchmarkHelper;
 	}
 
 	#[derive(Clone, Default)]
