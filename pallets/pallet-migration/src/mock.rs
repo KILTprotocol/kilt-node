@@ -300,7 +300,7 @@ impl TryFrom<Vec<u8>> for TestWeb3Name {
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		ensure!(
-			value.len() >= <Test as pallet_web3_names::Config>::MinNameLength::get().saturated_into(),
+			value.len() >= <Test as pallet_web3_names::Config>::MinNameLength::get().saturated_into::<usize>(),
 			Self::Error::TooShort
 		);
 		let bounded_vec: BoundedVec<u8, <Test as pallet_web3_names::Config>::MaxNameLength> =

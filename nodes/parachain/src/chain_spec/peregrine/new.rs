@@ -18,7 +18,10 @@
 
 //! KILT chain specification
 
-use peregrine_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, WASM_BINARY};
+use kilt_support::traits::InspectMetadata;
+use peregrine_runtime::{
+	MetadataProvider, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SS_58_PREFIX, WASM_BINARY,
+};
 use sc_service::ChainType;
 use serde_json::to_value;
 
@@ -31,6 +34,8 @@ use crate::chain_spec::{
 pub(crate) fn generate_chain_spec() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("WASM binary not available");
 	let genesis_config = to_value(generate_genesis_state()).expect("Creating genesis state failed");
+	let currency_symbol = String::from_utf8(MetadataProvider::symbol()).expect("Creating currency symbol failed");
+	let denomination = MetadataProvider::decimals();
 
 	ChainSpec::builder(
 		wasm_binary,
@@ -42,7 +47,11 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 	.with_name("KILT Peregrine New (change title)")
 	.with_id("kilt_peregrine_new")
 	.with_chain_type(ChainType::Live)
-	.with_properties(get_properties("PILT", 15, 38))
+	.with_properties(get_properties(
+		&currency_symbol,
+		denomination.into(),
+		SS_58_PREFIX.into(),
+	))
 	.with_genesis_config(genesis_config)
 	.build()
 }

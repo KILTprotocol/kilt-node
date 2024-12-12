@@ -43,6 +43,7 @@ use sp_runtime::{create_runtime_str, generic};
 use sp_std::{prelude::*, vec::Vec};
 
 // Internal crates
+pub use kilt::MetadataProvider;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 use runtime_common::{constants, fees::WeightToFee, Address, Signature};
@@ -146,6 +147,7 @@ construct_runtime! {
 
 		AssetSwitchPool1: pallet_asset_switch::<Instance1> = 48,
 		Fungibles: pallet_assets = 49,
+		BondedFungibles: pallet_assets::<Instance2> = 50,
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
@@ -163,6 +165,7 @@ construct_runtime! {
 		DepositStorage: pallet_deposit_storage = 72,
 		DotNames: pallet_web3_names::<Instance2> = 73,
 		UniqueLinking: pallet_did_lookup::<Instance2> = 74,
+		BondedCurrencies: pallet_bonded_coins = 75,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 

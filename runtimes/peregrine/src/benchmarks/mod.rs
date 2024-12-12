@@ -37,19 +37,22 @@ use sp_std::{boxed::Box, vec, vec::Vec};
 use xcm::v4::{Asset, Assets, Fungibility, Location};
 
 use crate::{
-	xcm::XcmConfig, AllPalletsWithSystem, AssetSwitchPool1, Attestation, Balances, Council, Ctype, Delegation,
-	Democracy, DepositStorage, Did, DidLookup, DipProvider, DotNames, Fungibles, Indices, Inflation, MessageQueue,
-	Migration, Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy, PublicCredentials, Runtime, RuntimeEvent,
-	Scheduler, Sudo, System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership, Treasury,
-	UniqueLinking, Utility, Vesting, Web3Names,
+	xcm::XcmConfig, AllPalletsWithSystem, AssetSwitchPool1, Attestation, Balances, BondedCurrencies, BondedFungibles,
+	Council, Ctype, Delegation, Democracy, DepositStorage, Did, DidLookup, DipProvider, DotNames, Fungibles, Indices,
+	Inflation, MessageQueue, Migration, Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy,
+	PublicCredentials, Runtime, RuntimeEvent, Scheduler, Sudo, System, TechnicalCommittee, TechnicalMembership,
+	Timestamp, Tips, TipsMembership, Treasury, UniqueLinking, Utility, Vesting, Web3Names,
 };
 
 pub(crate) mod asset_switch;
+pub(crate) mod bonded_coins;
 pub(crate) mod governance;
 pub(crate) mod web3_names;
 
 /// Workaround for a bug in the benchmarking code around instances.
 /// Upstream fix PR: https://github.com/paritytech/polkadot-sdk/pull/6435
+#[allow(unused_imports)]
+use pallet_assets as pallet_bonded_assets;
 #[allow(unused_imports)]
 use pallet_collective as pallet_technical_committee_collective;
 #[allow(unused_imports)]
@@ -87,8 +90,8 @@ define_benchmarks!(
 	[pallet_dip_provider, DipProvider]
 	[pallet_deposit_storage, DepositStorage]
 	[pallet_asset_switch, AssetSwitchPool1]
-	[pallet_assets, Fungibles]
 	[pallet_message_queue, MessageQueue]
+	[pallet_bonded_coins, BondedCurrencies]
 	[cumulus_pallet_parachain_system, ParachainSystem]
 	[frame_benchmarking::baseline, frame_benchmarking::baseline::Pallet::<Runtime>]
 	// pallet_collective instances
@@ -103,6 +106,9 @@ define_benchmarks!(
 	// pallet_web3_names instances
 	[pallet_web3_names, Web3Names]
 	[pallet_dot_names, DotNames]
+	// pallet assets instances
+	[pallet_assets, Fungibles]
+	[pallet_bonded_assets, BondedFungibles]
 );
 
 impl pallet_xcm::benchmarking::Config for Runtime {

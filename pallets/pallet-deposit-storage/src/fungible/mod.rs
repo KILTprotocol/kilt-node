@@ -87,6 +87,12 @@ pub struct PalletDepositStorageReason<Namespace, Key> {
 	pub(crate) key: Key,
 }
 
+impl<Namespace, Key> PalletDepositStorageReason<Namespace, Key> {
+	pub const fn new(namespace: Namespace, key: Key) -> Self {
+		Self { namespace, key }
+	}
+}
+
 impl<Namespace, Key> From<PalletDepositStorageReason<Namespace, Key>> for HoldReason {
 	fn from(_value: PalletDepositStorageReason<Namespace, Key>) -> Self {
 		// All the deposits ever taken like this will count towards the same hold

@@ -60,6 +60,8 @@ pallets=(
 if [ "$runtime" = "peregrine" ]; then
 	pallets+=(
 		pallet-sudo
+		pallet-bonded-assets
+		pallet-bonded-coins
 	)
 fi
 

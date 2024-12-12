@@ -32,6 +32,7 @@ kilt-runtime-api-did                       = { workspace = true }
 kilt-runtime-api-public-credentials        = { workspace = true }
 kilt-runtime-api-staking                   = { workspace = true }
 pallet-asset-switch-runtime-api            = { workspace = true }
+pallet-bonded-coins-runtime-api            = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 unique-linking-runtime-api                 = { workspace = true }
 
@@ -43,6 +44,7 @@ did                           = { workspace = true }
 kilt-runtime-api-dip-provider = { workspace = true }
 kilt-support                  = { workspace = true }
 pallet-asset-switch           = { workspace = true }
+pallet-bonded-coins           = { workspace = true }
 pallet-deposit-storage        = { workspace = true }
 pallet-did-lookup             = { workspace = true }
 pallet-dip-provider           = { workspace = true }
@@ -142,6 +144,7 @@ runtime-benchmarks = [
   "pallet-asset-switch/runtime-benchmarks",
   "pallet-assets/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
+  "pallet-bonded-coins/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
   "pallet-deposit-storage/runtime-benchmarks",
@@ -204,6 +207,8 @@ std = [
   "pallet-aura/std",
   "pallet-authorship/std",
   "pallet-balances/std",
+  "pallet-bonded-coins-runtime-api/std",
+  "pallet-bonded-coins/std",
   "pallet-collective/std",
   "pallet-democracy/std",
   "pallet-deposit-storage/std",
@@ -274,6 +279,7 @@ try-runtime = [
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
+  "pallet-bonded-coins/try-runtime",
   "pallet-collective/try-runtime",
   "pallet-democracy/try-runtime",
   "pallet-deposit-storage/try-runtime",

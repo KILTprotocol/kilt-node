@@ -20,8 +20,9 @@ use did::{DidRawOrigin, EnsureDidOrigin};
 use frame_system::EnsureSigned;
 use runtime_common::{
 	constants::{deposit_storage::MAX_DEPOSIT_PALLET_KEY_LENGTH, dip_provider::MAX_LINKED_ACCOUNTS},
+	deposits::DepositNamespace,
 	dip::{
-		deposit::{DepositCollectorHooks, DepositHooks, DepositNamespace},
+		deposit::{DepositCollectorHooks, DepositHooks},
 		did::LinkedDidInfoProvider,
 		merkle::DidMerkleRootGenerator,
 	},
