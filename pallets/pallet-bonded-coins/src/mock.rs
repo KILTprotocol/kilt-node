@@ -54,10 +54,7 @@ pub mod runtime {
 	use frame_support::{
 		pallet_prelude::*,
 		parameter_types, storage_alias,
-		traits::{
-			fungible::{hold::Mutate as MutateHold, Mutate},
-			ConstU128, ConstU32, PalletInfoAccess, VariantCount,
-		},
+		traits::{fungible::hold::Mutate as MutateHold, ConstU128, ConstU32, PalletInfoAccess, VariantCount},
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::{EnsureRoot, EnsureSigned};
@@ -72,7 +69,7 @@ pub mod runtime {
 		self as pallet_bonded_coins,
 		traits::NextAssetIds,
 		types::{Locks, PoolStatus},
-		CollateralAssetIdOf, Config, DepositBalanceOf, FungiblesAssetIdOf, PoolDetailsOf,
+		Config, DepositBalanceOf, FungiblesAssetIdOf, PoolDetailsOf,
 	};
 
 	pub type Hash = sp_core::H256;
@@ -315,11 +312,13 @@ pub mod runtime {
 			seed
 		}
 
-		fn calculate_collateral_asset_id(seed: u32) -> CollateralAssetIdOf<Test> {
+		fn calculate_collateral_asset_id(seed: u32) -> crate::CollateralAssetIdOf<Test> {
 			seed
 		}
 
 		fn set_native_balance(who: &AccountId, amount: DepositBalanceOf<Test>) {
+			use frame_support::traits::fungible::Mutate;
+
 			Balances::set_balance(who, amount);
 		}
 	}
