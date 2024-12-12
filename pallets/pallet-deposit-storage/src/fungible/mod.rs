@@ -88,7 +88,7 @@ pub struct PalletDepositStorageReason<Namespace, Key> {
 }
 
 impl<Namespace, Key> PalletDepositStorageReason<Namespace, Key> {
-	pub fn new(namespace: Namespace, key: Key) -> Self {
+	pub const fn new(namespace: Namespace, key: Key) -> Self {
 		Self { namespace, key }
 	}
 }
