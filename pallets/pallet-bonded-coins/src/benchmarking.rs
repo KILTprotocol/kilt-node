@@ -794,8 +794,11 @@ mod benchmarks {
 
 		make_free_for_deposit::<T>(&owner);
 
+		let Ok(hold_reason) = T::HoldReason::try_from(pool_id.clone()) else {
+			panic!("Failed to generate `HoldReason` from pool ID.");
+		};
 		T::DepositCurrency::hold(
-			&T::RuntimeHoldReason::from(T::HoldReason::from(pool_id.clone())),
+			&T::RuntimeHoldReason::from(hold_reason),
 			&owner,
 			Pallet::<T>::calculate_pool_deposit(bonded_currencies.len()),
 		)

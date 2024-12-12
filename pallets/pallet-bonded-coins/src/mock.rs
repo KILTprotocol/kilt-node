@@ -54,14 +54,14 @@ pub mod runtime {
 	use frame_support::{
 		pallet_prelude::*,
 		parameter_types, storage_alias,
-		traits::{fungible::hold::Mutate, ConstU128, ConstU32, PalletInfoAccess},
+		traits::{fungible::hold::Mutate, ConstU128, ConstU32, PalletInfoAccess, VariantCount},
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::{EnsureRoot, EnsureSigned};
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		ArithmeticError, BoundedVec, BuildStorage, DispatchError, MultiSignature, Permill,
+		AccountId32, ArithmeticError, BoundedVec, BuildStorage, DispatchError, MultiSignature, Permill,
 	};
 	use substrate_fixed::types::{I75F53, U75F53};
 
@@ -69,7 +69,7 @@ pub mod runtime {
 		self as pallet_bonded_coins,
 		traits::NextAssetIds,
 		types::{Locks, PoolStatus},
-		Config, DepositBalanceOf, FungiblesAssetIdOf, HoldReason, PoolDetailsOf,
+		Config, DepositBalanceOf, FungiblesAssetIdOf, PoolDetailsOf,
 	};
 
 	pub type Hash = sp_core::H256;
@@ -190,6 +190,16 @@ pub mod runtime {
 		}
 	}
 
+	#[derive(Default, Clone, Copy, Encode, Decode, MaxEncodedLen, TypeInfo, Debug, PartialEq, Eq, PartialOrd, Ord)]
+	pub enum TestRuntimeHoldReason {
+		#[default]
+		Deposit,
+	}
+
+	impl VariantCount for TestRuntimeHoldReason {
+		const VARIANT_COUNT: u32 = 1;
+	}
+
 	frame_support::construct_runtime!(
 		pub enum Test
 		{
@@ -250,7 +260,7 @@ pub mod runtime {
 		type ReserveIdentifier = [u8; 8];
 		type RuntimeEvent = RuntimeEvent;
 		type RuntimeFreezeReason = ();
-		type RuntimeHoldReason = RuntimeHoldReason;
+		type RuntimeHoldReason = TestRuntimeHoldReason;
 		type WeightInfo = ();
 	}
 
@@ -288,6 +298,12 @@ pub mod runtime {
 		pub const MaxDenomination: u8 = 15;
 	}
 
+	impl From<AccountId32> for TestRuntimeHoldReason {
+		fn from(_value: AccountId32) -> Self {
+			Self::Deposit
+		}
+	}
+
 	impl pallet_bonded_coins::Config for Test {
 		type BaseDeposit = ExistentialDeposit;
 		type Collaterals = Assets;
@@ -305,7 +321,8 @@ pub mod runtime {
 		type PoolCreateOrigin = EnsureSigned<AccountId>;
 		type PoolId = AccountId;
 		type RuntimeEvent = RuntimeEvent;
-		type RuntimeHoldReason = RuntimeHoldReason;
+		type HoldReason = Self::PoolId;
+		type RuntimeHoldReason = TestRuntimeHoldReason;
 		type WeightInfo = ();
 
 		#[cfg(feature = "runtime-benchmarks")]
@@ -401,7 +418,7 @@ pub mod runtime {
 
 				self.pools.into_iter().for_each(|(pool_id, pool)| {
 					<Test as crate::Config>::DepositCurrency::hold(
-						&HoldReason::Deposit.into(),
+						&TestRuntimeHoldReason::Deposit,
 						&pool.owner,
 						BondingPallet::calculate_pool_deposit(pool.bonded_currencies.len()),
 					)
