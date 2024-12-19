@@ -21,6 +21,7 @@ build-production-wasm:
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - export AUTHORIZE_UPGRADE_CHECK_VERSION=true
     - export VERBOSE=true
+    - export DEFAULT_FEATURES="--features metadata-hash"
     - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/${RUNTIME}_runtime.compact.wasm > /out/${RUNTIME}-metadata.json

@@ -70,31 +70,32 @@ sp-transaction-pool = { workspace = true }
 sp-version          = { workspace = true }
 sp-weights          = { workspace = true }
 
-frame-executive            = { workspace = true }
-frame-support              = { workspace = true }
-frame-system               = { workspace = true }
-pallet-assets              = { workspace = true }
-pallet-aura                = { workspace = true }
-pallet-authorship          = { workspace = true }
-pallet-balances            = { workspace = true }
-pallet-collective          = { workspace = true }
-pallet-democracy           = { workspace = true }
-pallet-indices             = { workspace = true }
-pallet-membership          = { workspace = true }
-pallet-message-queue       = { workspace = true }
-pallet-multisig            = { workspace = true }
-pallet-preimage            = { workspace = true }
-pallet-proxy               = { workspace = true }
-pallet-scheduler           = { workspace = true }
-pallet-session             = { workspace = true }
-pallet-sudo                = { workspace = true }
-pallet-timestamp           = { workspace = true }
-pallet-tips                = { workspace = true }
-pallet-transaction-payment = { workspace = true }
-pallet-treasury            = { workspace = true }
-pallet-utility             = { workspace = true }
-pallet-vesting             = { workspace = true }
-sp-genesis-builder         = { workspace = true }
+frame-executive               = { workspace = true }
+frame-metadata-hash-extension = { workspace = true }
+frame-support                 = { workspace = true }
+frame-system                  = { workspace = true }
+pallet-assets                 = { workspace = true }
+pallet-aura                   = { workspace = true }
+pallet-authorship             = { workspace = true }
+pallet-balances               = { workspace = true }
+pallet-collective             = { workspace = true }
+pallet-democracy              = { workspace = true }
+pallet-indices                = { workspace = true }
+pallet-membership             = { workspace = true }
+pallet-message-queue          = { workspace = true }
+pallet-multisig               = { workspace = true }
+pallet-preimage               = { workspace = true }
+pallet-proxy                  = { workspace = true }
+pallet-scheduler              = { workspace = true }
+pallet-session                = { workspace = true }
+pallet-sudo                   = { workspace = true }
+pallet-timestamp              = { workspace = true }
+pallet-tips                   = { workspace = true }
+pallet-transaction-payment    = { workspace = true }
+pallet-treasury               = { workspace = true }
+pallet-utility                = { workspace = true }
+pallet-vesting                = { workspace = true }
+sp-genesis-builder            = { workspace = true }
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext         = { workspace = true }
@@ -126,6 +127,7 @@ frame-try-runtime = { workspace = true, optional = true }
 [features]
 default = ["std"]
 fast-gov = ["runtime-common/fast-gov"]
+metadata-hash = ["substrate-wasm-builder/metadata-hash"]
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
@@ -190,6 +192,7 @@ std = [
   "did/std",
   "frame-benchmarking?/std",
   "frame-executive/std",
+  "frame-metadata-hash-extension/std",
   "frame-support/std",
   "frame-system-benchmarking?/std",
   "frame-system-rpc-runtime-api/std",
