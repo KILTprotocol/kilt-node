@@ -33,6 +33,7 @@ use core::str;
 
 // Polkadot-sdk crates
 use cumulus_pallet_parachain_system::register_validate_block;
+use frame_metadata_hash_extension::CheckMetadataHash;
 use frame_support::construct_runtime;
 use frame_system::{
 	ChainContext, CheckEra, CheckGenesis, CheckNonZeroSender, CheckNonce, CheckSpecVersion, CheckTxVersion, CheckWeight,
@@ -212,4 +213,5 @@ pub type SignedExtra = (
 	CheckNonce<Runtime>,
 	CheckWeight<Runtime>,
 	ChargeTransactionPayment<Runtime>,
+	CheckMetadataHash<Runtime>,
 );
