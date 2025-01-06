@@ -5,7 +5,7 @@ import * as HydraDxConfig from '../../../network/hydraDx.js'
 import { tx, query } from '../../../helper/api.js'
 
 import type { ApiPromise } from '@polkadot/api'
-import type { BasicConfig, BasicXcmTestConfiguration, BasisTxContext } from '../types.js'
+import type { BasicConfig, BasicXcmTestConfiguration, BasisTxContext } from '../../types.js'
 import type { SubmittableExtrinsic } from '@polkadot/api/types'
 
 interface Config extends BasicConfig {

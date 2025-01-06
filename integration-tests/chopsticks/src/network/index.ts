@@ -1,6 +1,7 @@
 import * as SpiritnetConfig from './spiritnet.js'
 import * as PolkadotConfig from './relay.js'
 import * as HydraDxConfig from './hydraDx.js'
+import * as AssetHubConfig from './assethub.js'
 import { ChainConfigs } from './types.js'
 
 /*
@@ -37,4 +38,10 @@ export const all: ChainConfigs = {
 			blockNumber: Number(getEnvVariable('POLKADOT_BLOCK_NUMBER')),
 		},
 	},
+	assetHub: {
+		getConfig: AssetHubConfig.getSetupOptions,
+		parameters: {
+			blockNumber: Number(getEnvVariable('ASSETHUB_BLOCK_NUMBER')),
+		},
+	}
 }
