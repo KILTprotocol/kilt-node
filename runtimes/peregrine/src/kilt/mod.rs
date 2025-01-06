@@ -196,9 +196,9 @@ impl pallet_bonded_coins::Config for Runtime {
 
 pub(crate) type BondedFungiblesInstance = pallet_assets::Instance2;
 impl pallet_assets::Config<BondedFungiblesInstance> for Runtime {
-	type ApprovalDeposit = constants::assets::ApprovalDeposit;
-	type AssetAccountDeposit = constants::assets::AssetAccountDeposit;
-	type AssetDeposit = constants::assets::AssetDeposit;
+	type ApprovalDeposit = ConstU128<{ constants::bonded_assets::APPROVAL_DEPOSIT }>;
+	type AssetAccountDeposit = ConstU128<{ constants::bonded_assets::ASSET_ACCOUNT_DEPOSIT }>;
+	type AssetDeposit = ConstU128<{ constants::bonded_assets::ASSET_DEPOSIT }>;
 	type AssetId = AssetId;
 	type AssetIdParameter = AssetId;
 	type Balance = Balance;
@@ -208,11 +208,11 @@ impl pallet_assets::Config<BondedFungiblesInstance> for Runtime {
 	type Extra = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Freezer = ();
-	type MetadataDepositBase = constants::assets::MetaDepositBase;
-	type MetadataDepositPerByte = constants::assets::MetaDepositPerByte;
-	type RemoveItemsLimit = constants::assets::RemoveItemsLimit;
+	type MetadataDepositBase = ConstU128<{ constants::bonded_assets::META_DEPOSIT_BASE }>;
+	type MetadataDepositPerByte = ConstU128<{ constants::bonded_assets::META_DEPOSIT_PER_BYTE }>;
+	type RemoveItemsLimit = ConstU32<{ constants::bonded_assets::REMOVE_ITEMS_LIMIT }>;
 	type RuntimeEvent = RuntimeEvent;
-	type StringLimit = constants::assets::StringLimit;
+	type StringLimit = ConstU32<{ constants::bonded_assets::STRING_LIMIT }>;
 	type WeightInfo = weights::pallet_bonded_assets::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]
