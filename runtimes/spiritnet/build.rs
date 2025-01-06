@@ -26,7 +26,7 @@ fn main() {
 
 	#[cfg(feature = "metadata-hash")]
 	// TODO: Can we re-use some consts?
-	let builder = builder.enable_metadata_hash("PILT", 15);
+	let builder = builder.enable_metadata_hash("KILT", 15);
 
 	builder.build()
 }
