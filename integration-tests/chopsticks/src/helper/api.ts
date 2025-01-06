@@ -43,6 +43,26 @@ export const xtokens = {
 			api.tx.xTokens.transfer(token, amount, dest(acc), weight),
 }
 
+export const switchPallet = {
+	switchV4:
+		() =>
+		({ api }: { api: ApiPromise }, acc: any, amount: string) =>
+			api.tx.assetSwitchPool1.switch(amount, {
+				V4: {
+					parents: 0,
+					interior: {
+						X1: [
+							{
+								AccountId32: {
+									id: acc,
+								},
+							},
+						],
+					},
+				},
+			}),
+}
+
 /**
  * All possible ways to submit an XCM message for the xcmPallet.
  * different structs for the xcm versions are provided
@@ -62,6 +82,12 @@ export const xcmPallet = {
 			interior: {
 				X1: { Parachain: paraId },
 			},
+		},
+	}),
+	parachainV4: (parents: number, paraId: any) => ({
+		V4: {
+			parents,
+			interior: { X1: [{ Parachain: paraId }] },
 		},
 	}),
 	limitedTeleportAssets:
@@ -150,6 +176,53 @@ export const xcmPallet = {
 				0,
 				'Unlimited'
 			),
+	transferAssets:
+		(dest: any, token: any) =>
+		({ api }: { api: ApiPromise }, acc: any, amount: any) =>
+			api.tx.polkadotXcm.transferAssets(
+				dest,
+				{
+					V3: {
+						parents: 0,
+						interior: {
+							X1: {
+								AccountId32: {
+									id: acc,
+								},
+							},
+						},
+					},
+				},
+				{
+					V3: [
+						{
+							id: token,
+							fun: { Fungible: amount },
+						},
+					],
+				},
+				0,
+				'Unlimited'
+			),
+	transferAssetsUsingTypeAndThen:
+		(dest: any, token: any, xcmMessage: any) =>
+		({ api }: { api: ApiPromise }, balanceToTransfer: string) =>
+			api.tx.polkadotXcm.transferAssetsUsingTypeAndThen(
+				dest,
+				{
+					V4: [
+						{
+							id: token,
+							fun: { Fungible: balanceToTransfer },
+						},
+					],
+				},
+				'LocalReserve',
+				{ V4: token },
+				'LocalReserve',
+				xcmMessage,
+				'Unlimited'
+			),
 }
 
 /**
@@ -158,6 +231,7 @@ export const xcmPallet = {
 export const tx = {
 	xtokens,
 	xcmPallet,
+	switchPallet,
 }
 
 /**
