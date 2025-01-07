@@ -31,18 +31,18 @@ export interface BasisTxContext {
 
 export interface BasicConfig {
 	desc: string
+	storage: Storage
+	network: NetworkSetupOption
 }
 
-interface SovereignAccount {
+export interface SovereignAccount {
 	sender: string
 	receiver: string
 }
 
 export interface BasicXcmTestConfiguration {
 	config: BasicConfig
-	storage: Storage
 	accounts: Accounts
-	network: NetworkSetupOption
 	sovereignAccount: SovereignAccount
 	txContext: BasisTxContext
 }

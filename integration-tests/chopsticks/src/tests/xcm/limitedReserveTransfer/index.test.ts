@@ -11,7 +11,7 @@ import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 describe.each(testPairsLimitedReserveTransfers)(
 	'Limited Reserve Transfers',
 	{ timeout: 30_000 },
-	async ({ network, storage, accounts, query, sovereignAccount, txContext, config }) => {
+	async ({ accounts, query, sovereignAccount, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config
@@ -20,6 +20,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 		const { desc, precision } = config
 
 		beforeEach(async () => {
+			const { network, storage } = config
 			const { receiver, sender, relay } = network
 
 			const { receiverChainContext, senderChainContext, relayChainContext } = await setupNetwork(
@@ -52,7 +53,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000, retry: 0 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 			const { pallets, tx, balanceToTransfer } = txContext
 

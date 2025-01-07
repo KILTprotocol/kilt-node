@@ -11,9 +11,9 @@ export const getSetupOptions = ({
 	wasmOverride?: string
 }) =>
 	({
-		endpoint: process.env.SPIRITNET_WS || 'wss://kilt-rpc.dwellir.com',
+		endpoint: process.env.SPIRITNET_WS || 'wss://kilt.ibp.network',
 		db: './db/spiritnet.db.sqlite',
-		port: toNumber(process.env.SPIRITNET_PORT) || 9002,
+		port: toNumber(process.env.SPIRITNET_PORT),
 		wasmOverride,
 		blockNumber,
 	}) as SetupOption
@@ -40,4 +40,4 @@ export const paraId = 2086
 export const KILT = { Concrete: { parents: 0, interior: 'Here' } }
 
 /// Sibling sovereign account
-export const siblingSovereignAccount = '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'
+export const sovereignAccountOnSiblingChains = '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs'

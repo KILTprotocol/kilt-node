@@ -17,7 +17,7 @@ export const getSetupOptions = ({
 			'wss://rpc.ibp.network/polkadot',
 		],
 		db: './db/polkadot.db.sqlite',
-		port: toNumber(process.env.POLKADOT_PORT) || 9000,
+		port: toNumber(process.env.POLKADOT_PORT),
 		blockNumber,
 		wasmOverride,
 	}) as SetupOption

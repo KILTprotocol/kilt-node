@@ -44,6 +44,21 @@ export const xtokens = {
 }
 
 export const switchPallet = {
+	switchV3:
+		() =>
+		({ api }: { api: ApiPromise }, acc: any, amount: string) =>
+			api.tx.assetSwitchPool1.switch(amount, {
+				V3: {
+					parents: 0,
+					interior: {
+						X1: {
+							AccountId32: {
+								id: acc,
+							},
+						},
+					},
+				},
+			}),
 	switchV4:
 		() =>
 		({ api }: { api: ApiPromise }, acc: any, amount: string) =>
@@ -101,7 +116,6 @@ export const xcmPallet = {
 						interior: {
 							X1: {
 								AccountId32: {
-									// network: 'Any',
 									id: acc,
 								},
 							},
@@ -176,7 +190,37 @@ export const xcmPallet = {
 				0,
 				'Unlimited'
 			),
-	transferAssets:
+	limitedReserveTransferAssetsV4:
+		(token: any, dest: any) =>
+		({ api }: { api: ApiPromise }, acc: any, amount: any) =>
+			(api.tx.xcmPallet || api.tx.polkadotXcm).limitedReserveTransferAssets(
+				dest,
+				{
+					V4: {
+						parents: 0,
+						interior: {
+							X1: [
+								{
+									AccountId32: {
+										id: acc,
+									},
+								},
+							],
+						},
+					},
+				},
+				{
+					V4: [
+						{
+							id: token,
+							fun: { Fungible: amount },
+						},
+					],
+				},
+				0,
+				'Unlimited'
+			),
+	transferAssetsV3:
 		(dest: any, token: any) =>
 		({ api }: { api: ApiPromise }, acc: any, amount: any) =>
 			api.tx.polkadotXcm.transferAssets(
@@ -204,7 +248,37 @@ export const xcmPallet = {
 				0,
 				'Unlimited'
 			),
-	transferAssetsUsingTypeAndThen:
+	transferAssetsV4:
+		(dest: any, token: any) =>
+		({ api }: { api: ApiPromise }, acc: any, amount: any) =>
+			api.tx.polkadotXcm.transferAssets(
+				dest,
+				{
+					V4: {
+						parents: 0,
+						interior: {
+							X1: [
+								{
+									AccountId32: {
+										id: acc,
+									},
+								},
+							],
+						},
+					},
+				},
+				{
+					V4: [
+						{
+							id: token,
+							fun: { Fungible: amount },
+						},
+					],
+				},
+				0,
+				'Unlimited'
+			),
+	transferAssetsUsingTypeAndThenV4:
 		(dest: any, token: any, xcmMessage: any) =>
 		({ api }: { api: ApiPromise }, balanceToTransfer: string) =>
 			api.tx.polkadotXcm.transferAssetsUsingTypeAndThen(
@@ -223,10 +297,29 @@ export const xcmPallet = {
 				xcmMessage,
 				'Unlimited'
 			),
+	transferAssetsUsingTypeAndThenV3:
+		(dest: any, token: any, xcmMessage: any) =>
+		({ api }: { api: ApiPromise }, balanceToTransfer: string) =>
+			api.tx.polkadotXcm.transferAssetsUsingTypeAndThen(
+				dest,
+				{
+					V3: [
+						{
+							id: token,
+							fun: { Fungible: balanceToTransfer },
+						},
+					],
+				},
+				'LocalReserve',
+				{ V3: token },
+				'LocalReserve',
+				xcmMessage,
+				'Unlimited'
+			),
 }
 
 /**
- * Different pallets to submit xcm messages.
+ * Different pallets to submit tx
  */
 export const tx = {
 	xtokens,
@@ -236,13 +329,30 @@ export const tx = {
 
 /**
  * Query functions for different chains.
- * Native tokens are fetched via the system pallet, while other tokens are fetched via the tokens pallet.
+ * Native tokens are fetched via the system pallet, while other tokens are fetched via the tokens or assets pallet.
  *
  */
-
 export const query = {
 	balances: async ({ api }: { api: ApiPromise }, address: string) =>
 		BigInt(((await api.query.system.account(address)) as any).data.free),
+	foreignAssets:
+		(assetId: any) =>
+		async ({ api }: { api: ApiPromise }, address: string) => {
+			const accountInfo: any = await api.query.foreignAssets.account(assetId, address)
+			if (accountInfo.isNone) {
+				return BigInt(0)
+			}
+			return accountInfo.unwrap().balance.toBigInt()
+		},
+	fungibles:
+		(assetId: any) =>
+		async ({ api }: { api: ApiPromise }, address: string) => {
+			const accountInfo: any = await api.query.fungibles.account(assetId, address)
+			if (accountInfo.isNone) {
+				return BigInt(0)
+			}
+			return accountInfo.unwrap().balance.toBigInt()
+		},
 	tokens:
 		(token: any) =>
 		async ({ api }: { api: ApiPromise }, address: string) =>

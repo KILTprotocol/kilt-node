@@ -13,7 +13,7 @@ export const getSetupOptions = ({
 	({
 		endpoint: process.env.ASSETHUB_WSS || 'wss://asset-hub-polkadot-rpc.dwellir.com',
 		db: './db/assethub.db.sqlite',
-		port: toNumber(process.env.ASSETHUB_PORT) || 9003,
+		port: toNumber(process.env.ASSETHUB_PORT),
 		wasmOverride,
 		blockNumber,
 	}) as SetupOption

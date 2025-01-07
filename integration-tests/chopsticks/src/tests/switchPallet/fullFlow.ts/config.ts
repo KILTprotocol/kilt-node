@@ -1,43 +1,105 @@
+import type { EventFilter } from '@acala-network/chopsticks-testing'
+import type { ApiPromise } from '@polkadot/api'
+import type { SubmittableExtrinsic } from '@polkadot/api/types'
+import type { KeyringPair } from '@polkadot/keyring/types'
+
 import * as PolkadotChainConfigs from '../../../network/index.js'
-import { hexAddress, initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
+import { initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
 import * as SpiritnetConfig from '../../../network/spiritnet.js'
 import * as AssetHubContext from '../../../network/assethub.js'
 import { tx, query } from '../../../helper/api.js'
-
-import type { ApiPromise } from '@polkadot/api'
-import type { Accounts, BasicConfig, NetworkSetupOption, SovereignAccount, Storage } from '../../types.js'
-import type { SubmittableExtrinsic } from '@polkadot/api/types'
+import { getXcmMessageV4ToSendEkilt } from '../index.js'
+import type { BasicConfig } from '../../types.js'
 
 interface QueryFunds {
-	native: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
+	// Query the native asset of the chain
+	nativeFunds: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
+	// Query the foreign asset of the chain
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	foreign: () => void //({ api }: { api: ApiPromise }, assetId: any, address: string) => Promise<bigint>
+	foreignFunds: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
 }
 
 interface Query {
-	sender: QueryFunds
-	receiver: QueryFunds
+	// Query options on the native chain
+	native: QueryFunds
+	// Query options on the foreign chain
+	foreign: QueryFunds
 }
 
-interface TxContext {
-	balanceToTransfer: {
-		native: bigint
-		foreign: bigint
+/**
+ * All possible transactions to switch funds between chains.
+ */
+interface Transactions {
+	native: {
+		// tx to send the funds from the native chain to the foreign chain
+		transfer: ({ api }: { api: ApiPromise }, submitter: string, amount: string) => SubmittableExtrinsic<'promise'>
+		// tx to withdraw the funds from the foreign chain to the native chain
+		withdraw: ({ api }: { api: ApiPromise }, amount: string) => SubmittableExtrinsic<'promise'>
 	}
-	tx: {
-		switch: ({ api }: { api: ApiPromise }, submitter: string, amount: string) => SubmittableExtrinsic<'promise'>
-		switchBack: ({ api }: { api: ApiPromise }, amount: string) => SubmittableExtrinsic<'promise'>
+	foreign: {
+		// tx to send the funds from the foreign chain to the native chain
 		transfer: (
 			{ api }: { api: ApiPromise },
-			beneficiary1: string,
+			beneficiary: string,
 			amount: string | number
 		) => SubmittableExtrinsic<'promise'>
+		// tx to withdraw the funds from the native chain to the foreign chain
 		withdraw: (
 			{ api }: { api: ApiPromise },
 			submitter: string,
 			amount: string | number
 		) => SubmittableExtrinsic<'promise'>
 	}
+}
+
+/**
+ * All possible events to check after the transaction.
+ */
+interface Events {
+	// events to check after the transaction on the native chain
+	native: {
+		// events after transfering the native funds to the foreign chain
+		transfer: EventFilter[]
+		// events after transfering the foreign funds from the native chain to the foreign chain
+		withdraw: EventFilter[]
+		// events after receiving the native funds from the foreign chain
+		receive: {
+			// events after receiving the native funds from the foreign chain
+			native: EventFilter[]
+			// events after receiving the foreign funds from the foreign chain
+			foreign: EventFilter[]
+		}
+	}
+	// events to check after the transaction on the foreign chain
+	foreign: {
+		// events after transfering the foreign funds to the native chain
+		transfer: EventFilter[]
+		// events after transfering the native funds from the foreign chain to the native chain
+		withdraw: EventFilter[]
+		receive: {
+			// events after receiving the native funds from the native chain on the foreign chain
+			native: EventFilter[]
+			// events after receiving the foreign funds from the native chain on the foreign chain
+			foreign: EventFilter[]
+		}
+	}
+}
+
+/**
+ * Context for the transaction to switch funds between chains.
+ */
+interface TxContext {
+	// amount of funds to transfer
+	balanceToTransfer: {
+		// amount of native currency to transfer
+		native: bigint
+		// amount of foreign currency to transfer
+		foreign: bigint
+	}
+	// transactions to execute
+	tx: Transactions
+	// events to check after the transaction
+	events: Events
 }
 
 /*
@@ -47,93 +109,95 @@ interface SwitchTestConfiguration {
 	config: BasicConfig
 	query: Query
 	txContext: TxContext
-	network: NetworkSetupOption
-	accounts: Accounts
-	storage: Storage
-	sovereignAccount: SovereignAccount
-}
-
-export function getXcmMessageV4ToSendEkilt(address: string) {
-	return {
-		V4: [
-			{
-				DepositAsset: {
-					assets: { Wild: 'All' },
-					beneficiary: {
-						parents: 0,
-						interior: {
-							X1: [
-								{
-									AccountId32: {
-										id: hexAddress(address),
-									},
-								},
-							],
-						},
-					},
-				},
-			},
-		],
-	}
+	account: KeyringPair
+	sovereignAccount: string
 }
 
 // Test pairs for limited reserve transfers
 export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 	{
 		config: {
-			desc: 'Switch: Kilt -> AssetHub -> Kilt',
+			desc: 'Switch V4 LIVE: Kilt -> AssetHub -> Kilt',
+			network: {
+				sender: PolkadotChainConfigs.all.spiritnet.getConfig({}),
+				receiver: PolkadotChainConfigs.all.assetHub.getConfig({}),
+				relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
+			},
+			storage: {
+				senderStorage: SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+				receiverStorage: {
+					// Assign some coins to create the account.
+					...AssetHubContext.assignDotTokensToAccountsAsStorage([keysAlice.address]),
+					// Create the eKilts.
+					...AssetHubContext.createForeignAsset(keysBob.address),
+				},
+				relayStorage: {},
+			},
 		},
-		network: {
-			sender: PolkadotChainConfigs.all.spiritnet.getConfig({}),
-			receiver: PolkadotChainConfigs.all.assetHub.getConfig({}),
-			relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
-		},
-		accounts: {
-			senderAccount: keysAlice,
-			receiverAccount: keysAlice,
-		},
+
+		account: keysAlice,
 		query: {
-			sender: { native: query.balances, foreign: () => {} },
-			receiver: { native: query.balances, foreign: () => {} },
+			native: { nativeFunds: query.balances, foreignFunds: query.fungibles(AssetHubContext.nativeTokenLocation) },
+			foreign: {
+				nativeFunds: query.balances,
+				foreignFunds: query.foreignAssets(AssetHubContext.eKiltLocation),
+			},
 		},
 		txContext: {
 			tx: {
-				switch: tx.switchPallet.switchV4(),
-				switchBack: tx.xcmPallet.transferAssetsUsingTypeAndThen(
-					tx.xcmPallet.parachainV4(1, SpiritnetConfig.paraId),
-					AssetHubContext.eKiltLocation,
-					getXcmMessageV4ToSendEkilt(keysAlice.address)
-				),
-				transfer: tx.xcmPallet.limitedReserveTransferAssetsV3(
-					{ Concrete: AssetHubContext.nativeTokenLocation },
-					tx.xcmPallet.parachainV3(1, SpiritnetConfig.paraId)
-				),
-				withdraw: tx.xcmPallet.transferAssets(tx.xcmPallet.parachainV3(1, AssetHubContext.paraId), {
-					Concrete: AssetHubContext.nativeTokenLocation,
-				}),
+				native: {
+					transfer: tx.switchPallet.switchV4(),
+					withdraw: tx.xcmPallet.transferAssetsUsingTypeAndThenV4(
+						tx.xcmPallet.parachainV4(1, SpiritnetConfig.paraId),
+						AssetHubContext.eKiltLocation,
+						getXcmMessageV4ToSendEkilt(keysAlice.address)
+					),
+				},
+				foreign: {
+					transfer: tx.xcmPallet.limitedReserveTransferAssetsV4(
+						AssetHubContext.nativeTokenLocation,
+						tx.xcmPallet.parachainV4(1, SpiritnetConfig.paraId)
+					),
+					withdraw: tx.xcmPallet.transferAssetsV4(
+						tx.xcmPallet.parachainV4(1, AssetHubContext.paraId),
+						AssetHubContext.nativeTokenLocation
+					),
+				},
 			},
-			// pallets: {
-			// 	sender: [],
-			// 	receiver: [],
-			// },
+			events: {
+				native: {
+					transfer: [
+						{ section: 'assetSwitchPool1', method: 'LocalToRemoteSwitchExecuted' },
+						{ section: 'fungibles', method: 'Burned' },
+					],
+
+					receive: {
+						native: [{ section: 'assetSwitchPool1', method: 'RemoteToLocalSwitchExecuted' }],
+						foreign: [
+							{ section: 'fungibles', method: 'Issued' },
+							{ section: 'messageQueue', method: 'Processed' },
+						],
+					},
+					withdraw: [{ section: 'polkadotXcm', method: 'Sent' }, 'fungibles'],
+				},
+
+				foreign: {
+					transfer: [{ section: 'polkadotXcm', method: 'Sent' }],
+					receive: {
+						foreign: ['foreignAssets', { section: 'messageQueue', method: 'Processed' }],
+						native: [
+							{ section: 'messageQueue', method: 'Processed' },
+							{ section: 'balances', method: 'burned' },
+						],
+					},
+					withdraw: [{ section: 'polkadotXcm', method: 'Sent' }],
+				},
+			},
 			balanceToTransfer: {
 				native: BigInt(1e15),
 				foreign: BigInt(1e10),
 			},
 		},
-		storage: {
-			senderStorage: SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-			receiverStorage: {
-				// Assign some coins to create the account.
-				...AssetHubContext.assignDotTokensToAccountsAsStorage([keysAlice.address]),
-				// Create the eKilts.
-				...AssetHubContext.createForeignAsset(keysBob.address),
-			},
-			relayStorage: {},
-		},
-		sovereignAccount: {
-			sender: AssetHubContext.sovereignAccountOnSiblingChains,
-			receiver: SpiritnetConfig.siblingSovereignAccount,
-		},
+		sovereignAccount: SpiritnetConfig.sovereignAccountOnSiblingChains,
 	},
 ] as const

@@ -11,9 +11,9 @@ export const getSetupOptions = ({
 	wasmOverride?: string
 } = {}) =>
 	({
-		endpoint: process.env.HYDRADX_WS || ['wss://hydradx-rpc.dwellir.com', 'wss://rpc.hydradx.cloud'],
+		endpoint: process.env.HYDRADX_WS || ['wss://rpc.hydradx.cloud'],
 		db: './db/hydradx.db.sqlite',
-		port: toNumber(process.env.HYDRADX_PORT) || 9001,
+		port: toNumber(process.env.HYDRADX_PORT),
 		blockNumber,
 		wasmOverride,
 	}) as SetupOption
@@ -45,7 +45,7 @@ export function assignKiltTokensToAccounts(addr: string[], balance: bigint = ini
 }
 
 // Sibling Sovereign Account
-export const siblingSovereignAccount = '5Eg2fntQqFi3EvFWAf71G66Ecjjah26bmFzoANAeHFgj9Lia'
+export const sovereignAccountOnSiblingChains = '5Eg2fntQqFi3EvFWAf71G66Ecjjah26bmFzoANAeHFgj9Lia'
 
 export const kiltTokenId = 28
 

@@ -1,4 +1,8 @@
+import { SubmittableResult } from '@polkadot/api'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Keyring } from '@polkadot/keyring'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { Codec } from '@polkadot/types/types'
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 import { ExpectStatic } from 'vitest'
@@ -71,6 +75,32 @@ export function validateBalanceWithPrecision(
 
 	expect(receivedBalance).toBeGreaterThanOrEqual(lowerBound)
 	expect(receivedBalance).toBeLessThanOrEqual(upperBound)
+}
+
+/**
+ * Fetches the paid fees for the executed XCM message.
+ */
+export async function getPaidXcmFees(events: Codec[]): Promise<bigint> {
+	const polkadotFees = events.filter(
+		(event) =>
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(event as any).event.data.section === 'polkadotXcm' &&
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(event as any).event.data.method === 'FeesPaid'
+	)[0]
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return BigInt(JSON.parse((polkadotFees as any).event.data.fees[0].fun.toString()).fungible)
+}
+
+/**
+ * Calculates the transaction fees for a given transaction.
+ */
+export async function calculateTxFees(
+	tx: SubmittableExtrinsic<'promise', SubmittableResult>,
+	account: KeyringPair
+): Promise<bigint> {
+	const paymentInfo = await tx.paymentInfo(account)
+	return paymentInfo.partialFee.toBigInt()
 }
 
 export const KILT = BigInt(1e15)
