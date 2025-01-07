@@ -26,3 +26,10 @@ export interface ChainConfig {
 
 /// A Record of all possible chain configurations.
 export type ChainConfigs = Record<string, ChainConfig>
+
+export interface ParachainInfo {
+	paraId: number
+	sovereignAccountOnSiblingChains: string
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	[key: string]: any
+}

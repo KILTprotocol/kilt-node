@@ -1,7 +1,7 @@
 # e2e Chopsticks tests
 
 This project is a set of end-to-end tests for the KILT protocol against other parachains. 
-Other functionalities such as a creation of DID can be easy inserted.
+Other functionalities such as a creation of DID can be easily added.
 
 ## Getting Started
 

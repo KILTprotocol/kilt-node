@@ -39,24 +39,21 @@ async function connectNetworks(relayChain: Config, parachains: Config[]) {
  * This function is used to set up a network with a relay chain, a sender, and a receiver.
  *
  * @param {SetupOption} relayChain - The relay chain option for the network setup.
- * @param {SetupOption} sender - The sender option for the network setup.
- * @param {SetupOption} receiver - The receiver option for the network setup.
+ * @param {SetupOption} parachains - The parachain option for the network setup.
  *
  * @returns {Promise<{relayChainContext: Config, senderChainContext: Config, receiverChainContext: Config}>}
  * An object containing the contexts of the relay chain, sender, and receiver.
  */
 export async function setupNetwork(
 	relayChain: SetupOption,
-	sender: SetupOption,
-	receiver: SetupOption
-): Promise<{ relayChainContext: Config; senderChainContext: Config; receiverChainContext: Config }> {
+	parachains: SetupOption[]
+): Promise<{ relayChainContext: Config; parachainContexts: Config[] }> {
 	await setTimeout(50)
 	const relayChainContext = await setupContext(relayChain)
-	const senderChainContext = await setupContext(sender)
-	const receiverChainContext = await setupContext(receiver)
+	const parachainContexts = await Promise.all(parachains.map((parachain) => setupContext(parachain)))
 
-	await connectNetworks(relayChainContext, [senderChainContext, receiverChainContext])
-	return { relayChainContext, senderChainContext, receiverChainContext }
+	await connectNetworks(relayChainContext, parachainContexts)
+	return { relayChainContext, parachainContexts }
 }
 
 /// Creates a new block for the given context

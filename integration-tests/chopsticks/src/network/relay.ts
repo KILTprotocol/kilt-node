@@ -22,24 +22,26 @@ export const getSetupOptions = ({
 		wasmOverride,
 	}) as SetupOption
 
-/// Assigns the native tokens to an accounts
-export function assignNativeTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
-	return {
-		System: {
-			Account: addr.map((address) => [[address], { providers: 1, data: { free: balance } }]),
-		},
-	}
-}
+export const storageModifier = {
+	/// Assigns the native tokens to an accounts
+	assignNativeTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
+		return {
+			System: {
+				Account: addr.map((address) => [[address], { providers: 1, data: { free: balance } }]),
+			},
+		}
+	},
 
-export function removeDisputesAndMessageQueues() {
-	return {
-		ParasDisputes: {
-			// those can makes block building super slow
-			$removePrefix: ['disputes'],
-		},
-		Dmp: {
-			// clear existing dmp to avoid impact test result
-			$removePrefix: ['downwardMessageQueues'],
-		},
-	}
+	removeDisputesAndMessageQueues() {
+		return {
+			ParasDisputes: {
+				// those can makes block building super slow
+				$removePrefix: ['disputes'],
+			},
+			Dmp: {
+				// clear existing dmp to avoid impact test result
+				$removePrefix: ['downwardMessageQueues'],
+			},
+		}
+	},
 }
