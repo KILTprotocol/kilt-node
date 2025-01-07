@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+// Old benchmarking macros are a mess.
+#![allow(clippy::tests_outside_test_module)]
+
 use frame_benchmarking::benchmarks;
 use frame_support::traits::EnsureOriginWithArg;
 
@@ -34,7 +37,7 @@ benchmarks! {
 
 	impl_benchmark_test_suite!(
 		Pallet,
-		crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+		crate::mock::runtime::ExtBuilder.build_with_keystore(),
 		crate::mock::runtime::Test
 	)
 }

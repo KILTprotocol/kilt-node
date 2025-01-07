@@ -56,7 +56,7 @@ pub struct CompleteMerkleProof<Root, Proof> {
 	pub proof: Proof,
 }
 
-#[derive(Clone, RuntimeDebug, Encode, Decode, TypeInfo, PartialEq)]
+#[derive(Clone, RuntimeDebug, Encode, Decode, TypeInfo, PartialEq, Eq)]
 pub enum DidMerkleProofError {
 	UnsupportedVersion,
 	KeyNotFound,

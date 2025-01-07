@@ -69,6 +69,7 @@ impl frame_system::Config for TestRuntime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = ();
 	type SS58Prefix = ConstU16<1>;
 	type SystemWeightInfo = ();
 	type Version = ();
@@ -78,15 +79,14 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 500;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
-	pub const MaxHolds: u32 = 50;
 	pub const MaxFreezes: u32 = 50;
 }
 
 impl pallet_balances::Config for TestRuntime {
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
-	type MaxHolds = MaxHolds;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;
@@ -150,6 +150,14 @@ impl ExtBuilder {
 		});
 
 		ext
+	}
+
+	pub(crate) fn build_and_execute_with_sanity_tests(self, run: impl FnOnce()) {
+		let mut ext = self.build();
+		ext.execute_with(|| {
+			run();
+			crate::try_state::try_state::<TestRuntime>(System::block_number()).unwrap();
+		});
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]

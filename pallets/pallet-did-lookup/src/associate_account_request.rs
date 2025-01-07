@@ -81,6 +81,8 @@ pub fn get_challenge<DidIdentifier: AsRef<[u8]>, BlockNumber: Debug>(
 // Copied from https://github.com/paritytech/substrate/blob/ad5399644aebc54e32a107ac37ae08e6cd1f0cfb/primitives/core/src/crypto.rs#L324
 // Copyright (C) Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: Apache-2.0
+#[allow(clippy::expect_used)]
+#[allow(clippy::as_conversions)]
 fn to_ss58(public_key: &[u8], prefix: u16) -> String {
 	// We mask out the upper two bits of the ident - SS58 Prefix currently only
 	// supports 14-bits
@@ -89,16 +91,18 @@ fn to_ss58(public_key: &[u8], prefix: u16) -> String {
 		0..=63 => vec![ident as u8],
 		64..=16_383 => {
 			// upper six bits of the lower byte(!)
-			let first = ((ident & 0b0000_0000_1111_1100) as u8) >> 2;
+			let first = ((ident & 0b0000_0000_1111_1100) as u8) >> 2u8;
 			// lower two bits of the lower byte in the high pos,
 			// lower bits of the upper byte in the low pos
-			let second = ((ident >> 8) as u8) | ((ident & 0b0000_0000_0000_0011) as u8) << 6;
+			let second = ((ident >> 8u8) as u8) | ((ident & 0b0000_0000_0000_0011) as u8) << 6u8;
 			vec![first | 0b01000000, second]
 		}
+		#[allow(clippy::unreachable)]
 		_ => unreachable!("masked out the upper two bits; qed"),
 	};
 	v.extend(public_key);
 	let r = ss58hash(&v);
+	#[allow(clippy::indexing_slicing)]
 	v.extend(&r[0..2]);
 	v.to_base58()
 }

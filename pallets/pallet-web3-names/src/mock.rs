@@ -23,20 +23,20 @@ use crate::{
 	AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf,
 };
 
-pub(crate) fn insert_raw_w3n<T: Config>(
+pub(crate) fn insert_raw_w3n<T: Config<I>, I: 'static>(
 	payer: AccountIdOf<T>,
-	owner: Web3NameOwnerOf<T>,
-	name: Web3NameOf<T>,
+	owner: Web3NameOwnerOf<T, I>,
+	name: Web3NameOf<T, I>,
 	block_number: BlockNumberFor<T>,
-	deposit: BalanceOf<T>,
+	deposit: BalanceOf<T, I>,
 ) {
-	CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &payer, deposit)
+	CurrencyOf::<T, I>::hold(&HoldReason::Deposit.into(), &payer, deposit)
 		.expect("Payer should have enough funds for deposit");
 
-	Names::<T>::insert(&owner, name.clone());
-	Owner::<T>::insert(
+	Names::<T, I>::insert(&owner, name.clone());
+	Owner::<T, I>::insert(
 		&name,
-		Web3OwnershipOf::<T> {
+		Web3OwnershipOf::<T, I> {
 			owner,
 			claimed_at: block_number,
 			deposit: Deposit {
@@ -53,15 +53,18 @@ pub use crate::mock::runtime::*;
 // Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use frame_support::parameter_types;
+	use frame_support::{ensure, parameter_types};
 	use frame_system::EnsureRoot;
 	use kilt_support::mock::{mock_origin, SubjectId};
+	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+	use scale_info::TypeInfo;
+	use sp_core::RuntimeDebug;
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BuildStorage, MultiSignature,
+		BoundedVec, BuildStorage, MultiSignature, SaturatedConversion,
 	};
 
-	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name};
+	use crate::{self as pallet_web3_names, Config, Error};
 
 	type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -112,21 +115,21 @@ pub(crate) mod runtime {
 		type SS58Prefix = SS58Prefix;
 		type OnSetCode = ();
 		type MaxConsumers = frame_support::traits::ConstU32<16>;
+		type RuntimeTask = RuntimeTask;
 	}
 
 	parameter_types! {
 		pub const ExistentialDeposit: Balance = 10;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
-		pub const MaxHolds: u32 = 50;
 		pub const MaxFreezes: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type RuntimeFreezeReason = RuntimeFreezeReason;
 		type FreezeIdentifier = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
-		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = RuntimeEvent;
@@ -138,7 +141,30 @@ pub(crate) mod runtime {
 		type WeightInfo = ();
 	}
 
-	pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;
+	#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen, PartialEq, Eq, PartialOrd, Ord, Clone)]
+	pub struct TestWeb3Name(pub(crate) BoundedVec<u8, <Test as Config>::MaxNameLength>);
+
+	impl TryFrom<Vec<u8>> for TestWeb3Name {
+		type Error = Error<Test>;
+
+		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+			ensure!(
+				value.len() >= <Test as Config>::MinNameLength::get().saturated_into(),
+				Self::Error::TooShort
+			);
+			let bounded_vec: BoundedVec<u8, <Test as Config>::MaxNameLength> =
+				BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
+			ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);
+			Ok(Self(bounded_vec))
+		}
+	}
+
+	fn is_valid_web3_name(input: &[u8]) -> bool {
+		input
+			.iter()
+			.all(|c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_'))
+	}
+
 	pub(crate) type TestWeb3NameOwner = SubjectId;
 	pub(crate) type TestWeb3NamePayer = AccountId;
 	pub(crate) type TestOwnerOrigin = mock_origin::EnsureDoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
@@ -154,6 +180,7 @@ pub(crate) mod runtime {
 
 	impl pallet_web3_names::Config for Test {
 		type BanOrigin = TestBanOrigin;
+		type ClaimOrigin = TestOwnerOrigin;
 		type OwnerOrigin = TestOwnerOrigin;
 		type OriginSuccess = TestOriginSuccess;
 		type Currency = Balances;
@@ -166,6 +193,9 @@ pub(crate) mod runtime {
 		type Web3NameOwner = TestWeb3NameOwner;
 		type WeightInfo = ();
 		type BalanceMigrationManager = ();
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper = ();
 	}
 
 	impl mock_origin::Config for Test {
@@ -182,7 +212,7 @@ pub(crate) mod runtime {
 	pub(crate) const WEB3_NAME_01_INPUT: &[u8; 12] = b"web3_name_01";
 
 	pub(crate) fn get_web3_name(web3_name_input: &[u8]) -> TestWeb3Name {
-		AsciiWeb3Name::try_from(web3_name_input.to_vec()).expect("Invalid web3 name input.")
+		TestWeb3Name::try_from(web3_name_input.to_vec()).expect("Invalid web3 name input.")
 	}
 
 	#[derive(Clone, Default)]
@@ -224,6 +254,10 @@ pub(crate) mod runtime {
 			let mut ext = sp_io::TestExternalities::new(storage);
 
 			ext.execute_with(|| {
+				// ensure that we are not at the genesis block. Events are not registered for
+				// the genesis block.
+				System::set_block_number(System::block_number() + 1);
+
 				for (owner, web3_name, payer) in self.claimed_web3_names {
 					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer)
 						.expect("Could not register name");
@@ -240,7 +274,7 @@ pub(crate) mod runtime {
 		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 			self.build().execute_with(|| {
 				test();
-				crate::try_state::do_try_state::<Test>().expect("Sanity test for w3n failed.");
+				crate::try_state::do_try_state::<Test, _>().expect("Sanity test for w3n failed.");
 			})
 		}
 

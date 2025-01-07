@@ -18,19 +18,24 @@
 
 //! KILT chain specification
 
+// Triggered by the `ChainSpecGroup` derive macro used for the custom chainspec
+// extension.
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use std::str::FromStr;
 
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
-use sc_cli::RuntimeVersion;
 use serde::{Deserialize, Serialize};
 
 pub(crate) use utils::load_spec;
 
 pub(crate) mod peregrine;
+pub(crate) mod rilt;
 pub(crate) mod spiritnet;
 pub(crate) mod utils;
 
 const KILT_PARA_ID: u32 = 2_086;
+const RILT_PARA_ID: u32 = 4504;
 
 /// The extensions for the `ChainSpec`.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
@@ -55,6 +60,7 @@ pub(crate) enum PeregrineRuntime {
 	PeregrineStg,
 	Rilt,
 	New,
+	RiltNew,
 	Other(String),
 }
 
@@ -65,6 +71,7 @@ impl std::fmt::Display for PeregrineRuntime {
 			Self::Peregrine => write!(f, "peregrine"),
 			Self::PeregrineStg => write!(f, "peregrine-stg"),
 			Self::Rilt => write!(f, "rilt"),
+			Self::RiltNew => write!(f, "rilt-new"),
 			Self::New => write!(f, "new"),
 			Self::Other(path) => write!(f, "other -> {path}"),
 		}
@@ -94,15 +101,6 @@ pub(crate) enum ParachainRuntime {
 	Spiritnet(SpiritnetRuntime),
 }
 
-impl ParachainRuntime {
-	pub(crate) fn native_version(&self) -> &'static RuntimeVersion {
-		match self {
-			Self::Peregrine(_) => &peregrine_runtime::VERSION,
-			Self::Spiritnet(_) => &spiritnet_runtime::VERSION,
-		}
-	}
-}
-
 impl std::fmt::Display for ParachainRuntime {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
@@ -118,7 +116,7 @@ impl FromStr for ParachainRuntime {
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			// Peregrine development
-			"dev" => Ok(Self::Peregrine(PeregrineRuntime::Dev)),
+			"dev" | "peregrine-dev" => Ok(Self::Peregrine(PeregrineRuntime::Dev)),
 			// New blank Peregrine chainspec
 			"peregrine-new" => Ok(Self::Peregrine(PeregrineRuntime::New)),
 			// Peregrine chainspec
@@ -127,6 +125,7 @@ impl FromStr for ParachainRuntime {
 			"peregrine-stg" => Ok(Self::Peregrine(PeregrineRuntime::PeregrineStg)),
 			// RILT chainspec
 			"rilt" => Ok(Self::Peregrine(PeregrineRuntime::Rilt)),
+			"rilt-new" => Ok(Self::Peregrine(PeregrineRuntime::RiltNew)),
 			// Any other Peregrine-based chainspec
 			s if s.contains("peregrine") => Ok(Self::Peregrine(PeregrineRuntime::Other(s.to_string()))),
 
@@ -139,7 +138,9 @@ impl FromStr for ParachainRuntime {
 			// Any other Spiritnet-based chainspec
 			s if s.contains("spiritnet") => Ok(Self::Spiritnet(SpiritnetRuntime::Other(s.to_string()))),
 
-			_ => Err(format!("Unknown chainspec id provided: {s}")),
+			// Instead of panicking, we use the Peregrine runtime, since we don't expect Spiritnet to ever be used in
+			// this way
+			path => Ok(Self::Peregrine(PeregrineRuntime::Other(path.to_string()))),
 		}
 	}
 }

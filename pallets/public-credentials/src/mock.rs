@@ -148,10 +148,6 @@ where
 		_credential_id: &CredentialIdOf<T>,
 		authorization_id: &T::AuthorizationId,
 	) -> Result<Weight, DispatchError> {
-		#[cfg(test)]
-		println!("{:#?}", who);
-		#[cfg(test)]
-		println!("{:#?}", authorization_id);
 		if authorization_id == who {
 			Ok(Weight::zero())
 		} else {
@@ -282,6 +278,7 @@ pub(crate) mod runtime {
 	}
 
 	impl frame_system::Config for Test {
+		type RuntimeTask = ();
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Block = Block;
@@ -290,7 +287,7 @@ pub(crate) mod runtime {
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = ConstU64<250>;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -309,13 +306,13 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
+		type RuntimeFreezeReason = RuntimeFreezeReason;
 		type FreezeIdentifier = RuntimeFreezeReason;
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = ConstU32<10>;
-		type MaxHolds = ConstU32<10>;
 		type Balance = Balance;
 		type DustRemoval = ();
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type ExistentialDeposit = ConstU128<MILLI_UNIT>;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -329,7 +326,7 @@ pub(crate) mod runtime {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OverarchingOrigin = EnsureSigned<AccountId>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type WeightInfo = ();
 
 		type Currency = Balances;
@@ -347,7 +344,7 @@ pub(crate) mod runtime {
 		type Currency = Balances;
 		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::AttesterId>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type MaxEncodedClaimsLength = ConstU32<500>;
 		type MaxSubjectIdLength = ConstU32<100>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
@@ -424,6 +421,10 @@ pub(crate) mod runtime {
 			let mut ext = sp_io::TestExternalities::new(storage);
 
 			ext.execute_with(|| {
+				// ensure that we are not at the genesis block. Events are not registered for
+				// the genesis block.
+				System::set_block_number(System::block_number() + 1);
+
 				for ctype in self.ctypes {
 					ctype::Ctypes::<Test>::insert(
 						ctype.0,

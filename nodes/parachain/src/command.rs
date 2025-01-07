@@ -15,17 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-
-use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
-use parity_scale_codec::Encode;
-use runtime_common::Block;
+use runtime_common::opaque::Block;
 use sc_cli::SubstrateCli;
 use sc_executor::NativeExecutionDispatch;
-use sp_core::hexdisplay::HexDisplay;
-use sp_runtime::traits::{AccountIdConversion, Block as BlockT};
+use sp_runtime::traits::AccountIdConversion;
+use std::iter::once;
 
 use crate::{
 	chain_spec::{self, ParachainRuntime},
@@ -108,8 +105,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 			runner.sync_run(|config| {
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					[RelayChainCli::executable_name()]
-						.iter()
+					once(&RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 
@@ -120,12 +116,8 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				cmd.run(config, polkadot_config)
 			})
 		}
-		Some(Subcommand::ExportGenesisState(cmd)) => {
-			let (chain_spec_id, runtime) = get_selected_chainspec(&cmd.shared_params)?;
-			let spec = cli.load_spec(chain_spec_id.as_str())?;
-
-			println!("Dispatching task for spec id: {chain_spec_id}.");
-			println!("The following runtime was chosen based on the spec id: {runtime}.");
+		Some(Subcommand::ExportGenesisHead(cmd)) => {
+			let (_, runtime) = get_selected_chainspec(&cmd.shared_params)?;
 
 			let runner = cli.create_runner(cmd)?;
 
@@ -135,14 +127,15 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 						&config,
 						crate::service::build_import_queue,
 					)?;
-					cmd.run::<Block>(&*spec, &*partials.client)
+
+					cmd.run(partials.client)
 				}),
 				ParachainRuntime::Peregrine(_) => runner.sync_run(|config| {
 					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
-					cmd.run::<Block>(&*spec, &*partials.client)
+					cmd.run(partials.client)
 				}),
 			}
 		}
@@ -223,7 +216,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
 				}),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
@@ -235,7 +228,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
 				}),
 				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
 				(BenchmarkCmd::Machine(cmd), _) => {
@@ -267,8 +260,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 				let polkadot_cli = RelayChainCli::new(
 					&config,
-					[RelayChainCli::executable_name()]
-						.iter()
+					once(&RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 
@@ -279,18 +271,12 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 				let (_, runtime) = get_selected_chainspec(&cli.run.base.shared_params)?;
 
-				let state_version = runtime.native_version().state_version();
-				let block: Block =
-					generate_genesis_block(&*config.chain_spec, state_version).map_err(|e| format!("{:?}", e))?;
-				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
-
 				let tokio_handle = config.tokio_handle.clone();
 				let polkadot_config = SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
 					.map_err(|err| format!("Relay chain argument error: {}", err))?;
 
 				info!("Parachain id: {:?}", id);
 				info!("Parachain Account: {}", parachain_account);
-				info!("Parachain genesis state: {}", genesis_state);
 				info!(
 					"Is collating: {}",
 					if config.role.is_authority() { "yes" } else { "no" }

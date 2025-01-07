@@ -39,15 +39,15 @@ use crate::{constants::MILLI_KILT, AccountId, Balance, CreditOf, NegativeImbalan
 pub struct SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>(
 	sp_std::marker::PhantomData<(R, Ratio, Beneficiary1, Beneficiary2)>,
 );
-impl<R, Ratio, Beneficiary1, Beneficiary2> OnUnbalanced<NegativeImbalanceOf<R>>
+impl<R, Ratio, Beneficiary1, Beneficiary2> OnUnbalanced<CreditOf<R>>
 	for SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>
 where
 	R: pallet_balances::Config,
-	Beneficiary1: OnUnbalanced<NegativeImbalanceOf<R>>,
-	Beneficiary2: OnUnbalanced<NegativeImbalanceOf<R>>,
+	Beneficiary1: OnUnbalanced<CreditOf<R>>,
+	Beneficiary2: OnUnbalanced<CreditOf<R>>,
 	Ratio: Get<(u32, u32)>,
 {
-	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalanceOf<R>>) {
+	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = CreditOf<R>>) {
 		let ratio = Ratio::get();
 		if let Some(fees) = fees_then_tips.next() {
 			let mut split = fees.ration(ratio.0, ratio.1);
@@ -67,8 +67,7 @@ pub struct ToAuthor<R>(sp_std::marker::PhantomData<R>);
 impl<R> OnUnbalanced<NegativeImbalanceOf<R>> for ToAuthor<R>
 where
 	R: pallet_balances::Config + pallet_authorship::Config,
-	<R as frame_system::Config>::AccountId: From<AccountId>,
-	<R as frame_system::Config>::AccountId: Into<AccountId>,
+	<R as frame_system::Config>::AccountId: From<AccountId> + Into<AccountId>,
 	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<R>) {
@@ -82,8 +81,7 @@ pub struct ToAuthorCredit<R>(sp_std::marker::PhantomData<R>);
 impl<R> OnUnbalanced<CreditOf<R>> for ToAuthorCredit<R>
 where
 	R: pallet_balances::Config + pallet_authorship::Config,
-	<R as frame_system::Config>::AccountId: From<AccountId>,
-	<R as frame_system::Config>::AccountId: Into<AccountId>,
+	<R as frame_system::Config>::AccountId: From<AccountId> + Into<AccountId>,
 	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
@@ -109,12 +107,12 @@ where
 pub struct WeightToFee<R>(sp_std::marker::PhantomData<R>);
 impl<R> WeightToFeePolynomial for WeightToFee<R>
 where
-	R: pallet_transaction_payment::Config,
-	R: frame_system::Config,
-	R: pallet_balances::Config,
+	R: pallet_transaction_payment::Config + frame_system::Config + pallet_balances::Config,
 	u128: From<<<R as pallet_transaction_payment::Config>::OnChargeTransaction as OnChargeTransaction<R>>::Balance>,
 {
 	type Balance = Balance;
+	#[allow(clippy::integer_division)]
+	#[allow(clippy::arithmetic_side_effects)]
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
 		// The should be fee
 		let wanted_fee: Balance = 10 * MILLI_KILT;
@@ -202,7 +200,7 @@ mod tests {
 		type RuntimeOrigin = RuntimeOrigin;
 		type Block = Block;
 		type Nonce = u64;
-
+		type RuntimeTask = ();
 		type RuntimeCall = RuntimeCall;
 		type Hash = H256;
 		type Hashing = BlakeTwo256;
@@ -227,9 +225,9 @@ mod tests {
 	impl pallet_balances::Config for Test {
 		type Balance = u64;
 		type FreezeIdentifier = ();
+		type RuntimeFreezeReason = RuntimeFreezeReason;
 		type RuntimeHoldReason = ();
 		type MaxFreezes = ();
-		type MaxHolds = ();
 		type RuntimeEvent = RuntimeEvent;
 		type DustRemoval = ();
 		type ExistentialDeposit = ConstU64<1>;
@@ -243,11 +241,13 @@ mod tests {
 	pub const TREASURY_ACC: AccountId = crate::AccountId::new([1u8; 32]);
 	const AUTHOR_ACC: AccountId = AccountId::new([2; 32]);
 
-	pub struct ToBeneficiary();
-	impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
-		fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
+	pub struct ToBeneficiary;
+	impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
+		fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 			// Must resolve into existing but better to be safe.
-			<pallet_balances::Pallet<Test>>::resolve_creating(&TREASURY_ACC, amount);
+			let result = <pallet_balances::Pallet<Test>>::resolve(&TREASURY_ACC, amount);
+
+			debug_assert!(result.is_ok(), "The whole credit cannot be countered");
 		}
 	}
 
@@ -281,13 +281,15 @@ mod tests {
 	#[test]
 	fn test_fees_and_tip_split() {
 		new_test_ext().execute_with(|| {
-			let fee = <Balances as Currency<<Test as frame_system::Config>::AccountId>>::issue(10);
-			let tip = <Balances as Currency<<Test as frame_system::Config>::AccountId>>::issue(20);
+			let fee = <Balances as Balanced<<Test as frame_system::Config>::AccountId>>::issue(10);
+			let tip = <Balances as Balanced<<Test as frame_system::Config>::AccountId>>::issue(20);
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 0);
 			assert_eq!(Balances::free_balance(AUTHOR_ACC), 0);
 
-			SplitFeesByRatio::<Test, Ratio, ToBeneficiary, ToAuthor<Test>>::on_unbalanceds(vec![fee, tip].into_iter());
+			SplitFeesByRatio::<Test, Ratio, ToBeneficiary, ToAuthorCredit<Test>>::on_unbalanceds(
+				vec![fee, tip].into_iter(),
+			);
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 5);
 			assert_eq!(Balances::free_balance(AUTHOR_ACC), 25);

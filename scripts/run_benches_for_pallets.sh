@@ -19,11 +19,12 @@ pallets=(
 	pallet-web3-names
 	parachain-staking
 	public-credentials
+	pallet-asset-switch
 )
 
 // Add Peregrine-only pallets here!
 if [ "$runtime" = "peregrine" ]; then
-  pallets+=()
+	pallets+=()
 fi
 
 echo "[+] Running all default weight benchmarks for $runtime --chain=$chain"
@@ -36,11 +37,7 @@ for pallet in "${pallets[@]}"; do
 	./target/release/kilt-parachain benchmark pallet \
 		--template=".maintain/weight-template.hbs" \
 		--header="HEADER-GPL" \
-		--execution=wasm \
-		--wasm-execution=compiled \
 		--heap-pages=4096 \
-		--steps=50 \
-		--repeat=20 \
 		--chain="${chain}" \
 		--pallet="$pallet" \
 		--extrinsic="*" \

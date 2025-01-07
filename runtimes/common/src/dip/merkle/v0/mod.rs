@@ -24,7 +24,7 @@ use kilt_dip_primitives::{
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::{traits::IdentityProvider, IdentityOf};
 use pallet_web3_names::Web3NameOf;
-use sp_std::{prelude::ToOwned, vec, vec::Vec};
+use sp_std::{iter::once, prelude::ToOwned, vec, vec::Vec};
 use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
 use crate::dip::{
@@ -58,12 +58,11 @@ where
 			);
 			DidMerkleProofError::Internal
 		})?;
-	Ok([RevealedDidKey {
+	Ok(once(RevealedDidKey {
 		id: did_details.authentication_key,
 		relationship: DidVerificationKeyRelationship::Authentication.into(),
 		details: auth_key_details.clone(),
-	}]
-	.into_iter())
+	}))
 }
 
 fn get_att_leaves<Runtime>(
@@ -200,36 +199,39 @@ where
 	// Key agreement keys.
 	let enc_leaves = get_enc_leaves(did_details)?;
 	// Linked accounts.
-	let linked_accounts = get_linked_account_leaves(linked_accounts);
+	let linked_account_leaves = get_linked_account_leaves(linked_accounts);
 	// Web3name.
-	let web3_name = web3_name_details.as_ref().map(get_web3name_leaf::<Runtime>);
+	let web3_name_leaf = web3_name_details.as_ref().map(get_web3name_leaf::<Runtime>);
 
 	// Add all leaves to the proof builder.
-	let keys = auth_leaves
+	let revealed_keys = auth_leaves
 		.chain(att_leaves)
 		.chain(del_leaves)
 		.chain(enc_leaves)
 		.map(RevealedDidMerkleProofLeaf::from);
-	let linked_accounts = linked_accounts.map(RevealedDidMerkleProofLeaf::from);
-	let web3_names = web3_name
+	let revealed_linked_accounts = linked_account_leaves.map(RevealedDidMerkleProofLeaf::from);
+	let revealed_web3_names = web3_name_leaf
 		.map(|n| vec![n])
 		.unwrap_or_default()
 		.into_iter()
 		.map(RevealedDidMerkleProofLeaf::from);
 
-	keys.chain(linked_accounts).chain(web3_names).try_for_each(|leaf| {
-		trie_builder
-			.insert(leaf.encoded_key().as_slice(), leaf.encoded_value().as_slice())
-			.map_err(|_| {
-				log::error!(
-					target: LOG_TARGET,
-					"Failed to insert leaf {:#?} in the trie builder.",
-					leaf
-				);
-				DidMerkleProofError::Internal
-			})?;
-		Ok(())
-	})?;
+	revealed_keys
+		.chain(revealed_linked_accounts)
+		.chain(revealed_web3_names)
+		.try_for_each(|leaf| {
+			trie_builder
+				.insert(leaf.encoded_key().as_slice(), leaf.encoded_value().as_slice())
+				.map_err(|_| {
+					log::error!(
+						target: LOG_TARGET,
+						"Failed to insert leaf {:#?} in the trie builder.",
+						leaf
+					);
+					DidMerkleProofError::Internal
+				})?;
+			Ok(())
+		})?;
 
 	trie_builder.commit();
 	Ok(trie_builder.root().to_owned())

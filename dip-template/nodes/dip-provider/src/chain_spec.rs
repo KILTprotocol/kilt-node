@@ -16,14 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+// Triggered by the `ChainSpecGroup` derive macro used for the custom chainspec
+// extension.
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use cumulus_primitives_core::ParaId;
 use dip_provider_runtime_template::{
 	AccountId, AuraId, BalancesConfig, CollatorSelectionConfig, ParachainInfoConfig, RuntimeGenesisConfig,
-	SessionConfig, SessionKeys, Signature, SudoConfig, SystemConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
+	SessionConfig, SessionKeys, Signature, SudoConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
 };
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::{ChainType, GenericChainSpec};
 use serde::{Deserialize, Serialize};
+use serde_json::to_value;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
@@ -38,7 +43,7 @@ pub(crate) fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pa
 		.public()
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
 pub struct Extensions {
 	pub relay_chain: String,
@@ -72,13 +77,6 @@ fn testnet_genesis(
 	id: ParaId,
 ) -> RuntimeGenesisConfig {
 	RuntimeGenesisConfig {
-		system: SystemConfig {
-			code: WASM_BINARY
-				.expect("WASM binary was not build, please build it!")
-				.to_vec(),
-			..Default::default()
-		},
-		parachain_system: Default::default(),
 		parachain_info: ParachainInfoConfig {
 			parachain_id: id,
 			..Default::default()
@@ -89,7 +87,6 @@ fn testnet_genesis(
 		balances: BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
 		},
-		transaction_payment: Default::default(),
 		collator_selection: CollatorSelectionConfig {
 			invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
 			candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
@@ -101,47 +98,45 @@ fn testnet_genesis(
 				.map(|(acc, aura)| (acc.clone(), acc, template_session_keys(aura)))
 				.collect(),
 		},
-		aura: Default::default(),
-		aura_ext: Default::default(),
-		did_lookup: Default::default(),
+		..Default::default()
 	}
 }
 
 pub fn development_config() -> ChainSpec {
+	let wasm_binary = WASM_BINARY.expect("WASM binary was not build, please build it!");
 	let mut properties = Properties::new();
 	properties.insert("tokenSymbol".into(), "SEILT".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 	properties.insert("ss58Format".into(), SS58_PREFIX.into());
 
-	ChainSpec::from_genesis(
-		"DIP provider dev",
-		"dip-provider-dev",
-		ChainType::Development,
-		move || {
-			testnet_genesis(
-				vec![(
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_collator_keys_from_seed("Alice"),
-				)],
-				vec![
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Bob"),
-					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-				],
-				PARA_ID.into(),
-			)
-		},
-		Vec::new(),
-		None,
-		"dip-provider-dev".into(),
-		None,
-		None,
+	let genesis_state = testnet_genesis(
+		vec![(
+			get_account_id_from_seed::<sr25519::Public>("Alice"),
+			get_collator_keys_from_seed("Alice"),
+		)],
+		vec![
+			get_account_id_from_seed::<sr25519::Public>("Alice"),
+			get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+			get_account_id_from_seed::<sr25519::Public>("Bob"),
+			get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+			get_account_id_from_seed::<sr25519::Public>("Charlie"),
+			get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+		],
+		PARA_ID.into(),
+	);
+
+	ChainSpec::builder(
+		wasm_binary,
 		Extensions {
 			relay_chain: "rococo-local".into(),
 			para_id: PARA_ID,
 		},
 	)
+	.with_name("DIP provider dev")
+	.with_id("dip-provider-dev")
+	.with_chain_type(ChainType::Development)
+	.with_protocol_id("dip-consumer-dev")
+	.with_properties(properties)
+	.with_genesis_config(to_value(genesis_state).unwrap())
+	.build()
 }

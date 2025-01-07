@@ -37,6 +37,7 @@ impl MaxEncodedLen for RewardRate {
 }
 
 /// Convert annual reward rate to per_block.
+#[allow(clippy::arithmetic_side_effects)]
 fn annual_to_per_block(blocks_per_year: u64, rate: Perquintill) -> Perquintill {
 	rate / blocks_per_year.max(1)
 }
@@ -80,6 +81,7 @@ impl StakingInfo {
 	///
 	/// NOTE: If we exceed the max staking rate, the reward will be reduced by
 	/// max_rate / current_rate.
+	#[allow(clippy::arithmetic_side_effects)]
 	pub fn compute_reward<T: Config>(
 		&self,
 		stake: BalanceOf<T>,

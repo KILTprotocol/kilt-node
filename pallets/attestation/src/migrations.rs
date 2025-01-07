@@ -41,7 +41,7 @@ where
 pub mod test {
 	use ctype::mock::get_ctype_hash;
 	use frame_support::{
-		assert_noop,
+		assert_noop, assert_ok,
 		traits::{fungible::InspectHold, ReservableCurrency},
 	};
 	use sp_runtime::traits::Zero;
@@ -119,7 +119,7 @@ pub mod test {
 					attestation_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				assert!(update_balance_for_attestation::<Test>(&claim_hash).is_ok());
+				assert_ok!(update_balance_for_attestation::<Test>(&claim_hash));
 
 				let attestation_post_migration = Attestations::<Test>::get(claim_hash);
 

@@ -18,7 +18,7 @@
 
 use crate::{Config, Pallet};
 use frame_benchmarking::v2::*;
-use sp_std::{vec, vec::Vec};
+use sp_std::vec::Vec;
 
 #[benchmarks(
 	where

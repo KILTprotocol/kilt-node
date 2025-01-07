@@ -165,6 +165,7 @@ impl<
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>;
 
+	#[allow(clippy::as_conversions)]
 	fn verify_proof_for_call_against_details(
 		call: &RuntimeCallOf<ConsumerRuntime>,
 		subject: &<ConsumerRuntime as pallet_dip_consumer::Config>::Identifier,
@@ -173,7 +174,7 @@ impl<
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		// 1. Verify parachain state is finalized by relay chain and fresh.
-		if proof.provider_head_proof.proof.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into() {
+		if proof.provider_head_proof.proof.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into::<usize>() {
 			let inner_error = DipProofComponentTooLargeError::ParachainHeadProofTooManyLeaves;
 			log::info!(
 				target: LOG_TARGET,
@@ -189,7 +190,7 @@ impl<
 			.provider_head_proof
 			.proof
 			.iter()
-			.any(|l| l.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into())
+			.any(|l| l.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into::<usize>())
 		{
 			let inner_error = DipProofComponentTooLargeError::ParachainHeadProofLeafTooLarge;
 			log::info!(
@@ -217,7 +218,8 @@ impl<
 		);
 
 		// 2. Verify commitment is included in provider parachain state.
-		if proof_without_relaychain.dip_commitment_proof.0.len() > MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into()
+		if proof_without_relaychain.dip_commitment_proof.0.len()
+			> MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into::<usize>()
 		{
 			let inner_error = DipProofComponentTooLargeError::DipCommitmentProofTooManyLeaves;
 			log::info!(
@@ -234,7 +236,7 @@ impl<
 			.dip_commitment_proof
 			.0
 			.iter()
-			.any(|l| l.len() > MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into())
+			.any(|l| l.len() > MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into::<usize>())
 		{
 			let inner_error = DipProofComponentTooLargeError::DipCommitmentProofLeafTooLarge;
 			log::info!(
@@ -257,7 +259,8 @@ impl<
 		);
 
 		// 3. Verify DIP Merkle proof.
-		if proof_without_parachain.dip_proof.blinded.len() > MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into() {
+		if proof_without_parachain.dip_proof.blinded.len() > MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into::<usize>()
+		{
 			let inner_error = DipProofComponentTooLargeError::DipProofTooManyLeaves;
 			log::info!(
 				target: LOG_TARGET,
@@ -273,7 +276,7 @@ impl<
 			.dip_proof
 			.blinded
 			.iter()
-			.any(|l| l.len() > MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into())
+			.any(|l| l.len() > MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into::<usize>())
 		{
 			let inner_error = DipProofComponentTooLargeError::DipProofLeafTooLarge;
 			log::info!(

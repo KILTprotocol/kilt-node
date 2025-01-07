@@ -45,11 +45,13 @@ mod v1 {
 	pub const MINIMUM_CHAIN_NAMESPACE_LENGTH: usize = 3;
 	/// The maximum length of a valid chain ID namespace.
 	pub const MAXIMUM_CHAIN_NAMESPACE_LENGTH: usize = 8;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_CHAIN_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_CHAIN_NAMESPACE_LENGTH as u32;
 	/// The minimum length of a valid chain ID reference.
 	pub const MINIMUM_CHAIN_REFERENCE_LENGTH: usize = 1;
 	/// The maximum length of a valid chain ID reference.
 	pub const MAXIMUM_CHAIN_REFERENCE_LENGTH: usize = 32;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_CHAIN_REFERENCE_LENGTH_U32: u32 = MAXIMUM_CHAIN_REFERENCE_LENGTH as u32;
 
 	/// Separator between chain namespace and chain reference.
@@ -117,27 +119,27 @@ mod v1 {
 		}
 
 		/// The chain ID for the Bitcoin mainnet.
-		pub fn bitcoin_mainnet() -> Self {
+		pub const fn bitcoin_mainnet() -> Self {
 			Self::Bip122(GenesisHexHash32Reference::bitcoin_mainnet())
 		}
 
 		/// The chain ID for the Litecoin mainnet.
-		pub fn litecoin_mainnet() -> Self {
+		pub const fn litecoin_mainnet() -> Self {
 			Self::Bip122(GenesisHexHash32Reference::litecoin_mainnet())
 		}
 
 		/// The chain ID for the Polkadot relaychain.
-		pub fn polkadot() -> Self {
+		pub const fn polkadot() -> Self {
 			Self::Dotsama(GenesisHexHash32Reference::polkadot())
 		}
 
 		/// The chain ID for the Kusama relaychain.
-		pub fn kusama() -> Self {
+		pub const fn kusama() -> Self {
 			Self::Dotsama(GenesisHexHash32Reference::kusama())
 		}
 
 		/// The chain ID for the KILT Spiritnet parachain.
-		pub fn kilt_spiritnet() -> Self {
+		pub const fn kilt_spiritnet() -> Self {
 			Self::Dotsama(GenesisHexHash32Reference::kilt_spiritnet())
 		}
 
@@ -154,8 +156,8 @@ mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			let input_length = input.len();
+			let input_ref = input.as_ref();
+			let input_length = input_ref.len();
 			if !(MINIMUM_CHAIN_ID_LENGTH..=MAXIMUM_CHAIN_ID_LENGTH).contains(&input_length) {
 				log::trace!(
 					"Length of provided input {} is not included in the inclusive range [{},{}]",
@@ -166,7 +168,7 @@ mod v1 {
 				return Err(Error::InvalidFormat);
 			}
 
-			let ChainComponents { namespace, reference } = split_components(input);
+			let ChainComponents { namespace, reference } = split_components(input_ref);
 
 			match (namespace, reference) {
 				// "eip155:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md
@@ -186,12 +188,13 @@ mod v1 {
 					GenesisBase58Hash32Reference::from_utf8_encoded(solana_reference).map(Self::Solana)
 				}
 				// Other chains that are still compatible with the CAIP-2 spec -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
-				_ => GenericChainId::from_utf8_encoded(input).map(Self::Generic),
+				_ => GenericChainId::from_utf8_encoded(input_ref).map(Self::Generic),
 			}
 		}
 	}
 
 	impl Display for ChainId {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			match self {
 				Self::Bip122(reference) => {
@@ -313,10 +316,10 @@ mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_reference_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)?;
 
-			let decoded = str::from_utf8(input).map_err(|_| {
+			let decoded = str::from_utf8(input_ref).map_err(|_| {
 				log::trace!("Provided input is not a valid UTF8 string as expected by an Eip155 reference.");
 				ReferenceError::InvalidFormat
 			})?;
@@ -331,7 +334,7 @@ mod v1 {
 
 	// Getters
 	impl Eip155Reference {
-		pub fn inner(&self) -> &u128 {
+		pub const fn inner(&self) -> &u128 {
 			&self.0
 		}
 	}
@@ -403,10 +406,10 @@ mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_reference_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)?;
 
-			let decoded = hex::decode(input).map_err(|_| {
+			let decoded = hex::decode(input_ref).map_err(|_| {
 				log::trace!("Provided input is not a valid hex value as expected by a genesis HEX reference.");
 				ReferenceError::InvalidFormat
 			})?;
@@ -420,7 +423,7 @@ mod v1 {
 
 	// Getters
 	impl GenesisHexHash32Reference {
-		pub fn inner(&self) -> &[u8] {
+		pub const fn inner(&self) -> &[u8] {
 			&self.0
 		}
 	}
@@ -438,6 +441,7 @@ mod v1 {
 
 	impl GenesisBase58Hash32Reference {
 		/// The CAIP-2 reference for the Solana mainnet.
+		#[allow(clippy::expect_used)]
 		pub fn solana_mainnet() -> Self {
 			// Base58 decoding of Solana genesis hash 4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ
 			Self(
@@ -458,10 +462,10 @@ mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_reference_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)?;
 
-			let decoded_string = str::from_utf8(input).map_err(|_| {
+			let decoded_string = str::from_utf8(input_ref).map_err(|_| {
 				log::trace!("Provided input is not a valid UTF8 string as expected by a genesis base58 reference.");
 				ReferenceError::InvalidFormat
 			})?;
@@ -506,9 +510,9 @@ mod v1 {
 			let ChainComponents { namespace, reference } = split_components(input.as_ref());
 
 			match (namespace, reference) {
-				(Some(namespace), Some(reference)) => Ok(Self {
-					namespace: GenericChainNamespace::from_utf8_encoded(namespace)?,
-					reference: GenericChainReference::from_utf8_encoded(reference)?,
+				(Some(encoded_namespace), Some(encoded_reference)) => Ok(Self {
+					namespace: GenericChainNamespace::from_utf8_encoded(encoded_namespace)?,
+					reference: GenericChainReference::from_utf8_encoded(encoded_reference)?,
 				}),
 				_ => Err(Error::InvalidFormat),
 			}
@@ -517,10 +521,10 @@ mod v1 {
 
 	// Getters
 	impl GenericChainId {
-		pub fn namespace(&self) -> &GenericChainNamespace {
+		pub const fn namespace(&self) -> &GenericChainNamespace {
 			&self.namespace
 		}
-		pub fn reference(&self) -> &GenericChainReference {
+		pub const fn reference(&self) -> &GenericChainReference {
 			&self.reference
 		}
 	}
@@ -538,11 +542,11 @@ mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_namespace_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_namespace_length_bounds(input_ref)?;
 
-			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
+			input_ref.iter().try_for_each(|c| {
+				if !matches!(*c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic chain namespace.");
 					Err(NamespaceError::InvalidFormat)
 				} else {
@@ -550,7 +554,7 @@ mod v1 {
 				}
 			})?;
 			Ok(Self(
-				Vec::<u8>::from(input)
+				Vec::<u8>::from(input_ref)
 					.try_into()
 					.map_err(|_| NamespaceError::InvalidFormat)?,
 			))
@@ -565,6 +569,7 @@ mod v1 {
 	}
 
 	impl Display for GenericChainNamespace {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
@@ -587,11 +592,11 @@ mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_reference_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)?;
 
-			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'_' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+			input_ref.iter().try_for_each(|c| {
+				if !matches!(*c, b'-' | b'_' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic chain reference.");
 					Err(ReferenceError::InvalidFormat)
 				} else {
@@ -599,7 +604,7 @@ mod v1 {
 				}
 			})?;
 			Ok(Self(
-				Vec::<u8>::from(input)
+				Vec::<u8>::from(input_ref)
 					.try_into()
 					.map_err(|_| ReferenceError::InvalidFormat)?,
 			))
@@ -614,6 +619,7 @@ mod v1 {
 	}
 
 	impl Display for GenericChainReference {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.

@@ -37,8 +37,7 @@ use crate::{
 fn on_identity_committed_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(SUBMITTER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let namespace = DepositNamespaces::get();
 			let key: DepositKeyOf<TestRuntime> = (SUBJECT, SUBMITTER, 0 as IdentityCommitmentVersion)
 				.encode()
@@ -94,8 +93,7 @@ fn on_identity_committed_existing_deposit() {
 				},
 			},
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_identity_committed(
 					&SUBJECT,
@@ -110,7 +108,7 @@ fn on_identity_committed_existing_deposit() {
 
 #[test]
 fn on_identity_committed_insufficient_balance() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_identity_committed(
 				&SUBJECT,

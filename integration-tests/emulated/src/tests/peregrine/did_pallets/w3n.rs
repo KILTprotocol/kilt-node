@@ -16,19 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use asset_hub_rococo_emulated_chain::AssetHubRococoParaPallet;
 use frame_support::{assert_ok, traits::fungible::Mutate};
 use parity_scale_codec::Encode;
 use runtime_common::{constants::KILT, AccountId, Balance};
 use sp_runtime::BoundedVec;
-use xcm::{v3::prelude::OriginKind, DoubleEncoded, VersionedXcm};
+use xcm::{lts::prelude::OriginKind, DoubleEncoded, VersionedXcm};
 use xcm_emulator::{assert_expected_events, Chain, Network, TestExt};
 
 use crate::{
-	mock::{
-		network::MockNetworkRococo,
-		para_chains::{AssetHubRococo, AssetHubRococoPallet, Peregrine},
-		relay_chains::Rococo,
-	},
+	mock::network::{AssetHub, MockNetwork, Peregrine, Rococo},
 	tests::peregrine::did_pallets::utils::{
 		construct_basic_transact_xcm_message, create_mock_did_from_account, get_asset_hub_sovereign_account,
 		get_sibling_destination_peregrine,
@@ -54,9 +51,9 @@ fn get_xcm_message_claim_w3n(origin_kind: OriginKind, withdraw_balance: Balance)
 
 #[test]
 fn test_claim_w3n_from_asset_hub_successful() {
-	MockNetworkRococo::reset();
+	MockNetwork::reset();
 
-	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	let init_balance = KILT * 10;
@@ -69,35 +66,34 @@ fn test_claim_w3n_from_asset_hub_successful() {
 		<peregrine_runtime::Balances as Mutate<AccountId>>::set_balance(&asset_hub_sovereign_account, init_balance);
 	});
 
-	AssetHubRococo::execute_with(|| {
-		assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
+	AssetHub::execute_with(|| {
+		assert_ok!(<AssetHub as AssetHubRococoParaPallet>::PolkadotXcm::send(
 			sudo_origin,
 			Box::new(destination),
 			Box::new(xcm_claim_w3n_msg)
 		));
 
-		type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
+		type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 		assert_expected_events!(
-			AssetHubRococo,
+			AssetHub,
 			vec![
 				RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 			]
 		);
 	});
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	Peregrine::execute_with(|| {
 		type PeregrineRuntimeEvent = <Peregrine as Chain>::RuntimeEvent;
 
 		assert_expected_events!(
 			Peregrine,
 			vec![
-				PeregrineRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Success { .. }) => {},
+				PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
 				PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(account, result)) => {
 					account: account == &asset_hub_sovereign_account,
 					result: result.is_ok(),
 				},
-				PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed{owner, name: _}) => {
+				PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed{owner, ..}) => {
 					owner: owner == &asset_hub_sovereign_account,
 				},
 			]
@@ -113,14 +109,14 @@ fn test_claim_w3n_from_asset_hub_successful() {
 fn test_claim_w3n_from_asset_hub_unsuccessful() {
 	let origin_kind_list = vec![OriginKind::Native, OriginKind::Superuser, OriginKind::Xcm];
 
-	let sudo_origin = <AssetHubRococo as Chain>::RuntimeOrigin::root();
+	let sudo_origin = <AssetHub as Chain>::RuntimeOrigin::root();
 	let init_balance = KILT * 100;
 
 	let destination = get_sibling_destination_peregrine();
 	let asset_hub_sovereign_account = get_asset_hub_sovereign_account();
 
 	for origin_kind in origin_kind_list {
-		MockNetworkRococo::reset();
+		MockNetwork::reset();
 
 		Peregrine::execute_with(|| {
 			create_mock_did_from_account(asset_hub_sovereign_account.clone());
@@ -129,16 +125,16 @@ fn test_claim_w3n_from_asset_hub_unsuccessful() {
 
 		let xcm_claim_w3n_msg = get_xcm_message_claim_w3n(origin_kind, KILT);
 
-		AssetHubRococo::execute_with(|| {
-			assert_ok!(<AssetHubRococo as AssetHubRococoPallet>::PolkadotXcm::send(
+		AssetHub::execute_with(|| {
+			assert_ok!(<AssetHub as AssetHubRococoParaPallet>::PolkadotXcm::send(
 				sudo_origin.clone(),
 				Box::new(destination.clone()),
 				Box::new(xcm_claim_w3n_msg.clone())
 			));
 
-			type RuntimeEvent = <AssetHubRococo as Chain>::RuntimeEvent;
+			type RuntimeEvent = <AssetHub as Chain>::RuntimeEvent;
 			assert_expected_events!(
-				AssetHubRococo,
+				AssetHub,
 				vec![
 					RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
 				]
@@ -152,10 +148,7 @@ fn test_claim_w3n_from_asset_hub_unsuccessful() {
 				matches!(
 					event,
 					PeregrineRuntimeEvent::Did(did::Event::DidCallDispatched(_, _))
-						| PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed {
-							owner: _,
-							name: _
-						})
+						| PeregrineRuntimeEvent::Web3Names(pallet_web3_names::Event::Web3NameClaimed { .. })
 				)
 			});
 

@@ -23,7 +23,7 @@ use frame_support::{
 		traits::{BlakeTwo256, IdentityLookup},
 		AccountId32,
 	},
-	traits::{ConstU16, ConstU32, ConstU64, Contains, Currency, Everything},
+	traits::{ConstBool, ConstU16, ConstU32, ConstU64, Contains, Currency, Everything},
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
 
@@ -63,6 +63,7 @@ impl frame_system::Config for TestRuntime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = ();
 	type SS58Prefix = ConstU16<1>;
 	type SystemWeightInfo = ();
 	type Version = ();
@@ -75,16 +76,17 @@ impl pallet_balances::Config for TestRuntime {
 	type ExistentialDeposit = ConstU64<1>;
 	type FreezeIdentifier = [u8; 8];
 	type MaxFreezes = ConstU32<10>;
-	type MaxHolds = ConstU32<10>;
 	type MaxLocks = ConstU32<10>;
 	type MaxReserves = ConstU32<10>;
 	type ReserveIdentifier = [u8; 8];
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type WeightInfo = ();
 }
 
 impl pallet_did_lookup::Config for TestRuntime {
+	type AssociateOrigin = Self::EnsureOrigin;
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = ConstU64<1>;
@@ -93,6 +95,7 @@ impl pallet_did_lookup::Config for TestRuntime {
 	type OriginSuccess = DipOrigin<AccountId32, AccountId32, ()>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type UniqueLinkingEnabled = ConstBool<false>;
 	type WeightInfo = ();
 }
 
@@ -126,7 +129,9 @@ impl IdentityProofVerifier<TestRuntime> for BooleanProofVerifier {
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		if proof {
-			*identity_details = identity_details.map(|d| Some(d + 1)).unwrap_or(Some(u128::default()));
+			*identity_details = identity_details
+				.map(|d| Some(d + 1))
+				.unwrap_or_else(|| Some(u128::default()));
 			Ok(())
 		} else {
 			Err(1)

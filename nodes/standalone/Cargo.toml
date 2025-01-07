@@ -24,9 +24,10 @@ clap        = { workspace = true, features = ["derive"] }
 futures     = { workspace = true, features = ["thread-pool"] }
 hex-literal = { workspace = true }
 jsonrpsee   = { workspace = true, features = ["server"] }
+serde_json  = { workspace = true }
 
 # Internal dependencies
-kestrel-runtime = { workspace = true, features = ["std"] }
+kestrel-runtime = { workspace = true, features = ["metadata-hash", "std"] }
 runtime-common  = { workspace = true, features = ["std"] }
 
 # Substrate dependencies

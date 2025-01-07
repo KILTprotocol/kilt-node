@@ -1,0 +1,233 @@
+import { describe, beforeEach, it, afterEach } from 'vitest'
+import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
+import type { KeyringPair } from '@polkadot/keyring/types'
+
+import { createBlock, setStorage } from '../../../network/utils.js'
+import { calculateTxFees, getPaidXcmFees, hexAddress } from '../../../helper/utils.js'
+import { testPairsSwitchFunds } from './config.js'
+import { Config } from '../../../network/types.js'
+import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
+import { checkSwitchPalletInvariant } from '../index.js'
+
+describe.each(testPairsSwitchFunds)(
+	'Switch KILTs',
+	{ timeout: 30_000 },
+	async ({ account, query, txContext, config, sovereignAccount }) => {
+		let nativeContext: Config
+		let foreignContext: Config
+		let relayContext: Config
+		let senderAccount: KeyringPair
+		const { desc, network, storage } = config
+
+		// Create the network context
+		beforeEach(async () => {
+			const { receiver, sender, relay } = network
+
+			const { receiverChainContext, senderChainContext, relayChainContext } = await setupNetwork(
+				relay,
+				sender,
+				receiver
+			)
+
+			relayContext = relayChainContext
+			nativeContext = senderChainContext
+			foreignContext = receiverChainContext
+
+			const { receiverStorage, senderStorage, relayStorage } = storage
+			await setStorage(nativeContext, senderStorage)
+			await setStorage(foreignContext, receiverStorage)
+			await setStorage(relayContext, relayStorage)
+
+			senderAccount = account
+		}, 20_000)
+
+		// Shut down the network
+		afterEach(async () => {
+			try {
+				await shutDownNetwork([nativeContext, foreignContext, relayContext])
+			} catch (error) {
+				if (!(error instanceof TypeError)) {
+					console.error(error)
+				}
+			}
+		})
+
+		it(desc, { timeout: 10_000, retry: 0 }, async ({ expect }) => {
+			const { checkEvents, checkSystemEvents } = withExpect(expect)
+
+			const { tx, balanceToTransfer, events } = txContext
+
+			const foreignFundsBeforeTx = await query.foreign.nativeFunds(foreignContext, senderAccount.address)
+
+			// 1. send foreign tokens from foreign chain to native chain
+			const txSendForeignAsset = tx.foreign.transfer(
+				foreignContext,
+				hexAddress(senderAccount.address),
+				balanceToTransfer.foreign.toString()
+			)
+
+			const events1 = await sendTransaction(txSendForeignAsset.signAsync(senderAccount))
+
+			// process tx
+			await createBlock(foreignContext)
+			// process xcm message
+			await createBlock(nativeContext)
+
+			// check balance movement
+			const txFees = await calculateTxFees(txSendForeignAsset, senderAccount)
+
+			const foreignFundsAfterTx = await query.foreign.nativeFunds(foreignContext, senderAccount.address)
+
+			const xcmFees = await getPaidXcmFees(await events1.events)
+
+			expect(foreignFundsBeforeTx - balanceToTransfer.foreign - txFees - xcmFees).toBe(foreignFundsAfterTx)
+
+			// check events
+			events.foreign.transfer.map(
+				async (pallet) =>
+					await checkEvents(events1, pallet).toMatchSnapshot(
+						`transfer foreign funds from foreign chain ${JSON.stringify(pallet)}`
+					)
+			)
+
+			events.native.receive.foreign.map(
+				async (pallet) =>
+					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
+						`receive foreign funds on native chain ${JSON.stringify(pallet)}`
+					)
+			)
+
+			// 2. send native tokens
+			const nativeBalanceBeforeTx = await query.native.nativeFunds(nativeContext, senderAccount.address)
+
+			// Send funds from native to foreign chainbalanceToTransferBackForeignparaId
+			const txSendNativeAsset = tx.native.transfer(
+				nativeContext,
+				hexAddress(senderAccount.address),
+				balanceToTransfer.native.toString()
+			)
+
+			const events2 = await sendTransaction(txSendNativeAsset.signAsync(senderAccount))
+			// process tx
+			await createBlock(nativeContext)
+			// process xcm message
+			await createBlock(foreignContext)
+
+			// check balance movement
+
+			const txFees2 = await calculateTxFees(txSendNativeAsset, senderAccount)
+
+			const nativeBalanceAfterTx = await query.native.nativeFunds(nativeContext, senderAccount.address)
+
+			expect(nativeBalanceBeforeTx - balanceToTransfer.native - txFees2).toBe(nativeBalanceAfterTx)
+
+			// check events
+			events.native.transfer.map(
+				async (pallet) =>
+					await checkEvents(events2, pallet).toMatchSnapshot(
+						`Transfer native funds from native chain ${JSON.stringify(pallet)}`
+					)
+			)
+
+			events.native.receive.native.map(
+				async (pallet) =>
+					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
+						`Receive native funds on foreign chain ${JSON.stringify(pallet)}`
+					)
+			)
+
+			// 3. send native tokens back to sender chain.
+			const balanceToTransferBack = balanceToTransfer.native / BigInt(2)
+
+			const nativeBalnceForeignChainBeforeTx = await query.foreign.foreignFunds(
+				foreignContext,
+				hexAddress(senderAccount.address)
+			)
+
+			const signedTx3 = tx.native
+				.withdraw(foreignContext, balanceToTransferBack.toString())
+				.signAsync(senderAccount)
+
+			const events3 = await sendTransaction(signedTx3)
+
+			// process tx
+			await createBlock(foreignContext)
+			// process xcm message
+			await createBlock(nativeContext)
+
+			// check balance movement
+
+			const nativeBalanceForeignChainAfterx = await query.foreign.foreignFunds(
+				foreignContext,
+				senderAccount.address
+			)
+
+			expect(nativeBalnceForeignChainBeforeTx - balanceToTransferBack).toBe(nativeBalanceForeignChainAfterx)
+
+			// check events
+
+			events.foreign.withdraw.map(
+				async (pallet) =>
+					await checkEvents(events3, pallet).toMatchSnapshot(
+						`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
+					)
+			)
+
+			events.native.receive.native.map(
+				async (pallet) =>
+					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
+						`Receive native funds on native chain ${JSON.stringify(pallet)}`
+					)
+			)
+
+			// 4. send foreign token back
+
+			const balanceToTransferBackForeign = balanceToTransfer.foreign / BigInt(10)
+
+			const foreignBalanceBeforeTx = await query.native.foreignFunds(nativeContext, senderAccount.address)
+
+			const signedTx4 = tx.foreign
+				.withdraw(nativeContext, hexAddress(senderAccount.address), balanceToTransferBackForeign.toString())
+				.signAsync(senderAccount)
+
+			const events4 = await sendTransaction(signedTx4)
+
+			// process tx
+			await createBlock(nativeContext)
+
+			// process xcm message
+			await createBlock(foreignContext)
+
+			// check balance movement
+
+			const foreignBalanceAfterTx = await query.native.foreignFunds(nativeContext, senderAccount.address)
+
+			expect(foreignBalanceBeforeTx - balanceToTransferBackForeign).toBe(foreignBalanceAfterTx)
+
+			// check events
+
+			events.native.withdraw.map(
+				async (pallet) =>
+					await checkEvents(events4, pallet).toMatchSnapshot(
+						`Withdraw foreign funds on native chain ${JSON.stringify(pallet)}`
+					)
+			)
+
+			events.foreign.receive.native.map(
+				async (pallet) =>
+					await checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
+						`Receive foreign funds on foreign chain ${JSON.stringify(pallet)}`
+					)
+			)
+
+			checkSwitchPalletInvariant(
+				expect,
+				nativeContext,
+				foreignContext,
+				sovereignAccount,
+				query.native.nativeFunds,
+				query.foreign.foreignFunds
+			)
+		})
+	}
+)

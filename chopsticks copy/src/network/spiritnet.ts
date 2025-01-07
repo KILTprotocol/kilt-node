@@ -1,0 +1,46 @@
+import { SetupOption } from '@acala-network/chopsticks-testing'
+
+import { initialBalanceKILT, toNumber } from '../helper/utils.js'
+import { ParachainInfo } from './types.js'
+
+/// Options used to create the Spiritnet context
+export const getSetupOptions = ({
+	blockNumber = undefined,
+	wasmOverride = undefined,
+}: {
+	blockNumber?: number
+	wasmOverride?: string
+}) =>
+	({
+		endpoint: process.env.SPIRITNET_WS || 'wss://kilt.ibp.network',
+		db: './db/spiritnet.db.sqlite',
+		port: toNumber(process.env.SPIRITNET_PORT),
+		wasmOverride,
+		blockNumber,
+	}) as SetupOption
+
+export const storage = {
+	/// Assigns the native tokens to an accounts
+	assignNativeTokensToAccounts(addr: string[], balance: bigint = initialBalanceKILT) {
+		return {
+			System: {
+				Account: addr.map((address) => [[address], { providers: 1, data: { free: balance } }]),
+			},
+		}
+	},
+
+	/// Sets the [technicalCommittee] and [council] governance to the given accounts
+	setGovernance(addr: string[]) {
+		return {
+			technicalCommittee: { Members: addr },
+			council: { Members: addr },
+		}
+	},
+}
+
+export const parachainInfo: ParachainInfo = {
+	/// Spiritnet ParaId
+	paraId: 2086,
+	/// Sibling sovereign account
+	sovereignAccountOnSiblingChains: '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs',
+}

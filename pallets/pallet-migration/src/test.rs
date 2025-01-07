@@ -45,7 +45,7 @@ use pallet_did_lookup::{
 	linkable_account::LinkableAccountId,
 	ConnectedDids,
 };
-use pallet_web3_names::{web3_name::AsciiWeb3Name, Owner};
+use pallet_web3_names::Owner;
 use parity_scale_codec::Encode;
 use public_credentials::{
 	mock::{generate_base_credential_entry, generate_base_public_credential_creation_op, generate_credential_id},
@@ -81,7 +81,7 @@ fn check_succesful_migration() {
 	did_details.deposit.amount = MICRO_KILT;
 
 	//w3n
-	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+	let web3_name_00 = TestWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
 
 	// public credentials
 	let deposit = kilt_support::Deposit {
@@ -233,7 +233,7 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 	did_details.deposit.amount = MICRO_KILT;
 
 	//w3n
-	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+	let web3_name_00 = TestWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
 
 	// public credentials
 	let deposit = kilt_support::Deposit {
@@ -489,7 +489,7 @@ fn check_excluded_keys_lookup() {
 
 #[test]
 fn check_excluded_keys_w3n() {
-	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+	let web3_name_00 = TestWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, KILT)])
@@ -684,7 +684,7 @@ fn migrate_key_by_update_deposit_lookup() {
 
 #[test]
 fn migrate_key_by_update_deposit_w3n() {
-	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+	let web3_name_00 = TestWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, KILT)])

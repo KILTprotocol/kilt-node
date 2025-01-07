@@ -1,28 +1,12 @@
-.check_skip_rust:
-  before_script:
-    - |-
-      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-rust"; then
-        echo "Skipping rust tests due to commit title"
-        exit 0
-      fi
-
-.check_skip_integration_tests:
-  before_script:
-    - |-
-      if echo "$CI_COMMIT_TITLE" | grep -q "ci-skip-integration-tests"; then
-        echo "Skipping integration tests due to commit title"
-        exit 0
-      fi
-
 workflow:
-  auto_cancel:
-    on_new_commit: interruptible
-
+  name: GitLab build pipeline
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "trigger"'
 
 stages:
-  - test
   - build
 
+<<<<<<< HEAD
 clippy-and-docs:
   extends: .check_skip_rust
   interruptible: true
@@ -139,82 +123,87 @@ build:
 
 build-wasm-peregrine:
   interruptible: true
+=======
+build-production-wasm:
+>>>>>>> develop
   image:
-    name: paritytech/srtool:1.70.0
+    name: paritytech/srtool:1.75.0
     entrypoint: [""]
   stage: build
-  only:
-    - develop
-    - master
-    - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
-  script:
-    - export PACKAGE=peregrine-runtime
-    - export RUNTIME_DIR=runtimes/peregrine
-    - export PARACHAIN_PALLET_ID=0x50
-    - export AUTHORIZE_UPGRADE_PREFIX=0x02
-    - cp -r * /build
-    - /srtool/build build
-    - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
-    - subwasm get -o peregrine-live.wasm wss://peregrine.kilt.io
-    - subwasm diff --no-color peregrine-live.wasm /out/peregrine_runtime.compact.wasm | tee /out/peregrine-diff.txt
-    - mkdir ./out
-    - mv /out/* ./out/
-  artifacts:
-    paths:
-      - out/*.wasm
-      - out/*.json
-      - out/*.txt
-    expire_in: 12 week
-
-build-wasm-spiritnet:
-  interruptible: true
-  image:
-    name: paritytech/srtool:1.70.0
-    entrypoint: [""]
-  stage: build
-  only:
-    - develop
-    - master
-    - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
-  script:
-    - export PACKAGE=spiritnet-runtime
-    - export RUNTIME_DIR=runtimes/spiritnet
-    - export PARACHAIN_PALLET_ID=0x50
-    - export AUTHORIZE_UPGRADE_PREFIX=0x02
-    - cp -r * /build
-    - /srtool/build build
-    - subwasm meta --format=json+scale /out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
-    - subwasm get -o spiritnet-live.wasm wss://spiritnet.kilt.io
-    - subwasm diff --no-color spiritnet-live.wasm /out/spiritnet_runtime.compact.wasm | tee /out/spiritnet-diff.txt
-    - mkdir ./out
-    - mv /out/* ./out/
-  artifacts:
-    paths:
-      - out/*.wasm
-      - out/*.json
-      - out/*.txt
-    expire_in: 12 week
-
-build-wasm-try-runtime:
-  interruptible: true
   parallel:
     matrix:
-      - RUNTIME: "peregrine"
-      - RUNTIME: "spiritnet"
+      - RUNTIME: ["peregrine", "spiritnet"]
+  script:
+    - export PACKAGE=${RUNTIME}-runtime
+    - export RUNTIME_DIR=runtimes/${RUNTIME}
+    - export PARACHAIN_PALLET_ID=0x50
+    - export AUTHORIZE_UPGRADE_PREFIX=0x02
+    - export AUTHORIZE_UPGRADE_CHECK_VERSION=true
+    - export VERBOSE=true
+    - export BUILD_OPTS="--features metadata-hash"
+    - cp -r * /build
+    - /srtool/build build
+    - subwasm meta --format=json+scale /out/${RUNTIME}_runtime.compact.wasm > /out/${RUNTIME}-metadata.json
+    - subwasm get -o ${RUNTIME}-live.wasm wss://${RUNTIME}.kilt.io
+    - subwasm diff --no-color ${RUNTIME}-live.wasm /out/${RUNTIME}_runtime.compact.wasm | tee /out/${RUNTIME}-diff.txt
+    - mkdir -p ./out
+    - mv /out/* ./out/
+  artifacts:
+    paths:
+      - out/*.wasm
+      - out/*.json
+      - out/*.txt
+    expire_in: 12 week
+
+build-try-state-wasm:
   image:
-    name: paritytech/ci-unified:bullseye-1.70.0
+    name: paritytech/ci-unified:bullseye-1.74.0
+  stage: build
+  parallel:
+    matrix:
+      - RUNTIME: ["peregrine", "spiritnet"]
+  variables:
+    # Move cargo data INSIDE the project dir so it can be cached
+    CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
+  cache:
+    when: always
+    key:
+      # E.g., `build-try-state-wasm-develop-peregrine` and `build-try-state-wasm-develop-spiritnet`
+      prefix: "$CI_JOB_NAME:$CI_COMMIT_REF_NAME:${RUNTIME}"
+      files:
+        - Cargo.lock
+    paths:
+      - $CARGO_HOME/bin/
+      - $CARGO_HOME/registry/index/
+      - $CARGO_HOME/registry/cache/
+      - $CARGO_HOME/git/db/
+  script:
+    - cargo build --release --locked -p ${RUNTIME}-runtime --features try-runtime
+    - mkdir -p out
+    - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm out/**UNSAFE**${RUNTIME}_runtime_try_runtime.compact.compressed.wasm
+  artifacts:
+    paths:
+      - out
+    expire_in: 12 week
+
+build-docker-images:
+  timeout: 2 hours
+  image:
+    name: kiltprotocol/kilt-ci:2.7.31
     entrypoint: [""]
   stage: build
-  only:
-    - develop
-    - master
-    - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+  variables:
+    DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
+    DOCKER_HUB_STANDALONE: "kiltprotocol/standalone-node"
+    DOCKER_HUB_DIP_PROVIDER_TEMPLATE: "kiltprotocol/dip-provider-node-template"
+    DOCKER_HUB_DIP_CONSUMER_TEMPLATE: "kiltprotocol/dip-consumer-node-template"
+  before_script:
+    - docker --version
   script:
-    - cargo build --release -p ${RUNTIME}-runtime --features try-runtime
-    - mkdir ./out
-    - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm ./dangerous_${RUNTIME}.try-runtime.wasm
-  artifacts:
-    name: ${RUNTIME}_try-runtime
-    paths:
-      - ./dangerous_${RUNTIME}.try-runtime.wasm
-    expire_in: 12 week
+    - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+
+    - ./.maintain/build-image.sh build
+    - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_SHORT_SHA}; fi"
+    - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build latest-${CI_COMMIT_BRANCH}; fi"
+    - "if [[ ! -z ${CI_COMMIT_TAG} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_TAG}; fi"
+    - "if [[ ! -z ${CI_COMMIT_TAG} && ! -z ${CI_COMMIT_TAG##*-rc*} && ! -z ${CI_COMMIT_TAG##*dev-*} ]]; then ./.maintain/push-image.sh build latest; fi"
