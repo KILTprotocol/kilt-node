@@ -19,9 +19,14 @@
 use substrate_wasm_builder::WasmBuilder;
 
 fn main() {
-	WasmBuilder::new()
+	let builder = WasmBuilder::new()
 		.with_current_project()
 		.export_heap_base()
-		.import_memory()
-		.build()
+		.import_memory();
+
+	#[cfg(feature = "metadata-hash")]
+	// TODO: Can we re-use some consts?
+	let builder = builder.enable_metadata_hash("KILT", 15);
+
+	builder.build()
 }

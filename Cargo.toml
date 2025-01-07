@@ -134,6 +134,7 @@ xcm-emulator                      = { git = "https://github.com/paritytech/polka
 frame-benchmarking                         = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-benchmarking-cli                     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-executive                            = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+frame-metadata-hash-extension              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-support                              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-system                               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-system-rpc-runtime-api               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
