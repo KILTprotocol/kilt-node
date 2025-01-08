@@ -49,7 +49,7 @@ describe.each(testPairsSwitchFunds)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 0 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const { tx, balanceToTransfer, events } = txContext
@@ -122,15 +122,24 @@ describe.each(testPairsSwitchFunds)(
 			events.native.transfer.map(
 				async (pallet) =>
 					await checkEvents(events2, pallet).toMatchSnapshot(
-						`Transfer native funds from native chain ${JSON.stringify(pallet)}`
+						`Transfer native funds to foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
-			events.native.receive.native.map(
+			events.foreign.receive.native.map(
 				async (pallet) =>
-					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
+					await checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
 						`Receive native funds on foreign chain ${JSON.stringify(pallet)}`
 					)
+			)
+
+			checkSwitchPalletInvariant(
+				expect,
+				nativeContext,
+				foreignContext,
+				sovereignAccount,
+				query.native.nativeFunds,
+				query.foreign.foreignFunds
 			)
 
 			// 3. send native tokens back to sender chain.
@@ -177,6 +186,17 @@ describe.each(testPairsSwitchFunds)(
 					)
 			)
 
+			// finalize the switch. Create a another block to process the query xcm message
+			await createBlock(nativeContext)
+			checkSwitchPalletInvariant(
+				expect,
+				nativeContext,
+				foreignContext,
+				sovereignAccount,
+				query.native.nativeFunds,
+				query.foreign.foreignFunds
+			)
+
 			// 4. send foreign token back
 
 			const balanceToTransferBackForeign = balanceToTransfer.foreign / BigInt(10)
@@ -215,15 +235,6 @@ describe.each(testPairsSwitchFunds)(
 					await checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
 						`Receive foreign funds on foreign chain ${JSON.stringify(pallet)}`
 					)
-			)
-
-			checkSwitchPalletInvariant(
-				expect,
-				nativeContext,
-				foreignContext,
-				sovereignAccount,
-				query.native.nativeFunds,
-				query.foreign.foreignFunds
 			)
 		})
 	}

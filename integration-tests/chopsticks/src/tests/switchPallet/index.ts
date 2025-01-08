@@ -57,7 +57,8 @@ export async function checkSwitchPalletInvariant(
 
 	// Check pool account has enough funds to cover the circulating supply
 
-	expect(poolAccountBalance).toBe(remoteAssetCirculatingSupply)
+	// everybody can send funds to the pool account. The pool account should have at least the circulating supply
+	expect(poolAccountBalance).toBeGreaterThanOrEqual(remoteAssetCirculatingSupply)
 	expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
 	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + deltaStoredSovereignSupply)
 }

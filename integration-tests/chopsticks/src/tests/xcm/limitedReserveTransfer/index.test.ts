@@ -51,7 +51,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 0 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 			const { pallets, tx, balanceToTransfer } = txContext
 

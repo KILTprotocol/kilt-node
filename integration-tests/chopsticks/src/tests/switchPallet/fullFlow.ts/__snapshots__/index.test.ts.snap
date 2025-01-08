@@ -1,6 +1,30 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive foreign funds on foreign chain {"section":"balances","method":"burned"} 1`] = `[]`;
+exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive foreign funds on foreign chain {"section":"balances","method":"Burned"} 1`] = `
+[
+  {
+    "data": {
+      "amount": 1000000000,
+      "who": "13cKp88mpGREFCq8KsJEFjpSBnjFuCNWq6bmD3js7fu4f66e",
+    },
+    "method": "Burned",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive foreign funds on foreign chain {"section":"balances","method":"Minted"} 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 960000000)",
+      "who": "15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8",
+    },
+    "method": "Minted",
+    "section": "balances",
+  },
+]
+`;
 
 exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive foreign funds on foreign chain {"section":"messageQueue","method":"Processed"} 1`] = `
 [
@@ -22,7 +46,59 @@ exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive forei
 ]
 `;
 
-exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive native funds on foreign chain {"section":"assetSwitchPool1","method":"RemoteToLocalSwitchExecuted"} 1`] = `[]`;
+exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive native funds on foreign chain {"section":"balances","method":"Burned"} 1`] = `
+[
+  {
+    "data": {
+      "amount": 5000000000,
+      "who": "13cKp88mpGREFCq8KsJEFjpSBnjFuCNWq6bmD3js7fu4f66e",
+    },
+    "method": "Burned",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive native funds on foreign chain {"section":"balances","method":"Minted"} 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 300000000)",
+      "who": "14xmwinmCEz6oRrFdczHKqHgWNMiCysE2KrA4jXXAAM1Eogk",
+    },
+    "method": "Minted",
+    "section": "balances",
+  },
+  {
+    "data": {
+      "amount": "(rounded 4600000000)",
+      "who": "15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8",
+    },
+    "method": "Minted",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive native funds on foreign chain {"section":"messageQueue","method":"Processed"} 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": "(rounded 2100)",
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": "(rounded 24000)",
+        "refTime": "(rounded 1500000000)",
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
 
 exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive native funds on native chain {"section":"assetSwitchPool1","method":"RemoteToLocalSwitchExecuted"} 1`] = `
 [
@@ -37,7 +113,7 @@ exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Receive nativ
 ]
 `;
 
-exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Transfer native funds from native chain {"section":"assetSwitchPool1","method":"LocalToRemoteSwitchExecuted"} 1`] = `
+exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Transfer native funds to foreign chain {"section":"assetSwitchPool1","method":"LocalToRemoteSwitchExecuted"} 1`] = `
 [
   {
     "data": {
@@ -65,7 +141,7 @@ exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Transfer nati
 ]
 `;
 
-exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Transfer native funds from native chain {"section":"fungibles","method":"Burned"} 1`] = `
+exports[`Switch KILTs > Switch V4 LIVE: Kilt -> AssetHub -> Kilt > Transfer native funds to foreign chain {"section":"fungibles","method":"Burned"} 1`] = `
 [
   {
     "data": {

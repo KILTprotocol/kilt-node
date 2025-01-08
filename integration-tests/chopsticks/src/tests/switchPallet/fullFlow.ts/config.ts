@@ -190,7 +190,8 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 						foreign: ['foreignAssets', { section: 'messageQueue', method: 'Processed' }],
 						native: [
 							{ section: 'messageQueue', method: 'Processed' },
-							{ section: 'balances', method: 'burned' },
+							{ section: 'balances', method: 'Burned' },
+							{ section: 'balances', method: 'Minted' },
 						],
 					},
 					withdraw: [{ section: 'polkadotXcm', method: 'Sent' }],
