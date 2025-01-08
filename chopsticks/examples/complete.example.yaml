@@ -1,5 +1,0 @@
-port: 50002
-wasm-override: ../../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm
-import-storage:
-    Sudo:
-        Key: 15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8

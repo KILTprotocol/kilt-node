@@ -1,4 +1,0 @@
-endpoint:
-    - wss://rpc.ibp.network/polkadot
-    - wss://polkadot.dotters.network
-db: db/spiritnet/relay/db.sqlite

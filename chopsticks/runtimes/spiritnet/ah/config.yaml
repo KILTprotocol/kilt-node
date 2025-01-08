@@ -1,4 +1,0 @@
-endpoint:
-    - wss://sys.ibp.network/asset-hub-polkadot
-    - wss://asset-hub-polkadot.dotters.network
-db: db/spiritnet/ah/db.sqlite

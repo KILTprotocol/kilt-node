@@ -1,1 +1,0 @@
-wasm-override: ../../../target/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm
