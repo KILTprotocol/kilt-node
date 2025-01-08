@@ -22,14 +22,12 @@ export interface ChainConfig {
 		blockNumber?: number
 		wasmOverride?: string
 	}
-}
-
-/// A Record of all possible chain configurations.
-export type ChainConfigs = Record<string, ChainConfig>
-
-export interface ParachainInfo {
-	paraId: number
-	sovereignAccountOnSiblingChains: string
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	[key: string]: any
+	storage: Record<string, (...args: any[]) => Record<string, Record<string, unknown>>>
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	chainInfo: Record<string, any>
 }
+
+type chains = 'kilt' | 'polkadot' | 'assetHub' | 'hydration'
+/// A Record of all possible chain configurations.
+export type ChainConfigs = Record<chains, ChainConfig>

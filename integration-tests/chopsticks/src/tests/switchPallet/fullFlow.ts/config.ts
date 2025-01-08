@@ -3,10 +3,8 @@ import type { ApiPromise } from '@polkadot/api'
 import type { SubmittableExtrinsic } from '@polkadot/api/types'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import * as PolkadotChainConfigs from '../../../network/index.js'
 import { initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
-import * as SpiritnetConfig from '../../../network/spiritnet.js'
-import * as AssetHubContext from '../../../network/assethub.js'
+import { mainChains } from '../../../network/index.js'
 import { tx, query } from '../../../helper/api.js'
 import { getXcmMessageV4ToSendEkilt } from '../index.js'
 import type { BasicConfig } from '../../types.js'
@@ -119,17 +117,19 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 		config: {
 			desc: 'Switch V4 LIVE: Kilt -> AssetHub -> Kilt',
 			network: {
-				sender: PolkadotChainConfigs.all.spiritnet.getConfig({}),
-				receiver: PolkadotChainConfigs.all.assetHub.getConfig({}),
-				relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
+				relay: mainChains.polkadot.getConfig({}),
+				parachains: [mainChains.kilt.getConfig({}), mainChains.assetHub.getConfig({})],
 			},
 			storage: {
-				senderStorage: SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+					[keysAlice.address],
+					initialBalanceKILT
+				),
 				receiverStorage: {
 					// Assign some coins to create the account.
-					...AssetHubContext.assignDotTokensToAccountsAsStorage([keysAlice.address]),
+					...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
 					// Create the eKilts.
-					...AssetHubContext.createForeignAsset(keysBob.address),
+					...mainChains.assetHub.storage.createForeignAsset(keysBob.address),
 				},
 				relayStorage: {},
 			},
@@ -137,10 +137,13 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 
 		account: keysAlice,
 		query: {
-			native: { nativeFunds: query.balances, foreignFunds: query.fungibles(AssetHubContext.nativeTokenLocation) },
+			native: {
+				nativeFunds: query.balances,
+				foreignFunds: query.fungibles(mainChains.assetHub.chainInfo.nativeTokenLocation),
+			},
 			foreign: {
 				nativeFunds: query.balances,
-				foreignFunds: query.foreignAssets(AssetHubContext.eKiltLocation),
+				foreignFunds: query.foreignAssets(mainChains.assetHub.chainInfo.eKiltLocation),
 			},
 		},
 		txContext: {
@@ -148,19 +151,19 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 				native: {
 					transfer: tx.switchPallet.switchV4(),
 					withdraw: tx.xcmPallet.transferAssetsUsingTypeAndThenV4(
-						tx.xcmPallet.parachainV4(1, SpiritnetConfig.paraId),
-						AssetHubContext.eKiltLocation,
+						tx.xcmPallet.parachainV4(1, mainChains.kilt.chainInfo.paraId),
+						mainChains.assetHub.chainInfo.eKiltLocation,
 						getXcmMessageV4ToSendEkilt(keysAlice.address)
 					),
 				},
 				foreign: {
 					transfer: tx.xcmPallet.limitedReserveTransferAssetsV4(
-						AssetHubContext.nativeTokenLocation,
-						tx.xcmPallet.parachainV4(1, SpiritnetConfig.paraId)
+						mainChains.assetHub.chainInfo.nativeTokenLocation,
+						tx.xcmPallet.parachainV4(1, mainChains.kilt.chainInfo.paraId)
 					),
 					withdraw: tx.xcmPallet.transferAssetsV4(
-						tx.xcmPallet.parachainV4(1, AssetHubContext.paraId),
-						AssetHubContext.nativeTokenLocation
+						tx.xcmPallet.parachainV4(1, mainChains.assetHub.chainInfo.paraId),
+						mainChains.assetHub.chainInfo.nativeTokenLocation
 					),
 				},
 			},
@@ -198,6 +201,6 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 				foreign: BigInt(1e10),
 			},
 		},
-		sovereignAccount: SpiritnetConfig.sovereignAccountOnSiblingChains,
+		sovereignAccount: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
 	},
 ] as const

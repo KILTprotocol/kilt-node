@@ -21,13 +21,10 @@ describe.each(testPairsSwitchFunds)(
 
 		// Create the network context
 		beforeEach(async () => {
-			const { receiver, sender, relay } = network
+			const { parachains, relay } = network
 
-			const { receiverChainContext, senderChainContext, relayChainContext } = await setupNetwork(
-				relay,
-				sender,
-				receiver
-			)
+			const { parachainContexts, relayChainContext } = await setupNetwork(relay, parachains)
+			const [senderChainContext, receiverChainContext] = parachainContexts
 
 			relayContext = relayChainContext
 			nativeContext = senderChainContext

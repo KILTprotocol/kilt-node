@@ -1,6 +1,6 @@
 import type { SetupOption } from '@acala-network/chopsticks-testing'
 
-import { initialBalanceDOT, toNumber } from '../helper/utils.js'
+import { initialBalanceDOT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the HydraDx context
 export const getSetupOptions = ({
@@ -16,13 +16,13 @@ export const getSetupOptions = ({
 			'wss://polkadot-rpc.dwellir.com',
 			'wss://rpc.ibp.network/polkadot',
 		],
-		db: './db/polkadot.db.sqlite',
+		db: './db/polkadot_main.db.sqlite',
 		port: toNumber(process.env.POLKADOT_PORT),
 		blockNumber,
 		wasmOverride,
 	}) as SetupOption
 
-export const storageModifier = {
+export const storage = {
 	/// Assigns the native tokens to an accounts
 	assignNativeTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
 		return {

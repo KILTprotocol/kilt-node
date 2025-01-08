@@ -1,0 +1,725 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver events "currencies" 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 1000000000000000)",
+      "currencyId": 28,
+      "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
+    },
+    "method": "Deposited",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 3900000000000)",
+      "currencyId": 28,
+      "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
+    },
+    "method": "Deposited",
+    "section": "currencies",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver events "tokens" 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 1000000000000000)",
+      "currencyId": 28,
+      "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
+    },
+    "method": "Endowed",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 1000000000000000)",
+      "currencyId": 28,
+      "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
+    },
+    "method": "Deposited",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 3900000000000)",
+      "currencyId": 28,
+      "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
+    },
+    "method": "Deposited",
+    "section": "tokens",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver events "xcmpQueue" 1`] = `[]`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "polkadotXcm" 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "used": {
+            "proofSize": 0,
+            "refTime": 200000000,
+          },
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "fees": [],
+      "paying": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "FeesPaid",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": "(rounded 2000)",
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "message": [
+        {
+          "ReserveAssetDeposited": [
+            {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X1": [
+                    {
+                      "Parachain": "(rounded 2100)",
+                    },
+                  ],
+                },
+                "parents": 1,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X1": [
+                    {
+                      "Parachain": "(rounded 2100)",
+                    },
+                  ],
+                },
+                "parents": 1,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": {
+                "AllCounted": 1,
+              },
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events {"section":"balances","method":"Withdraw"} 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver events "currencies" 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 1000000000000000)",
+      "currencyId": 28,
+      "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
+    },
+    "method": "Deposited",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 3900000000000)",
+      "currencyId": 28,
+      "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
+    },
+    "method": "Deposited",
+    "section": "currencies",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver events "tokens" 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 1000000000000000)",
+      "currencyId": 28,
+      "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
+    },
+    "method": "Endowed",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 1000000000000000)",
+      "currencyId": 28,
+      "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
+    },
+    "method": "Deposited",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 3900000000000)",
+      "currencyId": 28,
+      "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
+    },
+    "method": "Deposited",
+    "section": "tokens",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver events "xcmpQueue" 1`] = `[]`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "polkadotXcm" 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "used": {
+            "proofSize": 0,
+            "refTime": 200000000,
+          },
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "fees": [],
+      "paying": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "FeesPaid",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": "(rounded 2000)",
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "message": [
+        {
+          "ReserveAssetDeposited": [
+            {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X1": [
+                    {
+                      "Parachain": "(rounded 2100)",
+                    },
+                  ],
+                },
+                "parents": 1,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X1": [
+                    {
+                      "Parachain": "(rounded 2100)",
+                    },
+                  ],
+                },
+                "parents": 1,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": {
+                "AllCounted": 1,
+              },
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events {"section":"balances","method":"Withdraw"} 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 170000000000)",
+      "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+    },
+    "method": "Withdraw",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > receiver events "xcmpQueue" 1`] = `[]`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "polkadotXcm" 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "used": {
+            "proofSize": 0,
+            "refTime": 200000000,
+          },
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "fees": [],
+      "paying": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "FeesPaid",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": "(rounded 2000)",
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "message": [
+        {
+          "ReserveAssetDeposited": [
+            {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X1": [
+                    {
+                      "Parachain": "(rounded 2100)",
+                    },
+                  ],
+                },
+                "parents": 1,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X1": [
+                    {
+                      "Parachain": "(rounded 2100)",
+                    },
+                  ],
+                },
+                "parents": 1,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": {
+                "AllCounted": 1,
+              },
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > receiver events "xcmpQueue" 1`] = `[]`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > sender events "polkadotXcm" 1`] = `
+[
+  {
+    "data": {
+      "outcome": {
+        "Complete": {
+          "used": {
+            "proofSize": 0,
+            "refTime": 200000000,
+          },
+        },
+      },
+    },
+    "method": "Attempted",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "fees": [],
+      "paying": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "FeesPaid",
+    "section": "polkadotXcm",
+  },
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": "(rounded 2000)",
+            },
+          ],
+        },
+        "parents": 1,
+      },
+      "message": [
+        {
+          "ReserveAssetDeposited": [
+            {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X1": [
+                    {
+                      "Parachain": "(rounded 2100)",
+                    },
+                  ],
+                },
+                "parents": 1,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X1": [
+                    {
+                      "Parachain": "(rounded 2100)",
+                    },
+                  ],
+                },
+                "parents": 1,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": {
+                "AllCounted": 1,
+              },
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": {
+          "X1": [
+            {
+              "AccountId32": {
+                "id": "(hash)",
+                "network": "Polkadot",
+              },
+            },
+          ],
+        },
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "polkadotXcm",
+  },
+]
+`;
+
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > sender events "xcmpQueue" 1`] = `
+[
+  {
+    "data": {
+      "messageHash": "(hash)",
+    },
+    "method": "XcmpMessageSent",
+    "section": "xcmpQueue",
+  },
+]
+`;

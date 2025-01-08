@@ -1,7 +1,6 @@
 import { SetupOption } from '@acala-network/chopsticks-testing'
 
-import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../helper/utils.js'
-import { ParachainInfo } from './types.js'
+import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the HydraDx context
 export const getSetupOptions = ({
@@ -13,7 +12,7 @@ export const getSetupOptions = ({
 } = {}) =>
 	({
 		endpoint: process.env.HYDRADX_WS || ['wss://rpc.hydradx.cloud'],
-		db: './db/hydradx.db.sqlite',
+		db: './db/hydration_main.db.sqlite',
 		port: toNumber(process.env.HYDRADX_PORT),
 		blockNumber,
 		wasmOverride,
@@ -46,7 +45,7 @@ export const storage = {
 	},
 }
 
-export const parachainInfo: ParachainInfo = {
+export const parachainInfo = {
 	// Sibling Sovereign Account
 	sovereignAccountOnSiblingChains: '5Eg2fntQqFi3EvFWAf71G66Ecjjah26bmFzoANAeHFgj9Lia',
 	kiltTokenId: 28,

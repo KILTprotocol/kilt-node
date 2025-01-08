@@ -1,7 +1,6 @@
 import { SetupOption } from '@acala-network/chopsticks-testing'
 
-import { initialBalanceKILT, toNumber } from '../helper/utils.js'
-import { ParachainInfo } from './types.js'
+import { initialBalanceKILT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the Spiritnet context
 export const getSetupOptions = ({
@@ -13,7 +12,7 @@ export const getSetupOptions = ({
 }) =>
 	({
 		endpoint: process.env.SPIRITNET_WS || 'wss://kilt.ibp.network',
-		db: './db/spiritnet.db.sqlite',
+		db: './db/spiritnet_main.db.sqlite',
 		port: toNumber(process.env.SPIRITNET_PORT),
 		wasmOverride,
 		blockNumber,
@@ -38,9 +37,11 @@ export const storage = {
 	},
 }
 
-export const parachainInfo: ParachainInfo = {
+export const parachainInfo = {
 	/// Spiritnet ParaId
 	paraId: 2086,
 	/// Sibling sovereign account
 	sovereignAccountOnSiblingChains: '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs',
+
+	HERE: { Concrete: { parents: 0, interior: 'Here' } },
 }

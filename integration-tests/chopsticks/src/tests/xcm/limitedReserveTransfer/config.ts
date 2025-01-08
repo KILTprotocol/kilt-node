@@ -1,7 +1,5 @@
-import * as PolkadotChainConfigs from '../../../network/index.js'
 import { initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
-import * as SpiritnetConfig from '../../../network/spiritnet.js'
-import * as HydraDxConfig from '../../../network/hydraDx.js'
+import { mainChains } from '../../../network/index.js'
 import { tx, query } from '../../../helper/api.js'
 
 import type { ApiPromise } from '@polkadot/api'
@@ -38,14 +36,17 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			desc: 'Kilt -> HydraDx live V2',
 			precision: BigInt(96),
 			storage: {
-				senderStorage: SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+					[keysAlice.address],
+					initialBalanceKILT
+				),
 				receiverStorage: {},
 				relayStorage: {},
 			},
 			network: {
-				sender: PolkadotChainConfigs.all.spiritnet.getConfig({}),
-				receiver: PolkadotChainConfigs.all.hydraDx.getConfig({}),
-				relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
+				// sender, receiver
+				parachains: [mainChains.kilt.getConfig({}), mainChains.hydration.getConfig({})],
+				relay: mainChains.polkadot.getConfig({}),
 			},
 		},
 
@@ -55,12 +56,12 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 		query: {
 			sender: query.balances,
-			receiver: query.tokens(HydraDxConfig.kiltTokenId),
+			receiver: query.tokens(mainChains.hydration.chainInfo.kiltTokenId),
 		},
 		txContext: {
 			tx: tx.xcmPallet.limitedReserveTransferAssetsV2(
-				SpiritnetConfig.KILT,
-				tx.xcmPallet.parachainV2(1, HydraDxConfig.paraId)
+				mainChains.kilt.chainInfo.KILT,
+				tx.xcmPallet.parachainV2(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
 				sender: ['xcmpQueue', 'polkadotXcm'],
@@ -70,8 +71,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 
 		sovereignAccount: {
-			sender: HydraDxConfig.sovereignAccountOnSiblingChains,
-			receiver: SpiritnetConfig.sovereignAccountOnSiblingChains,
+			sender: mainChains.hydration.chainInfo.sovereignAccountOnSiblingChains,
+			receiver: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
 		},
 	},
 
@@ -80,18 +81,17 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			desc: 'Kilt -> HydraDx at block V2',
 			precision: BigInt(99),
 			network: {
-				sender: PolkadotChainConfigs.all.spiritnet.getConfig({
-					blockNumber: PolkadotChainConfigs.all.spiritnet.parameters.blockNumber,
-				}),
-				receiver: PolkadotChainConfigs.all.hydraDx.getConfig({
-					blockNumber: PolkadotChainConfigs.all.hydraDx.parameters.blockNumber,
-				}),
-				relay: PolkadotChainConfigs.all.polkadot.getConfig({
-					blockNumber: PolkadotChainConfigs.all.polkadot.parameters.blockNumber,
+				// sender, receiver
+				parachains: [mainChains.kilt.getConfig({}), mainChains.hydration.getConfig({})],
+				relay: mainChains.polkadot.getConfig({
+					blockNumber: mainChains.polkadot.parameters.blockNumber,
 				}),
 			},
 			storage: {
-				senderStorage: SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+					[keysAlice.address],
+					initialBalanceKILT
+				),
 				receiverStorage: {},
 				relayStorage: {},
 			},
@@ -103,12 +103,12 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 		query: {
 			sender: query.balances,
-			receiver: query.tokens(HydraDxConfig.kiltTokenId),
+			receiver: query.tokens(mainChains.hydration.chainInfo.kiltTokenId),
 		},
 		txContext: {
 			tx: tx.xcmPallet.limitedReserveTransferAssetsV2(
-				SpiritnetConfig.KILT,
-				tx.xcmPallet.parachainV2(1, HydraDxConfig.paraId)
+				mainChains.kilt.chainInfo.KILT,
+				tx.xcmPallet.parachainV2(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
 				sender: ['xcmpQueue', 'polkadotXcm', { section: 'balances', method: 'Withdraw' }],
@@ -118,8 +118,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 
 		sovereignAccount: {
-			sender: HydraDxConfig.sovereignAccountOnSiblingChains,
-			receiver: SpiritnetConfig.sovereignAccountOnSiblingChains,
+			sender: mainChains.hydration.chainInfo.sovereignAccountOnSiblingChains,
+			receiver: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
 		},
 	},
 
@@ -128,14 +128,17 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			desc: 'Kilt -> HydraDx live V3',
 			precision: BigInt(96),
 			storage: {
-				senderStorage: SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+					[keysAlice.address],
+					initialBalanceKILT
+				),
 				receiverStorage: {},
 				relayStorage: {},
 			},
 			network: {
-				sender: PolkadotChainConfigs.all.spiritnet.getConfig({}),
-				receiver: PolkadotChainConfigs.all.hydraDx.getConfig({}),
-				relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
+				// sender, receiver
+				parachains: [mainChains.kilt.getConfig({}), mainChains.hydration.getConfig({})],
+				relay: mainChains.polkadot.getConfig({}),
 			},
 		},
 
@@ -145,12 +148,12 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 		query: {
 			sender: query.balances,
-			receiver: query.tokens(HydraDxConfig.kiltTokenId),
+			receiver: query.tokens(mainChains.hydration.chainInfo.kiltTokenId),
 		},
 		txContext: {
 			tx: tx.xcmPallet.limitedReserveTransferAssetsV3(
-				SpiritnetConfig.KILT,
-				tx.xcmPallet.parachainV3(1, HydraDxConfig.paraId)
+				mainChains.kilt.chainInfo.KILT,
+				tx.xcmPallet.parachainV3(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
 				sender: ['xcmpQueue', 'polkadotXcm'],
@@ -160,8 +163,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 
 		sovereignAccount: {
-			sender: HydraDxConfig.sovereignAccountOnSiblingChains,
-			receiver: SpiritnetConfig.sovereignAccountOnSiblingChains,
+			sender: mainChains.hydration.chainInfo.sovereignAccountOnSiblingChains,
+			receiver: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
 		},
 	},
 
@@ -170,19 +173,18 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			desc: 'Kilt -> HydraDx at block V3',
 			precision: BigInt(99),
 			storage: {
-				senderStorage: SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+					[keysAlice.address],
+					initialBalanceKILT
+				),
 				receiverStorage: {},
 				relayStorage: {},
 			},
 			network: {
-				sender: PolkadotChainConfigs.all.spiritnet.getConfig({
-					blockNumber: PolkadotChainConfigs.all.spiritnet.parameters.blockNumber,
-				}),
-				receiver: PolkadotChainConfigs.all.hydraDx.getConfig({
-					blockNumber: PolkadotChainConfigs.all.hydraDx.parameters.blockNumber,
-				}),
-				relay: PolkadotChainConfigs.all.polkadot.getConfig({
-					blockNumber: PolkadotChainConfigs.all.polkadot.parameters.blockNumber,
+				// sender, receiver
+				parachains: [mainChains.kilt.getConfig({}), mainChains.hydration.getConfig({})],
+				relay: mainChains.polkadot.getConfig({
+					blockNumber: mainChains.polkadot.parameters.blockNumber,
 				}),
 			},
 		},
@@ -193,12 +195,12 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 		query: {
 			sender: query.balances,
-			receiver: query.tokens(HydraDxConfig.kiltTokenId),
+			receiver: query.tokens(mainChains.hydration.chainInfo.kiltTokenId),
 		},
 		txContext: {
 			tx: tx.xcmPallet.limitedReserveTransferAssetsV3(
-				SpiritnetConfig.KILT,
-				tx.xcmPallet.parachainV3(1, HydraDxConfig.paraId)
+				mainChains.kilt.chainInfo.KILT,
+				tx.xcmPallet.parachainV3(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
 				sender: ['xcmpQueue', 'polkadotXcm', { section: 'balances', method: 'Withdraw' }],
@@ -208,8 +210,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		},
 
 		sovereignAccount: {
-			sender: HydraDxConfig.sovereignAccountOnSiblingChains,
-			receiver: SpiritnetConfig.sovereignAccountOnSiblingChains,
+			sender: mainChains.hydration.chainInfo.sovereignAccountOnSiblingChains,
+			receiver: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
 		},
 	},
 
@@ -218,14 +220,14 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	// 		desc: 'Kilt DEV -> HydraDx live v3',
 	// 		precision: BigInt(96),
 	// 		storage: {
-	// 			senderStorage: SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+	// 			senderStorage: mainChains.kilt.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 	// 			receiverStorage: {},
 	// 			relayStorage: {},
 	// 		},
 	// 		network: {
-	// 			sender: PolkadotChainConfigs.all.spiritnet.getConfig(PolkadotChainConfigs.all.spiritnet.parameters),
-	// 			receiver: PolkadotChainConfigs.all.hydraDx.getConfig({}),
-	// 			relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
+	// 			sender: mainChains.kilt.getConfig(mainChains.kilt.parameters),
+	// 			receiver: mainChains.hydration.getConfig({}),
+	// 			relay: mainChains.polkadot.getConfig({}),
 	// 		},
 	// 	},
 
@@ -235,12 +237,12 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	// 	},
 	// 	query: {
 	// 		sender: query.balances,
-	// 		receiver: query.tokens(HydraDxConfig.kiltTokenId),
+	// 		receiver: query.tokens(mainChains.hydration.kiltTokenId),
 	// 	},
 	// 	txContext: {
 	// 		tx: tx.xcmPallet.limitedReserveTransferAssetsV3(
-	// 			SpiritnetConfig.KILT,
-	// 			tx.xcmPallet.parachainV3(1, HydraDxConfig.paraId)
+	// 			mainChains.kilt.KILT,
+	// 			tx.xcmPallet.parachainV3(1, mainChains.hydration.paraId)
 	// 		),
 	// 		pallets: {
 	// 			sender: ['xcmpQueue', 'polkadotXcm'],
@@ -250,8 +252,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	// 	},
 
 	// 	sovereignAccount: {
-	// 		sender: HydraDxConfig.sovereignAccountOnSiblingChains,
-	// 		receiver: SpiritnetConfig.sovereignAccountOnSiblingChains,
+	// 		sender: mainChains.hydration.sovereignAccountOnSiblingChains,
+	// 		receiver: mainChains.kilt.sovereignAccountOnSiblingChains,
 	// 	},
 	// },
 
@@ -260,14 +262,14 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	// 		desc: 'Kilt DEV -> HydraDx live v2',
 	// 		precision: BigInt(96),
 	// 		storage: {
-	// 			senderStorage: SpiritnetConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+	// 			senderStorage: mainChains.kilt.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 	// 			receiverStorage: {},
 	// 			relayStorage: {},
 	// 		},
 	// 		network: {
-	// 			sender: PolkadotChainConfigs.all.spiritnet.getConfig(PolkadotChainConfigs.all.spiritnet.parameters),
-	// 			receiver: PolkadotChainConfigs.all.hydraDx.getConfig({}),
-	// 			relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
+	// 			sender: mainChains.kilt.getConfig(mainChains.kilt.parameters),
+	// 			receiver: mainChains.hydration.getConfig({}),
+	// 			relay: mainChains.polkadot.getConfig({}),
 	// 		},
 	// 	},
 
@@ -277,12 +279,12 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	// 	},
 	// 	query: {
 	// 		sender: query.balances,
-	// 		receiver: query.tokens(HydraDxConfig.kiltTokenId),
+	// 		receiver: query.tokens(mainChains.hydration.kiltTokenId),
 	// 	},
 	// 	txContext: {
 	// 		tx: tx.xcmPallet.limitedReserveTransferAssetsV2(
-	// 			SpiritnetConfig.KILT,
-	// 			tx.xcmPallet.parachainV2(1, HydraDxConfig.paraId)
+	// 			mainChains.kilt.KILT,
+	// 			tx.xcmPallet.parachainV2(1, mainChains.hydration.paraId)
 	// 		),
 	// 		pallets: {
 	// 			sender: ['xcmpQueue', 'polkadotXcm'],
@@ -292,8 +294,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	// 	},
 
 	// 	sovereignAccount: {
-	// 		sender: HydraDxConfig.sovereignAccountOnSiblingChains,
-	// 		receiver: SpiritnetConfig.sovereignAccountOnSiblingChains,
+	// 		sender: mainChains.hydration.sovereignAccountOnSiblingChains,
+	// 		receiver: mainChains.kilt.sovereignAccountOnSiblingChains,
 	// 	},
 	// },
 ] as const

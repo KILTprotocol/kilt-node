@@ -1,7 +1,6 @@
 import { SetupOption } from '@acala-network/chopsticks-testing'
 
-import { initialBalanceDOT, toNumber } from '../helper/utils.js'
-import { ParachainInfo } from './types.js'
+import { initialBalanceDOT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the Spiritnet context
 export const getSetupOptions = ({
@@ -13,15 +12,15 @@ export const getSetupOptions = ({
 }) =>
 	({
 		endpoint: process.env.ASSETHUB_WSS || 'wss://asset-hub-polkadot-rpc.dwellir.com',
-		db: './db/assethub.db.sqlite',
-		port: toNumber(process.env.ASSETHUB_PORT),
+		db: './db/assethub-main.db.sqlite',
+		port: toNumber(process.env.ASSETHUB_MAIN_PORT),
 		wasmOverride,
 		blockNumber,
 	}) as SetupOption
 
 export const storage = {
 	/// AssetHub has no own coin. Teleported dots are used as the native token.
-	assignDotTokensToAccountsAsStorage(addr: string[], balance: bigint = initialBalanceDOT) {
+	assignNativeTokensToAccountsAsStorage(addr: string[], balance: bigint = initialBalanceDOT) {
 		return {
 			System: {
 				Account: addr.map((address) => [[address], { providers: 1, data: { free: balance.toString() } }]),
@@ -92,7 +91,7 @@ export const storage = {
 	},
 }
 
-export const parachainInfo: ParachainInfo = {
+export const parachainInfo = {
 	/// AssetHub ParaId
 	paraId: 1000,
 	KSMAssetLocation: {

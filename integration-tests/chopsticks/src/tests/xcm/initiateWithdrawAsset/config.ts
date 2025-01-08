@@ -1,8 +1,6 @@
-import * as PolkadotChainConfigs from '../../../network/index.js'
 import { initialBalanceHDX, initialBalanceKILT, keysAlice, keysBob } from '../../../helper/utils.js'
-import * as SpiritnetConfig from '../../../network/spiritnet.js'
-import * as HydraDxConfig from '../../../network/hydraDx.js'
 import { tx, query } from '../../../helper/api.js'
+import { mainChains } from '../../../network/index.js'
 
 import type { ApiPromise } from '@polkadot/api'
 import type { BasicConfig, BasicXcmTestConfiguration, BasisTxContext } from '../../types.js'
@@ -37,14 +35,17 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			desc: 'HydraDx -> KILT live',
 			precision: BigInt(96),
 			network: {
-				sender: PolkadotChainConfigs.all.hydraDx.getConfig({}),
-				receiver: PolkadotChainConfigs.all.spiritnet.getConfig({}),
-				relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
+				relay: mainChains.polkadot.getConfig({}),
+				// sender, receiver
+				parachains: [mainChains.hydration.getConfig({}), mainChains.kilt.getConfig({})],
 			},
 			storage: {
 				senderStorage: {
-					...HydraDxConfig.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					...HydraDxConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceHDX),
+					...mainChains.hydration.storage.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
+					...mainChains.hydration.storage.assignNativeTokensToAccounts(
+						[keysAlice.address],
+						initialBalanceHDX
+					),
 				},
 				receiverStorage: {},
 				relayStorage: {},
@@ -56,11 +57,14 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			receiverAccount: keysBob,
 		},
 		query: {
-			sender: query.tokens(HydraDxConfig.kiltTokenId),
+			sender: query.tokens(mainChains.hydration.chainInfo.kiltTokenId),
 			receiver: query.balances,
 		},
 		txContext: {
-			tx: tx.xtokens.transfer(HydraDxConfig.kiltTokenId, tx.xtokens.parachainV3(SpiritnetConfig.paraId)),
+			tx: tx.xtokens.transfer(
+				mainChains.hydration.chainInfo.kiltTokenId,
+				tx.xtokens.parachainV3(mainChains.kilt.chainInfo.paraId)
+			),
 			pallets: {
 				sender: ['xcmpQueue'],
 				receiver: ['xcmpQueue', { section: 'system', method: 'NewAccount' }],
@@ -69,8 +73,8 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 		},
 
 		sovereignAccount: {
-			sender: SpiritnetConfig.sovereignAccountOnSiblingChains,
-			receiver: HydraDxConfig.sovereignAccountOnSiblingChains,
+			sender: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
+			receiver: mainChains.hydration.chainInfo.sovereignAccountOnSiblingChains,
 		},
 	},
 
@@ -121,20 +125,19 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			desc: 'HydraDx -> KILT at Block',
 			precision: BigInt(99),
 			network: {
-				sender: PolkadotChainConfigs.all.hydraDx.getConfig({
-					blockNumber: PolkadotChainConfigs.all.hydraDx.parameters.blockNumber,
+				relay: mainChains.polkadot.getConfig({
+					blockNumber: mainChains.polkadot.parameters.blockNumber,
 				}),
-				receiver: PolkadotChainConfigs.all.spiritnet.getConfig({
-					blockNumber: PolkadotChainConfigs.all.spiritnet.parameters.blockNumber,
-				}),
-				relay: PolkadotChainConfigs.all.polkadot.getConfig({
-					blockNumber: PolkadotChainConfigs.all.polkadot.parameters.blockNumber,
-				}),
+				// sender, receiver
+				parachains: [mainChains.hydration.getConfig({}), mainChains.kilt.getConfig({})],
 			},
 			storage: {
 				senderStorage: {
-					...HydraDxConfig.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					...HydraDxConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceHDX),
+					...mainChains.hydration.storage.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
+					...mainChains.hydration.storage.assignNativeTokensToAccounts(
+						[keysAlice.address],
+						initialBalanceHDX
+					),
 				},
 				receiverStorage: {},
 				relayStorage: {},
@@ -146,11 +149,14 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			receiverAccount: keysBob,
 		},
 		query: {
-			sender: query.tokens(HydraDxConfig.kiltTokenId),
+			sender: query.tokens(mainChains.hydration.chainInfo.kiltTokenId),
 			receiver: query.balances,
 		},
 		txContext: {
-			tx: tx.xtokens.transfer(HydraDxConfig.kiltTokenId, tx.xtokens.parachainV3(SpiritnetConfig.paraId)),
+			tx: tx.xtokens.transfer(
+				mainChains.hydration.chainInfo.kiltTokenId,
+				tx.xtokens.parachainV3(mainChains.kilt.chainInfo.paraId)
+			),
 			pallets: {
 				sender: ['xcmpQueue', { section: 'currencies', method: 'Withdrawn' }],
 				receiver: [
@@ -163,8 +169,8 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 		},
 
 		sovereignAccount: {
-			sender: SpiritnetConfig.sovereignAccountOnSiblingChains,
-			receiver: HydraDxConfig.sovereignAccountOnSiblingChains,
+			sender: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
+			receiver: mainChains.hydration.chainInfo.sovereignAccountOnSiblingChains,
 		},
 	},
 ] as const

@@ -15,8 +15,7 @@ export interface Accounts {
 }
 
 export interface NetworkSetupOption {
-	sender: SetupOption
-	receiver: SetupOption
+	parachains: SetupOption[]
 	relay: SetupOption
 }
 
