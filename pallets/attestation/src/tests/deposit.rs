@@ -77,6 +77,13 @@ fn test_change_deposit_owner() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				<Test as Config>::Deposit::get()
 			);
+			assert!(System::events().iter().any(|e| e.event
+				== Event::<Test>::DepositOwnerChanged {
+					id: claim_hash,
+					from: ACCOUNT_00,
+					to: ACCOUNT_01
+				}
+				.into()));
 		});
 }
 
@@ -99,7 +106,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 			);
 			assert_noop!(
 				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, attester).into(), claim_hash),
-				TokenError::CannotCreateHold
+				TokenError::FundsUnavailable
 			);
 		});
 }

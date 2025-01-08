@@ -55,21 +55,21 @@ impl AssetDid {
 	pub fn ether_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: Slip44Reference(60.into()).into(),
+			asset_id: Slip44Reference(60u8.into()).into(),
 		}
 	}
 
 	pub fn bitcoin_currency() -> Self {
 		Self {
 			chain_id: ChainId::Bip122(GenesisHexHash32Reference::bitcoin_mainnet()),
-			asset_id: Slip44Reference(0.into()).into(),
+			asset_id: Slip44Reference(0u8.into()).into(),
 		}
 	}
 
 	pub fn litecoin_currency() -> Self {
 		Self {
 			chain_id: ChainId::Bip122(GenesisHexHash32Reference::litecoin_mainnet()),
-			asset_id: Slip44Reference(2.into()).into(),
+			asset_id: Slip44Reference(2u8.into()).into(),
 		}
 	}
 
@@ -115,8 +115,8 @@ impl AssetDid {
 	where
 		I: AsRef<[u8]> + Into<Vec<u8>>,
 	{
-		let input = input.as_ref();
-		let input_length = input.len();
+		let input_ref = input.as_ref();
+		let input_length = input_ref.len();
 		if !(MINIMUM_ASSET_DID_LENGTH..=MAXIMUM_ASSET_DID_LENGTH).contains(&input_length) {
 			log::trace!(
 				"Length of provided input {} is not included in the inclusive range [{},{}]",
@@ -127,15 +127,15 @@ impl AssetDid {
 			return Err(AssetDidError::InvalidFormat);
 		}
 
-		let asset_id = input
+		let input_asset_id = input_ref
 			.as_ref()
 			.strip_prefix(DID_ASSET_PREFIX)
 			.ok_or(AssetDidError::InvalidFormat)?;
 
-		let mut split = asset_id.splitn(2, |c| *c == CHAIN_ASSET_SEPARATOR);
-		let (chain, asset) = (split.next(), split.next());
+		let mut split = input_asset_id.splitn(2, |c| *c == CHAIN_ASSET_SEPARATOR);
+		let (input_chain, input_asset) = (split.next(), split.next());
 
-		if let (Some(chain), Some(asset)) = (chain, asset) {
+		if let (Some(chain), Some(asset)) = (input_chain, input_asset) {
 			let chain_id = ChainId::from_utf8_encoded(chain).map_err(AssetDidError::ChainId)?;
 			let asset_id = AssetId::from_utf8_encoded(asset).map_err(AssetDidError::AssetId)?;
 			Ok(Self { chain_id, asset_id })
@@ -146,6 +146,7 @@ impl AssetDid {
 }
 
 impl Display for AssetDid {
+	#[allow(clippy::expect_used)]
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		write!(
 			f,

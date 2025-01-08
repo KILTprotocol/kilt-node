@@ -59,6 +59,7 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
+	type RuntimeTask = ();
 	type BaseCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
@@ -91,10 +92,10 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
+	type RuntimeFreezeReason = ();
 	type FreezeIdentifier = ();
 	type RuntimeHoldReason = ();
 	type MaxFreezes = ();
-	type MaxHolds = ();
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
@@ -106,7 +107,7 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-pub struct ToBeneficiary();
+pub struct ToBeneficiary;
 impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
 	fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 		// Must resolve into existing but better to be safe.

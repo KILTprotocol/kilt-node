@@ -22,17 +22,17 @@ use runtime_common::Balance;
 use sp_core::H256;
 use sp_runtime::AccountId32;
 use xcm::{
-	v3::prelude::{
+	lts::prelude::{
 		Instruction::{BuyExecution, Transact, WithdrawAsset},
 		Junction,
 		Junctions::{self, Here},
 		OriginKind, ParentThen, Weight, WeightLimit, Xcm,
 	},
-	DoubleEncoded, VersionedMultiLocation, VersionedXcm,
+	DoubleEncoded, VersionedLocation, VersionedXcm,
 };
 use xcm_emulator::Parachain;
 
-use crate::mock::para_chains::{peregrine, AssetHubRococo, Peregrine};
+use crate::mock::network::{AssetHub, Peregrine};
 
 pub fn create_mock_ctype(ctype_hash: H256, creator: AccountId32) {
 	let ctype_entry = CtypeEntry { creator, created_at: 0 };
@@ -41,11 +41,11 @@ pub fn create_mock_ctype(ctype_hash: H256, creator: AccountId32) {
 }
 
 pub fn get_asset_hub_sovereign_account() -> AccountId32 {
-	Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHubRococo::para_id()))
+	Peregrine::sovereign_account_id_of(Peregrine::sibling_location_of(AssetHub::para_id()))
 }
 
-pub fn get_sibling_destination_peregrine() -> VersionedMultiLocation {
-	ParentThen(Junctions::X1(Junction::Parachain(peregrine::PARA_ID))).into()
+pub fn get_sibling_destination_peregrine() -> VersionedLocation {
+	ParentThen(Junctions::X1([Junction::Parachain(Peregrine::para_id().into())].into())).into()
 }
 
 pub fn create_mock_did_from_account(account: AccountId32) {

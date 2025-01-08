@@ -16,13 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::parameter_types;
+use frame_support::{pallet_prelude::ValueQuery, parameter_types, storage_alias};
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::{
 	mock::{mock_origin, SubjectId},
 	traits::StorageDepositCollector,
 };
 
+use sp_core::Get;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	BuildStorage, MultiSignature,
@@ -64,6 +65,7 @@ impl frame_system::Config for Test {
 	type Nonce = u64;
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
+	type RuntimeTask = ();
 	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
@@ -85,15 +87,14 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 10;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
-	pub const MaxHolds: u32 = 50;
 	pub const MaxFreezes: u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
-	type MaxHolds = MaxHolds;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;
@@ -109,6 +110,23 @@ parameter_types! {
 	pub const DidLookupDeposit: Balance = 10;
 }
 
+pub struct UniqueLinkEnabledFlag;
+
+#[storage_alias]
+type FlagStorage = StorageValue<DidLookup, bool, ValueQuery>;
+
+impl UniqueLinkEnabledFlag {
+	fn set(flag: bool) {
+		FlagStorage::set(flag)
+	}
+}
+
+impl Get<bool> for UniqueLinkEnabledFlag {
+	fn get() -> bool {
+		FlagStorage::get()
+	}
+}
+
 impl pallet_did_lookup::Config for Test {
 	type BalanceMigrationManager = ();
 	type RuntimeEvent = RuntimeEvent;
@@ -116,9 +134,11 @@ impl pallet_did_lookup::Config for Test {
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
+	type AssociateOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
 	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 	type DidIdentifier = SubjectId;
 	type WeightInfo = ();
+	type UniqueLinkingEnabled = UniqueLinkEnabledFlag;
 }
 
 impl mock_origin::Config for Test {
@@ -136,9 +156,9 @@ pub(crate) const LINKABLE_ACCOUNT_01: LinkableAccountId = LinkableAccountId::Acc
 
 pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,
-	did_identifier: DidIdentifierOf<T>,
+	did_identifier: DidIdentifierOf<T, ()>,
 	account: LinkableAccountId,
-	deposit: BalanceOf<T>,
+	deposit: BalanceOf<T, ()>,
 ) {
 	let deposit = LinkableAccountDepositCollector::<T>::create_deposit(sender, deposit)
 		.expect("Account should have enough balance");
@@ -163,6 +183,7 @@ pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
 	/// list of connection (sender, did, connected address)
 	connections: Vec<(AccountId, SubjectId, LinkableAccountId)>,
+	unique_flag: bool,
 }
 
 impl ExtBuilder {
@@ -179,6 +200,11 @@ impl ExtBuilder {
 		self
 	}
 
+	pub fn with_unique_connections(mut self) -> Self {
+		self.unique_flag = true;
+		self
+	}
+
 	pub fn build(self) -> sp_io::TestExternalities {
 		let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 		pallet_balances::GenesisConfig::<Test> {
@@ -189,10 +215,16 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
+			// ensure that we are not at the genesis block. Events are not registered for
+			// the genesis block.
+			System::set_block_number(System::block_number() + 1);
+
 			for (sender, did, account) in self.connections {
 				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
 					.expect("Should create connection");
 			}
+
+			UniqueLinkEnabledFlag::set(self.unique_flag);
 		});
 		ext
 	}
@@ -200,7 +232,7 @@ impl ExtBuilder {
 	pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 		self.build().execute_with(|| {
 			test();
-			crate::try_state::do_try_state::<Test>().expect("Sanity test for did lookup failed.");
+			crate::try_state::do_try_state::<Test, _>().expect("Sanity test for did lookup failed.");
 		})
 	}
 
@@ -209,7 +241,7 @@ impl ExtBuilder {
 		let mut ext = self.build();
 
 		let keystore = sp_keystore::testing::MemoryKeystore::new();
-		ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
+		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 
 		ext
 	}

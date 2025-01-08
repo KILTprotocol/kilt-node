@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -239,6 +239,7 @@ mod dip_did_proof_with_verified_relay_state_root {
 	);
 
 	impl frame_system::Config for TestProviderRuntime {
+		type RuntimeTask = ();
 		type AccountData = ();
 		type AccountId = AccountId32;
 		type BaseCallFilter = Everything;

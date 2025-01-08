@@ -19,11 +19,12 @@
 //! KILT chain specification
 
 use kestrel_runtime::{
-	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, WASM_BINARY,
 };
 use runtime_common::{AccountId, AccountPublic};
 
 use sc_service::{self, ChainType, Properties};
+use serde_json::to_value;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{ed25519, sr25519, Pair, Public};
@@ -41,30 +42,23 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 
 fn generate_dev_chain_spec() -> ChainSpec {
-	let properties = Properties::from_iter(
-		[
-			("tokenDecimals".into(), 15.into()),
-			("tokenSymbol".into(), "DILT".into()),
-		]
-		.into_iter(),
-	);
+	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
+	let properties = Properties::from_iter([
+		("tokenDecimals".into(), 15.into()),
+		("tokenSymbol".into(), "DILT".into()),
+	]);
+	let genesis_state = to_value(generate_genesis_state()).expect("Creating genesis state failed");
 
-	ChainSpec::from_genesis(
-		"Standalone Node (Dev)",
-		"standalone_node_development",
-		ChainType::Development,
-		generate_devnet_genesis_state,
-		vec![],
-		None,
-		None,
-		None,
-		Some(properties),
-		None,
-	)
+	ChainSpec::builder(wasm_binary, None)
+		.with_name("Standalone Node (Dev)")
+		.with_id("standalone_node_development")
+		.with_chain_type(ChainType::Development)
+		.with_properties(properties)
+		.with_genesis_config(genesis_state)
+		.build()
 }
 
-fn generate_devnet_genesis_state() -> RuntimeGenesisConfig {
-	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
+fn generate_genesis_state() -> RuntimeGenesisConfig {
 	let endowed_accounts = vec![
 		// Dev Faucet account
 		get_account_id_from_secret::<ed25519::Public>(
@@ -79,30 +73,31 @@ fn generate_devnet_genesis_state() -> RuntimeGenesisConfig {
 	let root_key = get_account_id_from_secret::<ed25519::Public>("//Alice");
 
 	RuntimeGenesisConfig {
-		system: SystemConfig {
-			code: wasm_binary.to_vec(),
-			..Default::default()
-		},
+		system: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts.into_iter().map(|a| (a, 1u128 << 90)).collect(),
 		},
 		session: SessionConfig {
 			keys: initial_authorities
 				.into_iter()
-				.map(|x| {
+				.map(|(acc, aura, grandpa)| {
 					(
-						x.0.clone(),
-						x.0.clone(),
-						SessionKeys {
-							aura: x.1.clone(),
-							grandpa: x.2,
-						},
+						acc.clone(),                          // account id
+						acc,                                  // validator id
+						template_session_keys(aura, grandpa), // session keys
 					)
 				})
 				.collect::<Vec<_>>(),
 		},
 		sudo: SudoConfig { key: Some(root_key) },
 		..Default::default()
+	}
+}
+
+fn template_session_keys(aura_keys: AuraId, grandpa_keys: GrandpaId) -> SessionKeys {
+	SessionKeys {
+		aura: aura_keys,
+		grandpa: grandpa_keys,
 	}
 }
 

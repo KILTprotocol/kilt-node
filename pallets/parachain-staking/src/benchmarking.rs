@@ -15,9 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg(feature = "runtime-benchmarks")]
 
-//! Benchmarking
+// Old benchmarking macros are a mess.
+#![allow(clippy::tests_outside_test_module)]
+
 use crate::{types::RoundInfo, *};
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
@@ -106,17 +107,20 @@ where
 	let who = delegator.unwrap_or(collator);
 	assert_eq!(Unstaking::<T>::get(who).len(), 0);
 	while System::<T>::block_number() < unstaked.into() {
-		if let Some(delegator) = delegator {
-			assert_ok!(Pallet::<T>::delegator_stake_less(
-				RawOrigin::Signed(delegator.clone()).into(),
-				T::CurrencyBalance::one()
-			));
-		} else {
-			assert_ok!(Pallet::<T>::candidate_stake_less(
-				RawOrigin::Signed(collator.clone()).into(),
-				T::CurrencyBalance::one()
-			));
-		}
+		delegator.map_or_else(
+			|| {
+				assert_ok!(Pallet::<T>::candidate_stake_less(
+					RawOrigin::Signed(collator.clone()).into(),
+					T::CurrencyBalance::one()
+				));
+			},
+			|delegator| {
+				assert_ok!(Pallet::<T>::delegator_stake_less(
+					RawOrigin::Signed(delegator.clone()).into(),
+					T::CurrencyBalance::one()
+				));
+			},
+		);
 		System::<T>::set_block_number(System::<T>::block_number() + BlockNumberFor::<T>::one());
 	}
 	assert_eq!(Unstaking::<T>::get(who).len() as u64, unstaked);
@@ -198,7 +202,9 @@ benchmarks! {
 			Perquintill::from_percent(40),
 			Perquintill::from_percent(10)
 		);
-	}: _(RawOrigin::Root, inflation.collator.max_rate, inflation.collator.reward_rate.annual, inflation.delegator.max_rate, inflation.delegator.reward_rate.annual)
+
+		let candidate_pool_size = candidates.len() as u32;
+	}: _(RawOrigin::Root, inflation.collator.max_rate, inflation.collator.reward_rate.annual, inflation.delegator.max_rate, inflation.delegator.reward_rate.annual, candidate_pool_size)
 	verify {
 		assert_eq!(InflationConfig::<T>::get(), inflation);
 		candidates.into_iter().for_each(|candidate| {
@@ -438,7 +444,7 @@ benchmarks! {
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, amount);
 
 		// increase stake so we can unstake, because current stake is minimum
-		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(15)));
+		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(17)));
 		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::CurrencyBalance::from(u as u64)));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, amount + T::CurrencyBalance::from(u as u64));
 
@@ -474,7 +480,7 @@ benchmarks! {
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get());
 
 		// increase stake so we can unstake, because current stake is minimum
-		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(15)));
+		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(17)));
 		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), amount + amount));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get() + amount + amount);
 
@@ -511,7 +517,7 @@ benchmarks! {
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get());
 
 		// increase stake so we can unstake, because current stake is minimum
-		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(15)));
+		T::Currency::set_balance(&delegator, T::CurrencyBalance::from(10u128.pow(17)));
 		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), amount + amount));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get() + amount + amount);
 
@@ -533,7 +539,7 @@ benchmarks! {
 		let u in 1 .. (T::MaxUnstakeRequests::get() - 1);
 
 		let candidate = account("collator", 0u32, COLLATOR_ACCOUNT_SEED);
-		let free_balance = T::CurrencyBalance::from(10u128.pow(15));
+		let free_balance = T::CurrencyBalance::from(10u128.pow(20));
 		let stake = T::MinCollatorCandidateStake::get();
 		T::Currency::set_balance(&candidate, free_balance);
 		assert_ok!(Pallet::<T>::join_candidates(
@@ -627,7 +633,8 @@ benchmarks! {
 		let old = InflationConfig::<T>::get();
 		assert_eq!(LastRewardReduction::<T>::get(), BlockNumberFor::<T>::zero());
 		System::<T>::set_block_number(T::BLOCKS_PER_YEAR + BlockNumberFor::<T>::one());
-	}: _(RawOrigin::Signed(collator))
+		let candidate_pool_size = candidates.len() as u32;
+	}: _(RawOrigin::Signed(collator), candidate_pool_size)
 	verify {
 		let new = InflationConfig::<T>::get();
 		assert_eq!(LastRewardReduction::<T>::get(), BlockNumberFor::<T>::one());

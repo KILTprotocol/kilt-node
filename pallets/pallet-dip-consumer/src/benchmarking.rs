@@ -34,7 +34,7 @@ pub struct WorstCaseOf<T: Config> {
 mod benchmarks {
 	use frame_system::RawOrigin;
 	use kilt_support::traits::GetWorstCase;
-	use sp_std::{boxed::Box, vec};
+	use sp_std::boxed::Box;
 
 	use crate::{benchmarking::WorstCaseOf, Call, Config, IdentityEntries, Pallet};
 

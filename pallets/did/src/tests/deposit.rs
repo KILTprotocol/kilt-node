@@ -167,6 +167,13 @@ fn test_change_deposit_owner() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get()
 			);
+			assert!(System::events().iter().any(|e| e.event
+				== Event::<Test>::DepositOwnerChanged {
+					id: alice_did,
+					from: ACCOUNT_00,
+					to: ACCOUNT_01
+				}
+				.into()));
 		});
 }
 
@@ -189,7 +196,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_noop!(Did::change_deposit_owner(origin), TokenError::CannotCreateHold);
+			assert_noop!(Did::change_deposit_owner(origin), TokenError::FundsUnavailable);
 		});
 }
 

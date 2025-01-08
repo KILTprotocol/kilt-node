@@ -169,7 +169,7 @@ fn delegator_should_not_receive_rewards_after_revoking() {
 }
 #[test]
 fn coinbase_rewards_many_blocks_simple_check() {
-	let num_of_years: Perquintill = Perquintill::from_perthousand(2);
+	let num_of_years = Perquintill::from_perthousand(2);
 	ExtBuilder::default()
 		.with_balances(vec![
 			(1, 40_000_000 * DECIMALS),
@@ -332,7 +332,10 @@ fn adjust_reward_rates() {
 			roll_to_claim_rewards(<Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
 			// reward reduction should not happen automatically anymore
 			assert_eq!(StakePallet::last_reward_reduction(), 0u64);
-			assert_ok!(StakePallet::execute_scheduled_reward_change(RuntimeOrigin::signed(1)));
+			assert_ok!(StakePallet::execute_scheduled_reward_change(
+				RuntimeOrigin::signed(1),
+				2
+			));
 			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
 			let inflation_1 = InflationInfo::new(
 				<Test as Config>::BLOCKS_PER_YEAR,
@@ -363,7 +366,10 @@ fn adjust_reward_rates() {
 			roll_to_claim_rewards(2 * <Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
 			// reward reduction should not happen automatically anymore
 			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
-			assert_ok!(StakePallet::execute_scheduled_reward_change(RuntimeOrigin::signed(1)));
+			assert_ok!(StakePallet::execute_scheduled_reward_change(
+				RuntimeOrigin::signed(1),
+				2
+			));
 			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
 			let inflation_2 = InflationInfo::new(
 				<Test as Config>::BLOCKS_PER_YEAR,
@@ -393,7 +399,10 @@ fn adjust_reward_rates() {
 			roll_to_claim_rewards(3 * <Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
 			// reward reduction should not happen automatically anymore
 			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
-			assert_ok!(StakePallet::execute_scheduled_reward_change(RuntimeOrigin::signed(1)));
+			assert_ok!(StakePallet::execute_scheduled_reward_change(
+				RuntimeOrigin::signed(1),
+				2
+			));
 			assert_eq!(StakePallet::last_reward_reduction(), 3u64);
 			let inflation_3 = InflationInfo::new(
 				<Test as Config>::BLOCKS_PER_YEAR,
@@ -992,5 +1001,18 @@ fn api_get_unclaimed_staking_rewards() {
 			assert_ok!(StakePallet::claim_rewards(RuntimeOrigin::signed(3)));
 			assert_eq!(rewards_3 + 98 * stake, Balances::usable_balance(3));
 			assert!(StakePallet::get_unclaimed_staking_rewards(&3).is_zero());
+		});
+}
+
+#[test]
+fn too_small_candidate_size_provided_for_reward_adjustment() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10), (2, 100)])
+		.with_collators(vec![(1, 10), (2, 10)])
+		.build_and_execute_with_sanity_tests(|| {
+			assert_noop!(
+				StakePallet::execute_scheduled_reward_change(RuntimeOrigin::signed(1), 1),
+				Error::<Test>::InvalidInput
+			);
 		});
 }

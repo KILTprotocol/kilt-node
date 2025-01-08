@@ -29,6 +29,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
+// Triggered by `impl_runtime_apis` macro
+#![allow(clippy::empty_structs_with_brackets)]
 
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
@@ -38,12 +40,13 @@ pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
 use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberMonotonicallyIncreases};
-use cumulus_primitives_core::CollationInfo;
+use cumulus_primitives_core::{AggregateMessageOrigin, CollationInfo};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
+	genesis_builder_helper::{build_config, create_default_config},
 	parameter_types,
-	traits::{ConstU32, ConstU64, ConstU8, Everything},
+	traits::{ConstU32, ConstU64, ConstU8, EnqueueWithOrigin, Everything},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
 		IdentityFee, Weight,
@@ -57,7 +60,7 @@ use frame_system::{
 use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
-use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
+use pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
 use sp_core::{crypto::KeyTypeId, ConstBool, ConstU128, ConstU16, OpaqueMetadata};
@@ -152,7 +155,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("dip-consumer-runtime-template"),
 	impl_name: create_runtime_str!("dip-consumer-runtime-template"),
 	authoring_version: 1,
-	spec_version: 11400,
+	spec_version: 11500,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -224,16 +227,17 @@ impl frame_system::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeTask = RuntimeTask;
 	type SS58Prefix = ConstU16<SS58_PREFIX>;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type Version = Version;
 }
 
-/// Maximum number of blocks simultaneously accepted by the Runtime, not yet included into the
-/// relay chain.
+/// Maximum number of blocks simultaneously accepted by the Runtime, not yet
+/// included into the relay chain.
 const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
-/// How many parachain blocks are processed by the relay chain per parent. Limits the number of
-/// blocks authored per slot.
+/// How many parachain blocks are processed by the relay chain per parent.
+/// Limits the number of blocks authored per slot.
 const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 /// Relay chain slot duration, in milliseconds.
 const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
@@ -251,9 +255,12 @@ type ConsensusHook = cumulus_pallet_aura_ext::FixedVelocityConsensusHook<
 	UNINCLUDED_SEGMENT_CAPACITY,
 >;
 
+parameter_types! {
+	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
+}
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
-	type DmpMessageHandler = ();
 	type OnSystemEvent = ();
 	type OutboundXcmpMessageSource = ();
 	type ReservedDmpWeight = ();
@@ -262,6 +269,8 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type SelfParaId = ParachainInfo;
 	type XcmpMessageHandler = ();
 	type ConsensusHook = ConsensusHook;
+	type WeightInfo = ();
+	type DmpQueue = EnqueueWithOrigin<(), RelayOrigin>;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -295,17 +304,17 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type MaxFreezes = ConstU32<50>;
-	type MaxHolds = ConstU32<50>;
 	type MaxLocks = ConstU32<50>;
 	type MaxReserves = ConstU32<50>;
 	type ReserveIdentifier = [u8; 8];
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type WeightInfo = ();
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+	type OnChargeTransaction = FungibleAdapter<Balances, ()>;
 	type FeeMultiplierUpdate = ();
 	type LengthToFee = IdentityFee<Balance>;
 	type OperationalFeeMultiplier = ConstU8<1>;
@@ -532,6 +541,17 @@ impl_runtime_apis! {
 	impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
 		fn collect_collation_info(header: &<Block as BlockT>::Header) -> CollationInfo {
 			ParachainSystem::collect_collation_info(header)
+		}
+	}
+
+	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+
+		fn create_default_config() -> Vec<u8> {
+			create_default_config::<RuntimeGenesisConfig>()
+		}
+
+		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_config::<RuntimeGenesisConfig>(config)
 		}
 	}
 

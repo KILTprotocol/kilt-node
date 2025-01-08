@@ -69,6 +69,7 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
+	type RuntimeTask = ();
 	type BaseCallFilter = frame_support::traits::Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
@@ -96,14 +97,13 @@ impl frame_system::Config for Test {
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 1;
 	pub const MaxFreezes : u32 = 50;
-	pub const MaxHolds : u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
-	type MaxHolds = MaxHolds;
 	type MaxLocks = ();
 	type MaxReserves = ();
 	type ReserveIdentifier = [u8; 8];
@@ -145,7 +145,7 @@ parameter_types! {
 	pub const NetworkRewardStart: BlockNumber = 5 * 5 * 60 * 24 * 36525 / 100;
 }
 
-pub struct ToBeneficiary();
+pub struct ToBeneficiary;
 impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
 	fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 		// Must resolve into existing but better to be safe.

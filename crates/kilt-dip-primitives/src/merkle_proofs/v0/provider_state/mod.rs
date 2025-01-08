@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -95,7 +95,7 @@ impl<
 		ConsumerBlockNumber,
 	>
 {
-	pub fn new(
+	pub const fn new(
 		provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
 		dip_commitment_proof: DipCommitmentStateProof,
 		dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
@@ -109,21 +109,21 @@ impl<
 		}
 	}
 
-	pub fn provider_head_proof(&self) -> &ProviderHeadStateProof<RelayBlockNumber> {
+	pub const fn provider_head_proof(&self) -> &ProviderHeadStateProof<RelayBlockNumber> {
 		&self.provider_head_proof
 	}
 
-	pub fn dip_commitment_proof(&self) -> &DipCommitmentStateProof {
+	pub const fn dip_commitment_proof(&self) -> &DipCommitmentStateProof {
 		&self.dip_commitment_proof
 	}
 
-	pub fn dip_proof(
+	pub const fn dip_proof(
 		&self,
 	) -> &DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId> {
 		&self.dip_proof
 	}
 
-	pub fn signature(&self) -> &TimeBoundDidSignature<ConsumerBlockNumber> {
+	pub const fn signature(&self) -> &TimeBoundDidSignature<ConsumerBlockNumber> {
 		&self.signature
 	}
 }
@@ -179,7 +179,7 @@ impl<
 		log::trace!(target: "dip::consumer::ParachainDipDidProofV0", "Calculated storage key for para ID {:#?} = {:#?}", provider_para_id, provider_head_storage_key);
 		// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
 		//This could be the reason (and the solution): https://substrate.stackexchange.com/a/1891/1795
-		let provider_header = verify_storage_value_proof_with_decoder::<_, RelayHasher, ProviderHeader>(
+		let provider_header = verify_storage_value_proof_with_decoder::<_, RelayHasher, _, ProviderHeader, _>(
 			&provider_head_storage_key,
 			*relay_state_root,
 			self.provider_head_proof.proof,
@@ -187,6 +187,7 @@ impl<
 				if input.len() < 2 {
 					return None;
 				}
+				#[allow(clippy::indexing_slicing)]
 				let mut trimmed_input = &input[2..];
 				ProviderHeader::decode(&mut trimmed_input).ok()
 			},
@@ -325,12 +326,13 @@ impl<
 		let dip_commitment_storage_key =
 			calculate_dip_identity_commitment_storage_key_for_runtime::<ProviderRuntime>(subject, 0);
 		log::trace!(target: "dip::consumer::DipDidProofWithVerifiedStateRootV0", "Calculated storage key for subject {:#?} = {:#?}", subject, dip_commitment_storage_key);
-		let dip_commitment = verify_storage_value_proof::<_, ParachainHasher, IdentityCommitmentOf<ProviderRuntime>>(
-			&dip_commitment_storage_key,
-			self.state_root,
-			self.dip_commitment_proof.0,
-		)
-		.map_err(Error::DipCommitmentMerkleProof)?;
+		let dip_commitment =
+			verify_storage_value_proof::<_, ParachainHasher, IdentityCommitmentOf<ProviderRuntime>, _>(
+				&dip_commitment_storage_key,
+				self.state_root,
+				self.dip_commitment_proof.0,
+			)
+			.map_err(Error::DipCommitmentMerkleProof)?;
 		Ok(DipDidProofWithVerifiedSubjectCommitment {
 			dip_commitment,
 			dip_proof: self.dip_proof,
@@ -391,7 +393,7 @@ impl<
 		ConsumerBlockNumber,
 	>
 {
-	pub fn new(
+	pub const fn new(
 		dip_commitment: Commitment,
 		dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
 		signature: TimeBoundDidSignature<ConsumerBlockNumber>,
@@ -453,7 +455,7 @@ impl<
 		DidMerkleHasher: Hash<Output = Commitment>,
 	{
 		ensure!(
-			self.dip_proof.revealed.len() <= MAX_REVEALED_LEAVES_COUNT.saturated_into(),
+			self.dip_proof.revealed.len() <= MAX_REVEALED_LEAVES_COUNT.saturated_into::<usize>(),
 			Error::TooManyLeavesRevealed
 		);
 

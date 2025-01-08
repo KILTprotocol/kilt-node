@@ -39,8 +39,7 @@ fn reclaim_deposit_successful() {
 	let key = DepositKeyOf::<TestRuntime>::default();
 	ExtBuilder::default()
 		.with_deposits(vec![(namespace.clone(), key.clone(), deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_some());
 			assert_eq!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &OWNER), 10_000);
 
@@ -57,7 +56,7 @@ fn reclaim_deposit_successful() {
 
 #[test]
 fn reclaim_deposit_not_found() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<TestRuntime>::reclaim_deposit(
 				RawOrigin::Signed(OWNER).into(),
@@ -82,8 +81,7 @@ fn reclaim_deposit_unauthorized() {
 	let key = DepositKeyOf::<TestRuntime>::default();
 	ExtBuilder::default()
 		.with_deposits(vec![(namespace.clone(), key.clone(), deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<TestRuntime>::reclaim_deposit(
 					RawOrigin::Signed(OTHER_ACCOUNT).into(),

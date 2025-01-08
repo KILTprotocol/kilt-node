@@ -17,28 +17,40 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use core::{marker::PhantomData, ops::ControlFlow};
+use cumulus_primitives_core::AggregateMessageOrigin;
 use frame_support::{match_types, parameter_types, traits::ProcessMessageError, weights::Weight};
 use polkadot_parachain::primitives::Sibling;
-use xcm::v3::prelude::*;
-use xcm_builder::{AccountId32Aliases, CurrencyAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};
+use sp_runtime::Perbill;
+use xcm::v4::prelude::*;
+use xcm_builder::{AccountId32Aliases, FungibleAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};
 use xcm_executor::traits::{Properties, ShouldExecute};
 
-use crate::AccountId;
+use crate::{AccountId, BlockWeights};
+
+#[allow(clippy::arithmetic_side_effects)]
+#[inline]
+fn service_weight() -> Weight {
+	Perbill::from_percent(35) * BlockWeights::get().max_block
+}
 
 parameter_types! {
 	// One XCM operation is 200_000_000 weight, cross-chain transfer ~= 2x of transfer.
 	pub UnitWeightCost: Weight = Weight::from_parts(200_000_000, 0);
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
+	pub const MaxStale: u32 = 8;
+	pub const HeapSize: u32 = 64 * 1024;
+	pub ServiceWeight: Weight = service_weight();
+	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
 match_types! {
-	pub type ParentLocation: impl Contains<MultiLocation> = {
-		MultiLocation { parents: 1, interior: Here}
+	pub type ParentLocation: impl Contains<Location> = {
+		Location { parents: 1, interior: Here}
 	};
-	pub type ParentOrSiblings: impl Contains<MultiLocation> = {
-		MultiLocation { parents: 1, interior: Here } |
-		MultiLocation { parents: 1, interior: X1(_) }
+	pub type ParentOrSiblings: impl Contains<Location> = {
+		Location { parents: 1, interior: Here } |
+		Location { parents: 1, interior:  Junctions::X1(_) }
 	};
 }
 
@@ -54,7 +66,7 @@ where
 	Allow: ShouldExecute,
 {
 	fn should_execute<Call>(
-		origin: &MultiLocation,
+		origin: &Location,
 		instructions: &mut [Instruction<Call>],
 		max_weight: Weight,
 		properties: &mut Properties,
@@ -69,7 +81,7 @@ where
 pub struct DenyReserveTransferToRelayChain;
 impl ShouldExecute for DenyReserveTransferToRelayChain {
 	fn should_execute<RuntimeCall>(
-		origin: &MultiLocation,
+		origin: &Location,
 		message: &mut [Instruction<RuntimeCall>],
 		_max_weight: Weight,
 		_properties: &mut Properties,
@@ -79,21 +91,28 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 			|_| true,
 			|inst| match inst {
 				InitiateReserveWithdraw {
-					reserve: MultiLocation {
+					reserve: Location {
 						parents: 1,
 						interior: Here,
 					},
 					..
 				}
 				| DepositReserveAsset {
-					dest: MultiLocation {
+					dest: Location {
 						parents: 1,
 						interior: Here,
 					},
 					..
 				}
 				| TransferReserveAsset {
-					dest: MultiLocation {
+					dest: Location {
+						parents: 1,
+						interior: Here,
+					},
+					..
+				}
+				| TransferAsset {
+					beneficiary: Location {
 						parents: 1,
 						interior: Here,
 					},
@@ -102,22 +121,17 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 					Err(ProcessMessageError::Unsupported) // Deny
 				}
 
-				// An unexpected reserve transfer has arrived from the Relay Chain. Generally,
-				// `IsReserve` should not allow this, but we just log it here.
+				// We don't accept DOTs from the relay chain for the moment. Only AH should pass.
 				ReserveAssetDeposited { .. }
 					if matches!(
 						origin,
-						MultiLocation {
+						Location {
 							parents: 1,
 							interior: Here
 						}
 					) =>
 				{
-					log::warn!(
-						target: "xcm::barrier",
-						"Unexpected ReserveAssetDeposited from the Relay Chain",
-					);
-					Ok(ControlFlow::Continue(()))
+					Err(ProcessMessageError::Unsupported) // Deny
 				}
 
 				_ => Ok(ControlFlow::Continue(())),
@@ -130,11 +144,11 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 }
 
 parameter_types! {
-	pub const RelayLocation: MultiLocation = MultiLocation::parent();
-	pub const HereLocation: MultiLocation = MultiLocation::here();
+	pub const RelayLocation: Location = Location::parent();
+	pub const HereLocation: Location = Location::here();
 }
 
-/// Type for specifying how a `MultiLocation` can be converted into an
+/// Type for specifying how a `Location` can be converted into an
 /// `AccountId`. This is used when determining ownership of accounts for asset
 /// transacting and when attempting to use XCM `Transact` in order to determine
 /// the dispatch Origin.
@@ -148,12 +162,12 @@ pub type LocationToAccountId<NetworkId> = (
 );
 
 /// Means for transacting assets on this chain.
-pub type LocalAssetTransactor<Currency, NetworkId> = CurrencyAdapter<
+pub type LocalAssetTransactor<Currency, NetworkId> = FungibleAdapter<
 	// Use this currency:
 	Currency,
 	// Use this currency when it is a fungible asset matching the given location or name:
 	IsConcrete<HereLocation>,
-	// Do a simple punn to convert an AccountId32 MultiLocation into a native chain account ID:
+	// Do a simple punn to convert an AccountId32 Location into a native chain account ID:
 	LocationToAccountId<NetworkId>,
 	// Our chain's account ID type (we can't get away without mentioning it explicitly):
 	AccountId,

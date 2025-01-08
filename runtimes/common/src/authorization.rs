@@ -50,8 +50,8 @@ where
 		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_revoke(who, ctype, claim, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_revoke(who, ctype, claim, delegation_id)
 	}
 
 	fn can_remove(
@@ -61,8 +61,8 @@ where
 		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_remove(who, ctype, claim, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_remove(who, ctype, claim, delegation_id)
 	}
 
 	fn authorization_id(&self) -> AuthorizationId<DelegationId> {
@@ -107,8 +107,8 @@ where
 		credential_id: &CredentialId,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_revoke(who, ctype, credential_id, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_revoke(who, ctype, credential_id, delegation_id)
 	}
 
 	fn can_unrevoke(
@@ -118,8 +118,8 @@ where
 		credential_id: &CredentialId,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_unrevoke(who, ctype, credential_id, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_unrevoke(who, ctype, credential_id, delegation_id)
 	}
 
 	fn can_remove(
@@ -129,8 +129,8 @@ where
 		credential_id: &CredentialId,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_remove(who, ctype, credential_id, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_remove(who, ctype, credential_id, delegation_id)
 	}
 
 	fn authorization_id(&self) -> AuthorizationId<DelegationId> {

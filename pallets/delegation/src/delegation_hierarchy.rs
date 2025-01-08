@@ -37,7 +37,8 @@ bitflags! {
 
 impl Permissions {
 	/// Encode permission bitflags into u8 array.
-	pub fn as_u8(self) -> [u8; 4] {
+	#[allow(clippy::as_conversions)]
+	pub const fn as_u8(self) -> [u8; 4] {
 		let x: u32 = self.bits;
 		let b1: u8 = ((x >> 24) & 0xff) as u8;
 		let b2: u8 = ((x >> 16) & 0xff) as u8;
@@ -141,7 +142,7 @@ impl<DelegatorId> DelegationDetails<DelegatorId> {
 	///
 	/// The default revocation status is false and all permissions are granted
 	/// by default.
-	pub fn default_with_owner(owner: DelegatorId) -> Self {
+	pub const fn default_with_owner(owner: DelegatorId) -> Self {
 		Self {
 			owner,
 			permissions: Permissions::all(),
