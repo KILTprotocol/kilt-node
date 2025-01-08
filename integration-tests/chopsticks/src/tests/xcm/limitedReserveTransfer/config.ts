@@ -65,7 +65,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			),
 			pallets: {
 				sender: ['xcmpQueue', 'polkadotXcm'],
-				receiver: ['xcmpQueue'],
+				receiver: ['messageQueue'],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -112,7 +112,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			),
 			pallets: {
 				sender: ['xcmpQueue', 'polkadotXcm', { section: 'balances', method: 'Withdraw' }],
-				receiver: ['xcmpQueue', 'tokens', 'currencies'],
+				receiver: ['messageQueue', 'tokens', 'currencies'],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -157,7 +157,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			),
 			pallets: {
 				sender: ['xcmpQueue', 'polkadotXcm'],
-				receiver: ['xcmpQueue'],
+				receiver: ['messageQueue'],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -204,7 +204,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			),
 			pallets: {
 				sender: ['xcmpQueue', 'polkadotXcm', { section: 'balances', method: 'Withdraw' }],
-				receiver: ['xcmpQueue', 'tokens', 'currencies'],
+				receiver: ['messageQueue', 'tokens', 'currencies'],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},

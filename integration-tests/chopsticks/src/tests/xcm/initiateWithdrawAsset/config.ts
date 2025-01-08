@@ -67,7 +67,7 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			),
 			pallets: {
 				sender: ['xcmpQueue'],
-				receiver: ['xcmpQueue', { section: 'system', method: 'NewAccount' }],
+				receiver: ['messageQueue', { section: 'system', method: 'NewAccount' }],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -109,7 +109,7 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 	// 		tx: tx.xtokens.transfer(HydraDxConfig.kiltTokenId, tx.xtokens.parachainV3(SpiritnetConfig.paraId)),
 	// 		pallets: {
 	// 			sender: ['xcmpQueue'],
-	// 			receiver: ['xcmpQueue', { section: 'system', method: 'NewAccount' }],
+	// 			receiver: ['messageQueue', { section: 'system', method: 'NewAccount' }],
 	// 		},
 	// 		balanceToTransfer: BigInt(1e15),
 	// 	},
@@ -160,8 +160,9 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			pallets: {
 				sender: ['xcmpQueue', { section: 'currencies', method: 'Withdrawn' }],
 				receiver: [
-					'xcmpQueue',
-					{ section: 'balances', method: 'Withdraw' },
+					'messageQueue',
+					{ section: 'balances', method: 'Burned' },
+					{ section: 'balances', method: 'Minted' },
 					{ section: 'system', method: 'NewAccount' },
 				],
 			},

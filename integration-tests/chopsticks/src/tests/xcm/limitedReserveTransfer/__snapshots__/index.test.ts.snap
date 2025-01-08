@@ -23,6 +23,26 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
 ]
 `;
 
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver events "messageQueue" 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": "(rounded 2100)",
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
+
 exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver events "tokens" 1`] = `
 [
   {
@@ -54,8 +74,6 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
   },
 ]
 `;
-
-exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver events "xcmpQueue" 1`] = `[]`;
 
 exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events "polkadotXcm" 1`] = `
 [
@@ -238,6 +256,26 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver even
 ]
 `;
 
+exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver events "messageQueue" 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": "(rounded 2100)",
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
+
 exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver events "tokens" 1`] = `
 [
   {
@@ -269,8 +307,6 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver even
   },
 ]
 `;
-
-exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver events "xcmpQueue" 1`] = `[]`;
 
 exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events "polkadotXcm" 1`] = `
 [
@@ -430,7 +466,25 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events
 ]
 `;
 
-exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > receiver events "xcmpQueue" 1`] = `[]`;
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > receiver events "messageQueue" 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": "(rounded 2100)",
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
 
 exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "polkadotXcm" 1`] = `
 [
@@ -577,7 +631,25 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx live V2 > sender events "xc
 ]
 `;
 
-exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > receiver events "xcmpQueue" 1`] = `[]`;
+exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > receiver events "messageQueue" 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": "(rounded 2100)",
+      },
+      "success": true,
+      "weightUsed": {
+        "proofSize": 0,
+        "refTime": 400000000,
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
+  },
+]
+`;
 
 exports[`Limited Reserve Transfers > Kilt -> HydraDx live V3 > sender events "polkadotXcm" 1`] = `
 [
