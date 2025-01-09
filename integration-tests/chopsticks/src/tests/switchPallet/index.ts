@@ -62,3 +62,23 @@ export async function checkSwitchPalletInvariant(
 	expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
 	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + deltaStoredSovereignSupply)
 }
+
+export async function getPoolAccount(context: SetupConfig) {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const switchPairInfo: any = await context.api.query.assetSwitchPool1.switchPair()
+	if (switchPairInfo.isNone) {
+		return
+	}
+	return switchPairInfo.unwrap().poolAccount
+}
+
+export async function getRemoteLockedSupply(context: SetupConfig): Promise<bigint> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const switchPairInfo: any = await context.api.query.assetSwitchPool1.switchPair()
+
+	if (switchPairInfo.isNone) {
+		return BigInt(0)
+	}
+
+	return switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
+}
