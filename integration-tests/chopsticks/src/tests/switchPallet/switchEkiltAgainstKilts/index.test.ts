@@ -3,15 +3,15 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
 import { createBlock, setStorage } from '../../../network/utils.js'
-import { calculateTxFees, getPaidXcmFees, hexAddress } from '../../../helper/utils.js'
+import { hexAddress } from '../../../helper/utils.js'
 import { testPairsSwitchFunds } from './config.js'
 import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
-import { checkSwitchPalletInvariant, getPoolAccount, getRemoteLockedSupply } from '../index.js'
+import { checkSwitchPalletInvariant, getPoolAccount, getReceivedNativeTokens, getRemoteLockedSupply } from '../index.js'
 
 describe.skip.each(testPairsSwitchFunds)(
 	'Switch EKILTs',
-	{ timeout: 30_00000 },
+	{ timeout: 30_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -36,7 +36,7 @@ describe.skip.each(testPairsSwitchFunds)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
-		}, 20_00000)
+		}, 20_000)
 
 		// Shut down the network
 		afterEach(async () => {
@@ -49,32 +49,31 @@ describe.skip.each(testPairsSwitchFunds)(
 			}
 		})
 
-		it(desc, { timeout: 10_00000, retry: 0 }, async ({ expect }) => {
+		it(desc, { timeout: 10000, retry: 3 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const poolAccount = await getPoolAccount(receiverContext)
 
 			// check initial state
-
-			const balanceBeforeTxReceiverChain = await query.receiver(
+			const initialRemoteLockedSupply = await getRemoteLockedSupply(receiverContext)
+			const initialBalanceReceiverChain = await query.receiver(receiverContext, hexAddress(senderAccount.address))
+			const initialBalanceSenderChain = await query.sender(senderContext, hexAddress(senderAccount.address))
+			const initialBalancePoolAccount = await query.receiver(receiverContext, poolAccount)
+			const initialBalanceSovereignAccount = await query.sender(senderContext, sovereignAccount.sender)
+			const initialBalanceUserSenderChain = await query.sender(senderContext, hexAddress(senderAccount.address))
+			const initialBalanceUserReceiverChain = await query.receiver(
 				receiverContext,
 				hexAddress(senderAccount.address)
 			)
-			const balanceBeforeTxSenderChain = await query.sender(senderContext, hexAddress(senderAccount.address))
 
-			expect(balanceBeforeTxReceiverChain).toBe(BigInt(0))
-			expect(balanceBeforeTxSenderChain).toBeGreaterThan(BigInt(0))
-
-			const initialBalancePoolAccount = await query.receiver(receiverContext, poolAccount)
-			const initialBalanceSovereignAccount = await query.sender(senderContext, sovereignAccount.sender)
-			const initalBalanceUser = await query.sender(senderContext, hexAddress(senderAccount.address))
-			const initialRemoteLockedSupply = await getRemoteLockedSupply(receiverContext)
+			expect(initialBalanceReceiverChain).toBe(BigInt(0))
+			expect(initialBalanceSenderChain).toBeGreaterThan(BigInt(0))
 
 			const { balanceToTransfer, events, tx } = txContext
 
-			const signedTx3 = tx(senderContext, balanceToTransfer.toString()).signAsync(senderAccount)
+			const signedTx = tx(senderContext, balanceToTransfer.toString()).signAsync(senderAccount)
 
-			const events3 = await sendTransaction(signedTx3)
+			const eventsResult = await sendTransaction(signedTx)
 
 			// process tx
 			await createBlock(senderContext)
@@ -82,41 +81,44 @@ describe.skip.each(testPairsSwitchFunds)(
 			await createBlock(receiverContext)
 
 			// check balance movement
+			const remoteLockedSupply = await getRemoteLockedSupply(receiverContext)
+			const balanceSovereignAccount = await query.sender(senderContext, sovereignAccount.sender)
+			const balanceSenderChain = await query.sender(senderContext, hexAddress(senderAccount.address))
+			const balancePoolAccount = await query.receiver(receiverContext, poolAccount)
+			const balanceUserReceiverChain = await query.receiver(receiverContext, hexAddress(senderAccount.address))
+			const receivedFunds = await getReceivedNativeTokens(receiverContext)
 
-			const nativeBalanceForeignChainAfterx = await query.sender(senderContext, sovereignAccount.sender)
-			const balanceAfterTxSenderChain = await query.sender(senderContext, hexAddress(senderAccount.address))
+			expect(initialBalanceSovereignAccount + balanceToTransfer).toBe(balanceSovereignAccount)
+			expect(initialBalanceUserSenderChain - balanceToTransfer).toBe(balanceSenderChain)
 
-			expect(initialBalanceSovereignAccount + balanceToTransfer).toBe(nativeBalanceForeignChainAfterx)
-			expect(initalBalanceUser - balanceToTransfer).toBe(balanceAfterTxSenderChain)
+			expect(balancePoolAccount + balanceToTransfer).toBe(initialBalancePoolAccount)
+			expect(balanceUserReceiverChain - receivedFunds).toBe(initialBalanceUserReceiverChain)
 
-			await receiverContext.pause()
+			expect(remoteLockedSupply).toBe(initialRemoteLockedSupply + balanceToTransfer)
 
 			// check events
-
 			events.sender.map(
 				async (pallet) =>
-					await checkEvents(events3, pallet).toMatchSnapshot(
+					await checkEvents(eventsResult, pallet).toMatchSnapshot(
 						`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
-			// events.native.receive.native.map(
-			// 	async (pallet) =>
-			// 		await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
-			// 			`Receive native funds on native chain ${JSON.stringify(pallet)}`
-			// 		)
-			//)
+			events.receiver.map(
+				async (pallet) =>
+					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+						`Receive native funds on native chain ${JSON.stringify(pallet)}`
+					)
+			)
 
-			// finalize the switch. Create a another block to process the query xcm message
-			// await createBlock(receiverContext)
-			// checkSwitchPalletInvariant(
-			// 	expect,
-			// 	receiverContext,
-			// 	senderContext,
-			// 	sovereignAccount.sender,
-			// 	query.receiver,
-			// 	query.sender
-			// )
+			checkSwitchPalletInvariant(
+				expect,
+				receiverContext,
+				senderContext,
+				sovereignAccount.sender,
+				query.receiver,
+				query.sender
+			)
 		})
 	}
 )

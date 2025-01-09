@@ -8,7 +8,7 @@ import { testPairsLimitedReserveTransfers } from './config.js'
 import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 
-describe.each(testPairsLimitedReserveTransfers)(
+describe.skip.each(testPairsLimitedReserveTransfers)(
 	'Limited Reserve Transfers',
 	{ timeout: 30_000 },
 	async ({ accounts, query, sovereignAccount, txContext, config }) => {

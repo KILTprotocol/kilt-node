@@ -1,7 +1,8 @@
 import { ExpectStatic } from 'vitest'
-import { hexAddress } from '../../helper/utils.js'
 import { ApiPromise } from '@polkadot/api'
 import { SetupConfig } from '@acala-network/chopsticks-testing'
+
+import { hexAddress } from '../../helper/utils.js'
 
 export function getXcmMessageV4ToSendEkilt(address: string) {
 	return {
@@ -81,4 +82,19 @@ export async function getRemoteLockedSupply(context: SetupConfig): Promise<bigin
 	}
 
 	return switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
+}
+
+export async function getReceivedNativeTokens({ api }: { api: ApiPromise }): Promise<bigint> {
+	const events = await api.query.system.events()
+
+	const polkadotFees = events.filter(
+		(event) =>
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(event as any).event.data.section === 'assetSwitchPool1' &&
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(event as any).event.data.method === 'RemoteToLocalSwitchExecuted'
+	)[0]
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return BigInt((polkadotFees as any).event.data.amount.toString())
 }

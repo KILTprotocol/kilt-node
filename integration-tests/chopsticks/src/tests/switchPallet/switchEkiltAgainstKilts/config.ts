@@ -89,8 +89,8 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 				],
 
 				receiver: [
-					{ section: 'assetSwitchPool1', method: 'LocalToRemoteSwitchExecuted' },
-					{ section: 'fungibles', method: 'Burned' },
+					{ section: 'assetSwitchPool1', method: 'RemoteToLocalSwitchExecuted' },
+					{ section: 'messageQueue', method: 'Processed' },
 				],
 			},
 			balanceToTransfer: BigInt(1e15),
