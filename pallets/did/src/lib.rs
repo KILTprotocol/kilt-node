@@ -88,6 +88,7 @@ pub mod errors;
 pub mod migrations;
 pub mod origin;
 pub mod service_endpoints;
+pub mod traits;
 
 #[cfg(test)]
 mod mock;
@@ -171,6 +172,7 @@ pub mod pallet {
 			DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey, RelationshipDeriveError,
 		},
 		service_endpoints::{utils as service_endpoints_utils, ServiceEndpointId},
+		traits::{DidDeletionHook, DidLifecycleHooks},
 	};
 
 	/// The current storage version.
@@ -328,6 +330,8 @@ pub mod pallet {
 
 		/// Migration manager to handle new created entries
 		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
+
+		type DidLifecycleHooks: DidLifecycleHooks<Self>;
 	}
 
 	#[pallet::pallet]
@@ -455,6 +459,9 @@ pub mod pallet {
 		/// The number of service endpoints stored under the DID is larger than
 		/// the number of endpoints to delete.
 		MaxStoredEndpointsCountExceeded,
+		/// The DID cannot be deleted because other resources are depending on
+		/// it.
+		CannotDelete,
 		/// An error that is not supposed to take place, yet it happened.
 		Internal,
 	}
@@ -972,7 +979,10 @@ pub mod pallet {
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
 		#[pallet::call_index(10)]
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete(*endpoints_to_remove))]
+		#[pallet::weight({
+			let max_hook_weight = <<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::MAX_WEIGHT;
+			<T as pallet::Config>::WeightInfo::delete(*endpoints_to_remove).saturating_add(max_hook_weight)
+		})]
 		pub fn delete(origin: OriginFor<T>, endpoints_to_remove: u32) -> DispatchResult {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
 			let did_subject = source.subject();
@@ -1002,7 +1012,10 @@ pub mod pallet {
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
 		#[pallet::call_index(11)]
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit(*endpoints_to_remove))]
+		#[pallet::weight({
+			let max_hook_weight = <<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::MAX_WEIGHT;
+			<T as pallet::Config>::WeightInfo::reclaim_deposit(*endpoints_to_remove).saturating_add(max_hook_weight)
+		})]
 		pub fn reclaim_deposit(
 			origin: OriginFor<T>,
 			did_subject: DidIdentifierOf<T>,
@@ -1491,6 +1504,17 @@ pub mod pallet {
 		/// endpoints, adds the identifier to the blacklisted DIDs and frees the
 		/// deposit.
 		pub fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
+			let Ok(()) =
+				<<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::can_delete(
+					&did_subject,
+				)
+			else {
+				return Err(Error::<T>::CannotDelete.into());
+			};
+			// <<T::DidLifecycleHooks as DidDeletionHook<T>>::DidDeletionHook as
+			// DidDeletionHook<T>>::can_delete( 	&did_subject,
+			// )?;
+
 			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 			ensure!(
 				current_endpoints_count <= endpoints_to_remove,
