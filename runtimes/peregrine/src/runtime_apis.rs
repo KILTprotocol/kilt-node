@@ -14,6 +14,7 @@ use frame_support::{
 		PalletInfoAccess,
 	},
 	weights::Weight,
+	Hashable,
 };
 use kilt_runtime_api_did::RawDidLinkedInfo;
 use kilt_support::traits::ItemFilter;
@@ -624,7 +625,12 @@ impl_runtime_apis! {
 				}),
 			};
 
+			let currency_ids = bonded_currencies.iter().map(|id| id.to_owned()).collect::<Vec<_>>();
+
+			let pool_id = AccountId::from(currency_ids.blake2_256());
+
 			Ok(PoolDetails {
+				id: pool_id,
 				bonded_currencies: currencies,
 				curve: fmt_curve,
 				collateral: collateral_details,
