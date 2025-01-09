@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 pub(super) mod dot_names {
+	use did::origin::AuthorisedSubmitter;
 	use frame_support::{pallet_prelude::OptionQuery, storage_alias, traits::PalletInfoAccess};
 	use sp_core::Get;
 	use sp_std::marker::PhantomData;
@@ -37,19 +38,22 @@ pub(super) mod dot_names {
 	/// without the pallet knowing about it.
 	pub struct AllowedDotNameClaimer<DotNamesDeployment>(PhantomData<DotNamesDeployment>);
 
-	impl<DotNamesDeployment> Get<Option<AccountId>> for AllowedDotNameClaimer<DotNamesDeployment>
+	impl<DotNamesDeployment> Get<AuthorisedSubmitter<AccountId>> for AllowedDotNameClaimer<DotNamesDeployment>
 	where
 		DotNamesDeployment: PalletInfoAccess,
 	{
-		fn get() -> Option<AccountId> {
+		fn get() -> AuthorisedSubmitter<AccountId> {
 			let stored_account = AllowedDotNameClaimerStorage::<DotNamesDeployment>::get();
 			log::trace!(target: LOG_TARGET, "Stored value for DotNames authorized account: {:#?}", stored_account);
-			stored_account
+			stored_account.map_or(AuthorisedSubmitter::None, |authorised_account| {
+				authorised_account.into()
+			})
 		}
 	}
 }
 
 pub(super) mod unique_linking {
+	use did::origin::AuthorisedSubmitter;
 	use frame_support::{pallet_prelude::OptionQuery, storage_alias, traits::PalletInfoAccess};
 	use sp_core::Get;
 	use sp_std::marker::PhantomData;
@@ -70,14 +74,17 @@ pub(super) mod unique_linking {
 	/// pallet, without the pallet knowing about it.
 	pub struct AllowedUniqueLinkingAssociator<UniqueLinkingDeployment>(PhantomData<UniqueLinkingDeployment>);
 
-	impl<UniqueLinkingDeployment> Get<Option<AccountId>> for AllowedUniqueLinkingAssociator<UniqueLinkingDeployment>
+	impl<UniqueLinkingDeployment> Get<AuthorisedSubmitter<AccountId>>
+		for AllowedUniqueLinkingAssociator<UniqueLinkingDeployment>
 	where
 		UniqueLinkingDeployment: PalletInfoAccess,
 	{
-		fn get() -> Option<AccountId> {
+		fn get() -> AuthorisedSubmitter<AccountId> {
 			let stored_account = AllowedUniqueLinkingAssociatorStorage::<UniqueLinkingDeployment>::get();
 			log::trace!(target: LOG_TARGET, "Stored value for UniqueLinking authorized account: {:#?}", stored_account);
-			stored_account
+			stored_account.map_or(AuthorisedSubmitter::None, |authorised_account| {
+				authorised_account.into()
+			})
 		}
 	}
 }
