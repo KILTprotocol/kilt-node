@@ -1,6 +1,6 @@
 import { SetupOption } from '@acala-network/chopsticks-testing'
 
-import { initialBalanceKILT, toNumber } from '../../helper/utils.js'
+import { initialBalanceDOT, initialBalanceKILT, toNumber } from '../../helper/utils.js'
 
 /// Options used to create the Spiritnet context
 export const getSetupOptions = ({
@@ -33,6 +33,17 @@ export const storage = {
 		return {
 			technicalCommittee: { Members: addr },
 			council: { Members: addr },
+		}
+	},
+	/// Assigns the relay token to the account.
+	assignRelayTokensToAccounts(addr: string[], balance: bigint = initialBalanceDOT) {
+		return {
+			fungibles: {
+				account: addr.map((acc) => [
+					[{ parents: 1, interior: 'here' }, acc],
+					{ balance: balance, status: 'Liquid', reason: 'Consumer', extra: null },
+				]),
+			},
 		}
 	},
 }
