@@ -83,10 +83,8 @@ describe.each(testPairsSwitchFunds)(
 			const balanceUserReceiverChain = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 
 			expect(initialBalanceUserSenderChain - balanceToTransfer - txFees).toBe(balanceSenderChain)
-
 			expect(initialBalancePoolAccount).toBe(balancePoolAccount - balanceToTransfer)
 			expect(balanceUserReceiverChain).toBeGreaterThan(BigInt(0))
-
 			expect(remoteLockedSupply).toBe(initialRemoteLockedSupply - balanceToTransfer)
 
 			// check events
