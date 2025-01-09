@@ -33,7 +33,7 @@ interface TxContext {
 	// amount of funds to transfer
 	balanceToTransfer: bigint
 	// transactions to execute
-	tx: ({ api }: { api: ApiPromise }, submitter: string, amount: string | number) => SubmittableExtrinsic<'promise'>
+	tx: ({ api }: { api: ApiPromise }, amount: string) => SubmittableExtrinsic<'promise'>
 	// events to check after the transaction
 	events: Events
 }
@@ -59,10 +59,7 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 				parachains: [mainChains.assetHub.getConfig({}), mainChains.kilt.getConfig({})],
 			},
 			storage: {
-				receiverStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
-					[keysAlice.address],
-					initialBalanceKILT
-				),
+				receiverStorage: {},
 				senderStorage: {
 					// Assign some coins to create the account.
 					...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
@@ -87,8 +84,8 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 			),
 			events: {
 				sender: [
-					{ section: 'assetSwitchPool1', method: 'LocalToRemoteSwitchExecuted' },
-					{ section: 'fungibles', method: 'Burned' },
+					{ section: 'foreignAssets', method: 'Transferred' },
+					{ section: 'polkadotXcm', method: 'Sent' },
 				],
 
 				receiver: [
@@ -99,8 +96,8 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 			balanceToTransfer: BigInt(1e15),
 		},
 		sovereignAccount: {
-			sender: mainChains.assetHub.chainInfo.sovereignAccountOnSiblingChains,
-			receiver: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
+			sender: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
+			receiver: mainChains.assetHub.chainInfo.sovereignAccountOnSiblingChains,
 		},
 	},
 ] as const

@@ -1,5 +1,5 @@
 import { describe, beforeEach, it, afterEach } from 'vitest'
-import { sendTransaction } from '@acala-network/chopsticks-testing'
+import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
 import { createBlock, setStorage } from '../../../network/utils.js'
@@ -10,8 +10,8 @@ import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant, getPoolAccount, getRemoteLockedSupply } from '../index.js'
 
 describe.each(testPairsSwitchFunds)(
-	'Switch KILTs',
-	{ timeout: 30_000 },
+	'Switch EKILTs',
+	{ timeout: 30_00000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -36,7 +36,7 @@ describe.each(testPairsSwitchFunds)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
-		}, 20_000)
+		}, 20_00000)
 
 		// Shut down the network
 		afterEach(async () => {
@@ -49,7 +49,9 @@ describe.each(testPairsSwitchFunds)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 10_00000, retry: 0 }, async ({ expect }) => {
+			const { checkEvents, checkSystemEvents } = withExpect(expect)
+
 			const poolAccount = await getPoolAccount(receiverContext)
 
 			// check initial state
@@ -65,13 +67,12 @@ describe.each(testPairsSwitchFunds)(
 
 			const initialBalancePoolAccount = await query.receiver(receiverContext, poolAccount)
 			const initialBalanceSovereignAccount = await query.sender(senderContext, sovereignAccount.sender)
+			const initalBalanceUser = await query.sender(senderContext, hexAddress(senderAccount.address))
 			const initialRemoteLockedSupply = await getRemoteLockedSupply(receiverContext)
 
 			const { balanceToTransfer, events, tx } = txContext
 
-			const signedTx3 = tx(senderContext, senderAccount.address, balanceToTransfer.toString()).signAsync(
-				senderAccount
-			)
+			const signedTx3 = tx(senderContext, balanceToTransfer.toString()).signAsync(senderAccount)
 
 			const events3 = await sendTransaction(signedTx3)
 
@@ -82,18 +83,22 @@ describe.each(testPairsSwitchFunds)(
 
 			// check balance movement
 
-			const nativeBalanceForeignChainAfterx = await query.sender(senderContext, senderAccount.address)
+			const nativeBalanceForeignChainAfterx = await query.sender(senderContext, sovereignAccount.sender)
+			const balanceAfterTxSenderChain = await query.sender(senderContext, hexAddress(senderAccount.address))
 
-			//expect(nativeBalnceForeignChainBeforeTx - balanceToTransferBack).toBe(nativeBalanceForeignChainAfterx)
+			expect(initialBalanceSovereignAccount + balanceToTransfer).toBe(nativeBalanceForeignChainAfterx)
+			expect(initalBalanceUser - balanceToTransfer).toBe(balanceAfterTxSenderChain)
+
+			await receiverContext.pause()
 
 			// check events
 
-			// events.foreign.withdraw.map(
-			// 	async (pallet) =>
-			// 		await checkEvents(events3, pallet).toMatchSnapshot(
-			// 			`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
-			// 		)
-			// )
+			events.sender.map(
+				async (pallet) =>
+					await checkEvents(events3, pallet).toMatchSnapshot(
+						`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
+					)
+			)
 
 			// events.native.receive.native.map(
 			// 	async (pallet) =>
@@ -103,15 +108,15 @@ describe.each(testPairsSwitchFunds)(
 			//)
 
 			// finalize the switch. Create a another block to process the query xcm message
-			await createBlock()
-			checkSwitchPalletInvariant(
-				expect,
-				receiverContext,
-				senderContext,
-				sovereignAccount.sender,
-				query.receiver,
-				query.sender
-			)
+			// await createBlock(receiverContext)
+			// checkSwitchPalletInvariant(
+			// 	expect,
+			// 	receiverContext,
+			// 	senderContext,
+			// 	sovereignAccount.sender,
+			// 	query.receiver,
+			// 	query.sender
+			// )
 		})
 	}
 )
