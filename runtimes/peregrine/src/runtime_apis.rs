@@ -625,10 +625,6 @@ impl_runtime_apis! {
 				}),
 			};
 
-			let currency_ids = bonded_currencies.iter().map(|id| id.to_owned()).collect::<Vec<_>>();
-
-			let pool_id = AccountId::from(currency_ids.blake2_256());
-
 			Ok(PoolDetails {
 				id: pool_id,
 				bonded_currencies: currencies,
