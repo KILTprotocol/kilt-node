@@ -14,7 +14,6 @@ use frame_support::{
 		PalletInfoAccess,
 	},
 	weights::Weight,
-	Hashable,
 };
 use kilt_runtime_api_did::RawDidLinkedInfo;
 use kilt_support::traits::ItemFilter;
