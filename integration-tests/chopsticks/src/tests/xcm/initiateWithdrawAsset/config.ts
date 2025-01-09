@@ -78,47 +78,52 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 		},
 	},
 
-	// {
-	// 	config: {
-	// 		desc: 'HydraDx -> KILT DEV',
-	// 		precision: BigInt(96),
-	// 		network: {
-	// 			sender: PolkadotChainConfigs.all.hydraDx.getConfig({}),
-	// 			receiver: PolkadotChainConfigs.all.spiritnet.getConfig(PolkadotChainConfigs.all.spiritnet.parameters),
-	// 			relay: PolkadotChainConfigs.all.polkadot.getConfig({}),
-	// 		},
-	// 		storage: {
-	// 			senderStorage: {
-	// 				...HydraDxConfig.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
-	// 				...HydraDxConfig.assignNativeTokensToAccounts([keysAlice.address], initialBalanceHDX),
-	// 			},
-	// 			receiverStorage: {},
-	// 			relayStorage: {},
-	// 		},
-	// 	},
+	{
+		config: {
+			desc: 'HydraDx -> KILT DEV',
+			precision: BigInt(96),
+			network: {
+				parachains: [mainChains.hydration.getConfig({}), mainChains.kilt.getConfig(mainChains.kilt.parameters)],
+				relay: mainChains.polkadot.getConfig({}),
+			},
+			storage: {
+				senderStorage: {
+					...mainChains.hydration.storage.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
+					...mainChains.hydration.storage.assignNativeTokensToAccounts(
+						[keysAlice.address],
+						initialBalanceHDX
+					),
+				},
+				receiverStorage: {},
+				relayStorage: {},
+			},
+		},
 
-	// 	accounts: {
-	// 		senderAccount: keysAlice,
-	// 		receiverAccount: keysBob,
-	// 	},
-	// 	query: {
-	// 		sender: query.tokens(HydraDxConfig.kiltTokenId),
-	// 		receiver: query.balances,
-	// 	},
-	// 	txContext: {
-	// 		tx: tx.xtokens.transfer(HydraDxConfig.kiltTokenId, tx.xtokens.parachainV3(SpiritnetConfig.paraId)),
-	// 		pallets: {
-	// 			sender: ['xcmpQueue'],
-	// 			receiver: ['messageQueue', { section: 'system', method: 'NewAccount' }],
-	// 		},
-	// 		balanceToTransfer: BigInt(1e15),
-	// 	},
+		accounts: {
+			senderAccount: keysAlice,
+			receiverAccount: keysBob,
+		},
+		query: {
+			sender: query.tokens(mainChains.hydration.chainInfo.kiltTokenId),
+			receiver: query.balances,
+		},
+		txContext: {
+			tx: tx.xtokens.transfer(
+				mainChains.hydration.chainInfo.kiltTokenId,
+				tx.xtokens.parachainV3(mainChains.kilt.chainInfo.paraId)
+			),
+			pallets: {
+				sender: ['xcmpQueue'],
+				receiver: ['messageQueue', { section: 'system', method: 'NewAccount' }],
+			},
+			balanceToTransfer: BigInt(1e15),
+		},
 
-	// 	sovereignAccount: {
-	// 		sender: SpiritnetConfig.siblingSovereignAccount,
-	// 		receiver: HydraDxConfig.siblingSovereignAccount,
-	// 	},
-	// },
+		sovereignAccount: {
+			sender: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
+			receiver: mainChains.hydration.chainInfo.sovereignAccountOnSiblingChains,
+		},
+	},
 
 	{
 		config: {
