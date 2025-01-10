@@ -54,7 +54,7 @@ pub mod dot_names;
 pub use dot_names::DotName;
 pub mod did;
 pub mod errors;
-pub use did::LinkedWeb3NameDeletionHook;
+pub use did::EnsureNoLinkedWeb3NameDeletionHook;
 pub mod fees;
 pub mod migrations;
 pub mod pallet_id;

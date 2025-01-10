@@ -21,12 +21,14 @@ use sp_std::marker::PhantomData;
 
 use sp_weights::Weight;
 
-pub struct LinkedWeb3NameDeletionHook<const READ_WEIGHT_TIME: u64, const READ_WEIGHT_SIZE: u64, Web3NameDeployment>(
-	PhantomData<Web3NameDeployment>,
-);
+pub struct EnsureNoLinkedWeb3NameDeletionHook<
+	const READ_WEIGHT_TIME: u64,
+	const READ_WEIGHT_SIZE: u64,
+	Web3NameDeployment,
+>(PhantomData<Web3NameDeployment>);
 
 impl<T, const READ_WEIGHT_TIME: u64, const READ_WEIGHT_SIZE: u64, Web3NameDeployment> did::traits::DidDeletionHook<T>
-	for LinkedWeb3NameDeletionHook<READ_WEIGHT_SIZE, READ_WEIGHT_TIME, Web3NameDeployment>
+	for EnsureNoLinkedWeb3NameDeletionHook<READ_WEIGHT_SIZE, READ_WEIGHT_TIME, Web3NameDeployment>
 where
 	T: did::Config + pallet_web3_names::Config<Web3NameDeployment, Web3NameOwner = DidIdentifierOf<T>>,
 	Web3NameDeployment: 'static,
@@ -42,13 +44,15 @@ where
 	}
 }
 
-pub struct LinkedAccountDeletionHook<const READ_WEIGHT_TIME: u64, const READ_WEIGHT_SIZE: u64, AccountLinkingDeployment>(
-	PhantomData<AccountLinkingDeployment>,
-);
+pub struct EnsureNoLinkedAccountDeletionHook<
+	const READ_WEIGHT_TIME: u64,
+	const READ_WEIGHT_SIZE: u64,
+	AccountLinkingDeployment,
+>(PhantomData<AccountLinkingDeployment>);
 
 impl<T, const READ_WEIGHT_TIME: u64, const READ_WEIGHT_SIZE: u64, AccountLinkingDeployment>
 	did::traits::DidDeletionHook<T>
-	for LinkedAccountDeletionHook<READ_WEIGHT_SIZE, READ_WEIGHT_TIME, AccountLinkingDeployment>
+	for EnsureNoLinkedAccountDeletionHook<READ_WEIGHT_SIZE, READ_WEIGHT_TIME, AccountLinkingDeployment>
 where
 	T: did::Config + pallet_did_lookup::Config<AccountLinkingDeployment, DidIdentifier = DidIdentifierOf<T>>,
 	AccountLinkingDeployment: 'static,

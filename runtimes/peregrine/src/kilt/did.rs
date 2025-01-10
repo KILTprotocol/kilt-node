@@ -17,20 +17,21 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{
-	DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult, DidRawOrigin,
-	DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
+	traits::EvaluateAll, DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
+	DidRawOrigin, DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
 };
 use frame_system::EnsureRoot;
 use runtime_common::{
 	constants,
+	did::EnsureNoLinkedAccountDeletionHook,
 	dot_names::{AllowedDotNameClaimer, AllowedUniqueLinkingAssociator},
-	AccountId, DidIdentifier, SendDustAndFeesToTreasury,
+	AccountId, DidIdentifier, EnsureNoLinkedWeb3NameDeletionHook, SendDustAndFeesToTreasury,
 };
 use sp_core::ConstBool;
 
 use crate::{
-	weights, Balances, DotNames, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
-	UniqueLinking,
+	weights::{self, rocksdb_weights::constants::RocksDbWeight},
+	Balances, DotNames, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, UniqueLinking,
 };
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
@@ -86,6 +87,26 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	}
 }
 
+pub struct DidLifecycleHooks;
+
+impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
+	type DeletionHook = EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
+}
+
+type EnsureNoWeb3NameOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, ()>;
+type EnsureNoDotNameOnDeletion =
+	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, DotNamesDeployment>;
+type EnsureNoUsernamesOnDeletion = EvaluateAll<EnsureNoWeb3NameOnDeletion, EnsureNoDotNameOnDeletion>;
+
+type EnsureNoWeb3NameLinkedAccountsOnDeletion = EnsureNoLinkedAccountDeletionHook<{ RocksDbWeight::get().read }, 0, ()>;
+type EnsureNoDotNameLinkedAccountOnDeletion =
+	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, UniqueLinkingDeployment>;
+type EnsureNoLinkedAccountsOnDeletion =
+	EvaluateAll<EnsureNoWeb3NameLinkedAccountsOnDeletion, EnsureNoDotNameLinkedAccountOnDeletion>;
+
+pub type EnsureNoNamesAndNoLinkedAccountsOnDidDeletion =
+	EvaluateAll<EnsureNoUsernamesOnDeletion, EnsureNoLinkedAccountsOnDeletion>;
+
 impl did::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
@@ -121,6 +142,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
+	type DidLifecycleHooks = DidLifecycleHooks;
 }
 
 impl pallet_did_lookup::Config for Runtime {
