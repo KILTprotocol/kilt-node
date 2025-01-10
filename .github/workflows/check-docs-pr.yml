@@ -10,6 +10,9 @@ concurrency:
 jobs:
   check-docs-pr:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -29,7 +32,6 @@ jobs:
         env:
           DOCS_REPO: KILTprotocol/docs
           PR_NO: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           DOCS_PRS=$(gh pr list --repo $DOCS_REPO --json number,body,title --jq '.[]')
 
@@ -39,7 +41,6 @@ jobs:
             echo "MATCHING_DOCS_PR=false" >> $GITHUB_ENV
           else
             echo "MATCHING_DOCS_PR=true" >> $GITHUB_ENV
-          fi
 
       - name: Ensure Linked Docs PR
         if: env.SKIP_DOCS_PR_CHECK == 'false' && env.MATCHING_DOCS_PR == 'false'
