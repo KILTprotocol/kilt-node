@@ -39,7 +39,7 @@ where
 	const MAX_WEIGHT: Weight = Weight::from_parts(READ_WEIGHT_TIME, READ_WEIGHT_SIZE);
 
 	fn can_delete(did: &did::DidIdentifierOf<T>) -> Result<(), Weight> {
-		if pallet_web3_names::Names::<T, Web3NameDeployment>::contains_key(did) {
+		if !pallet_web3_names::Names::<T, Web3NameDeployment>::contains_key(did) {
 			Ok(())
 		} else {
 			Err(<Self as did::traits::DidDeletionHook<T>>::MAX_WEIGHT)

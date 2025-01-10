@@ -16,24 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#[cfg(test)]
+mod tests;
+
 use sp_std::marker::PhantomData;
 use sp_weights::Weight;
 
 use crate::{Config, DidIdentifierOf};
-
-pub trait DidLifecycleHooks<T>
-where
-	T: Config,
-{
-	type DeletionHook: DidDeletionHook<T>;
-}
-
-impl<T> DidLifecycleHooks<T> for ()
-where
-	T: Config,
-{
-	type DeletionHook = ();
-}
 
 pub trait DidDeletionHook<T>
 where
