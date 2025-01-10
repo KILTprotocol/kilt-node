@@ -13,6 +13,7 @@ version       = { workspace = true }
 [dev-dependencies]
 did                 = { workspace = true, features = ["mock", "std"] }
 enum-iterator       = { workspace = true }
+env_logger          = { workspace = true }
 kilt-dip-primitives = { workspace = true, features = ["std"] }
 sp-io               = { workspace = true, features = ["std"] }
 

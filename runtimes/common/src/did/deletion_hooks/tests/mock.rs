@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{traits::EvaluateAll, DidVerificationKeyRelationship};
+use did::{did_details::DidVerificationKey, traits::EvaluateAll, DidVerificationKeyRelationship};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchResult,
@@ -26,10 +26,11 @@ use frame_support::{
 		tokens::{DepositConsequence, Fortitude, Preservation, Provenance, WithdrawConsequence},
 	},
 };
-use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
+use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned, RawOrigin};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ConstBool, ConstU32, ConstU64, H256};
+use sp_io::TestExternalities;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32, DispatchError,
@@ -239,4 +240,45 @@ impl pallet_web3_names::Config for TestRuntime {
 	type BenchmarkHelper = ();
 }
 
-// TODO: Add `ExtBuilder`
+#[derive(Default)]
+pub(super) struct ExtBuilder(Vec<(AccountId32, Option<Web3Name>, bool)>);
+
+impl ExtBuilder {
+	pub(super) fn with_dids(mut self, did_links: Vec<(AccountId32, Option<Web3Name>, bool)>) -> Self {
+		self.0 = did_links;
+		self
+	}
+
+	pub(super) fn build(self) -> TestExternalities {
+		let _ = env_logger::try_init();
+		let mut ext = TestExternalities::default();
+
+		ext.execute_with(|| {
+			for (did, maybe_web3_name, should_link_account) in self.0 {
+				// Store DID.
+				Did::create_from_account(
+					RawOrigin::Signed(did.clone()).into(),
+					DidVerificationKey::Account(did.clone()),
+				)
+				.expect("Failed to create DID.");
+
+				// If specified, link web3name.
+				if let Some(web3_name) = maybe_web3_name {
+					Web3Names::claim(
+						RawOrigin::Signed(did.clone()).into(),
+						Vec::<u8>::from(web3_name.clone()).try_into().unwrap(),
+					)
+					.expect("Failed to link web3name.");
+				}
+
+				// If specified, link account.
+				if should_link_account {
+					LinkedAccounts::associate_sender(RawOrigin::Signed(did.clone()).into())
+						.expect("Failed to link account.");
+				}
+			}
+		});
+
+		ext
+	}
+}
