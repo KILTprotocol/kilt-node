@@ -18,7 +18,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check for Skip Label
-        id: check_skip_label
         run: |
           if gh pr view ${{ github.event.pull_request.number }} --json labels --jq '.labels | .[].name' | grep -q 'ci-skip-docs-pr'; then
             echo "SKIP_DOCS_PR_CHECK=true" >> $GITHUB_ENV
@@ -26,9 +25,8 @@ jobs:
             echo "SKIP_DOCS_PR_CHECK=false" >> $GITHUB_ENV
           fi
 
-      - name: Check for Linked Docs PR
+      - name: Ensure Linked Docs PR
         if: env.SKIP_DOCS_PR_CHECK == 'false'
-        id: check_docs_pr
         env:
           DOCS_REPO: KILTprotocol/docs
           PR_NO: ${{ github.event.pull_request.number }}
@@ -38,12 +36,8 @@ jobs:
           MATCHING_PR=$(echo "$DOCS_PRS" | jq -r "select(.body | contains(\"#${PR_NO}\") or .title | contains(\"#${PR_NO}\"))")
 
           if [ -z "$MATCHING_PR" ]; then
-            echo "MATCHING_DOCS_PR=false" >> $GITHUB_ENV
-          else
-            echo "MATCHING_DOCS_PR=true" >> $GITHUB_ENV
-
-      - name: Ensure Linked Docs PR
-        if: env.SKIP_DOCS_PR_CHECK == 'false' && env.MATCHING_DOCS_PR == 'false'
-        run: |
-          echo "Please link a docs PR #${{ github.event.pull_request.number }} or apply the 'ci-skip-docs-pr' label."
+            echo "Please link a docs PR for code PR #${PR_NO} or apply the 'ci-skip-docs-pr' label."
             exit 1
+          else
+            echo "Matching docs PR found for code PR #${PR_NOPR_NO}."
+          fi
