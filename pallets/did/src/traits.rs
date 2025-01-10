@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use sp_std::marker::PhantomData;
 use sp_weights::Weight;
 
 use crate::{Config, DidIdentifierOf};
@@ -52,6 +53,28 @@ where
 	const MAX_WEIGHT: Weight = Weight::from_parts(0, 0);
 
 	fn can_delete(_did: &DidIdentifierOf<T>) -> Result<(), Weight> {
+		Ok(())
+	}
+}
+
+/// Implementation of [`did::traits::DidDeletionHook`] that iterates over both
+/// components, bailing out early if the first one fails.
+pub struct EvaluateAll<A, B>(PhantomData<(A, B)>);
+
+impl<T, A, B> DidDeletionHook<T> for EvaluateAll<A, B>
+where
+	T: Config,
+	A: DidDeletionHook<T>,
+	B: DidDeletionHook<T>,
+{
+	const MAX_WEIGHT: Weight = A::MAX_WEIGHT.saturating_add(B::MAX_WEIGHT);
+
+	fn can_delete(did: &DidIdentifierOf<T>) -> Result<(), Weight> {
+		// If A fails, return the weight consumed by A.
+		// If A succeeds and B fails, return A's max weight + B consumed weight.
+		// Else, return Ok.
+		A::can_delete(did)?;
+		B::can_delete(did).map_err(|consumed_weight| A::MAX_WEIGHT.saturating_add(consumed_weight))?;
 		Ok(())
 	}
 }

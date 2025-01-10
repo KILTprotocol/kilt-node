@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 use did::DidIdentifierOf;
 use sp_std::marker::PhantomData;
 
 use sp_weights::Weight;
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
 pub struct LinkedWeb3NameDeletionHook<const READ_WEIGHT_TIME: u64, const READ_WEIGHT_SIZE: u64, Web3NameDeployment>(
 	PhantomData<Web3NameDeployment>,
 );
@@ -41,5 +42,30 @@ where
 	}
 }
 
-// TODO: Add the other ones, and then implement the trait for a tuple of
-// elements, summing up their `MAX_WEIGHT` as the overall `MAX_WEIGHT`.
+pub struct LinkedAccountDeletionHook<const READ_WEIGHT_TIME: u64, const READ_WEIGHT_SIZE: u64, AccountLinkingDeployment>(
+	PhantomData<AccountLinkingDeployment>,
+);
+
+impl<T, const READ_WEIGHT_TIME: u64, const READ_WEIGHT_SIZE: u64, AccountLinkingDeployment>
+	did::traits::DidDeletionHook<T>
+	for LinkedAccountDeletionHook<READ_WEIGHT_SIZE, READ_WEIGHT_TIME, AccountLinkingDeployment>
+where
+	T: did::Config + pallet_did_lookup::Config<AccountLinkingDeployment, DidIdentifier = DidIdentifierOf<T>>,
+	AccountLinkingDeployment: 'static,
+{
+	const MAX_WEIGHT: Weight = Weight::from_parts(READ_WEIGHT_TIME, READ_WEIGHT_SIZE);
+
+	fn can_delete(did: &did::DidIdentifierOf<T>) -> Result<(), Weight> {
+		// We check whether the prefix iterator for the given DID has at least one
+		// element (`next == Some`).
+		let is_any_account_linked =
+			pallet_did_lookup::ConnectedAccounts::<T, AccountLinkingDeployment>::iter_key_prefix(did)
+				.next()
+				.is_some();
+		if !is_any_account_linked {
+			Ok(())
+		} else {
+			Err(<Self as did::traits::DidDeletionHook<T>>::MAX_WEIGHT)
+		}
+	}
+}
