@@ -23,11 +23,12 @@ use futures::FutureExt;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
-use sc_executor::NativeElseWasmExecutor;
+use sc_executor::WasmExecutor;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
+use sp_io::SubstrateHostFunctions;
 
 use std::{sync::Arc, time::Duration};
 
@@ -48,7 +49,12 @@ impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
 	}
 }
 
-type FullClient = sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
+#[cfg(not(feature = "runtime-benchmarks"))]
+type HostFunctions = SubstrateHostFunctions;
+#[cfg(feature = "runtime-benchmarks")]
+type HostFunctions = (SubstrateHostFunctions, frame_benchmarking::benchmarking::HostFunctions);
+
+type FullClient = sc_service::TFullClient<Block, RuntimeApi, WasmExecutor<HostFunctions>>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
@@ -82,7 +88,14 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 		})
 		.transpose()?;
 
-	let executor = sc_service::new_native_or_wasm_executor(config);
+	#[allow(deprecated)]
+	let executor = WasmExecutor::<HostFunctions>::new(
+		config.wasm_method,
+		config.default_heap_pages,
+		config.max_runtime_instances,
+		None,
+		config.runtime_cache_size,
+	);
 
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
 		config,
@@ -109,7 +122,7 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 	let (grandpa_block_import, grandpa_link) = sc_consensus_grandpa::block_import(
 		client.clone(),
 		GRANDPA_JUSTIFICATION_PERIOD,
-		&(Arc::clone(&client) as Arc<_>),
+		&(Arc::clone(&client)),
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
