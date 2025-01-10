@@ -3,6 +3,10 @@ name: Docs PR Check
 on:
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   check-docs-pr:
     runs-on: ubuntu-latest
@@ -25,7 +29,7 @@ jobs:
         env:
           DOCS_REPO: KILTprotocol/docs
           PR_NO: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           DOCS_PRS=$(gh pr list --repo $DOCS_REPO --json number,body,title --jq '.[]')
 
