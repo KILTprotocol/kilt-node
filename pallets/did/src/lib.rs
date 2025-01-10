@@ -1504,17 +1504,6 @@ pub mod pallet {
 		/// endpoints, adds the identifier to the blacklisted DIDs and frees the
 		/// deposit.
 		pub fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
-			let Ok(()) =
-				<<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::can_delete(
-					&did_subject,
-				)
-			else {
-				return Err(Error::<T>::CannotDelete.into());
-			};
-			// <<T::DidLifecycleHooks as DidDeletionHook<T>>::DidDeletionHook as
-			// DidDeletionHook<T>>::can_delete( 	&did_subject,
-			// )?;
-
 			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 			ensure!(
 				current_endpoints_count <= endpoints_to_remove,
@@ -1535,6 +1524,14 @@ pub mod pallet {
 
 			// `take` calls `kill` internally
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
+
+			let Ok(()) =
+				<<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::can_delete(
+					&did_subject,
+				)
+			else {
+				return Err(Error::<T>::CannotDelete.into());
+			};
 
 			DidEndpointsCount::<T>::remove(&did_subject);
 
