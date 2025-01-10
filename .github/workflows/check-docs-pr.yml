@@ -1,0 +1,46 @@
+name: Docs PR Check
+
+on:
+  pull_request:
+
+jobs:
+  check-docs-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for linked docs PR
+        id: check_docs_pr
+        env:
+          DOCS_REPO: KILTprotocol/docs
+          PR_NO: ${{ github.event.pull_request.number }}
+        run: |
+          DOCS_PRS=$(gh pr list --repo $DOCS_REPO --json number,body,title --jq '.[]')
+
+          MATCHING_PR=$(echo "$DOCS_PRS" | jq -r "select(.body | contains(\"#${PR_NO}\") or .title | contains(\"#${PR_NO}\"))")
+
+          if [ -z "$MATCHING_PR" ]; then
+            echo "pr_link=false" >> $GITHUB_ENV
+          else
+            echo "pr_link=true" >> $GITHUB_ENV
+          fi
+
+      - name: Ensure docs PR exists
+        if: env.pr_link == 'false'
+        run: |
+          echo "Please link the PR (#${{ github.event.pull_request.number }}) in a docs PR or apply the skip label."
+          exit 1
+
+  allow-skip:
+    needs: check-docs-pr
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if ci-skip-docs-pr label is applied
+        run: |
+          if gh pr view ${{ github.event.pull_request.number }} --json labels --jq '.labels | .[].name' | grep -q 'ci-skip-docs-pr'; then
+            echo "skip label found. Skipping docs PR check."
+          else
+            echo "No skip label found. Failing check."
+            exit 1
