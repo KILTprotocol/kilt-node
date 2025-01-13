@@ -94,19 +94,37 @@ impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
 	type DeletionHook = EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
 }
 
+// Worst case taken from the weight values of reading a single storage item as
+// computed in the peregrine weight file.
+// TODO: Replace this with a properly benchmarked value after adding a storage
+// read benchmark to the web3name pallet.
+const WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE: u64 = 500;
 /// Ensure there is no Web3Name linked to a DID.
-type EnsureNoWeb3NameOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, ()>;
+type EnsureNoWeb3NameOnDeletion =
+	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE, ()>;
 /// Ensure there is no Dotname linked to a DID.
-type EnsureNoDotNameOnDeletion =
-	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, DotNamesDeployment>;
+type EnsureNoDotNameOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<
+	{ RocksDbWeight::get().read },
+	WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE,
+	DotNamesDeployment,
+>;
 /// Ensure there is neither a Web3Name nor a Dotname linked to a DID.
 type EnsureNoUsernamesOnDeletion = RequireBoth<EnsureNoWeb3NameOnDeletion, EnsureNoDotNameOnDeletion>;
 
+// Worst case taken from the weight values of reading a single storage item as
+// computed in the peregrine weight file.
+// TODO: Replace this with a properly benchmarked value after adding a storage
+// read benchmark to the account linking pallet.
+const WORST_CASE_LINKING_STORAGE_READ_SIZE: u64 = 1_000;
 /// Ensure there is no linked account (for a web3name) to a DID.
-type EnsureNoWeb3NameLinkedAccountsOnDeletion = EnsureNoLinkedAccountDeletionHook<{ RocksDbWeight::get().read }, 0, ()>;
+type EnsureNoWeb3NameLinkedAccountsOnDeletion =
+	EnsureNoLinkedAccountDeletionHook<{ RocksDbWeight::get().read }, WORST_CASE_LINKING_STORAGE_READ_SIZE, ()>;
 /// Ensure there is no unique linked account (for a dotname) to a DID.
-type EnsureNoDotNameLinkedAccountOnDeletion =
-	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, UniqueLinkingDeployment>;
+type EnsureNoDotNameLinkedAccountOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<
+	{ RocksDbWeight::get().read },
+	WORST_CASE_LINKING_STORAGE_READ_SIZE,
+	UniqueLinkingDeployment,
+>;
 /// Ensure there is no account linked for both the DID's Web3Name and DotName.
 type EnsureNoLinkedAccountsOnDeletion =
 	RequireBoth<EnsureNoWeb3NameLinkedAccountsOnDeletion, EnsureNoDotNameLinkedAccountOnDeletion>;
