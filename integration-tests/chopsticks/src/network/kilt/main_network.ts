@@ -46,6 +46,70 @@ export const storage = {
 			},
 		}
 	},
+	/// Pauses the switch pool. Default value are fetched from block 7,896,550 and will break the invariant check.
+	puaseSwitch(
+		remoteAssetCirculatingSupply = '1044350720000000000000',
+		remoteAssetTotalSupply = '164000000000000000000000',
+		remoteAssetSovereignTotalBalance = '162955649280000000000000'
+	) {
+		return {
+			assetSwitchPool1: {
+				switchPair: {
+					status: 'Paused',
+					poolAccount: '4pCvXiDJXzfms5G2Digp474mo3SJSsAWUBuAJpzcuZvvK8dt',
+					remoteAssetCirculatingSupply,
+					remoteAssetEd: 1,
+					remoteAssetId: {
+						V4: {
+							parents: 2,
+							interior: {
+								X2: [
+									{
+										GlobalConsensus: {
+											Ethereum: {
+												chainId: 1,
+											},
+										},
+									},
+									{
+										AccountKey20: {
+											network: null,
+											key: '0x5d3d01fd6d2ad1169b17918eb4f153c6616288eb',
+										},
+									},
+								],
+							},
+						},
+					},
+					remoteAssetTotalSupply,
+					remoteReserveLocation: {
+						V4: {
+							parents: 1,
+							interior: {
+								X1: [
+									{
+										Parachain: 1000,
+									},
+								],
+							},
+						},
+					},
+					remoteXcmFee: {
+						V4: {
+							id: {
+								parents: 1,
+								interior: 'Here',
+							},
+							fun: {
+								Fungible: 5000000000,
+							},
+						},
+					},
+					remoteAssetSovereignTotalBalance,
+				},
+			},
+		}
+	},
 }
 
 export const parachainInfo = {

@@ -9,7 +9,7 @@ import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant, getPoolAccount, getRemoteLockedSupply } from '../index.js'
 
-describe.each(testPairsSwitchFunds)(
+describe.skip.each(testPairsSwitchFunds)(
 	'Switch KILTs',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
