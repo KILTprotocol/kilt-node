@@ -47,7 +47,7 @@ export const storage = {
 		}
 	},
 	/// Pauses the switch pool. Default value are fetched from block 7,896,550 and will break the invariant check.
-	puaseSwitch(
+	pauseSwitch(
 		remoteAssetCirculatingSupply = '1044350720000000000000',
 		remoteAssetTotalSupply = '164000000000000000000000',
 		remoteAssetSovereignTotalBalance = '162955649280000000000000'
@@ -107,6 +107,14 @@ export const storage = {
 					},
 					remoteAssetSovereignTotalBalance,
 				},
+			},
+		}
+	},
+	/// Removes the switch pool
+	removeSwitchPair() {
+		return {
+			assetSwitchPool1: {
+				switchPair: {},
 			},
 		}
 	},

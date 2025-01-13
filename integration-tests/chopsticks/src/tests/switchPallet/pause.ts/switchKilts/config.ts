@@ -2,7 +2,7 @@ import type { ApiPromise } from '@polkadot/api'
 import type { SubmittableExtrinsic } from '@polkadot/api/types'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import { initialBalanceKILT, keysAlice } from '../../../../helper/utils.js'
+import { initialBalanceKILT, keysAlice, KILT } from '../../../../helper/utils.js'
 import { mainChains } from '../../../../network/index.js'
 import { tx } from '../../../../helper/api.js'
 import type { BasicConfig } from '../../../types.js'
@@ -37,7 +37,7 @@ export const testCases: SwitchTestConfiguration[] = [
 			storage: {
 				senderStorage: {
 					...mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					...mainChains.kilt.storage.puaseSwitch(),
+					...mainChains.kilt.storage.pauseSwitch(),
 				},
 				receiverStorage: {},
 				relayStorage: {},
@@ -45,7 +45,7 @@ export const testCases: SwitchTestConfiguration[] = [
 		},
 		account: keysAlice,
 		txContext: {
-			balanceToTransfer: BigInt('1000000000000000'),
+			balanceToTransfer: KILT,
 			tx: tx.switchPallet.switchV4(),
 		},
 	},

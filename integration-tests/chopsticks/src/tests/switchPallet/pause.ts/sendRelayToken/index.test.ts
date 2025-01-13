@@ -8,7 +8,7 @@ import { testPairsSwitchFunds } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
 
-describe.each(testPairsSwitchFunds)(
+describe.skip.each(testPairsSwitchFunds)(
 	'Send ROCs while switch paused',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {

@@ -8,8 +8,8 @@ import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
 
-describe.skip.each(testCases)(
-	'Switch eKILTs while paused',
+describe.each(testCases)(
+	'Switch eKILTs while no pair set',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {
 		let senderContext: Config
