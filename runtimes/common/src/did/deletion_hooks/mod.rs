@@ -36,7 +36,7 @@ pub struct EnsureNoLinkedWeb3NameDeletionHook<
 >(PhantomData<Web3NameDeployment>);
 
 impl<T, const READ_WEIGHT_TIME: u64, const READ_WEIGHT_SIZE: u64, Web3NameDeployment> did::traits::DidDeletionHook<T>
-	for EnsureNoLinkedWeb3NameDeletionHook<READ_WEIGHT_SIZE, READ_WEIGHT_TIME, Web3NameDeployment>
+	for EnsureNoLinkedWeb3NameDeletionHook<READ_WEIGHT_TIME, READ_WEIGHT_SIZE, Web3NameDeployment>
 where
 	T: did::Config + pallet_web3_names::Config<Web3NameDeployment, Web3NameOwner = DidIdentifierOf<T>>,
 	Web3NameDeployment: 'static,
@@ -65,7 +65,7 @@ pub struct EnsureNoLinkedAccountDeletionHook<
 
 impl<T, const READ_WEIGHT_TIME: u64, const READ_WEIGHT_SIZE: u64, AccountLinkingDeployment>
 	did::traits::DidDeletionHook<T>
-	for EnsureNoLinkedAccountDeletionHook<READ_WEIGHT_SIZE, READ_WEIGHT_TIME, AccountLinkingDeployment>
+	for EnsureNoLinkedAccountDeletionHook<READ_WEIGHT_TIME, READ_WEIGHT_SIZE, AccountLinkingDeployment>
 where
 	T: did::Config + pallet_did_lookup::Config<AccountLinkingDeployment, DidIdentifier = DidIdentifierOf<T>>,
 	AccountLinkingDeployment: 'static,
