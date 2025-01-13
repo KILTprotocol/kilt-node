@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+//! Test module for the `RequireBoth` type. It verifies that the type works as
+//! expected in case of failure of one of its components.
+
 use sp_runtime::AccountId32;
 use sp_weights::Weight;
 

@@ -331,6 +331,8 @@ pub mod pallet {
 		/// Migration manager to handle new created entries
 		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 
+		/// Runtime-injected logic to be called at each stage of a DID's
+		/// lifecycle.
 		type DidLifecycleHooks: DidLifecycleHooks<Self>;
 	}
 
@@ -459,8 +461,8 @@ pub mod pallet {
 		/// The number of service endpoints stored under the DID is larger than
 		/// the number of endpoints to delete.
 		MaxStoredEndpointsCountExceeded,
-		/// The DID cannot be deleted because other resources are depending on
-		/// it.
+		/// The DID cannot be deleted because the runtime logic returned an
+		/// error.
 		CannotDelete,
 		/// An error that is not supposed to take place, yet it happened.
 		Internal,
@@ -1525,6 +1527,9 @@ pub mod pallet {
 			// `take` calls `kill` internally
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
+			// Make sure this check happens after the line where we check if a DID exists,
+			// else we would start getting `CannotDelete` errors when we should be getting
+			// `NotFound`.
 			ensure!(
 				<<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::can_delete(
 					&did_subject,

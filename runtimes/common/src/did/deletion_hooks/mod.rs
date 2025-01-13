@@ -24,6 +24,11 @@ use sp_std::marker::PhantomData;
 
 use sp_weights::Weight;
 
+/// Implementation of the [`did::traits::DidDeletionHook`] trait that makes sure
+/// there is no resource linked to the DID in the provided web3name pallet
+/// deployment.
+///
+/// The returned worst-case weight is the same weight provided to this type.
 pub struct EnsureNoLinkedWeb3NameDeletionHook<
 	const READ_WEIGHT_TIME: u64,
 	const READ_WEIGHT_SIZE: u64,
@@ -47,6 +52,11 @@ where
 	}
 }
 
+/// Implementation of the [`did::traits::DidDeletionHook`] trait that makes sure
+/// there is no resource linked to the DID in the provided did_lookup pallet
+/// deployment.
+///
+/// The returned worst-case weight is the same weight provided to this type.
 pub struct EnsureNoLinkedAccountDeletionHook<
 	const READ_WEIGHT_TIME: u64,
 	const READ_WEIGHT_SIZE: u64,

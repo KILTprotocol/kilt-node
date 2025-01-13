@@ -26,10 +26,12 @@ mod mock;
 
 use crate::Config;
 
+/// A collection of hooks invoked during DID operations.
 pub trait DidLifecycleHooks<T>
 where
 	T: Config,
 {
+	/// Hook called when a DID deletion is requested by an authorized entity.
 	type DeletionHook: DidDeletionHook<T>;
 }
 

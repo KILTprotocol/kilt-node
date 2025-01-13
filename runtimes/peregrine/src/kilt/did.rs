@@ -94,17 +94,24 @@ impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
 	type DeletionHook = EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
 }
 
+/// Ensure there is no Web3Name linked to a DID.
 type EnsureNoWeb3NameOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, ()>;
+/// Ensure there is no Dotname linked to a DID.
 type EnsureNoDotNameOnDeletion =
 	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, DotNamesDeployment>;
+/// Ensure there is neither a Web3Name nor a Dotname linked to a DID.
 type EnsureNoUsernamesOnDeletion = RequireBoth<EnsureNoWeb3NameOnDeletion, EnsureNoDotNameOnDeletion>;
 
+/// Ensure there is no linked account (for a web3name) to a DID.
 type EnsureNoWeb3NameLinkedAccountsOnDeletion = EnsureNoLinkedAccountDeletionHook<{ RocksDbWeight::get().read }, 0, ()>;
+/// Ensure there is no unique linked account (for a dotname) to a DID.
 type EnsureNoDotNameLinkedAccountOnDeletion =
 	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, UniqueLinkingDeployment>;
+/// Ensure there is no account linked for both the DID's Web3Name and DotName.
 type EnsureNoLinkedAccountsOnDeletion =
 	RequireBoth<EnsureNoWeb3NameLinkedAccountsOnDeletion, EnsureNoDotNameLinkedAccountOnDeletion>;
 
+/// Ensure there is no trace of names nor linked accounts for the DID.
 pub type EnsureNoNamesAndNoLinkedAccountsOnDidDeletion =
 	RequireBoth<EnsureNoUsernamesOnDeletion, EnsureNoLinkedAccountsOnDeletion>;
 
