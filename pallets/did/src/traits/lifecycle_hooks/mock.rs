@@ -16,22 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	construct_runtime,
-	dispatch::DispatchResult,
-	parameter_types,
-	traits::{
-		fungible::{Balanced, Dust, Inspect, InspectHold, Mutate, MutateHold, Unbalanced, UnbalancedHold},
-		tokens::{DepositConsequence, Fortitude, Preservation, Provenance, WithdrawConsequence},
-	},
-};
+use frame_support::{construct_runtime, parameter_types};
 use frame_system::{mocking::MockBlock, EnsureSigned};
+use kilt_support::test_utils::MockCurrency;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, ConstU64, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
-	AccountId32, DispatchError,
+	AccountId32,
 };
 
 use crate::{
@@ -74,81 +67,6 @@ impl frame_system::Config for TestRuntime {
 	type Version = ();
 }
 
-pub struct MockCurrency;
-
-impl MutateHold<AccountId32> for MockCurrency {}
-
-impl UnbalancedHold<AccountId32> for MockCurrency {
-	fn set_balance_on_hold(_reason: &Self::Reason, _who: &AccountId32, _amount: Self::Balance) -> DispatchResult {
-		Ok(())
-	}
-}
-
-impl InspectHold<AccountId32> for MockCurrency {
-	type Reason = RuntimeHoldReason;
-
-	fn total_balance_on_hold(_who: &AccountId32) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn balance_on_hold(_reason: &Self::Reason, _who: &AccountId32) -> Self::Balance {
-		Self::Balance::default()
-	}
-}
-
-impl Mutate<AccountId32> for MockCurrency {}
-
-impl Inspect<AccountId32> for MockCurrency {
-	type Balance = u64;
-
-	fn active_issuance() -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn balance(_who: &AccountId32) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn can_deposit(_who: &AccountId32, _amount: Self::Balance, _provenance: Provenance) -> DepositConsequence {
-		DepositConsequence::Success
-	}
-
-	fn can_withdraw(_who: &AccountId32, _amount: Self::Balance) -> WithdrawConsequence<Self::Balance> {
-		WithdrawConsequence::Success
-	}
-
-	fn minimum_balance() -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn reducible_balance(_who: &AccountId32, _preservation: Preservation, _force: Fortitude) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn total_balance(_who: &AccountId32) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn total_issuance() -> Self::Balance {
-		Self::Balance::default()
-	}
-}
-
-impl Unbalanced<AccountId32> for MockCurrency {
-	fn handle_dust(_dust: Dust<AccountId32, Self>) {}
-
-	fn write_balance(_who: &AccountId32, _amount: Self::Balance) -> Result<Option<Self::Balance>, DispatchError> {
-		Ok(Some(Self::Balance::default()))
-	}
-
-	fn set_total_issuance(_amount: Self::Balance) {}
-}
-
-impl Balanced<AccountId32> for MockCurrency {
-	type OnDropDebt = ();
-	type OnDropCredit = ();
-}
-
 parameter_types! {
 	#[derive(TypeInfo, Debug, PartialEq, Eq, Clone, Encode, Decode)]
 	pub const MaxNewKeyAgreementKeys: u32 = 1;
@@ -172,7 +90,7 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 impl Config for TestRuntime {
 	type BalanceMigrationManager = ();
 	type BaseDeposit = ConstU64<1>;
-	type Currency = MockCurrency;
+	type Currency = MockCurrency<u64, RuntimeHoldReason>;
 	type DidIdentifier = AccountId32;
 	type DidLifecycleHooks = ();
 	type EnsureOrigin = EnsureSigned<AccountId32>;

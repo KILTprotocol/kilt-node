@@ -401,6 +401,7 @@ impl did::Config for Runtime {
 	type BaseDeposit = ConstU128<UNIT>;
 	type Currency = Balances;
 	type DidIdentifier = DidIdentifier;
+	type DidLifecycleHooks = ();
 	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type Fee = ConstU128<MILLIUNIT>;
 	type FeeCollector = ();

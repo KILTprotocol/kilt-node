@@ -423,6 +423,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
 	type WeightInfo = ();
 	type BalanceMigrationManager = ();
+	type DidLifecycleHooks = ();
 }
 
 impl pallet_did_lookup::Config for Runtime {
