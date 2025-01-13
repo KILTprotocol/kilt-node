@@ -50,7 +50,7 @@ where
 	}
 }
 
-/// Implementation of [`did::traits::DidDeletionHook`] that iterates over both
+/// Implementation of [`DidDeletionHook`] that iterates over both
 /// components, bailing out early if the first one fails. The `MAX_WEIGHT` is
 /// the sum of both components.
 pub struct RequireBoth<A, B>(PhantomData<(A, B)>);
