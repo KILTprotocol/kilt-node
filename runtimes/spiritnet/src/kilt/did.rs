@@ -17,8 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{
-	traits::EvaluateAll, DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
-	DidRawOrigin, DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
+	traits::deletion::RequireBoth, DeriveDidCallAuthorizationVerificationKeyRelationship,
+	DeriveDidCallKeyRelationshipResult, DidRawOrigin, DidVerificationKeyRelationship, EnsureDidOrigin,
+	RelationshipDeriveError,
 };
 use frame_system::EnsureRoot;
 use runtime_common::{
@@ -96,16 +97,16 @@ impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
 type EnsureNoWeb3NameOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, ()>;
 type EnsureNoDotNameOnDeletion =
 	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, DotNamesDeployment>;
-type EnsureNoUsernamesOnDeletion = EvaluateAll<EnsureNoWeb3NameOnDeletion, EnsureNoDotNameOnDeletion>;
+type EnsureNoUsernamesOnDeletion = RequireBoth<EnsureNoWeb3NameOnDeletion, EnsureNoDotNameOnDeletion>;
 
 type EnsureNoWeb3NameLinkedAccountsOnDeletion = EnsureNoLinkedAccountDeletionHook<{ RocksDbWeight::get().read }, 0, ()>;
 type EnsureNoDotNameLinkedAccountOnDeletion =
 	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, 0, UniqueLinkingDeployment>;
 type EnsureNoLinkedAccountsOnDeletion =
-	EvaluateAll<EnsureNoWeb3NameLinkedAccountsOnDeletion, EnsureNoDotNameLinkedAccountOnDeletion>;
+	RequireBoth<EnsureNoWeb3NameLinkedAccountsOnDeletion, EnsureNoDotNameLinkedAccountOnDeletion>;
 
 pub type EnsureNoNamesAndNoLinkedAccountsOnDidDeletion =
-	EvaluateAll<EnsureNoUsernamesOnDeletion, EnsureNoLinkedAccountsOnDeletion>;
+	RequireBoth<EnsureNoUsernamesOnDeletion, EnsureNoLinkedAccountsOnDeletion>;
 
 impl did::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;

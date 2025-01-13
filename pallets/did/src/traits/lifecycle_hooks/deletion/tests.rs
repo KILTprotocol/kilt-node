@@ -20,7 +20,7 @@ use sp_runtime::AccountId32;
 use sp_weights::Weight;
 
 use crate::{
-	traits::lifecycle_hooks::{deletion::EvaluateAll, mock::TestRuntime, DidDeletionHook},
+	traits::lifecycle_hooks::{deletion::RequireBoth, mock::TestRuntime, DidDeletionHook},
 	DidIdentifierOf,
 };
 
@@ -39,14 +39,14 @@ struct True;
 impl DidDeletionHook<TestRuntime> for True {
 	const MAX_WEIGHT: Weight = Weight::from_all(20);
 
-	fn can_delete(did: &DidIdentifierOf<TestRuntime>) -> Result<(), Weight> {
+	fn can_delete(_did: &DidIdentifierOf<TestRuntime>) -> Result<(), Weight> {
 		Ok(())
 	}
 }
 
 #[test]
 fn first_false() {
-	type TestSubject = EvaluateAll<False, True>;
+	type TestSubject = RequireBoth<False, True>;
 
 	// Max weight is the sum.
 	assert_eq!(TestSubject::MAX_WEIGHT, Weight::from_all(30));
@@ -59,7 +59,7 @@ fn first_false() {
 
 #[test]
 fn second_false() {
-	type TestSubject = EvaluateAll<True, False>;
+	type TestSubject = RequireBoth<True, False>;
 
 	// Max weight is the sum.
 	assert_eq!(TestSubject::MAX_WEIGHT, Weight::from_all(30));
@@ -72,9 +72,10 @@ fn second_false() {
 
 #[test]
 fn both_true() {
-	type TestSubject = EvaluateAll<True, True>;
+	type TestSubject = RequireBoth<True, True>;
 
 	// Max weight is the sum.
 	assert_eq!(TestSubject::MAX_WEIGHT, Weight::from_all(40));
+	// Overall result is `Ok`.
 	assert_eq!(TestSubject::can_delete(&AccountId32::new([0u8; 32])), Ok(()));
 }

@@ -1525,13 +1525,13 @@ pub mod pallet {
 			// `take` calls `kill` internally
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
-			let Ok(()) =
+			ensure!(
 				<<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::can_delete(
 					&did_subject,
 				)
-			else {
-				return Err(Error::<T>::CannotDelete.into());
-			};
+				.is_ok(),
+				Error::<T>::CannotDelete
+			);
 
 			DidEndpointsCount::<T>::remove(&did_subject);
 

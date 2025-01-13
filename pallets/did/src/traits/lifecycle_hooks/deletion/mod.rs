@@ -48,9 +48,9 @@ where
 
 /// Implementation of [`did::traits::DidDeletionHook`] that iterates over both
 /// components, bailing out early if the first one fails.
-pub struct EvaluateAll<A, B>(PhantomData<(A, B)>);
+pub struct RequireBoth<A, B>(PhantomData<(A, B)>);
 
-impl<T, A, B> DidDeletionHook<T> for EvaluateAll<A, B>
+impl<T, A, B> DidDeletionHook<T> for RequireBoth<A, B>
 where
 	T: Config,
 	A: DidDeletionHook<T>,

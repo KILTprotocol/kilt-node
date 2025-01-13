@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidVerificationKey, traits::deletion::EvaluateAll, DidVerificationKeyRelationship};
+use did::{did_details::DidVerificationKey, traits::deletion::RequireBoth, DidVerificationKeyRelationship};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchResult,
@@ -176,7 +176,7 @@ pub struct DidLifecycleHooks;
 
 impl did::traits::DidLifecycleHooks<TestRuntime> for DidLifecycleHooks {
 	type DeletionHook =
-		EvaluateAll<EnsureNoLinkedWeb3NameDeletionHook<1, 1, ()>, EnsureNoLinkedAccountDeletionHook<1, 1, ()>>;
+		RequireBoth<EnsureNoLinkedWeb3NameDeletionHook<1, 1, ()>, EnsureNoLinkedAccountDeletionHook<1, 1, ()>>;
 }
 
 impl did::Config for TestRuntime {

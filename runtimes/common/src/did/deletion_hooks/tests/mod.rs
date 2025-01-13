@@ -16,6 +16,77 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-mod linked_account;
-mod linked_name;
 mod mock;
+
+use frame_support::{assert_noop, assert_ok};
+use frame_system::RawOrigin;
+
+use crate::did::deletion_hooks::tests::mock::{Did, ExtBuilder, TestRuntime, DID};
+
+#[test]
+fn test_delete_with_no_dangling_resources() {
+	ExtBuilder::default()
+		.with_dids(vec![(DID, None, false)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(Did::delete(RawOrigin::Signed(DID).into(), 0));
+		});
+}
+
+#[test]
+fn test_delete_with_dangling_web3_name() {
+	ExtBuilder::default()
+		.with_dids(vec![(DID, Some(b"t".to_vec().try_into().unwrap()), false)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Did::delete(RawOrigin::Signed(DID).into(), 0),
+				did::Error::<TestRuntime>::CannotDelete
+			);
+		});
+}
+
+#[test]
+fn test_delete_with_dangling_linked_account() {
+	ExtBuilder::default()
+		.with_dids(vec![(DID, None, true)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Did::delete(RawOrigin::Signed(DID).into(), 0),
+				did::Error::<TestRuntime>::CannotDelete
+			);
+		});
+}
+
+// If someone tries to re-delete a delete DID with dangling resources, they get
+// a `NotFound` error. We are testing that we always check for DID existence
+// before we check for linked resources.
+#[test]
+fn test_delete_with_no_did_and_dangling_web3_name() {
+	ExtBuilder::default()
+		.with_dangling_dids(vec![(DID, Some(b"t".to_vec().try_into().unwrap()), false)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Did::delete(RawOrigin::Signed(DID).into(), 0),
+				did::Error::<TestRuntime>::NotFound
+			);
+		});
+}
+
+// If someone tries to re-delete a delete DID with dangling resources, they get
+// a `NotFound` error. We are testing that we always check for DID existence
+// before we check for linked resources.
+#[test]
+fn test_delete_with_no_did_and_dangling_linked_account() {
+	ExtBuilder::default()
+		.with_dangling_dids(vec![(DID, None, true)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Did::delete(RawOrigin::Signed(DID).into(), 0),
+				did::Error::<TestRuntime>::NotFound
+			);
+		});
+}
