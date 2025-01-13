@@ -575,7 +575,7 @@ impl_runtime_apis! {
 		}
 
 		fn pool_info(pool_id: AccountId) -> Result<PoolDetails<AccountId, Balance, BondedAssetId, AssetId>, BondedCurrencyError> {
-			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
+			let pool = Pools::<Runtime>::get(&pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
 			let PoolDetailsOf::<Runtime> {
 				curve,
 				bonded_currencies,
@@ -625,6 +625,7 @@ impl_runtime_apis! {
 			};
 
 			Ok(PoolDetails {
+				id: pool_id,
 				bonded_currencies: currencies,
 				curve: fmt_curve,
 				collateral: collateral_details,

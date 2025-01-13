@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use pallet_bonded_coins::{curves::Curve, PoolDetails};
-use parity_scale_codec::{alloc::string::String, Decode, Encode};
+use pallet_bonded_coins::{curves::Curve, Locks, PoolStatus};
+use parity_scale_codec::{alloc::string::String, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
@@ -28,9 +28,40 @@ pub type CurveOf = Curve<String>;
 pub type CurrenciesOf<AssetId, Balance> = Vec<BondedCurrencyDetails<AssetId, Balance>>;
 
 /// Human readable pool details.
-pub type PoolDetailsOf<AccountId, Balance, AssetId, CollateralAssetId> =
-	PoolDetails<AccountId, CurveOf, CurrenciesOf<AssetId, Balance>, CollateralDetails<CollateralAssetId>, Balance>;
+pub type PoolDetailsOf<AccountId, Balance, AssetId, CollateralAssetId> = PoolDetails<
+	AccountId,
+	AccountId,
+	CurveOf,
+	CurrenciesOf<AssetId, Balance>,
+	CollateralDetails<CollateralAssetId>,
+	Balance,
+>;
 
+#[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
+pub struct PoolDetails<AccountId, PoolId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance> {
+	/// The ID of the pool.
+	pub id: PoolId,
+	/// The owner of the pool.
+	pub owner: AccountId,
+	/// The manager of the pool. If a manager is set, the pool is permissioned.
+	pub manager: Option<AccountId>,
+	/// The curve of the pool.
+	pub curve: ParametrizedCurve,
+	/// The collateral currency of the pool.
+	pub collateral: BaseCurrencyId,
+	/// The bonded currencies of the pool.
+	pub bonded_currencies: Currencies,
+	/// The status of the pool.
+	pub state: PoolStatus<Locks>,
+	/// Whether the pool is transferable or not.
+	pub transferable: bool,
+	/// The denomination of the pool.
+	pub denomination: u8,
+	/// The minimum amount that can be minted/burnt.
+	pub min_operation_balance: u128,
+	/// The deposit to be returned upon destruction of this pool.
+	pub deposit: DepositBalance,
+}
 /// Collateral currency details used for the runtime API.
 #[derive(Decode, Encode, TypeInfo)]
 pub struct CollateralDetails<AssetId> {
