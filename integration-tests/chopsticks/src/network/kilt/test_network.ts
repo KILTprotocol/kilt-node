@@ -9,14 +9,16 @@ export const getSetupOptions = ({
 }: {
 	blockNumber?: number
 	wasmOverride?: string
-}) =>
-	({
+}) => {
+	const random = (Math.random() + 1).toString(36).substring(7)
+	return {
 		endpoint: process.env.SPIRITNET_WS || 'wss://peregrine.kilt.io/parachain-public-ws/',
-		db: './db/spiritnet_main.db.sqlite',
+		db: `./db/spiritnet_main_${random}.db.sqlite`,
 		port: toNumber(process.env.SPIRITNET_PORT),
 		wasmOverride,
 		blockNumber,
-	}) as SetupOption
+	} as SetupOption
+}
 
 export const storage = {
 	/// Assigns the native tokens to an accounts

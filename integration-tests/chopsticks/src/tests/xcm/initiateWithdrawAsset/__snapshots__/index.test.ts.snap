@@ -64,8 +64,6 @@ exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events "messageQue
 ]
 `;
 
-exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events "xcmpQueue" 1`] = `[]`;
-
 exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events {"section":"balances","method":"Burned"} 1`] = `
 [
   {
@@ -91,8 +89,6 @@ exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events {"section":
   },
 ]
 `;
-
-exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events {"section":"balances","method":"Withdraw"} 1`] = `[]`;
 
 exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events {"section":"system","method":"NewAccount"} 1`] = `
 [
@@ -160,8 +156,6 @@ exports[`Withdraw Asset > HydraDx -> KILT live > receiver events "messageQueue" 
   },
 ]
 `;
-
-exports[`Withdraw Asset > HydraDx -> KILT live > receiver events "xcmpQueue" 1`] = `[]`;
 
 exports[`Withdraw Asset > HydraDx -> KILT live > receiver events {"section":"system","method":"NewAccount"} 1`] = `
 [

@@ -7,8 +7,9 @@ import { hexAddress } from '../../../../helper/utils.js'
 import { testCases } from './config.js'
 import type { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
+import { skipTest } from '../../../utils.js'
 
-describe.skip.each(testCases)(
+describe.skipIf(skipTest()).each(testCases)(
 	'Switch eKILTs while no pair set',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {

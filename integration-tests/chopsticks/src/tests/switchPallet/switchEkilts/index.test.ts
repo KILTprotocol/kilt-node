@@ -8,8 +8,9 @@ import { testCases } from './config.js'
 import type { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant, getPoolAccount, getReceivedNativeTokens, getRemoteLockedSupply } from '../index.js'
+import { skipTest } from '../../utils.js'
 
-describe.skip.each(testCases)(
+describe.skipIf(skipTest()).each(testCases)(
 	'Switch EKILTs',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {

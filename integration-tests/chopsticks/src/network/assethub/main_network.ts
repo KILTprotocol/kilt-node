@@ -9,14 +9,16 @@ export const getSetupOptions = ({
 }: {
 	blockNumber?: number
 	wasmOverride?: string
-}) =>
-	({
+}) => {
+	const random = (Math.random() + 1).toString(36).substring(7)
+	return {
 		endpoint: process.env.ASSETHUB_WSS || 'wss://asset-hub-polkadot-rpc.dwellir.com',
-		db: './db/assethub-main.db.sqlite',
+		db: `./db/assethub-main_${random}.db.sqlite`,
 		port: toNumber(process.env.ASSETHUB_MAIN_PORT),
 		wasmOverride,
 		blockNumber,
-	}) as SetupOption
+	} as SetupOption
+}
 
 export const storage = {
 	/// AssetHub has no own coin. Teleported dots are used as the native token.

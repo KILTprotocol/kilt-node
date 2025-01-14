@@ -38,7 +38,7 @@ interface TxContext {
 	events: Events
 }
 
-interface SwitchTestConfiguration {
+interface TestConfiguration {
 	config: BasicConfig
 	query: Query
 	txContext: TxContext
@@ -46,11 +46,10 @@ interface SwitchTestConfiguration {
 	sovereignAccount: SovereignAccount
 }
 
-// Test pairs for limited reserve transfers
-export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
+export const testCases: TestConfiguration[] = [
 	{
 		config: {
-			desc: 'Switch V4 LIVE: KILT -> AH',
+			desc: 'V4 LIVE',
 			network: {
 				relay: mainChains.polkadot.getConfig({}),
 				parachains: [mainChains.kilt.getConfig({}), mainChains.assetHub.getConfig({})],

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch EKILTs > Switch V4 LIVE: AssetHub -> Kilt > Receive native funds on native chain {"section":"assetSwitchPool1","method":"RemoteToLocalSwitchExecuted"} 1`] = `
+exports[`Switch EKILTs > V4 LIVE > V4 LIVE: switch eKILTs receiver {"section":"assetSwitchPool1","method":"RemoteToLocalSwitchExecuted"} 1`] = `
 [
   {
     "data": {
@@ -13,7 +13,7 @@ exports[`Switch EKILTs > Switch V4 LIVE: AssetHub -> Kilt > Receive native funds
 ]
 `;
 
-exports[`Switch EKILTs > Switch V4 LIVE: AssetHub -> Kilt > Receive native funds on native chain {"section":"messageQueue","method":"Processed"} 1`] = `
+exports[`Switch EKILTs > V4 LIVE > V4 LIVE: switch eKILTs receiver {"section":"messageQueue","method":"Processed"} 1`] = `
 [
   {
     "data": {
@@ -33,7 +33,7 @@ exports[`Switch EKILTs > Switch V4 LIVE: AssetHub -> Kilt > Receive native funds
 ]
 `;
 
-exports[`Switch EKILTs > Switch V4 LIVE: AssetHub -> Kilt > Withdraw native funds on foreign chain {"section":"foreignAssets","method":"Transferred"} 1`] = `
+exports[`Switch EKILTs > V4 LIVE > V4 LIVE: switch eKILTs sender {"section":"foreignAssets","method":"Transferred"} 1`] = `
 [
   {
     "data": {
@@ -67,7 +67,7 @@ exports[`Switch EKILTs > Switch V4 LIVE: AssetHub -> Kilt > Withdraw native fund
 ]
 `;
 
-exports[`Switch EKILTs > Switch V4 LIVE: AssetHub -> Kilt > Withdraw native funds on foreign chain {"section":"polkadotXcm","method":"Sent"} 1`] = `
+exports[`Switch EKILTs > V4 LIVE > V4 LIVE: switch eKILTs sender {"section":"polkadotXcm","method":"Sent"} 1`] = `
 [
   {
     "data": {

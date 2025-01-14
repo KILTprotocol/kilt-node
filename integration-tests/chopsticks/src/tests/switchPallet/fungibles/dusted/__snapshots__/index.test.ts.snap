@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Dust account > V4 LIVE > Withdraw native funds on foreign chain {"section":"balances","method":"Endowed"} 1`] = `
+exports[`Dust account > V4 LIVE > V4 LIVE: Dusted accounts pallet: {"section":"balances","method":"Endowed"} 1`] = `
 [
   {
     "data": {
@@ -13,7 +13,7 @@ exports[`Dust account > V4 LIVE > Withdraw native funds on foreign chain {"secti
 ]
 `;
 
-exports[`Dust account > V4 LIVE > Withdraw native funds on foreign chain {"section":"balances","method":"Transfer"} 1`] = `
+exports[`Dust account > V4 LIVE > V4 LIVE: Dusted accounts pallet: {"section":"balances","method":"Transfer"} 1`] = `
 [
   {
     "data": {

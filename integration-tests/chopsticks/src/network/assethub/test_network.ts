@@ -9,14 +9,16 @@ export const getSetupOptions = ({
 }: {
 	blockNumber?: number
 	wasmOverride?: string
-}) =>
-	({
+}) => {
+	const random = (Math.random() + 1).toString(36).substring(7)
+	return {
 		endpoint: process.env.ASSETHUB_WSS || 'wss://asset-hub-paseo.dotters.network',
-		db: './db/assethub-test.db.sqlite',
+		db: `./db/assethub-test_${random}.db.sqlite`,
 		port: toNumber(process.env.ASSETHUB_TEST_PORT),
 		wasmOverride,
 		blockNumber,
-	}) as SetupOption
+	} as SetupOption
+}
 
 export const storage = {
 	/// AssetHub has no own coin. Teleported relay tokens are used as the native token.

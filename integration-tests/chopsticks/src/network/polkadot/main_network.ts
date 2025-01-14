@@ -9,18 +9,20 @@ export const getSetupOptions = ({
 }: {
 	blockNumber?: number
 	wasmOverride?: string
-}) =>
-	({
+}) => {
+	const random = (Math.random() + 1).toString(36).substring(7)
+	return {
 		endpoint: process.env.POLKADOT_WS || [
 			'wss://rpc.polkadot.io',
 			'wss://polkadot-rpc.dwellir.com',
 			'wss://rpc.ibp.network/polkadot',
 		],
-		db: './db/polkadot_main.db.sqlite',
+		db: `./db/polkadot_main_${random}.db.sqlite`,
 		port: toNumber(process.env.POLKADOT_PORT),
 		blockNumber,
 		wasmOverride,
-	}) as SetupOption
+	} as SetupOption
+}
 
 export const storage = {
 	/// Assigns the native tokens to an accounts

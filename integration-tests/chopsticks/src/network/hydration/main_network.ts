@@ -9,14 +9,16 @@ export const getSetupOptions = ({
 }: {
 	blockNumber?: number
 	wasmOverride?: string
-} = {}) =>
-	({
+} = {}) => {
+	const random = (Math.random() + 1).toString(36).substring(7)
+	return {
 		endpoint: process.env.HYDRADX_WS || ['wss://rpc.hydradx.cloud'],
-		db: './db/hydration_main.db.sqlite',
+		db: `./db/hydration_main_${random}.db.sqlite`,
 		port: toNumber(process.env.HYDRADX_PORT),
 		blockNumber,
 		wasmOverride,
-	}) as SetupOption
+	} as SetupOption
+}
 
 export const storage = {
 	/// Sets the [TechnicalCommittee] and [Council] governance to the given accounts

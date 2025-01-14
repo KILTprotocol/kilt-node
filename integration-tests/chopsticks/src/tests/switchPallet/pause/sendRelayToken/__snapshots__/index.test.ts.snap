@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Send ROCs while switch paused > V4 LIVE: AssetHub -> KILT > Receive native funds on native chain {"section":"polkadotXcm","method":"AssetsTrapped"} 1`] = `
+exports[`Send Relay token while switch paused > V4 LIVE > V4 LIVE: receive relay chain funds on receiver chain {"section":"polkadotXcm","method":"AssetsTrapped"} 1`] = `
 [
   {
     "data": {
@@ -35,7 +35,7 @@ exports[`Send ROCs while switch paused > V4 LIVE: AssetHub -> KILT > Receive nat
 ]
 `;
 
-exports[`Send ROCs while switch paused > V4 LIVE: AssetHub -> KILT > Withdraw native funds on foreign chain {"section":"polkadotXcm","method":"Sent"} 1`] = `
+exports[`Send Relay token while switch paused > V4 LIVE > V4 LIVE: send funds from relay chain {"section":"polkadotXcm","method":"Sent"} 1`] = `
 [
   {
     "data": {

@@ -7,8 +7,9 @@ import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { shutDownNetwork } from '../../../../network/utils.js'
 import { hexAddress } from '../../../../helper/utils.js'
+import { skipTest } from '../../../utils.js'
 
-describe.skip.each(testCases)(
+describe.skipIf(skipTest()).each(testCases)(
 	'Switch KILTs while paused',
 	{ timeout: 30_000 },
 	async ({ account, txContext, config }) => {

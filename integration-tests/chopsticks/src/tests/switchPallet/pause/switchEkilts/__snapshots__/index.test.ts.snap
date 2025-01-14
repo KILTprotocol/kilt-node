@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch eKILTs while paused > V4 LIVE > Receive native funds on native chain {"section":"polkadotXcm","method":"AssetsTrapped"} 1`] = `
+exports[`Switch eKILTs while paused > V4 LIVE > V4 LIVE: Switch eKILTs receiver chain {"section":"polkadotXcm","method":"AssetsTrapped"} 1`] = `
 [
   {
     "data": {
@@ -51,7 +51,7 @@ exports[`Switch eKILTs while paused > V4 LIVE > Receive native funds on native c
 ]
 `;
 
-exports[`Switch eKILTs while paused > V4 LIVE > Withdraw native funds on foreign chain {"section":"polkadotXcm","method":"Sent"} 1`] = `
+exports[`Switch eKILTs while paused > V4 LIVE > V4 LIVE: Switch eKILTs sender chain {"section":"polkadotXcm","method":"Sent"} 1`] = `
 [
   {
     "data": {

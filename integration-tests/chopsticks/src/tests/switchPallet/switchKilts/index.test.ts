@@ -4,12 +4,13 @@ import type { KeyringPair } from '@polkadot/keyring/types'
 
 import { createBlock, setStorage } from '../../../network/utils.js'
 import { calculateTxFees, hexAddress } from '../../../helper/utils.js'
-import { testPairsSwitchFunds } from './config.js'
+import { testCases } from './config.js'
 import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant, getPoolAccount, getRemoteLockedSupply } from '../index.js'
+import { skipTest } from '../../utils.js'
 
-describe.skip.each(testPairsSwitchFunds)(
+describe.skipIf(skipTest()).each(testCases)(
 	'Switch KILTs',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {

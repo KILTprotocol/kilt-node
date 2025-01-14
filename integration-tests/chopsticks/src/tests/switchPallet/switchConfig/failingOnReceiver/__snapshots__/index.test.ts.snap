@@ -1,26 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch KILTs while receiver can not handle them > V4 LIVE > Receive native funds on native chain {"section":"messageQueue","method":"Processed"} 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": "(rounded 2100)",
-      },
-      "success": false,
-      "weightUsed": {
-        "proofSize": "(rounded 24000)",
-        "refTime": "(rounded 1500000000)",
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
-
-exports[`Switch KILTs while receiver can not handle them > V4 LIVE > Withdraw native funds on foreign chain "assetSwitchPool1" 1`] = `
+exports[`Switch KILTs while receiver can not handle them > V4 LIVE > V4 LIVE: Switch on native chain: "assetSwitchPool1" 1`] = `
 [
   {
     "data": {
@@ -44,6 +24,26 @@ exports[`Switch KILTs while receiver can not handle them > V4 LIVE > Withdraw na
     },
     "method": "LocalToRemoteSwitchExecuted",
     "section": "assetSwitchPool1",
+  },
+]
+`;
+
+exports[`Switch KILTs while receiver can not handle them > V4 LIVE > V4 LIVE: Switch on receiver chain: {"section":"messageQueue","method":"Processed"} 1`] = `
+[
+  {
+    "data": {
+      "id": "(hash)",
+      "origin": {
+        "Sibling": "(rounded 2100)",
+      },
+      "success": false,
+      "weightUsed": {
+        "proofSize": "(rounded 24000)",
+        "refTime": "(rounded 1500000000)",
+      },
+    },
+    "method": "Processed",
+    "section": "messageQueue",
   },
 ]
 `;

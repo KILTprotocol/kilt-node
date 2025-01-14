@@ -9,14 +9,16 @@ export const getSetupOptions = ({
 }: {
 	blockNumber?: number
 	wasmOverride?: string
-}) =>
-	({
+}) => {
+	const random = (Math.random() + 1).toString(36).substring(7)
+	return {
 		endpoint: process.env.PASEO_WS || ['wss://paseo.rpc.amforc.com', 'wss://rpc.ibp.network/paseo'],
-		db: './db/polkadot_main.db.sqlite',
+		db: `./db/polkadot_test_${random}.db.sqlite`,
 		port: toNumber(process.env.POLKADOT_PORT),
 		blockNumber,
 		wasmOverride,
-	}) as SetupOption
+	} as SetupOption
+}
 
 export const storage = {
 	/// Assigns the native tokens to an accounts
