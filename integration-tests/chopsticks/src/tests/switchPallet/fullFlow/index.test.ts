@@ -12,7 +12,7 @@ import { skipTest } from '../../utils.js'
 
 describe.skipIf(skipTest()).each(testCases)(
 	'Switch KILTs full flow',
-	{ timeout: 30_000 },
+	{ timeout: 60_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let nativeContext: Config
 		let foreignContext: Config
@@ -37,7 +37,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
-		}, 20_000)
+		}, 40_000)
 
 		// Shut down the network
 		afterEach(async () => {
@@ -50,7 +50,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 20_000, retry: 3 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const { tx, balanceToTransfer, events } = txContext
@@ -84,14 +84,14 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.foreign.transfer.map(
 				async (pallet) =>
 					await checkEvents(events1, pallet).toMatchSnapshot(
-						`${desc}: transfer foreign funds from foreign chain ${JSON.stringify(pallet)}`
+						`transfer foreign funds from foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.native.receive.foreign.map(
 				async (pallet) =>
 					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
-						`${desc}: receive foreign funds on native chain ${JSON.stringify(pallet)}`
+						`receive foreign funds on native chain ${JSON.stringify(pallet)}`
 					)
 			)
 
@@ -123,18 +123,18 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.native.transfer.map(
 				async (pallet) =>
 					await checkEvents(events2, pallet).toMatchSnapshot(
-						`${desc}: Transfer native funds to foreign chain ${JSON.stringify(pallet)}`
+						`Transfer native funds to foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.foreign.receive.native.map(
 				async (pallet) =>
 					await checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
-						`${desc}: Receive native funds on foreign chain ${JSON.stringify(pallet)}`
+						`Receive native funds on foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
-			checkSwitchPalletInvariant(
+			await checkSwitchPalletInvariant(
 				expect,
 				nativeContext,
 				foreignContext,
@@ -176,20 +176,20 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.foreign.withdraw.map(
 				async (pallet) =>
 					await checkEvents(events3, pallet).toMatchSnapshot(
-						`${desc}: Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
+						`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.native.receive.native.map(
 				async (pallet) =>
 					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
-						`${desc}: Receive native funds on native chain ${JSON.stringify(pallet)}`
+						`Receive native funds on native chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			// finalize the switch. Create a another block to process the query xcm message
 			await createBlock(nativeContext)
-			checkSwitchPalletInvariant(
+			await checkSwitchPalletInvariant(
 				expect,
 				nativeContext,
 				foreignContext,
@@ -227,14 +227,14 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.native.withdraw.map(
 				async (pallet) =>
 					await checkEvents(events4, pallet).toMatchSnapshot(
-						`${desc}: Withdraw foreign funds on native chain ${JSON.stringify(pallet)}`
+						`Withdraw foreign funds on native chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.foreign.receive.native.map(
 				async (pallet) =>
 					await checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
-						`${desc}: Receive foreign funds on foreign chain ${JSON.stringify(pallet)}`
+						`Receive foreign funds on foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 		})

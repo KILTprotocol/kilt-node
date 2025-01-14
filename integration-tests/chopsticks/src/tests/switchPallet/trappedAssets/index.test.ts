@@ -55,7 +55,7 @@ describe.skipIf(skipTest()).each(testCases)(
 
 			const { tx, balanceToTransfer, events, reclaimTx, getXcmMessage, senderLocation } = txContext
 
-			// inital checks
+			// initial checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
@@ -81,12 +81,12 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.sender.map(
 				async (pallet) =>
 					await checkEvents(events1, pallet).toMatchSnapshot(
-						`${desc}: Switch eKILTs sender chain: ${JSON.stringify(pallet)}`
+						`Switch eKILTs sender chain: ${JSON.stringify(pallet)}`
 					)
 			)
 
 			await checkSystemEvents(receiverContext, 'polkadotXcm').toMatchSnapshot(
-				`${desc}: AssetsTrapped event on receiver chain`
+				'AssetsTrapped event on receiver chain'
 			)
 
 			// enable the switch pair again
@@ -120,17 +120,13 @@ describe.skipIf(skipTest()).each(testCases)(
 			await createBlock(relayContext)
 
 			// check if the tx was successful
-			await checkSystemEvents(relayContext, 'xcmPallet').toMatchSnapshot(
-				`${desc}: reclaim xcm message on relay chain`
-			)
+			await checkSystemEvents(relayContext, 'xcmPallet').toMatchSnapshot('reclaim xcm message on relay chain')
 
 			// process and send message on sender chain.
 			await createBlock(senderContext)
 
 			// check if the tx was successful
-			await checkSystemEvents(senderContext, 'polkadotXcm').toMatchSnapshot(
-				`${desc}: reclaim xcm message on sender chain`
-			)
+			await checkSystemEvents(senderContext, 'polkadotXcm').toMatchSnapshot('reclaim xcm message on sender chain')
 			// process message  receiver chain
 			await createBlock(receiverContext)
 
@@ -138,7 +134,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.receiver.map(
 				async (pallet) =>
 					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-						`${desc}: reclaim trapped assets receiver chain: ${JSON.stringify(pallet)}`
+						`reclaim trapped assets receiver chain: ${JSON.stringify(pallet)}`
 					)
 			)
 		})

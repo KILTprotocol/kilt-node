@@ -16,9 +16,8 @@ interface Query {
 }
 
 interface Events {
-	// events to check after the transaction on the native chain
 	sender: EventFilter[]
-	// events to check after the transaction on the foreign chain
+
 	receiver: EventFilter[]
 }
 
@@ -39,7 +38,6 @@ interface TestConfiguration {
 	sovereignAccount: SovereignAccount
 }
 
-// Test pairs for limited reserve transfers
 export const testCases: TestConfiguration[] = [
 	{
 		config: {

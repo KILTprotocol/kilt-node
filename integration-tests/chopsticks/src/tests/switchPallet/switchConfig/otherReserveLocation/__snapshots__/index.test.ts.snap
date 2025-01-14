@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch other reserve location > V4 LIVE > V4 LIVE: Switch eKILTs from untrusted location receiver: {"section":"messageQueue","method":"ProcessingFailed"} 1`] = `
+exports[`Switch other reserve location > V4 LIVE > Switch eKILTs from untrusted location receiver: {"section":"messageQueue","method":"ProcessingFailed"} 1`] = `
 [
   {
     "data": {
@@ -14,7 +14,7 @@ exports[`Switch other reserve location > V4 LIVE > V4 LIVE: Switch eKILTs from u
 ]
 `;
 
-exports[`Switch other reserve location > V4 LIVE > V4 LIVE: Switch eKILTs from untrusted location sender: {"section":"xcmPallet","method":"Sent"} 1`] = `
+exports[`Switch other reserve location > V4 LIVE > Switch eKILTs from untrusted location sender: {"section":"xcmPallet","method":"Sent"} 1`] = `
 [
   {
     "data": {

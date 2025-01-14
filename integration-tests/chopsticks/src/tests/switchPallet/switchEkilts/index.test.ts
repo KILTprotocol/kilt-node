@@ -101,14 +101,14 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.sender.map(
 				async (pallet) =>
 					await checkEvents(eventsResult, pallet).toMatchSnapshot(
-						`${desc}: switch eKILTs sender ${JSON.stringify(pallet)}`
+						`Switch eKILTs sender ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.receiver.map(
 				async (pallet) =>
 					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-						`${desc}: switch eKILTs receiver ${JSON.stringify(pallet)}`
+						`Switch eKILTs receiver ${JSON.stringify(pallet)}`
 					)
 			)
 

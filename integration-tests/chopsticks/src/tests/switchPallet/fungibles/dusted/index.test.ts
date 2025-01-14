@@ -81,7 +81,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.map(
 				async (pallet) =>
 					await checkSystemEvents(context, pallet).toMatchSnapshot(
-						`${desc}: Dusted accounts pallet: ${JSON.stringify(pallet)}`
+						`Dusted accounts pallet: ${JSON.stringify(pallet)}`
 					)
 			)
 		})

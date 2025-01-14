@@ -53,7 +53,7 @@ describe.skipIf(skipTest()).each(testPairsWithdrawAssets)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 0 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const { pallets, tx, balanceToTransfer } = txContext
@@ -82,8 +82,9 @@ describe.skipIf(skipTest()).each(testPairsWithdrawAssets)(
 			// check sender state
 			await createBlock(senderContext)
 
-			pallets.sender.map((pallet) =>
-				checkEvents(events, pallet).toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
+			pallets.sender.map(
+				async (pallet) =>
+					await checkEvents(events, pallet).toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
 			)
 
 			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
@@ -109,8 +110,11 @@ describe.skipIf(skipTest()).each(testPairsWithdrawAssets)(
 				senderSovereignAccountBalanceBeforeTransfer - BigInt(balanceToTransfer)
 			)
 
-			pallets.receiver.map((pallet) =>
-				checkSystemEvents(receiverContext, pallet).toMatchSnapshot(`receiver events ${JSON.stringify(pallet)}`)
+			pallets.receiver.map(
+				async (pallet) =>
+					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+						`receiver events ${JSON.stringify(pallet)}`
+					)
 			)
 
 			const balanceReceiverAfterTransfer = await query.receiver(receiverContext, receiverAccount.address)

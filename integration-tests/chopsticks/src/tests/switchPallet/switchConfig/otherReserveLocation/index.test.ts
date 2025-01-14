@@ -50,7 +50,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			const { checkSystemEvents } = withExpect(expect)
 			const { tx, balanceToTransfer, events, message } = txContext
 
-			// inital checks
+			// initial checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
 
@@ -70,14 +70,14 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.sender.map(
 				async (pallet) =>
 					await checkSystemEvents(relayContext, pallet).toMatchSnapshot(
-						`${desc}: Switch eKILTs from untrusted location sender: ${JSON.stringify(pallet)}`
+						`Switch eKILTs from untrusted location sender: ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.receiver.map(
 				async (pallet) =>
 					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-						`${desc}: Switch eKILTs from untrusted location receiver: ${JSON.stringify(pallet)}`
+						`Switch eKILTs from untrusted location receiver: ${JSON.stringify(pallet)}`
 					)
 			)
 		})

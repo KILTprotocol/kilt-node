@@ -13,7 +13,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
   },
   {
     "data": {
-      "amount": "(rounded 4000000000000)",
+      "amount": "(rounded 3900000000000)",
       "currencyId": 28,
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
@@ -65,7 +65,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
   },
   {
     "data": {
-      "amount": "(rounded 4000000000000)",
+      "amount": "(rounded 3900000000000)",
       "currencyId": 28,
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
@@ -246,7 +246,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver even
   },
   {
     "data": {
-      "amount": "(rounded 4000000000000)",
+      "amount": "(rounded 3900000000000)",
       "currencyId": 28,
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
@@ -298,7 +298,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver even
   },
   {
     "data": {
-      "amount": "(rounded 4000000000000)",
+      "amount": "(rounded 3900000000000)",
       "currencyId": 28,
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: AssetsTrapped event on receiver chain 1`] = `
+exports[`Reclaim trapped assets > V4 LIVE > AssetsTrapped event on receiver chain 1`] = `
 [
   {
     "data": {
@@ -51,7 +51,7 @@ exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: AssetsTrapped event on rece
 ]
 `;
 
-exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: Switch eKILTs sender chain: {"section":"polkadotXcm","method":"Sent"} 1`] = `
+exports[`Reclaim trapped assets > V4 LIVE > Switch eKILTs sender chain: {"section":"polkadotXcm","method":"Sent"} 1`] = `
 [
   {
     "data": {
@@ -168,7 +168,7 @@ exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: Switch eKILTs sender chain:
 ]
 `;
 
-exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: reclaim trapped assets receiver chain: {"section":"assetSwitchPool1","method":"RemoteToLocalSwitchExecuted"} 1`] = `
+exports[`Reclaim trapped assets > V4 LIVE > reclaim trapped assets receiver chain: {"section":"assetSwitchPool1","method":"RemoteToLocalSwitchExecuted"} 1`] = `
 [
   {
     "data": {
@@ -181,7 +181,7 @@ exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: reclaim trapped assets rece
 ]
 `;
 
-exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: reclaim trapped assets receiver chain: {"section":"polkadotXcm","method":"AssetsClaimed"} 1`] = `
+exports[`Reclaim trapped assets > V4 LIVE > reclaim trapped assets receiver chain: {"section":"polkadotXcm","method":"AssetsClaimed"} 1`] = `
 [
   {
     "data": {
@@ -232,7 +232,7 @@ exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: reclaim trapped assets rece
 ]
 `;
 
-exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: reclaim xcm message on relay chain 1`] = `
+exports[`Reclaim trapped assets > V4 LIVE > reclaim xcm message on relay chain 1`] = `
 [
   {
     "data": {
@@ -278,7 +278,7 @@ exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: reclaim xcm message on rela
 ]
 `;
 
-exports[`Reclaim trapped assets > V4 LIVE > V4 LIVE: reclaim xcm message on sender chain 1`] = `
+exports[`Reclaim trapped assets > V4 LIVE > reclaim xcm message on sender chain 1`] = `
 [
   {
     "data": {

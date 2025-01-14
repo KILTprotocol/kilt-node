@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch eKILTs while no pair set > V4 LIVE > V4 LIVE: Switch eKILTs on receiver chain: {"section":"messageQueue","method":"Processed"} 1`] = `
+exports[`Switch eKILTs while no pair set > V4 LIVE > Switch eKILTs on receiver chain: {"section":"messageQueue","method":"Processed"} 1`] = `
 [
   {
     "data": {
@@ -20,7 +20,7 @@ exports[`Switch eKILTs while no pair set > V4 LIVE > V4 LIVE: Switch eKILTs on r
 ]
 `;
 
-exports[`Switch eKILTs while no pair set > V4 LIVE > V4 LIVE: Switch eKILTs on sender chain: {"section":"polkadotXcm","method":"Sent"} 1`] = `
+exports[`Switch eKILTs while no pair set > V4 LIVE > Switch eKILTs on sender chain: {"section":"polkadotXcm","method":"Sent"} 1`] = `
 [
   {
     "data": {

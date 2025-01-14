@@ -54,7 +54,7 @@ describe.skipIf(skipTest()).each(testCases)(
 
 			const { tx, balanceToTransfer, events } = txContext
 
-			// inital checks
+			// initial checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
@@ -82,22 +82,20 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.sender.map(
 				async (pallet) =>
 					await checkEvents(events1, pallet).toMatchSnapshot(
-						`${desc}: Switch on native chain: ${JSON.stringify(pallet)}`
+						`Switch on native chain: ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.receiver.map(
 				async (pallet) =>
 					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-						`${desc}: Switch on receiver chain: ${JSON.stringify(pallet)}`
+						`Switch on receiver chain: ${JSON.stringify(pallet)}`
 					)
 			)
 
 			// finalize switch
 			await createBlock(senderContext)
-			await checkSystemEvents(senderContext, 'assetSwitchPool1').toMatchSnapshot(
-				'assetSwitchPool1 Finalization ' + desc
-			)
+			await checkSystemEvents(senderContext, 'assetSwitchPool1').toMatchSnapshot('assetSwitchPool1 Finalization')
 
 			const balanceAfterFinalization = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceAfterFinalization).toBe(balanceBeforeTxSender - txFees)

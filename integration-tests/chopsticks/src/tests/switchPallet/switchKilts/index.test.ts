@@ -92,22 +92,20 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.sender.map(
 				async (pallet) =>
 					await checkEvents(eventsResult, pallet).toMatchSnapshot(
-						`${desc}: switch KILTs sender chain: ${JSON.stringify(pallet)}`
+						`Switch KILTs sender chain: ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.receiver.map(
 				async (pallet) =>
 					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-						`${desc}: switch KILTs receiver chain: ${JSON.stringify(pallet)}`
+						`Switch KILTs receiver chain: ${JSON.stringify(pallet)}`
 					)
 			)
 
 			// finalize switch
 			await createBlock(senderContext)
-			await checkSystemEvents(senderContext, 'assetSwitchPool1').toMatchSnapshot(
-				`${desc}:  assetSwitchPool1 Finalization`
-			)
+			await checkSystemEvents(senderContext, 'assetSwitchPool1').toMatchSnapshot('AssetSwitchPool1 Finalization')
 
 			await checkSwitchPalletInvariant(
 				expect,

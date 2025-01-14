@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch KILTs > V4 LIVE > V4 LIVE:  assetSwitchPool1 Finalization 1`] = `
+exports[`Switch KILTs > V4 LIVE > AssetSwitchPool1 Finalization 1`] = `
 [
   {
     "data": {
@@ -28,9 +28,9 @@ exports[`Switch KILTs > V4 LIVE > V4 LIVE:  assetSwitchPool1 Finalization 1`] = 
 ]
 `;
 
-exports[`Switch KILTs > V4 LIVE > V4 LIVE: switch KILTs receiver chain: {"section":"foreignAssets","method":"Transferred"} 1`] = `[]`;
+exports[`Switch KILTs > V4 LIVE > Switch KILTs receiver chain: {"section":"foreignAssets","method":"Transferred"} 1`] = `[]`;
 
-exports[`Switch KILTs > V4 LIVE > V4 LIVE: switch KILTs sender chain: {"section":"assetSwitchPool1","method":"LocalToRemoteSwitchExecuted"} 1`] = `
+exports[`Switch KILTs > V4 LIVE > Switch KILTs sender chain: {"section":"assetSwitchPool1","method":"LocalToRemoteSwitchExecuted"} 1`] = `
 [
   {
     "data": {

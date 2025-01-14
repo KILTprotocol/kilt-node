@@ -46,9 +46,9 @@ interface Transactions {
 interface Events {
 	// events to check after the transaction on the native chain
 	native: {
-		// events after transfering the native funds to the foreign chain
+		// events after transferring the native funds to the foreign chain
 		transfer: EventFilter[]
-		// events after transfering the foreign funds from the native chain to the foreign chain
+		// events after transferring the foreign funds from the native chain to the foreign chain
 		withdraw: EventFilter[]
 		// events after receiving the native funds from the foreign chain
 		receive: {
@@ -60,9 +60,9 @@ interface Events {
 	}
 	// events to check after the transaction on the foreign chain
 	foreign: {
-		// events after transfering the foreign funds to the native chain
+		// events after transferring the foreign funds to the native chain
 		transfer: EventFilter[]
-		// events after transfering the native funds from the foreign chain to the native chain
+		// events after transferring the native funds from the foreign chain to the native chain
 		withdraw: EventFilter[]
 		receive: {
 			// events after receiving the native funds from the native chain on the foreign chain
@@ -87,10 +87,7 @@ interface TxContext {
 	events: Events
 }
 
-/*
- * Configuration for Swtichting coins.
- **/
-interface SwitchTestConfiguration {
+interface TestConfiguration {
 	config: BasicConfig
 	query: Query
 	txContext: TxContext
@@ -98,8 +95,7 @@ interface SwitchTestConfiguration {
 	sovereignAccount: string
 }
 
-// Test pairs for limited reserve transfers
-export const testCases: SwitchTestConfiguration[] = [
+export const testCases: TestConfiguration[] = [
 	{
 		config: {
 			desc: 'V4 LIVE',

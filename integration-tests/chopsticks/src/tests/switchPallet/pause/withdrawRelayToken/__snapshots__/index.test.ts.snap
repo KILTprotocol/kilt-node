@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Withdraw relay token while paused > V4 LIVE > V4 LIVE: Receive relay funds {"section":"balances","method":"Burned"} 1`] = `
+exports[`Withdraw relay token while paused > V4 LIVE > Receive relay funds {"section":"balances","method":"Burned"} 1`] = `
 [
   {
     "data": {
@@ -13,7 +13,7 @@ exports[`Withdraw relay token while paused > V4 LIVE > V4 LIVE: Receive relay fu
 ]
 `;
 
-exports[`Withdraw relay token while paused > V4 LIVE > V4 LIVE: Receive relay funds {"section":"balances","method":"Minted"} 1`] = `
+exports[`Withdraw relay token while paused > V4 LIVE > Receive relay funds {"section":"balances","method":"Minted"} 1`] = `
 [
   {
     "data": {
@@ -26,7 +26,7 @@ exports[`Withdraw relay token while paused > V4 LIVE > V4 LIVE: Receive relay fu
 ]
 `;
 
-exports[`Withdraw relay token while paused > V4 LIVE > V4 LIVE: Withdraw relay funds {"section":"polkadotXcm","method":"Sent"} 1`] = `
+exports[`Withdraw relay token while paused > V4 LIVE > Withdraw relay funds {"section":"polkadotXcm","method":"Sent"} 1`] = `
 [
   {
     "data": {

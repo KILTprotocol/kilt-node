@@ -54,7 +54,7 @@ describe.skipIf(skipTest()).each(testCases)(
 
 			const { tx, balanceToTransfer, events } = txContext
 
-			// inital checks
+			// initial checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
@@ -83,14 +83,14 @@ describe.skipIf(skipTest()).each(testCases)(
 			events.sender.map(
 				async (pallet) =>
 					await checkEvents(events1, pallet).toMatchSnapshot(
-						`${desc}: send funds from relay chain ${JSON.stringify(pallet)}`
+						`send funds from relay chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.receiver.map(
 				async (pallet) =>
 					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-						`${desc}: receive relay chain funds on receiver chain ${JSON.stringify(pallet)}`
+						`receive relay chain funds on receiver chain ${JSON.stringify(pallet)}`
 					)
 			)
 		})

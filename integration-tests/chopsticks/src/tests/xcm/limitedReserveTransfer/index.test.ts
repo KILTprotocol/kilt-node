@@ -80,8 +80,9 @@ describe.skipIf(skipTest()).each(testPairsLimitedReserveTransfers)(
 			// check sender state
 			await createBlock(senderContext)
 
-			pallets.sender.map((pallet) =>
-				checkEvents(events, pallet).toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
+			pallets.sender.map(
+				async (pallet) =>
+					await checkEvents(events, pallet).toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
 			)
 
 			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
@@ -106,8 +107,11 @@ describe.skipIf(skipTest()).each(testPairsLimitedReserveTransfers)(
 			// check receiver state
 			await createBlock(receiverContext)
 
-			pallets.receiver.map((pallet) =>
-				checkSystemEvents(receiverContext, pallet).toMatchSnapshot(`receiver events ${JSON.stringify(pallet)}`)
+			pallets.receiver.map(
+				async (pallet) =>
+					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+						`receiver events ${JSON.stringify(pallet)}`
+					)
 			)
 
 			const balanceReceiverAfterTransfer = await query.receiver(receiverContext, receiverAccount.address)
