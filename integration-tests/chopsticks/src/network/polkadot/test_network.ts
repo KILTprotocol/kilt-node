@@ -11,11 +11,7 @@ export const getSetupOptions = ({
 	wasmOverride?: string
 }) =>
 	({
-		endpoint: process.env.POLKADOT_WS || [
-			'wss://rpc.polkadot.io',
-			'wss://polkadot-rpc.dwellir.com',
-			'wss://rpc.ibp.network/polkadot',
-		],
+		endpoint: process.env.PASEO_WS || ['wss://paseo.rpc.amforc.com', 'wss://rpc.ibp.network/paseo'],
 		db: './db/polkadot_main.db.sqlite',
 		port: toNumber(process.env.POLKADOT_PORT),
 		blockNumber,
@@ -31,7 +27,13 @@ export const storage = {
 			},
 		}
 	},
-
+	assignSudoKey(addr: string) {
+		return {
+			Sudo: {
+				Key: addr,
+			},
+		}
+	},
 	removeDisputesAndMessageQueues() {
 		return {
 			ParasDisputes: {

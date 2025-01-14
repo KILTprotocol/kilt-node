@@ -57,7 +57,6 @@ describe.skip.each(testCases)(
 
 				// schedule tx
 				const rawTx = tx(relayContext, message(balanceToTransfer.toString(), keysAlice.address))
-
 				await scheduleTx(relayContext, rawTx)
 				// process tx
 				await createBlock(relayContext)

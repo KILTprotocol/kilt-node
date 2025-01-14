@@ -68,6 +68,49 @@ export function getDepositXcmMessageV3(assetId: object) {
 	})
 }
 
+export function getXcmV4ReclaimMessage(assetId: object) {
+	return (amount: string, receiver: string) => ({
+		V4: [
+			{ WithdrawAsset: [{ id: { parents: 0, interior: 'Here' }, fun: { Fungible: amount } }] },
+			{
+				BuyExecution: {
+					weightLimit: 'Unlimited',
+					fees: { id: { parents: 0, interior: 'Here' }, fun: { Fungible: amount } },
+				},
+			},
+			{
+				ClaimAsset: {
+					// Specify xcm version 4
+					ticket: { parents: 0, interior: { X1: [{ GeneralIndex: 4 }] } },
+					assets: [
+						{
+							id: assetId,
+							fun: { Fungible: amount },
+						},
+					],
+				},
+			},
+			{
+				DepositAsset: {
+					assets: { Wild: 'All' },
+					beneficiary: {
+						parents: 0,
+						interior: {
+							X1: [
+								{
+									AccountId32: {
+										id: hexAddress(receiver),
+									},
+								},
+							],
+						},
+					},
+				},
+			},
+		],
+	})
+}
+
 export async function checkSwitchPalletInvariant(
 	expect: ExpectStatic,
 	nativeContext: SetupConfig,

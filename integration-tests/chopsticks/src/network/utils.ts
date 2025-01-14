@@ -81,7 +81,7 @@ export async function scheduleTx({ api }: { api: ApiPromise }, call: Submittable
 					[
 						{
 							call: {
-								Inline: call.inner.toHex(),
+								Inline: call.method.toHex(),
 							},
 							origin: {
 								system: 'Root',

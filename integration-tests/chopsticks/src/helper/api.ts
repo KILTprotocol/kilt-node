@@ -81,6 +81,14 @@ export const switchPallet = {
 					},
 				},
 			}),
+	resume:
+		() =>
+		({ api }: { api: ApiPromise }) =>
+			api.tx.assetSwitchPool1.resumeSwitchPair(),
+	pause:
+		() =>
+		({ api }: { api: ApiPromise }) =>
+			api.tx.assetSwitchPool1.pauseSwitchPair(),
 }
 
 /**

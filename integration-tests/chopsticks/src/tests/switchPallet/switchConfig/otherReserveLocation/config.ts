@@ -60,11 +60,7 @@ export const testCases: SwitchTestConfiguration[] = [
 			storage: {
 				senderStorage: {},
 				receiverStorage: {},
-				relayStorage: {
-					...mainChains.polkadot.storage.assignNativeTokensToAccounts([
-						'4pF5Y2Eo6doQHPLQj5AkndZwtomVB8ab2sRftRS2D9JDdELr',
-					]),
-				},
+				relayStorage: {},
 			},
 		},
 		account: keysAlice,
