@@ -19,7 +19,7 @@
 use did::{did_details::DidVerificationKey, traits::deletion::RequireBoth, DidVerificationKeyRelationship};
 use frame_support::{construct_runtime, parameter_types};
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned, RawOrigin};
-use kilt_support::test_utils::MockCurrency;
+use kilt_support::mock::MockCurrency;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ConstBool, ConstU32, ConstU64, H256};

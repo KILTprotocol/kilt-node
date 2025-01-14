@@ -18,7 +18,7 @@
 
 use frame_support::{construct_runtime, parameter_types};
 use frame_system::{mocking::MockBlock, EnsureSigned};
-use kilt_support::test_utils::MockCurrency;
+use kilt_support::mock::MockCurrency;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, ConstU64, H256};

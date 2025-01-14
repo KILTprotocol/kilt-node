@@ -18,7 +18,7 @@
 
 use frame_support::{construct_runtime, parameter_types, traits::Everything};
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
-use kilt_support::test_utils::MockCurrency;
+use kilt_support::mock::MockCurrency;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},

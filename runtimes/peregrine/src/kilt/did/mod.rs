@@ -35,6 +35,9 @@ use crate::{
 	Balances, DotNames, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, UniqueLinking,
 };
 
+#[cfg(test)]
+mod tests;
+
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
 		/// ensure that all calls have the same VerificationKeyRelationship
@@ -94,28 +97,30 @@ impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
 	type DeletionHook = EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
 }
 
-// Worst case taken from the weight values of reading a single storage item as
-// computed in the peregrine weight file.
-// TODO: Replace this with a properly benchmarked value after adding a storage
-// read benchmark to the web3name pallet.
-const WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE: u64 = 500;
+// Read size is given by the `MaxEncodedLen`: https://substrate.stackexchange.com/a/11843/1795.
+// Since the trait is not `const`, we have unit tests that make sure the
+// `max_encoded_len()` function matches this const.
+const WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE: u64 = 33;
 /// Ensure there is no Web3Name linked to a DID.
 type EnsureNoWeb3NameOnDeletion =
 	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE, ()>;
+// Read size is given by the `MaxEncodedLen`: https://substrate.stackexchange.com/a/11843/1795.
+// Since the trait is not `const`, we have unit tests that make sure the
+// `max_encoded_len()` function matches this const.
+const WORST_CASE_DOT_NAME_STORAGE_READ_SIZE: u64 = 33;
 /// Ensure there is no Dotname linked to a DID.
 type EnsureNoDotNameOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<
 	{ RocksDbWeight::get().read },
-	WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE,
+	WORST_CASE_DOT_NAME_STORAGE_READ_SIZE,
 	DotNamesDeployment,
 >;
 /// Ensure there is neither a Web3Name nor a Dotname linked to a DID.
 type EnsureNoUsernamesOnDeletion = RequireBoth<EnsureNoWeb3NameOnDeletion, EnsureNoDotNameOnDeletion>;
 
-// Worst case taken from the weight values of reading a single storage item as
-// computed in the peregrine weight file.
-// TODO: Replace this with a properly benchmarked value after adding a storage
-// read benchmark to the account linking pallet.
-const WORST_CASE_LINKING_STORAGE_READ_SIZE: u64 = 1_000;
+// Read size is given by the `MaxEncodedLen`: https://substrate.stackexchange.com/a/11843/1795.
+// Since the trait is not `const`, we have unit tests that make sure the
+// `max_encoded_len()` function matches this const.
+const WORST_CASE_LINKING_STORAGE_READ_SIZE: u64 = 33;
 /// Ensure there is no linked account (for a web3name) to a DID.
 type EnsureNoWeb3NameLinkedAccountsOnDeletion =
 	EnsureNoLinkedAccountDeletionHook<{ RocksDbWeight::get().read }, WORST_CASE_LINKING_STORAGE_READ_SIZE, ()>;

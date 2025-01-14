@@ -15,6 +15,7 @@ did                 = { workspace = true, features = ["mock", "std"] }
 enum-iterator       = { workspace = true }
 env_logger          = { workspace = true }
 kilt-dip-primitives = { workspace = true, features = ["std"] }
+kilt-support        = { workspace = true, features = ["mock", "std"] }
 sp-io               = { workspace = true, features = ["std"] }
 
 [dependencies]
