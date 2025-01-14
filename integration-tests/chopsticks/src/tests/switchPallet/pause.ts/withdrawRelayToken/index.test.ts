@@ -1,17 +1,18 @@
 import { describe, beforeEach, it, afterEach } from 'vitest'
-import { withExpect } from '@acala-network/chopsticks-testing'
+import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import { createBlock, scheduleTx, setStorage } from '../../../../network/utils.js'
-import { hexAddress, keysAlice } from '../../../../helper/utils.js'
-import { testCases } from './config.js'
+import { createBlock, setStorage } from '../../../../network/utils.js'
+import { hexAddress } from '../../../../helper/utils.js'
+import { testPairsSwitchFunds } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
 
-describe.skip.each(testCases)(
-	'Switch other reserve location',
+describe.skip.each(testPairsSwitchFunds)(
+	'Withdraw relay token while paused',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {
+		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config
 		let senderAccount: KeyringPair
@@ -22,12 +23,14 @@ describe.skip.each(testCases)(
 			const { parachains, relay } = network
 
 			const { parachainContexts, relayChainContext } = await setupNetwork(relay, parachains)
-			const [receiverChainContext] = parachainContexts
+			const [senderChainContext, receiverChainContext] = parachainContexts
 
 			relayContext = relayChainContext
+			senderContext = senderChainContext
 			receiverContext = receiverChainContext
 
-			const { receiverStorage, relayStorage } = storage
+			const { receiverStorage, senderStorage, relayStorage } = storage
+			await setStorage(senderContext, senderStorage)
 			await setStorage(receiverContext, receiverStorage)
 			await setStorage(relayContext, relayStorage)
 
@@ -37,7 +40,7 @@ describe.skip.each(testCases)(
 		// Shut down the network
 		afterEach(async () => {
 			try {
-				await shutDownNetwork([receiverContext, relayContext])
+				await shutDownNetwork([receiverContext, senderContext, relayContext])
 			} catch (error) {
 				if (!(error instanceof TypeError)) {
 					console.error(error)
@@ -48,30 +51,35 @@ describe.skip.each(testCases)(
 		it(
 			desc,
 			async ({ expect }) => {
-				const { checkSystemEvents } = withExpect(expect)
-				const { tx, balanceToTransfer, events, message } = txContext
+				const { checkSystemEvents, checkEvents } = withExpect(expect)
+
+				const { tx, balanceToTransfer, events } = txContext
 
 				// inital checks
 				const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
+				const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 				expect(balanceBeforeTx).toBe(BigInt(0))
+				expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
+				const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
 
-				// schedule tx
-				const rawTx = tx(relayContext, message(balanceToTransfer.toString(), keysAlice.address))
+				const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
-				await scheduleTx(relayContext, rawTx)
 				// process tx
-				await createBlock(relayContext)
+				await createBlock(senderContext)
 				// process msg
 				await createBlock(receiverContext)
 
-				// Tx should fail on receiver. No balance movement.
+				// check balance movement on sender chain.
+				const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
+				expect(balanceAfterTxSender).toBe(balanceBeforeTxSender - balanceToTransfer)
+
 				const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
-				expect(balanceAfterTx).toBe(BigInt(0))
+				expect(balanceAfterTx).toBeGreaterThan(BigInt(0))
 
 				// check events
 				events.sender.map(
 					async (pallet) =>
-						await checkSystemEvents(relayContext, pallet).toMatchSnapshot(
+						await checkEvents(events1, pallet).toMatchSnapshot(
 							`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
 						)
 				)

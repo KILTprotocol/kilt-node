@@ -134,7 +134,6 @@ export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
 				relayStorage: {},
 			},
 		},
-
 		account: keysAlice,
 		query: {
 			native: {
