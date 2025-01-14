@@ -1,24 +1,19 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { EventFilter } from '@acala-network/chopsticks-testing'
 import type { ApiPromise } from '@polkadot/api'
 import type { SubmittableExtrinsic } from '@polkadot/api/types'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import { DOT, initialBalanceKILT, keysAlice, keysBob } from '../../../../helper/utils.js'
+import { DOT, initialBalanceKILT, keysAlice } from '../../../../helper/utils.js'
 import { mainChains } from '../../../../network/index.js'
 import { tx, query } from '../../../../helper/api.js'
 import type { BasicConfig } from '../../../types.js'
 
 interface Query {
-	// Query options on the native chain
 	sender: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
-	// Query options on the foreign chain
+
 	receiver: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
 }
 
-/**
- * All possible events to check after the transaction.
- */
 interface Events {
 	// events to check after the transaction on the native chain
 	sender: EventFilter[]
@@ -26,9 +21,6 @@ interface Events {
 	receiver: EventFilter[]
 }
 
-/**
- * Context for the transaction to switch funds between chains.
- */
 interface TxContext {
 	// amount of funds to transfer
 	balanceToTransfer: bigint
@@ -38,18 +30,14 @@ interface TxContext {
 	events: Events
 }
 
-/*
- * Configuration for Swtichting coins.
- **/
-interface SwitchTestConfiguration {
+interface TestConfiguration {
 	config: BasicConfig
 	query: Query
 	txContext: TxContext
 	account: KeyringPair
 }
 
-// Test pairs for limited reserve transfers
-export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
+export const testCases: TestConfiguration[] = [
 	{
 		config: {
 			desc: 'V4 LIVE',

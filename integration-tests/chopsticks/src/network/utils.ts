@@ -1,10 +1,9 @@
 import { connectParachains, connectVertical } from '@acala-network/chopsticks'
 import { setTimeout } from 'timers/promises'
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
-
 import type { Config } from './types.js'
-import { ApiPromise } from '@polkadot/api'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
+import type { ApiPromise } from '@polkadot/api'
+import type { SubmittableExtrinsic } from '@polkadot/api/types'
 
 /**
  * This function is used to shut down a network composed of multiple chains.

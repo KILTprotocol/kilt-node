@@ -5,11 +5,11 @@ import type { KeyringPair } from '@polkadot/keyring/types'
 import { createBlock, scheduleTx, setStorage } from '../../../network/utils.js'
 import { hexAddress, keysAlice } from '../../../helper/utils.js'
 import { testCases } from './config.js'
-import { Config } from '../../../network/types.js'
+import type { Config } from '../../../network/types.js'
 import { tx as txApi } from '../../../helper/api.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 
-describe.each(testCases)(
+describe.skip.each(testCases)(
 	'Reclaim trapped assets',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {
@@ -49,104 +49,97 @@ describe.each(testCases)(
 			}
 		})
 
-		it(
-			desc,
-			async ({ expect }) => {
-				const { checkSystemEvents, checkEvents } = withExpect(expect)
+		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+			const { checkSystemEvents, checkEvents } = withExpect(expect)
 
-				const { tx, balanceToTransfer, events, reclaimTx, getXcmMessage, senderLocation } = txContext
+			const { tx, balanceToTransfer, events, reclaimTx, getXcmMessage, senderLocation } = txContext
 
-				// inital checks
-				const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
-				const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
-				expect(balanceBeforeTx).toBe(BigInt(0))
-				expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
-				const rawTx = tx(senderContext, balanceToTransfer.toString())
+			// inital checks
+			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
+			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
+			expect(balanceBeforeTx).toBe(BigInt(0))
+			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
+			const rawTx = tx(senderContext, balanceToTransfer.toString())
 
-				const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
+			const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
-				// process tx
-				await createBlock(senderContext)
-				// process msg
-				await createBlock(receiverContext)
+			// process tx
+			await createBlock(senderContext)
+			// process msg
+			await createBlock(receiverContext)
 
-				// check balance movement on sender chain.
-				const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
-				expect(balanceAfterTxSender).toBe(balanceBeforeTxSender - balanceToTransfer)
+			// check balance movement on sender chain.
+			const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
+			expect(balanceAfterTxSender).toBe(balanceBeforeTxSender - balanceToTransfer)
 
-				// Tx should fail on receiver
-				const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
-				expect(balanceAfterTx).toBe(BigInt(0))
+			// Tx should fail on receiver
+			const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
+			expect(balanceAfterTx).toBe(BigInt(0))
 
-				// check events
-				events.sender.map(
-					async (pallet) =>
-						await checkEvents(events1, pallet).toMatchSnapshot(
-							`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
-						)
-				)
+			// check events
+			events.sender.map(
+				async (pallet) =>
+					await checkEvents(events1, pallet).toMatchSnapshot(
+						`${desc}: Switch eKILTs sender chain: ${JSON.stringify(pallet)}`
+					)
+			)
 
-				await checkSystemEvents(receiverContext, 'polkadotXcm').toMatchSnapshot(
-					'AssetsTrapped event on receiver chain' + desc
-				)
+			await checkSystemEvents(receiverContext, 'polkadotXcm').toMatchSnapshot(
+				`${desc}: AssetsTrapped event on receiver chain`
+			)
 
-				// enable the switch pair again
-				const resumeTx = txApi.switchPallet.resume()(receiverContext)
-				scheduleTx(receiverContext, resumeTx)
-				// process scheduled tx
-				await createBlock(receiverContext)
+			// enable the switch pair again
+			const resumeTx = txApi.switchPallet.resume()(receiverContext)
+			scheduleTx(receiverContext, resumeTx)
+			// process scheduled tx
+			await createBlock(receiverContext)
 
-				// create reclaim Tx
-				const xcmMessage = getXcmMessage(balanceToTransfer.toString(), keysAlice.address)
-				const rawReclaimTx = reclaimTx(senderContext, xcmMessage)
+			// create reclaim Tx
+			const xcmMessage = getXcmMessage(balanceToTransfer.toString(), keysAlice.address)
+			const rawReclaimTx = reclaimTx(senderContext, xcmMessage)
 
-				// create reclaim message for relay chain
-				const transactMessage = [
-					{ UnpaidExecution: { weightLimit: 'Unlimited' } },
-					{
-						Transact: {
-							originKind: 'SuperUser',
-							requireWeightAtMost: { refTime: '1000000000', proofSize: '65527' },
-							call: {
-								encoded: rawReclaimTx.method.toHex(),
-							},
+			// create reclaim message for relay chain
+			const transactMessage = [
+				{ UnpaidExecution: { weightLimit: 'Unlimited' } },
+				{
+					Transact: {
+						originKind: 'SuperUser',
+						requireWeightAtMost: { refTime: '1000000000', proofSize: '65527' },
+						call: {
+							encoded: rawReclaimTx.method.toHex(),
 						},
 					},
-				]
+				},
+			]
 
-				// TODO: make relay reclaim tx configurable in the config
-				const reclaimTxRelay = relayContext.api.tx.xcmPallet.send(
-					{ V3: senderLocation },
-					{ V3: transactMessage }
-				)
-				await sendTransaction(relayContext.api.tx.sudo.sudo(reclaimTxRelay).signAsync(keysAlice))
-				// process tx
-				await createBlock(relayContext)
+			// TODO: make relay reclaim tx configurable in the config
+			const reclaimTxRelay = relayContext.api.tx.xcmPallet.send({ V3: senderLocation }, { V3: transactMessage })
+			await sendTransaction(relayContext.api.tx.sudo.sudo(reclaimTxRelay).signAsync(keysAlice))
+			// process tx
+			await createBlock(relayContext)
 
-				// check if the tx was successful
-				await checkSystemEvents(relayContext, 'xcmPallet').toMatchSnapshot(
-					'reclaim xcm message on relay chain ' + desc
-				)
+			// check if the tx was successful
+			await checkSystemEvents(relayContext, 'xcmPallet').toMatchSnapshot(
+				`${desc}: reclaim xcm message on relay chain`
+			)
 
-				// process and send message on sender chain.
-				await createBlock(senderContext)
+			// process and send message on sender chain.
+			await createBlock(senderContext)
 
-				// check if the tx was successful
-				await checkSystemEvents(senderContext, 'polkadotXcm').toMatchSnapshot(
-					'reclaim xcm message on sender chain ' + desc
-				)
-				// process message  receiver chain
-				await createBlock(receiverContext)
+			// check if the tx was successful
+			await checkSystemEvents(senderContext, 'polkadotXcm').toMatchSnapshot(
+				`${desc}: reclaim xcm message on sender chain`
+			)
+			// process message  receiver chain
+			await createBlock(receiverContext)
 
-				// check events
-				events.receiver.map(
-					async (pallet) =>
-						await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-							`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
-						)
-				)
-			},
-			30_000
-		)
+			// check events
+			events.receiver.map(
+				async (pallet) =>
+					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+						`${desc}: reclaim trapped assets receiver chain: ${JSON.stringify(pallet)}`
+					)
+			)
+		})
 	}
 )

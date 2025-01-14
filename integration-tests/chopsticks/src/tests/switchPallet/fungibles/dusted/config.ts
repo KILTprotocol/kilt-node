@@ -19,7 +19,7 @@ interface TxContext {
 	events: EventFilter[]
 }
 
-interface SwitchTestConfiguration {
+interface TestConfiguration {
 	config: BasicConfig
 	query: Query
 	txContext: TxContext
@@ -29,7 +29,7 @@ interface SwitchTestConfiguration {
 	}
 }
 
-export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
+export const testCases: TestConfiguration[] = [
 	{
 		config: {
 			desc: 'V4 LIVE',

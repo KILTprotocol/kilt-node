@@ -1,10 +1,11 @@
 import { describe, beforeEach, it, afterEach } from 'vitest'
 import type { KeyringPair } from '@polkadot/keyring/types'
+import { setupContext } from '@acala-network/chopsticks-testing'
 
 import { createBlock, setStorage } from '../../../../network/utils.js'
 import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
-import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
+import { shutDownNetwork } from '../../../../network/utils.js'
 import { hexAddress } from '../../../../helper/utils.js'
 
 describe.skip.each(testCases)(
@@ -12,34 +13,23 @@ describe.skip.each(testCases)(
 	{ timeout: 30_000 },
 	async ({ account, txContext, config }) => {
 		let senderContext: Config
-		let receiverContext: Config
-		let relayContext: Config
 		let senderAccount: KeyringPair
 		const { desc, network, storage } = config
 
 		// Create the network context
 		beforeEach(async () => {
-			const { parachains, relay } = network
+			const { parachains } = network
+			senderContext = await setupContext(parachains[0])
 
-			const { parachainContexts, relayChainContext } = await setupNetwork(relay, parachains)
-			const [senderChainContext, receiverChainContext] = parachainContexts
-
-			relayContext = relayChainContext
-			senderContext = senderChainContext
-			receiverContext = receiverChainContext
-
-			const { receiverStorage, senderStorage, relayStorage } = storage
+			const { senderStorage } = storage
 			await setStorage(senderContext, senderStorage)
-			await setStorage(receiverContext, receiverStorage)
-			await setStorage(relayContext, relayStorage)
-
 			senderAccount = account
 		}, 20_000)
 
 		// Shut down the network
 		afterEach(async () => {
 			try {
-				await shutDownNetwork([receiverContext, senderContext, relayContext])
+				await shutDownNetwork([senderContext])
 			} catch (error) {
 				if (!(error instanceof TypeError)) {
 					console.error(error)
@@ -47,31 +37,27 @@ describe.skip.each(testCases)(
 			}
 		})
 
-		it(
-			desc,
-			async ({ expect }) => {
-				const { balanceToTransfer, tx } = txContext
-				let section: string = ''
-				let errorName: string = ''
+		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+			const { balanceToTransfer, tx } = txContext
+			let section: string = ''
+			let errorName: string = ''
 
-				// This should fail.
-				await tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString()).signAndSend(
-					senderAccount,
-					({ dispatchError }) => {
-						if (dispatchError) {
-							const decoded = senderContext.api.registry.findMetaError(dispatchError.asModule)
-							section = decoded.section
-							errorName = decoded.name
-						}
+			// This should fail.
+			await tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString()).signAndSend(
+				senderAccount,
+				({ dispatchError }) => {
+					if (dispatchError) {
+						const decoded = senderContext.api.registry.findMetaError(dispatchError.asModule)
+						section = decoded.section
+						errorName = decoded.name
 					}
-				)
+				}
+			)
 
-				await createBlock(senderContext)
+			await createBlock(senderContext)
 
-				expect(section).toBe('assetSwitchPool1')
-				expect(errorName).toBe('SwitchPairNotEnabled')
-			},
-			30_000
-		)
+			expect(section).toBe('assetSwitchPool1')
+			expect(errorName).toBe('SwitchPairNotEnabled')
+		})
 	}
 )

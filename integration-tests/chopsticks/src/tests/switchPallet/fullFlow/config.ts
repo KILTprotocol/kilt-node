@@ -10,23 +10,16 @@ import { getXcmMessageV4ToSendEkilt } from '../index.js'
 import type { BasicConfig } from '../../types.js'
 
 interface QueryFunds {
-	// Query the native asset of the chain
 	nativeFunds: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
-	// Query the foreign asset of the chain
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	foreignFunds: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
 }
 
 interface Query {
-	// Query options on the native chain
 	native: QueryFunds
-	// Query options on the foreign chain
 	foreign: QueryFunds
 }
 
-/**
- * All possible transactions to switch funds between chains.
- */
 interface Transactions {
 	native: {
 		// tx to send the funds from the native chain to the foreign chain
@@ -50,9 +43,6 @@ interface Transactions {
 	}
 }
 
-/**
- * All possible events to check after the transaction.
- */
 interface Events {
 	// events to check after the transaction on the native chain
 	native: {
@@ -83,9 +73,6 @@ interface Events {
 	}
 }
 
-/**
- * Context for the transaction to switch funds between chains.
- */
 interface TxContext {
 	// amount of funds to transfer
 	balanceToTransfer: {
@@ -112,10 +99,10 @@ interface SwitchTestConfiguration {
 }
 
 // Test pairs for limited reserve transfers
-export const testPairsSwitchFunds: SwitchTestConfiguration[] = [
+export const testCases: SwitchTestConfiguration[] = [
 	{
 		config: {
-			desc: 'Switch V4 LIVE: Kilt -> AssetHub -> Kilt',
+			desc: 'V4 LIVE',
 			network: {
 				relay: mainChains.polkadot.getConfig({}),
 				parachains: [mainChains.kilt.getConfig({}), mainChains.assetHub.getConfig({})],

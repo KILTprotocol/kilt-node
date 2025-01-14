@@ -4,12 +4,12 @@ import type { KeyringPair } from '@polkadot/keyring/types'
 
 import { createBlock, setStorage } from '../../../network/utils.js'
 import { hexAddress } from '../../../helper/utils.js'
-import { testPairsSwitchFunds } from './config.js'
-import { Config } from '../../../network/types.js'
+import { testCases } from './config.js'
+import type { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant, getPoolAccount, getReceivedNativeTokens, getRemoteLockedSupply } from '../index.js'
 
-describe.skip.each(testPairsSwitchFunds)(
+describe.skip.each(testCases)(
 	'Switch EKILTs',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
@@ -100,14 +100,14 @@ describe.skip.each(testPairsSwitchFunds)(
 			events.sender.map(
 				async (pallet) =>
 					await checkEvents(eventsResult, pallet).toMatchSnapshot(
-						`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
+						`${desc}: switch eKILTs sender ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.receiver.map(
 				async (pallet) =>
 					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-						`Receive native funds on native chain ${JSON.stringify(pallet)}`
+						`${desc}: switch eKILTs receiver ${JSON.stringify(pallet)}`
 					)
 			)
 

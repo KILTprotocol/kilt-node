@@ -1,15 +1,15 @@
-import { describe, beforeEach, it, afterEach } from 'vitest'
+import { describe, beforeEach, test, afterEach } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
 import { createBlock, setStorage } from '../../../../network/utils.js'
 import { calculateTxFees, getPaidXcmFees, hexAddress } from '../../../../helper/utils.js'
-import { testPairsSwitchFunds } from './config.js'
+import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
 
-describe.skip.each(testPairsSwitchFunds)(
-	'Send ROCs while switch paused',
+describe.skip.each(testCases)(
+	'Send Relay token while switch paused',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {
 		let senderContext: Config
@@ -48,54 +48,50 @@ describe.skip.each(testPairsSwitchFunds)(
 			}
 		})
 
-		it(
-			desc,
-			async ({ expect }) => {
-				const { checkSystemEvents, checkEvents } = withExpect(expect)
+		test(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+			const { checkSystemEvents, checkEvents } = withExpect(expect)
 
-				const { tx, balanceToTransfer, events } = txContext
+			const { tx, balanceToTransfer, events } = txContext
 
-				// inital checks
-				const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
-				const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
-				expect(balanceBeforeTx).toBe(BigInt(0))
-				expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
-				const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
+			// inital checks
+			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
+			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
+			expect(balanceBeforeTx).toBe(BigInt(0))
+			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
+			const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
 
-				const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
+			const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
-				// process tx
-				await createBlock(senderContext)
-				// process msg
-				await createBlock(receiverContext)
+			// process tx
+			await createBlock(senderContext)
+			// process msg
+			await createBlock(receiverContext)
 
-				// check balance movement on sender chain.
-				const txFees = await calculateTxFees(rawTx, senderAccount)
-				const xcmFees = await getPaidXcmFees(await events1.events)
-				const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
+			// check balance movement on sender chain.
+			const txFees = await calculateTxFees(rawTx, senderAccount)
+			const xcmFees = await getPaidXcmFees(await events1.events)
+			const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 
-				expect(balanceAfterTxSender).toBe(balanceBeforeTxSender - balanceToTransfer - txFees - xcmFees)
+			expect(balanceAfterTxSender).toBe(balanceBeforeTxSender - balanceToTransfer - txFees - xcmFees)
 
-				// Tx should fail on receiver
-				const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
-				expect(balanceAfterTx).toBe(BigInt(0))
+			// Tx should fail on receiver
+			const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
+			expect(balanceAfterTx).toBe(BigInt(0))
 
-				// check events
-				events.sender.map(
-					async (pallet) =>
-						await checkEvents(events1, pallet).toMatchSnapshot(
-							`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
-						)
-				)
+			// check events
+			events.sender.map(
+				async (pallet) =>
+					await checkEvents(events1, pallet).toMatchSnapshot(
+						`${desc}: send funds from relay chain ${JSON.stringify(pallet)}`
+					)
+			)
 
-				events.receiver.map(
-					async (pallet) =>
-						await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-							`Receive native funds on native chain ${JSON.stringify(pallet)}`
-						)
-				)
-			},
-			30_000
-		)
+			events.receiver.map(
+				async (pallet) =>
+					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+						`${desc}: receive relay chain funds on receiver chain ${JSON.stringify(pallet)}`
+					)
+			)
+		})
 	}
 )

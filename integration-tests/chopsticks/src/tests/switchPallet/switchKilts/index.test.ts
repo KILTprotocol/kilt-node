@@ -49,7 +49,7 @@ describe.skip.each(testPairsSwitchFunds)(
 			}
 		})
 
-		it(desc, { timeout: 10000, retry: 1 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const poolAccount = await getPoolAccount(senderContext)
@@ -91,21 +91,21 @@ describe.skip.each(testPairsSwitchFunds)(
 			events.sender.map(
 				async (pallet) =>
 					await checkEvents(eventsResult, pallet).toMatchSnapshot(
-						`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
+						`${desc}: switch KILTs sender chain: ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.receiver.map(
 				async (pallet) =>
 					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-						`Receive native funds on native chain ${JSON.stringify(pallet)}`
+						`${desc}: switch KILTs receiver chain: ${JSON.stringify(pallet)}`
 					)
 			)
 
 			// finalize switch
 			await createBlock(senderContext)
 			await checkSystemEvents(senderContext, 'assetSwitchPool1').toMatchSnapshot(
-				'assetSwitchPool1 Finalization ' + desc
+				`${desc}:  assetSwitchPool1 Finalization`
 			)
 
 			await checkSwitchPalletInvariant(

@@ -4,13 +4,13 @@ import type { KeyringPair } from '@polkadot/keyring/types'
 
 import { createBlock, setStorage } from '../../../network/utils.js'
 import { calculateTxFees, getPaidXcmFees, hexAddress } from '../../../helper/utils.js'
-import { testPairsSwitchFunds } from './config.js'
+import { testCases } from './config.js'
 import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant } from '../index.js'
 
-describe.skip.each(testPairsSwitchFunds)(
-	'Switch KILTs',
+describe.skip.each(testCases)(
+	'Switch KILTs full flow',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let nativeContext: Config
@@ -83,14 +83,14 @@ describe.skip.each(testPairsSwitchFunds)(
 			events.foreign.transfer.map(
 				async (pallet) =>
 					await checkEvents(events1, pallet).toMatchSnapshot(
-						`transfer foreign funds from foreign chain ${JSON.stringify(pallet)}`
+						`${desc}: transfer foreign funds from foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.native.receive.foreign.map(
 				async (pallet) =>
 					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
-						`receive foreign funds on native chain ${JSON.stringify(pallet)}`
+						`${desc}: receive foreign funds on native chain ${JSON.stringify(pallet)}`
 					)
 			)
 
@@ -122,14 +122,14 @@ describe.skip.each(testPairsSwitchFunds)(
 			events.native.transfer.map(
 				async (pallet) =>
 					await checkEvents(events2, pallet).toMatchSnapshot(
-						`Transfer native funds to foreign chain ${JSON.stringify(pallet)}`
+						`${desc}: Transfer native funds to foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.foreign.receive.native.map(
 				async (pallet) =>
 					await checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
-						`Receive native funds on foreign chain ${JSON.stringify(pallet)}`
+						`${desc}: Receive native funds on foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
@@ -175,14 +175,14 @@ describe.skip.each(testPairsSwitchFunds)(
 			events.foreign.withdraw.map(
 				async (pallet) =>
 					await checkEvents(events3, pallet).toMatchSnapshot(
-						`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
+						`${desc}: Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.native.receive.native.map(
 				async (pallet) =>
 					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
-						`Receive native funds on native chain ${JSON.stringify(pallet)}`
+						`${desc}: Receive native funds on native chain ${JSON.stringify(pallet)}`
 					)
 			)
 
@@ -226,14 +226,14 @@ describe.skip.each(testPairsSwitchFunds)(
 			events.native.withdraw.map(
 				async (pallet) =>
 					await checkEvents(events4, pallet).toMatchSnapshot(
-						`Withdraw foreign funds on native chain ${JSON.stringify(pallet)}`
+						`${desc}: Withdraw foreign funds on native chain ${JSON.stringify(pallet)}`
 					)
 			)
 
 			events.foreign.receive.native.map(
 				async (pallet) =>
 					await checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
-						`Receive foreign funds on foreign chain ${JSON.stringify(pallet)}`
+						`${desc}: Receive foreign funds on foreign chain ${JSON.stringify(pallet)}`
 					)
 			)
 		})

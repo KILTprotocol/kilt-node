@@ -10,9 +10,8 @@ import type { BasicConfig } from '../../../types.js'
 import { getXcmMessageV4ToSendEkilt } from '../../index.js'
 
 interface Query {
-	// Query options on the native chain
 	sender: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
-	// Query options on the foreign chain
+
 	receiver: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
 }
 

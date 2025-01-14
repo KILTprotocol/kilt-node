@@ -7,9 +7,6 @@ import { mainChains } from '../../../../network/index.js'
 import { tx } from '../../../../helper/api.js'
 import type { BasicConfig } from '../../../types.js'
 
-/**
- * Context for the transaction to switch funds between chains.
- */
 interface TxContext {
 	// amount of funds to transfer
 	balanceToTransfer: bigint
@@ -17,16 +14,13 @@ interface TxContext {
 	tx: ({ api }: { api: ApiPromise }, submitter: string, amount: string) => SubmittableExtrinsic<'promise'>
 }
 
-/*
- * Configuration for Swtichting coins.
- **/
-interface SwitchTestConfiguration {
+interface TestConfiguration {
 	config: BasicConfig
 	txContext: TxContext
 	account: KeyringPair
 }
 
-export const testCases: SwitchTestConfiguration[] = [
+export const testCases: TestConfiguration[] = [
 	{
 		config: {
 			desc: 'V4 LIVE',

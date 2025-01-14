@@ -10,25 +10,15 @@ import type { BasicConfig } from '../../types.js'
 import { getXcmV4ReclaimMessage, getXcmMessageV4ToSendEkilt } from '../index.js'
 
 interface Query {
-	// Query options on the native chain
 	sender: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
-	// Query options on the foreign chain
 	receiver: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
 }
 
-/**
- * All possible events to check after the transaction.
- */
 interface Events {
-	// events to check after the transaction on the native chain
 	sender: EventFilter[]
-	// events to check after the transaction on the foreign chain
 	receiver: EventFilter[]
 }
 
-/**
- * Context for the transaction to switch funds between chains.
- */
 interface TxContext {
 	// amount of funds to transfer
 	balanceToTransfer: bigint
@@ -42,17 +32,14 @@ interface TxContext {
 	senderLocation: object
 }
 
-/*
- * Configuration for Swtichting coins.
- **/
-interface SwitchTestConfiguration {
+interface TestConfiguration {
 	config: BasicConfig
 	query: Query
 	txContext: TxContext
 	account: KeyringPair
 }
 
-export const testCases: SwitchTestConfiguration[] = [
+export const testCases: TestConfiguration[] = [
 	{
 		config: {
 			desc: 'V4 LIVE',

@@ -5,7 +5,7 @@ import type { KeyringPair } from '@polkadot/keyring/types'
 import { createBlock, setStorage } from '../../../../network/utils.js'
 import { calculateTxFees, hexAddress } from '../../../../helper/utils.js'
 import { testCases } from './config.js'
-import { Config } from '../../../../network/types.js'
+import type { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
 
 describe.skip.each(testCases)(
@@ -48,62 +48,58 @@ describe.skip.each(testCases)(
 			}
 		})
 
-		it(
-			desc,
-			async ({ expect }) => {
-				const { checkSystemEvents, checkEvents } = withExpect(expect)
+		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+			const { checkSystemEvents, checkEvents } = withExpect(expect)
 
-				const { tx, balanceToTransfer, events } = txContext
+			const { tx, balanceToTransfer, events } = txContext
 
-				// inital checks
-				const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
-				const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
-				expect(balanceBeforeTx).toBe(BigInt(0))
-				expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
-				const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
+			// inital checks
+			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
+			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
+			expect(balanceBeforeTx).toBe(BigInt(0))
+			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
+			const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
 
-				const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
+			const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
-				// process tx
-				await createBlock(senderContext)
-				// process msg
-				await createBlock(receiverContext)
+			// process tx
+			await createBlock(senderContext)
+			// process msg
+			await createBlock(receiverContext)
 
-				// check balance movement on sender chain.
-				const txFees = await calculateTxFees(rawTx, senderAccount)
-				const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
-				expect(balanceAfterTxSender).toBe(balanceBeforeTxSender - balanceToTransfer - txFees)
+			// check balance movement on sender chain.
+			const txFees = await calculateTxFees(rawTx, senderAccount)
+			const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
+			expect(balanceAfterTxSender).toBe(balanceBeforeTxSender - balanceToTransfer - txFees)
 
-				// Tx should fail on receiver
-				const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
+			// Tx should fail on receiver
+			const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 
-				expect(balanceAfterTx).toBe(BigInt(0))
+			expect(balanceAfterTx).toBe(BigInt(0))
 
-				// check events
-				events.sender.map(
-					async (pallet) =>
-						await checkEvents(events1, pallet).toMatchSnapshot(
-							`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
-						)
-				)
+			// check events
+			events.sender.map(
+				async (pallet) =>
+					await checkEvents(events1, pallet).toMatchSnapshot(
+						`${desc}: Switch on native chain: ${JSON.stringify(pallet)}`
+					)
+			)
 
-				events.receiver.map(
-					async (pallet) =>
-						await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-							`Receive native funds on native chain ${JSON.stringify(pallet)}`
-						)
-				)
+			events.receiver.map(
+				async (pallet) =>
+					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+						`${desc}: Switch on receiver chain: ${JSON.stringify(pallet)}`
+					)
+			)
 
-				// finalize switch
-				await createBlock(senderContext)
-				await checkSystemEvents(senderContext, 'assetSwitchPool1').toMatchSnapshot(
-					'assetSwitchPool1 Finalization ' + desc
-				)
+			// finalize switch
+			await createBlock(senderContext)
+			await checkSystemEvents(senderContext, 'assetSwitchPool1').toMatchSnapshot(
+				'assetSwitchPool1 Finalization ' + desc
+			)
 
-				const balanceAfterFinalization = await query.sender(senderContext, hexAddress(senderAccount.address))
-				expect(balanceAfterFinalization).toBe(balanceBeforeTxSender - txFees)
-			},
-			30_000
-		)
+			const balanceAfterFinalization = await query.sender(senderContext, hexAddress(senderAccount.address))
+			expect(balanceAfterFinalization).toBe(balanceBeforeTxSender - txFees)
+		})
 	}
 )
