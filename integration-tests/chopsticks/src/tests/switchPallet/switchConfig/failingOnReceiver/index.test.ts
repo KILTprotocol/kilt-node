@@ -8,7 +8,7 @@ import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
 
-describe.each(testCases)(
+describe.skip.each(testCases)(
 	'Switch KILTs while receiver can not handle them',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {

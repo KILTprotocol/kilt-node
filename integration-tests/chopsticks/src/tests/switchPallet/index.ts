@@ -28,6 +28,46 @@ export function getXcmMessageV4ToSendEkilt(address: string) {
 	}
 }
 
+export function getDepositXcmMessageV3(assetId: object) {
+	return (balanceToTransfer: string, receiver: string) => ({
+		V3: [
+			{
+				ReserveAssetDeposited: [
+					{
+						id: { Concrete: assetId },
+						fun: { Fungible: balanceToTransfer },
+					},
+				],
+			},
+			'ClearOrigin',
+			{
+				BuyExecution: {
+					fees: {
+						id: { Concrete: assetId },
+						fun: { Fungible: balanceToTransfer },
+					},
+					weightLimit: 'Unlimited',
+				},
+			},
+			{
+				DepositAsset: {
+					assets: { Wild: 'All' },
+					beneficiary: {
+						parents: 0,
+						interior: {
+							X1: {
+								AccountId32: {
+									id: hexAddress(receiver),
+								},
+							},
+						},
+					},
+				},
+			},
+		],
+	})
+}
+
 export async function checkSwitchPalletInvariant(
 	expect: ExpectStatic,
 	nativeContext: SetupConfig,

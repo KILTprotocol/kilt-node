@@ -316,6 +316,10 @@ export const xcmPallet = {
 				xcmMessage,
 				'Unlimited'
 			),
+	send:
+		(destination: object) =>
+		({ api }: { api: ApiPromise }, xcmMessage: object) =>
+			(api.tx.xcmPallet || api.tx.polkadotXcm).send(destination, xcmMessage),
 }
 
 /**

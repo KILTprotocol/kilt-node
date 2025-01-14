@@ -1,0 +1,94 @@
+import type { EventFilter } from '@acala-network/chopsticks-testing'
+import type { ApiPromise } from '@polkadot/api'
+import type { SubmittableExtrinsic } from '@polkadot/api/types'
+import type { KeyringPair } from '@polkadot/keyring/types'
+
+import { keysAlice, KILT } from '../../../../helper/utils.js'
+import { mainChains } from '../../../../network/index.js'
+import { tx, query } from '../../../../helper/api.js'
+import type { BasicConfig } from '../../../types.js'
+import { getDepositXcmMessageV3 } from '../../index.js'
+
+interface Query {
+	// Query options on the foreign chain
+	receiver: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
+}
+
+/**
+ * All possible events to check after the transaction.
+ */
+interface Events {
+	// events to check after the transaction on the native chain
+	sender: EventFilter[]
+	// events to check after the transaction on the foreign chain
+	receiver: EventFilter[]
+}
+
+/**
+ * Context for the transaction to switch funds between chains.
+ */
+interface TxContext {
+	// amount of funds to transfer
+	balanceToTransfer: bigint
+	// transactions to execute
+	tx: ({ api }: { api: ApiPromise }, xcmMessage: object) => SubmittableExtrinsic<'promise'>
+	// the xcm message to send
+	message: (amount: string, receiver: string) => object
+	// events to check after the transaction
+	events: Events
+}
+
+/*
+ * Configuration for Swtichting coins.
+ **/
+interface SwitchTestConfiguration {
+	config: BasicConfig
+	query: Query
+	txContext: TxContext
+	account: KeyringPair
+}
+
+// Test pairs for limited reserve transfers
+export const testCases: SwitchTestConfiguration[] = [
+	{
+		config: {
+			desc: 'V4 LIVE',
+			network: {
+				relay: mainChains.polkadot.getConfig({}),
+				parachains: [mainChains.kilt.getConfig({})],
+			},
+			storage: {
+				senderStorage: {},
+				receiverStorage: {},
+				relayStorage: {
+					...mainChains.polkadot.storage.assignNativeTokensToAccounts([
+						'4pF5Y2Eo6doQHPLQj5AkndZwtomVB8ab2sRftRS2D9JDdELr',
+					]),
+				},
+			},
+		},
+		account: keysAlice,
+		query: {
+			receiver: query.balances,
+		},
+		txContext: {
+			balanceToTransfer: KILT,
+			message: getDepositXcmMessageV3(mainChains.assetHub.chainInfo.eKiltLocation),
+			tx: tx.xcmPallet.send(tx.xcmPallet.parachainV3(0, mainChains.kilt.chainInfo.paraId)),
+			events: {
+				sender: [
+					{
+						section: 'xcmPallet',
+						method: 'Sent',
+					},
+				],
+				receiver: [
+					{
+						section: 'messageQueue',
+						method: 'ProcessingFailed',
+					},
+				],
+			},
+		},
+	},
+]
