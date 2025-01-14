@@ -27,13 +27,13 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.7.1",
     "typescript": "*",
-    "vitest": "^1.4.0"
+    "vitest": "^2.1.8"
   },
   "scripts": {
     "ts-check": "tsc --noEmit",
     "lint": "eslint src && prettier --check src",
     "lint:fix": "eslint --fix src && prettier --write src",
     "clean": "rm -rf ./db",
-    "test": "LOG_LEVEL=error vitest  && yarn clean"
+    "test": "LOG_LEVEL=error vitest --config ./vitest.config.ts"
   }
 }

@@ -16,7 +16,7 @@ import type { SubmittableExtrinsic } from '@polkadot/api/types'
  */
 export async function shutDownNetwork(chains: Config[]): Promise<void> {
 	await setTimeout(50)
-	const tearDown = chains.map((chain) => chain.teardown())
+	const tearDown = chains.map((chain) => chain?.teardown())
 	await Promise.all(tearDown)
 }
 const newBlock = async (newBlockConfig: { count: number }, contexts: Config[]) => {
@@ -66,6 +66,7 @@ export async function createBlock(context: Config) {
 
 /// sets the storage for the given context.
 export async function setStorage(context: Config, storage: Record<string, Record<string, unknown>>) {
+	await setTimeout(50)
 	await context.dev.setStorage(storage)
 	await createBlock(context)
 }
