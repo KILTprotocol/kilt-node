@@ -43,6 +43,11 @@ export const xtokens = {
 			api.tx.xTokens.transfer(token, amount, dest(acc), weight),
 }
 
+export const balances = {
+	transferAllowDeath: ({ api }: { api: ApiPromise }, dest: string, amount: string) =>
+		api.tx.balances.transferAllowDeath(dest, amount),
+}
+
 export const switchPallet = {
 	switchV3:
 		() =>
@@ -329,6 +334,7 @@ export const tx = {
 	xtokens,
 	xcmPallet,
 	switchPallet,
+	balances,
 }
 
 /**

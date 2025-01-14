@@ -1,0 +1,28 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Dust account > V4 LIVE > Withdraw native funds on foreign chain {"section":"balances","method":"Endowed"} 1`] = `
+[
+  {
+    "data": {
+      "account": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
+      "freeBalance": "(rounded 100000000000000000)",
+    },
+    "method": "Endowed",
+    "section": "balances",
+  },
+]
+`;
+
+exports[`Dust account > V4 LIVE > Withdraw native funds on foreign chain {"section":"balances","method":"Transfer"} 1`] = `
+[
+  {
+    "data": {
+      "amount": "(rounded 100000000000000000)",
+      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+      "to": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
+    },
+    "method": "Transfer",
+    "section": "balances",
+  },
+]
+`;
