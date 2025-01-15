@@ -161,19 +161,19 @@ impl pallet_web3_names::Config for TestRuntime {
 }
 
 #[derive(Default)]
-pub(super) struct ExtBuilder(
-	Vec<(AccountId32, Option<Web3Name>, bool)>,
-	Vec<(AccountId32, Option<Web3Name>, bool)>,
-);
+pub(super) struct ExtBuilder {
+	dids: Vec<(AccountId32, Option<Web3Name>, bool)>,
+	dangling_dids: Vec<(AccountId32, Option<Web3Name>, bool)>,
+}
 
 impl ExtBuilder {
 	pub(super) fn with_dids(mut self, did_links: Vec<(AccountId32, Option<Web3Name>, bool)>) -> Self {
-		self.0 = did_links;
+		self.dids = did_links;
 		self
 	}
 
 	pub(super) fn with_dangling_dids(mut self, dangling_dids: Vec<(AccountId32, Option<Web3Name>, bool)>) -> Self {
-		self.1 = dangling_dids;
+		self.dangling_dids = dangling_dids;
 		self
 	}
 
@@ -182,7 +182,7 @@ impl ExtBuilder {
 		let mut ext = TestExternalities::default();
 
 		ext.execute_with(|| {
-			for (did, maybe_web3_name, should_link_account) in self.0 {
+			for (did, maybe_web3_name, should_link_account) in self.dids {
 				// Store DID.
 				Did::create_from_account(
 					RawOrigin::Signed(did.clone()).into(),
@@ -206,7 +206,7 @@ impl ExtBuilder {
 				}
 			}
 
-			for (did, maybe_web3_name, should_link_account) in self.1 {
+			for (did, maybe_web3_name, should_link_account) in self.dangling_dids {
 				// Cannot write the same DID as both linked and dangling.
 				assert!(!did::Did::<TestRuntime>::contains_key(&did));
 				if maybe_web3_name.is_none() && !should_link_account {
