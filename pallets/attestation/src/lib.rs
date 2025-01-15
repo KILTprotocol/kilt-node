@@ -242,10 +242,10 @@ pub mod pallet {
 			/// The claim hash of the credential for which the attestation entry
 			/// was deleted.
 			claim_hash: ClaimHashOf<T>,
-			/// Who authorized the deletion of the attestation.
-			authorized_by: AuthorizedByOf<T>,
 			/// The ctype of the attested credential.
 			ctype_hash: CtypeHashOf<T>,
+			/// Who authorized the deletion of the attestation.
+			authorized_by: AuthorizedByOf<T>,
 		},
 		/// The deposit for an attestation has changed owner.
 		DepositOwnerChanged {
