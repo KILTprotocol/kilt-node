@@ -177,10 +177,10 @@ impl AsRef<[u8]> for SubjectId {
 	}
 }
 
-// Mock currency that implements all required traits, allowing test runtimes to
-// not include the actual `pallet_balances` pallet. This mock currency is useful
-// for mocks in which a `Currency` is required but not relevant for the goal of
-// the tests.
+/// Mock currency that implements all required traits, allowing test runtimes to
+/// not include the actual `pallet_balances` pallet. This mock currency is
+/// useful for mocks in which a `Currency` is required but not relevant for the
+/// goal of the tests.
 pub struct MockCurrency<Balance, RuntimeHoldReason>(PhantomData<(Balance, RuntimeHoldReason)>);
 
 impl<AccountId, Balance, RuntimeHoldReason> MutateHold<AccountId> for MockCurrency<Balance, RuntimeHoldReason>
