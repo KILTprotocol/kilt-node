@@ -27,9 +27,9 @@ use crate::{
 	DidIdentifierOf,
 };
 
-struct False;
+struct AlwaysDeny;
 
-impl DidDeletionHook<TestRuntime> for False {
+impl DidDeletionHook<TestRuntime> for AlwaysDeny {
 	const MAX_WEIGHT: Weight = Weight::from_all(10);
 
 	fn can_delete(_did: &DidIdentifierOf<TestRuntime>) -> Result<(), Weight> {
@@ -37,9 +37,9 @@ impl DidDeletionHook<TestRuntime> for False {
 	}
 }
 
-struct True;
+struct AlwaysAllow;
 
-impl DidDeletionHook<TestRuntime> for True {
+impl DidDeletionHook<TestRuntime> for AlwaysAllow {
 	const MAX_WEIGHT: Weight = Weight::from_all(20);
 
 	fn can_delete(_did: &DidIdentifierOf<TestRuntime>) -> Result<(), Weight> {
@@ -49,7 +49,7 @@ impl DidDeletionHook<TestRuntime> for True {
 
 #[test]
 fn first_false() {
-	type TestSubject = RequireBoth<False, True>;
+	type TestSubject = RequireBoth<AlwaysDeny, AlwaysAllow>;
 
 	// Max weight is the sum.
 	assert_eq!(TestSubject::MAX_WEIGHT, Weight::from_all(30));
@@ -62,7 +62,7 @@ fn first_false() {
 
 #[test]
 fn second_false() {
-	type TestSubject = RequireBoth<True, False>;
+	type TestSubject = RequireBoth<AlwaysAllow, AlwaysDeny>;
 
 	// Max weight is the sum.
 	assert_eq!(TestSubject::MAX_WEIGHT, Weight::from_all(30));
@@ -75,7 +75,7 @@ fn second_false() {
 
 #[test]
 fn both_true() {
-	type TestSubject = RequireBoth<True, True>;
+	type TestSubject = RequireBoth<AlwaysAllow, AlwaysAllow>;
 
 	// Max weight is the sum.
 	assert_eq!(TestSubject::MAX_WEIGHT, Weight::from_all(40));
