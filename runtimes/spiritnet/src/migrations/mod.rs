@@ -25,8 +25,10 @@ parameter_types! {
 	pub const DmpPalletName: &'static str = "DmpQueue";
 }
 
-pub type RuntimeMigrations =
-	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>;
+pub type RuntimeMigrations = (
+	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>,
+	pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
+);
 
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
