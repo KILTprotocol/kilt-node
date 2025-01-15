@@ -17,21 +17,26 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{
-	DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult, DidRawOrigin,
-	DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
+	traits::deletion::RequireBoth, DeriveDidCallAuthorizationVerificationKeyRelationship,
+	DeriveDidCallKeyRelationshipResult, DidRawOrigin, DidVerificationKeyRelationship, EnsureDidOrigin,
+	RelationshipDeriveError,
 };
 use frame_system::EnsureRoot;
 use runtime_common::{
 	constants,
 	dot_names::{AllowedDotNameClaimer, AllowedUniqueLinkingAssociator},
-	AccountId, DidIdentifier, SendDustAndFeesToTreasury,
+	AccountId, DidIdentifier, EnsureNoLinkedAccountDeletionHook, EnsureNoLinkedWeb3NameDeletionHook,
+	SendDustAndFeesToTreasury,
 };
 use sp_core::ConstBool;
 
 use crate::{
-	weights, Balances, DotNames, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
-	UniqueLinking,
+	weights::{self, rocksdb_weights::constants::RocksDbWeight},
+	Balances, DotNames, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, UniqueLinking,
 };
+
+#[cfg(test)]
+mod tests;
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
@@ -86,6 +91,53 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	}
 }
 
+pub struct DidLifecycleHooks;
+
+impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
+	type DeletionHook = EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
+}
+
+// Read size is given by the `MaxEncodedLen`: https://substrate.stackexchange.com/a/11843/1795.
+// Since the trait is not `const`, we have unit tests that make sure the
+// `max_encoded_len()` function matches this const.
+const WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE: u64 = 33;
+/// Ensure there is no Web3Name linked to a DID.
+type EnsureNoWeb3NameOnDeletion =
+	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE, ()>;
+// Read size is given by the `MaxEncodedLen`: https://substrate.stackexchange.com/a/11843/1795.
+// Since the trait is not `const`, we have unit tests that make sure the
+// `max_encoded_len()` function matches this const.
+const WORST_CASE_DOT_NAME_STORAGE_READ_SIZE: u64 = 33;
+/// Ensure there is no Dotname linked to a DID.
+type EnsureNoDotNameOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<
+	{ RocksDbWeight::get().read },
+	WORST_CASE_DOT_NAME_STORAGE_READ_SIZE,
+	DotNamesDeployment,
+>;
+/// Ensure there is neither a Web3Name nor a Dotname linked to a DID.
+type EnsureNoUsernamesOnDeletion = RequireBoth<EnsureNoWeb3NameOnDeletion, EnsureNoDotNameOnDeletion>;
+
+// Read size is given by the `MaxEncodedLen`: https://substrate.stackexchange.com/a/11843/1795.
+// Since the trait is not `const`, we have unit tests that make sure the
+// `max_encoded_len()` function matches this const.
+const WORST_CASE_LINKING_STORAGE_READ_SIZE: u64 = 33;
+/// Ensure there is no linked account (for a web3name) to a DID.
+type EnsureNoWeb3NameLinkedAccountsOnDeletion =
+	EnsureNoLinkedAccountDeletionHook<{ RocksDbWeight::get().read }, WORST_CASE_LINKING_STORAGE_READ_SIZE, ()>;
+/// Ensure there is no unique linked account (for a dotname) to a DID.
+type EnsureNoDotNameLinkedAccountOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<
+	{ RocksDbWeight::get().read },
+	WORST_CASE_LINKING_STORAGE_READ_SIZE,
+	UniqueLinkingDeployment,
+>;
+/// Ensure there is no account linked for both the DID's Web3Name and DotName.
+type EnsureNoLinkedAccountsOnDeletion =
+	RequireBoth<EnsureNoWeb3NameLinkedAccountsOnDeletion, EnsureNoDotNameLinkedAccountOnDeletion>;
+
+/// Ensure there is no trace of names nor linked accounts for the DID.
+pub type EnsureNoNamesAndNoLinkedAccountsOnDidDeletion =
+	RequireBoth<EnsureNoUsernamesOnDeletion, EnsureNoLinkedAccountsOnDeletion>;
+
 impl did::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
@@ -121,6 +173,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
+	type DidLifecycleHooks = DidLifecycleHooks;
 }
 
 impl pallet_did_lookup::Config for Runtime {

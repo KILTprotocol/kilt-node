@@ -272,6 +272,7 @@ impl did::Config for Test {
 	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
 	type BalanceMigrationManager = Migration;
+	type DidLifecycleHooks = ();
 }
 
 parameter_types! {

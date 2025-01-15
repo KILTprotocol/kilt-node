@@ -121,6 +121,7 @@ impl did::Config for TestRuntime {
 	type BaseDeposit = ConstU128<KILT>;
 	type Currency = Balances;
 	type DidIdentifier = DidIdentifier;
+	type DidLifecycleHooks = ();
 	type EnsureOrigin = EnsureSigned<AccountId>;
 	type Fee = ConstU128<KILT>;
 	type FeeCollector = ();
