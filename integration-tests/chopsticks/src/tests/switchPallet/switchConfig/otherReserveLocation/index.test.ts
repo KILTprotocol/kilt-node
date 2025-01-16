@@ -7,9 +7,8 @@ import { hexAddress, keysAlice } from '../../../../helper/utils.js'
 import { testCases } from './config.js'
 import type { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
-import { skipTest } from '../../../utils.js'
 
-describe.skipIf(skipTest()).each(testCases)(
+describe.each(testCases)(
 	'Switch other reserve location',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {
@@ -46,7 +45,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000 }, async ({ expect }) => {
 			const { checkSystemEvents } = withExpect(expect)
 			const { tx, balanceToTransfer, events, message } = txContext
 

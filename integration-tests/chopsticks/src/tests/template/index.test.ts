@@ -33,7 +33,7 @@ describe.skip.each(testCases)('TEMPLATE', { timeout: 30_000 }, async ({ account,
 		}
 	})
 
-	it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+	it(desc, { timeout: 10_000 }, async ({ expect }) => {
 		expect(senderAccount).toBeTruthy()
 	})
 })

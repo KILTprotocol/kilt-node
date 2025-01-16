@@ -7,9 +7,8 @@ import { calculateTxFees, getPaidXcmFees, hexAddress } from '../../../../helper/
 import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
-import { skipTest } from '../../../utils.js'
 
-describe.skipIf(skipTest()).each(testCases)(
+describe.each(testCases)(
 	'Send Relay token while switch paused',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {
@@ -49,7 +48,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			}
 		})
 
-		test(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+		test(desc, { timeout: 10_000 }, async ({ expect }) => {
 			const { checkSystemEvents, checkEvents } = withExpect(expect)
 
 			const { tx, balanceToTransfer, events } = txContext

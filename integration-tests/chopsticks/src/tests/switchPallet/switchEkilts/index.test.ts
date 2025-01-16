@@ -8,9 +8,8 @@ import { testCases } from './config.js'
 import type { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant, getPoolAccount, getReceivedNativeTokens, getRemoteLockedSupply } from '../index.js'
-import { skipTest } from '../../utils.js'
 
-describe.skipIf(skipTest()).each(testCases)(
+describe.each(testCases)(
 	'Switch EKILTs',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
@@ -50,7 +49,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 10000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 10000 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const poolAccount = await getPoolAccount(receiverContext)

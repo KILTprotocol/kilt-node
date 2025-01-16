@@ -7,9 +7,8 @@ import { hexAddress, validateBalanceWithPrecision } from '../../../helper/utils.
 import { testPairsWithdrawAssets } from './config.js'
 import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
-import { skipTest } from '../../utils.js'
 
-describe.skipIf(skipTest()).each(testPairsWithdrawAssets)(
+describe.each(testPairsWithdrawAssets)(
 	'Withdraw Asset',
 	{ timeout: 30_000 },
 	async ({ accounts, query, sovereignAccount, txContext, config }) => {
@@ -53,7 +52,7 @@ describe.skipIf(skipTest()).each(testPairsWithdrawAssets)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const { pallets, tx, balanceToTransfer } = txContext

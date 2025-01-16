@@ -21,31 +21,30 @@ To install the node modules call:
 yarn 
 ```
 
-### Running the tests 
+### Running the tests
 
-In the package.json a script is provided. 
+In the package.json a script is provided.
 
-By calling the command below, the test will be executed: 
+By calling the command below, the test will be executed:
 
 ```sh
 yarn test 
 ```
 
-Please make sure an appropriate env is set. 
+Please make sure an appropriate env is set.
 
-### Env 
+### Env
 
 The project uses environment variables for configuration. You can find an example in the `.env-example` file. Copy this file to 
 .env and fill in the appropriate values. Explanation for the values are in the `.env-example` file provided.
 
-
-## Built With 
+## Built With
 
 [TypeScript](https://www.typescriptlang.org/)
 [Chopsticks](https://github.com/AcalaNetwork/chopsticks)
 [Polkadot API](https://github.com/polkadot-js/api)
 
-## Code Style 
+## Code Style
 
 This project uses Prettier and ESLint for code formatting and linting. The configuration for these tools can be found in the `.prettierrc` and `.eslintrc.json` files respectively.
 
@@ -65,10 +64,11 @@ yarn lint:fix
 
 To add a new test case, you need to insert a new object into the list of test cases. For example, if you want to add a new instance of `LimitedReserveTestConfiguration`, you would insert it into the `testPairsLimitedReserveTransfers` list. Here's a step-by-step guide:
 
-
 - Create a new instance of LimitedReserveTestConfiguration. Make sure to fill in all the necessary parameters for the test.
 - Insert this new instance into the testPairsLimitedReserveTransfers list.
 
 The tests are configuration-driven, meaning they can be easily customized for different scenarios. The test framework doesn't make assumptions about which parachain is sending which coin to which destination over which relay chain. Fundamental events such as the moving of coins or the creation of a new account should be emitted during the test.
 
 The test cases live in the tests folder and use mocks from the network directory. The network directory contains helper functions to set the blockchain state and provides an abstraction over the chopsticks functionalities, such as creating a network.
+
+For Adding a new test case scenario, a template folder is provided.

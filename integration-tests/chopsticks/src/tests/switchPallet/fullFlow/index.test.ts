@@ -8,9 +8,8 @@ import { testCases } from './config.js'
 import { Config } from '../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant } from '../index.js'
-import { skipTest } from '../../utils.js'
 
-describe.skipIf(skipTest()).each(testCases)(
+describe.each(testCases)(
 	'Switch KILTs full flow',
 	{ timeout: 60_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
@@ -50,7 +49,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 20_000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 20_000 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const { tx, balanceToTransfer, events } = txContext
@@ -71,7 +70,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			// process xcm message
 			await createBlock(nativeContext)
 
-			// check balance movement
+			// check balance movement asdf
 			const txFees = await calculateTxFees(txSendForeignAsset, senderAccount)
 
 			const foreignFundsAfterTx = await query.foreign.nativeFunds(foreignContext, senderAccount.address)

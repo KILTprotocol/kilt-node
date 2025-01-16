@@ -8,9 +8,8 @@ import { testCases } from './config.js'
 import type { Config } from '../../../network/types.js'
 import { tx as txApi } from '../../../helper/api.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
-import { skipTest } from '../../utils.js'
 
-describe.skipIf(skipTest()).each(testCases)(
+describe.each(testCases)(
 	'Reclaim trapped assets',
 	{ timeout: 30_000 },
 	async ({ account, query, txContext, config }) => {
@@ -50,7 +49,7 @@ describe.skipIf(skipTest()).each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
+		it(desc, { timeout: 10_000 }, async ({ expect }) => {
 			const { checkSystemEvents, checkEvents } = withExpect(expect)
 
 			const { tx, balanceToTransfer, events, reclaimTx, getXcmMessage, senderLocation } = txContext

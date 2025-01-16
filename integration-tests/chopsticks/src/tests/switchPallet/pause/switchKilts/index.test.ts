@@ -7,58 +7,53 @@ import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { shutDownNetwork } from '../../../../network/utils.js'
 import { hexAddress } from '../../../../helper/utils.js'
-import { skipTest } from '../../../utils.js'
 
-describe.skipIf(skipTest()).each(testCases)(
-	'Switch KILTs while paused',
-	{ timeout: 30_000 },
-	async ({ account, txContext, config }) => {
-		let senderContext: Config
-		let senderAccount: KeyringPair
-		const { desc, network, storage } = config
+describe.each(testCases)('Switch KILTs while paused', { timeout: 30_000 }, async ({ account, txContext, config }) => {
+	let senderContext: Config
+	let senderAccount: KeyringPair
+	const { desc, network, storage } = config
 
-		// Create the network context
-		beforeEach(async () => {
-			const { parachains } = network
-			senderContext = await setupContext(parachains[0])
+	// Create the network context
+	beforeEach(async () => {
+		const { parachains } = network
+		senderContext = await setupContext(parachains[0])
 
-			const { senderStorage } = storage
-			await setStorage(senderContext, senderStorage)
-			senderAccount = account
-		}, 20_000)
+		const { senderStorage } = storage
+		await setStorage(senderContext, senderStorage)
+		senderAccount = account
+	}, 20_000)
 
-		// Shut down the network
-		afterEach(async () => {
-			try {
-				await shutDownNetwork([senderContext])
-			} catch (error) {
-				if (!(error instanceof TypeError)) {
-					console.error(error)
+	// Shut down the network
+	afterEach(async () => {
+		try {
+			await shutDownNetwork([senderContext])
+		} catch (error) {
+			if (!(error instanceof TypeError)) {
+				console.error(error)
+			}
+		}
+	})
+
+	it(desc, { timeout: 10_000 }, async ({ expect }) => {
+		const { balanceToTransfer, tx } = txContext
+		let section: string = ''
+		let errorName: string = ''
+
+		// This should fail.
+		await tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString()).signAndSend(
+			senderAccount,
+			({ dispatchError }) => {
+				if (dispatchError) {
+					const decoded = senderContext.api.registry.findMetaError(dispatchError.asModule)
+					section = decoded.section
+					errorName = decoded.name
 				}
 			}
-		})
+		)
 
-		it(desc, { timeout: 10_000, retry: 3 }, async ({ expect }) => {
-			const { balanceToTransfer, tx } = txContext
-			let section: string = ''
-			let errorName: string = ''
+		await createBlock(senderContext)
 
-			// This should fail.
-			await tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString()).signAndSend(
-				senderAccount,
-				({ dispatchError }) => {
-					if (dispatchError) {
-						const decoded = senderContext.api.registry.findMetaError(dispatchError.asModule)
-						section = decoded.section
-						errorName = decoded.name
-					}
-				}
-			)
-
-			await createBlock(senderContext)
-
-			expect(section).toBe('assetSwitchPool1')
-			expect(errorName).toBe('SwitchPairNotEnabled')
-		})
-	}
-)
+		expect(section).toBe('assetSwitchPool1')
+		expect(errorName).toBe('SwitchPairNotEnabled')
+	})
+})

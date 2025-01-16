@@ -57,3 +57,61 @@ exports[`Switch KILTs > V4 LIVE > Switch KILTs sender chain: {"section":"assetSw
   },
 ]
 `;
+
+exports[`Switch KILTs1 > V4 LIVE > AssetSwitchPool1 Finalization 1`] = `
+[
+  {
+    "data": {
+      "amount": 1000000000000000,
+      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+      "to": {
+        "V4": {
+          "interior": {
+            "X1": [
+              {
+                "AccountId32": {
+                  "id": "(hash)",
+                  "network": null,
+                },
+              },
+            ],
+          },
+          "parents": 0,
+        },
+      },
+    },
+    "method": "LocalToRemoteSwitchFinalized",
+    "section": "assetSwitchPool1",
+  },
+]
+`;
+
+exports[`Switch KILTs1 > V4 LIVE > Switch KILTs receiver chain: {"section":"foreignAssets","method":"Transferred"} 1`] = `[]`;
+
+exports[`Switch KILTs1 > V4 LIVE > Switch KILTs sender chain: {"section":"assetSwitchPool1","method":"LocalToRemoteSwitchExecuted"} 1`] = `
+[
+  {
+    "data": {
+      "amount": 1000000000000000,
+      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
+      "to": {
+        "V4": {
+          "interior": {
+            "X1": [
+              {
+                "AccountId32": {
+                  "id": "(hash)",
+                  "network": null,
+                },
+              },
+            ],
+          },
+          "parents": 0,
+        },
+      },
+    },
+    "method": "LocalToRemoteSwitchExecuted",
+    "section": "assetSwitchPool1",
+  },
+]
+`;

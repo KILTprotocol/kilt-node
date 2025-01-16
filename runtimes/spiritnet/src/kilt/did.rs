@@ -22,15 +22,12 @@ use did::{
 };
 use frame_system::EnsureRoot;
 use runtime_common::{
-	constants,
-	dot_names::{AllowedDotNameClaimer, AllowedUniqueLinkingAssociator},
-	AccountId, DidIdentifier, SendDustAndFeesToTreasury,
+	constants, dot_names::AllowedUniqueLinkingAssociator, AccountId, DidIdentifier, SendDustAndFeesToTreasury,
 };
 use sp_core::ConstBool;
 
 use crate::{
-	weights, Balances, DotNames, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
-	UniqueLinking,
+	weights, Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, UniqueLinking,
 };
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
@@ -185,7 +182,11 @@ pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
-	type ClaimOrigin = EnsureDidOrigin<DidIdentifier, AccountId, AllowedDotNameClaimer<DotNames>>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type ClaimOrigin =
+		EnsureDidOrigin<DidIdentifier, AccountId, runtime_common::dot_names::AllowedDotNameClaimer<crate::DotNames>>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ClaimOrigin = Self::OwnerOrigin;
 	type Currency = Balances;
 	type Deposit = constants::dot_names::Web3NameDeposit;
 	type MaxNameLength = constants::dot_names::MaxNameLength;
