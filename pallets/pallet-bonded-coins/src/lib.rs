@@ -1355,7 +1355,7 @@ pub mod pallet {
 		/// # Errors
 		/// - `ArithmeticError`: If there is an error during the conversion to
 		///   fixed point.
-		fn calculate_normalized_passive_issuance(
+		pub fn calculate_normalized_passive_issuance(
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
 			currency_idx: usize,
