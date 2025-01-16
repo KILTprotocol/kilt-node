@@ -52,8 +52,6 @@ pub mod deposits;
 pub mod dip;
 pub mod dot_names;
 pub use dot_names::DotName;
-pub mod did;
-pub use did::{EnsureNoLinkedAccountDeletionHook, EnsureNoLinkedWeb3NameDeletionHook};
 pub mod errors;
 pub mod fees;
 pub mod migrations;

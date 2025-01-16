@@ -100,6 +100,7 @@ runtime-benchmarks = [
   "polkadot-runtime-common/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
   "xcm-executor/runtime-benchmarks",
 ]
