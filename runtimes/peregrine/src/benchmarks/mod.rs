@@ -46,6 +46,7 @@ use crate::{
 
 pub(crate) mod asset_switch;
 pub(crate) mod bonded_coins;
+pub(crate) mod did;
 pub(crate) mod governance;
 pub(crate) mod web3_names;
 
@@ -93,6 +94,7 @@ define_benchmarks!(
 	[pallet_message_queue, MessageQueue]
 	[pallet_bonded_coins, BondedCurrencies]
 	[cumulus_pallet_parachain_system, ParachainSystem]
+	[did_deletion_hooks, crate::benchmarks::did::Pallet<Runtime>]
 	[frame_benchmarking::baseline, frame_benchmarking::baseline::Pallet::<Runtime>]
 	// pallet_collective instances
 	[pallet_collective, Council]
@@ -169,6 +171,8 @@ impl frame_system_benchmarking::Config for Runtime {
 
 impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 impl frame_benchmarking::baseline::Config for Runtime {}
+
+impl crate::benchmarks::did::Config for Runtime {}
 
 pub(crate) fn benchmark_metadata(extra: bool) -> (Vec<BenchmarkList>, Vec<StorageInfo>) {
 	let mut list = Vec::<BenchmarkList>::new();
