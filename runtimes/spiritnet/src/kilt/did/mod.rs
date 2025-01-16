@@ -21,6 +21,7 @@ use did::{
 	DeriveDidCallKeyRelationshipResult, DidRawOrigin, DidVerificationKeyRelationship, EnsureDidOrigin,
 	RelationshipDeriveError,
 };
+use frame_support::weights::Weight;
 use frame_system::EnsureRoot;
 use runtime_common::{
 	constants,
@@ -97,37 +98,59 @@ impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
 	type DeletionHook = EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
 }
 
-// Read size is given by the `MaxEncodedLen`: https://substrate.stackexchange.com/a/11843/1795.
-// Since the trait is not `const`, we have unit tests that make sure the
-// `max_encoded_len()` function matches this const.
-const WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE: u64 = 33;
+//TODO: Add proper docs for this.
+pub(crate) trait DidDeletionHookBenchmarkWeightInfo {
+	fn read_web3_name() -> Weight;
+	fn read_dot_name() -> Weight;
+	fn read_web3_account() -> Weight;
+	fn read_dot_account() -> Weight;
+}
+
+// Since the trait is not `const`, we have unit tests that make sure this value
+// matches what's contained in the respective weight file.
+const WORST_CASE_WEB3_NAME_STORAGE_READ: Weight = Weight::from_parts(400_556_000, 0)
+	.saturating_add(Weight::from_parts(0, 990))
+	.saturating_add(Weight::from_parts(RocksDbWeight::get().read, 0));
 /// Ensure there is no Web3Name linked to a DID.
-type EnsureNoWeb3NameOnDeletion =
-	EnsureNoLinkedWeb3NameDeletionHook<{ RocksDbWeight::get().read }, WORST_CASE_WEB3_NAME_STORAGE_READ_SIZE, ()>;
-// Read size is given by the `MaxEncodedLen`: https://substrate.stackexchange.com/a/11843/1795.
-// Since the trait is not `const`, we have unit tests that make sure the
-// `max_encoded_len()` function matches this const.
-const WORST_CASE_DOT_NAME_STORAGE_READ_SIZE: u64 = 33;
+type EnsureNoWeb3NameOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<
+	{ WORST_CASE_WEB3_NAME_STORAGE_READ.ref_time() },
+	{ WORST_CASE_WEB3_NAME_STORAGE_READ.proof_size() },
+	(),
+>;
+// Since the trait is not `const`, we have unit tests that make sure this value
+// matches what's contained in the respective weight file.
+const WORST_CASE_DOT_NAME_STORAGE_READ: Weight = Weight::from_parts(198_704_000, 0)
+	.saturating_add(Weight::from_parts(0, 990))
+	.saturating_add(Weight::from_parts(RocksDbWeight::get().read, 0));
 /// Ensure there is no Dotname linked to a DID.
 type EnsureNoDotNameOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<
-	{ RocksDbWeight::get().read },
-	WORST_CASE_DOT_NAME_STORAGE_READ_SIZE,
+	{ WORST_CASE_DOT_NAME_STORAGE_READ.ref_time() },
+	{ WORST_CASE_DOT_NAME_STORAGE_READ.proof_size() },
 	DotNamesDeployment,
 >;
 /// Ensure there is neither a Web3Name nor a Dotname linked to a DID.
 type EnsureNoUsernamesOnDeletion = RequireBoth<EnsureNoWeb3NameOnDeletion, EnsureNoDotNameOnDeletion>;
 
-// Read size is given by the `MaxEncodedLen`: https://substrate.stackexchange.com/a/11843/1795.
-// Since the trait is not `const`, we have unit tests that make sure the
-// `max_encoded_len()` function matches this const.
-const WORST_CASE_LINKING_STORAGE_READ_SIZE: u64 = 33;
+// Since the trait is not `const`, we have unit tests that make sure this value
+// matches what's contained in the respective weight file.
+const WORST_CASE_WEB3_NAME_LINKING_STORAGE_READ: Weight = Weight::from_parts(219_041_000, 0)
+	.saturating_add(Weight::from_parts(0, 990))
+	.saturating_add(Weight::from_parts(RocksDbWeight::get().read, 0));
 /// Ensure there is no linked account (for a web3name) to a DID.
-type EnsureNoWeb3NameLinkedAccountsOnDeletion =
-	EnsureNoLinkedAccountDeletionHook<{ RocksDbWeight::get().read }, WORST_CASE_LINKING_STORAGE_READ_SIZE, ()>;
+type EnsureNoWeb3NameLinkedAccountsOnDeletion = EnsureNoLinkedAccountDeletionHook<
+	{ WORST_CASE_WEB3_NAME_LINKING_STORAGE_READ.ref_time() },
+	{ WORST_CASE_WEB3_NAME_LINKING_STORAGE_READ.proof_size() },
+	(),
+>;
+// Since the trait is not `const`, we have unit tests that make sure this value
+// matches what's contained in the respective weight file.
+const WORST_CASE_DOT_NAME_LINKING_STORAGE_READ: Weight = Weight::from_parts(90_472_000, 0)
+	.saturating_add(Weight::from_parts(0, 990))
+	.saturating_add(Weight::from_parts(RocksDbWeight::get().read, 0));
 /// Ensure there is no unique linked account (for a dotname) to a DID.
 type EnsureNoDotNameLinkedAccountOnDeletion = EnsureNoLinkedWeb3NameDeletionHook<
-	{ RocksDbWeight::get().read },
-	WORST_CASE_LINKING_STORAGE_READ_SIZE,
+	{ WORST_CASE_DOT_NAME_LINKING_STORAGE_READ.ref_time() },
+	{ WORST_CASE_DOT_NAME_LINKING_STORAGE_READ.proof_size() },
 	UniqueLinkingDeployment,
 >;
 /// Ensure there is no account linked for both the DID's Web3Name and DotName.

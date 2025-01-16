@@ -22,6 +22,7 @@ pub mod ctype;
 pub mod cumulus_pallet_parachain_system;
 pub mod delegation;
 pub mod did;
+pub mod did_deletion_hooks;
 pub mod frame_system;
 pub mod pallet_asset_switch;
 pub mod pallet_assets;
