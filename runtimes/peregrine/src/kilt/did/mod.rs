@@ -23,16 +23,14 @@ use did::{
 };
 use frame_system::EnsureRoot;
 use runtime_common::{
-	constants,
-	dot_names::{AllowedDotNameClaimer, AllowedUniqueLinkingAssociator},
-	AccountId, DidIdentifier, EnsureNoLinkedAccountDeletionHook, EnsureNoLinkedWeb3NameDeletionHook,
+	constants, AccountId, DidIdentifier, EnsureNoLinkedAccountDeletionHook, EnsureNoLinkedWeb3NameDeletionHook,
 	SendDustAndFeesToTreasury,
 };
 use sp_core::ConstBool;
 
 use crate::{
 	weights::{self, rocksdb_weights::constants::RocksDbWeight},
-	Balances, DotNames, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, UniqueLinking,
+	Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
 };
 
 #[cfg(test)]
@@ -198,7 +196,15 @@ impl pallet_did_lookup::Config for Runtime {
 
 pub(crate) type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
 impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
-	type AssociateOrigin = EnsureDidOrigin<DidIdentifier, AccountId, AllowedUniqueLinkingAssociator<UniqueLinking>>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type AssociateOrigin = EnsureDidOrigin<
+		DidIdentifier,
+		AccountId,
+		runtime_common::dot_names::AllowedUniqueLinkingAssociator<crate::UniqueLinking>,
+	>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type AssociateOrigin = EnsureDidOrigin<DidIdentifier, AccountId, did::origin::Everyone>;
+
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = constants::did_lookup::DidLookupDeposit;
@@ -238,7 +244,13 @@ pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
-	type ClaimOrigin = EnsureDidOrigin<DidIdentifier, AccountId, AllowedDotNameClaimer<DotNames>>;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type ClaimOrigin =
+		EnsureDidOrigin<DidIdentifier, AccountId, runtime_common::dot_names::AllowedDotNameClaimer<crate::DotNames>>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ClaimOrigin = EnsureDidOrigin<DidIdentifier, AccountId, did::origin::Everyone>;
+
 	type Currency = Balances;
 	type Deposit = constants::dot_names::Web3NameDeposit;
 	type MaxNameLength = constants::dot_names::MaxNameLength;
