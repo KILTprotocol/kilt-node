@@ -98,14 +98,6 @@ impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
 	type DeletionHook = EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
 }
 
-//TODO: Add proper docs for this.
-pub(crate) trait DidDeletionHookBenchmarkWeightInfo {
-	fn read_web3_name() -> Weight;
-	fn read_dot_name() -> Weight;
-	fn read_web3_account() -> Weight;
-	fn read_dot_account() -> Weight;
-}
-
 // Since the trait is not `const`, we have unit tests that make sure this value
 // matches what's contained in the respective weight file.
 const WORST_CASE_WEB3_NAME_STORAGE_READ: Weight = Weight::from_parts(400_556_000, 0)

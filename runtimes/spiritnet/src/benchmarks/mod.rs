@@ -91,6 +91,8 @@ define_benchmarks!(
 	[pallet_message_queue, MessageQueue]
 	[cumulus_pallet_parachain_system, ParachainSystem]
 	[frame_benchmarking::baseline, frame_benchmarking::baseline::Pallet::<Runtime>]
+	// DID deletion hooks
+	[did_deletion_hooks, crate::benchmarks::did::deletion_hooks::Pallet<Runtime>]
 	// pallet_collective instances
 	[pallet_collective, Council]
 	[pallet_technical_committee_collective, TechnicalCommittee]
@@ -163,6 +165,8 @@ impl frame_system_benchmarking::Config for Runtime {
 
 impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 impl frame_benchmarking::baseline::Config for Runtime {}
+
+impl crate::benchmarks::did::deletion_hooks::Config for Runtime {}
 
 pub(crate) fn benchmark_metadata(extra: bool) -> (Vec<BenchmarkList>, Vec<StorageInfo>) {
 	let mut list = Vec::<BenchmarkList>::new();

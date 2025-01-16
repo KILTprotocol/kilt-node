@@ -18,15 +18,12 @@
 
 use frame_support::{
 	assert_noop, assert_ok,
-	traits::{
-		fungible::{Inspect, InspectHold},
-		StorageInfoTrait,
-	},
+	traits::fungible::{Inspect, InspectHold},
 };
 use kilt_support::mock::mock_origin::DoubleOrigin;
 use sp_runtime::traits::Zero;
 
-use crate::{self as delegation, mock::*, Config, DelegationNodes, Error, HoldReason};
+use crate::{self as delegation, mock::*, Config, Error, HoldReason};
 
 #[test]
 fn create_root_delegation_successful() {
@@ -70,8 +67,6 @@ fn create_root_delegation_successful() {
 			assert_eq!(stored_delegation_root.details.owner, creator.clone());
 			assert_eq!(stored_delegation_root.deposit.owner, ACCOUNT_00);
 			assert!(!stored_delegation_root.details.revoked);
-
-			println!("{:?}", DelegationNodes::<Test>::storage_info());
 		});
 }
 

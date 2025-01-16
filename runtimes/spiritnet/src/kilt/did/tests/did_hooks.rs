@@ -18,10 +18,10 @@
 
 use crate::{
 	kilt::did::{
-		DidDeletionHookBenchmarkWeightInfo, WORST_CASE_DOT_NAME_LINKING_STORAGE_READ, WORST_CASE_DOT_NAME_STORAGE_READ,
+		WORST_CASE_DOT_NAME_LINKING_STORAGE_READ, WORST_CASE_DOT_NAME_STORAGE_READ,
 		WORST_CASE_WEB3_NAME_LINKING_STORAGE_READ, WORST_CASE_WEB3_NAME_STORAGE_READ,
 	},
-	weights::did_deletion_hooks,
+	weights::did_deletion_hooks::{self, WeightInfo},
 	Runtime,
 };
 
@@ -29,7 +29,7 @@ use crate::{
 fn test_worst_case_web3_name_storage_read() {
 	assert_eq!(
 		WORST_CASE_WEB3_NAME_STORAGE_READ,
-		did_deletion_hooks::WeightInfo::<Runtime>::read_web3_name()
+		did_deletion_hooks::WeightsInfo::<Runtime>::read_web3_name()
 	);
 }
 
@@ -37,7 +37,7 @@ fn test_worst_case_web3_name_storage_read() {
 fn test_worst_case_dot_name_storage_read() {
 	assert_eq!(
 		WORST_CASE_DOT_NAME_STORAGE_READ,
-		did_deletion_hooks::WeightInfo::<Runtime>::read_dot_name()
+		did_deletion_hooks::WeightsInfo::<Runtime>::read_dot_name()
 	);
 }
 
@@ -45,7 +45,7 @@ fn test_worst_case_dot_name_storage_read() {
 fn test_worst_case_web3_name_linked_account_storage_read() {
 	assert_eq!(
 		WORST_CASE_WEB3_NAME_LINKING_STORAGE_READ,
-		did_deletion_hooks::WeightInfo::<Runtime>::read_web3_account()
+		did_deletion_hooks::WeightsInfo::<Runtime>::read_web3_account()
 	);
 }
 
@@ -53,6 +53,6 @@ fn test_worst_case_web3_name_linked_account_storage_read() {
 fn test_worst_case_dot_name_linked_account_storage_read() {
 	assert_eq!(
 		WORST_CASE_DOT_NAME_LINKING_STORAGE_READ,
-		did_deletion_hooks::WeightInfo::<Runtime>::read_dot_account()
+		did_deletion_hooks::WeightsInfo::<Runtime>::read_dot_account()
 	);
 }

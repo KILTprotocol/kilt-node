@@ -42,8 +42,6 @@ pallets=(
 	pallet_multisig
 	pallet-assets
 	pallet-asset-switch
-	# Runtime hooks
-	did-deletion-hooks
 	# `pallet-membership` instances
 	pallet-membership
 	pallet-technical-membership
@@ -67,6 +65,10 @@ if [ "$runtime" = "peregrine" ]; then
 	)
 fi
 
+hooks=(
+	did-deletion-hooks
+)
+
 echo "[+] Running all runtime benchmarks for \"$runtime\", \"--chain=$chain\" and profile \"$profile\""
 
 cargo build $standard_args
@@ -77,9 +79,10 @@ if [ $profile == "dev" ]; then
 	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored"
 else
 	target_folder=$profile
-	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
+	additional_args="--header=HEADER-GPL --output=./runtimes/${runtime}/src/weights/"
 fi
 
+# Run pallets benchmarks
 for pallet in "${pallets[@]}"; do
 	echo "Runtime: $runtime. Pallet: $pallet"
 	# shellcheck disable=SC2086
@@ -88,6 +91,28 @@ for pallet in "${pallets[@]}"; do
 		--chain="${chain}" \
 		--pallet="$pallet" \
 		--extrinsic="*" \
+		--template=.maintain/runtime-weight-template.hbs \
+		$additional_args
+
+	bench_status=$?
+
+	# Exit with error as soon as one benchmark fails
+	if [ $bench_status -ne 0 ]; then
+		exit $bench_status
+	fi
+
+done
+
+# Run hooks benchmarks
+for hook in "${hooks[@]}"; do
+	echo "Runtime: $runtime. Hook: $hook"
+	# shellcheck disable=SC2086
+	./target/$target_folder/kilt-parachain benchmark pallet \
+		--heap-pages=4096 \
+		--chain="${chain}" \
+		--pallet="$hook" \
+		--extrinsic="*" \
+		--template=.maintain/runtime-hooks-template.hbs \
 		$additional_args
 
 	bench_status=$?
