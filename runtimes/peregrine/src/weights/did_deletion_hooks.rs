@@ -46,9 +46,12 @@
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
 
+// TODO: This has to be manually added everything the file is re-generated.
+use crate::kilt::did as did_deletion_hooks;
+
 /// Weight functions for `did_deletion_hooks`.
 pub struct WeightInfo<T>(PhantomData<T>);
-impl<T: frame_system::Config> did_deletion_hooks::WeightInfo for WeightInfo<T> {
+impl<T: frame_system::Config> did_deletion_hooks::DidDeletionHookBenchmarkWeightInfo for WeightInfo<T> {
 	/// Storage: `Web3Names::Names` (r:1 w:0)
 	/// Proof: `Web3Names::Names` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `Ignored`)
 	fn read_web3_name() -> Weight {
