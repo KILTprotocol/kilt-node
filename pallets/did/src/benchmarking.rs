@@ -43,7 +43,7 @@ use crate::{
 		DidVerificationKey,
 	}, mock_utils::{
 		generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys, get_service_endpoints,
-	}, service_endpoints::DidEndpoint, signature::DidSignatureVerify, traits::{DidDeletionHook, DidLifecycleHooks}, AccountIdOf, DidAuthorizedCallOperationOf, DidIdentifierOf, HoldReason
+	}, service_endpoints::DidEndpoint, signature::DidSignatureVerify, AccountIdOf, DidAuthorizedCallOperationOf, DidIdentifierOf, HoldReason
 };
 
 const DEFAULT_ACCOUNT_ID: &str = "tx_submitter";
@@ -362,7 +362,6 @@ benchmarks! {
 		Pallet::<T>::try_insert_did(did_subject.clone(), did_details, deposit_owner).expect("DID should be created!");
 
 		save_service_endpoints(&did_subject, &service_endpoints);
-		<<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::setup(&did_subject);
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: _(origin, c)
 	verify {
@@ -400,7 +399,6 @@ benchmarks! {
 		Pallet::<T>::try_insert_did(did_subject.clone(), did_details.clone(), deposit_owner).expect("DID should be created!");
 
 		save_service_endpoints(&did_subject, &service_endpoints);
-		<<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::setup(&did_subject);
 		let origin = RawOrigin::Signed(did_details.deposit.owner);
 		let subject_clone = did_subject.clone();
 	}: _(origin, subject_clone, c)

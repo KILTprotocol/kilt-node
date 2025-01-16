@@ -27,10 +27,6 @@ where
 	/// error, the consumed weight (less than or equal to `MAX_WEIGHT`) is
 	/// returned.
 	fn can_delete(did: &DidIdentifierOf<T>) -> bool;
-
-	/// Called when setting up the `delete` extrinsic for benchmarking.
-	#[cfg(feature = "runtime-benchmarks")]
-	fn setup(did: &DidIdentifierOf<T>);
 }
 
 impl<T> DidDeletionHook<T> for ()
@@ -40,7 +36,4 @@ where
 	fn can_delete(_did: &DidIdentifierOf<T>) -> bool {
 		true
 	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	fn setup(_did: &DidIdentifierOf<T>) {}
 }
