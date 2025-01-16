@@ -16,19 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![allow(unused_imports)]
-
 use frame_benchmarking::v2::benchmarks;
-use runtime_common::DidIdentifier;
 use sp_std::marker::PhantomData;
 
-use crate::{
-	kilt::{did::DotNamesDeployment, UniqueLinkingDeployment},
-	DotName, Web3Name,
-};
-
+// A `Config` trait is required by the benchmarking macro.
 pub(crate) trait Config {}
 
+// Also a `Pallet` struct is required by the benchmarking macro.
 pub struct Pallet<T: Config>(PhantomData<T>);
 
 #[benchmarks]
@@ -39,10 +33,15 @@ mod benchmarks {
 	use sp_core::Hasher;
 	use sp_runtime::{traits::BlakeTwo256, AccountId32};
 
-	use crate::Runtime;
+	use crate::{
+		kilt::{did::DotNamesDeployment, UniqueLinkingDeployment},
+		DotName, Runtime, Web3Name,
+	};
 
 	use super::*;
 
+	// TODO: Bump any of these values up if our Peregrine network sees more than
+	// this number of components.
 	const MAX_NUMBER_0F_WEB3_NAMES: usize = 100_000;
 	const MAX_NUMBER_0F_DOT_NAMES: usize = 100_000;
 
@@ -95,11 +94,9 @@ mod benchmarks {
 		{
 			let _ = <EnsureNoLinkedWeb3NameDeletionHook<0, 0, ()> as DidDeletionHook<Runtime>>::can_delete(&did);
 		}
-		// We make sure it actually returns what we expect.
-		assert_eq!(
-			<EnsureNoLinkedWeb3NameDeletionHook<0, 0, ()> as DidDeletionHook<Runtime>>::can_delete(&did),
-			Ok(())
-		);
+		// We make sure it actually returns what we expect, i.e, the hook fails because
+		// there's a linked Web3name.
+		assert!(<EnsureNoLinkedWeb3NameDeletionHook<0, 0, ()> as DidDeletionHook<Runtime>>::can_delete(&did).is_err(),);
 	}
 
 	#[benchmark]
@@ -113,12 +110,13 @@ mod benchmarks {
 					&did,
 				);
 		}
-		// We make sure it actually returns what we expect.
-		assert_eq!(
+		// We make sure it actually returns what we expect, i.e, the hook fails because
+		// there's a linked Dotname.
+		assert!(
 			<EnsureNoLinkedWeb3NameDeletionHook<0, 0, DotNamesDeployment> as DidDeletionHook<Runtime>>::can_delete(
 				&did
-			),
-			Ok(())
+			)
+			.is_err(),
 		);
 	}
 
@@ -129,10 +127,10 @@ mod benchmarks {
 		{
 			let _ = <EnsureNoLinkedAccountDeletionHook<0, 0, ()> as DidDeletionHook<Runtime>>::can_delete(&LINKED_DID);
 		}
-		// We make sure it actually returns what we expect.
-		assert_eq!(
-			<EnsureNoLinkedAccountDeletionHook<0, 0, ()> as DidDeletionHook<Runtime>>::can_delete(&LINKED_DID),
-			Ok(())
+		// We make sure it actually returns what we expect, i.e, the hook fails because
+		// there's a Web3name linked account.
+		assert!(
+			<EnsureNoLinkedAccountDeletionHook<0, 0, ()> as DidDeletionHook<Runtime>>::can_delete(&LINKED_DID).is_err(),
 		);
 	}
 
@@ -145,12 +143,13 @@ mod benchmarks {
 				&LINKED_DID,
 			);
 		}
-		// We make sure it actually returns what we expect.
-		assert_eq!(
+		// We make sure it actually returns what we expect, i.e, the hook fails because
+		// there's a Dotname linked account.
+		assert!(
 			<EnsureNoLinkedAccountDeletionHook<0, 0, UniqueLinkingDeployment> as DidDeletionHook<Runtime>>::can_delete(
 				&LINKED_DID
-			),
-			Ok(())
+			)
+			.is_err(),
 		);
 	}
 }
