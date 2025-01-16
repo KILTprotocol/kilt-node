@@ -226,26 +226,26 @@ pub mod pallet {
 		},
 		/// An attestation has been revoked.
 		AttestationRevoked {
-			/// Who authorized the revocation of the attestation.
-			authorized_by: AuthorizedByOf<T>,
 			/// The attester who initially created the attestation.
 			attester: AttesterOf<T>,
-			/// The ctype of the attested credential.
-			ctype_hash: CtypeHashOf<T>,
 			/// The claim hash of the credential that is revoked.
 			claim_hash: ClaimHashOf<T>,
+			/// The ctype of the attested credential.
+			ctype_hash: CtypeHashOf<T>,
+			/// Who authorized the revocation of the attestation.
+			authorized_by: AuthorizedByOf<T>,
 		},
 		/// An attestation has been removed.
 		AttestationRemoved {
-			/// Who authorized the deletion of the attestation.
-			authorized_by: AuthorizedByOf<T>,
 			/// The attester who initially created the attestation.
 			attester: AttesterOf<T>,
-			/// The ctype of the attested credential.
-			ctype_hash: CtypeHashOf<T>,
 			/// The claim hash of the credential for which the attestation entry
 			/// was deleted.
 			claim_hash: ClaimHashOf<T>,
+			/// The ctype of the attested credential.
+			ctype_hash: CtypeHashOf<T>,
+			/// Who authorized the deletion of the attestation.
+			authorized_by: AuthorizedByOf<T>,
 		},
 		/// The deposit for an attestation has changed owner.
 		DepositOwnerChanged {
