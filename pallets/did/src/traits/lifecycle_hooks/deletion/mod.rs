@@ -16,12 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#[cfg(test)]
-mod tests;
-
-use sp_std::marker::PhantomData;
-use sp_weights::Weight;
-
 use crate::{Config, DidIdentifierOf};
 
 /// Runtime logic evaluated by the DID pallet upon deleting an existing DID.
@@ -29,48 +23,17 @@ pub trait DidDeletionHook<T>
 where
 	T: Config,
 {
-	/// The statically computed maximum weight the implementation will consume
-	/// to verify if a DID can be deleted.
-	const MAX_WEIGHT: Weight;
-
 	/// Return whether the DID can be deleted (`Ok(())`), or not. In case of
 	/// error, the consumed weight (less than or equal to `MAX_WEIGHT`) is
 	/// returned.
-	fn can_delete(did: &DidIdentifierOf<T>) -> Result<(), Weight>;
+	fn can_delete(did: &DidIdentifierOf<T>) -> bool;
 }
 
 impl<T> DidDeletionHook<T> for ()
 where
 	T: Config,
 {
-	const MAX_WEIGHT: Weight = Weight::from_parts(0, 0);
-
-	fn can_delete(_did: &DidIdentifierOf<T>) -> Result<(), Weight> {
-		Ok(())
-	}
-}
-
-/// Implementation of [`DidDeletionHook`] that iterates over both
-/// components, bailing out early if the first one fails. The `MAX_WEIGHT` is
-/// the sum of both components.
-pub struct RequireBoth<A, B>(PhantomData<(A, B)>);
-
-impl<T, A, B> DidDeletionHook<T> for RequireBoth<A, B>
-where
-	T: Config,
-	A: DidDeletionHook<T>,
-	B: DidDeletionHook<T>,
-{
-	const MAX_WEIGHT: Weight = A::MAX_WEIGHT.saturating_add(B::MAX_WEIGHT);
-
-	/// In case of failure, the returned weight is either the weight consumed by
-	/// the first component, or the sum of the first component's maximum weight
-	/// and the weight consumed by the second component.
-	fn can_delete(did: &DidIdentifierOf<T>) -> Result<(), Weight> {
-		// Bail out early with A's weight if A fails.
-		A::can_delete(did)?;
-		// Bail out early with A's max weight + B's if B fails.
-		B::can_delete(did).map_err(|consumed_weight| A::MAX_WEIGHT.saturating_add(consumed_weight))?;
-		Ok(())
+	fn can_delete(_did: &DidIdentifierOf<T>) -> bool {
+		true
 	}
 }

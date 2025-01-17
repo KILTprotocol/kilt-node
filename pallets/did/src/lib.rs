@@ -981,10 +981,7 @@ pub mod pallet {
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
 		#[pallet::call_index(10)]
-		#[pallet::weight({
-			let max_hook_weight = <<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::MAX_WEIGHT;
-			<T as pallet::Config>::WeightInfo::delete(*endpoints_to_remove).saturating_add(max_hook_weight)
-		})]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete(*endpoints_to_remove))]
 		pub fn delete(origin: OriginFor<T>, endpoints_to_remove: u32) -> DispatchResult {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
 			let did_subject = source.subject();
@@ -1014,10 +1011,7 @@ pub mod pallet {
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
 		#[pallet::call_index(11)]
-		#[pallet::weight({
-			let max_hook_weight = <<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::MAX_WEIGHT;
-			<T as pallet::Config>::WeightInfo::reclaim_deposit(*endpoints_to_remove).saturating_add(max_hook_weight)
-		})]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete(*endpoints_to_remove))]
 		pub fn reclaim_deposit(
 			origin: OriginFor<T>,
 			did_subject: DidIdentifierOf<T>,
@@ -1533,8 +1527,7 @@ pub mod pallet {
 			ensure!(
 				<<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::can_delete(
 					&did_subject,
-				)
-				.is_ok(),
+				),
 				Error::<T>::CannotDelete
 			);
 
