@@ -49,11 +49,11 @@ export const testCases: TestConfiguration[] = [
 				senderStorage: {
 					...mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
 					...mainChains.kilt.storage.assignRelayTokensToAccounts([keysAlice.address]),
-					...mainChains.kilt.storage.pauseSwitch(),
 				},
 				receiverStorage: {},
 				relayStorage: {},
 			},
+			setUpTx: [[tx.switchPallet.pause(), 'sender']],
 		},
 		account: keysAlice,
 		query: {

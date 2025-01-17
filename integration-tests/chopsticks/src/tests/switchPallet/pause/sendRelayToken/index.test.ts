@@ -2,11 +2,12 @@ import { describe, beforeEach, test, afterEach } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import { createBlock, setStorage } from '../../../../network/utils.js'
+import { createBlock, scheduleTx, setStorage } from '../../../../network/utils.js'
 import { calculateTxFees, getPaidXcmFees, hexAddress } from '../../../../helper/utils.js'
 import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
+import { isSwitchPaused } from '../../index.js'
 
 describe.each(testCases)(
 	'Send Relay token while switch paused',
@@ -16,7 +17,7 @@ describe.each(testCases)(
 		let receiverContext: Config
 		let relayContext: Config
 		let senderAccount: KeyringPair
-		const { desc, network, storage } = config
+		const { desc, network, storage, setUpTx } = config
 
 		// Create the network context
 		beforeEach(async () => {
@@ -35,6 +36,18 @@ describe.each(testCases)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
+
+			if (setUpTx) {
+				await Promise.all(
+					setUpTx.map(async ([tx, chain]) => {
+						if (chain === 'receiver') {
+							const rawTx = tx(receiverContext)
+							await scheduleTx(receiverContext, rawTx)
+							await createBlock(receiverContext)
+						}
+					})
+				)
+			}
 		}, 20_000)
 
 		// Shut down the network
@@ -58,8 +71,9 @@ describe.each(testCases)(
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
 			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
-			const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
+			expect(await isSwitchPaused(receiverContext)).toBe(true)
 
+			const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
 			const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
 			// process tx
@@ -79,18 +93,20 @@ describe.each(testCases)(
 			expect(balanceAfterTx).toBe(BigInt(0))
 
 			// check events
-			events.sender.map(
-				async (pallet) =>
-					await checkEvents(events1, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.sender.map((pallet) =>
+					checkEvents(events1, pallet).toMatchSnapshot(
 						`send funds from relay chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
-			events.receiver.map(
-				async (pallet) =>
-					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.receiver.map((pallet) =>
+					checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
 						`receive relay chain funds on receiver chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 		})
 	}

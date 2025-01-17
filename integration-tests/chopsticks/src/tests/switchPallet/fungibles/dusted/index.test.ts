@@ -74,11 +74,10 @@ describe.each(testCases)('Dust account', { timeout: 30_000 }, async ({ account, 
 		expect(foreignBalanceAfter).toBeGreaterThan(BigInt(0))
 		expect(receiverNativeBalanceAfter).toBe(balanceToTransfer - txFees)
 
-		events.map(
-			async (pallet) =>
-				await checkSystemEvents(context, pallet).toMatchSnapshot(
-					`Dusted accounts pallet: ${JSON.stringify(pallet)}`
-				)
+		await Promise.all(
+			events.map((pallet) =>
+				checkSystemEvents(context, pallet).toMatchSnapshot(`Dusted accounts pallet: ${JSON.stringify(pallet)}`)
+			)
 		)
 	})
 })

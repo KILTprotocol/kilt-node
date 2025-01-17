@@ -53,11 +53,10 @@ export const testCases: TestConfiguration[] = [
 						[keysAlice.address, initialBalanceKILT],
 					]),
 				},
-				receiverStorage: {
-					...mainChains.kilt.storage.pauseSwitch(),
-				},
+				receiverStorage: {},
 				relayStorage: {},
 			},
+			setUpTx: [[tx.switchPallet.pause(), 'receiver']],
 		},
 		account: keysAlice,
 		query: {

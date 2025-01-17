@@ -28,10 +28,13 @@ export interface BasisTxContext {
 	}
 }
 
+export type SetupChain = 'relay' | 'sender' | 'receiver'
+
 export interface BasicConfig {
 	desc: string
 	storage: Storage
 	network: NetworkSetupOption
+	setUpTx?: [({ api }: { api: ApiPromise }) => SubmittableExtrinsic<'promise'>, SetupChain][]
 }
 
 export interface SovereignAccount {

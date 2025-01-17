@@ -88,18 +88,20 @@ describe.each(testCases)(
 			expect(remoteLockedSupply).toBe(initialRemoteLockedSupply - balanceToTransfer)
 
 			// check events
-			events.sender.map(
-				async (pallet) =>
-					await checkEvents(eventsResult, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.sender.map((pallet) =>
+					checkEvents(eventsResult, pallet).toMatchSnapshot(
 						`Switch KILTs sender chain: ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
-			events.receiver.map(
-				async (pallet) =>
-					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.receiver.map((pallet) =>
+					checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
 						`Switch KILTs receiver chain: ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
 			// finalize switch

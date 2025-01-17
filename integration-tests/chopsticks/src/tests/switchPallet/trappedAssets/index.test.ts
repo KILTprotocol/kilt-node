@@ -8,6 +8,7 @@ import { testCases } from './config.js'
 import type { Config } from '../../../network/types.js'
 import { tx as txApi } from '../../../helper/api.js'
 import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
+import { isSwitchPaused } from '../index.js'
 
 describe.each(testCases)(
 	'Reclaim trapped assets',
@@ -17,7 +18,7 @@ describe.each(testCases)(
 		let receiverContext: Config
 		let relayContext: Config
 		let senderAccount: KeyringPair
-		const { desc, network, storage } = config
+		const { desc, network, storage, setUpTx } = config
 
 		// Create the network context
 		beforeEach(async () => {
@@ -36,6 +37,18 @@ describe.each(testCases)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
+
+			if (setUpTx) {
+				await Promise.all(
+					setUpTx.map(async ([tx, chain]) => {
+						if (chain === 'receiver') {
+							const rawTx = tx(receiverContext)
+							await scheduleTx(receiverContext, rawTx)
+							await createBlock(receiverContext)
+						}
+					})
+				)
+			}
 		}, 20_000)
 
 		// Shut down the network
@@ -59,8 +72,9 @@ describe.each(testCases)(
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
 			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
-			const rawTx = tx(senderContext, balanceToTransfer.toString())
+			expect(await isSwitchPaused(receiverContext)).toBe(true)
 
+			const rawTx = tx(senderContext, balanceToTransfer.toString())
 			const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
 			// process tx
@@ -77,11 +91,12 @@ describe.each(testCases)(
 			expect(balanceAfterTx).toBe(BigInt(0))
 
 			// check events
-			events.sender.map(
-				async (pallet) =>
-					await checkEvents(events1, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.sender.map((pallet) =>
+					checkEvents(events1, pallet).toMatchSnapshot(
 						`Switch eKILTs sender chain: ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
 			await checkSystemEvents(receiverContext, 'polkadotXcm').toMatchSnapshot(
@@ -130,11 +145,12 @@ describe.each(testCases)(
 			await createBlock(receiverContext)
 
 			// check events
-			events.receiver.map(
-				async (pallet) =>
-					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.receiver.map((pallet) =>
+					checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
 						`reclaim trapped assets receiver chain: ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 		})
 	}

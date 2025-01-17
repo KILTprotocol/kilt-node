@@ -78,18 +78,18 @@ describe.each(testCases)(
 			expect(balanceAfterTx).toBe(BigInt(0))
 
 			// check events
-			events.sender.map(
-				async (pallet) =>
-					await checkEvents(events1, pallet).toMatchSnapshot(
-						`Switch on native chain: ${JSON.stringify(pallet)}`
-					)
+			await Promise.all(
+				events.sender.map((pallet) =>
+					checkEvents(events1, pallet).toMatchSnapshot(`Switch on native chain: ${JSON.stringify(pallet)}`)
+				)
 			)
 
-			events.receiver.map(
-				async (pallet) =>
-					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.receiver.map((pallet) =>
+					checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
 						`Switch on receiver chain: ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
 			// finalize switch

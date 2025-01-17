@@ -81,9 +81,10 @@ describe.each(testPairsWithdrawAssets)(
 			// check sender state
 			await createBlock(senderContext)
 
-			pallets.sender.map(
-				async (pallet) =>
-					await checkEvents(events, pallet).toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
+			Promise.all(
+				pallets.sender.map((pallet) =>
+					checkEvents(events, pallet).toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
+				)
 			)
 
 			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
@@ -109,11 +110,12 @@ describe.each(testPairsWithdrawAssets)(
 				senderSovereignAccountBalanceBeforeTransfer - BigInt(balanceToTransfer)
 			)
 
-			pallets.receiver.map(
-				async (pallet) =>
-					await checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
+			await Promise.all(
+				pallets.receiver.map((pallet) =>
+					checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
 						`receiver events ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
 			const balanceReceiverAfterTransfer = await query.receiver(receiverContext, receiverAccount.address)

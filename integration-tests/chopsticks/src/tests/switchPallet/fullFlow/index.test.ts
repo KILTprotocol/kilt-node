@@ -80,18 +80,20 @@ describe.each(testCases)(
 			expect(foreignFundsBeforeTx - balanceToTransfer.foreign - txFees - xcmFees).toBe(foreignFundsAfterTx)
 
 			// check events
-			events.foreign.transfer.map(
-				async (pallet) =>
-					await checkEvents(events1, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.foreign.transfer.map((pallet) =>
+					checkEvents(events1, pallet).toMatchSnapshot(
 						`transfer foreign funds from foreign chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
-			events.native.receive.foreign.map(
-				async (pallet) =>
-					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.native.receive.foreign.map((pallet) =>
+					checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
 						`receive foreign funds on native chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
 			// 2. send native tokens
@@ -119,18 +121,20 @@ describe.each(testCases)(
 			expect(nativeBalanceBeforeTx - balanceToTransfer.native - txFees2).toBe(nativeBalanceAfterTx)
 
 			// check events
-			events.native.transfer.map(
-				async (pallet) =>
-					await checkEvents(events2, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.native.transfer.map((pallet) =>
+					checkEvents(events2, pallet).toMatchSnapshot(
 						`Transfer native funds to foreign chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
-			events.foreign.receive.native.map(
-				async (pallet) =>
-					await checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.foreign.receive.native.map((pallet) =>
+					checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
 						`Receive native funds on foreign chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
 			await checkSwitchPalletInvariant(
@@ -145,7 +149,7 @@ describe.each(testCases)(
 			// 3. send native tokens back to sender chain.
 			const balanceToTransferBack = balanceToTransfer.native / BigInt(2)
 
-			const nativeBalnceForeignChainBeforeTx = await query.foreign.foreignFunds(
+			const nativeBalanceForeignChainBeforeTx = await query.foreign.foreignFunds(
 				foreignContext,
 				hexAddress(senderAccount.address)
 			)
@@ -163,27 +167,29 @@ describe.each(testCases)(
 
 			// check balance movement
 
-			const nativeBalanceForeignChainAfterx = await query.foreign.foreignFunds(
+			const nativeBalanceForeignChainAfterTx = await query.foreign.foreignFunds(
 				foreignContext,
 				senderAccount.address
 			)
 
-			expect(nativeBalnceForeignChainBeforeTx - balanceToTransferBack).toBe(nativeBalanceForeignChainAfterx)
+			expect(nativeBalanceForeignChainBeforeTx - balanceToTransferBack).toBe(nativeBalanceForeignChainAfterTx)
 
 			// check events
 
-			events.foreign.withdraw.map(
-				async (pallet) =>
-					await checkEvents(events3, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.foreign.withdraw.map((pallet) =>
+					checkEvents(events3, pallet).toMatchSnapshot(
 						`Withdraw native funds on foreign chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
-			events.native.receive.native.map(
-				async (pallet) =>
-					await checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.native.receive.native.map((pallet) =>
+					checkSystemEvents(nativeContext, pallet).toMatchSnapshot(
 						`Receive native funds on native chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
 			// finalize the switch. Create a another block to process the query xcm message
@@ -223,18 +229,20 @@ describe.each(testCases)(
 
 			// check events
 
-			events.native.withdraw.map(
-				async (pallet) =>
-					await checkEvents(events4, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.native.withdraw.map((pallet) =>
+					checkEvents(events4, pallet).toMatchSnapshot(
 						`Withdraw foreign funds on native chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 
-			events.foreign.receive.native.map(
-				async (pallet) =>
-					await checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
+			await Promise.all(
+				events.foreign.receive.native.map((pallet) =>
+					checkSystemEvents(foreignContext, pallet).toMatchSnapshot(
 						`Receive foreign funds on foreign chain ${JSON.stringify(pallet)}`
 					)
+				)
 			)
 		})
 	}

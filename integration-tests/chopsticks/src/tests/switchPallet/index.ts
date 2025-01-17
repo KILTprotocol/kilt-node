@@ -147,18 +147,18 @@ export async function checkSwitchPalletInvariant(
 	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + deltaStoredSovereignSupply)
 }
 
-export async function getPoolAccount(context: SetupConfig) {
+export async function getPoolAccount({ api }: { api: ApiPromise }) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const switchPairInfo: any = await context.api.query.assetSwitchPool1.switchPair()
+	const switchPairInfo: any = await api.query.assetSwitchPool1.switchPair()
 	if (switchPairInfo.isNone) {
 		return
 	}
 	return switchPairInfo.unwrap().poolAccount
 }
 
-export async function getRemoteLockedSupply(context: SetupConfig): Promise<bigint> {
+export async function getRemoteLockedSupply({ api }: { api: ApiPromise }): Promise<bigint> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const switchPairInfo: any = await context.api.query.assetSwitchPool1.switchPair()
+	const switchPairInfo: any = await api.query.assetSwitchPool1.switchPair()
 
 	if (switchPairInfo.isNone) {
 		return BigInt(0)
@@ -180,4 +180,14 @@ export async function getReceivedNativeTokens({ api }: { api: ApiPromise }): Pro
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	return BigInt((polkadotFees as any).event.data.amount.toString())
+}
+
+export async function isSwitchPaused({ api }: { api: ApiPromise }): Promise<boolean> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const switchPairInfo: any = await api.query.assetSwitchPool1.switchPair()
+	if (switchPairInfo.isNone) {
+		return false
+	}
+
+	return JSON.parse(switchPairInfo.unwrap().toString()).status === 'Paused'
 }

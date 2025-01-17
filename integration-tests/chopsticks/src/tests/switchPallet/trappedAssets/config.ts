@@ -56,17 +56,15 @@ export const testCases: TestConfiguration[] = [
 						[keysAlice.address, initialBalanceKILT],
 					]),
 				},
-				receiverStorage: {
-					...mainChains.kilt.storage.pauseSwitch(),
-					...mainChains.kilt.storage.assignNativeTokensToAccounts([
-						mainChains.assetHub.chainInfo.sovereignAccountOnSiblingChains,
-					]),
-				},
+				receiverStorage: mainChains.kilt.storage.assignNativeTokensToAccounts([
+					mainChains.assetHub.chainInfo.sovereignAccountOnSiblingChains,
+				]),
 				relayStorage: {
 					...testChains.polkadot.storage.assignNativeTokensToAccounts([keysAlice.address]),
 					...testChains.polkadot.storage.assignSudoKey(keysAlice.address),
 				},
 			},
+			setUpTx: [[tx.switchPallet.pause(), 'receiver']],
 		},
 		account: keysAlice,
 		query: {

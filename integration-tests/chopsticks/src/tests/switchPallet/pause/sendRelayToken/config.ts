@@ -48,13 +48,13 @@ export const testCases: TestConfiguration[] = [
 			},
 			storage: {
 				senderStorage: mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
-				receiverStorage: {
-					...mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					...mainChains.kilt.storage.pauseSwitch(),
-				},
-
+				receiverStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+					[keysAlice.address],
+					initialBalanceKILT
+				),
 				relayStorage: {},
 			},
+			setUpTx: [[tx.switchPallet.pause(), 'receiver']],
 		},
 		account: keysAlice,
 		query: {

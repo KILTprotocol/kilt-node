@@ -4,64 +4,6 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
 [
   {
     "data": {
-      "amount": "(rounded 18000000)",
-      "currencyId": 5,
-      "from": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-      "to": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
-    },
-    "method": "Transferred",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": 200000000000,
-      "currencyId": 5,
-      "from": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-      "to": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-    },
-    "method": "Transferred",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": "(rounded 140000000000000000000)",
-      "currencyId": "(rounded 100)",
-      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-      "to": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-    },
-    "method": "Transferred",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": "(rounded 2100000000)",
-      "currencyId": 1,
-      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-    },
-    "method": "Withdrawn",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": "(rounded 140000000000000000000)",
-      "currencyId": "(rounded 100)",
-      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-    },
-    "method": "Withdrawn",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": "(rounded 150000000)",
-      "currencyId": 10,
-      "from": "7LVGEVLFXpsCCtnsvhzkSMQARU7gRVCtwMckG7u7d3V6FVvG",
-      "to": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-    },
-    "method": "Transferred",
-    "section": "currencies",
-  },
-  {
-    "data": {
       "amount": "(rounded 1000000000000000)",
       "currencyId": 28,
       "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
@@ -71,50 +13,11 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
   },
   {
     "data": {
-      "amount": "(rounded 4200000000000)",
+      "amount": "(rounded 3800000000000)",
       "currencyId": 28,
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
     "method": "Deposited",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": "(rounded 180000000000000000)",
-      "currencyId": "(rounded 100)",
-      "from": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
-      "to": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-    },
-    "method": "Transferred",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": "(rounded 17000000000000)",
-      "currencyId": 0,
-      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-      "to": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
-    },
-    "method": "Transferred",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": "(rounded 4100000)",
-      "currencyId": 1,
-      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-    },
-    "method": "Withdrawn",
-    "section": "currencies",
-  },
-  {
-    "data": {
-      "amount": "(rounded 150000000000)",
-      "currencyId": 0,
-      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-      "to": "7L53bUTCQURi4iNpkVMox9K5XUra9Nom1nvJDMwxNRdJR7zu",
-    },
-    "method": "Transferred",
     "section": "currencies",
   },
 ]
@@ -144,110 +47,6 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
 [
   {
     "data": {
-      "amount": "(rounded 18000000)",
-      "currencyId": 5,
-      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-    },
-    "method": "Unreserved",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 18000000)",
-      "currencyId": 5,
-      "from": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-      "to": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
-    },
-    "method": "Transfer",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": 200000000000,
-      "currencyId": 5,
-      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-    },
-    "method": "Unreserved",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": 200000000000,
-      "currencyId": 5,
-      "from": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-      "to": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-    },
-    "method": "Transfer",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 140000000000000000000)",
-      "currencyId": "(rounded 100)",
-      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-    },
-    "method": "Endowed",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 140000000000000000000)",
-      "currencyId": "(rounded 100)",
-      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-      "to": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-    },
-    "method": "Transfer",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 2100000000)",
-      "currencyId": 1,
-      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-    },
-    "method": "Withdrawn",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 180000000000000000)",
-      "currencyId": "(rounded 100)",
-      "who": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
-    },
-    "method": "Endowed",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 180000000000000000)",
-      "currencyId": "(rounded 100)",
-      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-      "to": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
-    },
-    "method": "Transfer",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 140000000000000000000)",
-      "currencyId": "(rounded 100)",
-      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-    },
-    "method": "Withdrawn",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 150000000)",
-      "currencyId": 10,
-      "from": "7LVGEVLFXpsCCtnsvhzkSMQARU7gRVCtwMckG7u7d3V6FVvG",
-      "to": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
-    },
-    "method": "Transfer",
-    "section": "tokens",
-  },
-  {
-    "data": {
       "amount": "(rounded 1000000000000000)",
       "currencyId": 28,
       "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
@@ -266,30 +65,11 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
   },
   {
     "data": {
-      "amount": "(rounded 4200000000000)",
+      "amount": "(rounded 3800000000000)",
       "currencyId": 28,
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
     "method": "Deposited",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 180000000000000000)",
-      "currencyId": "(rounded 100)",
-      "from": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
-      "to": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-    },
-    "method": "Transfer",
-    "section": "tokens",
-  },
-  {
-    "data": {
-      "amount": "(rounded 4100000)",
-      "currencyId": 1,
-      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
-    },
-    "method": "Withdrawn",
     "section": "tokens",
   },
 ]
@@ -454,7 +234,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver even
   },
   {
     "data": {
-      "amount": "(rounded 4200000000000)",
+      "amount": "(rounded 3800000000000)",
       "currencyId": 28,
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
@@ -486,7 +266,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver even
   },
   {
     "data": {
-      "amount": "(rounded 4200000000000)",
+      "amount": "(rounded 3800000000000)",
       "currencyId": 28,
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },

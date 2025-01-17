@@ -2,11 +2,12 @@ import { describe, beforeEach, it, afterEach } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import { createBlock, setStorage } from '../../../../network/utils.js'
+import { createBlock, scheduleTx, setStorage } from '../../../../network/utils.js'
 import { hexAddress } from '../../../../helper/utils.js'
 import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
+import { isSwitchPaused } from '../../index.js'
 
 describe.each(testCases)(
 	'Withdraw relay token while paused',
@@ -16,7 +17,7 @@ describe.each(testCases)(
 		let receiverContext: Config
 		let relayContext: Config
 		let senderAccount: KeyringPair
-		const { desc, network, storage } = config
+		const { desc, network, storage, setUpTx } = config
 
 		// Create the network context
 		beforeEach(async () => {
@@ -35,6 +36,18 @@ describe.each(testCases)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
+
+			if (setUpTx) {
+				await Promise.all(
+					setUpTx.map(async ([tx, chain]) => {
+						if (chain === 'sender') {
+							const rawTx = tx(senderContext)
+							await scheduleTx(senderContext, rawTx)
+							await createBlock(senderContext)
+						}
+					})
+				)
+			}
 		}, 20_000)
 
 		// Shut down the network
@@ -58,8 +71,9 @@ describe.each(testCases)(
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
 			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
-			const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
+			expect(await isSwitchPaused(senderContext)).toBe(true)
 
+			const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
 			const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
 			// process tx
