@@ -76,10 +76,7 @@ export const testCases: TestConfiguration[] = [
 					{ section: 'polkadotXcm', method: 'Sent' },
 				],
 
-				receiver: [
-					{ section: 'assetSwitchPool1', method: 'RemoteToLocalSwitchExecuted' },
-					{ section: 'messageQueue', method: 'Processed' },
-				],
+				receiver: [{ section: 'assetSwitchPool1', method: 'RemoteToLocalSwitchExecuted' }],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},

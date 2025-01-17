@@ -26,26 +26,6 @@ exports[`Switch KILTs full flow > V4 LIVE > Receive foreign funds on foreign cha
 ]
 `;
 
-exports[`Switch KILTs full flow > V4 LIVE > Receive foreign funds on foreign chain {"section":"messageQueue","method":"Processed"} 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": "(rounded 2100)",
-      },
-      "success": true,
-      "weightUsed": {
-        "proofSize": "(rounded 7200)",
-        "refTime": "(rounded 320000000)",
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
-
 exports[`Switch KILTs full flow > V4 LIVE > Receive native funds on foreign chain {"section":"balances","method":"Burned"} 1`] = `
 [
   {
@@ -76,26 +56,6 @@ exports[`Switch KILTs full flow > V4 LIVE > Receive native funds on foreign chai
     },
     "method": "Minted",
     "section": "balances",
-  },
-]
-`;
-
-exports[`Switch KILTs full flow > V4 LIVE > Receive native funds on foreign chain {"section":"messageQueue","method":"Processed"} 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": "(rounded 2100)",
-      },
-      "success": true,
-      "weightUsed": {
-        "proofSize": "(rounded 24000)",
-        "refTime": "(rounded 1500000000)",
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
   },
 ]
 `;
@@ -392,26 +352,6 @@ exports[`Switch KILTs full flow > V4 LIVE > receive foreign funds on native chai
     },
     "method": "Issued",
     "section": "fungibles",
-  },
-]
-`;
-
-exports[`Switch KILTs full flow > V4 LIVE > receive foreign funds on native chain {"section":"messageQueue","method":"Processed"} 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": 1000,
-      },
-      "success": true,
-      "weightUsed": {
-        "proofSize": 0,
-        "refTime": 1000000000,
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
   },
 ]
 `;

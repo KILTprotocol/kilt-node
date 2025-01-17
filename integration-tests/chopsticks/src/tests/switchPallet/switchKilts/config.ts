@@ -75,7 +75,7 @@ export const testCases: TestConfiguration[] = [
 		txContext: {
 			tx: tx.switchPallet.switchV4(),
 			events: {
-				receiver: [{ section: 'foreignAssets', method: 'Transferred' }],
+				receiver: ['foreignAssets'],
 				sender: [{ section: 'assetSwitchPool1', method: 'LocalToRemoteSwitchExecuted' }],
 			},
 			balanceToTransfer: BigInt(1e15),

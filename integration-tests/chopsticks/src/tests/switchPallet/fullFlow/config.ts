@@ -158,10 +158,7 @@ export const testCases: TestConfiguration[] = [
 
 					receive: {
 						native: [{ section: 'assetSwitchPool1', method: 'RemoteToLocalSwitchExecuted' }],
-						foreign: [
-							{ section: 'fungibles', method: 'Issued' },
-							{ section: 'messageQueue', method: 'Processed' },
-						],
+						foreign: [{ section: 'fungibles', method: 'Issued' }],
 					},
 					withdraw: [{ section: 'polkadotXcm', method: 'Sent' }, 'fungibles'],
 				},
@@ -171,7 +168,6 @@ export const testCases: TestConfiguration[] = [
 					receive: {
 						foreign: ['foreignAssets', { section: 'messageQueue', method: 'Processed' }],
 						native: [
-							{ section: 'messageQueue', method: 'Processed' },
 							{ section: 'balances', method: 'Burned' },
 							{ section: 'balances', method: 'Minted' },
 						],

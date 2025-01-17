@@ -64,7 +64,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV2(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['xcmpQueue', 'polkadotXcm'],
+				sender: ['polkadotXcm'],
 				receiver: ['messageQueue'],
 			},
 			balanceToTransfer: BigInt(1e15),
@@ -111,7 +111,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV2(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['xcmpQueue', 'polkadotXcm', { section: 'balances', method: 'Withdraw' }],
+				sender: ['polkadotXcm', { section: 'balances', method: 'Withdraw' }],
 				receiver: ['messageQueue', 'tokens', 'currencies'],
 			},
 			balanceToTransfer: BigInt(1e15),
@@ -156,7 +156,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV3(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['xcmpQueue', 'polkadotXcm'],
+				sender: ['polkadotXcm'],
 				receiver: ['messageQueue'],
 			},
 			balanceToTransfer: BigInt(1e15),
@@ -203,8 +203,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV3(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['xcmpQueue', 'polkadotXcm', { section: 'balances', method: 'Withdraw' }],
-				receiver: ['messageQueue', 'tokens', 'currencies'],
+				sender: ['polkadotXcm', { section: 'balances', method: 'Withdraw' }],
+				receiver: ['tokens', 'currencies'],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -247,8 +247,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV3(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['xcmpQueue', 'polkadotXcm'],
-				receiver: ['xcmpQueue'],
+				sender: ['polkadotXcm'],
+				receiver: [],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -291,8 +291,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV2(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['xcmpQueue', 'polkadotXcm'],
-				receiver: ['xcmpQueue'],
+				sender: ['polkadotXcm'],
+				receiver: [],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},

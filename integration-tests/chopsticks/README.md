@@ -12,7 +12,6 @@ These instructions will allow you to run the tests on your local machine for dev
 - Node.js v20.11.0 (as specified in the [`.nvmrc`](https://github.com/nvm-sh/nvm)). With `nvm use` the right node version will be installed.
 - npm (comes with Node.js)
 
-
 ### Installing
 
 To install the node modules call:
@@ -35,7 +34,7 @@ Please make sure an appropriate env is set.
 
 ### Env
 
-The project uses environment variables for configuration. You can find an example in the `.env-example` file. Copy this file to 
+The project uses environment variables for configuration. You can find an example in the `.env-example` file. Copy this file to
 .env and fill in the appropriate values. Explanation for the values are in the `.env-example` file provided.
 
 ## Built With
@@ -72,3 +71,19 @@ The tests are configuration-driven, meaning they can be easily customized for di
 The test cases live in the tests folder and use mocks from the network directory. The network directory contains helper functions to set the blockchain state and provides an abstraction over the chopsticks functionalities, such as creating a network.
 
 For Adding a new test case scenario, a template folder is provided.
+
+## Debugging Existence Tests
+
+Each test case should have a unique ID. To execute a specific test case, run:
+
+```sh
+yarn test -t "REGULAR_EXPRESSION"
+```
+
+## UI
+
+Vitest supports a UI to manage the test cases. To spin up the UI, call:
+
+```sh
+yarn ui
+```

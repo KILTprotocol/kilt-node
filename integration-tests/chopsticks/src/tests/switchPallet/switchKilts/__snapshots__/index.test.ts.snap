@@ -28,67 +28,68 @@ exports[`Switch KILTs > V4 LIVE > AssetSwitchPool1 Finalization 1`] = `
 ]
 `;
 
-exports[`Switch KILTs > V4 LIVE > Switch KILTs receiver chain: {"section":"foreignAssets","method":"Transferred"} 1`] = `[]`;
+exports[`Switch KILTs > V4 LIVE > Switch KILTs receiver chain: "foreignAssets" 1`] = `
+[
+  {
+    "data": {
+      "assetId": {
+        "interior": {
+          "X2": [
+            {
+              "GlobalConsensus": {
+                "Ethereum": {
+                  "chainId": 1,
+                },
+              },
+            },
+            {
+              "AccountKey20": {
+                "key": "0x5d3d01fd6d2ad1169b17918eb4f153c6616288eb",
+                "network": null,
+              },
+            },
+          ],
+        },
+        "parents": 2,
+      },
+      "balance": 1000000000000000,
+      "owner": "13cKp88mpGREFCq8KsJEFjpSBnjFuCNWq6bmD3js7fu4f66e",
+    },
+    "method": "Burned",
+    "section": "foreignAssets",
+  },
+  {
+    "data": {
+      "amount": 1000000000000000,
+      "assetId": {
+        "interior": {
+          "X2": [
+            {
+              "GlobalConsensus": {
+                "Ethereum": {
+                  "chainId": 1,
+                },
+              },
+            },
+            {
+              "AccountKey20": {
+                "key": "0x5d3d01fd6d2ad1169b17918eb4f153c6616288eb",
+                "network": null,
+              },
+            },
+          ],
+        },
+        "parents": 2,
+      },
+      "owner": "15jSz35ugoWTc61xHPoxEkHte4o7UanKCk1gx1dizA8yuNs8",
+    },
+    "method": "Issued",
+    "section": "foreignAssets",
+  },
+]
+`;
 
 exports[`Switch KILTs > V4 LIVE > Switch KILTs sender chain: {"section":"assetSwitchPool1","method":"LocalToRemoteSwitchExecuted"} 1`] = `
-[
-  {
-    "data": {
-      "amount": 1000000000000000,
-      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
-      "to": {
-        "V4": {
-          "interior": {
-            "X1": [
-              {
-                "AccountId32": {
-                  "id": "(hash)",
-                  "network": null,
-                },
-              },
-            ],
-          },
-          "parents": 0,
-        },
-      },
-    },
-    "method": "LocalToRemoteSwitchExecuted",
-    "section": "assetSwitchPool1",
-  },
-]
-`;
-
-exports[`Switch KILTs1 > V4 LIVE > AssetSwitchPool1 Finalization 1`] = `
-[
-  {
-    "data": {
-      "amount": 1000000000000000,
-      "from": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
-      "to": {
-        "V4": {
-          "interior": {
-            "X1": [
-              {
-                "AccountId32": {
-                  "id": "(hash)",
-                  "network": null,
-                },
-              },
-            ],
-          },
-          "parents": 0,
-        },
-      },
-    },
-    "method": "LocalToRemoteSwitchFinalized",
-    "section": "assetSwitchPool1",
-  },
-]
-`;
-
-exports[`Switch KILTs1 > V4 LIVE > Switch KILTs receiver chain: {"section":"foreignAssets","method":"Transferred"} 1`] = `[]`;
-
-exports[`Switch KILTs1 > V4 LIVE > Switch KILTs sender chain: {"section":"assetSwitchPool1","method":"LocalToRemoteSwitchExecuted"} 1`] = `
 [
   {
     "data": {

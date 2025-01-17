@@ -37,6 +37,6 @@
     "clean": "rm -rf ./db",
     "test": "LOG_LEVEL=error vitest --config ./vitest.config.ts",
     "ui": "vitest --ui --config ./vitest.config.ts",
-    "test:CI": "LOG_LEVEL=error vitest --config ./vitest.config.ts"
+    "test:CI": "LOG_LEVEL=error vitest --config ./vitest.config.ts && yarn clean"
   }
 }

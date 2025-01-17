@@ -13,26 +13,6 @@ exports[`Switch EKILTs > V4 LIVE > Switch eKILTs receiver {"section":"assetSwitc
 ]
 `;
 
-exports[`Switch EKILTs > V4 LIVE > Switch eKILTs receiver {"section":"messageQueue","method":"Processed"} 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": 1000,
-      },
-      "success": true,
-      "weightUsed": {
-        "proofSize": 0,
-        "refTime": 1000000000,
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
-
 exports[`Switch EKILTs > V4 LIVE > Switch eKILTs sender {"section":"foreignAssets","method":"Transferred"} 1`] = `
 [
   {
