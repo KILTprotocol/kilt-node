@@ -17,16 +17,11 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{
-	DeriveDidCallAuthorizationVerificationKeyRelationship,
-	DeriveDidCallKeyRelationshipResult, DidRawOrigin, DidVerificationKeyRelationship, EnsureDidOrigin,
-	RelationshipDeriveError,
+	DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult, DidRawOrigin,
+	DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
 };
 use frame_system::EnsureRoot;
-use runtime_common::{
-	constants,
-	AccountId, DidIdentifier,
-	SendDustAndFeesToTreasury,
-};
+use runtime_common::{constants, AccountId, DidIdentifier, SendDustAndFeesToTreasury};
 use sp_core::ConstBool;
 
 use crate::{
@@ -107,14 +102,16 @@ impl did::traits::DidDeletionHook<Runtime> for EnsureNoNamesAndNoLinkedAccountsO
 		}
 		// 3. Check if there's a Web3name linked account
 		if pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(did)
-		.next()
-		.is_some() {
+			.next()
+			.is_some()
+		{
 			return false;
 		}
 		// 4. Check if there's a Dotname linked account
 		if pallet_did_lookup::ConnectedAccounts::<Runtime, UniqueLinkingDeployment>::iter_key_prefix(did)
-		.next()
-		.is_some() {
+			.next()
+			.is_some()
+		{
 			return false;
 		}
 

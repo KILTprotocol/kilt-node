@@ -41,9 +41,13 @@ use crate::{
 	did_details::{
 		DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidPublicKey, DidSignature,
 		DidVerificationKey,
-	}, mock_utils::{
+	},
+	mock_utils::{
 		generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys, get_service_endpoints,
-	}, service_endpoints::DidEndpoint, signature::DidSignatureVerify, AccountIdOf, DidAuthorizedCallOperationOf, DidIdentifierOf, HoldReason
+	},
+	service_endpoints::DidEndpoint,
+	signature::DidSignatureVerify,
+	AccountIdOf, DidAuthorizedCallOperationOf, DidIdentifierOf, HoldReason,
 };
 
 const DEFAULT_ACCOUNT_ID: &str = "tx_submitter";
