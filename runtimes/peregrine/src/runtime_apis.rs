@@ -43,7 +43,7 @@ use runtime_common::{
 		AssetId as BondedAssetId, FixedPoint, FixedPointUnderlyingType,
 	},
 	constants::SLOT_DURATION,
-	did::LinkedDidResource,
+	did::runtime_apis::LinkedDidResource,
 	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Nonce,
@@ -56,7 +56,7 @@ use sp_runtime::{
 	traits::{Block as BlockT, TryConvert},
 	ApplyExtrinsicResult, KeyTypeId, SaturatedConversion,
 };
-use sp_std::{prelude::*, str::FromStr, vec::Vec};
+use sp_std::{iter, prelude::*, str::FromStr, vec::Vec};
 use sp_version::{ApisVec, RuntimeVersion};
 use unique_linking_runtime_api::{AddressResult, NameResult};
 
@@ -388,23 +388,12 @@ impl_runtime_apis! {
 		}
 
 		fn linked_resources(did: DidIdentifier) -> Vec<LinkedDidResource<Web3Name, DotName>> {
-			let web3_name = pallet_web3_names::Names::<Runtime>::get(&did);
-			let dot_name = pallet_web3_names::Names::<Runtime, DotNamesDeployment>::get(&did);
-			let web3_name_accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did);
-			let dot_name_account = pallet_did_lookup::ConnectedAccounts::<Runtime, UniqueLinkingDeployment>::get(&did);
-
-			debug_assert!(dot_name_account.len() <= 1, "Found more than a single linked account to a Dotname.");
-
-			sp_std::iter::once(web3_name.map(LinkedDidResource::Web3Name))
-				.chain(sp_std::iter::once(dot_name.map(LinkedDidResource::DotName)))
-				.chain(web3_name_accounts.map(LinkedDidResource::Account))
-				.chain(dot_name_account.map(LinkedDidResource::Account))
-				.flatten()
-				.collect()
+			linked_resources_for_did(&did).collect()
 		}
 
-		fn get_linked_resources_deletion_calls(did: DidIdentifier) -> Vec<RuntimeCall> {
-			unimplemented!()
+		fn linked_resources_deletion_calls(did: DidIdentifier) -> Vec<RuntimeCall> {
+			let linked_resources = linked_resources_for_did(&did);
+			linked_resources.map(map_linked_resource_to_call).collect()
 		}
 	}
 
@@ -702,6 +691,37 @@ impl_runtime_apis! {
 				select,
 			);
 			Executive::try_execute_block(block, state_root_check, sig_check, select).expect("try_execute_block failed")
+		}
+	}
+}
+
+/// Returns an iterator over all linked resources for a given DID.
+fn linked_resources_for_did(did: &DidIdentifier) -> impl Iterator<Item = LinkedDidResource<Web3Name, DotName>> {
+	let web3_name = pallet_web3_names::Names::<Runtime>::get(did);
+	let dot_name = pallet_web3_names::Names::<Runtime, DotNamesDeployment>::get(did);
+	let web3_name_accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(did);
+	let dot_name_accounts =
+		pallet_did_lookup::ConnectedAccounts::<Runtime, UniqueLinkingDeployment>::iter_key_prefix(did);
+
+	iter::once(web3_name.map(LinkedDidResource::Web3Name))
+		.chain(iter::once(dot_name.map(LinkedDidResource::DotName)))
+		.chain(web3_name_accounts.map(|acc| Some(LinkedDidResource::Web3NameAccount(acc))))
+		.chain(dot_name_accounts.map(|acc| Some(LinkedDidResource::DotNameAccount(acc))))
+		.flatten()
+}
+
+/// Creates a `RuntimeCall` that, if submitted by the owner DID,
+/// would remove the provided linked resource.
+fn map_linked_resource_to_call(resource: LinkedDidResource<Web3Name, DotName>) -> RuntimeCall {
+	match resource {
+		LinkedDidResource::Web3Name(_) => RuntimeCall::Web3Names(pallet_web3_names::Call::release_by_owner {}),
+
+		LinkedDidResource::DotName(_) => RuntimeCall::DotNames(pallet_web3_names::Call::release_by_owner {}),
+		LinkedDidResource::Web3NameAccount(account) => {
+			RuntimeCall::DidLookup(pallet_did_lookup::Call::remove_account_association { account })
+		}
+		LinkedDidResource::DotNameAccount(account) => {
+			RuntimeCall::UniqueLinking(pallet_did_lookup::Call::remove_account_association { account })
 		}
 	}
 }

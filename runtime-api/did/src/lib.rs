@@ -117,6 +117,6 @@ sp_api::decl_runtime_apis! {
 		/// Returns the list of linked resources for a given DID that must be deleted before the DID itself can be deleted.
 		fn linked_resources(did: DidIdentifier) -> Vec<LinkedResource>;
 		/// Returns the list of calls that must be executed to delete the linked resources of a given DID, before deleting the DID itself.
-		fn get_linked_resources_deletion_calls(did: DidIdentifier) -> Vec<RuntimeCall>;
+		fn linked_resources_deletion_calls(did: DidIdentifier) -> Vec<RuntimeCall>;
 	}
 }

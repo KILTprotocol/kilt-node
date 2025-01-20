@@ -17,4 +17,3 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 pub mod runtime_apis;
-pub use runtime_apis::LinkedDidResource;
