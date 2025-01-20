@@ -1011,7 +1011,9 @@ impl_runtime_apis! {
 		LinkableAccountId,
 		Balance,
 		Hash,
-		BlockNumber
+		BlockNumber,
+		(),
+		()
 	> for Runtime {
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
@@ -1132,6 +1134,16 @@ impl_runtime_apis! {
 			>
 		>> {
 			dids.into_iter().map(Self::query).collect()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources(_did: DidIdentifier) -> Vec<()> {
+			[].into()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources_deletion_calls(_did: DidIdentifier) -> Vec<()> {
+			[].into()
 		}
 	}
 
