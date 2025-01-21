@@ -20,72 +20,72 @@ function getRequiredEnvVariable(name: string): string {
  */
 export const testChains: ChainConfigs = {
 	kilt: {
-		getConfig: KiltConfigs.test.getSetupOptions,
+		getConfig: KiltConfigs.test!.getConfig,
 		parameters: {
 			blockNumber: Number(getRequiredEnvVariable('SPIRITNET_BLOCK_NUMBER')),
 			wasmOverride: getRequiredEnvVariable('SPIRITNET_WASM_OVERRIDE'),
 		},
-		storage: KiltConfigs.test.storage,
-		chainInfo: KiltConfigs.test.parachainInfo,
+		storage: KiltConfigs.test!.storage,
+		chainInfo: KiltConfigs.test!.chainInfo,
 	},
 	hydration: {
-		getConfig: HydrationConfigs.test.getSetupOptions,
+		getConfig: HydrationConfigs.test!.getConfig,
 		parameters: {
 			blockNumber: Number(getRequiredEnvVariable('HYDRADX_BLOCK_NUMBER')),
 		},
-		storage: HydrationConfigs.test.storage,
-		chainInfo: HydrationConfigs.test.parachainInfo,
+		storage: HydrationConfigs.test!.storage,
+		chainInfo: HydrationConfigs.test!.chainInfo,
 	},
 	polkadot: {
-		getConfig: PolkadotConfigs.test.getSetupOptions,
+		getConfig: PolkadotConfigs.test!.getConfig,
 		parameters: {
 			blockNumber: Number(getRequiredEnvVariable('POLKADOT_BLOCK_NUMBER')),
 		},
-		storage: PolkadotConfigs.test.storage,
-		chainInfo: {},
+		storage: PolkadotConfigs.test!.storage,
+		chainInfo: PolkadotConfigs.test!.chainInfo,
 	},
 	assetHub: {
-		getConfig: AssetHubConfigs.test.getSetupOptions,
+		getConfig: AssetHubConfigs.test!.getConfig,
 		parameters: {
 			blockNumber: Number(getRequiredEnvVariable('ASSETHUB_BLOCK_NUMBER')),
 		},
-		storage: AssetHubConfigs.test.storage,
-		chainInfo: AssetHubConfigs.test.parachainInfo,
+		storage: AssetHubConfigs.test!.storage,
+		chainInfo: AssetHubConfigs.test!.chainInfo,
 	},
 }
 
 export const mainChains: ChainConfigs = {
 	kilt: {
-		getConfig: KiltConfigs.main.getSetupOptions,
+		getConfig: KiltConfigs.main!.getConfig,
 		parameters: {
 			blockNumber: Number(getRequiredEnvVariable('SPIRITNET_BLOCK_NUMBER')),
 			wasmOverride: getRequiredEnvVariable('SPIRITNET_WASM_OVERRIDE'),
 		},
-		storage: KiltConfigs.main.storage,
-		chainInfo: KiltConfigs.main.parachainInfo,
+		storage: KiltConfigs.main!.storage,
+		chainInfo: KiltConfigs.main!.chainInfo,
 	},
 	hydration: {
-		getConfig: HydrationConfigs.main.getSetupOptions,
+		getConfig: HydrationConfigs.main!.getConfig,
 		parameters: {
 			blockNumber: Number(getRequiredEnvVariable('HYDRADX_BLOCK_NUMBER')),
 		},
-		storage: HydrationConfigs.main.storage,
-		chainInfo: HydrationConfigs.main.parachainInfo,
+		storage: HydrationConfigs.main!.storage,
+		chainInfo: HydrationConfigs.main!.chainInfo,
 	},
 	polkadot: {
-		getConfig: PolkadotConfigs.main.getSetupOptions,
+		getConfig: PolkadotConfigs.main!.getConfig,
 		parameters: {
 			blockNumber: Number(getRequiredEnvVariable('POLKADOT_BLOCK_NUMBER')),
 		},
-		storage: PolkadotConfigs.main.storage,
-		chainInfo: {},
+		storage: PolkadotConfigs.main!.storage,
+		chainInfo: PolkadotConfigs.main!.chainInfo,
 	},
 	assetHub: {
-		getConfig: AssetHubConfigs.main.getSetupOptions,
+		getConfig: AssetHubConfigs.main!.getConfig,
 		parameters: {
 			blockNumber: Number(getRequiredEnvVariable('ASSETHUB_BLOCK_NUMBER')),
 		},
-		storage: AssetHubConfigs.main.storage,
-		chainInfo: AssetHubConfigs.main.parachainInfo,
+		storage: AssetHubConfigs.main!.storage,
+		chainInfo: AssetHubConfigs.main!.chainInfo,
 	},
 }

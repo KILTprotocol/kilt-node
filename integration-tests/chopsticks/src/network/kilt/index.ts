@@ -1,15 +1,16 @@
+import { Chains } from '../types.js'
 import * as Main from './main_network.js'
 import * as Test from './test_network.js'
 
-export const chains = {
+export const chains: Chains = {
 	main: {
 		storage: Main.storage,
-		getSetupOptions: Main.getSetupOptions,
-		parachainInfo: Main.parachainInfo,
+		getConfig: Main.getSetupOptions,
+		chainInfo: Main.parachainInfo,
 	},
 	test: {
 		storage: Test.storage,
-		getSetupOptions: Test.getSetupOptions,
-		parachainInfo: Test.parachainInfo,
+		getConfig: Test.getSetupOptions,
+		chainInfo: Test.parachainInfo,
 	},
 }
