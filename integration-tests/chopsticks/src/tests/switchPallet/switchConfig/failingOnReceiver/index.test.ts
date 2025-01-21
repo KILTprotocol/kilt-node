@@ -7,11 +7,12 @@ import { calculateTxFees, hexAddress } from '../../../../helper/utils.js'
 import { testCases } from './config.js'
 import type { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
+import { checkSwitchPalletInvariant } from '../../index.js'
 
 describe.each(testCases)(
 	'Switch KILTs while receiver can not handle them',
 	{ timeout: 30_000 },
-	async ({ account, query, txContext, config }) => {
+	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config
@@ -98,6 +99,15 @@ describe.each(testCases)(
 
 			const balanceAfterFinalization = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceAfterFinalization).toBe(balanceBeforeTxSender - txFees)
+
+			await checkSwitchPalletInvariant(
+				expect,
+				senderContext,
+				receiverContext,
+				sovereignAccount,
+				query.sender,
+				query.receiver
+			)
 		})
 	}
 )

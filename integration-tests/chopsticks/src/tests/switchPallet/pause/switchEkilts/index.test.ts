@@ -7,12 +7,12 @@ import { hexAddress } from '../../../../helper/utils.js'
 import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
-import { isSwitchPaused } from '../../index.js'
+import { checkSwitchPalletInvariant, isSwitchPaused } from '../../index.js'
 
 describe.each(testCases)(
 	'Switch eKILTs while paused',
 	{ timeout: 30_000 },
-	async ({ account, query, txContext, config }) => {
+	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config
@@ -102,6 +102,16 @@ describe.each(testCases)(
 						`Switch eKILTs receiver chain ${JSON.stringify(pallet)}`
 					)
 				)
+			)
+
+			await checkSwitchPalletInvariant(
+				expect,
+				receiverContext,
+				senderContext,
+				sovereignAccount,
+				query.receiver,
+				query.sender,
+				balanceToTransfer
 			)
 		})
 	}

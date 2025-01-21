@@ -37,7 +37,6 @@ interface TestConfiguration {
 	account: KeyringPair
 }
 
-// Test pairs for limited reserve transfers
 export const testCases: TestConfiguration[] = [
 	{
 		config: {

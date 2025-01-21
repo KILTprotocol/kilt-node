@@ -36,6 +36,7 @@ interface TestConfiguration {
 	query: Query
 	txContext: TxContext
 	account: KeyringPair
+	sovereignAccount: string
 }
 
 export const testCases: TestConfiguration[] = [
@@ -85,5 +86,6 @@ export const testCases: TestConfiguration[] = [
 				],
 			},
 		},
+		sovereignAccount: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,
 	},
 ]
