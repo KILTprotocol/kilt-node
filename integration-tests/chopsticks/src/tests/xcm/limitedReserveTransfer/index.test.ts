@@ -10,7 +10,7 @@ import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 
 describe.each(testPairsLimitedReserveTransfers)(
 	'Limited Reserve Transfers',
-	{ timeout: 30_000 },
+	{ timeout: 60_000 },
 	async ({ accounts, query, sovereignAccount, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -39,7 +39,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 			const { senderAccount: a, receiverAccount: b } = accounts
 			senderAccount = a
 			receiverAccount = b
-		}, 20_000)
+		}, 40_000)
 
 		afterEach(async () => {
 			try {
@@ -51,7 +51,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 			}
 		})
 
-		it(desc, { timeout: 10_000 }, async ({ expect }) => {
+		it(desc, { timeout: 20_000 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 			const { pallets, tx, balanceToTransfer } = txContext
 

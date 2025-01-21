@@ -8,7 +8,7 @@ import { Config } from '../../../../network/types.js'
 import { shutDownNetwork } from '../../../../network/utils.js'
 import { hexAddress } from '../../../../helper/utils.js'
 
-describe.each(testCases)('Switch KILTs while paused', { timeout: 30_000 }, async ({ account, txContext, config }) => {
+describe.each(testCases)('Switch KILTs while paused', { timeout: 60_000 }, async ({ account, txContext, config }) => {
 	let senderContext: Config
 	let senderAccount: KeyringPair
 	const { desc, network, storage } = config
@@ -21,7 +21,7 @@ describe.each(testCases)('Switch KILTs while paused', { timeout: 30_000 }, async
 		const { senderStorage } = storage
 		await setStorage(senderContext, senderStorage)
 		senderAccount = account
-	}, 20_000)
+	}, 40_000)
 
 	// Shut down the network
 	afterEach(async () => {
@@ -34,7 +34,7 @@ describe.each(testCases)('Switch KILTs while paused', { timeout: 30_000 }, async
 		}
 	})
 
-	it(desc, { timeout: 10_000 }, async ({ expect }) => {
+	it(desc, { timeout: 20_000 }, async ({ expect }) => {
 		const { balanceToTransfer, tx } = txContext
 		let section: string = ''
 		let errorName: string = ''

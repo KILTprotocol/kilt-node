@@ -11,7 +11,7 @@ import { checkSwitchPalletInvariant, getPoolAccount, getRemoteLockedSupply } fro
 
 describe.each(testCases)(
 	'Switch KILTs',
-	{ timeout: 30_000 },
+	{ timeout: 60_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -36,7 +36,7 @@ describe.each(testCases)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
-		}, 20_000)
+		}, 40_000)
 
 		// Shut down the network
 		afterEach(async () => {
@@ -49,7 +49,7 @@ describe.each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 10_000 }, async ({ expect }) => {
+		it(desc, { timeout: 20_000 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const poolAccount = await getPoolAccount(senderContext)

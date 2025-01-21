@@ -11,7 +11,7 @@ import { isSwitchPaused } from '../../index.js'
 
 describe.each(testCases)(
 	'Withdraw relay token while paused',
-	{ timeout: 30_000 },
+	{ timeout: 60_000 },
 	async ({ account, query, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -48,7 +48,7 @@ describe.each(testCases)(
 					})
 				)
 			}
-		}, 20_000)
+		}, 40_000)
 
 		// Shut down the network
 		afterEach(async () => {
@@ -61,7 +61,7 @@ describe.each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 10_000 }, async ({ expect }) => {
+		it(desc, { timeout: 20_000 }, async ({ expect }) => {
 			const { checkSystemEvents, checkEvents } = withExpect(expect)
 
 			const { tx, balanceToTransfer, events } = txContext

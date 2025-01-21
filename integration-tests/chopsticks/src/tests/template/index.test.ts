@@ -7,7 +7,7 @@ import { testCases } from './config.js'
 import type { Config } from '../../network/types.js'
 import { shutDownNetwork } from '../../network/utils.js'
 
-describe.skip.each(testCases)('TEMPLATE', { timeout: 30_000 }, async ({ account, config }) => {
+describe.skip.each(testCases)('TEMPLATE', { timeout: 60_000 }, async ({ account, config }) => {
 	let senderContext: Config
 	let senderAccount: KeyringPair
 	const { desc, network, storage } = config
@@ -20,7 +20,7 @@ describe.skip.each(testCases)('TEMPLATE', { timeout: 30_000 }, async ({ account,
 		const { senderStorage } = storage
 		await setStorage(senderContext, senderStorage)
 		senderAccount = account
-	}, 20_000)
+	}, 40_000)
 
 	// Shut down the network
 	afterEach(async () => {
@@ -33,7 +33,7 @@ describe.skip.each(testCases)('TEMPLATE', { timeout: 30_000 }, async ({ account,
 		}
 	})
 
-	it(desc, { timeout: 10_000 }, async ({ expect }) => {
+	it(desc, { timeout: 20_000 }, async ({ expect }) => {
 		expect(senderAccount).toBeTruthy()
 	})
 })

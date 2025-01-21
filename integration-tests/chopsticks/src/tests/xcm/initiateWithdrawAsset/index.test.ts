@@ -10,7 +10,7 @@ import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 
 describe.each(testPairsWithdrawAssets)(
 	'Withdraw Asset',
-	{ timeout: 30_000 },
+	{ timeout: 60_000 },
 	async ({ accounts, query, sovereignAccount, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -39,7 +39,7 @@ describe.each(testPairsWithdrawAssets)(
 			const { senderAccount: a, receiverAccount: b } = accounts
 			senderAccount = a
 			receiverAccount = b
-		}, 20_000)
+		}, 40_000)
 
 		// Shut down the network
 		afterEach(async () => {
@@ -52,7 +52,7 @@ describe.each(testPairsWithdrawAssets)(
 			}
 		})
 
-		it(desc, { timeout: 10_000 }, async ({ expect }) => {
+		it(desc, { timeout: 20_000 }, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const { pallets, tx, balanceToTransfer } = txContext

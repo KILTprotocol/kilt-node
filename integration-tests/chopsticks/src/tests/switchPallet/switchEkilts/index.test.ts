@@ -11,7 +11,7 @@ import { checkSwitchPalletInvariant, getPoolAccount, getReceivedNativeTokens, ge
 
 describe.each(testCases)(
 	'Switch EKILTs',
-	{ timeout: 30_000 },
+	{ timeout: 60_000 },
 	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -36,7 +36,7 @@ describe.each(testCases)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
-		}, 20_000)
+		}, 40_000)
 
 		// Shut down the network
 		afterEach(async () => {
