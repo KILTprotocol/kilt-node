@@ -6,6 +6,6 @@ export default defineConfig({
 		minWorkers: process.env.CI ? 1 : 5,
 		hideSkippedTests: true,
 		retry: process.env.CI ? 3 : 0,
-		setupFiles: './setup.ts',
+		setupFiles: './src/setup.ts',
 	},
 })
