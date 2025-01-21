@@ -1,7 +1,7 @@
 import * as Main from './main_network.js'
 import * as Test from './test_network.js'
 
-export default {
+export const chains = {
 	main: {
 		storage: Main.storage,
 		getSetupOptions: Main.getSetupOptions,

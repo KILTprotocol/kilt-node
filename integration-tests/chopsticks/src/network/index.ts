@@ -1,7 +1,7 @@
-import KiltConfigs from './kilt/index.js'
-import HydrationConfigs from './hydration/index.js'
-import PolkadotConfigs from './polkadot/index.js'
-import AssetHubConfigs from './assethub/index.js'
+import { chains as KiltConfigs } from './kilt/index.js'
+import { chains as HydrationConfigs } from './hydration/index.js'
+import { chains as PolkadotConfigs } from './polkadot/index.js'
+import { chains as AssetHubConfigs } from './assethub/index.js'
 import { ChainConfigs } from './types.js'
 
 /*
