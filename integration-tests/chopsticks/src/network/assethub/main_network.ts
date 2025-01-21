@@ -1,4 +1,4 @@
-import { SetupOption } from '@acala-network/chopsticks-testing'
+import type { SetupOption } from '@acala-network/chopsticks-testing'
 
 import { initialBalanceDOT, toNumber } from '../../helper/utils.js'
 
