@@ -2,11 +2,10 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
 	test: {
-		maxWorkers: 10,
-		minWorkers: 1,
-
+		maxWorkers: process.env.CI ? 4 : 10,
+		minWorkers: process.env.CI ? 1 : 5,
 		hideSkippedTests: true,
-		retry: 1,
+		retry: process.env.CI ? 3 : 0,
 		setupFiles: './setup.ts',
 	},
 })
