@@ -66,8 +66,8 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 				tx.xtokens.parachainV3(mainChains.kilt.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['xcmpQueue'],
-				receiver: ['messageQueue', { section: 'system', method: 'NewAccount' }],
+				sender: [],
+				receiver: [{ section: 'system', method: 'NewAccount' }],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -113,8 +113,8 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 				tx.xtokens.parachainV3(mainChains.kilt.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['xcmpQueue'],
-				receiver: ['messageQueue', { section: 'system', method: 'NewAccount' }],
+				sender: [],
+				receiver: [{ section: 'system', method: 'NewAccount' }],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},

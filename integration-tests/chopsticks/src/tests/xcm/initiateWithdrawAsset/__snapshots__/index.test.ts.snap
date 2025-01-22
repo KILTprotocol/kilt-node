@@ -1,49 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Withdraw Asset > HydraDx -> KILT DEV > receiver events "messageQueue" 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": "(rounded 2000)",
-      },
-      "success": true,
-      "weightUsed": {
-        "proofSize": 0,
-        "refTime": 800000000,
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT DEV > receiver events {"section":"system","method":"NewAccount"} 1`] = `
-[
-  {
-    "data": {
-      "account": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
-    },
-    "method": "NewAccount",
-    "section": "system",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT DEV > sender events "xcmpQueue" 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
-  },
-]
-`;
-
 exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events "messageQueue" 1`] = `
 [
   {
@@ -137,26 +93,6 @@ exports[`Withdraw Asset > HydraDx -> KILT at Block > sender events {"section":"c
 ]
 `;
 
-exports[`Withdraw Asset > HydraDx -> KILT live > receiver events "messageQueue" 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": "(rounded 2000)",
-      },
-      "success": true,
-      "weightUsed": {
-        "proofSize": 0,
-        "refTime": 800000000,
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
-
 exports[`Withdraw Asset > HydraDx -> KILT live > receiver events {"section":"system","method":"NewAccount"} 1`] = `
 [
   {
@@ -165,18 +101,6 @@ exports[`Withdraw Asset > HydraDx -> KILT live > receiver events {"section":"sys
     },
     "method": "NewAccount",
     "section": "system",
-  },
-]
-`;
-
-exports[`Withdraw Asset > HydraDx -> KILT live > sender events "xcmpQueue" 1`] = `
-[
-  {
-    "data": {
-      "messageHash": "(hash)",
-    },
-    "method": "XcmpMessageSent",
-    "section": "xcmpQueue",
   },
 ]
 `;

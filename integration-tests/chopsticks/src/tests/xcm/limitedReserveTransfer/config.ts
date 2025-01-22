@@ -64,8 +64,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV2(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['polkadotXcm'],
-				receiver: ['messageQueue'],
+				sender: [],
+				receiver: [],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -111,8 +111,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV2(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['polkadotXcm', { section: 'balances', method: 'Withdraw' }],
-				receiver: ['messageQueue', 'tokens', 'currencies'],
+				sender: [{ section: 'balances', method: 'Withdraw' }],
+				receiver: ['tokens', 'currencies'],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -156,8 +156,8 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV3(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['polkadotXcm'],
-				receiver: ['messageQueue'],
+				sender: [],
+				receiver: [],
 			},
 			balanceToTransfer: BigInt(1e15),
 		},
@@ -203,7 +203,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV3(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['polkadotXcm', { section: 'balances', method: 'Withdraw' }],
+				sender: [{ section: 'balances', method: 'Withdraw' }],
 				receiver: ['tokens', 'currencies'],
 			},
 			balanceToTransfer: BigInt(1e15),
@@ -247,7 +247,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV3(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['polkadotXcm'],
+				sender: [],
 				receiver: [],
 			},
 			balanceToTransfer: BigInt(1e15),
@@ -291,7 +291,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 				tx.xcmPallet.parachainV2(1, mainChains.hydration.chainInfo.paraId)
 			),
 			pallets: {
-				sender: ['polkadotXcm'],
+				sender: [],
 				receiver: [],
 			},
 			balanceToTransfer: BigInt(1e15),
