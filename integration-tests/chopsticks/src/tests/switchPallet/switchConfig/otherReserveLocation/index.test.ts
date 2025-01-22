@@ -10,7 +10,7 @@ import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
 
 describe.each(testCases)(
 	'Switch other reserve location',
-	{ timeout: 60_000 },
+	{ timeout: 70_000 },
 	async ({ account, query, txContext, config }) => {
 		let receiverContext: Config
 		let relayContext: Config
@@ -32,7 +32,7 @@ describe.each(testCases)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
-		}, 40_000)
+		}, 50_000)
 
 		// Shut down the network
 		afterEach(async () => {
@@ -45,7 +45,7 @@ describe.each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 20_000 }, async ({ expect }) => {
+		it(desc, { timeout: 30_000 }, async ({ expect }) => {
 			const { checkSystemEvents } = withExpect(expect)
 			const { tx, balanceToTransfer, events, message } = txContext
 

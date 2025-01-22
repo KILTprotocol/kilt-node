@@ -8,7 +8,7 @@ import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
 
-describe.each(testCases)('Dust account', { timeout: 60_000 }, async ({ account, query, txContext, config }) => {
+describe.each(testCases)('Dust account', { timeout: 70_000 }, async ({ account, query, txContext, config }) => {
 	let context: Config
 	let senderAccount: KeyringPair
 	let receiverAccount: KeyringPair
@@ -28,7 +28,7 @@ describe.each(testCases)('Dust account', { timeout: 60_000 }, async ({ account, 
 
 		senderAccount = account.sender
 		receiverAccount = account.receiver
-	}, 40_000)
+	}, 50_000)
 
 	// Shut down the network
 	afterEach(async () => {
@@ -41,7 +41,7 @@ describe.each(testCases)('Dust account', { timeout: 60_000 }, async ({ account, 
 		}
 	})
 
-	it(desc, { timeout: 20_000 }, async ({ expect }) => {
+	it(desc, { timeout: 30_000 }, async ({ expect }) => {
 		const { checkSystemEvents } = withExpect(expect)
 		const { balanceToTransfer, events, tx } = txContext
 

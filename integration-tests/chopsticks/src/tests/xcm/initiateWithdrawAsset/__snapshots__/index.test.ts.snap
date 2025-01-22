@@ -1,5 +1,17 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Withdraw Asset > HydraDx -> KILT DEV > receiver events {"section":"system","method":"NewAccount"} 1`] = `
+[
+  {
+    "data": {
+      "account": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
+    },
+    "method": "NewAccount",
+    "section": "system",
+  },
+]
+`;
+
 exports[`Withdraw Asset > HydraDx -> KILT at Block > receiver events "messageQueue" 1`] = `
 [
   {
