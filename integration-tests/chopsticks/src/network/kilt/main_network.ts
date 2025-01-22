@@ -1,15 +1,10 @@
 import type { SetupOption } from '@acala-network/chopsticks-testing'
 
 import { initialBalanceDOT, initialBalanceKILT, toNumber } from '../../helper/utils.js'
+import { SetupConfigParameters } from '../types.js'
 
 /// Options used to create the Spiritnet context
-export const getSetupOptions = ({
-	blockNumber = undefined,
-	wasmOverride = undefined,
-}: {
-	blockNumber?: number
-	wasmOverride?: string
-}) => {
+export const getSetupOptions = ({ blockNumber = undefined, wasmOverride = undefined }: SetupConfigParameters) => {
 	const random = (Math.random() + 1).toString(36).substring(7)
 	return {
 		endpoint: process.env.SPIRITNET_WS || 'wss://kilt.ibp.network',

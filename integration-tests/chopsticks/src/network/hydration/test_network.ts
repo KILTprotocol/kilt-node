@@ -1,15 +1,10 @@
 import type { SetupOption } from '@acala-network/chopsticks-testing'
 
 import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../../helper/utils.js'
+import { SetupConfigParameters } from '../types.js'
 
 /// Options used to create the HydraDx context
-export const getSetupOptions = ({
-	blockNumber,
-	wasmOverride,
-}: {
-	blockNumber?: number
-	wasmOverride?: string
-} = {}) => {
+export const getSetupOptions = ({ blockNumber, wasmOverride }: SetupConfigParameters) => {
 	const random = (Math.random() + 1).toString(36).substring(7)
 	return {
 		endpoint: process.env.HYDRADX_WS || ['wss://paseo-rpc.play.hydration.cloud'],

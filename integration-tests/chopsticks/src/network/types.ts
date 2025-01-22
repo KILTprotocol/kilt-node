@@ -26,3 +26,8 @@ export interface ChainConfig extends Chain {
 type chains = 'kilt' | 'polkadot' | 'assetHub' | 'hydration'
 /// A Record of all possible chain configurations.
 export type ChainConfigs = Record<chains, ChainConfig>
+
+export interface SetupConfigParameters {
+	blockNumber?: number
+	wasmOverride?: string
+}
