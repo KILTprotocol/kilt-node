@@ -11,7 +11,7 @@ import { checkSwitchPalletInvariant, isSwitchPaused } from '../../index.js'
 
 describe.each(testCases)(
 	'Switch eKILTs while paused',
-	{ timeout: 70_000 },
+
 	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let senderContext: Config
 		let receiverContext: Config
@@ -48,7 +48,7 @@ describe.each(testCases)(
 					})
 				)
 			}
-		}, 50_000)
+		})
 
 		// Shut down the network
 		afterEach(async () => {
@@ -61,7 +61,7 @@ describe.each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 30_000 }, async ({ expect }) => {
+		it(desc, async ({ expect }) => {
 			const { checkSystemEvents, checkEvents } = withExpect(expect)
 
 			const { tx, balanceToTransfer, events } = txContext

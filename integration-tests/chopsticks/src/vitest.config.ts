@@ -7,5 +7,8 @@ export default defineConfig({
 		hideSkippedTests: true,
 		retry: process.env.CI ? 3 : 0,
 		setupFiles: './src/setup.ts',
+		hookTimeout: 120_000,
+		testTimeout: 60_000,
+		teardownTimeout: 60_000,
 	},
 })

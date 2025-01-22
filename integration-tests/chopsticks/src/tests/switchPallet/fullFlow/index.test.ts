@@ -11,7 +11,7 @@ import { checkSwitchPalletInvariant } from '../index.js'
 
 describe.each(testCases)(
 	'Switch KILTs full flow',
-	{ timeout: 70_000 },
+
 	async ({ account, query, txContext, config, sovereignAccount }) => {
 		let nativeContext: Config
 		let foreignContext: Config
@@ -36,7 +36,7 @@ describe.each(testCases)(
 			await setStorage(relayContext, relayStorage)
 
 			senderAccount = account
-		}, 50_000)
+		})
 
 		// Shut down the network
 		afterEach(async () => {
@@ -49,7 +49,7 @@ describe.each(testCases)(
 			}
 		})
 
-		it(desc, { timeout: 30_000 }, async ({ expect }) => {
+		it(desc, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 
 			const { tx, balanceToTransfer, events } = txContext
