@@ -3,11 +3,10 @@ import type { SetupOption } from '@acala-network/chopsticks-testing'
 import { initialBalanceDOT, toNumber } from '../../helper/utils.js'
 import { SetupConfigParameters } from '../types.js'
 
-/// Options used to create the Spiritnet context
 export const getSetupOptions = ({ blockNumber = undefined, wasmOverride = undefined }: SetupConfigParameters) => {
 	const random = (Math.random() + 1).toString(36).substring(7)
 	return {
-		endpoint: process.env.ASSETHUB_WSS || 'wss://asset-hub-paseo.dotters.network',
+		endpoint: process.env.ASSETHUB_TEST_WSS || 'wss://asset-hub-paseo.dotters.network',
 		db: `./db/assethub-test_${random}.db.sqlite`,
 		port: toNumber(process.env.ASSETHUB_TEST_PORT),
 		wasmOverride,
@@ -25,6 +24,7 @@ export const storage = {
 		}
 	},
 
+	/// Creates the foreign asset with the given manager as owner, issuer, admin, and freezer.
 	createForeignAsset(manager: string, assetId = parachainInfo.eKiltLocation) {
 		return {
 			foreignAssets: {
@@ -106,6 +106,7 @@ export const parachainInfo = {
 	/// Native token in AssetHub
 	nativeTokenLocation: { parents: 1, interior: 'Here' },
 
+	/// ePILT location on Sepolia
 	eKiltLocation: {
 		parents: 2,
 		interior: {

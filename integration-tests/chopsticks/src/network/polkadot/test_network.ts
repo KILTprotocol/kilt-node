@@ -9,7 +9,7 @@ export const getSetupOptions = ({ blockNumber = undefined, wasmOverride = undefi
 	return {
 		endpoint: process.env.PASEO_WS || ['wss://paseo.rpc.amforc.com', 'wss://rpc.ibp.network/paseo'],
 		db: `./db/polkadot_test_${random}.db.sqlite`,
-		port: toNumber(process.env.POLKADOT_PORT),
+		port: toNumber(process.env.PASEO_PORT),
 		blockNumber,
 		wasmOverride,
 	} as SetupOption

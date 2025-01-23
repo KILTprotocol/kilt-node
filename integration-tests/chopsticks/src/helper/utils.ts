@@ -26,7 +26,6 @@ export function toNumber(value: string | undefined): number | undefined {
 	if (value === undefined) {
 		return undefined
 	}
-
 	return Number(value)
 }
 
@@ -78,7 +77,7 @@ export function validateBalanceWithPrecision(
 }
 
 /**
- * Fetches the paid fees for the executed XCM message.
+ * Fetches the paid fees for the executed XCM message. Is only working on the sender chain.
  */
 export async function getPaidXcmFees(events: Codec[]): Promise<bigint> {
 	const polkadotFees = events.filter(
@@ -103,6 +102,7 @@ export async function calculateTxFees(
 	return paymentInfo.partialFee.toBigInt()
 }
 
+// Constants for the balances
 export const KILT = BigInt(1e15)
 export const DOT = BigInt(1e10)
 export const HDX = BigInt(1e12)

@@ -7,9 +7,9 @@ import { SetupConfigParameters } from '../types.js'
 export const getSetupOptions = ({ blockNumber, wasmOverride }: SetupConfigParameters) => {
 	const random = (Math.random() + 1).toString(36).substring(7)
 	return {
-		endpoint: process.env.HYDRADX_WS || ['wss://paseo-rpc.play.hydration.cloud'],
+		endpoint: process.env.HYDRADX_TEST_WS || ['wss://paseo-rpc.play.hydration.cloud'],
 		db: `./db/hydration_test_${random}.db.sqlite`,
-		port: toNumber(process.env.HYDRADX_PORT),
+		port: toNumber(process.env.HYDRADX_TEST_PORT),
 		blockNumber,
 		wasmOverride,
 	} as SetupOption

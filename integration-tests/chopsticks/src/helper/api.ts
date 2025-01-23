@@ -1,10 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ApiPromise } from '@polkadot/api'
 
-/**
- * All possible ways to submit an XCM message for the xtokens pallet.
- * different structs for the xcm versions are provided
- */
 export const xtokens = {
 	parachainV2: (paraId: number) => (acc: any) => ({
 		V1: {
@@ -91,10 +87,6 @@ export const switchPallet = {
 			api.tx.assetSwitchPool1.pauseSwitchPair(),
 }
 
-/**
- * All possible ways to submit an XCM message for the xcmPallet.
- * different structs for the xcm versions are provided
- */
 export const xcmPallet = {
 	parachainV2: (parents: number, paraId: number) => ({
 		V2: {

@@ -43,7 +43,8 @@ export const storage = {
 			},
 		}
 	},
-	/// Pauses the switch pool. Default value are fetched from block 7,896,550 and will break the invariant check.
+	/// Pauses the switch pool. Default value are fetched from block 7,896,550 and might break the invariant check for all blocks after that.
+	// To maintain the invariant, use the pause tx.
 	pauseSwitch(
 		remoteAssetCirculatingSupply = '1044350720000000000000',
 		remoteAssetTotalSupply = '164000000000000000000000',
@@ -123,5 +124,6 @@ export const parachainInfo = {
 	/// Sibling sovereign account
 	sovereignAccountOnSiblingChains: '5Eg2fnshxV9kofpcNEFE7azHLAjcCtpNkbsH3kkWZasYUVKs',
 
+	// Native token location from Spiritnet perspective.
 	HERE: { Concrete: { parents: 0, interior: 'Here' } },
 }
