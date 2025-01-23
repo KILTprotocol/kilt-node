@@ -175,6 +175,7 @@ impl Config for Test {
 	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
 	type BalanceMigrationManager = ();
+	type DidLifecycleHooks = ();
 }
 
 parameter_types! {

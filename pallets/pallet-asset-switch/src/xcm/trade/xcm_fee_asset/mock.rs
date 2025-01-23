@@ -16,22 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	construct_runtime, parameter_types,
-	traits::{
-		fungible::Dust,
-		tokens::{
-			fungible::{Inspect as InspectFungible, Mutate as MutateFungible, Unbalanced as UnbalancedFungible},
-			DepositConsequence, Fortitude, Preservation, Provenance, WithdrawConsequence,
-		},
-		Everything,
-	},
-};
+use frame_support::{construct_runtime, parameter_types, traits::Everything};
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
+use kilt_support::mock::MockCurrency;
 use sp_core::{ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
-	AccountId32, DispatchError,
+	AccountId32,
 };
 use xcm::v4::{InteriorLocation, Junctions::Here};
 
@@ -71,58 +62,6 @@ impl frame_system::Config for MockRuntime {
 	type Version = ();
 }
 
-// Currency is not used in this XCM component tests, so we mock the entire
-// currency system.
-pub struct MockCurrency;
-
-impl MutateFungible<AccountId32> for MockCurrency {}
-
-impl InspectFungible<AccountId32> for MockCurrency {
-	type Balance = u64;
-
-	fn active_issuance() -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn balance(_who: &AccountId32) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn can_deposit(_who: &AccountId32, _amount: Self::Balance, _provenance: Provenance) -> DepositConsequence {
-		DepositConsequence::Success
-	}
-
-	fn can_withdraw(_who: &AccountId32, _amount: Self::Balance) -> WithdrawConsequence<Self::Balance> {
-		WithdrawConsequence::Success
-	}
-
-	fn minimum_balance() -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn reducible_balance(_who: &AccountId32, _preservation: Preservation, _force: Fortitude) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn total_balance(_who: &AccountId32) -> Self::Balance {
-		Self::Balance::default()
-	}
-
-	fn total_issuance() -> Self::Balance {
-		Self::Balance::default()
-	}
-}
-
-impl UnbalancedFungible<AccountId32> for MockCurrency {
-	fn handle_dust(_dust: Dust<AccountId32, Self>) {}
-
-	fn write_balance(_who: &AccountId32, _amount: Self::Balance) -> Result<Option<Self::Balance>, DispatchError> {
-		Ok(Some(Self::Balance::default()))
-	}
-
-	fn set_total_issuance(_amount: Self::Balance) {}
-}
-
 parameter_types! {
 	pub const UniversalLocation: InteriorLocation = Here;
 }
@@ -131,7 +70,7 @@ impl crate::Config for MockRuntime {
 	type AccountIdConverter = ();
 	type AssetTransactor = ();
 	type FeeOrigin = EnsureRoot<Self::AccountId>;
-	type LocalCurrency = MockCurrency;
+	type LocalCurrency = MockCurrency<u64, RuntimeHoldReason>;
 	type PauseOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type SubmitterOrigin = EnsureSigned<Self::AccountId>;

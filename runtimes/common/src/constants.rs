@@ -170,7 +170,17 @@ pub mod bonded_coins {
 	pub const DEPOSIT_PER_CURRENCY: Balance = deposit(1, ASSET_ID_BYTE_LENGTH + (2 * ASSET_METADATA_BYTE_LENGTH));
 	pub const MAX_CURRENCIES: u32 = 50;
 	pub const MAX_DENOMINATION: u8 = 15;
-	pub const MAX_STRING_LENGTH: u32 = crate::constants::assets::STRING_LIMIT;
+	pub const MAX_STRING_LENGTH: u32 = crate::constants::bonded_assets::STRING_LIMIT;
+}
+
+pub mod bonded_assets {
+	pub const APPROVAL_DEPOSIT: u128 = 0;
+	pub const ASSET_ACCOUNT_DEPOSIT: u128 = 0;
+	pub const ASSET_DEPOSIT: u128 = 0;
+	pub const META_DEPOSIT_BASE: u128 = 0;
+	pub const META_DEPOSIT_PER_BYTE: u128 = 0;
+	pub const REMOVE_ITEMS_LIMIT: u32 = 1000;
+	pub const STRING_LIMIT: u32 = 50;
 }
 
 pub mod assets {

@@ -18,6 +18,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use pallet_bonded_coins::Round;
 use parity_scale_codec::{alloc::string::String, Codec, Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -71,6 +72,7 @@ sp_api::decl_runtime_apis! {
 				currency_idx: u8,
 				low: Balance,
 				high: Balance,
+				rounding: Round
 			) -> Result<Balance, Error>;
 
 			/// Query all pool IDs where the given account is the manager.
