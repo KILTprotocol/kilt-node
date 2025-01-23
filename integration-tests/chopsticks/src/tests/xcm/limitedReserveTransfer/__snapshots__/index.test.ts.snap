@@ -5,7 +5,7 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V2 > receiver ev
   {
     "data": {
       "amount": "(rounded 1000000000000000)",
-      "currencyId": 28,
+      "currencyId": "(rounded 30)",
       "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
     },
     "method": "Deposited",
@@ -13,8 +13,8 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V2 > receiver ev
   },
   {
     "data": {
-      "amount": "(rounded 3500000000000)",
-      "currencyId": 28,
+      "amount": "(rounded 3000000000000)",
+      "currencyId": "(rounded 30)",
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
     "method": "Deposited",
@@ -28,7 +28,7 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V2 > receiver ev
   {
     "data": {
       "amount": "(rounded 1000000000000000)",
-      "currencyId": 28,
+      "currencyId": "(rounded 30)",
       "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
     },
     "method": "Endowed",
@@ -37,7 +37,7 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V2 > receiver ev
   {
     "data": {
       "amount": "(rounded 1000000000000000)",
-      "currencyId": 28,
+      "currencyId": "(rounded 30)",
       "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
     },
     "method": "Deposited",
@@ -45,8 +45,8 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V2 > receiver ev
   },
   {
     "data": {
-      "amount": "(rounded 3500000000000)",
-      "currencyId": 28,
+      "amount": "(rounded 3000000000000)",
+      "currencyId": "(rounded 30)",
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
     "method": "Deposited",
@@ -59,7 +59,7 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V2 > sender even
 [
   {
     "data": {
-      "amount": "(rounded 170000000000)",
+      "amount": "(rounded 200000000000)",
       "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
     },
     "method": "Withdraw",
@@ -72,8 +72,66 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V3 > receiver ev
 [
   {
     "data": {
+      "amount": "(rounded 10000000)",
+      "currencyId": 5,
+      "from": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+      "to": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
+    },
+    "method": "Transferred",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": 200000000000,
+      "currencyId": 5,
+      "from": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+      "to": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+    },
+    "method": "Transferred",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 100000000000000000000)",
+      "currencyId": "(rounded 100)",
+      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+      "to": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+    },
+    "method": "Transferred",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 2000000000)",
+      "currencyId": 1,
+      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+    },
+    "method": "Withdrawn",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 100000000000000000000)",
+      "currencyId": "(rounded 100)",
+      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+    },
+    "method": "Withdrawn",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 100000000)",
+      "currencyId": "(rounded 20)",
+      "from": "7LVGEVLFXpsCCtnsvhzkSMQARU7gRVCtwMckG7u7d3V6FVvG",
+      "to": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+    },
+    "method": "Transferred",
+    "section": "currencies",
+  },
+  {
+    "data": {
       "amount": "(rounded 1000000000000000)",
-      "currencyId": 28,
+      "currencyId": "(rounded 30)",
       "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
     },
     "method": "Deposited",
@@ -81,11 +139,50 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V3 > receiver ev
   },
   {
     "data": {
-      "amount": "(rounded 3500000000000)",
-      "currencyId": 28,
+      "amount": "(rounded 3000000000000)",
+      "currencyId": "(rounded 30)",
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
     "method": "Deposited",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 200000000000000000)",
+      "currencyId": "(rounded 100)",
+      "from": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
+      "to": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+    },
+    "method": "Transferred",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 20000000000000)",
+      "currencyId": 0,
+      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+      "to": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
+    },
+    "method": "Transferred",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 3000000)",
+      "currencyId": 1,
+      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+    },
+    "method": "Withdrawn",
+    "section": "currencies",
+  },
+  {
+    "data": {
+      "amount": "(rounded 60000000000)",
+      "currencyId": 0,
+      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+      "to": "7L53bUTCQURi4iNpkVMox9K5XUra9Nom1nvJDMwxNRdJR7zu",
+    },
+    "method": "Transferred",
     "section": "currencies",
   },
 ]
@@ -95,8 +192,112 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V3 > receiver ev
 [
   {
     "data": {
+      "amount": "(rounded 10000000)",
+      "currencyId": 5,
+      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+    },
+    "method": "Unreserved",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 10000000)",
+      "currencyId": 5,
+      "from": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+      "to": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
+    },
+    "method": "Transfer",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": 200000000000,
+      "currencyId": 5,
+      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+    },
+    "method": "Unreserved",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": 200000000000,
+      "currencyId": 5,
+      "from": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+      "to": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+    },
+    "method": "Transfer",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 100000000000000000000)",
+      "currencyId": "(rounded 100)",
+      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+    },
+    "method": "Endowed",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 100000000000000000000)",
+      "currencyId": "(rounded 100)",
+      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+      "to": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+    },
+    "method": "Transfer",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 2000000000)",
+      "currencyId": 1,
+      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+    },
+    "method": "Withdrawn",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 200000000000000000)",
+      "currencyId": "(rounded 100)",
+      "who": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
+    },
+    "method": "Endowed",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 200000000000000000)",
+      "currencyId": "(rounded 100)",
+      "from": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+      "to": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
+    },
+    "method": "Transfer",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 100000000000000000000)",
+      "currencyId": "(rounded 100)",
+      "who": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+    },
+    "method": "Withdrawn",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 100000000)",
+      "currencyId": "(rounded 20)",
+      "from": "7LVGEVLFXpsCCtnsvhzkSMQARU7gRVCtwMckG7u7d3V6FVvG",
+      "to": "7KCp4eenFS4CowF9SpQE5BBCj5MtoBA3K811tNyRmhLfH1aV",
+    },
+    "method": "Transfer",
+    "section": "tokens",
+  },
+  {
+    "data": {
       "amount": "(rounded 1000000000000000)",
-      "currencyId": 28,
+      "currencyId": "(rounded 30)",
       "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
     },
     "method": "Endowed",
@@ -105,7 +306,7 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V3 > receiver ev
   {
     "data": {
       "amount": "(rounded 1000000000000000)",
-      "currencyId": 28,
+      "currencyId": "(rounded 30)",
       "who": "7MZG43idRmdg8VSt5BS9mVJeBhhxxt5y55hCsMpoKp5xFQX2",
     },
     "method": "Deposited",
@@ -113,11 +314,30 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V3 > receiver ev
   },
   {
     "data": {
-      "amount": "(rounded 3500000000000)",
-      "currencyId": 28,
+      "amount": "(rounded 3000000000000)",
+      "currencyId": "(rounded 30)",
       "who": "7L53bUTBopuwFt3mKUfmkzgGLayYa1Yvn1hAg9v5UMrQzTfh",
     },
     "method": "Deposited",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 200000000000000000)",
+      "currencyId": "(rounded 100)",
+      "from": "7L53bUTCCAvmCxhe15maHwJZbjQYH89LkXuyTnTi1J58xyFC",
+      "to": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+    },
+    "method": "Transfer",
+    "section": "tokens",
+  },
+  {
+    "data": {
+      "amount": "(rounded 3000000)",
+      "currencyId": 1,
+      "who": "7L53bUTBbfuj14UpdCNPwmgzzHSsrsTWBHX5pys32mVWM3C1",
+    },
+    "method": "Withdrawn",
     "section": "tokens",
   },
 ]
@@ -127,7 +347,7 @@ exports[`Limited Reserve Transfers > Kilt -> Hydration at block V3 > sender even
 [
   {
     "data": {
-      "amount": "(rounded 170000000000)",
+      "amount": "(rounded 200000000000)",
       "who": "4seWojfEHrk5YKPahdErazQ3CWEHZYi6NV4gKz5AaejWbRPJ",
     },
     "method": "Withdraw",

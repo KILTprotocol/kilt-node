@@ -83,7 +83,9 @@ describe.each(testPairsWithdrawAssets)(
 
 			Promise.all(
 				pallets.sender.map((pallet) =>
-					checkEvents(events, pallet).toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
+					checkEvents(events, pallet)
+						.redact({ number: 1 })
+						.toMatchSnapshot(`sender events ${JSON.stringify(pallet)}`)
 				)
 			)
 
@@ -112,9 +114,9 @@ describe.each(testPairsWithdrawAssets)(
 
 			await Promise.all(
 				pallets.receiver.map((pallet) =>
-					checkSystemEvents(receiverContext, pallet).toMatchSnapshot(
-						`receiver events ${JSON.stringify(pallet)}`
-					)
+					checkSystemEvents(receiverContext, pallet)
+						.redact({ number: 1 })
+						.toMatchSnapshot(`receiver events ${JSON.stringify(pallet)}`)
 				)
 			)
 

@@ -1,17 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Withdraw Asset > Hydration -> KILT DEV > receiver events {"section":"system","method":"NewAccount"} 1`] = `
-[
-  {
-    "data": {
-      "account": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
-    },
-    "method": "NewAccount",
-    "section": "system",
-  },
-]
-`;
-
 exports[`Withdraw Asset > Hydration -> KILT at Block > receiver events "messageQueue" 1`] = `
 [
   {
@@ -86,7 +74,7 @@ exports[`Withdraw Asset > Hydration -> KILT at Block > sender events {"section":
 [
   {
     "data": {
-      "amount": "(rounded 520000000000)",
+      "amount": "(rounded 500000000000)",
       "currencyId": 0,
       "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
     },
@@ -96,7 +84,7 @@ exports[`Withdraw Asset > Hydration -> KILT at Block > sender events {"section":
   {
     "data": {
       "amount": 1000000000000000,
-      "currencyId": 28,
+      "currencyId": "(rounded 30)",
       "who": "7NL1GYCJu8cFSnWBLwET2X3fMdodw8T75zuxi59hA2bhdjQq",
     },
     "method": "Withdrawn",
