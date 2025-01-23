@@ -91,7 +91,9 @@ interface TestConfiguration {
 	config: BasicConfig
 	query: Query
 	txContext: TxContext
+	// account to use for the transactions
 	account: KeyringPair
+	// Kilt sovereign account used for invariant checks.
 	sovereignAccount: string
 }
 

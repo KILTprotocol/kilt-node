@@ -71,6 +71,7 @@ export async function setStorage(context: Config, storage: Record<string, Record
 	await createBlock(context)
 }
 
+/// Schedules a transaction with root privileges at the given block number. If no block is provided, the transaction will be scheduled for the next block.
 export async function scheduleTx({ api }: { api: ApiPromise }, call: SubmittableExtrinsic<'promise'>, at = undefined) {
 	const number = at ? at : (await api.rpc.chain.getHeader()).number.toNumber()
 	await api.rpc('dev_setStorage', {

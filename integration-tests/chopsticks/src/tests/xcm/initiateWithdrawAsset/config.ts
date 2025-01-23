@@ -7,6 +7,8 @@ import type { BasicConfig, BasicXcmTestConfiguration, BasisTxContext } from '../
 import type { SubmittableExtrinsic } from '@polkadot/api/types'
 
 interface Config extends BasicConfig {
+	// The received balance can be different in each block due to dynamic fee calculation.
+	// Precision is used to compare the balances with a certain precision.
 	precision: bigint
 }
 

@@ -70,7 +70,7 @@ describe.each(testCases)(
 			// process xcm message
 			await createBlock(nativeContext)
 
-			// check balance movement asdf
+			// check balance movement
 			const txFees = await calculateTxFees(txSendForeignAsset, senderAccount)
 
 			const foreignFundsAfterTx = await query.foreign.nativeFunds(foreignContext, senderAccount.address)
