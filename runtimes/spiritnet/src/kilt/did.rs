@@ -21,22 +21,12 @@ use did::{
 	DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
 };
 use frame_system::EnsureRoot;
-<<<<<<< HEAD
-use runtime_common::{
-	constants, dot_names::AllowedUniqueLinkingAssociator, AccountId, DidIdentifier, SendDustAndFeesToTreasury,
-};
-use sp_core::ConstBool;
-
-use crate::{
-	weights, Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, UniqueLinking,
-=======
 use runtime_common::{constants, AccountId, DidIdentifier, SendDustAndFeesToTreasury};
 use sp_core::ConstBool;
 
 use crate::{
 	weights::{self},
 	Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
->>>>>>> ag_chopsticks_design
 };
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
@@ -237,7 +227,7 @@ pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
-	
+
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type ClaimOrigin =
 		EnsureDidOrigin<DidIdentifier, AccountId, runtime_common::dot_names::AllowedDotNameClaimer<crate::DotNames>>;
