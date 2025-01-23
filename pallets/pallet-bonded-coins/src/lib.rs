@@ -36,7 +36,7 @@ mod types;
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarking::BenchmarkHelper;
 
-pub use types::{PoolDetails, Round};
+pub use types::{Locks, PoolStatus, Round};
 
 pub use default_weights::WeightInfo;
 
@@ -315,6 +315,8 @@ pub mod pallet {
 		Slippage,
 		/// The calculated collateral is zero.
 		ZeroCollateral,
+		/// A pool has to contain at least one bonded currency.
+		ZeroBondedCurrency,
 	}
 
 	#[pallet::call]
@@ -372,6 +374,7 @@ pub mod pallet {
 			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let currency_length = currencies.len();
+			ensure!(!currency_length.is_zero(), Error::<T>::ZeroBondedCurrency);
 
 			let currency_ids = T::NextAssetIds::try_get(currency_length.saturated_into())
 				.map_err(|e| e.into())
@@ -1352,7 +1355,7 @@ pub mod pallet {
 		/// # Errors
 		/// - `ArithmeticError`: If there is an error during the conversion to
 		///   fixed point.
-		fn calculate_normalized_passive_issuance(
+		pub fn calculate_normalized_passive_issuance(
 			bonded_currencies: &[FungiblesAssetIdOf<T>],
 			denomination: u8,
 			currency_idx: usize,

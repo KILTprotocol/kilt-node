@@ -47,9 +47,9 @@ macro_rules! construct_async_run {
 		match runtime {
 			ParachainRuntime::Spiritnet(_) => {
 				runner.async_run(|$config| {
-					let $components = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
+					let $components = new_partial::<spiritnet_runtime::RuntimeApi, _>(
 						&$config,
-						crate::service::build_import_queue::<SpiritnetRuntimeExecutor, spiritnet_runtime::RuntimeApi>,
+						crate::service::build_import_queue::<spiritnet_runtime::RuntimeApi>,
 					)?;
 					let task_manager = $components.task_manager;
 					{ $( $code )* }.map(|v| (v, task_manager))
@@ -57,9 +57,9 @@ macro_rules! construct_async_run {
 			},
 			ParachainRuntime::Peregrine(_) => {
 				runner.async_run(|$config| {
-					let $components = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
+					let $components = new_partial::<peregrine_runtime::RuntimeApi, _>(
 						&$config,
-						crate::service::build_import_queue::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>,
+						crate::service::build_import_queue::<peregrine_runtime::RuntimeApi>,
 					)?;
 					let task_manager = $components.task_manager;
 					{ $( $code )* }.map(|v| (v, task_manager))
@@ -123,7 +123,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 			match runtime {
 				ParachainRuntime::Spiritnet(_) => runner.sync_run(|config| {
-					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
+					let partials = new_partial::<spiritnet_runtime::RuntimeApi, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
@@ -131,7 +131,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					cmd.run(partials.client)
 				}),
 				ParachainRuntime::Peregrine(_) => runner.sync_run(|config| {
-					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
+					let partials = new_partial::<peregrine_runtime::RuntimeApi, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
@@ -187,14 +187,14 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					}
 				}
 				(BenchmarkCmd::Block(cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
-					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
+					let partials = new_partial::<spiritnet_runtime::RuntimeApi, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
 					cmd.run(partials.client)
 				}),
 				(BenchmarkCmd::Block(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
-					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
+					let partials = new_partial::<peregrine_runtime::RuntimeApi, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
@@ -208,7 +208,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				)),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
-					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
+					let partials = new_partial::<spiritnet_runtime::RuntimeApi, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
@@ -220,7 +220,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				}),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
-					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
+					let partials = new_partial::<peregrine_runtime::RuntimeApi, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
@@ -284,7 +284,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 
 				match runtime {
 					ParachainRuntime::Peregrine(_) => {
-						crate::service::start_node::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>(
+						crate::service::start_node::<peregrine_runtime::RuntimeApi>(
 							config,
 							polkadot_config,
 							collator_options,
@@ -296,7 +296,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 						.map_err(Into::into)
 					},
 					ParachainRuntime::Spiritnet(_) => {
-						crate::service::start_node::<SpiritnetRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
+						crate::service::start_node::<spiritnet_runtime::RuntimeApi>(
 							config,
 							polkadot_config,
 							collator_options,

@@ -21,6 +21,7 @@ use did::{
 	DidVerificationKeyRelationship, EnsureDidOrigin, RelationshipDeriveError,
 };
 use frame_system::EnsureRoot;
+<<<<<<< HEAD
 use runtime_common::{
 	constants, dot_names::AllowedUniqueLinkingAssociator, AccountId, DidIdentifier, SendDustAndFeesToTreasury,
 };
@@ -28,6 +29,14 @@ use sp_core::ConstBool;
 
 use crate::{
 	weights, Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, UniqueLinking,
+=======
+use runtime_common::{constants, AccountId, DidIdentifier, SendDustAndFeesToTreasury};
+use sp_core::ConstBool;
+
+use crate::{
+	weights::{self},
+	Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
+>>>>>>> ag_chopsticks_design
 };
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
@@ -83,6 +92,43 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	}
 }
 
+pub struct DidLifecycleHooks;
+
+impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
+	type DeletionHook = EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
+}
+
+pub struct EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
+
+impl did::traits::DidDeletionHook<Runtime> for EnsureNoNamesAndNoLinkedAccountsOnDidDeletion {
+	fn can_delete(did: &did::DidIdentifierOf<Runtime>) -> bool {
+		// 1. Check if there's a linked Web3name
+		if pallet_web3_names::Names::<Runtime>::contains_key(did) {
+			return false;
+		}
+		// 2. Check if there's a linked Dotname
+		if pallet_web3_names::Names::<Runtime, DotNamesDeployment>::contains_key(did) {
+			return false;
+		}
+		// 3. Check if there's a Web3name linked account
+		if pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(did)
+			.next()
+			.is_some()
+		{
+			return false;
+		}
+		// 4. Check if there's a Dotname linked account
+		if pallet_did_lookup::ConnectedAccounts::<Runtime, UniqueLinkingDeployment>::iter_key_prefix(did)
+			.next()
+			.is_some()
+		{
+			return false;
+		}
+
+		true
+	}
+}
+
 impl did::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
@@ -118,6 +164,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
+	type DidLifecycleHooks = DidLifecycleHooks;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -142,7 +189,15 @@ impl pallet_did_lookup::Config for Runtime {
 
 pub(crate) type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
 impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
-	type AssociateOrigin = EnsureDidOrigin<DidIdentifier, AccountId, AllowedUniqueLinkingAssociator<UniqueLinking>>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type AssociateOrigin = EnsureDidOrigin<
+		DidIdentifier,
+		AccountId,
+		runtime_common::dot_names::AllowedUniqueLinkingAssociator<crate::UniqueLinking>,
+	>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type AssociateOrigin = EnsureDidOrigin<DidIdentifier, AccountId, did::origin::Everyone>;
+
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = constants::did_lookup::DidLookupDeposit;
@@ -182,11 +237,13 @@ pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
 impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
+	
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type ClaimOrigin =
 		EnsureDidOrigin<DidIdentifier, AccountId, runtime_common::dot_names::AllowedDotNameClaimer<crate::DotNames>>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type ClaimOrigin = Self::OwnerOrigin;
+	type ClaimOrigin = EnsureDidOrigin<DidIdentifier, AccountId, did::origin::Everyone>;
+
 	type Currency = Balances;
 	type Deposit = constants::dot_names::Web3NameDeposit;
 	type MaxNameLength = constants::dot_names::MaxNameLength;
