@@ -32,7 +32,7 @@ interface WithdrawAssetTestConfiguration extends BasicXcmTestConfiguration {
 export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 	{
 		config: {
-			desc: 'HydraDx -> KILT live',
+			desc: 'Hydration -> KILT live',
 			precision: BigInt(96),
 			network: {
 				relay: mainChains.polkadot.getConfig({}),
@@ -80,7 +80,7 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 
 	{
 		config: {
-			desc: 'HydraDx -> KILT DEV',
+			desc: 'Hydration -> KILT DEV',
 			precision: BigInt(96),
 			network: {
 				parachains: [mainChains.hydration.getConfig({}), mainChains.kilt.getConfig(mainChains.kilt.parameters)],
@@ -127,7 +127,7 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 
 	{
 		config: {
-			desc: 'HydraDx -> KILT at Block',
+			desc: 'Hydration -> KILT at Block',
 			precision: BigInt(99),
 			network: {
 				relay: mainChains.polkadot.getConfig({

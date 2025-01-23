@@ -33,7 +33,7 @@ interface LimitedReserveTestConfiguration extends BasicXcmTestConfiguration {
 export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[] = [
 	{
 		config: {
-			desc: 'Kilt -> HydraDx live V2',
+			desc: 'Kilt -> Hydration live V2',
 			precision: BigInt(96),
 			storage: {
 				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
@@ -78,7 +78,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 
 	{
 		config: {
-			desc: 'Kilt -> HydraDx at block V2',
+			desc: 'Kilt -> Hydration at block V2',
 			precision: BigInt(99),
 			network: {
 				// sender, receiver
@@ -125,7 +125,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 
 	{
 		config: {
-			desc: 'Kilt -> HydraDx live V3',
+			desc: 'Kilt -> Hydration live V3',
 			precision: BigInt(96),
 			storage: {
 				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
@@ -170,7 +170,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 
 	{
 		config: {
-			desc: 'Kilt -> HydraDx at block V3',
+			desc: 'Kilt -> Hydration at block V3',
 			precision: BigInt(99),
 			storage: {
 				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
@@ -217,7 +217,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 
 	{
 		config: {
-			desc: 'Kilt DEV -> HydraDx live v3',
+			desc: 'Kilt DEV -> Hydration live v3',
 			precision: BigInt(96),
 			storage: {
 				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
@@ -261,7 +261,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 
 	{
 		config: {
-			desc: 'Kilt DEV -> HydraDx live v2',
+			desc: 'Kilt DEV -> Hydration live v2',
 			precision: BigInt(96),
 			storage: {
 				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(

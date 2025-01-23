@@ -31,7 +31,7 @@ export const testChains: ChainConfigs = {
 	hydration: {
 		getConfig: HydrationConfigs.test!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('HYDRADX_BLOCK_NUMBER')),
+			blockNumber: Number(getRequiredEnvVariable('HYDRATION_BLOCK_NUMBER')),
 		},
 		storage: HydrationConfigs.test!.storage,
 		chainInfo: HydrationConfigs.test!.chainInfo,
@@ -67,7 +67,7 @@ export const mainChains: ChainConfigs = {
 	hydration: {
 		getConfig: HydrationConfigs.main!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('HYDRADX_BLOCK_NUMBER')),
+			blockNumber: Number(getRequiredEnvVariable('HYDRATION_BLOCK_NUMBER')),
 		},
 		storage: HydrationConfigs.main!.storage,
 		chainInfo: HydrationConfigs.main!.chainInfo,

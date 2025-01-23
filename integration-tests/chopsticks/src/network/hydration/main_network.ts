@@ -3,13 +3,13 @@ import type { SetupOption } from '@acala-network/chopsticks-testing'
 import { initialBalanceHDX, initialBalanceKILT, toNumber } from '../../helper/utils.js'
 import { SetupConfigParameters } from '../types.js'
 
-/// Options used to create the HydraDx context
+/// Options used to create the Hydration context
 export const getSetupOptions = ({ blockNumber, wasmOverride }: SetupConfigParameters) => {
 	const random = (Math.random() + 1).toString(36).substring(7)
 	return {
-		endpoint: process.env.HYDRADX_WS || ['wss://rpc.hydradx.cloud'],
+		endpoint: process.env.HYDRATION_WS || ['wss://rpc.hydradx.cloud'],
 		db: `./db/hydration_main_${random}.db.sqlite`,
-		port: toNumber(process.env.HYDRADX_PORT),
+		port: toNumber(process.env.HYDRATION_PORT),
 		blockNumber,
 		wasmOverride,
 	} as SetupOption

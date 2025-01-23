@@ -3,7 +3,7 @@ import type { SetupOption } from '@acala-network/chopsticks-testing'
 import { initialBalanceDOT, toNumber } from '../../helper/utils.js'
 import { SetupConfigParameters } from '../types.js'
 
-/// Options used to create the HydraDx context
+/// Options used to create the Hydration context
 export const getSetupOptions = ({ blockNumber = undefined, wasmOverride = undefined }: SetupConfigParameters) => {
 	const random = (Math.random() + 1).toString(36).substring(7)
 	return {

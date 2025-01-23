@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver events "currencies" 1`] = `
+exports[`Limited Reserve Transfers > Kilt -> Hydration at block V2 > receiver events "currencies" 1`] = `
 [
   {
     "data": {
@@ -23,7 +23,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
 ]
 `;
 
-exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver events "tokens" 1`] = `
+exports[`Limited Reserve Transfers > Kilt -> Hydration at block V2 > receiver events "tokens" 1`] = `
 [
   {
     "data": {
@@ -55,7 +55,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > receiver even
 ]
 `;
 
-exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events {"section":"balances","method":"Withdraw"} 1`] = `
+exports[`Limited Reserve Transfers > Kilt -> Hydration at block V2 > sender events {"section":"balances","method":"Withdraw"} 1`] = `
 [
   {
     "data": {
@@ -68,7 +68,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V2 > sender events
 ]
 `;
 
-exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver events "currencies" 1`] = `
+exports[`Limited Reserve Transfers > Kilt -> Hydration at block V3 > receiver events "currencies" 1`] = `
 [
   {
     "data": {
@@ -91,7 +91,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver even
 ]
 `;
 
-exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver events "tokens" 1`] = `
+exports[`Limited Reserve Transfers > Kilt -> Hydration at block V3 > receiver events "tokens" 1`] = `
 [
   {
     "data": {
@@ -123,7 +123,7 @@ exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > receiver even
 ]
 `;
 
-exports[`Limited Reserve Transfers > Kilt -> HydraDx at block V3 > sender events {"section":"balances","method":"Withdraw"} 1`] = `
+exports[`Limited Reserve Transfers > Kilt -> Hydration at block V3 > sender events {"section":"balances","method":"Withdraw"} 1`] = `
 [
   {
     "data": {

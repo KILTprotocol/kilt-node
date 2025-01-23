@@ -134,7 +134,7 @@ jobs:
       CI: true
       PEREGRINE_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
       SPIRITNET_BLOCK_NUMBER: 7850499
-      HYDRADX_BLOCK_NUMBER: 5235787
+      HYDRATION_BLOCK_NUMBER: 5235787
       POLKADOT_BLOCK_NUMBER: 21010819
       ASSETHUB_BLOCK_NUMBER: 7934113
       SPIRITNET_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
