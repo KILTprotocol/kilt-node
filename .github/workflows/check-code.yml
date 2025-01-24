@@ -136,11 +136,8 @@ jobs:
       HYDRATION_BLOCK_NUMBER: 5235787
       POLKADOT_BLOCK_NUMBER: 21010819
       ASSETHUB_BLOCK_NUMBER: 7934113
-      SPIRITNET_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
+      SPIRITNET_WASM_OVERRIDE: ../../target/debug/wasm32-unknown-unknown/peregrine-runtime/peregrine_runtime.wasm
       PEREGRINE_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
-      
-      # Configured by the Docker image. We can't change this unless the image does it.
-      CARGO_HOME: /usr/local/cargo
 
     defaults:
       run:
