@@ -132,12 +132,15 @@ jobs:
     env:
       working-dir: ./integration-tests/chopsticks
       CI: true
-      PEREGRINE_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
       SPIRITNET_BLOCK_NUMBER: 7850499
       HYDRATION_BLOCK_NUMBER: 5235787
       POLKADOT_BLOCK_NUMBER: 21010819
       ASSETHUB_BLOCK_NUMBER: 7934113
       SPIRITNET_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
+      PEREGRINE_WASM_OVERRIDE: ../../target/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
+      
+      # Configured by the Docker image. We can't change this unless the image does it.
+      CARGO_HOME: /usr/local/cargo
 
     defaults:
       run:
@@ -153,6 +156,18 @@ jobs:
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: true
+
+      - name: Set up Cargo cache
+        uses: actions/cache@v4
+        with:
+          # These paths are mounted inside the Docker container.
+          # We cannot mount the `.cargo/bin` folder since the container already contains binaries, and overriding with an empty one breaks compilation.
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+          save-always: true
 
       - name: Setup environment
         uses: actions/setup-node@v4
@@ -181,7 +196,7 @@ jobs:
           save-always: true
 
       - name: Build Peregrine runtime
-        run: cargo build -p peregrine-runtime
+        run: cargo build -p peregrine-runtime --no-default-features --target wasm32-unknown-unknown
 
       - name: Run Chopsticks tests
         run: yarn test
