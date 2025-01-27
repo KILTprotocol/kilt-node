@@ -2,12 +2,13 @@ import { describe, beforeEach, it, afterEach } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import { createBlock, setStorage } from '../../../network/utils.js'
+import { createBlock } from '../../../network/utils.js'
 import { calculateTxFees, getPaidXcmFees, hexAddress } from '../../../helper/utils.js'
 import { testCases } from './config.js'
 import { Config } from '../../../network/types.js'
-import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
+import { shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant } from '../index.js'
+import { spinUpNetwork } from '../../utls.js'
 
 describe.each(testCases)(
 	'Switch KILTs full flow',
@@ -17,24 +18,14 @@ describe.each(testCases)(
 		let foreignContext: Config
 		let relayContext: Config
 		let senderAccount: KeyringPair
-		const { desc, network, storage } = config
+		const { desc } = config
 
 		// Create the network context
 		beforeEach(async () => {
-			const { parachains, relay } = network
-
-			const { parachainContexts, relayChainContext } = await setupNetwork(relay, parachains)
-			const [senderChainContext, receiverChainContext] = parachainContexts
-
-			relayContext = relayChainContext
+			const { receiverChainContext, relayChainContext, senderChainContext } = await spinUpNetwork(config)
 			nativeContext = senderChainContext
 			foreignContext = receiverChainContext
-
-			const { receiverStorage, senderStorage, relayStorage } = storage
-			await setStorage(nativeContext, senderStorage)
-			await setStorage(foreignContext, receiverStorage)
-			await setStorage(relayContext, relayStorage)
-
+			relayContext = relayChainContext
 			senderAccount = account
 		})
 
@@ -51,11 +42,10 @@ describe.each(testCases)(
 
 		it(desc, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
-
 			const { tx, balanceToTransfer, events } = txContext
-
 			const foreignFundsBeforeTx = await query.foreign.nativeFunds(foreignContext, senderAccount.address)
 
+			//action
 			// 1. send foreign tokens from foreign chain to native chain
 			const txSendForeignAsset = tx.foreign.transfer(
 				foreignContext,
@@ -222,9 +212,7 @@ describe.each(testCases)(
 			await createBlock(foreignContext)
 
 			// check balance movement
-
 			const foreignBalanceAfterTx = await query.native.foreignFunds(nativeContext, senderAccount.address)
-
 			expect(foreignBalanceBeforeTx - balanceToTransferBackForeign).toBe(foreignBalanceAfterTx)
 
 			// check events
