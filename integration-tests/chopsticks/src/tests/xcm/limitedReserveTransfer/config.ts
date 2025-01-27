@@ -3,7 +3,7 @@ import { mainChains } from '../../../network/index.js'
 import { tx, query } from '../../../helper/api.js'
 
 import type { ApiPromise } from '@polkadot/api'
-import type { BasicConfig, BasicXcmTestConfiguration, BasisTxContext } from '../../types.js'
+import type { BasicConfig, BasicXcmTestConfiguration, BasicTxContext } from '../../types.js'
 import type { SubmittableExtrinsic } from '@polkadot/api/types'
 
 interface Config extends BasicConfig {
@@ -17,7 +17,7 @@ interface Query {
 	receiver: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>
 }
 
-interface TxContext extends BasisTxContext {
+interface TxContext extends BasicTxContext {
 	balanceToTransfer: bigint
 	tx: ({ api }: { api: ApiPromise }, submitter: string, amount: string | number) => SubmittableExtrinsic<'promise'>
 }

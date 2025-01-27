@@ -19,7 +19,7 @@ export interface NetworkSetupOption {
 	relay: SetupOption
 }
 
-export interface BasisTxContext {
+export interface BasicTxContext {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	tx: ({ api }: { api: ApiPromise }, submitter: string, ...args: any[]) => SubmittableExtrinsic<'promise'>
 	pallets: {
@@ -46,5 +46,5 @@ export interface BasicXcmTestConfiguration {
 	config: BasicConfig
 	accounts: Accounts
 	sovereignAccount: SovereignAccount
-	txContext: BasisTxContext
+	txContext: BasicTxContext
 }
