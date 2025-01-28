@@ -17,12 +17,12 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	pallet_prelude::StorageVersion,
-	traits::{GetStorageVersion, OnRuntimeUpgrade},
+	traits::{GetStorageVersion, OnRuntimeUpgrade, PalletInfoAccess, StorageVersion},
 	weights::Weight,
 };
 use sp_core::Get;
-use sp_std::marker::PhantomData;
+use sp_std::{fmt::Debug, marker::PhantomData};
+use sp_weights::RuntimeDbWeight;
 
 const LOG_TARGET: &str = "migration::BumpStorageVersion";
 
@@ -30,20 +30,28 @@ const LOG_TARGET: &str = "migration::BumpStorageVersion";
 /// Based on the changes in the PR <https://github.com/paritytech/substrate/pull/13417>,
 /// pallets without a storage version or with a wrong version throw an error
 /// in the try state tests.
-pub struct BumpStorageVersion<T>(PhantomData<T>);
-
-const TARGET_PALLET_ASSETS_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
-
-impl<T> OnRuntimeUpgrade for BumpStorageVersion<T>
+pub struct BumpStorageVersion<T, W>(PhantomData<(T, W)>)
 where
-	T: pallet_assets::Config,
+	T: GetStorageVersion + PalletInfoAccess,
+	T::CurrentStorageVersion: Debug + Into<StorageVersion>,
+	StorageVersion: PartialOrd<T::CurrentStorageVersion>,
+	W: Get<RuntimeDbWeight>;
+
+impl<T, W> OnRuntimeUpgrade for BumpStorageVersion<T, W>
+where
+	T: GetStorageVersion + PalletInfoAccess,
+	T::CurrentStorageVersion: Debug + Into<StorageVersion>,
+	StorageVersion: PartialOrd<T::CurrentStorageVersion>,
+	W: Get<RuntimeDbWeight>,
 {
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, sp_runtime::TryRuntimeError> {
-		if pallet_assets::Pallet::<T>::on_chain_storage_version() < TARGET_PALLET_ASSETS_STORAGE_VERSION {
-			log::trace!(target: LOG_TARGET, "pallet_assets to be migrated to v1.");
+		let (on_chain_version, current_version) = (T::on_chain_storage_version(), T::current_storage_version());
+		let pallet_name = T::name();
+		if on_chain_version < current_version {
+			log::trace!(target: LOG_TARGET, "Pallet {:?} to be migrated from version {:?} to version {:?}.", pallet_name, on_chain_version, current_version);
 		} else {
-			log::trace!(target: LOG_TARGET, "pallet_assets already on v1. No migration will run.");
+			log::trace!(target: LOG_TARGET, "Pallet {:?} already on latest version {:?}. No migration will run.", pallet_name, current_version);
 		}
 		Ok([].into())
 	}
@@ -51,21 +59,27 @@ where
 	fn on_runtime_upgrade() -> Weight {
 		log::info!(target: LOG_TARGET, "Initiating migration.");
 
-		if pallet_assets::Pallet::<T>::on_chain_storage_version() < TARGET_PALLET_ASSETS_STORAGE_VERSION {
-			log::info!(target: LOG_TARGET, "pallet_assets to be migrated to v1.");
-			TARGET_PALLET_ASSETS_STORAGE_VERSION.put::<pallet_assets::Pallet<T>>();
-			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 1)
+		let (on_chain_version, current_version) = (T::on_chain_storage_version(), T::current_storage_version());
+		let pallet_name = T::name();
+
+		if on_chain_version < current_version {
+			log::trace!(target: LOG_TARGET, "Pallet {:?} to be migrated from version {:?} to version {:?}.", pallet_name, on_chain_version, current_version);
+			current_version.into().put::<T>();
+			W::get().reads_writes(1, 1)
 		} else {
-			log::info!(target: LOG_TARGET, "pallet_assets already on v1. No migration will run.");
-			<T as frame_system::Config>::DbWeight::get().reads(1)
+			log::trace!(target: LOG_TARGET, "Pallet {:?} already on latest version {:?}. No migration will run.", pallet_name, current_version);
+			W::get().reads(1)
 		}
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_state: sp_std::vec::Vec<u8>) -> Result<(), sp_runtime::TryRuntimeError> {
-		if pallet_assets::Pallet::<T>::on_chain_storage_version() < TARGET_PALLET_ASSETS_STORAGE_VERSION {
+		let (on_chain_version, current_version) = (T::on_chain_storage_version(), T::current_storage_version());
+
+		if on_chain_version < current_version {
+			log::error!(target: LOG_TARGET, "Storage version for pallet {:?} was not updated to the latest version {:?}.", T::name(), current_version);
 			Err(sp_runtime::TryRuntimeError::Other(
-				"pallet_assets storage version was not updated to v1.",
+				"Pallet storage version was not updated to the latest version.",
 			))
 		} else {
 			Ok(())
