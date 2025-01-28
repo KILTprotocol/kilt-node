@@ -77,6 +77,7 @@ where
 		let (on_chain_version, current_version) = (T::on_chain_storage_version(), T::current_storage_version());
 
 		if on_chain_version < current_version {
+			log::error!(target: LOG_TARGET, "Storage version for pallet {:?} was not updated to the latest version {:?}.", T::name(), current_version);
 			Err(sp_runtime::TryRuntimeError::Other(
 				"Pallet storage version was not updated to the latest version.",
 			))
