@@ -66,14 +66,16 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 >;
 
 sp_api::decl_runtime_apis! {
-	#[api_version(3)]
-	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber: MaxEncodedLen> where
+	#[api_version(4)]
+	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber: MaxEncodedLen, LinkedResource, RuntimeCall> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
 		LinkableAccountId: Codec,
 		BlockNumber: Codec,
 		Key: Codec,
 		Balance: Codec,
+		LinkedResource: Codec,
+		RuntimeCall: Codec,
 	{
 		/// Given a web3name this returns:
 		/// * the DID
@@ -111,5 +113,10 @@ sp_api::decl_runtime_apis! {
 		/// Allows for batching multiple `query` requests into one. For each requested name, the corresponding vector entry contains either `Some` or `None` depending on the result of each query.
 		#[allow(clippy::type_complexity)]
 		fn batch_query(dids: Vec<DidIdentifier>) -> Vec<Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>>;
+
+		/// Returns the list of linked resources for a given DID that must be deleted before the DID itself can be deleted.
+		fn linked_resources(did: DidIdentifier) -> Vec<LinkedResource>;
+		/// Returns the list of calls that must be executed to delete the linked resources of a given DID, before deleting the DID itself.
+		fn linked_resources_deletion_calls(did: DidIdentifier) -> Vec<RuntimeCall>;
 	}
 }
