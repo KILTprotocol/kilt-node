@@ -1,4 +1,6 @@
-import { setStorage, setupNetwork } from '../network/utils.js'
+import { SetupConfig } from '@acala-network/chopsticks-testing'
+
+import { setStorage, setupNetwork, shutDownNetwork } from '../network/utils.js'
 import { BasicConfig } from './types.js'
 
 export async function spinUpNetwork({ network, storage }: BasicConfig) {
@@ -13,4 +15,14 @@ export async function spinUpNetwork({ network, storage }: BasicConfig) {
 	await setStorage(relayChainContext, relayStorage)
 
 	return { receiverChainContext, senderChainContext, relayChainContext }
+}
+
+export async function tearDownNetwork(chains: SetupConfig[]) {
+	try {
+		await shutDownNetwork(chains)
+	} catch (error) {
+		if (!(error instanceof TypeError)) {
+			console.error(error)
+		}
+	}
 }
