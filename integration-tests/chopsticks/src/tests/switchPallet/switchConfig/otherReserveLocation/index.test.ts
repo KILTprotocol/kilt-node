@@ -2,11 +2,11 @@ import { describe, beforeEach, it, afterEach } from 'vitest'
 import { withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import { createBlock, scheduleTx, setStorage } from '../../../../network/utils.js'
+import { createBlock, scheduleTx } from '../../../../network/utils.js'
 import { hexAddress, keysAlice } from '../../../../helper/utils.js'
 import { testCases } from './config.js'
 import type { Config } from '../../../../network/types.js'
-import { setupNetwork, shutDownNetwork } from '../../../../network/utils.js'
+import { spinUpNetwork, tearDownNetwork } from '../../../utils.js'
 
 describe.each(testCases)(
 	'Switch other reserve location',
@@ -15,34 +15,20 @@ describe.each(testCases)(
 		let receiverContext: Config
 		let relayContext: Config
 		let senderAccount: KeyringPair
-		const { desc, network, storage } = config
+		const { desc } = config
 
 		// Create the network context
 		beforeEach(async () => {
-			const { parachains, relay } = network
-
-			const { parachainContexts, relayChainContext } = await setupNetwork(relay, parachains)
-			const [receiverChainContext] = parachainContexts
+			const { senderChainContext: receiverChainContext, relayChainContext } = await spinUpNetwork(config)
 
 			relayContext = relayChainContext
 			receiverContext = receiverChainContext
-
-			const { receiverStorage, relayStorage } = storage
-			await setStorage(receiverContext, receiverStorage)
-			await setStorage(relayContext, relayStorage)
-
 			senderAccount = account
 		})
 
 		// Shut down the network
 		afterEach(async () => {
-			try {
-				await shutDownNetwork([receiverContext, relayContext])
-			} catch (error) {
-				if (!(error instanceof TypeError)) {
-					console.error(error)
-				}
-			}
+			await tearDownNetwork([receiverContext, relayContext])
 		})
 
 		it(desc, async ({ expect }) => {

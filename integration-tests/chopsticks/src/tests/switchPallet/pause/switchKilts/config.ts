@@ -29,12 +29,19 @@ export const testCases: TestConfiguration[] = [
 				parachains: [mainChains.kilt.getConfig({}), mainChains.assetHub.getConfig({})],
 			},
 			storage: {
-				senderStorage: {
-					...mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					...mainChains.kilt.storage.pauseSwitch(),
-				},
-				receiverStorage: {},
-				relayStorage: {},
+				parachains: [
+					// Sender
+					{
+						...mainChains.kilt.storage.assignNativeTokensToAccounts(
+							[keysAlice.address],
+							initialBalanceKILT
+						),
+						...mainChains.kilt.storage.pauseSwitch(),
+					},
+					// receiver
+					{},
+				],
+				relay: {},
 			},
 		},
 		account: keysAlice,

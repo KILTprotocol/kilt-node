@@ -106,17 +106,19 @@ export const testCases: TestConfiguration[] = [
 				parachains: [mainChains.kilt.getConfig({}), mainChains.assetHub.getConfig({})],
 			},
 			storage: {
-				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
-					[keysAlice.address],
-					initialBalanceKILT
-				),
-				receiverStorage: {
-					// Assign some coins to create the account.
-					...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
-					// Create the eKilts.
-					...mainChains.assetHub.storage.createForeignAsset(keysBob.address),
-				},
-				relayStorage: {},
+				parachains: [
+					// sender
+					mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+					// receiver
+					{
+						// Assign some coins to create the account.
+						...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
+						// Create the eKilts.
+						...mainChains.assetHub.storage.createForeignAsset(keysBob.address),
+					},
+				],
+
+				relay: {},
 			},
 		},
 		account: keysAlice,

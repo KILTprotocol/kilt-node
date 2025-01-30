@@ -6,9 +6,8 @@ import { createBlock } from '../../../network/utils.js'
 import { calculateTxFees, getPaidXcmFees, hexAddress } from '../../../helper/utils.js'
 import { testCases } from './config.js'
 import { Config } from '../../../network/types.js'
-import { shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant } from '../index.js'
-import { spinUpNetwork } from '../../utls.js'
+import { spinUpNetwork, tearDownNetwork } from '../../utils.js'
 
 describe.each(testCases)(
 	'Switch KILTs full flow',
@@ -31,13 +30,7 @@ describe.each(testCases)(
 
 		// Shut down the network
 		afterEach(async () => {
-			try {
-				await shutDownNetwork([nativeContext, foreignContext, relayContext])
-			} catch (error) {
-				if (!(error instanceof TypeError)) {
-					console.error(error)
-				}
-			}
+			await tearDownNetwork([nativeContext, foreignContext, relayContext])
 		})
 
 		it(desc, async ({ expect }) => {

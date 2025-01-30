@@ -42,15 +42,22 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 				parachains: [mainChains.hydration.getConfig({}), mainChains.kilt.getConfig({})],
 			},
 			storage: {
-				senderStorage: {
-					...mainChains.hydration.storage.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					...mainChains.hydration.storage.assignNativeTokensToAccounts(
-						[keysAlice.address],
-						initialBalanceHDX
-					),
-				},
-				receiverStorage: {},
-				relayStorage: {},
+				parachains: [
+					// Sender
+					{
+						...mainChains.hydration.storage.assignKiltTokensToAccounts(
+							[keysAlice.address],
+							initialBalanceKILT
+						),
+						...mainChains.hydration.storage.assignNativeTokensToAccounts(
+							[keysAlice.address],
+							initialBalanceHDX
+						),
+					},
+					// Receiver
+					{},
+				],
+				relay: {},
 			},
 		},
 
@@ -89,15 +96,23 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 				relay: mainChains.polkadot.getConfig({}),
 			},
 			storage: {
-				senderStorage: {
-					...mainChains.hydration.storage.assignKiltTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					...mainChains.hydration.storage.assignNativeTokensToAccounts(
-						[keysAlice.address],
-						initialBalanceHDX
-					),
-				},
-				receiverStorage: {},
-				relayStorage: {},
+				parachains: [
+					// Sender
+					{
+						...mainChains.hydration.storage.assignKiltTokensToAccounts(
+							[keysAlice.address],
+							initialBalanceKILT
+						),
+						...mainChains.hydration.storage.assignNativeTokensToAccounts(
+							[keysAlice.address],
+							initialBalanceHDX
+						),
+					},
+					// Receiver
+					{},
+				],
+
+				relay: {},
 			},
 		},
 

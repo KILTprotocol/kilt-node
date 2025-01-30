@@ -48,9 +48,8 @@ export const testCases: TestConfiguration[] = [
 				parachains: [mainChains.kilt.getConfig({})],
 			},
 			storage: {
-				senderStorage: {},
-				receiverStorage: {},
-				relayStorage: {},
+				parachains: [{}, {}],
+				relay: {},
 			},
 		},
 		account: keysAlice,

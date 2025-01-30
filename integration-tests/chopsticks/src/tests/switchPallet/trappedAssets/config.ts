@@ -51,16 +51,21 @@ export const testCases: TestConfiguration[] = [
 				parachains: [mainChains.assetHub.getConfig({}), mainChains.kilt.getConfig({})],
 			},
 			storage: {
-				senderStorage: {
-					...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
-					...mainChains.assetHub.storage.assignForeignAssetToAccounts([
-						[keysAlice.address, initialBalanceKILT],
+				parachains: [
+					// Sender
+					{
+						...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
+						...mainChains.assetHub.storage.assignForeignAssetToAccounts([
+							[keysAlice.address, initialBalanceKILT],
+						]),
+					},
+					// Receiver
+					mainChains.kilt.storage.assignNativeTokensToAccounts([
+						mainChains.assetHub.chainInfo.sovereignAccountOnSiblingChains,
 					]),
-				},
-				receiverStorage: mainChains.kilt.storage.assignNativeTokensToAccounts([
-					mainChains.assetHub.chainInfo.sovereignAccountOnSiblingChains,
-				]),
-				relayStorage: {
+				],
+
+				relay: {
 					...testChains.polkadot.storage.assignNativeTokensToAccounts([keysAlice.address]),
 					...testChains.polkadot.storage.assignSudoKey(keysAlice.address),
 				},

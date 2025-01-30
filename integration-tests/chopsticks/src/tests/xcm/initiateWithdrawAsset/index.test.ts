@@ -2,11 +2,11 @@ import { describe, beforeEach, it, afterEach } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import { createBlock, setStorage } from '../../../network/utils.js'
+import { createBlock } from '../../../network/utils.js'
 import { hexAddress, validateBalanceWithPrecision } from '../../../helper/utils.js'
 import { testPairsWithdrawAssets } from './config.js'
 import { Config } from '../../../network/types.js'
-import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
+import { spinUpNetwork, tearDownNetwork } from '../../utils.js'
 
 describe.each(testPairsWithdrawAssets)(
 	'Withdraw Asset',
@@ -21,20 +21,11 @@ describe.each(testPairsWithdrawAssets)(
 
 		// Create the network context
 		beforeEach(async () => {
-			const { network, storage } = config
-			const { parachains, relay } = network
-
-			const { parachainContexts, relayChainContext } = await setupNetwork(relay, parachains)
-			const [senderChainContext, receiverChainContext] = parachainContexts
+			const { receiverChainContext, relayChainContext, senderChainContext } = await spinUpNetwork(config)
 
 			relayContext = relayChainContext
 			senderContext = senderChainContext
 			receiverContext = receiverChainContext
-
-			const { receiverStorage, senderStorage, relayStorage } = storage
-			await setStorage(senderContext, senderStorage)
-			await setStorage(receiverContext, receiverStorage)
-			await setStorage(relayContext, relayStorage)
 
 			const { senderAccount: a, receiverAccount: b } = accounts
 			senderAccount = a
@@ -43,13 +34,7 @@ describe.each(testPairsWithdrawAssets)(
 
 		// Shut down the network
 		afterEach(async () => {
-			try {
-				await shutDownNetwork([senderContext, receiverContext, relayContext])
-			} catch (error) {
-				if (!(error instanceof TypeError)) {
-					console.error(error)
-				}
-			}
+			await tearDownNetwork([receiverContext, senderContext, relayContext])
 		})
 
 		it(desc, async ({ expect }) => {

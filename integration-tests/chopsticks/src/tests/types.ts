@@ -4,9 +4,8 @@ import type { KeyringPair } from '@polkadot/keyring/types'
 import type { SetupOption, EventFilter } from '@acala-network/chopsticks-testing'
 
 export interface Storage {
-	senderStorage: Record<string, Record<string, unknown>>
-	receiverStorage: Record<string, Record<string, unknown>>
-	relayStorage: Record<string, Record<string, unknown>>
+	parachains: Record<string, Record<string, unknown>>[]
+	relay: Record<string, Record<string, unknown>>
 }
 
 export interface Accounts {

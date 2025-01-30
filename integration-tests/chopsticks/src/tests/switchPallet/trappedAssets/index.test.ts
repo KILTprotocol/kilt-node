@@ -2,13 +2,13 @@ import { describe, beforeEach, it, afterEach } from 'vitest'
 import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
-import { createBlock, scheduleTx, setStorage } from '../../../network/utils.js'
+import { createBlock, scheduleTx } from '../../../network/utils.js'
 import { hexAddress, keysAlice } from '../../../helper/utils.js'
 import { testCases } from './config.js'
 import type { Config } from '../../../network/types.js'
 import { tx as txApi } from '../../../helper/api.js'
-import { setupNetwork, shutDownNetwork } from '../../../network/utils.js'
 import { checkSwitchPalletInvariant, isSwitchPaused } from '../index.js'
+import { spinUpNetwork, tearDownNetwork } from '../../utils.js'
 
 describe.each(testCases)(
 	'Reclaim trapped assets',
@@ -18,48 +18,21 @@ describe.each(testCases)(
 		let receiverContext: Config
 		let relayContext: Config
 		let senderAccount: KeyringPair
-		const { desc, network, storage, setUpTx } = config
+		const { desc } = config
 
 		// Create the network context
 		beforeEach(async () => {
-			const { parachains, relay } = network
-
-			const { parachainContexts, relayChainContext } = await setupNetwork(relay, parachains)
-			const [senderChainContext, receiverChainContext] = parachainContexts
+			const { receiverChainContext, relayChainContext, senderChainContext } = await spinUpNetwork(config)
 
 			relayContext = relayChainContext
 			senderContext = senderChainContext
 			receiverContext = receiverChainContext
-
-			const { receiverStorage, senderStorage, relayStorage } = storage
-			await setStorage(senderContext, senderStorage)
-			await setStorage(receiverContext, receiverStorage)
-			await setStorage(relayContext, relayStorage)
-
 			senderAccount = account
-
-			if (setUpTx) {
-				await Promise.all(
-					setUpTx.map(async ([tx, chain]) => {
-						if (chain === 'receiver') {
-							const rawTx = tx(receiverContext)
-							await scheduleTx(receiverContext, rawTx)
-							await createBlock(receiverContext)
-						}
-					})
-				)
-			}
 		})
 
 		// Shut down the network
 		afterEach(async () => {
-			try {
-				await shutDownNetwork([receiverContext, senderContext, relayContext])
-			} catch (error) {
-				if (!(error instanceof TypeError)) {
-					console.error(error)
-				}
-			}
+			await tearDownNetwork([receiverContext, senderContext, relayContext])
 		})
 
 		it(desc, async ({ expect }) => {

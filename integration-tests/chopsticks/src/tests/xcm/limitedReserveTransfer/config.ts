@@ -38,12 +38,13 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			desc: 'Kilt -> Hydration live V2',
 			precision: BigInt(96),
 			storage: {
-				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
-					[keysAlice.address],
-					initialBalanceKILT
-				),
-				receiverStorage: {},
-				relayStorage: {},
+				parachains: [
+					// Sender
+					mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+					// Receiver
+					{},
+				],
+				relay: {},
 			},
 			network: {
 				// sender, receiver
@@ -83,12 +84,13 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			desc: 'Kilt -> Hydration live V3',
 			precision: BigInt(96),
 			storage: {
-				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
-					[keysAlice.address],
-					initialBalanceKILT
-				),
-				receiverStorage: {},
-				relayStorage: {},
+				parachains: [
+					// Sender
+					mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+					// Receiver
+					{},
+				],
+				relay: {},
 			},
 			network: {
 				// sender, receiver
@@ -128,12 +130,13 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			desc: 'Kilt DEV -> Hydration live v3',
 			precision: BigInt(96),
 			storage: {
-				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
-					[keysAlice.address],
-					initialBalanceKILT
-				),
-				receiverStorage: {},
-				relayStorage: {},
+				parachains: [
+					// Sender
+					mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+					// Receiver
+					{},
+				],
+				relay: {},
 			},
 			network: {
 				parachains: [mainChains.kilt.getConfig(mainChains.kilt.parameters), mainChains.hydration.getConfig({})],
@@ -172,12 +175,13 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 			desc: 'Kilt DEV -> Hydration live v2',
 			precision: BigInt(96),
 			storage: {
-				senderStorage: mainChains.kilt.storage.assignNativeTokensToAccounts(
-					[keysAlice.address],
-					initialBalanceKILT
-				),
-				receiverStorage: {},
-				relayStorage: {},
+				parachains: [
+					// Sender
+					mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
+					// Receiver
+					{},
+				],
+				relay: {},
 			},
 			network: {
 				parachains: [mainChains.kilt.getConfig(mainChains.kilt.parameters), mainChains.hydration.getConfig({})],
