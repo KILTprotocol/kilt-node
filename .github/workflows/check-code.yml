@@ -180,23 +180,8 @@ jobs:
       - name: Check lints
         run: yarn lint
 
-      - name: Set up Cargo cache
-        uses: actions/cache@v4
-        with:
-          # Not executed in a container, so we cache the local paths as on the GH worker.
-          path: |
-            ${HOME}/.cargo/bin/
-            ${HOME}/.cargo/registry/index/
-            ${HOME}/.cargo/registry/cache/
-            ${HOME}/.cargo/git/db/
-          key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
-          save-always: true
-
-      - name: Build Peregrine runtime
-        run: cargo build -p peregrine-runtime --no-default-features --target wasm32-unknown-unknown
-
-      - name: Build Spiritnet runtime
-        run: cargo build -p spiritnet-runtime --no-default-features --target wasm32-unknown-unknown
+      - name: Build runtime wasms
+        run: cargo build -p peregrine-runtime -p spiritnet-runtime --no-default-features --target wasm32-unknown-unknown
 
       - name: Run Chopsticks tests
         run: yarn test
