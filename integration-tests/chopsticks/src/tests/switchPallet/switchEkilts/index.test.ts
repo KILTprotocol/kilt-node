@@ -39,7 +39,7 @@ describe.each(testCases)(
 
 			const poolAccount = await getPoolAccount(receiverContext)
 
-			// check initial state
+			// pre condition checks
 			const initialRemoteLockedSupply = await getRemoteLockedSupply(receiverContext)
 			const initialBalanceReceiverChain = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			const initialBalanceSenderChain = await query.sender(senderContext, hexAddress(senderAccount.address))
@@ -50,14 +50,12 @@ describe.each(testCases)(
 				receiverContext,
 				hexAddress(senderAccount.address)
 			)
-
 			expect(initialBalanceReceiverChain).toBe(BigInt(0))
 			expect(initialBalanceSenderChain).toBeGreaterThan(BigInt(0))
 
+			// action
 			const { balanceToTransfer, events, tx } = txContext
-
 			const signedTx = tx(senderContext, balanceToTransfer.toString()).signAsync(senderAccount)
-
 			const eventsResult = await sendTransaction(signedTx)
 
 			// process tx
@@ -65,7 +63,7 @@ describe.each(testCases)(
 			// process xcm message
 			await createBlock(receiverContext)
 
-			// check balance movement
+			// post condition checks
 			const remoteLockedSupply = await getRemoteLockedSupply(receiverContext)
 			const balanceSovereignAccount = await query.sender(senderContext, sovereignAccount.sender)
 			const balanceSenderChain = await query.sender(senderContext, hexAddress(senderAccount.address))

@@ -39,9 +39,9 @@ describe.each(testPairsWithdrawAssets)(
 
 		it(desc, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
-
 			const { pallets, tx, balanceToTransfer } = txContext
 
+			// precondition checks
 			// Balance of the sovereign account before the transfer
 			const senderSovereignAccountBalanceBeforeTransfer = await query.receiver(
 				receiverContext,
@@ -50,11 +50,10 @@ describe.each(testPairsWithdrawAssets)(
 
 			const balanceSenderBeforeTransfer = await query.sender(senderContext, senderAccount.address)
 			const initialBalanceReceiver = await query.receiver(receiverContext, receiverAccount.address)
-
 			// Check initial balance receiver should be zero
 			expect(initialBalanceReceiver).toBe(BigInt(0))
 
-			// Fire tx
+			// action
 			const signedTx = tx(
 				senderContext,
 				hexAddress(receiverAccount.address),
@@ -65,6 +64,8 @@ describe.each(testPairsWithdrawAssets)(
 
 			// check sender state
 			await createBlock(senderContext)
+
+			// post condition checks
 
 			Promise.all(
 				pallets.sender.map((pallet) =>

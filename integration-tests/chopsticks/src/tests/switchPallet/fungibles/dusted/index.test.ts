@@ -42,7 +42,6 @@ describe.each(testCases)('Dust account', async ({ account, query, txContext, con
 		expect(receiverNativeBalance).toBe(BigInt(0))
 
 		// action
-
 		let rawTx = tx(context, hexAddress(receiverAccount.address), balanceToTransfer.toString())
 		const txFees = await calculateTxFees(rawTx, senderAccount)
 		rawTx = tx(context, hexAddress(receiverAccount.address), (balanceToTransfer - txFees).toString())

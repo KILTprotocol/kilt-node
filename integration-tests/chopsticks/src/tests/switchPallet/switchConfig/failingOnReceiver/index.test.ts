@@ -35,16 +35,16 @@ describe.each(testCases)(
 
 		it(desc, async ({ expect }) => {
 			const { checkSystemEvents, checkEvents } = withExpect(expect)
-
 			const { tx, balanceToTransfer, events } = txContext
 
-			// initial checks
+			//pre condition checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
 			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
-			const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
 
+			// action
+			const rawTx = tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString())
 			const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
 			// process tx
@@ -52,6 +52,7 @@ describe.each(testCases)(
 			// process msg
 			await createBlock(receiverContext)
 
+			// post condition checks
 			// check balance movement on sender chain.
 			const txFees = await calculateTxFees(rawTx, senderAccount)
 			const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))

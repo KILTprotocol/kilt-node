@@ -40,13 +40,14 @@ describe.each(testCases)(
 
 			const { tx, balanceToTransfer, events, reclaimTx, getXcmMessage, senderLocation } = txContext
 
-			// initial checks
+			// precondition checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
 			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
 			expect(await isSwitchPaused(receiverContext)).toBe(true)
 
+			// action
 			const rawTx = tx(senderContext, balanceToTransfer.toString())
 			const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
@@ -105,6 +106,8 @@ describe.each(testCases)(
 			await sendTransaction(relayContext.api.tx.sudo.sudo(reclaimTxRelay).signAsync(senderAccount))
 			// process tx
 			await createBlock(relayContext)
+
+			// post condition checks
 
 			// check if the tx was successful
 			await checkSystemEvents(relayContext, 'xcmPallet').toMatchSnapshot('reclaim xcm message on relay chain')

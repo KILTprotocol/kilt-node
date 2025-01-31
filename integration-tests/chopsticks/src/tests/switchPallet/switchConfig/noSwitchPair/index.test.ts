@@ -21,7 +21,6 @@ describe.each(testCases)(
 		// Create the network context
 		beforeEach(async () => {
 			const { relayChainContext, parachainContexts } = await spinUpNetwork(config)
-
 			relayContext = relayChainContext
 			senderContext = parachainContexts[0]
 			receiverContext = parachainContexts[1]
@@ -35,16 +34,16 @@ describe.each(testCases)(
 
 		it(desc, async ({ expect }) => {
 			const { checkSystemEvents, checkEvents } = withExpect(expect)
-
 			const { tx, balanceToTransfer, events } = txContext
 
-			// initial checks
+			// pre condition checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
 			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
-			const rawTx = tx(senderContext, balanceToTransfer.toString())
 
+			// action
+			const rawTx = tx(senderContext, balanceToTransfer.toString())
 			const events1 = await sendTransaction(rawTx.signAsync(senderAccount))
 
 			// process tx
@@ -52,6 +51,7 @@ describe.each(testCases)(
 			// process msg
 			await createBlock(receiverContext)
 
+			// post condition checks
 			// check balance movement on sender chain.
 			const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 			expect(balanceAfterTxSender).toBe(balanceBeforeTxSender - balanceToTransfer)

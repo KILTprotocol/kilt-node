@@ -35,10 +35,11 @@ describe.each(testCases)(
 			const { checkSystemEvents } = withExpect(expect)
 			const { tx, balanceToTransfer, events, message } = txContext
 
-			// initial checks
+			// precondition checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			expect(balanceBeforeTx).toBe(BigInt(0))
 
+			// action
 			// schedule tx
 			const rawTx = tx(relayContext, message(balanceToTransfer.toString(), keysAlice.address))
 			await scheduleTx(relayContext, rawTx)
@@ -47,7 +48,7 @@ describe.each(testCases)(
 			// process msg
 			await createBlock(receiverContext)
 
-			// Tx should fail on receiver. No balance movement.
+			// post condition checks
 			const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			expect(balanceAfterTx).toBe(BigInt(0))
 

@@ -21,11 +21,9 @@ describe.each(testPairsLimitedReserveTransfers)(
 
 		beforeEach(async () => {
 			const { parachainContexts, relayChainContext } = await spinUpNetwork(config)
-
 			relayContext = relayChainContext
 			senderContext = parachainContexts[0]
 			receiverContext = parachainContexts[1]
-
 			const { senderAccount: a, receiverAccount: b } = accounts
 			senderAccount = a
 			receiverAccount = b
@@ -40,6 +38,8 @@ describe.each(testPairsLimitedReserveTransfers)(
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
 			const { pallets, tx, balanceToTransfer } = txContext
 
+			// precondition checks
+
 			// Balance of the sovereign account before the transfer
 			const receiverSovereignAccountBalanceBeforeTransfer = await query.sender(
 				senderContext,
@@ -47,12 +47,12 @@ describe.each(testPairsLimitedReserveTransfers)(
 			)
 
 			const initialBalanceSender = await query.sender(senderContext, senderAccount.address)
-
 			const initialBalanceReceiver = await query.receiver(receiverContext, receiverAccount.address)
 
 			// Check initial balance receiver should be zero
 			expect(initialBalanceReceiver).toBe(BigInt(0))
 
+			// action
 			const signedTx = tx(
 				senderContext,
 				hexAddress(receiverAccount.address),
@@ -63,6 +63,8 @@ describe.each(testPairsLimitedReserveTransfers)(
 
 			// check sender state
 			await createBlock(senderContext)
+
+			// post condition checks
 
 			await Promise.all(
 				pallets.sender.map((pallet) =>
