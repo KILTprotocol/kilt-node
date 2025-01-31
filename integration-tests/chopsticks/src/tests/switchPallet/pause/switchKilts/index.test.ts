@@ -14,9 +14,9 @@ describe.each(testCases)('Switch KILTs while paused', async ({ account, txContex
 
 	// Create the network context
 	beforeEach(async () => {
-		const { senderChainContext } = await spinUpNetwork(config)
+		const { parachainContexts } = await spinUpNetwork(config)
 
-		senderContext = senderChainContext
+		senderContext = parachainContexts[0]
 		senderAccount = account
 	})
 

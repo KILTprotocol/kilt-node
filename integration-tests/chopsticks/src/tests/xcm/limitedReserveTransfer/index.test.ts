@@ -20,11 +20,11 @@ describe.each(testPairsLimitedReserveTransfers)(
 		const { desc, precision } = config
 
 		beforeEach(async () => {
-			const { receiverChainContext, relayChainContext, senderChainContext } = await spinUpNetwork(config)
+			const { parachainContexts, relayChainContext } = await spinUpNetwork(config)
 
 			relayContext = relayChainContext
-			senderContext = senderChainContext
-			receiverContext = receiverChainContext
+			senderContext = parachainContexts[0]
+			receiverContext = parachainContexts[1]
 
 			const { senderAccount: a, receiverAccount: b } = accounts
 			senderAccount = a

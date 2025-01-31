@@ -3,51 +3,39 @@ import { SetupConfig } from '@acala-network/chopsticks-testing'
 import { createBlock, scheduleTx, setStorage, setupNetwork, shutDownNetwork } from '../network/utils.js'
 import { BasicConfig } from './types.js'
 
-export async function spinUpNetwork({ network, storage, setUpTx }: BasicConfig) {
+export async function spinUpNetwork({ network }: BasicConfig) {
 	const { parachains, relay } = network
-	const { parachainContexts, relayChainContext } = await setupNetwork(relay, parachains)
-	const [senderChainContext, receiverChainContext] = parachainContexts
+	const parachainOptions = parachains.map((parachain) => parachain.option)
+	const { parachainContexts, relayChainContext } = await setupNetwork(relay.option, parachainOptions)
 
-	const {
-		parachains: [senderStorage, receiverStorage],
-		relay: relayStorage,
-	} = storage
+	await setStorage(relayChainContext, relay.storage)
+	await Promise.all(
+		relay.setUpTx.map(async (tx) => {
+			const rawTx = tx(relayChainContext)
+			await scheduleTx(relayChainContext, rawTx)
+			await createBlock(relayChainContext)
+		})
+	)
 
-	if (senderChainContext) {
-		await setStorage(senderChainContext, senderStorage)
-	}
+	await Promise.all(
+		parachains.map(async (parachain, index) => {
+			// fetch the right context
+			const currentContext = parachainContexts[index]
+			// set the storage
+			await setStorage(currentContext, parachain.storage)
 
-	if (receiverChainContext) {
-		await setStorage(receiverChainContext, receiverStorage)
-	}
+			// schedule txs.
+			await Promise.all(
+				parachain.setUpTx.map(async (tx) => {
+					const rawTx = tx(currentContext)
+					await scheduleTx(currentContext, rawTx)
+					await createBlock(currentContext)
+				})
+			)
+		})
+	)
 
-	if (relayChainContext) {
-		await setStorage(relayChainContext, relayStorage)
-	}
-
-	if (setUpTx) {
-		await Promise.all(
-			setUpTx.map(async ([tx, chain]) => {
-				if (chain === 'receiver') {
-					const rawTx = tx(receiverChainContext)
-					await scheduleTx(receiverChainContext, rawTx)
-					await createBlock(receiverChainContext)
-				}
-				if (chain === 'sender') {
-					const rawTx = tx(senderChainContext)
-					await scheduleTx(senderChainContext, rawTx)
-					await createBlock(senderChainContext)
-				}
-				if (chain === 'relay') {
-					const rawTx = tx(relayChainContext)
-					await scheduleTx(relayChainContext, rawTx)
-					await createBlock(relayChainContext)
-				}
-			})
-		)
-	}
-
-	return { receiverChainContext, senderChainContext, relayChainContext }
+	return { parachainContexts, relayChainContext }
 }
 
 export async function tearDownNetwork(chains: SetupConfig[]) {

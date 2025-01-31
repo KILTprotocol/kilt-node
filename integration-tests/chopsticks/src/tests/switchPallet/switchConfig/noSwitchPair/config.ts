@@ -45,24 +45,24 @@ export const testCases: TestConfiguration[] = [
 		config: {
 			desc: 'V4 LIVE',
 			network: {
-				relay: mainChains.polkadot.getConfig({}),
-				parachains: [mainChains.assetHub.getConfig({}), mainChains.kilt.getConfig({})],
-			},
-			storage: {
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 				parachains: [
-					// Sender
 					{
-						...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
-						...mainChains.assetHub.storage.assignForeignAssetToAccounts([
-							[keysAlice.address, initialBalanceKILT],
-						]),
+						option: mainChains.assetHub.getConfig({}),
+						storage: {
+							...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
+							...mainChains.assetHub.storage.assignForeignAssetToAccounts([
+								[keysAlice.address, initialBalanceKILT],
+							]),
+						},
+						setUpTx: [],
 					},
-					// Receiver
 					{
-						...mainChains.kilt.storage.removeSwitchPair(),
+						option: mainChains.kilt.getConfig({}),
+						setUpTx: [],
+						storage: mainChains.kilt.storage.removeSwitchPair(),
 					},
 				],
-				relay: {},
 			},
 		},
 		account: keysAlice,

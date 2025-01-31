@@ -44,12 +44,8 @@ export const testCases: TestConfiguration[] = [
 		config: {
 			desc: 'V4 LIVE',
 			network: {
-				relay: mainChains.polkadot.getConfig({}),
-				parachains: [mainChains.kilt.getConfig({})],
-			},
-			storage: {
-				parachains: [{}, {}],
-				relay: {},
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
+				parachains: [{ option: mainChains.kilt.getConfig({}), setUpTx: [], storage: {} }],
 			},
 		},
 		account: keysAlice,

@@ -21,11 +21,11 @@ describe.each(testCases)(
 
 		// Create the network context
 		beforeEach(async () => {
-			const { receiverChainContext, relayChainContext, senderChainContext } = await spinUpNetwork(config)
+			const { relayChainContext, parachainContexts } = await spinUpNetwork(config)
 
 			relayContext = relayChainContext
-			senderContext = senderChainContext
-			receiverContext = receiverChainContext
+			senderContext = parachainContexts[0]
+			receiverContext = parachainContexts[1]
 			senderAccount = account
 		})
 

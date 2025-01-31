@@ -37,19 +37,20 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		config: {
 			desc: 'Kilt -> Hydration live V2',
 			precision: BigInt(96),
-			storage: {
-				parachains: [
-					// Sender
-					mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					// Receiver
-					{},
-				],
-				relay: {},
-			},
 			network: {
 				// sender, receiver
-				parachains: [mainChains.kilt.getConfig({}), mainChains.hydration.getConfig({})],
-				relay: mainChains.polkadot.getConfig({}),
+				parachains: [
+					{
+						option: mainChains.kilt.getConfig({}),
+						storage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+							[keysAlice.address],
+							initialBalanceKILT
+						),
+						setUpTx: [],
+					},
+					{ option: mainChains.hydration.getConfig({}), setUpTx: [], storage: {} },
+				],
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 			},
 		},
 
@@ -83,19 +84,20 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		config: {
 			desc: 'Kilt -> Hydration live V3',
 			precision: BigInt(96),
-			storage: {
-				parachains: [
-					// Sender
-					mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					// Receiver
-					{},
-				],
-				relay: {},
-			},
 			network: {
 				// sender, receiver
-				parachains: [mainChains.kilt.getConfig({}), mainChains.hydration.getConfig({})],
-				relay: mainChains.polkadot.getConfig({}),
+				parachains: [
+					{
+						option: mainChains.kilt.getConfig({}),
+						storage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+							[keysAlice.address],
+							initialBalanceKILT
+						),
+						setUpTx: [],
+					},
+					{ option: mainChains.hydration.getConfig({}), setUpTx: [], storage: {} },
+				],
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 			},
 		},
 
@@ -129,18 +131,20 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		config: {
 			desc: 'Kilt DEV -> Hydration live v3',
 			precision: BigInt(96),
-			storage: {
-				parachains: [
-					// Sender
-					mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					// Receiver
-					{},
-				],
-				relay: {},
-			},
 			network: {
-				parachains: [mainChains.kilt.getConfig(mainChains.kilt.parameters), mainChains.hydration.getConfig({})],
-				relay: mainChains.polkadot.getConfig({}),
+				// sender, receiver
+				parachains: [
+					{
+						option: mainChains.kilt.getConfig({}),
+						storage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+							[keysAlice.address],
+							initialBalanceKILT
+						),
+						setUpTx: [],
+					},
+					{ option: mainChains.hydration.getConfig({}), setUpTx: [], storage: {} },
+				],
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 			},
 		},
 
@@ -174,18 +178,20 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 		config: {
 			desc: 'Kilt DEV -> Hydration live v2',
 			precision: BigInt(96),
-			storage: {
-				parachains: [
-					// Sender
-					mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address], initialBalanceKILT),
-					// Receiver
-					{},
-				],
-				relay: {},
-			},
 			network: {
-				parachains: [mainChains.kilt.getConfig(mainChains.kilt.parameters), mainChains.hydration.getConfig({})],
-				relay: mainChains.polkadot.getConfig({}),
+				// sender, receiver
+				parachains: [
+					{
+						option: mainChains.kilt.getConfig({}),
+						storage: mainChains.kilt.storage.assignNativeTokensToAccounts(
+							[keysAlice.address],
+							initialBalanceKILT
+						),
+						setUpTx: [],
+					},
+					{ option: mainChains.hydration.getConfig({}), setUpTx: [], storage: {} },
+				],
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 			},
 		},
 

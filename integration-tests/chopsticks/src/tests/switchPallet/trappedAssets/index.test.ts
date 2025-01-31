@@ -3,7 +3,7 @@ import { sendTransaction, withExpect } from '@acala-network/chopsticks-testing'
 import type { KeyringPair } from '@polkadot/keyring/types'
 
 import { createBlock, scheduleTx } from '../../../network/utils.js'
-import { hexAddress, keysAlice } from '../../../helper/utils.js'
+import { hexAddress } from '../../../helper/utils.js'
 import { testCases } from './config.js'
 import type { Config } from '../../../network/types.js'
 import { tx as txApi } from '../../../helper/api.js'
@@ -22,11 +22,11 @@ describe.each(testCases)(
 
 		// Create the network context
 		beforeEach(async () => {
-			const { receiverChainContext, relayChainContext, senderChainContext } = await spinUpNetwork(config)
+			const { parachainContexts, relayChainContext } = await spinUpNetwork(config)
 
 			relayContext = relayChainContext
-			senderContext = senderChainContext
-			receiverContext = receiverChainContext
+			senderContext = parachainContexts[0]
+			receiverContext = parachainContexts[1]
 			senderAccount = account
 		})
 
@@ -83,7 +83,7 @@ describe.each(testCases)(
 			await createBlock(receiverContext)
 
 			// create reclaim Tx
-			const xcmMessage = getXcmMessage(balanceToTransfer.toString(), keysAlice.address)
+			const xcmMessage = getXcmMessage(balanceToTransfer.toString(), senderAccount.address)
 			const rawReclaimTx = reclaimTx(senderContext, xcmMessage)
 
 			// create reclaim message for relay chain
@@ -102,7 +102,7 @@ describe.each(testCases)(
 
 			// TODO: make relay reclaim tx configurable in the config
 			const reclaimTxRelay = relayContext.api.tx.xcmPallet.send({ V3: senderLocation }, { V3: transactMessage })
-			await sendTransaction(relayContext.api.tx.sudo.sudo(reclaimTxRelay).signAsync(keysAlice))
+			await sendTransaction(relayContext.api.tx.sudo.sudo(reclaimTxRelay).signAsync(senderAccount))
 			// process tx
 			await createBlock(relayContext)
 

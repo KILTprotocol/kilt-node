@@ -51,24 +51,23 @@ export const testCases: TestConfiguration[] = [
 		config: {
 			desc: 'V4 LIVE',
 			network: {
-				relay: mainChains.polkadot.getConfig({}),
-				parachains: [mainChains.kilt.getConfig({}), mainChains.assetHub.getConfig({})],
-			},
-			storage: {
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 				parachains: [
-					//Sender
 					{
-						// Assign some coins to create the account.
-						...mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address]),
-						...mainChains.kilt.storage.assignRelayTokensToAccounts([keysAlice.address]),
+						option: mainChains.kilt.getConfig({}),
+						setUpTx: [],
+						storage: {
+							// Assign some coins to create the account.
+							...mainChains.kilt.storage.assignNativeTokensToAccounts([keysAlice.address]),
+							...mainChains.kilt.storage.assignRelayTokensToAccounts([keysAlice.address]),
+						},
 					},
-					// Receiver
 					{
-						// Assign some coins to create the account.
-						...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
+						option: mainChains.assetHub.getConfig({}),
+						setUpTx: [],
+						storage: mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
 					},
 				],
-				relay: {},
 			},
 		},
 		account: keysAlice,

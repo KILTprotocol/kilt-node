@@ -34,22 +34,22 @@ export const testCases: TestConfiguration[] = [
 		config: {
 			desc: 'V4 LIVE',
 			network: {
-				relay: mainChains.polkadot.getConfig({}),
-				parachains: [mainChains.kilt.getConfig({})],
-			},
-			storage: {
-				relay: {},
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 				parachains: [
-					// sender
 					{
-						...mainChains.kilt.storage.assignNativeTokensToAccounts(
-							[keysAlice.address],
-							initialBalanceKILT
-						),
-						...mainChains.kilt.storage.assignRelayTokensToAccounts([keysAlice.address], initialBalanceDOT),
+						option: mainChains.kilt.getConfig({}),
+						storage: {
+							...mainChains.kilt.storage.assignNativeTokensToAccounts(
+								[keysAlice.address],
+								initialBalanceKILT
+							),
+							...mainChains.kilt.storage.assignRelayTokensToAccounts(
+								[keysAlice.address],
+								initialBalanceDOT
+							),
+						},
+						setUpTx: [],
 					},
-					// receiver
-					{},
 				],
 			},
 		},

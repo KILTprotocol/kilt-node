@@ -37,27 +37,30 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			desc: 'Hydration -> KILT live',
 			precision: BigInt(96),
 			network: {
-				relay: mainChains.polkadot.getConfig({}),
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 				// sender, receiver
-				parachains: [mainChains.hydration.getConfig({}), mainChains.kilt.getConfig({})],
-			},
-			storage: {
 				parachains: [
-					// Sender
 					{
-						...mainChains.hydration.storage.assignKiltTokensToAccounts(
-							[keysAlice.address],
-							initialBalanceKILT
-						),
-						...mainChains.hydration.storage.assignNativeTokensToAccounts(
-							[keysAlice.address],
-							initialBalanceHDX
-						),
+						option: mainChains.hydration.getConfig({}),
+						storage: {
+							...mainChains.hydration.storage.assignKiltTokensToAccounts(
+								[keysAlice.address],
+								initialBalanceKILT
+							),
+							...mainChains.hydration.storage.assignNativeTokensToAccounts(
+								[keysAlice.address],
+								initialBalanceHDX
+							),
+						},
+						setUpTx: [],
 					},
-					// Receiver
-					{},
+
+					{
+						option: mainChains.kilt.getConfig({}),
+						storage: {},
+						setUpTx: [],
+					},
 				],
-				relay: {},
 			},
 		},
 
@@ -86,33 +89,35 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 			receiver: mainChains.hydration.chainInfo.sovereignAccountOnSiblingChains,
 		},
 	},
-
 	{
 		config: {
 			desc: 'Hydration -> KILT DEV',
 			precision: BigInt(96),
 			network: {
-				parachains: [mainChains.hydration.getConfig({}), mainChains.kilt.getConfig(mainChains.kilt.parameters)],
-				relay: mainChains.polkadot.getConfig({}),
-			},
-			storage: {
+				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
+				// sender, receiver
 				parachains: [
-					// Sender
 					{
-						...mainChains.hydration.storage.assignKiltTokensToAccounts(
-							[keysAlice.address],
-							initialBalanceKILT
-						),
-						...mainChains.hydration.storage.assignNativeTokensToAccounts(
-							[keysAlice.address],
-							initialBalanceHDX
-						),
+						option: mainChains.hydration.getConfig({}),
+						storage: {
+							...mainChains.hydration.storage.assignKiltTokensToAccounts(
+								[keysAlice.address],
+								initialBalanceKILT
+							),
+							...mainChains.hydration.storage.assignNativeTokensToAccounts(
+								[keysAlice.address],
+								initialBalanceHDX
+							),
+						},
+						setUpTx: [],
 					},
-					// Receiver
-					{},
-				],
 
-				relay: {},
+					{
+						option: mainChains.kilt.getConfig(mainChains.kilt.parameters),
+						storage: {},
+						setUpTx: [],
+					},
+				],
 			},
 		},
 

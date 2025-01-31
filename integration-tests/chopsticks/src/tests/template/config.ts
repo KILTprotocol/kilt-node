@@ -23,12 +23,7 @@ export const testCases: TestConfiguration[] = [
 			desc: 'TEMPLATE',
 			network: {
 				parachains: [],
-				relay: mainChains.polkadot.getConfig({}),
-			},
-			storage: {
-				senderStorage: {},
-				receiverStorage: {},
-				relayStorage: {},
+				relay: { option: mainChains.polkadot.getConfig({}), setUpTx: [], storage: {} },
 			},
 		},
 		account: keysAlice,

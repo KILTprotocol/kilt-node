@@ -17,8 +17,8 @@ describe.each(testCases)('Dust account', async ({ account, query, txContext, con
 
 	// Create the network context
 	beforeEach(async () => {
-		const { senderChainContext } = await spinUpNetwork(config)
-		context = senderChainContext
+		const { parachainContexts } = await spinUpNetwork(config)
+		context = parachainContexts[0]
 		senderAccount = account.sender
 		receiverAccount = account.receiver
 	})

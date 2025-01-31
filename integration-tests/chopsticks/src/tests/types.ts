@@ -3,19 +3,23 @@ import type { SubmittableExtrinsic } from '@polkadot/api/types'
 import type { KeyringPair } from '@polkadot/keyring/types'
 import type { SetupOption, EventFilter } from '@acala-network/chopsticks-testing'
 
-export interface Storage {
-	parachains: Record<string, Record<string, unknown>>[]
-	relay: Record<string, Record<string, unknown>>
+export type Storage = Record<string, Record<string, unknown>>
+
+export type SetUpTx = ({ api }: { api: ApiPromise }) => SubmittableExtrinsic<'promise'>
+
+export interface ChainConfig {
+	option: SetupOption
+	storage: Storage
+	setUpTx: SetUpTx[]
 }
 
 export interface Accounts {
 	senderAccount: KeyringPair
 	receiverAccount: KeyringPair
 }
-
 export interface NetworkSetupOption {
-	parachains: SetupOption[]
-	relay: SetupOption
+	parachains: ChainConfig[]
+	relay: ChainConfig
 }
 
 export interface BasicTxContext {
@@ -27,13 +31,9 @@ export interface BasicTxContext {
 	}
 }
 
-export type SetupChain = 'relay' | 'sender' | 'receiver'
-
 export interface BasicConfig {
 	desc: string
-	storage: Storage
 	network: NetworkSetupOption
-	setUpTx?: [({ api }: { api: ApiPromise }) => SubmittableExtrinsic<'promise'>, SetupChain][]
 }
 
 export interface SovereignAccount {

@@ -47,30 +47,34 @@ export const testCases: TestConfiguration[] = [
 			network: {
 				// For this test, the relay chain is not important. By using the test chain, we can
 				// dispatch calls with sudo rights. TODO: Scheduling the calls is somehow not possible.
-				relay: testChains.polkadot.getConfig({}),
-				parachains: [mainChains.assetHub.getConfig({}), mainChains.kilt.getConfig({})],
-			},
-			storage: {
+				relay: {
+					option: testChains.polkadot.getConfig({}),
+					setUpTx: [],
+					storage: {
+						...testChains.polkadot.storage.assignNativeTokensToAccounts([keysAlice.address]),
+						...testChains.polkadot.storage.assignSudoKey(keysAlice.address),
+					},
+				},
 				parachains: [
-					// Sender
 					{
-						...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
-						...mainChains.assetHub.storage.assignForeignAssetToAccounts([
-							[keysAlice.address, initialBalanceKILT],
+						option: mainChains.assetHub.getConfig({}),
+						setUpTx: [],
+						storage: {
+							...mainChains.assetHub.storage.assignNativeTokensToAccountsAsStorage([keysAlice.address]),
+							...mainChains.assetHub.storage.assignForeignAssetToAccounts([
+								[keysAlice.address, initialBalanceKILT],
+							]),
+						},
+					},
+					{
+						option: mainChains.kilt.getConfig({}),
+						setUpTx: [tx.switchPallet.pause()],
+						storage: mainChains.kilt.storage.assignNativeTokensToAccounts([
+							mainChains.assetHub.chainInfo.sovereignAccountOnSiblingChains,
 						]),
 					},
-					// Receiver
-					mainChains.kilt.storage.assignNativeTokensToAccounts([
-						mainChains.assetHub.chainInfo.sovereignAccountOnSiblingChains,
-					]),
 				],
-
-				relay: {
-					...testChains.polkadot.storage.assignNativeTokensToAccounts([keysAlice.address]),
-					...testChains.polkadot.storage.assignSudoKey(keysAlice.address),
-				},
 			},
-			setUpTx: [[tx.switchPallet.pause(), 'receiver']],
 		},
 		account: keysAlice,
 		query: {
