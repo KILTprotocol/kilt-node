@@ -79,7 +79,7 @@ describe.each(testCases)(
 
 			// enable the switch pair again
 			const resumeTx = txApi.switchPallet.resume()(receiverContext)
-			scheduleTx(receiverContext, resumeTx)
+			scheduleTx(receiverContext, resumeTx.method.toHex())
 			// process scheduled tx
 			await createBlock(receiverContext)
 

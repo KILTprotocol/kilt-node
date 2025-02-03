@@ -10,7 +10,10 @@ import { ChainConfigs } from './types.js'
 function getRequiredEnvVariable(name: string): string {
 	const value = process.env[name]
 	if (value === undefined) {
-		throw new Error(`Environment variable ${name} is not set.`)
+		if (process.env.NODE_ENV === 'test') {
+			console.error(`Error: Environment variable ${name} is not set. Some tests might not work.`)
+		}
+		return ''
 	}
 	return value
 }
