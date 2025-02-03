@@ -39,6 +39,7 @@
     "cli": "tsx ./src/cli.ts"
   },
   "dependencies": {
-    "commander": "^13.1.0"
+    "commander": "^13.1.0",
+    "execa": "^9.5.2"
   }
 }

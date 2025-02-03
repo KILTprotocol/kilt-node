@@ -1,6 +1,6 @@
 import { Command } from 'commander'
 
-import { createTestNetwork, scheduleTxCommand } from './command/index.js'
+import { createTestNetwork, scheduleTxCommand, stateTransition } from './command/index.js'
 
 const program = new Command()
 
@@ -22,8 +22,16 @@ program
 	.option('--port <Number>', 'The RPC port', '8888')
 	.action(async (endpoint, rawTx, options) => {
 		const { origin, port } = options
-		console.log(endpoint, rawTx, origin, port)
+
 		await scheduleTxCommand(endpoint, rawTx, origin, +port)
+	})
+
+program
+	.command('stateTransition')
+	.description('Shows the state transition of the network by the latest block')
+	.argument('<endpoint>', 'The endpoint of the network')
+	.action(async (endpoint) => {
+		await stateTransition(endpoint)
 	})
 
 program.parse()
