@@ -30,8 +30,11 @@ program
 	.command('stateTransition')
 	.description('Shows the state transition of the network by the latest block')
 	.argument('<endpoint>', 'The endpoint of the network')
-	.action(async (endpoint) => {
-		await stateTransition(endpoint)
+	.option('--block', 'The block number to do the state transition', 'undefined')
+	.action(async (endpoint, options) => {
+		const { block } = options
+		const blockNumber = block === 'undefined' ? undefined : +block
+		await stateTransition(endpoint, blockNumber)
 	})
 
 program.parse()
