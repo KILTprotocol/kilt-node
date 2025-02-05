@@ -132,6 +132,15 @@ yarn cli stateTransition endpoint [option]
 - endpoint: The endpoint of the network.
 - --block: The block to do the state transition
 
+
+## Recommended VS Code Extensions
+
+- [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint): Integrates ESLint into VS Code, a tool for identifying and reporting on patterns in JavaScript.
+- [Prettier - Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode): An opinionated code formatter that supports many languages.
+- [TypeScript Hero](https://marketplace.visualstudio.com/items?itemName=rbbit.typescript-hero): Provides additional features for TypeScript development, such as import management and code navigation.
+- [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer): Renders HTML files, useful for state transition HTML.
+- [GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens): Supercharges the built-in Git capabilities of VS Code.
+
 ## Built With
 
 [TypeScript](https://www.typescriptlang.org/)
