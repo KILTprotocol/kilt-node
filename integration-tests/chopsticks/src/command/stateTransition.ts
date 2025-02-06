@@ -8,6 +8,10 @@ export async function stateTransition(endpoint: string, blockNumber?: number) {
 	}
 
 	await execa('yarn', options)
-	  .then(({stdout})=>{console.log(stdout)})
-	  .catch(error => {console.error('Error:', error)})
+		.then(({ stdout }) => {
+			console.log(stdout)
+		})
+		.catch((error) => {
+			console.error('Error:', error)
+		})
 }
