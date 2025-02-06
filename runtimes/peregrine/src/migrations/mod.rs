@@ -17,16 +17,23 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::parameter_types;
-use runtime_common::constants;
+use runtime_common::{constants, migrations::BumpStorageVersion};
 
-use crate::{weights, Balances, Runtime, RuntimeEvent};
+use crate::{
+	weights::{self, rocksdb_weights::constants::RocksDbWeight},
+	Balances, DotNames, Runtime, RuntimeEvent, UniqueLinking,
+};
 
 parameter_types! {
 	pub const DmpPalletName: &'static str = "DmpQueue";
 }
 
-pub type RuntimeMigrations =
-	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>;
+pub type RuntimeMigrations = (
+	pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
+	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>,
+	BumpStorageVersion<DotNames, RocksDbWeight>,
+	BumpStorageVersion<UniqueLinking, RocksDbWeight>,
+);
 
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;

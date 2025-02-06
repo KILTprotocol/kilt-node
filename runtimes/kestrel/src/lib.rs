@@ -123,7 +123,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-kestrel"),
 	impl_name: create_runtime_str!("kilt-kestrel"),
 	authoring_version: 4,
-	spec_version: 11500,
+	spec_version: 11600,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 6,
@@ -1011,7 +1011,9 @@ impl_runtime_apis! {
 		LinkableAccountId,
 		Balance,
 		Hash,
-		BlockNumber
+		BlockNumber,
+		(),
+		()
 	> for Runtime {
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
@@ -1132,6 +1134,16 @@ impl_runtime_apis! {
 			>
 		>> {
 			dids.into_iter().map(Self::query).collect()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources(_did: DidIdentifier) -> Vec<()> {
+			[].into()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources_deletion_calls(_did: DidIdentifier) -> Vec<()> {
+			[].into()
 		}
 	}
 
