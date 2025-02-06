@@ -18,8 +18,18 @@ program
 	.description('Executes a transaction on the network')
 	.argument('<endpoint>', 'The endpoint of the network')
 	.argument('<rawTx>', 'The raw transaction to execute')
-	.option('--origin <String>', 'The origin of the transaction', 'Root')
-	.option('--port <Number>', 'The RPC port', '8888')
+	.option(
+		'--origin',
+		'The origin of the transaction Either "Root" or "Signed". Default is "Root"',
+		(value) => {
+			if (value !== 'Root' && value !== 'Signed') {
+				throw new Error('Invalid origin. Must be either "Root" or "Signed"')
+			}
+			return value
+		},
+		'Root'
+	)
+	.option('--port', 'The RPC port', '8888')
 	.action(async (endpoint, rawTx, options) => {
 		const { origin, port } = options
 
