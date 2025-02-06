@@ -12,7 +12,7 @@ export async function spinUpNetwork({ network }: BasicConfig) {
 	await Promise.all(
 		relay.setUpTx.map(async (tx) => {
 			const rawTx = tx(relayChainContext)
-			await scheduleTx(relayChainContext, rawTx)
+			await scheduleTx(relayChainContext, rawTx.method.toHex())
 			await createBlock(relayChainContext)
 		})
 	)
@@ -28,7 +28,7 @@ export async function spinUpNetwork({ network }: BasicConfig) {
 			await Promise.all(
 				parachain.setUpTx.map(async (tx) => {
 					const rawTx = tx(currentContext)
-					await scheduleTx(currentContext, rawTx)
+					await scheduleTx(currentContext, rawTx.method.toHex())
 					await createBlock(currentContext)
 				})
 			)

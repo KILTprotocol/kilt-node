@@ -42,7 +42,7 @@ describe.each(testCases)(
 			// action
 			// schedule tx
 			const rawTx = tx(relayContext, message(balanceToTransfer.toString(), keysAlice.address))
-			await scheduleTx(relayContext, rawTx)
+			await scheduleTx(relayContext, rawTx.method.toHex())
 			// process tx
 			await createBlock(relayContext)
 			// process msg
