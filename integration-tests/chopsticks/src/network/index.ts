@@ -7,7 +7,7 @@ import { ChainConfigs } from './types.js'
 /*
  * Get an environment variable and throw an error if it is not set.
  */
-function getRequiredEnvVariable(name: string): string {
+function getEnvVariable(name: string): string {
 	const value = process.env[name]
 	if (value === undefined) {
 		if (process.env.NODE_ENV === 'test') {
@@ -25,8 +25,8 @@ export const testChains: ChainConfigs = {
 	kilt: {
 		getConfig: KiltConfigs.test!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('SPIRITNET_BLOCK_NUMBER')),
-			wasmOverride: getRequiredEnvVariable('SPIRITNET_WASM_OVERRIDE'),
+			blockNumber: Number(getEnvVariable('SPIRITNET_BLOCK_NUMBER')),
+			wasmOverride: getEnvVariable('SPIRITNET_WASM_OVERRIDE'),
 		},
 		storage: KiltConfigs.test!.storage,
 		chainInfo: KiltConfigs.test!.chainInfo,
@@ -34,7 +34,7 @@ export const testChains: ChainConfigs = {
 	hydration: {
 		getConfig: HydrationConfigs.test!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('HYDRATION_BLOCK_NUMBER')),
+			blockNumber: Number(getEnvVariable('HYDRATION_BLOCK_NUMBER')),
 		},
 		storage: HydrationConfigs.test!.storage,
 		chainInfo: HydrationConfigs.test!.chainInfo,
@@ -42,7 +42,7 @@ export const testChains: ChainConfigs = {
 	polkadot: {
 		getConfig: PolkadotConfigs.test!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('POLKADOT_BLOCK_NUMBER')),
+			blockNumber: Number(getEnvVariable('POLKADOT_BLOCK_NUMBER')),
 		},
 		storage: PolkadotConfigs.test!.storage,
 		chainInfo: PolkadotConfigs.test!.chainInfo,
@@ -50,7 +50,7 @@ export const testChains: ChainConfigs = {
 	assetHub: {
 		getConfig: AssetHubConfigs.test!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('ASSETHUB_BLOCK_NUMBER')),
+			blockNumber: Number(getEnvVariable('ASSETHUB_BLOCK_NUMBER')),
 		},
 		storage: AssetHubConfigs.test!.storage,
 		chainInfo: AssetHubConfigs.test!.chainInfo,
@@ -61,8 +61,8 @@ export const mainChains: ChainConfigs = {
 	kilt: {
 		getConfig: KiltConfigs.main!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('SPIRITNET_BLOCK_NUMBER')),
-			wasmOverride: getRequiredEnvVariable('SPIRITNET_WASM_OVERRIDE'),
+			blockNumber: Number(getEnvVariable('SPIRITNET_BLOCK_NUMBER')),
+			wasmOverride: getEnvVariable('SPIRITNET_WASM_OVERRIDE'),
 		},
 		storage: KiltConfigs.main!.storage,
 		chainInfo: KiltConfigs.main!.chainInfo,
@@ -70,7 +70,7 @@ export const mainChains: ChainConfigs = {
 	hydration: {
 		getConfig: HydrationConfigs.main!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('HYDRATION_BLOCK_NUMBER')),
+			blockNumber: Number(getEnvVariable('HYDRATION_BLOCK_NUMBER')),
 		},
 		storage: HydrationConfigs.main!.storage,
 		chainInfo: HydrationConfigs.main!.chainInfo,
@@ -78,7 +78,7 @@ export const mainChains: ChainConfigs = {
 	polkadot: {
 		getConfig: PolkadotConfigs.main!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('POLKADOT_BLOCK_NUMBER')),
+			blockNumber: Number(getEnvVariable('POLKADOT_BLOCK_NUMBER')),
 		},
 		storage: PolkadotConfigs.main!.storage,
 		chainInfo: PolkadotConfigs.main!.chainInfo,
@@ -86,7 +86,7 @@ export const mainChains: ChainConfigs = {
 	assetHub: {
 		getConfig: AssetHubConfigs.main!.getConfig,
 		parameters: {
-			blockNumber: Number(getRequiredEnvVariable('ASSETHUB_BLOCK_NUMBER')),
+			blockNumber: Number(getEnvVariable('ASSETHUB_BLOCK_NUMBER')),
 		},
 		storage: AssetHubConfigs.main!.storage,
 		chainInfo: AssetHubConfigs.main!.chainInfo,
