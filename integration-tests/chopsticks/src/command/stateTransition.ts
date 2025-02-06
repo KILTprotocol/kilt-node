@@ -7,10 +7,7 @@ export async function stateTransition(endpoint: string, blockNumber?: number) {
 		options.push(`--block=${blockNumber}`)
 	}
 
-	try {
-		const { stdout } = await execa('yarn', options)
-		console.log(stdout)
-	} catch (error) {
-		console.error('Error:', error)
-	}
+	await execa('yarn', options)
+	  .then(({stdout})=>{console.log(stdout)})
+	  .catch(error => {console.error('Error:', error)})
 }

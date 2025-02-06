@@ -18,11 +18,9 @@ export async function createTestNetwork() {
 
 	const { relayChainContext, parachainContexts } = await setupNetwork(relayConfig, parachainOptions)
 
-	parachainStorage.map(async (storage, index) => await setStorage(parachainContexts[index], storage))
+	await Promise.all(parachainStorage.map((storage, index) => setStorage(parachainContexts[index], storage)))
 
 	await Promise.all(
-		[...parachainContexts, relayChainContext].map((context) => {
-			context.pause()
-		})
+		[...parachainContexts, relayChainContext].map((context) => context.pause())
 	)
 }
