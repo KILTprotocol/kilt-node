@@ -160,8 +160,6 @@ construct_runtime! {
 		Migration: pallet_migration = 70,
 		DipProvider: pallet_dip_provider = 71,
 		DepositStorage: pallet_deposit_storage = 72,
-		// DELETED: DotNames: pallet_web3_names::<Instance2> = 73,
-		// DELETED: UniqueLinking: pallet_did_lookup::<Instance2> = 74,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
