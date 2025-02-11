@@ -50,7 +50,7 @@ use runtime_common::{constants, fees::WeightToFee, Address, Signature};
 
 mod governance;
 mod kilt;
-pub use kilt::{DotName, Web3Name};
+pub use kilt::Web3Name;
 mod migrations;
 pub use migrations::RuntimeMigrations;
 mod parachain;
@@ -160,8 +160,8 @@ construct_runtime! {
 		Migration: pallet_migration = 70,
 		DipProvider: pallet_dip_provider = 71,
 		DepositStorage: pallet_deposit_storage = 72,
-		DotNames: pallet_web3_names::<Instance2> = 73,
-		UniqueLinking: pallet_did_lookup::<Instance2> = 74,
+		// DELETED: DotNames: pallet_web3_names::<Instance2> = 73,
+		// DELETED: UniqueLinking: pallet_did_lookup::<Instance2> = 74,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 

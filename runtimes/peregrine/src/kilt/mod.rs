@@ -45,8 +45,7 @@ use crate::{
 
 pub(crate) mod credential;
 pub(crate) mod did;
-pub(crate) use did::UniqueLinkingDeployment;
-pub use did::{DotName, Web3Name};
+pub use did::Web3Name;
 pub(crate) mod dip;
 pub use dip::{DipProofError, DipProofRequest};
 

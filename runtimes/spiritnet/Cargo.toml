@@ -33,7 +33,6 @@ kilt-runtime-api-public-credentials        = { workspace = true }
 kilt-runtime-api-staking                   = { workspace = true }
 pallet-asset-switch-runtime-api            = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
-unique-linking-runtime-api                 = { workspace = true }
 
 # KILT pallets & primitives
 attestation                   = { workspace = true }
@@ -252,7 +251,6 @@ std = [
   "sp-transaction-pool/std",
   "sp-version/std",
   "sp-weights/std",
-  "unique-linking-runtime-api/std",
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
