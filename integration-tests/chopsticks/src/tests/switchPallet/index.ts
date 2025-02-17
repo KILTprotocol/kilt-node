@@ -170,13 +170,7 @@ export async function getRemoteLockedSupply({ api }: { api: ApiPromise }): Promi
 export async function getReceivedNativeTokens({ api }: { api: ApiPromise }): Promise<bigint> {
 	const events = await api.query.system.events()
 
-	const polkadotFees = events.find(
-		(event) =>
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(event as any).event.data.section === 'assetSwitchPool1' &&
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(event as any).event.data.method === 'RemoteToLocalSwitchExecuted'
-	)
+	const polkadotFees = events.find((event) => api.events.assetSwitchPool1.RemoteToLocalSwitchExecuted.is(event.event))
 
 	if (!polkadotFees) {
 		throw new Error('RemoteToLocalSwitchExecuted event not found')
