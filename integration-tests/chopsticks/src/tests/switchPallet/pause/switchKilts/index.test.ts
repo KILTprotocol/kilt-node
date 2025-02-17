@@ -27,24 +27,24 @@ describe.each(testCases)('Switch KILTs while paused', ({ account, txContext, con
 
 	it(desc, async ({ expect }) => {
 		const { balanceToTransfer, tx } = txContext
-		let section: string = ''
-		let errorName: string = ''
+		let error
 
 		// This should fail.
 		await tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString()).signAndSend(
 			senderAccount,
 			({ dispatchError }) => {
 				if (dispatchError) {
-					const decoded = senderContext.api.registry.findMetaError(dispatchError.asModule)
-					section = decoded.section
-					errorName = decoded.name
+					error = dispatchError
 				}
 			}
 		)
 
 		await createBlock(senderContext)
 
-		expect(section).toBe('assetSwitchPool1')
-		expect(errorName).toBe('SwitchPairNotEnabled')
+		if (!error) {
+			throw new Error('Expected SwitchPairNotEnabled error')
+		}
+
+		expect(senderContext.api.errors.assetSwitchPool1.SwitchPairNotEnabled.is(error))
 	})
 })
