@@ -183,7 +183,7 @@ export async function getReceivedNativeTokens({ api }: { api: ApiPromise }): Pro
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return BigInt((polkadotFees as any).event.data.amount.toString())
+	return (polkadotFees as any).event.data.amount.toBigInt()
 }
 
 export async function isSwitchPaused({ api }: { api: ApiPromise }): Promise<boolean> {

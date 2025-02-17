@@ -344,7 +344,7 @@ export const tx = {
  */
 export const query = {
 	balances: async ({ api }: { api: ApiPromise }, address: string) =>
-		BigInt(((await api.query.system.account(address)) as any).data.free),
+		((await api.query.system.account(address)) as any).data.free.toBigInt(),
 	foreignAssets:
 		(assetId: any) =>
 		async ({ api }: { api: ApiPromise }, address: string) => {
@@ -366,5 +366,5 @@ export const query = {
 	tokens:
 		(token: any) =>
 		async ({ api }: { api: ApiPromise }, address: string) =>
-			BigInt(((await api.query.tokens.accounts(address, token)) as any).free),
+			((await api.query.tokens.accounts(address, token)) as any).data.free.toBigInt(),
 }
