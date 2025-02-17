@@ -366,5 +366,5 @@ export const query = {
 	tokens:
 		(token: any) =>
 		async ({ api }: { api: ApiPromise }, address: string) =>
-			((await api.query.tokens.accounts(address, token)) as any).data.free.toBigInt(),
+			((await api.query.tokens.accounts(address, token)) as any).free.toBigInt(),
 }
