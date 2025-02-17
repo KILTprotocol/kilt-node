@@ -1,5 +1,5 @@
 import { connectParachains, connectVertical } from '@acala-network/chopsticks'
-import { setTimeout } from 'timers/promises'
+import { setTimeout as setTimeOutPromise } from 'timers/promises'
 import { setupContext, SetupOption } from '@acala-network/chopsticks-testing'
 import type { Config } from './types.js'
 import type { ApiPromise } from '@polkadot/api'
@@ -14,7 +14,7 @@ import type { ApiPromise } from '@polkadot/api'
  *
  */
 export async function shutDownNetwork(chains: Config[]): Promise<void> {
-	await setTimeout(50)
+	await setTimeOutPromise(50)
 	const tearDown = chains.map((chain) => chain?.teardown())
 	await Promise.all(tearDown)
 }
@@ -30,7 +30,7 @@ async function connectNetworks(relayChain: Config, parachains: Config[]) {
 
 	const newBlockConfig = { count: 2 }
 	// fixes api runtime disconnect warning
-	await setTimeout(50)
+	await setTimeOutPromise(50)
 	// Perform runtime upgrade and establish xcm connections.
 	await newBlock(newBlockConfig, [relayChain, ...parachains])
 }
@@ -48,7 +48,7 @@ export async function setupNetwork(
 	relayChain: SetupOption,
 	parachains: SetupOption[]
 ): Promise<{ relayChainContext: Config; parachainContexts: Config[] }> {
-	await setTimeout(50)
+	await setTimeOutPromise(50)
 	const relayChainContext = await setupContext(relayChain)
 	const parachainContexts = await Promise.all(parachains.map((parachain) => setupContext(parachain)))
 
@@ -59,13 +59,13 @@ export async function setupNetwork(
 /// Creates a new block for the given context
 export async function createBlock(context: Config) {
 	// fixes api runtime disconnect warning
-	await setTimeout(50)
+	await setTimeOutPromise(50)
 	await context.dev.newBlock()
 }
 
 /// sets the storage for the given context.
 export async function setStorage(context: Config, storage: Record<string, Record<string, unknown>>) {
-	await setTimeout(50)
+	await setTimeOutPromise(50)
 	await context.dev.setStorage(storage)
 	await createBlock(context)
 }
