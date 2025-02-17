@@ -46,8 +46,8 @@ describe.each(testCases)(
 			const initialBalancePoolAccount = await query.sender(senderContext, poolAccount)
 			const initialBalanceUserSenderChain = await query.sender(senderContext, hexAddress(senderAccount.address))
 
-			expect(initialBalanceReceiverChain).toBe(BigInt(0))
-			expect(initialBalanceSenderChain).toBeGreaterThan(BigInt(0))
+			expect(initialBalanceReceiverChain).toBe(0n)
+			expect(initialBalanceSenderChain).toBeGreaterThan(0n)
 
 			// action
 			const { balanceToTransfer, events, tx } = txContext
@@ -69,7 +69,7 @@ describe.each(testCases)(
 			// post condition checks
 			expect(initialBalanceUserSenderChain - balanceToTransfer - txFees).toBe(balanceSenderChain)
 			expect(initialBalancePoolAccount).toBe(balancePoolAccount - balanceToTransfer)
-			expect(balanceUserReceiverChain).toBeGreaterThan(BigInt(0))
+			expect(balanceUserReceiverChain).toBeGreaterThan(0n)
 			expect(remoteLockedSupply).toBe(initialRemoteLockedSupply - balanceToTransfer)
 
 			// check events

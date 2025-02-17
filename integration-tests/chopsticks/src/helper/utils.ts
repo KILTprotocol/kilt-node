@@ -62,15 +62,15 @@ export function validateBalanceWithPrecision(
 	expect: ExpectStatic,
 	precision: bigint
 ) {
-	if (precision < BigInt(0) || precision > BigInt(100)) {
+	if (precision < 0n || precision > 100n) {
 		throw new Error('Precision must be between 0 and 100')
 	}
 
-	const allowedError = BigInt(100) - precision
+	const allowedError = 100n - precision
 	const expectedBalance = previousBalance + deltaBalance
 
-	const lowerBound = expectedBalance - (expectedBalance * allowedError) / BigInt(100)
-	const upperBound = expectedBalance + (expectedBalance * allowedError) / BigInt(100)
+	const lowerBound = expectedBalance - (expectedBalance * allowedError) / 100n
+	const upperBound = expectedBalance + (expectedBalance * allowedError) / 100n
 
 	expect(receivedBalance).toBeGreaterThanOrEqual(lowerBound)
 	expect(receivedBalance).toBeLessThanOrEqual(upperBound)
@@ -107,6 +107,6 @@ export const KILT = BigInt(1e15)
 export const DOT = BigInt(1e10)
 export const HDX = BigInt(1e12)
 
-export const initialBalanceKILT = BigInt(100) * KILT
-export const initialBalanceDOT = BigInt(100) * DOT
-export const initialBalanceHDX = BigInt(100) * HDX
+export const initialBalanceKILT = 100n * KILT
+export const initialBalanceDOT = 100n * DOT
+export const initialBalanceHDX = 100n * HDX

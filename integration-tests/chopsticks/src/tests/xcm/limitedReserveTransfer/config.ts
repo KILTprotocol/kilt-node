@@ -36,7 +36,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	{
 		config: {
 			desc: 'Kilt -> Hydration live V2',
-			precision: BigInt(96),
+			precision: 96n,
 			network: {
 				// sender, receiver
 				parachains: [
@@ -83,7 +83,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	{
 		config: {
 			desc: 'Kilt -> Hydration live V3',
-			precision: BigInt(96),
+			precision: 96n,
 			network: {
 				// sender, receiver
 				parachains: [
@@ -130,7 +130,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	{
 		config: {
 			desc: 'Kilt DEV -> Hydration live v3',
-			precision: BigInt(96),
+			precision: 96n,
 			network: {
 				// sender, receiver
 				parachains: [
@@ -177,7 +177,7 @@ export const testPairsLimitedReserveTransfers: LimitedReserveTestConfiguration[]
 	{
 		config: {
 			desc: 'Kilt DEV -> Hydration live v2',
-			precision: BigInt(96),
+			precision: 96n,
 			network: {
 				// sender, receiver
 				parachains: [

@@ -35,7 +35,7 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 	{
 		config: {
 			desc: 'Hydration -> KILT live',
-			precision: BigInt(96),
+			precision: 96n,
 			network: {
 				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 				// sender, receiver
@@ -92,7 +92,7 @@ export const testPairsWithdrawAssets: WithdrawAssetTestConfiguration[] = [
 	{
 		config: {
 			desc: 'Hydration -> KILT DEV',
-			precision: BigInt(96),
+			precision: 96n,
 			network: {
 				relay: { option: mainChains.polkadot.getConfig({}), storage: {}, setUpTx: [] },
 				// sender, receiver

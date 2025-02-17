@@ -118,7 +118,7 @@ export async function checkSwitchPalletInvariant(
 	sovereignAccount: string,
 	queryNativeBalance: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>,
 	queryForeignBalance: ({ api }: { api: ApiPromise }, address: string) => Promise<bigint>,
-	deltaStoredSovereignSupply = BigInt(0)
+	deltaStoredSovereignSupply = 0n
 ) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const switchPairInfo: any = await nativeContext.api.query.assetSwitchPool1.switchPair()
@@ -161,7 +161,7 @@ export async function getRemoteLockedSupply({ api }: { api: ApiPromise }): Promi
 	const switchPairInfo: any = await api.query.assetSwitchPool1.switchPair()
 
 	if (switchPairInfo.isNone) {
-		return BigInt(0)
+		return 0n
 	}
 
 	return switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()

@@ -51,7 +51,7 @@ describe.each(testPairsWithdrawAssets)(
 			const balanceSenderBeforeTransfer = await query.sender(senderContext, senderAccount.address)
 			const initialBalanceReceiver = await query.receiver(receiverContext, receiverAccount.address)
 			// Check initial balance receiver should be zero
-			expect(initialBalanceReceiver).toBe(BigInt(0))
+			expect(initialBalanceReceiver).toBe(0n)
 
 			// action
 			const signedTx = tx(
@@ -76,7 +76,7 @@ describe.each(testPairsWithdrawAssets)(
 			)
 
 			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
-			const removedBalance = balanceToTransfer * BigInt(-1)
+			const removedBalance = balanceToTransfer * -1n
 
 			validateBalanceWithPrecision(
 				balanceSenderBeforeTransfer,
@@ -95,7 +95,7 @@ describe.each(testPairsWithdrawAssets)(
 			)
 
 			expect(senderSovereignAccountBalanceAfterTransfer).toBe(
-				senderSovereignAccountBalanceBeforeTransfer - BigInt(balanceToTransfer)
+				senderSovereignAccountBalanceBeforeTransfer - balanceToTransfer
 			)
 
 			await Promise.all(

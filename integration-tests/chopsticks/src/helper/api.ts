@@ -350,7 +350,7 @@ export const query = {
 		async ({ api }: { api: ApiPromise }, address: string) => {
 			const accountInfo: any = await api.query.foreignAssets.account(assetId, address)
 			if (accountInfo.isNone) {
-				return BigInt(0)
+				return 0n
 			}
 			return accountInfo.unwrap().balance.toBigInt()
 		},
@@ -359,7 +359,7 @@ export const query = {
 		async ({ api }: { api: ApiPromise }, address: string) => {
 			const accountInfo: any = await api.query.fungibles.account(assetId, address)
 			if (accountInfo.isNone) {
-				return BigInt(0)
+				return 0n
 			}
 			return accountInfo.unwrap().balance.toBigInt()
 		},

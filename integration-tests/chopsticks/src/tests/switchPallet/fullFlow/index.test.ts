@@ -130,7 +130,7 @@ describe.each(testCases)(
 			)
 
 			// 3. send native tokens back to sender chain.
-			const balanceToTransferBack = balanceToTransfer.native / BigInt(2)
+			const balanceToTransferBack = balanceToTransfer.native / 2n
 
 			const nativeBalanceForeignChainBeforeTx = await query.foreign.foreignFunds(
 				foreignContext,
@@ -188,7 +188,7 @@ describe.each(testCases)(
 
 			// 4. send foreign token back
 
-			const balanceToTransferBackForeign = balanceToTransfer.foreign / BigInt(10)
+			const balanceToTransferBackForeign = balanceToTransfer.foreign / 10n
 
 			const foreignBalanceBeforeTx = await query.native.foreignFunds(nativeContext, senderAccount.address)
 

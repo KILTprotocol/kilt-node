@@ -37,7 +37,7 @@ describe.each(testCases)(
 
 			// precondition checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
-			expect(balanceBeforeTx).toBe(BigInt(0))
+			expect(balanceBeforeTx).toBe(0n)
 
 			// action
 			// schedule tx
@@ -50,7 +50,7 @@ describe.each(testCases)(
 
 			// post condition checks
 			const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
-			expect(balanceAfterTx).toBe(BigInt(0))
+			expect(balanceAfterTx).toBe(0n)
 
 			// check events
 			events.sender.map(

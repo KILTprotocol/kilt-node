@@ -38,8 +38,8 @@ describe.each(testCases)('Dust account', async ({ account, query, txContext, con
 		const receiverNativeBalance = await query.native(context, receiverAccount.address)
 
 		expect(nativeBalance).toBe(balanceToTransfer)
-		expect(foreignBalance).toBeGreaterThan(BigInt(0))
-		expect(receiverNativeBalance).toBe(BigInt(0))
+		expect(foreignBalance).toBeGreaterThan(0n)
+		expect(receiverNativeBalance).toBe(0n)
 
 		// action
 		let rawTx = tx(context, hexAddress(receiverAccount.address), balanceToTransfer.toString())
@@ -58,9 +58,9 @@ describe.each(testCases)('Dust account', async ({ account, query, txContext, con
 		const foreignBalanceAfter = await query.foreign(context, senderAccount.address)
 		const receiverNativeBalanceAfter = await query.native(context, receiverAccount.address)
 
-		expect(nativeBalanceAfter).toBe(BigInt(0))
+		expect(nativeBalanceAfter).toBe(0n)
 		// sender should keep the foreign balance
-		expect(foreignBalanceAfter).toBeGreaterThan(BigInt(0))
+		expect(foreignBalanceAfter).toBeGreaterThan(0n)
 		expect(receiverNativeBalanceAfter).toBe(balanceToTransfer - txFees)
 
 		await Promise.all(

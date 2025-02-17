@@ -50,8 +50,8 @@ describe.each(testCases)(
 				receiverContext,
 				hexAddress(senderAccount.address)
 			)
-			expect(initialBalanceReceiverChain).toBe(BigInt(0))
-			expect(initialBalanceSenderChain).toBeGreaterThan(BigInt(0))
+			expect(initialBalanceReceiverChain).toBe(0n)
+			expect(initialBalanceSenderChain).toBeGreaterThan(0n)
 
 			// action
 			const { balanceToTransfer, events, tx } = txContext

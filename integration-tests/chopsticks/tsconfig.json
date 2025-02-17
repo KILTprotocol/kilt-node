@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2016",
+    "target": "es2020",
     "lib": ["es2020"],
     "module": "NodeNext",
     "rootDir": "src",

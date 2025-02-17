@@ -50,7 +50,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 			const initialBalanceReceiver = await query.receiver(receiverContext, receiverAccount.address)
 
 			// Check initial balance receiver should be zero
-			expect(initialBalanceReceiver).toBe(BigInt(0))
+			expect(initialBalanceReceiver).toBe(0n)
 
 			// action
 			const signedTx = tx(
@@ -80,10 +80,10 @@ describe.each(testPairsLimitedReserveTransfers)(
 				sovereignAccount.sender
 			)
 			expect(receiverSovereignAccountBalanceAfterTransfer).toBe(
-				receiverSovereignAccountBalanceBeforeTransfer + BigInt(balanceToTransfer)
+				receiverSovereignAccountBalanceBeforeTransfer + balanceToTransfer
 			)
 
-			const removedBalance = balanceToTransfer * BigInt(-1)
+			const removedBalance = balanceToTransfer * -1n
 
 			validateBalanceWithPrecision(
 				initialBalanceSender,

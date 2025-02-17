@@ -43,8 +43,8 @@ describe.each(testCases)(
 			// precondition checks
 			const balanceBeforeTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
 			const balanceBeforeTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
-			expect(balanceBeforeTx).toBe(BigInt(0))
-			expect(balanceBeforeTxSender).toBeGreaterThan(BigInt(0))
+			expect(balanceBeforeTx).toBe(0n)
+			expect(balanceBeforeTxSender).toBeGreaterThan(0n)
 			expect(await isSwitchPaused(receiverContext)).toBe(true)
 
 			// action
@@ -62,7 +62,7 @@ describe.each(testCases)(
 
 			// Tx should fail on receiver
 			const balanceAfterTx = await query.receiver(receiverContext, hexAddress(senderAccount.address))
-			expect(balanceAfterTx).toBe(BigInt(0))
+			expect(balanceAfterTx).toBe(0n)
 
 			// check events
 			await Promise.all(
