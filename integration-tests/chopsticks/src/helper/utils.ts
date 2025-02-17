@@ -90,8 +90,9 @@ export async function getPaidXcmFees(events: Codec[]): Promise<bigint> {
 	if (!polkadotFees) {
 		throw new Error('FeesPaid event not found')
 	}
+
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return BigInt(JSON.parse((polkadotFees as any).event.data.fees[0].fun.toString()).fungible)
+	return (polkadotFees as any).event.data.fees[0].fun.asFungible.toBigInt()
 }
 
 /**
