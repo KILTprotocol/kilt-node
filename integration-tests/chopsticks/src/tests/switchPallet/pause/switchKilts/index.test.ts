@@ -21,9 +21,7 @@ describe.each(testCases)('Switch KILTs while paused', ({ account, txContext, con
 	})
 
 	// Shut down the network
-	afterEach(async () => {
-		await tearDownNetwork([senderContext])
-	})
+	afterEach(async () => await tearDownNetwork([senderContext]))
 
 	it(desc, async ({ expect }) => {
 		const { balanceToTransfer, tx } = txContext

@@ -24,9 +24,7 @@ describe.each(testCases)('Dust account', ({ account, query, txContext, config })
 	})
 
 	// Shut down the network
-	afterEach(async () => {
-		await tearDownNetwork([context])
-	})
+	afterEach(async () => await tearDownNetwork([context]))
 
 	it(desc, async ({ expect }) => {
 		const { checkSystemEvents } = withExpect(expect)

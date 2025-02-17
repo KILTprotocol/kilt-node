@@ -18,9 +18,7 @@ describe.skip.each(testCases)('TEMPLATE', ({ account, config }) => {
 	})
 
 	// Shut down the network
-	afterEach(async () => {
-		tearDownNetwork([senderContext])
-	})
+	afterEach(async () => tearDownNetwork([senderContext]))
 
 	it(desc, async ({ expect }) => {
 		expect(senderAccount).toBeTruthy()

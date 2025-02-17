@@ -29,9 +29,7 @@ describe.each(testCases)(
 		})
 
 		// Shut down the network
-		afterEach(async () => {
-			await tearDownNetwork([nativeContext, foreignContext, relayContext])
-		})
+		afterEach(async () => await tearDownNetwork([nativeContext, foreignContext, relayContext]))
 
 		it(desc, async ({ expect }) => {
 			const { checkEvents, checkSystemEvents } = withExpect(expect)
