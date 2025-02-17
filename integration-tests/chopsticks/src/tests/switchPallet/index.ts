@@ -187,5 +187,5 @@ export async function isSwitchPaused({ api }: { api: ApiPromise }): Promise<bool
 		return false
 	}
 
-	return JSON.parse(switchPairInfo.unwrap().toString()).status === 'Paused'
+	return switchPairInfo.unwrap().status.isPaused
 }
