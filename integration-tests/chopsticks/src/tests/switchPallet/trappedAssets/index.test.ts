@@ -13,7 +13,7 @@ import { spinUpNetwork, tearDownNetwork } from '../../utils.js'
 describe.each(testCases)(
 	'Reclaim trapped assets',
 
-	async ({ account, query, txContext, config, sovereignAccount }) => {
+	({ account, query, txContext, config, sovereignAccount }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config

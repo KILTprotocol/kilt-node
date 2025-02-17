@@ -10,8 +10,7 @@ import { spinUpNetwork, tearDownNetwork } from '../../utils.js'
 
 describe.each(testPairsLimitedReserveTransfers)(
 	'Limited Reserve Transfers',
-
-	async ({ accounts, query, sovereignAccount, txContext, config }) => {
+	({ accounts, query, sovereignAccount, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config

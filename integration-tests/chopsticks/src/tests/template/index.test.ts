@@ -5,7 +5,7 @@ import { testCases } from './config.js'
 import type { Config } from '../../network/types.js'
 import { spinUpNetwork, tearDownNetwork } from '../utils.js'
 
-describe.skip.each(testCases)('TEMPLATE', async ({ account, config }) => {
+describe.skip.each(testCases)('TEMPLATE', ({ account, config }) => {
 	let senderContext: Config
 	let senderAccount: KeyringPair
 	const { desc } = config

@@ -12,7 +12,7 @@ import { spinUpNetwork, tearDownNetwork } from '../../../utils.js'
 describe.each(testCases)(
 	'Switch KILTs while receiver can not handle them',
 
-	async ({ account, query, txContext, config, sovereignAccount }) => {
+	({ account, query, txContext, config, sovereignAccount }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config

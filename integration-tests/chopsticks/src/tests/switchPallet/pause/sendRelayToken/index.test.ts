@@ -12,7 +12,7 @@ import { spinUpNetwork, tearDownNetwork } from '../../../utils.js'
 describe.each(testCases)(
 	'Send Relay token while switch paused',
 
-	async ({ account, query, txContext, config }) => {
+	({ account, query, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config

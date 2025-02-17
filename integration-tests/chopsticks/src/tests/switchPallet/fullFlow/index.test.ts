@@ -12,7 +12,7 @@ import { spinUpNetwork, tearDownNetwork } from '../../utils.js'
 describe.each(testCases)(
 	'Switch KILTs full flow',
 
-	async ({ account, query, txContext, config, sovereignAccount }) => {
+	({ account, query, txContext, config, sovereignAccount }) => {
 		let nativeContext: Config
 		let foreignContext: Config
 		let relayContext: Config

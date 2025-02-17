@@ -11,7 +11,7 @@ import { spinUpNetwork, tearDownNetwork } from '../../../utils.js'
 describe.each(testCases)(
 	'Switch other reserve location',
 
-	async ({ account, query, txContext, config }) => {
+	({ account, query, txContext, config }) => {
 		let receiverContext: Config
 		let relayContext: Config
 		let senderAccount: KeyringPair

@@ -11,7 +11,7 @@ import { spinUpNetwork, tearDownNetwork } from '../../../utils.js'
 describe.each(testCases)(
 	'Switch eKILTs while no pair set',
 
-	async ({ account, query, txContext, config }) => {
+	({ account, query, txContext, config }) => {
 		let senderContext: Config
 		let receiverContext: Config
 		let relayContext: Config

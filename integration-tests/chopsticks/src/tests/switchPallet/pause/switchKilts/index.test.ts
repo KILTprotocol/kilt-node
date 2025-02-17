@@ -7,7 +7,7 @@ import { Config } from '../../../../network/types.js'
 import { hexAddress } from '../../../../helper/utils.js'
 import { spinUpNetwork, tearDownNetwork } from '../../../utils.js'
 
-describe.each(testCases)('Switch KILTs while paused', async ({ account, txContext, config }) => {
+describe.each(testCases)('Switch KILTs while paused', ({ account, txContext, config }) => {
 	let senderContext: Config
 	let senderAccount: KeyringPair
 	const { desc } = config

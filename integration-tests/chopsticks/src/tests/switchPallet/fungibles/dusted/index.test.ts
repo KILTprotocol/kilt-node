@@ -8,7 +8,7 @@ import { testCases } from './config.js'
 import { Config } from '../../../../network/types.js'
 import { spinUpNetwork, tearDownNetwork } from '../../../utils.js'
 
-describe.each(testCases)('Dust account', async ({ account, query, txContext, config }) => {
+describe.each(testCases)('Dust account', ({ account, query, txContext, config }) => {
 	let context: Config
 	let senderAccount: KeyringPair
 	let receiverAccount: KeyringPair
