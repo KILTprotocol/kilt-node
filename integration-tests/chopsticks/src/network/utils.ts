@@ -22,9 +22,7 @@ const newBlock = async (newBlockConfig: { count: number }, contexts: Config[]) =
 	await Promise.all(contexts.map((context) => context.dev.newBlock(newBlockConfig)))
 }
 async function connectNetworks(relayChain: Config, parachains: Config[]) {
-	for (const parachain of parachains) {
-		await connectVertical(relayChain.chain, parachain.chain)
-	}
+	await Promise.all(parachains.map((parachain) => connectVertical(relayChain.chain, parachain.chain)))
 
 	await connectParachains(parachains.map((parachain) => parachain.chain))
 
