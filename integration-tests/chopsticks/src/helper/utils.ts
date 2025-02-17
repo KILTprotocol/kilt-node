@@ -80,13 +80,16 @@ export function validateBalanceWithPrecision(
  * Fetches the paid fees for the executed XCM message. Is only working on the sender chain.
  */
 export async function getPaidXcmFees(events: Codec[]): Promise<bigint> {
-	const polkadotFees = events.filter(
+	const polkadotFees = events.find(
 		(event) =>
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(event as any).event.data.section === 'polkadotXcm' &&
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(event as any).event.data.method === 'FeesPaid'
-	)[0]
+	)
+	if (!polkadotFees) {
+		throw new Error('FeesPaid event not found')
+	}
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	return BigInt(JSON.parse((polkadotFees as any).event.data.fees[0].fun.toString()).fungible)
 }
