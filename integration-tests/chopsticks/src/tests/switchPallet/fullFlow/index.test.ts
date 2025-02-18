@@ -56,7 +56,7 @@ describe.each(testCases)(
 
 			const foreignFundsAfterTx = await query.foreign.nativeFunds(foreignContext, senderAccount.address)
 
-			const xcmFees = await getPaidXcmFees(await events1.events)
+			const xcmFees = await getPaidXcmFees(foreignContext.api, await events1.events)
 
 			expect(foreignFundsBeforeTx - balanceToTransfer.foreign - txFees - xcmFees).toBe(foreignFundsAfterTx)
 

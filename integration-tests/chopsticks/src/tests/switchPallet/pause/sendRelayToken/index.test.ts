@@ -54,7 +54,7 @@ describe.each(testCases)(
 			// post condition checks
 			// check balance movement on sender chain.
 			const txFees = await calculateTxFees(rawTx, senderAccount)
-			const xcmFees = await getPaidXcmFees(await events1.events)
+			const xcmFees = await getPaidXcmFees(senderContext.api, await events1.events)
 			const balanceAfterTxSender = await query.sender(senderContext, hexAddress(senderAccount.address))
 
 			expect(balanceAfterTxSender).toBe(balanceBeforeTxSender - balanceToTransfer - txFees - xcmFees)
