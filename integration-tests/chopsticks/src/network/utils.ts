@@ -70,7 +70,7 @@ export async function setStorage(context: Config, storage: Record<string, Record
 
 /// Schedules a transaction with root privileges at the given block number. If no block is provided, the transaction will be scheduled for the next block.
 export async function scheduleTx({ api }: { api: ApiPromise }, call: string, at = undefined, origin = 'Root') {
-	const number = at ? at : (await api.rpc.chain.getHeader()).number.toNumber()
+	const number = at ?? (await api.rpc.chain.getHeader()).number.toNumber()
 	await api.rpc('dev_setStorage', {
 		scheduler: {
 			agenda: [
