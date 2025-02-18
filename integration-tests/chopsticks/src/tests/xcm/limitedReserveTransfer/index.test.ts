@@ -80,7 +80,7 @@ describe.each(testPairsLimitedReserveTransfers)(
 				receiverSovereignAccountBalanceBeforeTransfer + balanceToTransfer
 			)
 
-			const removedBalance = balanceToTransfer * -1n
+			const removedBalance = -balanceToTransfer
 
 			validateBalanceWithPrecision(
 				initialBalanceSender,

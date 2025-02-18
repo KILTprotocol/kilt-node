@@ -74,7 +74,7 @@ describe.each(testPairsWithdrawAssets)(
 			)
 
 			const balanceSenderAfterTransfer = await query.sender(senderContext, senderAccount.address)
-			const removedBalance = balanceToTransfer * -1n
+			const removedBalance = -balanceToTransfer
 
 			validateBalanceWithPrecision(
 				balanceSenderBeforeTransfer,
