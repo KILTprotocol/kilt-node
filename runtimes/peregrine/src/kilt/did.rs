@@ -60,10 +60,8 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 			RuntimeCall::Did(did::Call::create { .. }) => Err(RelationshipDeriveError::NotCallableByDid),
 			RuntimeCall::Did { .. } => Ok(DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::Web3Names { .. } => Ok(DidVerificationKeyRelationship::Authentication),
-			RuntimeCall::DotNames { .. } => Ok(DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::PublicCredentials { .. } => Ok(DidVerificationKeyRelationship::AssertionMethod),
 			RuntimeCall::DidLookup { .. } => Ok(DidVerificationKeyRelationship::Authentication),
-			RuntimeCall::UniqueLinking { .. } => Ok(DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			RuntimeCall::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			RuntimeCall::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(&calls[..]),
@@ -96,19 +94,9 @@ impl did::traits::DidDeletionHook<Runtime> for EnsureNoNamesAndNoLinkedAccountsO
 		if pallet_web3_names::Names::<Runtime>::contains_key(did) {
 			return false;
 		}
-		// 2. Check if there's a linked Dotname
-		if pallet_web3_names::Names::<Runtime, DotNamesDeployment>::contains_key(did) {
-			return false;
-		}
-		// 3. Check if there's a Web3name linked account
+
+		// 2. Check if there's a Web3name linked account
 		if pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(did)
-			.next()
-			.is_some()
-		{
-			return false;
-		}
-		// 4. Check if there's a Dotname linked account
-		if pallet_did_lookup::ConnectedAccounts::<Runtime, UniqueLinkingDeployment>::iter_key_prefix(did)
 			.next()
 			.is_some()
 		{
@@ -177,29 +165,6 @@ impl pallet_did_lookup::Config for Runtime {
 	type UniqueLinkingEnabled = ConstBool<false>;
 }
 
-pub(crate) type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
-impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type AssociateOrigin = EnsureDidOrigin<
-		DidIdentifier,
-		AccountId,
-		runtime_common::dot_names::AllowedUniqueLinkingAssociator<crate::UniqueLinking>,
-	>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type AssociateOrigin = EnsureDidOrigin<DidIdentifier, AccountId, did::origin::Everyone>;
-
-	type BalanceMigrationManager = ();
-	type Currency = Balances;
-	type Deposit = constants::did_lookup::DidLookupDeposit;
-	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type UniqueLinkingEnabled = ConstBool<true>;
-	type WeightInfo = weights::pallet_unique_linking::WeightInfo<Runtime>;
-}
-
 pub type Web3Name =
 	runtime_common::Web3Name<{ constants::web3_names::MIN_LENGTH }, { constants::web3_names::MAX_LENGTH }>;
 impl pallet_web3_names::Config for Runtime {
@@ -220,32 +185,4 @@ impl pallet_web3_names::Config for Runtime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = crate::benchmarks::web3_names::Web3NamesBenchmarkHelper;
-}
-
-pub type DotName = runtime_common::DotName<{ constants::dot_names::MIN_LENGTH }, { constants::dot_names::MAX_LENGTH }>;
-pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
-impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
-	type BalanceMigrationManager = ();
-	type BanOrigin = EnsureRoot<AccountId>;
-
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type ClaimOrigin =
-		EnsureDidOrigin<DidIdentifier, AccountId, runtime_common::dot_names::AllowedDotNameClaimer<crate::DotNames>>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type ClaimOrigin = EnsureDidOrigin<DidIdentifier, AccountId, did::origin::Everyone>;
-
-	type Currency = Balances;
-	type Deposit = constants::dot_names::Web3NameDeposit;
-	type MaxNameLength = constants::dot_names::MaxNameLength;
-	type MinNameLength = constants::dot_names::MinNameLength;
-	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
-	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type Web3Name = DotName;
-	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = weights::pallet_dot_names::WeightInfo<Runtime>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = crate::benchmarks::web3_names::DotNamesBenchmarkHelper;
 }

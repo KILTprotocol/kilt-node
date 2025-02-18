@@ -38,10 +38,10 @@ use xcm::v4::{Asset, Assets, Fungibility, Location};
 
 use crate::{
 	xcm::XcmConfig, AllPalletsWithSystem, AssetSwitchPool1, Attestation, Balances, Council, Ctype, Delegation,
-	Democracy, DepositStorage, Did, DidLookup, DipProvider, DotNames, Fungibles, Indices, Inflation, MessageQueue,
-	Migration, Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy, PublicCredentials, Runtime, RuntimeEvent,
-	Scheduler, System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership, Treasury,
-	UniqueLinking, Utility, Vesting, Web3Names,
+	Democracy, DepositStorage, Did, DidLookup, DipProvider, Fungibles, Indices, Inflation, MessageQueue, Migration,
+	Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy, PublicCredentials, Runtime, RuntimeEvent, Scheduler,
+	System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership, Treasury, Utility, Vesting,
+	Web3Names,
 };
 
 pub(crate) mod asset_switch;
@@ -52,12 +52,9 @@ pub(crate) mod web3_names;
 /// Upstream fix PR: https://github.com/paritytech/polkadot-sdk/pull/6435
 #[allow(unused_imports)]
 use pallet_collective as pallet_technical_committee_collective;
-#[allow(unused_imports)]
-use pallet_did_lookup as pallet_unique_linking;
+
 #[allow(unused_imports)]
 use pallet_membership as pallet_technical_membership;
-#[allow(unused_imports)]
-use pallet_web3_names as pallet_dot_names;
 
 define_benchmarks!(
 	[frame_system, frame_system_benchmarking::Pallet::<Runtime>]
@@ -98,10 +95,8 @@ define_benchmarks!(
 	[pallet_technical_membership, TechnicalMembership]
 	// pallet_did_lookup instances
 	[pallet_did_lookup, DidLookup]
-	[pallet_unique_linking, UniqueLinking]
 	// pallet_web3_names instances
 	[pallet_web3_names, Web3Names]
-	[pallet_dot_names, DotNames]
 );
 
 impl pallet_xcm::benchmarking::Config for Runtime {

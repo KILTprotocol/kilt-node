@@ -39,8 +39,6 @@ use runtime_common::{
 	AccountId, BlockNumber,
 };
 
-use crate::kilt::did::DotNamesDeployment;
-
 use super::{Runtime, RuntimeCall};
 
 // TODO: Uncomment if pallet_assets implements measures to reduce their `Call`
@@ -114,17 +112,6 @@ fn test_bonded_coins_pool_max_length() {
 	let id = <Runtime as pallet_bonded_coins::Config>::PoolId::max_encoded_len();
 
 	assert_eq!(id + value, MAX_POOL_BYTE_LENGTH as usize)
-}
-
-#[test]
-fn dot_name_storage_sizes() {
-	let owner_size = Web3NameOf::<Runtime, DotNamesDeployment>::max_encoded_len();
-	let name_size = Web3OwnershipOf::<Runtime, DotNamesDeployment>::max_encoded_len();
-
-	assert_eq!(
-		owner_size + name_size,
-		runtime_common::constants::dot_names::MAX_NAME_BYTE_LENGTH as usize
-	)
 }
 
 #[test]

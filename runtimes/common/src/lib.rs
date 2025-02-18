@@ -51,8 +51,6 @@ pub mod constants;
 pub mod deposits;
 pub mod did;
 pub mod dip;
-pub mod dot_names;
-pub use dot_names::DotName;
 pub mod errors;
 pub mod fees;
 pub mod migrations;
