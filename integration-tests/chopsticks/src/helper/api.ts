@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ApiPromise } from '@polkadot/api'
+import type { ApiPromise } from '@polkadot/api'
+import type { AccountData } from '@polkadot/types/interfaces'
 
 export const xtokens = {
 	parachainV2: (paraId: number) => (acc: any) => ({
@@ -344,7 +345,7 @@ export const tx = {
  */
 export const query = {
 	balances: async ({ api }: { api: ApiPromise }, address: string) =>
-		((await api.query.system.account(address)) as any).data.free.toBigInt(),
+		(await api.query.system.account(address)).data.free.toBigInt(),
 	foreignAssets:
 		(assetId: any) =>
 		async ({ api }: { api: ApiPromise }, address: string) => {
@@ -366,5 +367,5 @@ export const query = {
 	tokens:
 		(token: any) =>
 		async ({ api }: { api: ApiPromise }, address: string) =>
-			((await api.query.tokens.accounts(address, token)) as any).free.toBigInt(),
+			(await api.query.tokens.accounts<AccountData>(address, token)).free.toBigInt(),
 }
