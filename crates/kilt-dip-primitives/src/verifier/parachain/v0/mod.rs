@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use did::KeyIdOf;
 use frame_system::pallet_prelude::{BlockNumberFor, HeaderFor};
@@ -174,7 +174,7 @@ impl<
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		// 1. Verify parachain state is finalized by relay chain and fresh.
-		if proof.provider_head_proof.proof.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into() {
+		if proof.provider_head_proof.proof.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into::<usize>() {
 			let inner_error = DipProofComponentTooLargeError::ParachainHeadProofTooManyLeaves;
 			log::info!(
 				target: LOG_TARGET,
@@ -190,7 +190,7 @@ impl<
 			.provider_head_proof
 			.proof
 			.iter()
-			.any(|l| l.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into())
+			.any(|l| l.len() > MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into::<usize>())
 		{
 			let inner_error = DipProofComponentTooLargeError::ParachainHeadProofLeafTooLarge;
 			log::info!(
@@ -218,7 +218,8 @@ impl<
 		);
 
 		// 2. Verify commitment is included in provider parachain state.
-		if proof_without_relaychain.dip_commitment_proof.0.len() > MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into()
+		if proof_without_relaychain.dip_commitment_proof.0.len()
+			> MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into::<usize>()
 		{
 			let inner_error = DipProofComponentTooLargeError::DipCommitmentProofTooManyLeaves;
 			log::info!(
@@ -235,7 +236,7 @@ impl<
 			.dip_commitment_proof
 			.0
 			.iter()
-			.any(|l| l.len() > MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into())
+			.any(|l| l.len() > MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into::<usize>())
 		{
 			let inner_error = DipProofComponentTooLargeError::DipCommitmentProofLeafTooLarge;
 			log::info!(
@@ -258,7 +259,8 @@ impl<
 		);
 
 		// 3. Verify DIP Merkle proof.
-		if proof_without_parachain.dip_proof.blinded.len() > MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into() {
+		if proof_without_parachain.dip_proof.blinded.len() > MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into::<usize>()
+		{
 			let inner_error = DipProofComponentTooLargeError::DipProofTooManyLeaves;
 			log::info!(
 				target: LOG_TARGET,
@@ -274,7 +276,7 @@ impl<
 			.dip_proof
 			.blinded
 			.iter()
-			.any(|l| l.len() > MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into())
+			.any(|l| l.len() > MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into::<usize>())
 		{
 			let inner_error = DipProofComponentTooLargeError::DipProofLeafTooLarge;
 			log::info!(

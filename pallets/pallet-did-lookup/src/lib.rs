@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 //! # DID lookup pallet
 //!
@@ -107,6 +107,9 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The origin that can associate accounts to itself.
+		type AssociateOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
+		/// The origin that can do other regular operations, except what
+		/// `AssociateOrigin` allows.
 		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 
 		/// The information that is returned by the origin check.
@@ -272,7 +275,7 @@ pub mod pallet {
 			req: AssociateAccountRequest,
 			expiration: BlockNumberFor<T>,
 		) -> DispatchResult {
-			let source = <T as Config<I>>::EnsureOrigin::ensure_origin(origin)?;
+			let source = <T as Config<I>>::AssociateOrigin::ensure_origin(origin)?;
 			let did_identifier = source.subject();
 			let sender = source.sender();
 
@@ -314,7 +317,7 @@ pub mod pallet {
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config<I>>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
-			let source = <T as Config<I>>::EnsureOrigin::ensure_origin(origin)?;
+			let source = <T as Config<I>>::AssociateOrigin::ensure_origin(origin)?;
 
 			ensure!(
 				<<T as Config<I>>::Currency as InspectHold<AccountIdOf<T>>>::can_hold(

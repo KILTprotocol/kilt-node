@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::ensure;
 use pallet_web3_names::{Config, Error};
@@ -55,7 +55,10 @@ impl<const MIN_LENGTH: u32, const MAX_LENGTH: u32> TryFrom<Vec<u8>> for Web3Name
 	type Error = Web3NameValidationError;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		ensure!(value.len() >= MIN_LENGTH.saturated_into(), Self::Error::TooShort);
+		ensure!(
+			value.len() >= MIN_LENGTH.saturated_into::<usize>(),
+			Self::Error::TooShort
+		);
 		let bounded_vec: BoundedVec<u8, ConstU32<MAX_LENGTH>> =
 			BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
 		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);

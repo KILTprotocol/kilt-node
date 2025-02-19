@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 //! The KILT runtime. This can be compiled with `#[no_std]`, ready for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -123,7 +123,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-kestrel"),
 	impl_name: create_runtime_str!("kilt-kestrel"),
 	authoring_version: 4,
-	spec_version: 11500,
+	spec_version: 11600,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 6,
@@ -423,6 +423,8 @@ impl did::Config for Runtime {
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
 	type WeightInfo = ();
 	type BalanceMigrationManager = ();
+	// This differs from the implementation of the other runtimes.
+	type DidLifecycleHooks = ();
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -434,6 +436,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = constants::did_lookup::DidLookupDeposit;
 
+	type AssociateOrigin = Self::EnsureOrigin;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type BalanceMigrationManager = ();
@@ -446,6 +449,7 @@ impl pallet_did_lookup::Config for Runtime {
 impl pallet_web3_names::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
+	type ClaimOrigin = Self::OwnerOrigin;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
@@ -795,6 +799,7 @@ pub type SignedExtra = (
 	frame_system::CheckNonce<Runtime>,
 	frame_system::CheckWeight<Runtime>,
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+	frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
@@ -1006,7 +1011,9 @@ impl_runtime_apis! {
 		LinkableAccountId,
 		Balance,
 		Hash,
-		BlockNumber
+		BlockNumber,
+		(),
+		()
 	> for Runtime {
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
@@ -1127,6 +1134,16 @@ impl_runtime_apis! {
 			>
 		>> {
 			dids.into_iter().map(Self::query).collect()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources(_did: DidIdentifier) -> Vec<()> {
+			[].into()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources_deletion_calls(_did: DidIdentifier) -> Vec<()> {
+			[].into()
 		}
 	}
 

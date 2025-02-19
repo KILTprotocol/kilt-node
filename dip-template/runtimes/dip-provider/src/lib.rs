@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 //! Runtime template of a Decentralized Identity Provider (DIP) provider, which
 //! includes, beyond system pallets, [`did::Pallet`],
@@ -401,6 +401,7 @@ impl did::Config for Runtime {
 	type BaseDeposit = ConstU128<UNIT>;
 	type Currency = Balances;
 	type DidIdentifier = DidIdentifier;
+	type DidLifecycleHooks = ();
 	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type Fee = ConstU128<MILLIUNIT>;
 	type FeeCollector = ();
@@ -425,6 +426,7 @@ impl did::Config for Runtime {
 }
 
 impl pallet_did_lookup::Config for Runtime {
+	type AssociateOrigin = Self::EnsureOrigin;
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
@@ -441,6 +443,7 @@ pub type Web3Name = runtime_common::Web3Name<3, 32>;
 impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
+	type ClaimOrigin = Self::OwnerOrigin;
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
 	type MaxNameLength = ConstU32<32>;
@@ -630,7 +633,9 @@ impl_runtime_apis! {
 		LinkableAccountId,
 		Balance,
 		Hash,
-		BlockNumber
+		BlockNumber,
+		(),
+		()
 	> for Runtime {
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
@@ -751,6 +756,16 @@ impl_runtime_apis! {
 			>
 		>> {
 			dids.into_iter().map(Self::query).collect()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources(_did: DidIdentifier) -> Vec<()> {
+			[].into()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources_deletion_calls(_did: DidIdentifier) -> Vec<()> {
+			[].into()
 		}
 	}
 

@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use did::{
 	DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult, DidRawOrigin,
@@ -24,7 +24,10 @@ use frame_system::EnsureRoot;
 use runtime_common::{constants, AccountId, DidIdentifier, SendDustAndFeesToTreasury};
 use sp_core::ConstBool;
 
-use crate::{weights, Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin};
+use crate::{
+	weights::{self},
+	Balances, Migration, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
+};
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
@@ -57,10 +60,8 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 			RuntimeCall::Did(did::Call::create { .. }) => Err(RelationshipDeriveError::NotCallableByDid),
 			RuntimeCall::Did { .. } => Ok(DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::Web3Names { .. } => Ok(DidVerificationKeyRelationship::Authentication),
-			RuntimeCall::DotNames { .. } => Ok(DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::PublicCredentials { .. } => Ok(DidVerificationKeyRelationship::AssertionMethod),
 			RuntimeCall::DidLookup { .. } => Ok(DidVerificationKeyRelationship::Authentication),
-			RuntimeCall::UniqueLinking { .. } => Ok(DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			RuntimeCall::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			RuntimeCall::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(&calls[..]),
@@ -76,6 +77,33 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
 		RuntimeCall::System(frame_system::Call::remark { remark: sp_std::vec![] })
+	}
+}
+
+pub struct DidLifecycleHooks;
+
+impl did::traits::DidLifecycleHooks<Runtime> for DidLifecycleHooks {
+	type DeletionHook = EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
+}
+
+pub struct EnsureNoNamesAndNoLinkedAccountsOnDidDeletion;
+
+impl did::traits::DidDeletionHook<Runtime> for EnsureNoNamesAndNoLinkedAccountsOnDidDeletion {
+	fn can_delete(did: &did::DidIdentifierOf<Runtime>) -> bool {
+		// 1. Check if there's a linked Web3name
+		if pallet_web3_names::Names::<Runtime>::contains_key(did) {
+			return false;
+		}
+
+		// 2. Check if there's a Web3name linked account
+		if pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(did)
+			.next()
+			.is_some()
+		{
+			return false;
+		}
+
+		true
 	}
 }
 
@@ -114,6 +142,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
+	type DidLifecycleHooks = DidLifecycleHooks;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -125,8 +154,9 @@ impl pallet_did_lookup::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = constants::did_lookup::DidLookupDeposit;
 
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	type AssociateOrigin = Self::EnsureOrigin;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 	type BalanceMigrationManager = Migration;
@@ -135,25 +165,12 @@ impl pallet_did_lookup::Config for Runtime {
 	type UniqueLinkingEnabled = ConstBool<false>;
 }
 
-pub(crate) type UniqueLinkingDeployment = pallet_did_lookup::Instance2;
-impl pallet_did_lookup::Config<UniqueLinkingDeployment> for Runtime {
-	type BalanceMigrationManager = ();
-	type Currency = Balances;
-	type Deposit = constants::did_lookup::DidLookupDeposit;
-	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type UniqueLinkingEnabled = ConstBool<true>;
-	type WeightInfo = weights::pallet_unique_linking::WeightInfo<Runtime>;
-}
-
 pub type Web3Name =
 	runtime_common::Web3Name<{ constants::web3_names::MIN_LENGTH }, { constants::web3_names::MAX_LENGTH }>;
 impl pallet_web3_names::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
+	type ClaimOrigin = Self::OwnerOrigin;
 	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
@@ -168,25 +185,4 @@ impl pallet_web3_names::Config for Runtime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = crate::benchmarks::web3_names::Web3NamesBenchmarkHelper;
-}
-
-pub type DotName = runtime_common::DotName<{ constants::dot_names::MIN_LENGTH }, { constants::dot_names::MAX_LENGTH }>;
-pub(crate) type DotNamesDeployment = pallet_web3_names::Instance2;
-impl pallet_web3_names::Config<DotNamesDeployment> for Runtime {
-	type BalanceMigrationManager = ();
-	type BanOrigin = EnsureRoot<AccountId>;
-	type Currency = Balances;
-	type Deposit = constants::dot_names::Web3NameDeposit;
-	type MaxNameLength = constants::dot_names::MaxNameLength;
-	type MinNameLength = constants::dot_names::MinNameLength;
-	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type Web3Name = DotName;
-	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = weights::pallet_dot_names::WeightInfo<Runtime>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = crate::benchmarks::web3_names::DotNamesBenchmarkHelper;
 }

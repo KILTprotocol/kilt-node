@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,38 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
-
-// The `RuntimeDebug` macro uses these internally.
-#![allow(clippy::ref_patterns)]
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::traits::Get;
 use pallet_deposit_storage::{
 	traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet,
 };
 use pallet_dip_provider::IdentityCommitmentVersion;
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
-use sp_core::{ConstU128, RuntimeDebug};
+use parity_scale_codec::Decode;
+use sp_core::ConstU128;
 
-use crate::{constants::dip_provider::COMMITMENT_DEPOSIT, AccountId, DidIdentifier};
+pub use crate::{
+	constants::dip_provider::COMMITMENT_DEPOSIT,
+	deposits::{DepositKey, DepositNamespace},
+	AccountId, DidIdentifier,
+};
 
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod tests;
-
-#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
-pub enum DepositNamespace {
-	DipProvider,
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-impl Default for DepositNamespace {
-	fn default() -> Self {
-		Self::DipProvider
-	}
-}
 
 /// The namespace to use in the [`pallet_deposit_storage::Pallet`] to store
 /// all deposits related to DIP commitments.
@@ -55,19 +43,6 @@ impl Get<DepositNamespace> for DipProviderDepositNamespace {
 	fn get() -> DepositNamespace {
 		DepositNamespace::DipProvider
 	}
-}
-
-/// The various different keys that can be stored in the storage-tracking
-/// pallet.
-/// Although the namespace is used to distinguish between keys, it is useful to
-/// group all keys under the same enum to calculate the maximum length that a
-/// key can take.
-#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
-pub enum DepositKey {
-	DipProvider {
-		identifier: DidIdentifier,
-		version: IdentityCommitmentVersion,
-	},
 }
 
 impl From<(DidIdentifier, AccountId, IdentityCommitmentVersion)> for DepositKey {
@@ -157,6 +132,8 @@ where
 		<Runtime as pallet_deposit_storage::Config>::Namespace,
 		sp_runtime::BoundedVec<u8, <Runtime as pallet_deposit_storage::Config>::MaxKeyLength>,
 	) {
+		use parity_scale_codec::Encode;
+
 		let submitter = AccountId::from([100u8; 32]);
 		let namespace = DepositNamespace::DipProvider;
 		let did_identifier = DidIdentifier::from([200u8; 32]);

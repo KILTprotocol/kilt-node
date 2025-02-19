@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 //! # Pallet storing unique nickname <-> DID links for user-friendly DID
 //! nicknames.
@@ -121,7 +121,10 @@ pub mod pallet {
 	pub trait Config<I: 'static = ()>: frame_system::Config {
 		/// The origin allowed to ban names.
 		type BanOrigin: EnsureOrigin<Self::RuntimeOrigin>;
-		/// The origin allowed to perform regular operations.
+		/// The origin allowed to claim a web3name.
+		type ClaimOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
+		/// The origin allowed to perform all regular operations, except
+		/// claiming a name, which is authorized by `ClaimOrigin`.
 		type OwnerOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		/// The type of origin after a successful origin check.
 		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self, I>>;
@@ -244,7 +247,7 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		#[pallet::weight(<T as Config<I>>::WeightInfo::claim(name.len().saturated_into()))]
 		pub fn claim(origin: OriginFor<T>, name: Web3NameInput<T, I>) -> DispatchResult {
-			let runtime_origin = T::OwnerOrigin::ensure_origin(origin)?;
+			let runtime_origin = T::ClaimOrigin::ensure_origin(origin)?;
 			let payer = runtime_origin.sender();
 			let owner = runtime_origin.subject();
 

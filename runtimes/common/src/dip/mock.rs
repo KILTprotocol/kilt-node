@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use did::{
 	did_details::{DidDetails, DidEncryptionKey, DidVerificationKey},
@@ -121,6 +121,7 @@ impl did::Config for TestRuntime {
 	type BaseDeposit = ConstU128<KILT>;
 	type Currency = Balances;
 	type DidIdentifier = DidIdentifier;
+	type DidLifecycleHooks = ();
 	type EnsureOrigin = EnsureSigned<AccountId>;
 	type Fee = ConstU128<KILT>;
 	type FeeCollector = ();
@@ -147,6 +148,7 @@ impl did::Config for TestRuntime {
 impl pallet_web3_names::Config for TestRuntime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
+	type ClaimOrigin = EnsureSigned<AccountId>;
 	type Currency = Balances;
 	type Deposit = ConstU128<KILT>;
 	type MaxNameLength = MaxNameLength;
@@ -164,6 +166,7 @@ impl pallet_web3_names::Config for TestRuntime {
 }
 
 impl pallet_did_lookup::Config for TestRuntime {
+	type AssociateOrigin = EnsureSigned<AccountId>;
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = ConstU128<KILT>;

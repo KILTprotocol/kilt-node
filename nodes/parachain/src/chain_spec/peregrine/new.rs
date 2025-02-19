@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,11 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 //! KILT chain specification
 
-use peregrine_runtime::{ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, WASM_BINARY};
+use kilt_support::traits::InspectMetadata;
+use peregrine_runtime::{
+	MetadataProvider, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SS_58_PREFIX, WASM_BINARY,
+};
 use sc_service::ChainType;
 use serde_json::to_value;
 
@@ -31,6 +34,8 @@ use crate::chain_spec::{
 pub(crate) fn generate_chain_spec() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("WASM binary not available");
 	let genesis_config = to_value(generate_genesis_state()).expect("Creating genesis state failed");
+	let currency_symbol = String::from_utf8(MetadataProvider::symbol()).expect("Creating currency symbol failed");
+	let denomination = MetadataProvider::decimals();
 
 	ChainSpec::builder(
 		wasm_binary,
@@ -42,7 +47,11 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 	.with_name("KILT Peregrine New (change title)")
 	.with_id("kilt_peregrine_new")
 	.with_chain_type(ChainType::Live)
-	.with_properties(get_properties("PILT", 15, 38))
+	.with_properties(get_properties(
+		&currency_symbol,
+		denomination.into(),
+		SS_58_PREFIX.into(),
+	))
 	.with_genesis_config(genesis_config)
 	.build()
 }

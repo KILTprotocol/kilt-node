@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,14 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use substrate_wasm_builder::WasmBuilder;
 
 fn main() {
-	WasmBuilder::new()
+	let builder = WasmBuilder::new()
 		.with_current_project()
 		.export_heap_base()
-		.import_memory()
-		.build()
+		.import_memory();
+
+	#[cfg(feature = "metadata-hash")]
+	// TODO: Can we re-use some consts?
+	let builder = builder.enable_metadata_hash("DILT", 15);
+
+	builder.build()
 }
