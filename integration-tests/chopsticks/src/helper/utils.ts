@@ -7,6 +7,7 @@ import type { SubmittableExtrinsic } from '@polkadot/api/types'
 import type { KeyringPair } from '@polkadot/keyring/types'
 import type { Codec } from '@polkadot/types/types'
 import type { ExpectStatic } from 'vitest'
+import { EventRecord } from '@polkadot/types/interfaces'
 
 /**
  * Keyring instance to generate key pairs with 38 ss58Format encoding.
@@ -80,9 +81,10 @@ export function validateBalanceWithPrecision(
 /**
  * Fetches the paid fees for the executed XCM message. Is only working on the sender chain.
  */
-export async function getPaidXcmFees(api: ApiPromise, events: Codec[]): Promise<bigint> {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const polkadotFees = events.find((event) => api.events.polkadotXcm.FeesPaid.is((event as any).event))
+export async function getPaidXcmFees(api: ApiPromise, eventRecords: Codec[]): Promise<bigint> {
+	const polkadotFees = eventRecords.find((eventRecord) =>
+		api.events.polkadotXcm.FeesPaid.is((eventRecord as EventRecord).event)
+	)
 	if (!polkadotFees) {
 		throw new Error('FeesPaid event not found')
 	}
