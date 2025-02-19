@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 use cumulus_pallet_aura_ext::FixedVelocityConsensusHook;
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
