@@ -1,5 +1,6 @@
 import { describe, beforeEach, it, afterEach } from 'vitest'
 import type { KeyringPair } from '@polkadot/keyring/types'
+import type { DispatchError } from '@polkadot/types/interfaces'
 
 import { createBlock } from '../../../../network/utils.js'
 import { testCases } from './config.js'
@@ -25,15 +26,13 @@ describe.each(testCases)('Switch KILTs while paused', ({ account, txContext, con
 
 	it(desc, async ({ expect }) => {
 		const { balanceToTransfer, tx } = txContext
-		let error
+		let error: DispatchError | undefined
 
 		// This should fail.
 		await tx(senderContext, hexAddress(senderAccount.address), balanceToTransfer.toString()).signAndSend(
 			senderAccount,
 			({ dispatchError }) => {
-				if (dispatchError) {
-					error = dispatchError
-				}
+				error = dispatchError
 			}
 		)
 
@@ -43,6 +42,6 @@ describe.each(testCases)('Switch KILTs while paused', ({ account, txContext, con
 			throw new Error('Expected SwitchPairNotEnabled error')
 		}
 
-		expect(senderContext.api.errors.assetSwitchPool1.SwitchPairNotEnabled.is(error))
+		expect(senderContext.api.errors.assetSwitchPool1.SwitchPairNotEnabled.is(error.asModule)).toBe(true)
 	})
 })
