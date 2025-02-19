@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 //! Library to parse the raw byte vectors into supported Asset DIDs, according
 //! to the spec.

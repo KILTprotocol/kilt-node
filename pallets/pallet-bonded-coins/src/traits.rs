@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 use frame_support::{dispatch::DispatchResult, traits::fungibles::roles::Inspect};
 use frame_system::RawOrigin;
 use pallet_assets::{Config as AssetConfig, Pallet as AssetsPallet};

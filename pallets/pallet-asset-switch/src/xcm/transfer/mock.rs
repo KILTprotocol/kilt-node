@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 use frame_support::{construct_runtime, parameter_types, traits::Everything};
 use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
