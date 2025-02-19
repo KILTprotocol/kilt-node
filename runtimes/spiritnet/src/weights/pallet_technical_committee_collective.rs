@@ -39,6 +39,7 @@
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_imports)]
 #![allow(clippy::as_conversions)]
+#![allow(clippy::decimal_literal_representation)]
 
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
