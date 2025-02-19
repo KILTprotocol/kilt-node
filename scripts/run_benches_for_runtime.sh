@@ -50,9 +50,7 @@ pallets=(
 	pallet-technical-committee-collective
 	# `pallet-did-lookup` instances
 	pallet-did-lookup
-	pallet-unique-linking
 	# `pallet-web3-names` instances
-	pallet-dot-names
 	pallet-web3-names
 )
 
