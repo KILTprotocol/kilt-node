@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 use frame_support::{assert_err, assert_ok};
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use sp_runtime::traits::BadOrigin;

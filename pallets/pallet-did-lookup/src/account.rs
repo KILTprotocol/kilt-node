@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 // This code originally came from the purestake/moonbeam repo.
 // see https://github.com/PureStake/moonbeam/blob/74324db0cfacaad555064c839f17072b57cb35e3/primitives/account/src/lib.rs for reference.

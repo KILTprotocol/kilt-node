@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 use frame_support::{parameter_types, traits::AsEnsureOriginWithArg};
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
@@ -45,8 +45,7 @@ use crate::{
 
 pub(crate) mod credential;
 pub(crate) mod did;
-pub(crate) use did::UniqueLinkingDeployment;
-pub use did::{DotName, Web3Name};
+pub use did::Web3Name;
 pub(crate) mod dip;
 pub use dip::{DipProofError, DipProofRequest};
 

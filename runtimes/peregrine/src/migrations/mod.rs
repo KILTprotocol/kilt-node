@@ -14,25 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 use frame_support::parameter_types;
-use runtime_common::{constants, migrations::BumpStorageVersion};
+use runtime_common::constants;
 
-use crate::{
-	weights::{self, rocksdb_weights::constants::RocksDbWeight},
-	Balances, DotNames, Runtime, RuntimeEvent, UniqueLinking,
-};
+use crate::{weights, Balances, Runtime, RuntimeEvent};
 
 parameter_types! {
 	pub const DmpPalletName: &'static str = "DmpQueue";
+	pub const DotNames: &'static str = "DotNames";
+	pub const UniqueLinking: &'static str = "UniqueLinking";
 }
 
 pub type RuntimeMigrations = (
 	pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>,
-	BumpStorageVersion<DotNames, RocksDbWeight>,
-	BumpStorageVersion<UniqueLinking, RocksDbWeight>,
+	frame_support::migrations::RemovePallet<DotNames, <Runtime as frame_system::Config>::DbWeight>,
+	frame_support::migrations::RemovePallet<UniqueLinking, <Runtime as frame_system::Config>::DbWeight>,
 );
 
 impl pallet_migration::Config for Runtime {
