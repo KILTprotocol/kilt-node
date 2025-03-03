@@ -396,10 +396,28 @@ pub mod pallet {
 			} = currencies_settings;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
-			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
+			let checked_curve: Curve<CurveParameterTypeOf<T>> =
+				curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
 
 			let currency_length = currencies.len();
 			ensure!(!currency_length.is_zero(), Error::<T>::ZeroBondedCurrency);
+
+			// maximum bonded currency balance scaled down by the denomination
+			let max_supply_scaled = balance_to_fixed(
+				U256::MAX.saturated_into::<FungiblesBalanceOf<T>>(),
+				denomination,
+				Round::Up,
+			)
+			.map_err(|_| Error::<T>::InvalidInput)?;
+			// do a dry-run mint to maximum bonded currency balance to make sure we don't
+			// encounter overflow with the chosen curve parameters
+			checked_curve
+				.calculate_costs(
+					CurveParameterTypeOf::<T>::from_num(0),
+					max_supply_scaled,
+					vec![max_supply_scaled; currency_length],
+				)
+				.map_err(|_| Error::<T>::InvalidInput)?;
 
 			let currency_ids = T::NextAssetIds::try_get(currency_length.saturated_into())
 				.map_err(|e| e.into())
