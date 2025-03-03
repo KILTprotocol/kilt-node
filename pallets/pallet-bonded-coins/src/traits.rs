@@ -87,14 +87,24 @@ where
 {
 	fn reset_team(
 		id: Self::AssetId,
-		_owner: AccountIdOf<T>,
+		owner: AccountIdOf<T>,
 		admin: AccountIdOf<T>,
 		issuer: AccountIdOf<T>,
 		freezer: AccountIdOf<T>,
 	) -> DispatchResult {
-		let owner = AssetsPallet::<T, I>::owner(id.clone()).ok_or(DispatchError::Unavailable)?;
-		let origin = RawOrigin::Signed(owner);
-		AssetsPallet::<T, I>::set_team(origin.into(), id.into(), issuer.into(), admin.into(), freezer.into())
+		let current_owner = AssetsPallet::<T, I>::owner(id.clone()).ok_or(DispatchError::Unavailable)?;
+		AssetsPallet::<T, I>::transfer_ownership(
+			RawOrigin::Signed(current_owner).into(),
+			id.clone().into(),
+			owner.clone().into(),
+		)?;
+		AssetsPallet::<T, I>::set_team(
+			RawOrigin::Signed(owner).into(),
+			id.into(),
+			issuer.into(),
+			admin.into(),
+			freezer.into(),
+		)
 	}
 }
 
