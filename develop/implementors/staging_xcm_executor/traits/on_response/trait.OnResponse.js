@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"kilt_support":[["impl&lt;A, B&gt; OnResponse for <a class=\"struct\" href=\"kilt_support/xcm/struct.EitherOr.html\" title=\"struct kilt_support::xcm::EitherOr\">EitherOr</a>&lt;A, B&gt;<span class=\"where fmt-newline\">where\n    A: OnResponse,\n    B: OnResponse,</span>"]],
+"pallet_asset_switch":[["impl&lt;T: <a class=\"trait\" href=\"pallet_asset_switch/pallet/trait.Config.html\" title=\"trait pallet_asset_switch::pallet::Config\">Config</a>&lt;I&gt;, I: 'static&gt; OnResponse for <a class=\"struct\" href=\"pallet_asset_switch/pallet/struct.Pallet.html\" title=\"struct pallet_asset_switch::pallet::Pallet\">Pallet</a>&lt;T, I&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

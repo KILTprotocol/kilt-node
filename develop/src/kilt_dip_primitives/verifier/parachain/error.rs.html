@@ -79,8 +79,15 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -95,7 +102,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span><span class="kw">crate</span>::Error;
 
@@ -113,7 +120,9 @@
 <span class="kw">where
 	</span>DidOriginError: Into&lt;u8&gt;,
 {
-	<span class="kw">fn </span>from(value: DipParachainStateProofVerifierError&lt;DidOriginError&gt;) -&gt; <span class="self">Self </span>{
+	<span class="attr">#[allow(clippy::as_conversions)]
+	#[allow(clippy::arithmetic_side_effects)]
+	</span><span class="kw">fn </span>from(value: DipParachainStateProofVerifierError&lt;DidOriginError&gt;) -&gt; <span class="self">Self </span>{
 		<span class="kw">match </span>value {
 			<span class="comment">// DO NOT USE 0
 			// Errors of different sub-parts are separated by a `u8::MAX`.
@@ -132,32 +141,37 @@
 	}
 }
 
-<span class="attr">#[test]
-</span><span class="kw">fn </span>dip_parachain_state_proof_verifier_error_value_never_zero() {
-	<span class="macro">assert!</span>(
-		enum_iterator::all::&lt;DipParachainStateProofVerifierError&lt;u8&gt;&gt;().all(|e| u16::from(e) != <span class="number">0</span>),
-		<span class="string">&quot;One of the u8 values for the error is 0, which is not allowed.&quot;
-	</span>);
-}
+<span class="attr">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+	<span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="attr">#[test]
-</span><span class="kw">fn </span>dip_parachain_state_proof_verifier_error_value_not_duplicated() {
-	enum_iterator::all::&lt;DipParachainStateProofVerifierError&lt;u8&gt;&gt;().fold(
-		sp_std::collections::btree_set::BTreeSet::&lt;u16&gt;::new(),
-		|<span class="kw-2">mut </span>values, new_value| {
-			<span class="kw">let </span>new_encoded_value = u16::from(new_value);
-			<span class="comment">// DidOriginError is generic, and we cannot test its constraints in this unit
-			// test, so we skip it.
-			</span><span class="kw">if </span>new_encoded_value == u8::MAX <span class="kw">as </span>u16 * <span class="number">3 </span>{
-				<span class="kw">return </span>values;
-			}
-			<span class="macro">assert!</span>(
-				values.insert(new_encoded_value),
-				<span class="string">&quot;Failed to add unique value {:#?} for error variant&quot;</span>,
-				new_encoded_value
-			);
-			values
-		},
-	);
+	<span class="attr">#[test]
+	</span><span class="kw">fn </span>dip_parachain_state_proof_verifier_error_value_never_zero() {
+		<span class="macro">assert!</span>(
+			enum_iterator::all::&lt;DipParachainStateProofVerifierError&lt;u8&gt;&gt;().all(|e| u16::from(e) != <span class="number">0</span>),
+			<span class="string">&quot;One of the u8 values for the error is 0, which is not allowed.&quot;
+		</span>);
+	}
+
+	<span class="attr">#[test]
+	</span><span class="kw">fn </span>dip_parachain_state_proof_verifier_error_value_not_duplicated() {
+		enum_iterator::all::&lt;DipParachainStateProofVerifierError&lt;u8&gt;&gt;().fold(
+			sp_std::collections::btree_set::BTreeSet::&lt;u16&gt;::new(),
+			|<span class="kw-2">mut </span>values, new_value| {
+				<span class="kw">let </span>new_encoded_value = u16::from(new_value);
+				<span class="comment">// DidOriginError is generic, and we cannot test its constraints in this unit
+				// test, so we skip it.
+				</span><span class="kw">if </span>new_encoded_value == u8::MAX <span class="kw">as </span>u16 * <span class="number">3 </span>{
+					<span class="kw">return </span>values;
+				}
+				<span class="macro">assert!</span>(
+					values.insert(new_encoded_value),
+					<span class="string">&quot;Failed to add unique value {:#?} for error variant&quot;</span>,
+					new_encoded_value
+				);
+				values
+			},
+		);
+	}
 }
 </code></pre></div></section></main></body></html>

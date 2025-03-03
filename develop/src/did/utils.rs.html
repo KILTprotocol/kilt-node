@@ -146,8 +146,13 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -162,7 +167,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>fluent_uri::Uri;
 <span class="kw">use </span>parity_scale_codec::Encode;
@@ -200,9 +205,13 @@
 	Uri::parse(<span class="kw-2">&amp;</span>full_test_uri).is_ok()
 }
 
-<span class="attr">#[test]
-</span><span class="kw">fn </span>check_is_valid_ascii_string() {
-	<span class="kw">let </span>test_cases = [
+<span class="attr">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+	<span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+	<span class="attr">#[test]
+	</span><span class="kw">fn </span>check_is_valid_ascii_string() {
+		<span class="kw">let </span>test_cases = [
 		(<span class="string">&quot;kilt.io&quot;</span>, <span class="bool-val">true</span>),
 		(<span class="string">&quot;super.long.domain.com:12345/path/to/directory#fragment?arg=value&quot;</span>, <span class="bool-val">true</span>),
 		(<span class="string">&quot;super.long.domain.com:12345/path/to/directory/file.txt&quot;</span>, <span class="bool-val">true</span>),
@@ -217,19 +226,19 @@
 		(<span class="string">&quot;https://gist.githubusercontent.com/lukeg90/50c384ce10e3ec10e4d6a257fae8850d/raw/0ec6f2adb26b002b299825568685d3b1fa360b18/v2.json&quot;</span>, <span class="bool-val">true</span>),
 	];
 
-	test_cases.iter().for_each(|(input, expected_result)| {
-		<span class="macro">assert_eq!</span>(
-			is_valid_ascii_string(input),
-			<span class="kw-2">*</span>expected_result,
-			<span class="string">&quot;Test case for \&quot;{}\&quot; returned wrong result.&quot;</span>,
-			input
-		);
-	});
-}
+		test_cases.iter().for_each(|(input, expected_result)| {
+			<span class="macro">assert_eq!</span>(
+				is_valid_ascii_string(input),
+				<span class="kw-2">*</span>expected_result,
+				<span class="string">&quot;Test case for \&quot;{}\&quot; returned wrong result.&quot;</span>,
+				input
+			);
+		});
+	}
 
-<span class="attr">#[test]
-</span><span class="kw">fn </span>check_is_valid_uri() {
-	<span class="kw">let </span>test_cases = [
+	<span class="attr">#[test]
+	</span><span class="kw">fn </span>check_is_valid_uri() {
+		<span class="kw">let </span>test_cases = [
 		(<span class="string">&quot;kilt.io&quot;</span>, <span class="bool-val">true</span>),
 		(<span class="string">&quot;super.long.domain.com:12345/path/to/directory#fragment?arg=value&quot;</span>, <span class="bool-val">true</span>),
 		(<span class="string">&quot;super.long.domain.com:12345/path/to/directory/file.txt&quot;</span>, <span class="bool-val">true</span>),
@@ -249,19 +258,19 @@
 		(<span class="string">&quot;https://gist.githubusercontent.com/lukeg90/50c384ce10e3ec10e4d6a257fae8850d/raw/0ec6f2adb26b002b299825568685d3b1fa360b18/v2.json&quot;</span>, <span class="bool-val">true</span>),
 	];
 
-	test_cases.iter().for_each(|(input, expected_result)| {
-		<span class="macro">assert_eq!</span>(
-			is_valid_uri(input),
-			<span class="kw-2">*</span>expected_result,
-			<span class="string">&quot;Test case for \&quot;{}\&quot; returned wrong result.&quot;</span>,
-			input
-		);
-	});
-}
+		test_cases.iter().for_each(|(input, expected_result)| {
+			<span class="macro">assert_eq!</span>(
+				is_valid_uri(input),
+				<span class="kw-2">*</span>expected_result,
+				<span class="string">&quot;Test case for \&quot;{}\&quot; returned wrong result.&quot;</span>,
+				input
+			);
+		});
+	}
 
-<span class="attr">#[test]
-</span><span class="kw">fn </span>check_is_valid_uri_fragment_string() {
-	<span class="kw">let </span>test_cases = [
+	<span class="attr">#[test]
+	</span><span class="kw">fn </span>check_is_valid_uri_fragment_string() {
+		<span class="kw">let </span>test_cases = [
 		(<span class="string">&quot;kilt.io&quot;</span>, <span class="bool-val">true</span>),
 		<span class="comment">// Will fail because a fragment cannot have a &#39;#&#39; inside it.
 		</span>(
@@ -285,13 +294,14 @@
 		(<span class="string">&quot;https://gist.githubusercontent.com/lukeg90/50c384ce10e3ec10e4d6a257fae8850d/raw/0ec6f2adb26b002b299825568685d3b1fa360b18/v2.json&quot;</span>, <span class="bool-val">true</span>),
 	];
 
-	test_cases.iter().for_each(|(input, expected_result)| {
-		<span class="macro">assert_eq!</span>(
-			is_valid_uri_fragment(input),
-			<span class="kw-2">*</span>expected_result,
-			<span class="string">&quot;Test case for \&quot;{}\&quot; returned wrong result.&quot;</span>,
-			input
-		);
-	});
+		test_cases.iter().for_each(|(input, expected_result)| {
+			<span class="macro">assert_eq!</span>(
+				is_valid_uri_fragment(input),
+				<span class="kw-2">*</span>expected_result,
+				<span class="string">&quot;Test case for \&quot;{}\&quot; returned wrong result.&quot;</span>,
+				input
+			);
+		});
+	}
 }
 </code></pre></div></section></main></body></html>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["hooks","runtime_api"],"struct":["NativeAndForeignAssets","TargetFromLeft"],"type":["AssetId","FixedPoint","FixedPointInput","FixedPointUnderlyingType"]};

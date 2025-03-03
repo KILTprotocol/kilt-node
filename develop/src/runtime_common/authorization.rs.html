@@ -156,8 +156,8 @@
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -172,7 +172,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 </span><span class="kw">use </span>parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 <span class="kw">use </span>scale_info::TypeInfo;
 <span class="kw">use </span>sp_runtime::DispatchError;
@@ -208,8 +208,8 @@
 		claim: <span class="kw-2">&amp;</span>ClaimHash,
 		auth_id: <span class="kw-2">&amp;</span>AuthorizationId&lt;DelegationId&gt;,
 	) -&gt; <span class="prelude-ty">Result</span>&lt;Weight, DispatchError&gt; {
-		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (<span class="self">self</span>, auth_id);
-		ac.can_revoke(who, ctype, claim, auth_id)
+		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (<span class="self">self</span>, auth_id);
+		ac.can_revoke(who, ctype, claim, delegation_id)
 	}
 
 	<span class="kw">fn </span>can_remove(
@@ -219,8 +219,8 @@
 		claim: <span class="kw-2">&amp;</span>ClaimHash,
 		auth_id: <span class="kw-2">&amp;</span>AuthorizationId&lt;DelegationId&gt;,
 	) -&gt; <span class="prelude-ty">Result</span>&lt;Weight, DispatchError&gt; {
-		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (<span class="self">self</span>, auth_id);
-		ac.can_remove(who, ctype, claim, auth_id)
+		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (<span class="self">self</span>, auth_id);
+		ac.can_remove(who, ctype, claim, delegation_id)
 	}
 
 	<span class="kw">fn </span>authorization_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AuthorizationId&lt;DelegationId&gt; {
@@ -265,8 +265,8 @@
 		credential_id: <span class="kw-2">&amp;</span>CredentialId,
 		auth_id: <span class="kw-2">&amp;</span>AuthorizationId&lt;DelegationId&gt;,
 	) -&gt; <span class="prelude-ty">Result</span>&lt;Weight, DispatchError&gt; {
-		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (<span class="self">self</span>, auth_id);
-		ac.can_revoke(who, ctype, credential_id, auth_id)
+		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (<span class="self">self</span>, auth_id);
+		ac.can_revoke(who, ctype, credential_id, delegation_id)
 	}
 
 	<span class="kw">fn </span>can_unrevoke(
@@ -276,8 +276,8 @@
 		credential_id: <span class="kw-2">&amp;</span>CredentialId,
 		auth_id: <span class="kw-2">&amp;</span>AuthorizationId&lt;DelegationId&gt;,
 	) -&gt; <span class="prelude-ty">Result</span>&lt;Weight, DispatchError&gt; {
-		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (<span class="self">self</span>, auth_id);
-		ac.can_unrevoke(who, ctype, credential_id, auth_id)
+		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (<span class="self">self</span>, auth_id);
+		ac.can_unrevoke(who, ctype, credential_id, delegation_id)
 	}
 
 	<span class="kw">fn </span>can_remove(
@@ -287,8 +287,8 @@
 		credential_id: <span class="kw-2">&amp;</span>CredentialId,
 		auth_id: <span class="kw-2">&amp;</span>AuthorizationId&lt;DelegationId&gt;,
 	) -&gt; <span class="prelude-ty">Result</span>&lt;Weight, DispatchError&gt; {
-		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (<span class="self">self</span>, auth_id);
-		ac.can_remove(who, ctype, credential_id, auth_id)
+		<span class="kw">let </span>(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (<span class="self">self</span>, auth_id);
+		ac.can_remove(who, ctype, credential_id, delegation_id)
 	}
 
 	<span class="kw">fn </span>authorization_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AuthorizationId&lt;DelegationId&gt; {

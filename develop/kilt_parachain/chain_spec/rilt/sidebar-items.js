@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["SAFE_XCM_VERSION"],"fn":["load_chain_spec"],"mod":["new"],"type":["ChainSpec"]};
+window.SIDEBAR_ITEMS = {"constant":["SAFE_XCM_VERSION"],"mod":["new"],"type":["ChainSpec"]};

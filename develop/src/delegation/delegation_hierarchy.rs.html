@@ -157,8 +157,9 @@
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#160" id="160">160</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -173,7 +174,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>bitflags::bitflags;
 <span class="kw">use </span>frame_support::{storage::bounded_btree_set::BoundedBTreeSet, traits::Get};
@@ -196,7 +197,8 @@
 
 <span class="kw">impl </span>Permissions {
 	<span class="doccomment">/// Encode permission bitflags into u8 array.
-	</span><span class="kw">pub fn </span>as_u8(<span class="self">self</span>) -&gt; [u8; <span class="number">4</span>] {
+	</span><span class="attr">#[allow(clippy::as_conversions)]
+	</span><span class="kw">pub const fn </span>as_u8(<span class="self">self</span>) -&gt; [u8; <span class="number">4</span>] {
 		<span class="kw">let </span>x: u32 = <span class="self">self</span>.bits;
 		<span class="kw">let </span>b1: u8 = ((x &gt;&gt; <span class="number">24</span>) &amp; <span class="number">0xff</span>) <span class="kw">as </span>u8;
 		<span class="kw">let </span>b2: u8 = ((x &gt;&gt; <span class="number">16</span>) &amp; <span class="number">0xff</span>) <span class="kw">as </span>u8;
@@ -300,7 +302,7 @@
 	///
 	/// The default revocation status is false and all permissions are granted
 	/// by default.
-	</span><span class="kw">pub fn </span>default_with_owner(owner: DelegatorId) -&gt; <span class="self">Self </span>{
+	</span><span class="kw">pub const fn </span>default_with_owner(owner: DelegatorId) -&gt; <span class="self">Self </span>{
 		<span class="self">Self </span>{
 			owner,
 			permissions: Permissions::all(),

@@ -151,8 +151,8 @@
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
 <a href="#153" id="153">153</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -167,7 +167,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{
 	pallet_prelude::DispatchResult,
@@ -194,7 +194,7 @@
 </span><span class="kw">pub mod </span>test {
 	<span class="kw">use </span>ctype::mock::get_ctype_hash;
 	<span class="kw">use </span>frame_support::{
-		assert_noop,
+		assert_noop, assert_ok,
 		traits::{fungible::InspectHold, ReservableCurrency},
 	};
 	<span class="kw">use </span>sp_runtime::traits::Zero;
@@ -272,7 +272,7 @@
 					attestation_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				<span class="macro">assert!</span>(update_balance_for_attestation::&lt;Test&gt;(<span class="kw-2">&amp;</span>claim_hash).is_ok());
+				<span class="macro">assert_ok!</span>(update_balance_for_attestation::&lt;Test&gt;(<span class="kw-2">&amp;</span>claim_hash));
 
 				<span class="kw">let </span>attestation_post_migration = Attestations::&lt;Test&gt;::get(claim_hash);
 

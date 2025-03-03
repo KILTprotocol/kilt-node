@@ -64,8 +64,8 @@
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{
 	pallet_prelude::DispatchResult,
@@ -115,7 +115,7 @@
 }
 
 <span class="attr">#[cfg(any(feature = <span class="string">&quot;mock&quot;</span>, feature = <span class="string">&quot;runtime-benchmarks&quot;</span>))]
-</span><span class="kw">pub fn </span>translate_holds_to_reserve&lt;T: Config&gt;(hold_id: T::RuntimeHoldReason)
+</span><span class="kw">pub fn </span>translate_holds_to_reserve&lt;T&gt;(hold_id: T::RuntimeHoldReason)
 <span class="kw">where
 	</span>T: Config,
 {

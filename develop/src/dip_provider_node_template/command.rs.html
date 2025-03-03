@@ -393,12 +393,8 @@
 <a href="#393" id="393">393</a>
 <a href="#394" id="394">394</a>
 <a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -413,9 +409,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
-</span><span class="kw">use </span>std::{fs::create_dir_all, net::SocketAddr};
+</span><span class="kw">use </span>std::{fs::create_dir_all, iter::once, net::SocketAddr};
 
 <span class="kw">use </span>cumulus_primitives_core::ParaId;
 <span class="kw">use </span>dip_provider_runtime_template::Block;
@@ -516,7 +512,7 @@
 	</span>}
 
 	<span class="kw">fn </span>load_spec(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>str) -&gt; std::result::Result&lt;Box&lt;<span class="kw">dyn </span>ChainSpec&gt;, String&gt; {
-		polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
+		polkadot_cli::Cli::from_iter(once(<span class="kw-2">&amp;</span>RelayChainCli::executable_name())).load_spec(id)
 	}
 }
 
@@ -566,9 +562,7 @@
 			runner.sync_run(|config| {
 				<span class="kw">let </span>polkadot_cli = RelayChainCli::new(
 					<span class="kw-2">&amp;</span>config,
-					[RelayChainCli::executable_name()]
-						.iter()
-						.chain(cli.relay_chain_args.iter()),
+					once(<span class="kw-2">&amp;</span>RelayChainCli::executable_name()).chain(cli.relay_chain_args.iter()),
 				);
 
 				<span class="kw">let </span>polkadot_config =
@@ -619,7 +613,7 @@
 					<span class="kw">let </span>partials = new_partial(<span class="kw-2">&amp;</span>config)<span class="question-mark">?</span>;
 					<span class="kw">let </span>db = partials.backend.expose_db();
 					<span class="kw">let </span>storage = partials.backend.expose_storage();
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, std::sync::Arc::clone(<span class="kw-2">&amp;</span>partials.client), db, storage)
 				}),
 				BenchmarkCmd::Machine(cmd) =&gt; {
 					runner.sync_run(|config| cmd.run(<span class="kw-2">&amp;</span>config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
@@ -646,9 +640,7 @@
 
 				<span class="kw">let </span>polkadot_cli = RelayChainCli::new(
 					<span class="kw-2">&amp;</span>config,
-					[RelayChainCli::executable_name()]
-						.iter()
-						.chain(cli.relay_chain_args.iter()),
+					once(<span class="kw-2">&amp;</span>RelayChainCli::executable_name()).chain(cli.relay_chain_args.iter()),
 				);
 
 				<span class="kw">let </span>id = ParaId::from(para_id);

@@ -319,8 +319,9 @@
 <a href="#319" id="319">319</a>
 <a href="#320" id="320">320</a>
 <a href="#321" id="321">321</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#322" id="322">322</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -335,7 +336,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_benchmarking::v2::instance_benchmarks;
 <span class="kw">use </span>xcm::{VersionedAsset, VersionedAssetId, VersionedInteriorLocation, VersionedLocation};
@@ -395,12 +396,12 @@
 			parents: <span class="number">1</span>,
 			interior: Junctions::X1([Junction::Parachain(<span class="number">1_000</span>)].into()),
 		};
-		<span class="kw">let </span>default_remote_asset_id: AssetId = AssetId(default_reserve_location.clone());
+		<span class="kw">let </span>default_remote_asset_id = AssetId(default_reserve_location.clone());
 		<span class="kw">let </span>default_remote_xcm_fee: Asset = Asset {
 			id: default_remote_asset_id.clone(),
 			fun: Fungibility::Fungible(<span class="number">100_000</span>),
 		};
-		<span class="kw">let </span>default_beneficiary: Junctions = Junctions::X1(
+		<span class="kw">let </span>default_beneficiary = Junctions::X1(
 			[Junction::AccountId32 {
 				network: <span class="prelude-val">None</span>,
 				id: [<span class="number">0</span>; <span class="number">32</span>],
@@ -594,9 +595,9 @@
 		<span class="kw">let </span>account_id = &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::SubmitterOrigin::ensure_origin(origin.clone()).unwrap();
 		<span class="kw">let </span>pool_account = Pallet::&lt;T, I&gt;::pool_account_id_for_remote_asset(<span class="kw-2">&amp;</span>remote_asset_id).unwrap();
 		<span class="kw">let </span>minimum_balance = &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::LocalCurrency::minimum_balance();
-		<span class="comment">// Set submitter balance to ED + 1_000 and pool balance to ED
+		<span class="comment">// Set submitter balance to 2 * ED and pool balance to ED
 		</span>{
-			&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::LocalCurrency::set_balance(<span class="kw-2">&amp;</span>account_id, minimum_balance + <span class="number">1_000u32</span>.into());
+			&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::LocalCurrency::set_balance(<span class="kw-2">&amp;</span>account_id, minimum_balance + minimum_balance);
 			&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::LocalCurrency::set_balance(<span class="kw-2">&amp;</span>pool_account, minimum_balance);
 		}
 		<span class="comment">// Set submitter&#39;s fungible balance to the XCM fee
@@ -618,14 +619,15 @@
 				.unwrap()
 				.into(),
 		);
-		<span class="kw">let </span>amount = <span class="number">1_000u32</span>.into();
+		<span class="comment">// We can&#39;t switch less than ED.
+		</span><span class="kw">let </span>amount = minimum_balance;
 
 		<span class="attr">#[extrinsic_call]
 		</span>Pallet::&lt;T, I&gt;::switch(origin <span class="kw">as </span>T::RuntimeOrigin, amount, beneficiary);
 
 		<span class="macro">assert_eq!</span>(
 			&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::LocalCurrency::balance(<span class="kw-2">&amp;</span>pool_account),
-			minimum_balance + <span class="number">1_000u32</span>.into()
+			minimum_balance + minimum_balance
 		);
 	}
 

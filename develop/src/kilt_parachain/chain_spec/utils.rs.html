@@ -79,28 +79,8 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a>
-<a href="#95" id="95">95</a>
-<a href="#96" id="96">96</a>
-<a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -115,11 +95,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
-</span><span class="kw">use </span>std::path::{Path, PathBuf};
-
-<span class="kw">use </span>runtime_common::{AccountId, AccountPublic};
+</span><span class="kw">use </span>runtime_common::{AccountId, AccountPublic};
 <span class="kw">use </span>sc_service::Properties;
 <span class="kw">use </span>sp_core::{Pair, Public};
 <span class="kw">use </span>sp_runtime::traits::IdentifyAccount;
@@ -158,18 +136,14 @@
 				<span class="string">&quot;rococo_local&quot;</span>,
 			))),
 			PeregrineRuntime::New =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::peregrine::new::generate_chain_spec())),
-			PeregrineRuntime::Peregrine =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::peregrine::load_chain_spec(
-				get_chainspec_full_path(<span class="string">&quot;peregrine/peregrine-paseo.json&quot;</span>)
-					.to_str()
-					.unwrap(),
+			PeregrineRuntime::Peregrine =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::peregrine::ChainSpec::from_json_bytes(
+				<span class="macro">include_bytes!</span>(<span class="string">&quot;../../../../chainspecs/peregrine/peregrine-paseo.json&quot;</span>).as_slice(),
 			)<span class="question-mark">?</span>)),
-			PeregrineRuntime::PeregrineStg =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::peregrine::load_chain_spec(
-				get_chainspec_full_path(<span class="string">&quot;peregrine-stg/peregrine-stg.json&quot;</span>)
-					.to_str()
-					.unwrap(),
+			PeregrineRuntime::PeregrineStg =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::peregrine::ChainSpec::from_json_bytes(
+				<span class="macro">include_bytes!</span>(<span class="string">&quot;../../../../chainspecs/peregrine-stg/peregrine-stg.json&quot;</span>).as_slice(),
 			)<span class="question-mark">?</span>)),
-			PeregrineRuntime::Rilt =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::rilt::load_chain_spec(
-				get_chainspec_full_path(<span class="string">&quot;rilt/peregrine-rilt.json&quot;</span>).to_str().unwrap(),
+			PeregrineRuntime::Rilt =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::peregrine::ChainSpec::from_json_bytes(
+				<span class="macro">include_bytes!</span>(<span class="string">&quot;../../../../chainspecs/rilt/peregrine-rilt.json&quot;</span>).as_slice(),
 			)<span class="question-mark">?</span>)),
 			PeregrineRuntime::RiltNew =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::rilt::new::generate_chain_spec())),
 			PeregrineRuntime::Other(s) =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::peregrine::load_chain_spec(s.as_str())<span class="question-mark">?</span>)),
@@ -179,25 +153,11 @@
 				<span class="string">&quot;rococo_local&quot;</span>,
 			))),
 			SpiritnetRuntime::New =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::spiritnet::new::generate_chain_spec())),
-			SpiritnetRuntime::Spiritnet =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::spiritnet::load_chain_spec(
-				get_chainspec_full_path(<span class="string">&quot;spiritnet/spiritnet.json&quot;</span>).to_str().unwrap(),
+			SpiritnetRuntime::Spiritnet =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::spiritnet::ChainSpec::from_json_bytes(
+				<span class="macro">include_bytes!</span>(<span class="string">&quot;../../../../chainspecs/spiritnet/spiritnet.json&quot;</span>).as_slice(),
 			)<span class="question-mark">?</span>)),
 			SpiritnetRuntime::Other(s) =&gt; <span class="prelude-val">Ok</span>(Box::new(chain_spec::spiritnet::load_chain_spec(s.as_str())<span class="question-mark">?</span>)),
 		},
 	}
-}
-
-<span class="kw">const </span>MANIFEST_DIR: <span class="kw-2">&amp;</span>str = <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>);
-<span class="kw">const </span>CHAINSPECS_FOLDER: <span class="kw-2">&amp;</span>str = <span class="string">&quot;chainspecs&quot;</span>;
-
-<span class="comment">// Prepends the given path with the `&lt;workspace_root&gt;/chainspecs` path.
-</span><span class="kw">fn </span>get_chainspec_full_path(path: <span class="kw-2">&amp;</span>str) -&gt; PathBuf {
-	Path::new(MANIFEST_DIR)
-		.join(<span class="string">&quot;..&quot;</span>)
-		.join(<span class="string">&quot;..&quot;</span>)
-		.join(CHAINSPECS_FOLDER)
-		.join(path)
-		.canonicalize()
-		.expect(<span class="string">&quot;Invalid path provided.&quot;</span>)
 }
 </code></pre></div></section></main></body></html>

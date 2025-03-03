@@ -76,9 +76,8 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
-<a href="#79" id="79">79</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -93,7 +92,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="doccomment">//! A collection of node-specific RPC methods.
 //! Substrate provides the `sc-rpc` crate, which defines the core RPC layer
@@ -112,7 +111,7 @@
 <span class="kw">use </span>sp_block_builder::BlockBuilder;
 <span class="kw">use </span>sp_blockchain::{Error <span class="kw">as </span>BlockChainError, HeaderBackend, HeaderMetadata};
 
-<span class="kw">use </span>runtime_common::{AccountId, Balance, Block, Nonce};
+<span class="kw">use </span>runtime_common::{opaque::Block, AccountId, Balance, Nonce};
 
 <span class="doccomment">/// Full client dependencies.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>FullDeps&lt;C, P&gt; {
@@ -127,12 +126,11 @@
 <span class="doccomment">/// Instantiate all full RPC extensions.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>create_full&lt;C, P&gt;(deps: FullDeps&lt;C, P&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;RpcModule&lt;()&gt;, Box&lt;<span class="kw">dyn </span>std::error::Error + Send + Sync&gt;&gt;
 <span class="kw">where
-	</span>C: ProvideRuntimeApi&lt;Block&gt;,
-	C: HeaderBackend&lt;Block&gt; + HeaderMetadata&lt;Block, Error = BlockChainError&gt; + <span class="lifetime">&#39;static</span>,
+	</span>C: ProvideRuntimeApi&lt;Block&gt; + HeaderBackend&lt;Block&gt; + HeaderMetadata&lt;Block, Error = BlockChainError&gt; + <span class="lifetime">&#39;static</span>,
 	C: Send + Sync + <span class="lifetime">&#39;static</span>,
-	C::Api: substrate_frame_rpc_system::AccountNonceApi&lt;Block, AccountId, Nonce&gt;,
-	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi&lt;Block, Balance&gt;,
-	C::Api: BlockBuilder&lt;Block&gt;,
+	C::Api: substrate_frame_rpc_system::AccountNonceApi&lt;Block, AccountId, Nonce&gt;
+		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi&lt;Block, Balance&gt;
+		+ BlockBuilder&lt;Block&gt;,
 	P: TransactionPool + <span class="lifetime">&#39;static</span>,
 {
 	<span class="kw">use </span>pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};

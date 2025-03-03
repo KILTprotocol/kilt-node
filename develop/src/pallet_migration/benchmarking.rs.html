@@ -239,8 +239,14 @@
 <a href="#239" id="239">239</a>
 <a href="#240" id="240">240</a>
 <a href="#241" id="241">241</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -255,7 +261,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
+
+// Old benchmarking macros are a mess.
+</span><span class="attr">#![allow(clippy::tests_outside_test_module)]
 
 </span><span class="kw">use </span>attestation::{AttestationDetails, AttestationDetailsOf};
 <span class="kw">use </span>ctype::CtypeEntryOf;
@@ -307,6 +316,7 @@
 		&lt;T <span class="kw">as </span>did::Config&gt;::Currency: ReservableCurrency&lt;AccountIdOf&lt;T&gt;, Balance = &lt;&lt;T <span class="kw">as </span>did::Config&gt;::Currency <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::Balance&gt;,
 		&lt;T <span class="kw">as </span>pallet_did_lookup::Config&gt;::Currency: ReservableCurrency&lt;AccountIdOf&lt;T&gt;,Balance = &lt;&lt;T <span class="kw">as </span>pallet_did_lookup::Config&gt;::Currency <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::Balance&gt;,
 		&lt;T <span class="kw">as </span>pallet_web3_names::Config&gt;::Currency: ReservableCurrency&lt;AccountIdOf&lt;T&gt;, Balance = &lt;&lt;T <span class="kw">as </span>pallet_web3_names::Config&gt;::Currency <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::Balance&gt;,
+		&lt;&lt;T <span class="kw">as </span>pallet_web3_names::Config&gt;::Web3Name <span class="kw">as </span>TryFrom&lt;Vec&lt;u8&gt;&gt;&gt;::Error: Into&lt;pallet_web3_names::Error&lt;T&gt;&gt;,
 		&lt;T <span class="kw">as </span>public_credentials::Config&gt;::Currency: ReservableCurrency&lt;AccountIdOf&lt;T&gt;, Balance = &lt;&lt;T <span class="kw">as </span>public_credentials::Config&gt;::Currency <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::Balance&gt;,
 		&lt;T <span class="kw">as </span>did::Config&gt;::DidIdentifier: From&lt;AccountId32&gt;,
 		&lt;T <span class="kw">as </span>frame_system::Config&gt;::AccountId: From&lt;AccountId32&gt;,
@@ -429,7 +439,9 @@
 		pallet_balances::Pallet::&lt;T&gt;::set_balance(<span class="kw-2">&amp;</span>sender, KILT.saturated_into());
 		pallet_web3_names::Pallet::&lt;T&gt;::claim(origin, web3_name_input.clone()).expect(<span class="string">&quot;Should register the claimed web3 name.&quot;</span>);
 		kilt_support::migration::translate_holds_to_reserve::&lt;T&gt;(pallet_web3_names::HoldReason::Deposit.into());
-		<span class="kw">let </span>web3_name = Web3NameOf::&lt;T&gt;::try_from(web3_name_input.to_vec()).unwrap();
+		<span class="kw">let </span><span class="prelude-val">Ok</span>(web3_name) = Web3NameOf::&lt;T&gt;::try_from(web3_name_input.to_vec()) <span class="kw">else </span>{
+			<span class="macro">panic!</span>();
+		};
 
 		<span class="kw">let </span>entries_to_migrate = EntriesToMigrate {
 			w3n: BoundedVec::try_from(<span class="macro">vec!</span>[web3_name]).expect(<span class="string">&quot;Vector initialization should not fail.&quot;</span>),
@@ -477,7 +489,7 @@
 
 <span class="macro">impl_benchmark_test_suite! </span>{
 	Pallet,
-	<span class="kw">crate</span>::mock::runtime::ExtBuilder::default().build_with_keystore(),
-	<span class="kw">crate</span>::mock::runtime::Test
+	<span class="kw">crate</span>::mock::ExtBuilder::default().build_with_keystore(),
+	<span class="kw">crate</span>::mock::Test
 }
 </code></pre></div></section></main></body></html>

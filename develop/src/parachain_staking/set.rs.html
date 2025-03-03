@@ -555,8 +555,16 @@
 <a href="#555" id="555">555</a>
 <a href="#556" id="556">556</a>
 <a href="#557" id="557">557</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -571,7 +579,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{traits::Get, BoundedVec, DefaultNoBound};
 <span class="kw">use </span>parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -610,14 +618,15 @@
 		<span class="kw">let </span><span class="kw-2">mut </span>v = bv.into_inner();
 		v.sort_by(|a, b| b.cmp(a));
 		v.dedup();
-		<span class="self">Self</span>::from_sorted_set(v.try_into().map_err(|<span class="kw">_</span>| ()).expect(<span class="string">&quot;No values were added&quot;</span>))
+		<span class="attr">#[allow(clippy::expect_used)]
+		</span><span class="self">Self</span>::from_sorted_set(v.try_into().map_err(|<span class="kw">_</span>| ()).expect(<span class="string">&quot;No values were added&quot;</span>))
 	}
 
 	<span class="doccomment">/// Create a set from a `BoundedVec`.
 	///
 	/// Assumes that `v` is sorted reversely (from greatest to lowest) and only
 	/// contains unique elements.
-	</span><span class="kw">pub fn </span>from_sorted_set(bv: BoundedVec&lt;T, S&gt;) -&gt; <span class="self">Self </span>{
+	</span><span class="kw">pub const fn </span>from_sorted_set(bv: BoundedVec&lt;T, S&gt;) -&gt; <span class="self">Self </span>{
 		<span class="self">Self</span>(bv)
 	}
 
@@ -631,7 +640,8 @@
 		</span><span class="kw">let </span><span class="kw-2">mut </span>i: usize = <span class="number">0</span>;
 		<span class="kw">let </span><span class="kw-2">mut </span>next = i.saturating_add(<span class="number">1</span>);
 		<span class="kw">while </span>next &lt; <span class="self">self</span>.len() {
-			<span class="kw">if </span><span class="self">self</span>[i] == <span class="self">self</span>[next] {
+			<span class="attr">#[allow(clippy::indexing_slicing)]
+			</span><span class="kw">if </span><span class="self">self</span>[i] == <span class="self">self</span>[next] {
 				<span class="self">self</span>.<span class="number">0</span>.remove(next);
 			} <span class="kw">else </span>{
 				i = next;
@@ -681,6 +691,7 @@
 				<span class="comment">// accessing by index wont panic since we checked the index, inserting the item
 				// at the end of the list to ensure last-in-least-priority-rule for collators.
 				// sorting algorithm must be stable!
+				</span><span class="attr">#[allow(clippy::indexing_slicing)]
 				</span><span class="kw">let </span>old = sp_std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0</span>[last_idx], value);
 				<span class="self">self</span>.sort_greatest_to_lowest();
 				<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(old))
@@ -701,7 +712,8 @@
 	</span><span class="kw">pub fn </span>try_upsert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;T&gt;, ()&gt; {
 		<span class="kw">match </span><span class="self">self</span>.linear_search(<span class="kw-2">&amp;</span>value) {
 			<span class="prelude-val">Ok</span>(i) =&gt; {
-				<span class="kw">let </span>old = sp_std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0</span>[i], value);
+				<span class="attr">#[allow(clippy::indexing_slicing)]
+				</span><span class="kw">let </span>old = sp_std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0</span>[i], value);
 				<span class="self">self</span>.sort_greatest_to_lowest();
 				<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(old))
 			}
@@ -800,7 +812,8 @@
 <span class="kw">impl</span>&lt;T: Ord + Clone, S: Get&lt;u32&gt;&gt; Index&lt;usize&gt; <span class="kw">for </span>OrderedSet&lt;T, S&gt; {
 	<span class="kw">type </span>Output = T;
 
-	<span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, index: usize) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Output {
+	<span class="attr">#[allow(clippy::indexing_slicing)]
+	</span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, index: usize) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Output {
 		<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>[index]
 	}
 }
@@ -808,7 +821,8 @@
 <span class="kw">impl</span>&lt;T: Ord + Clone, S: Get&lt;u32&gt;&gt; Index&lt;Range&lt;usize&gt;&gt; <span class="kw">for </span>OrderedSet&lt;T, S&gt; {
 	<span class="kw">type </span>Output = [T];
 
-	<span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: Range&lt;usize&gt;) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Output {
+	<span class="attr">#[allow(clippy::indexing_slicing)]
+	</span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: Range&lt;usize&gt;) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Output {
 		<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>[range]
 	}
 }
@@ -816,7 +830,8 @@
 <span class="kw">impl</span>&lt;T: Ord + Clone, S: Get&lt;u32&gt;&gt; Index&lt;RangeFull&gt; <span class="kw">for </span>OrderedSet&lt;T, S&gt; {
 	<span class="kw">type </span>Output = [T];
 
-	<span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: RangeFull) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Output {
+	<span class="attr">#[allow(clippy::indexing_slicing)]
+	</span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: RangeFull) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Output {
 		<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>[range]
 	}
 }
@@ -839,7 +854,7 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
 	<span class="kw">use crate</span>::{mock::Test, types::StakeOf};
-	<span class="kw">use </span>frame_support::parameter_types;
+	<span class="kw">use </span>frame_support::{assert_err, parameter_types};
 	<span class="kw">use </span>sp_runtime::RuntimeDebug;
 
 	<span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -945,7 +960,7 @@
 
 		<span class="macro">assert_eq!</span>(set.clone().into_bounded_vec().into_inner(), <span class="macro">vec!</span>[<span class="number">10</span>, <span class="number">9</span>, <span class="number">8</span>, <span class="number">7</span>]);
 		<span class="macro">assert_eq!</span>(set.try_insert_replace(<span class="number">5</span>), <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>));
-		<span class="macro">assert!</span>(set.try_insert(<span class="number">11</span>).is_err());
+		<span class="macro">assert_err!</span>(set.try_insert(<span class="number">11</span>), <span class="number">0usize</span>);
 
 		<span class="macro">assert_eq!</span>(set.try_insert_replace(<span class="number">6</span>), <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="number">5</span>)));
 		<span class="macro">assert_eq!</span>(set.clone().into_bounded_vec().into_inner(), <span class="macro">vec!</span>[<span class="number">10</span>, <span class="number">9</span>, <span class="number">8</span>, <span class="number">7</span>, <span class="number">6</span>]);
@@ -1015,7 +1030,8 @@
 		<span class="kw">let </span><span class="kw-2">mut </span>set: OrderedSet&lt;i32, Five&gt; = OrderedSet::from(<span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>].try_into().unwrap());
 		<span class="kw">let </span>inserted = set.try_insert(<span class="number">6</span>);
 
-		<span class="macro">assert!</span>(inserted.is_err());
+		<span class="comment">// Position `0` since the set is sorted from largest to smallest.
+		</span><span class="macro">assert_err!</span>(inserted, <span class="number">0usize</span>);
 	}
 
 	<span class="attr">#[test]

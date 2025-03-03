@@ -72,8 +72,22 @@
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
 <a href="#74" id="74">74</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -88,15 +102,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{
-	pallet_prelude::StorageVersion,
-	traits::{GetStorageVersion, OnRuntimeUpgrade},
+	traits::{GetStorageVersion, OnRuntimeUpgrade, PalletInfoAccess, StorageVersion},
 	weights::Weight,
 };
 <span class="kw">use </span>sp_core::Get;
-<span class="kw">use </span>sp_std::marker::PhantomData;
+<span class="kw">use </span>sp_std::{fmt::Debug, marker::PhantomData};
+<span class="kw">use </span>sp_weights::RuntimeDbWeight;
 
 <span class="kw">const </span>LOG_TARGET: <span class="kw-2">&amp;</span>str = <span class="string">&quot;migration::BumpStorageVersion&quot;</span>;
 
@@ -104,20 +118,28 @@
 /// Based on the changes in the PR &lt;https://github.com/paritytech/substrate/pull/13417&gt;,
 /// pallets without a storage version or with a wrong version throw an error
 /// in the try state tests.
-</span><span class="kw">pub struct </span>BumpStorageVersion&lt;T&gt;(PhantomData&lt;T&gt;);
-
-<span class="kw">const </span>TARGET_PALLET_ASSETS_STORAGE_VERSION: StorageVersion = StorageVersion::new(<span class="number">1</span>);
-
-<span class="kw">impl</span>&lt;T&gt; OnRuntimeUpgrade <span class="kw">for </span>BumpStorageVersion&lt;T&gt;
+</span><span class="kw">pub struct </span>BumpStorageVersion&lt;T, W&gt;(PhantomData&lt;(T, W)&gt;)
 <span class="kw">where
-	</span>T: pallet_assets::Config,
+	</span>T: GetStorageVersion + PalletInfoAccess,
+	T::CurrentStorageVersion: Debug + Into&lt;StorageVersion&gt;,
+	StorageVersion: PartialOrd&lt;T::CurrentStorageVersion&gt;,
+	W: Get&lt;RuntimeDbWeight&gt;;
+
+<span class="kw">impl</span>&lt;T, W&gt; OnRuntimeUpgrade <span class="kw">for </span>BumpStorageVersion&lt;T, W&gt;
+<span class="kw">where
+	</span>T: GetStorageVersion + PalletInfoAccess,
+	T::CurrentStorageVersion: Debug + Into&lt;StorageVersion&gt;,
+	StorageVersion: PartialOrd&lt;T::CurrentStorageVersion&gt;,
+	W: Get&lt;RuntimeDbWeight&gt;,
 {
 	<span class="attr">#[cfg(feature = <span class="string">&quot;try-runtime&quot;</span>)]
 	</span><span class="kw">fn </span>pre_upgrade() -&gt; <span class="prelude-ty">Result</span>&lt;sp_std::vec::Vec&lt;u8&gt;, sp_runtime::TryRuntimeError&gt; {
-		<span class="kw">if </span>pallet_assets::Pallet::&lt;T&gt;::on_chain_storage_version() &lt; TARGET_PALLET_ASSETS_STORAGE_VERSION {
-			<span class="macro">log::trace!</span>(target: LOG_TARGET, <span class="string">&quot;pallet_assets to be migrated to v1.&quot;</span>);
+		<span class="kw">let </span>(on_chain_version, current_version) = (T::on_chain_storage_version(), T::current_storage_version());
+		<span class="kw">let </span>pallet_name = T::name();
+		<span class="kw">if </span>on_chain_version &lt; current_version {
+			<span class="macro">log::trace!</span>(target: LOG_TARGET, <span class="string">&quot;Pallet {:?} to be migrated from version {:?} to version {:?}.&quot;</span>, pallet_name, on_chain_version, current_version);
 		} <span class="kw">else </span>{
-			<span class="macro">log::trace!</span>(target: LOG_TARGET, <span class="string">&quot;pallet_assets already on v1. No migration will run.&quot;</span>);
+			<span class="macro">log::trace!</span>(target: LOG_TARGET, <span class="string">&quot;Pallet {:?} already on latest version {:?}. No migration will run.&quot;</span>, pallet_name, current_version);
 		}
 		<span class="prelude-val">Ok</span>([].into())
 	}
@@ -125,21 +147,27 @@
 	<span class="kw">fn </span>on_runtime_upgrade() -&gt; Weight {
 		<span class="macro">log::info!</span>(target: LOG_TARGET, <span class="string">&quot;Initiating migration.&quot;</span>);
 
-		<span class="kw">if </span>pallet_assets::Pallet::&lt;T&gt;::on_chain_storage_version() &lt; TARGET_PALLET_ASSETS_STORAGE_VERSION {
-			<span class="macro">log::info!</span>(target: LOG_TARGET, <span class="string">&quot;pallet_assets to be migrated to v1.&quot;</span>);
-			TARGET_PALLET_ASSETS_STORAGE_VERSION.put::&lt;pallet_assets::Pallet&lt;T&gt;&gt;();
-			&lt;T <span class="kw">as </span>frame_system::Config&gt;::DbWeight::get().reads_writes(<span class="number">1</span>, <span class="number">1</span>)
+		<span class="kw">let </span>(on_chain_version, current_version) = (T::on_chain_storage_version(), T::current_storage_version());
+		<span class="kw">let </span>pallet_name = T::name();
+
+		<span class="kw">if </span>on_chain_version &lt; current_version {
+			<span class="macro">log::trace!</span>(target: LOG_TARGET, <span class="string">&quot;Pallet {:?} to be migrated from version {:?} to version {:?}.&quot;</span>, pallet_name, on_chain_version, current_version);
+			current_version.into().put::&lt;T&gt;();
+			W::get().reads_writes(<span class="number">1</span>, <span class="number">1</span>)
 		} <span class="kw">else </span>{
-			<span class="macro">log::info!</span>(target: LOG_TARGET, <span class="string">&quot;pallet_assets already on v1. No migration will run.&quot;</span>);
-			&lt;T <span class="kw">as </span>frame_system::Config&gt;::DbWeight::get().reads(<span class="number">1</span>)
+			<span class="macro">log::trace!</span>(target: LOG_TARGET, <span class="string">&quot;Pallet {:?} already on latest version {:?}. No migration will run.&quot;</span>, pallet_name, current_version);
+			W::get().reads(<span class="number">1</span>)
 		}
 	}
 
 	<span class="attr">#[cfg(feature = <span class="string">&quot;try-runtime&quot;</span>)]
 	</span><span class="kw">fn </span>post_upgrade(_state: sp_std::vec::Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), sp_runtime::TryRuntimeError&gt; {
-		<span class="kw">if </span>pallet_assets::Pallet::&lt;T&gt;::on_chain_storage_version() &lt; TARGET_PALLET_ASSETS_STORAGE_VERSION {
+		<span class="kw">let </span>(on_chain_version, current_version) = (T::on_chain_storage_version(), T::current_storage_version());
+
+		<span class="kw">if </span>on_chain_version &lt; current_version {
+			<span class="macro">log::error!</span>(target: LOG_TARGET, <span class="string">&quot;Storage version for pallet {:?} was not updated to the latest version {:?}.&quot;</span>, T::name(), current_version);
 			<span class="prelude-val">Err</span>(sp_runtime::TryRuntimeError::Other(
-				<span class="string">&quot;pallet_assets storage version was not updated to v1.&quot;</span>,
+				<span class="string">&quot;Pallet storage version was not updated to the latest version.&quot;</span>,
 			))
 		} <span class="kw">else </span>{
 			<span class="prelude-val">Ok</span>(())

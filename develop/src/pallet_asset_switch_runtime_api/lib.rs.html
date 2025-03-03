@@ -31,8 +31,13 @@
 <a href="#31" id="31">31</a>
 <a href="#32" id="32">32</a>
 <a href="#33" id="33">33</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,7 +52,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="attr">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]
 
@@ -55,13 +60,18 @@
 <span class="kw">use </span>sp_std::vec::Vec;
 
 <span class="macro">sp_api::decl_runtime_apis! </span>{
-	<span class="doccomment">/// Runtime API to compute the pool account for a given switch pair ID and remote asset.
-	</span><span class="kw">pub trait </span>AssetSwitch&lt;AssetId, AccountId, Error&gt; <span class="kw">where
+	<span class="doccomment">/// Runtime API to compute the pool account for a given switch pair ID and remote asset, and to compute the XCM that would be sent to destination for a given switch operation.
+	</span><span class="attr">#[api_version(<span class="number">2</span>)]
+	</span><span class="kw">pub trait </span>AssetSwitch&lt;AssetId, AccountId, Amount, Destination, Error, Xcm&gt; <span class="kw">where
 		</span>AssetId: Codec,
 		AccountId: Codec,
+		Amount: Codec,
+		Destination: Codec,
 		Error: Codec,
+		Xcm: Codec,
 		{
 			<span class="kw">fn </span>pool_account_id(pair_id: Vec&lt;u8&gt;, asset_id: AssetId) -&gt; <span class="prelude-ty">Result</span>&lt;AccountId, Error&gt;;
+			<span class="kw">fn </span>xcm_for_switch(pair_id: Vec&lt;u8&gt;, from: AccountId, to: Destination, amount: Amount) -&gt; <span class="prelude-ty">Result</span>&lt;Xcm, Error&gt;;
 		}
 }
 </code></pre></div></section></main></body></html>

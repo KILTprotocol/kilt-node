@@ -203,8 +203,9 @@
 <a href="#203" id="203">203</a>
 <a href="#204" id="204">204</a>
 <a href="#205" id="205">205</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#206" id="206">206</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -219,7 +220,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 </span><span class="kw">use </span>hex_literal::hex;
 <span class="kw">use </span>parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 <span class="kw">use </span>scale_info::TypeInfo;
@@ -260,21 +261,21 @@
 	<span class="kw">pub fn </span>ether_currency() -&gt; <span class="self">Self </span>{
 		<span class="self">Self </span>{
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: Slip44Reference(<span class="number">60</span>.into()).into(),
+			asset_id: Slip44Reference(<span class="number">60u8</span>.into()).into(),
 		}
 	}
 
 	<span class="kw">pub fn </span>bitcoin_currency() -&gt; <span class="self">Self </span>{
 		<span class="self">Self </span>{
 			chain_id: ChainId::Bip122(GenesisHexHash32Reference::bitcoin_mainnet()),
-			asset_id: Slip44Reference(<span class="number">0</span>.into()).into(),
+			asset_id: Slip44Reference(<span class="number">0u8</span>.into()).into(),
 		}
 	}
 
 	<span class="kw">pub fn </span>litecoin_currency() -&gt; <span class="self">Self </span>{
 		<span class="self">Self </span>{
 			chain_id: ChainId::Bip122(GenesisHexHash32Reference::litecoin_mainnet()),
-			asset_id: Slip44Reference(<span class="number">2</span>.into()).into(),
+			asset_id: Slip44Reference(<span class="number">2u8</span>.into()).into(),
 		}
 	}
 
@@ -320,8 +321,8 @@
 	<span class="kw">where
 		</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 	{
-		<span class="kw">let </span>input = input.as_ref();
-		<span class="kw">let </span>input_length = input.len();
+		<span class="kw">let </span>input_ref = input.as_ref();
+		<span class="kw">let </span>input_length = input_ref.len();
 		<span class="kw">if </span>!(MINIMUM_ASSET_DID_LENGTH..=MAXIMUM_ASSET_DID_LENGTH).contains(<span class="kw-2">&amp;</span>input_length) {
 			<span class="macro">log::trace!</span>(
 				<span class="string">&quot;Length of provided input {} is not included in the inclusive range [{},{}]&quot;</span>,
@@ -332,15 +333,15 @@
 			<span class="kw">return </span><span class="prelude-val">Err</span>(AssetDidError::InvalidFormat);
 		}
 
-		<span class="kw">let </span>asset_id = input
+		<span class="kw">let </span>input_asset_id = input_ref
 			.as_ref()
 			.strip_prefix(DID_ASSET_PREFIX)
 			.ok_or(AssetDidError::InvalidFormat)<span class="question-mark">?</span>;
 
-		<span class="kw">let </span><span class="kw-2">mut </span>split = asset_id.splitn(<span class="number">2</span>, |c| <span class="kw-2">*</span>c == CHAIN_ASSET_SEPARATOR);
-		<span class="kw">let </span>(chain, asset) = (split.next(), split.next());
+		<span class="kw">let </span><span class="kw-2">mut </span>split = input_asset_id.splitn(<span class="number">2</span>, |c| <span class="kw-2">*</span>c == CHAIN_ASSET_SEPARATOR);
+		<span class="kw">let </span>(input_chain, input_asset) = (split.next(), split.next());
 
-		<span class="kw">if let </span>(<span class="prelude-val">Some</span>(chain), <span class="prelude-val">Some</span>(asset)) = (chain, asset) {
+		<span class="kw">if let </span>(<span class="prelude-val">Some</span>(chain), <span class="prelude-val">Some</span>(asset)) = (input_chain, input_asset) {
 			<span class="kw">let </span>chain_id = ChainId::from_utf8_encoded(chain).map_err(AssetDidError::ChainId)<span class="question-mark">?</span>;
 			<span class="kw">let </span>asset_id = AssetId::from_utf8_encoded(asset).map_err(AssetDidError::AssetId)<span class="question-mark">?</span>;
 			<span class="prelude-val">Ok</span>(<span class="self">Self </span>{ chain_id, asset_id })
@@ -351,7 +352,8 @@
 }
 
 <span class="kw">impl </span>Display <span class="kw">for </span>AssetDid {
-	<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
+	<span class="attr">#[allow(clippy::expect_used)]
+	</span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
 		<span class="macro">write!</span>(
 			f,
 			<span class="string">&quot;{}{}{}{}&quot;</span>,

@@ -945,8 +945,15 @@
 <a href="#945" id="945">945</a>
 <a href="#946" id="946">946</a>
 <a href="#947" id="947">947</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -961,7 +968,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 // Exported types. This will always only re-export the latest version by
 // default.
@@ -991,17 +998,20 @@
 	</span><span class="kw">pub const </span>MINIMUM_ASSET_NAMESPACE_LENGTH: usize = <span class="number">3</span>;
 	<span class="doccomment">/// The maximum length of a valid asset ID namespace.
 	</span><span class="kw">pub const </span>MAXIMUM_NAMESPACE_LENGTH: usize = <span class="number">8</span>;
-	<span class="kw">const </span>MAXIMUM_ASSET_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH <span class="kw">as </span>u32;
+	<span class="attr">#[allow(clippy::as_conversions)]
+	</span><span class="kw">const </span>MAXIMUM_ASSET_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH <span class="kw">as </span>u32;
 	<span class="doccomment">/// The minimum length of a valid asset ID reference.
 	</span><span class="kw">pub const </span>MINIMUM_ASSET_REFERENCE_LENGTH: usize = <span class="number">1</span>;
 	<span class="doccomment">/// The maximum length of a valid asset ID reference.
 	</span><span class="kw">pub const </span>MAXIMUM_ASSET_REFERENCE_LENGTH: usize = <span class="number">128</span>;
-	<span class="kw">const </span>MAXIMUM_ASSET_REFERENCE_LENGTH_U32: u32 = MAXIMUM_ASSET_REFERENCE_LENGTH <span class="kw">as </span>u32;
+	<span class="attr">#[allow(clippy::as_conversions)]
+	</span><span class="kw">const </span>MAXIMUM_ASSET_REFERENCE_LENGTH_U32: u32 = MAXIMUM_ASSET_REFERENCE_LENGTH <span class="kw">as </span>u32;
 	<span class="doccomment">/// The minimum length of a valid asset ID identifier.
 	</span><span class="kw">pub const </span>MINIMUM_ASSET_IDENTIFIER_LENGTH: usize = <span class="number">1</span>;
 	<span class="doccomment">/// The maximum length of a valid asset ID reference.
 	</span><span class="kw">pub const </span>MAXIMUM_ASSET_IDENTIFIER_LENGTH: usize = <span class="number">78</span>;
-	<span class="kw">const </span>MAXIMUM_ASSET_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_ASSET_IDENTIFIER_LENGTH <span class="kw">as </span>u32;
+	<span class="attr">#[allow(clippy::as_conversions)]
+	</span><span class="kw">const </span>MAXIMUM_ASSET_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_ASSET_IDENTIFIER_LENGTH <span class="kw">as </span>u32;
 
 	<span class="doccomment">/// Separator between asset namespace and asset reference.
 	</span><span class="kw">const </span>ASSET_NAMESPACE_REFERENCE_SEPARATOR: u8 = <span class="string">b&#39;:&#39;</span>;
@@ -1053,8 +1063,8 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			<span class="kw">let </span>input_length = input.len();
+			<span class="kw">let </span>input_ref = input.as_ref();
+			<span class="kw">let </span>input_length = input_ref.len();
 			<span class="kw">if </span>!(MINIMUM_ASSET_ID_LENGTH..=MAXIMUM_ASSET_ID_LENGTH).contains(<span class="kw-2">&amp;</span>input_length) {
 				<span class="macro">log::trace!</span>(
 					<span class="string">&quot;Length of provided input {} is not included in the inclusive range [{},{}]&quot;</span>,
@@ -1066,12 +1076,12 @@
 			}
 
 			<span class="kw">let </span>AssetComponents {
-				namespace,
-				reference,
-				identifier,
-			} = split_components(input);
+				namespace: encoded_namespace,
+				reference: encoded_reference,
+				identifier: encoded_identifier,
+			} = split_components(input_ref);
 
-			<span class="kw">match </span>(namespace, reference, identifier) {
+			<span class="kw">match </span>(encoded_namespace, encoded_reference, encoded_identifier) {
 				<span class="comment">// &quot;slip44:&quot; assets -&gt; https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 				</span>(<span class="prelude-val">Some</span>(SLIP44_NAMESPACE), <span class="kw">_</span>, <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; {
 					<span class="macro">log::trace!</span>(<span class="string">&quot;Slip44 namespace does not accept an asset identifier.&quot;</span>);
@@ -1089,9 +1099,9 @@
 					EvmSmartContractFungibleReference::from_utf8_encoded(erc20_reference).map(<span class="self">Self</span>::Erc20)
 				}
 				<span class="comment">// &quot;erc721:&quot; assets -&gt; https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md
-				</span>(<span class="prelude-val">Some</span>(ERC721_NAMESPACE), <span class="prelude-val">Some</span>(erc721_reference), identifier) =&gt; {
+				</span>(<span class="prelude-val">Some</span>(ERC721_NAMESPACE), <span class="prelude-val">Some</span>(erc721_reference), erc721_identifier) =&gt; {
 					<span class="kw">let </span>reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc721_reference)<span class="question-mark">?</span>;
-					<span class="kw">let </span>identifier = identifier.map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |id| {
+					<span class="kw">let </span>identifier = erc721_identifier.map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |id| {
 						EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(<span class="prelude-val">Some</span>)
 					})<span class="question-mark">?</span>;
 					<span class="prelude-val">Ok</span>(<span class="self">Self</span>::Erc721(EvmSmartContractNonFungibleReference(
@@ -1099,9 +1109,9 @@
 					)))
 				}
 				<span class="comment">// &quot;erc1155:&quot; assets-&gt; https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md
-				</span>(<span class="prelude-val">Some</span>(ERC1155_NAMESPACE), <span class="prelude-val">Some</span>(erc1155_reference), identifier) =&gt; {
+				</span>(<span class="prelude-val">Some</span>(ERC1155_NAMESPACE), <span class="prelude-val">Some</span>(erc1155_reference), erc1155_identifier) =&gt; {
 					<span class="kw">let </span>reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc1155_reference)<span class="question-mark">?</span>;
-					<span class="kw">let </span>identifier = identifier.map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |id| {
+					<span class="kw">let </span>identifier = erc1155_identifier.map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |id| {
 						EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(<span class="prelude-val">Some</span>)
 					})<span class="question-mark">?</span>;
 					<span class="prelude-val">Ok</span>(<span class="self">Self</span>::Erc1155(EvmSmartContractNonFungibleReference(
@@ -1109,13 +1119,14 @@
 					)))
 				}
 				<span class="comment">// Generic yet valid asset IDs
-				</span><span class="kw">_ </span>=&gt; GenericAssetId::from_utf8_encoded(input).map(<span class="self">Self</span>::Generic),
+				</span><span class="kw">_ </span>=&gt; GenericAssetId::from_utf8_encoded(input_ref).map(<span class="self">Self</span>::Generic),
 			}
 		}
 	}
 
 	<span class="kw">impl </span>Display <span class="kw">for </span>AssetId {
-		<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
+		<span class="attr">#[allow(clippy::expect_used)]
+		</span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
 			<span class="kw">match </span><span class="self">self </span>{
 				<span class="self">Self</span>::Slip44(reference) =&gt; {
 					<span class="macro">write!</span>(
@@ -1219,23 +1230,20 @@
 	<span class="doccomment">/// Split the given input into its components, i.e., namespace, reference,
 	/// and identifier, if the proper separators are found.
 	</span><span class="kw">fn </span>split_components(input: <span class="kw-2">&amp;</span>[u8]) -&gt; AssetComponents {
-		<span class="kw">let </span><span class="kw-2">mut </span>split = input.splitn(<span class="number">2</span>, |c| <span class="kw-2">*</span>c == ASSET_NAMESPACE_REFERENCE_SEPARATOR);
-		<span class="kw">let </span>(namespace, reference) = (split.next(), split.next());
+		<span class="kw">let </span><span class="kw-2">mut </span>namespace_reference_split = input.splitn(<span class="number">2</span>, |c| <span class="kw-2">*</span>c == ASSET_NAMESPACE_REFERENCE_SEPARATOR);
+		<span class="kw">let </span>(parsed_namespace, reference) = (namespace_reference_split.next(), namespace_reference_split.next());
 
 		<span class="comment">// Split the remaining reference to extract the identifier, if present
-		</span><span class="kw">let </span>(reference, identifier) = <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = reference {
-			<span class="kw">let </span><span class="kw-2">mut </span>split = r.splitn(<span class="number">2</span>, |c| <span class="kw-2">*</span>c == ASSET_REFERENCE_IDENTIFIER_SEPARATOR);
+		</span><span class="kw">let </span>(parsed_reference, parsed_identifier) = reference.map_or((reference, <span class="prelude-val">None</span>), |r| {
+			<span class="kw">let </span><span class="kw-2">mut </span>reference_identifier_split = r.splitn(<span class="number">2</span>, |c| <span class="kw-2">*</span>c == ASSET_REFERENCE_IDENTIFIER_SEPARATOR);
 			<span class="comment">// Split the reference further, if present
-			</span>(split.next(), split.next())
-		} <span class="kw">else </span>{
-			<span class="comment">// Return the old reference, which is None if we are at this point
-			</span>(reference, <span class="prelude-val">None</span>)
-		};
+			</span>(reference_identifier_split.next(), reference_identifier_split.next())
+		});
 
 		AssetComponents {
-			namespace,
-			reference,
-			identifier,
+			namespace: parsed_namespace,
+			reference: parsed_reference,
+			identifier: parsed_identifier,
 		}
 	}
 
@@ -1258,10 +1266,10 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_reference_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			<span class="kw">let </span>decoded = str::from_utf8(input).map_err(|<span class="kw">_</span>| {
+			<span class="kw">let </span>decoded = str::from_utf8(input_ref).map_err(|<span class="kw">_</span>| {
 				<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input is not a valid UTF8 string as expected by a Slip44 reference.&quot;</span>);
 				ReferenceError::InvalidFormat
 			})<span class="question-mark">?</span>;
@@ -1282,6 +1290,7 @@
 			// TODO: This could be enforced at compilation time once constraints on generics
 			// will be available.
 			// https://rust-lang.github.io/rfcs/2000-const-generics.html
+			</span><span class="attr">#[allow(clippy::expect_used)]
 			</span><span class="kw">if </span>value
 				&lt;= U256::from_str_radix(<span class="string">&quot;9999999999999999999999999999999999999999999999999999999999999999&quot;</span>, <span class="number">10</span>)
 					.expect(<span class="string">&quot;Casting the maximum value for a Slip44 reference into a U256 should never fail.&quot;</span>)
@@ -1301,7 +1310,7 @@
 
 	<span class="comment">// Getters
 	</span><span class="kw">impl </span>Slip44Reference {
-		<span class="kw">pub fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>U256 {
+		<span class="kw">pub const fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>U256 {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
 		</span>}
 	}
@@ -1325,9 +1334,9 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
+			<span class="kw">let </span>input_ref = input.as_ref();
 			<span class="comment">// If the prefix is &quot;0x&quot; =&gt; parse the address
-			</span><span class="kw">if let </span>[<span class="string">b&#39;0&#39;</span>, <span class="string">b&#39;x&#39;</span>, contract_address @ ..] = input {
+			</span><span class="kw">if let </span>[<span class="string">b&#39;0&#39;</span>, <span class="string">b&#39;x&#39;</span>, contract_address @ ..] = input_ref {
 				check_reference_length_bounds(contract_address)<span class="question-mark">?</span>;
 
 				<span class="kw">let </span>decoded = hex::decode(contract_address).map_err(|<span class="kw">_</span>| {
@@ -1349,7 +1358,7 @@
 
 	<span class="comment">// Getters
 	</span><span class="kw">impl </span>EvmSmartContractFungibleReference {
-		<span class="kw">pub fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
+		<span class="kw">pub const fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
 		</span>}
 	}
@@ -1373,11 +1382,11 @@
 
 	<span class="comment">// Getters
 	</span><span class="kw">impl </span>EvmSmartContractNonFungibleReference {
-		<span class="kw">pub fn </span>smart_contract(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>EvmSmartContractFungibleReference {
+		<span class="kw">pub const fn </span>smart_contract(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>EvmSmartContractFungibleReference {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
 		</span>}
 
-		<span class="kw">pub fn </span>identifier(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;EvmSmartContractNonFungibleIdentifier&gt; {
+		<span class="kw">pub const fn </span>identifier(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;EvmSmartContractNonFungibleIdentifier&gt; {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1
 		</span>}
 	}
@@ -1399,10 +1408,10 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_identifier_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_identifier_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			input.iter().try_for_each(|c| {
+			input_ref.iter().try_for_each(|c| {
 				<span class="kw">if </span>!c.is_ascii_digit() {
 					<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input has some invalid values as expected by a smart contract-based asset identifier.&quot;</span>);
 					<span class="prelude-val">Err</span>(IdentifierError::InvalidFormat)
@@ -1412,7 +1421,7 @@
 			})<span class="question-mark">?</span>;
 
 			<span class="prelude-val">Ok</span>(<span class="self">Self</span>(
-				Vec::&lt;u8&gt;::from(input)
+				Vec::&lt;u8&gt;::from(input_ref)
 					.try_into()
 					.map_err(|<span class="kw">_</span>| IdentifierError::InvalidFormat)<span class="question-mark">?</span>,
 			))
@@ -1427,7 +1436,8 @@
 	}
 
 	<span class="kw">impl </span>Display <span class="kw">for </span>EvmSmartContractNonFungibleIdentifier {
-		<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
+		<span class="attr">#[allow(clippy::expect_used)]
+		</span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
 			<span class="comment">// We checked when the type is created that all characters are valid digits.
 			</span><span class="macro">write!</span>(
 				f,
@@ -1460,12 +1470,13 @@
 			} = split_components(input.as_ref());
 
 			<span class="kw">match </span>(namespace, reference, identifier) {
-				(<span class="prelude-val">Some</span>(namespace), <span class="prelude-val">Some</span>(reference), identifier) =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-					namespace: GenericAssetNamespace::from_utf8_encoded(namespace)<span class="question-mark">?</span>,
-					reference: GenericAssetReference::from_utf8_encoded(reference)<span class="question-mark">?</span>,
+				(<span class="prelude-val">Some</span>(encoded_namespace), <span class="prelude-val">Some</span>(encoded_reference), encoded_identifier) =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+					namespace: GenericAssetNamespace::from_utf8_encoded(encoded_namespace)<span class="question-mark">?</span>,
+					reference: GenericAssetReference::from_utf8_encoded(encoded_reference)<span class="question-mark">?</span>,
 					<span class="comment">// Transform Option&lt;Result&gt; to Result&lt;Option&gt; and bubble Err case up, keeping Ok(Option) for
 					// successful cases.
-					</span>id: identifier.map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |id| GenericAssetIdentifier::from_utf8_encoded(id).map(<span class="prelude-val">Some</span>))<span class="question-mark">?</span>,
+					</span>id: encoded_identifier
+						.map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |id| GenericAssetIdentifier::from_utf8_encoded(id).map(<span class="prelude-val">Some</span>))<span class="question-mark">?</span>,
 				}),
 				<span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::InvalidFormat),
 			}
@@ -1474,13 +1485,13 @@
 
 	<span class="comment">// Getters
 	</span><span class="kw">impl </span>GenericAssetId {
-		<span class="kw">pub fn </span>namespace(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GenericAssetNamespace {
+		<span class="kw">pub const fn </span>namespace(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GenericAssetNamespace {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.namespace
 		}
-		<span class="kw">pub fn </span>reference(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GenericAssetReference {
+		<span class="kw">pub const fn </span>reference(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GenericAssetReference {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.reference
 		}
-		<span class="kw">pub fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;GenericAssetIdentifier&gt; {
+		<span class="kw">pub const fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;GenericAssetIdentifier&gt; {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.id
 		}
 	}
@@ -1498,11 +1509,11 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_namespace_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_namespace_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			input.iter().try_for_each(|c| {
-				<span class="kw">if </span>!<span class="macro">matches!</span>(c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
+			input_ref.iter().try_for_each(|c| {
+				<span class="kw">if </span>!<span class="macro">matches!</span>(<span class="kw-2">*</span>c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
 					<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input has some invalid values as expected by a generic asset namespace.&quot;</span>);
 					<span class="prelude-val">Err</span>(NamespaceError::InvalidFormat)
 				} <span class="kw">else </span>{
@@ -1510,7 +1521,7 @@
 				}
 			})<span class="question-mark">?</span>;
 			<span class="prelude-val">Ok</span>(<span class="self">Self</span>(
-				Vec::&lt;u8&gt;::from(input)
+				Vec::&lt;u8&gt;::from(input_ref)
 					.try_into()
 					.map_err(|<span class="kw">_</span>| NamespaceError::InvalidFormat)<span class="question-mark">?</span>,
 			))
@@ -1525,7 +1536,8 @@
 	}
 
 	<span class="kw">impl </span>Display <span class="kw">for </span>GenericAssetNamespace {
-		<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
+		<span class="attr">#[allow(clippy::expect_used)]
+		</span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
 			<span class="comment">// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
 			</span><span class="macro">write!</span>(
@@ -1547,11 +1559,11 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_reference_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			input.iter().try_for_each(|c| {
-				<span class="kw">if </span>!<span class="macro">matches!</span>(c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;.&#39; </span>| <span class="string">b&#39;%&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;A&#39;</span>..=<span class="string">b&#39;Z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
+			input_ref.iter().try_for_each(|c| {
+				<span class="kw">if </span>!<span class="macro">matches!</span>(<span class="kw-2">*</span>c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;.&#39; </span>| <span class="string">b&#39;%&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;A&#39;</span>..=<span class="string">b&#39;Z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
 					<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input has some invalid values as expected by a generic asset reference.&quot;</span>);
 					<span class="prelude-val">Err</span>(ReferenceError::InvalidFormat)
 				} <span class="kw">else </span>{
@@ -1559,7 +1571,7 @@
 				}
 			})<span class="question-mark">?</span>;
 			<span class="prelude-val">Ok</span>(<span class="self">Self</span>(
-				Vec::&lt;u8&gt;::from(input)
+				Vec::&lt;u8&gt;::from(input_ref)
 					.try_into()
 					.map_err(|<span class="kw">_</span>| ReferenceError::InvalidFormat)<span class="question-mark">?</span>,
 			))
@@ -1574,7 +1586,8 @@
 	}
 
 	<span class="kw">impl </span>Display <span class="kw">for </span>GenericAssetReference {
-		<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
+		<span class="attr">#[allow(clippy::expect_used)]
+		</span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
 			<span class="comment">// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
 			</span><span class="macro">write!</span>(
@@ -1596,11 +1609,11 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_identifier_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_identifier_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			input.iter().try_for_each(|c| {
-				<span class="kw">if </span>!<span class="macro">matches!</span>(c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;.&#39; </span>| <span class="string">b&#39;%&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;A&#39;</span>..=<span class="string">b&#39;Z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
+			input_ref.iter().try_for_each(|c| {
+				<span class="kw">if </span>!<span class="macro">matches!</span>(<span class="kw-2">*</span>c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;.&#39; </span>| <span class="string">b&#39;%&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;A&#39;</span>..=<span class="string">b&#39;Z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
 					<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input has some invalid values as expected by a generic asset identifier.&quot;</span>);
 					<span class="prelude-val">Err</span>(IdentifierError::InvalidFormat)
 				} <span class="kw">else </span>{
@@ -1608,7 +1621,7 @@
 				}
 			})<span class="question-mark">?</span>;
 			<span class="prelude-val">Ok</span>(<span class="self">Self</span>(
-				Vec::&lt;u8&gt;::from(input)
+				Vec::&lt;u8&gt;::from(input_ref)
 					.try_into()
 					.map_err(|<span class="kw">_</span>| IdentifierError::InvalidFormat)<span class="question-mark">?</span>,
 			))
@@ -1623,7 +1636,8 @@
 	}
 
 	<span class="kw">impl </span>Display <span class="kw">for </span>GenericAssetIdentifier {
-		<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
+		<span class="attr">#[allow(clippy::expect_used)]
+		</span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
 			<span class="comment">// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
 			</span><span class="macro">write!</span>(

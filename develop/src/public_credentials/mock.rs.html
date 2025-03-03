@@ -457,8 +457,12 @@
 <a href="#457" id="457">457</a>
 <a href="#458" id="458">458</a>
 <a href="#459" id="459">459</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -473,7 +477,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{traits::Get, weights::Weight};
 <span class="kw">use </span>frame_system::pallet_prelude::BlockNumberFor;
@@ -746,7 +750,7 @@
 		<span class="kw">type </span>Hashing = BlakeTwo256;
 		<span class="kw">type </span>AccountId = AccountId;
 		<span class="kw">type </span>Lookup = IdentityLookup&lt;<span class="self">Self</span>::AccountId&gt;;
-		<span class="kw">type </span>RuntimeEvent = ();
+		<span class="kw">type </span>RuntimeEvent = RuntimeEvent;
 		<span class="kw">type </span>BlockHashCount = ConstU64&lt;<span class="number">250</span>&gt;;
 		<span class="kw">type </span>DbWeight = RocksDbWeight;
 		<span class="kw">type </span>Version = ();
@@ -771,7 +775,7 @@
 		<span class="kw">type </span>MaxFreezes = ConstU32&lt;<span class="number">10</span>&gt;;
 		<span class="kw">type </span>Balance = Balance;
 		<span class="kw">type </span>DustRemoval = ();
-		<span class="kw">type </span>RuntimeEvent = ();
+		<span class="kw">type </span>RuntimeEvent = RuntimeEvent;
 		<span class="kw">type </span>ExistentialDeposit = ConstU128&lt;MILLI_UNIT&gt;;
 		<span class="kw">type </span>AccountStore = System;
 		<span class="kw">type </span>WeightInfo = ();
@@ -785,7 +789,7 @@
 		<span class="kw">type </span>EnsureOrigin = mock_origin::EnsureDoubleOrigin&lt;AccountId, <span class="self">Self</span>::CtypeCreatorId&gt;;
 		<span class="kw">type </span>OriginSuccess = mock_origin::DoubleOrigin&lt;AccountId, <span class="self">Self</span>::CtypeCreatorId&gt;;
 		<span class="kw">type </span>OverarchingOrigin = EnsureSigned&lt;AccountId&gt;;
-		<span class="kw">type </span>RuntimeEvent = ();
+		<span class="kw">type </span>RuntimeEvent = RuntimeEvent;
 		<span class="kw">type </span>WeightInfo = ();
 
 		<span class="kw">type </span>Currency = Balances;
@@ -803,7 +807,7 @@
 		<span class="kw">type </span>Currency = Balances;
 		<span class="kw">type </span>Deposit = ConstU128&lt;{ <span class="number">10 </span>* MILLI_UNIT }&gt;;
 		<span class="kw">type </span>EnsureOrigin = mock_origin::EnsureDoubleOrigin&lt;AccountId, <span class="self">Self</span>::AttesterId&gt;;
-		<span class="kw">type </span>RuntimeEvent = ();
+		<span class="kw">type </span>RuntimeEvent = RuntimeEvent;
 		<span class="kw">type </span>MaxEncodedClaimsLength = ConstU32&lt;<span class="number">500</span>&gt;;
 		<span class="kw">type </span>MaxSubjectIdLength = ConstU32&lt;<span class="number">100</span>&gt;;
 		<span class="kw">type </span>OriginSuccess = mock_origin::DoubleOrigin&lt;AccountId, <span class="self">Self</span>::AttesterId&gt;;
@@ -880,6 +884,10 @@
 			<span class="kw">let </span><span class="kw-2">mut </span>ext = sp_io::TestExternalities::new(storage);
 
 			ext.execute_with(|| {
+				<span class="comment">// ensure that we are not at the genesis block. Events are not registered for
+				// the genesis block.
+				</span>System::set_block_number(System::block_number() + <span class="number">1</span>);
+
 				<span class="kw">for </span>ctype <span class="kw">in </span><span class="self">self</span>.ctypes {
 					ctype::Ctypes::&lt;Test&gt;::insert(
 						ctype.<span class="number">0</span>,

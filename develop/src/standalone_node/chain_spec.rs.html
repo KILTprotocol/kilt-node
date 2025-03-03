@@ -121,8 +121,8 @@
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -137,12 +137,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="doccomment">//! KILT chain specification
 
 </span><span class="kw">use </span>kestrel_runtime::{
-	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, WASM_BINARY,
 };
 <span class="kw">use </span>runtime_common::{AccountId, AccountPublic};
 
@@ -196,7 +196,7 @@
 	<span class="kw">let </span>root_key = get_account_id_from_secret::&lt;ed25519::Public&gt;(<span class="string">&quot;//Alice&quot;</span>);
 
 	RuntimeGenesisConfig {
-		system: SystemConfig { ..Default::default() },
+		system: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts.into_iter().map(|a| (a, <span class="number">1u128 </span>&lt;&lt; <span class="number">90</span>)).collect(),
 		},

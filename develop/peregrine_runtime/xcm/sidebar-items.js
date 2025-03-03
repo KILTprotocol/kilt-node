@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Ancestry","RelayChainOrigin","RelayNetworkId","SafeCallFilter","TreasuryAccountId","UniversalLocation","XcmConfig"],"type":["LocalOriginToLocation","LocationToAccountIdConverter","XcmBarrier","XcmOriginToTransactDispatchOrigin","XcmRouter"]};

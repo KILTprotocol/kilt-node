@@ -777,8 +777,65 @@
 <a href="#777" id="777">777</a>
 <a href="#778" id="778">778</a>
 <a href="#779" id="779">779</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -793,7 +850,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="doccomment">//! Runtime template of a Decentralized Identity Provider (DIP) provider, which
 //! includes, beyond system pallets, [`did::Pallet`],
@@ -803,12 +860,14 @@
 
 </span><span class="attr">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]
 #![recursion_limit = <span class="string">&quot;256&quot;</span>]
+</span><span class="comment">// Triggered by `impl_runtime_apis` macro
+</span><span class="attr">#![allow(clippy::empty_structs_with_brackets)]
 
 #[cfg(feature = <span class="string">&quot;std&quot;</span>)]
 </span><span class="macro">include!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">&quot;OUT_DIR&quot;</span>), <span class="string">&quot;/wasm_binary.rs&quot;</span>));
 
 <span class="kw">use </span>pallet_did_lookup::linkable_account::LinkableAccountId;
-<span class="kw">use </span>pallet_web3_names::web3_name::AsciiWeb3Name;
+<span class="kw">use </span>pallet_web3_names::Web3NameOf;
 <span class="kw">use </span>parity_scale_codec::{Decode, Encode};
 <span class="kw">use </span>scale_info::TypeInfo;
 <span class="kw">pub use </span>sp_consensus_aura::sr25519::AuthorityId <span class="kw">as </span>AuraId;
@@ -1147,7 +1206,6 @@
 	<span class="kw">type </span>AuthorityId = AuraId;
 	<span class="kw">type </span>DisabledValidators = ();
 	<span class="kw">type </span>MaxAuthorities = ConstU32&lt;<span class="number">100_000</span>&gt;;
-	<span class="kw">type </span>SlotDuration = ConstU64&lt;SLOT_DURATION&gt;;
 }
 
 <span class="kw">impl </span>cumulus_pallet_aura_ext::Config <span class="kw">for </span>Runtime {}
@@ -1179,6 +1237,7 @@
 	<span class="kw">type </span>BaseDeposit = ConstU128&lt;UNIT&gt;;
 	<span class="kw">type </span>Currency = Balances;
 	<span class="kw">type </span>DidIdentifier = DidIdentifier;
+	<span class="kw">type </span>DidLifecycleHooks = ();
 	<span class="kw">type </span>EnsureOrigin = EnsureDidOrigin&lt;DidIdentifier, AccountId&gt;;
 	<span class="kw">type </span>Fee = ConstU128&lt;MILLIUNIT&gt;;
 	<span class="kw">type </span>FeeCollector = ();
@@ -1203,6 +1262,7 @@
 }
 
 <span class="kw">impl </span>pallet_did_lookup::Config <span class="kw">for </span>Runtime {
+	<span class="kw">type </span>AssociateOrigin = <span class="self">Self</span>::EnsureOrigin;
 	<span class="kw">type </span>BalanceMigrationManager = ();
 	<span class="kw">type </span>Currency = Balances;
 	<span class="kw">type </span>Deposit = ConstU128&lt;UNIT&gt;;
@@ -1211,14 +1271,15 @@
 	<span class="kw">type </span>OriginSuccess = DidRawOrigin&lt;AccountId, DidIdentifier&gt;;
 	<span class="kw">type </span>RuntimeEvent = RuntimeEvent;
 	<span class="kw">type </span>RuntimeHoldReason = RuntimeHoldReason;
+	<span class="kw">type </span>UniqueLinkingEnabled = ConstBool&lt;<span class="bool-val">false</span>&gt;;
 	<span class="kw">type </span>WeightInfo = weights::pallet_did_lookup::WeightInfo&lt;Runtime&gt;;
 }
 
-<span class="kw">pub type </span>Web3Name = AsciiWeb3Name&lt;Runtime&gt;;
-
+<span class="kw">pub type </span>Web3Name = runtime_common::Web3Name&lt;<span class="number">3</span>, <span class="number">32</span>&gt;;
 <span class="kw">impl </span>pallet_web3_names::Config <span class="kw">for </span>Runtime {
 	<span class="kw">type </span>BalanceMigrationManager = ();
 	<span class="kw">type </span>BanOrigin = EnsureRoot&lt;AccountId&gt;;
+	<span class="kw">type </span>ClaimOrigin = <span class="self">Self</span>::OwnerOrigin;
 	<span class="kw">type </span>Currency = Balances;
 	<span class="kw">type </span>Deposit = ConstU128&lt;UNIT&gt;;
 	<span class="kw">type </span>MaxNameLength = ConstU32&lt;<span class="number">32</span>&gt;;
@@ -1230,6 +1291,9 @@
 	<span class="kw">type </span>Web3Name = Web3Name;
 	<span class="kw">type </span>Web3NameOwner = DidIdentifier;
 	<span class="kw">type </span>WeightInfo = weights::pallet_web3_names::WeightInfo&lt;Runtime&gt;;
+
+	<span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
+	</span><span class="kw">type </span>BenchmarkHelper = ();
 }
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
@@ -1405,7 +1469,9 @@
 		LinkableAccountId,
 		Balance,
 		Hash,
-		BlockNumber
+		BlockNumber,
+		(),
+		()
 	&gt; <span class="kw">for </span>Runtime {
 		<span class="kw">fn </span>query_by_web3_name(name: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;kilt_runtime_api_did::RawDidLinkedInfo&lt;
 				DidIdentifier,
@@ -1416,7 +1482,7 @@
 				BlockNumber
 			&gt;
 		&gt; {
-			<span class="kw">let </span>name: pallet_web3_names::web3_name::AsciiWeb3Name&lt;Runtime&gt; = name.try_into().ok()<span class="question-mark">?</span>;
+			<span class="kw">let </span>name: Web3NameOf&lt;Runtime&gt; = name.try_into().ok()<span class="question-mark">?</span>;
 			pallet_web3_names::Owner::&lt;Runtime&gt;::get(<span class="kw-2">&amp;</span>name)
 				.and_then(|owner_info| {
 					did::Did::&lt;Runtime&gt;::get(<span class="kw-2">&amp;</span>owner_info.owner).map(|details| (owner_info, details))
@@ -1435,6 +1501,18 @@
 						details: details.into(),
 					}
 			})
+		}
+
+		<span class="kw">fn </span>batch_query_by_web3_name(names: Vec&lt;Vec&lt;u8&gt;&gt;) -&gt; Vec&lt;<span class="prelude-ty">Option</span>&lt;kilt_runtime_api_did::RawDidLinkedInfo&lt;
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			&gt;
+		&gt;&gt; {
+			names.into_iter().map(<span class="self">Self</span>::query_by_web3_name).collect()
 		}
 
 		<span class="kw">fn </span>query_by_account(account: LinkableAccountId) -&gt; <span class="prelude-ty">Option</span>&lt;
@@ -1466,6 +1544,19 @@
 				})
 		}
 
+		<span class="kw">fn </span>batch_query_by_account(accounts: Vec&lt;LinkableAccountId&gt;) -&gt; Vec&lt;<span class="prelude-ty">Option</span>&lt;
+			kilt_runtime_api_did::RawDidLinkedInfo&lt;
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			&gt;
+		&gt;&gt; {
+			accounts.into_iter().map(<span class="self">Self</span>::query_by_account).collect()
+		}
+
 		<span class="kw">fn </span>query(did: DidIdentifier) -&gt; <span class="prelude-ty">Option</span>&lt;
 			kilt_runtime_api_did::RawDidLinkedInfo&lt;
 				DidIdentifier,
@@ -1488,6 +1579,29 @@
 				service_endpoints,
 				details: details.into(),
 			})
+		}
+
+		<span class="kw">fn </span>batch_query(dids: Vec&lt;DidIdentifier&gt;) -&gt; Vec&lt;<span class="prelude-ty">Option</span>&lt;
+			kilt_runtime_api_did::RawDidLinkedInfo&lt;
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			&gt;
+		&gt;&gt; {
+			dids.into_iter().map(<span class="self">Self</span>::query).collect()
+		}
+
+		<span class="comment">// We don&#39;t return anything here, since the runtime does not require the resources to be cleaned up.
+		</span><span class="kw">fn </span>linked_resources(_did: DidIdentifier) -&gt; Vec&lt;()&gt; {
+			[].into()
+		}
+
+		<span class="comment">// We don&#39;t return anything here, since the runtime does not require the resources to be cleaned up.
+		</span><span class="kw">fn </span>linked_resources_deletion_calls(_did: DidIdentifier) -&gt; Vec&lt;()&gt; {
+			[].into()
 		}
 	}
 

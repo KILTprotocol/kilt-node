@@ -78,11 +78,8 @@
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
-<a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -97,7 +94,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::ensure;
 <span class="kw">use </span>sp_std::marker::PhantomData;
@@ -130,10 +127,7 @@
 		<span class="comment">// 1. Retrieve switch pair from storage.
 		</span><span class="kw">let </span>switch_pair = SwitchPair::&lt;T, I&gt;::get().ok_or(XcmExecutorError::AssetNotHandled)<span class="question-mark">?</span>;
 
-		<span class="comment">// 2. Ensure switch pair is enabled
-		</span><span class="macro">ensure!</span>(switch_pair.is_enabled(), XcmExecutorError::AssetNotHandled);
-
-		<span class="comment">// 3. Match stored asset ID with input asset ID.
+		<span class="comment">// 2. Match stored asset ID with input asset ID.
 		</span><span class="kw">let </span>Asset { id, fun } = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
 			<span class="macro">log::error!</span>(
 				target: LOG_TARGET,
@@ -144,7 +138,7 @@
 			XcmExecutorError::AssetNotHandled
 		})<span class="question-mark">?</span>;
 		<span class="macro">ensure!</span>(id == a.id, XcmExecutorError::AssetNotHandled);
-		<span class="comment">// 4. Verify the stored asset is a fungible one.
+		<span class="comment">// 3. Verify the stored asset is a fungible one.
 		</span><span class="kw">let </span>Fungibility::Fungible(<span class="kw">_</span>) = fun <span class="kw">else </span>{
 			<span class="macro">log::info!</span>(target: LOG_TARGET, <span class="string">&quot;Stored remote fee asset {:?} is not a fungible one.&quot;</span>, switch_pair.remote_xcm_fee);
 			<span class="kw">return </span><span class="prelude-val">Err</span>(XcmExecutorError::AssetNotHandled);
@@ -154,7 +148,7 @@
 		// errors thrown from here onwards is a `FailedToTransactAsset` error.
 
 		</span><span class="kw">let </span>AssetId(location) = id;
-		<span class="comment">// 5. Force input asset as a fungible one and return its amount.
+		<span class="comment">// 4. Force input asset as a fungible one and return its amount.
 		</span><span class="kw">let </span>Fungibility::Fungible(amount) = a.fun <span class="kw">else </span>{
 			<span class="macro">log::info!</span>(target: LOG_TARGET, <span class="string">&quot;Input asset {:?} is supposed to be fungible but it is not.&quot;</span>, a);
 			<span class="kw">return </span><span class="prelude-val">Err</span>(XcmExecutorError::AmountToBalanceConversionFailed);

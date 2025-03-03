@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["convert","match","trade","transact","transfer"]};
+window.SIDEBAR_ITEMS = {"mod":["convert","match","query","trade","transact","transfer"]};

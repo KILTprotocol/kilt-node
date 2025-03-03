@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"runtime_common":[["impl&lt;BondedFungibles: PalletInfoAccess&gt; StorageInstance for <a class=\"struct\" href=\"runtime_common/bonded_coins/hooks/struct.NextAssetId_Storage_Instance.html\" title=\"struct runtime_common::bonded_coins::hooks::NextAssetId_Storage_Instance\">NextAssetId_Storage_Instance</a>&lt;BondedFungibles&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

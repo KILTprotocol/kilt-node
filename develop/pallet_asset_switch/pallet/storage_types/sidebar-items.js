@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["SwitchPair"]};
+window.SIDEBAR_ITEMS = {"struct":["NextQueryId","PendingSwitchConfirmations","SwitchPair"]};

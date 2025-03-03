@@ -161,28 +161,8 @@
 <a href="#161" id="161">161</a>
 <a href="#162" id="162">162</a>
 <a href="#163" id="163">163</a>
-<a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -197,35 +177,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::traits::Get;
 <span class="kw">use </span>pallet_deposit_storage::{
 	traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet,
 };
 <span class="kw">use </span>pallet_dip_provider::IdentityCommitmentVersion;
-<span class="kw">use </span>parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-<span class="kw">use </span>scale_info::TypeInfo;
-<span class="kw">use </span>sp_core::{ConstU128, RuntimeDebug};
+<span class="kw">use </span>parity_scale_codec::Decode;
+<span class="kw">use </span>sp_core::ConstU128;
 
-<span class="kw">use crate</span>::{constants::dip_provider::COMMITMENT_DEPOSIT, AccountId, DidIdentifier};
+<span class="kw">pub use crate</span>::{
+	constants::dip_provider::COMMITMENT_DEPOSIT,
+	deposits::{DepositKey, DepositNamespace},
+	AccountId, DidIdentifier,
+};
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>mock;
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests;
-
-<span class="attr">#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
-</span><span class="kw">pub enum </span>DepositNamespace {
-	DipProvider,
-}
-
-<span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
-</span><span class="kw">impl </span>Default <span class="kw">for </span>DepositNamespace {
-	<span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-		<span class="self">Self</span>::DipProvider
-	}
-}
 
 <span class="doccomment">/// The namespace to use in the [`pallet_deposit_storage::Pallet`] to store
 /// all deposits related to DIP commitments.
@@ -235,19 +206,6 @@
 	<span class="kw">fn </span>get() -&gt; DepositNamespace {
 		DepositNamespace::DipProvider
 	}
-}
-
-<span class="doccomment">/// The various different keys that can be stored in the storage-tracking
-/// pallet.
-/// Although the namespace is used to distinguish between keys, it is useful to
-/// group all keys under the same enum to calculate the maximum length that a
-/// key can take.
-</span><span class="attr">#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
-</span><span class="kw">pub enum </span>DepositKey {
-	DipProvider {
-		identifier: DidIdentifier,
-		version: IdentityCommitmentVersion,
-	},
 }
 
 <span class="kw">impl </span>From&lt;(DidIdentifier, AccountId, IdentityCommitmentVersion)&gt; <span class="kw">for </span>DepositKey {
@@ -337,6 +295,8 @@
 		&lt;Runtime <span class="kw">as </span>pallet_deposit_storage::Config&gt;::Namespace,
 		sp_runtime::BoundedVec&lt;u8, &lt;Runtime <span class="kw">as </span>pallet_deposit_storage::Config&gt;::MaxKeyLength&gt;,
 	) {
+		<span class="kw">use </span>parity_scale_codec::Encode;
+
 		<span class="kw">let </span>submitter = AccountId::from([<span class="number">100u8</span>; <span class="number">32</span>]);
 		<span class="kw">let </span>namespace = DepositNamespace::DipProvider;
 		<span class="kw">let </span>did_identifier = DidIdentifier::from([<span class="number">200u8</span>; <span class="number">32</span>]);

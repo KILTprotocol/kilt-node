@@ -309,8 +309,9 @@
 <a href="#309" id="309">309</a>
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#312" id="312">312</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -325,12 +326,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
-</span><span class="attr">#![cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
-</span><span class="doccomment">//! Benchmarking
+// Old benchmarking macros are a mess.
+</span><span class="attr">#![allow(clippy::tests_outside_test_module)]
 
-</span><span class="kw">use </span>frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+</span><span class="kw">use </span>frame_benchmarking::{account, benchmarks_instance_pallet, impl_benchmark_test_suite};
 <span class="kw">use </span>frame_support::{
 	crypto::ecdsa::ECDSAExt,
 	traits::{
@@ -361,23 +362,24 @@
 
 <span class="comment">// Free 2x deposit amount + existential deposit so that we can use this function
 // to link an account two times to two different DIDs.
-</span><span class="kw">fn </span>make_free_for_did&lt;T: Config&gt;(account: <span class="kw-2">&amp;</span>AccountIdOf&lt;T&gt;)
+</span><span class="kw">fn </span>make_free_for_did&lt;T: Config&lt;I&gt;, I: <span class="lifetime">&#39;static</span>&gt;(account: <span class="kw-2">&amp;</span>AccountIdOf&lt;T&gt;)
 <span class="kw">where
-	</span>&lt;T <span class="kw">as </span>Config&gt;::Currency: Mutate&lt;T::AccountId&gt;,
+	</span>&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Currency: Mutate&lt;T::AccountId&gt;,
 {
-	<span class="kw">let </span>balance = &lt;CurrencyOf&lt;T&gt; <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::minimum_balance()
-		+ &lt;T <span class="kw">as </span>Config&gt;::Deposit::get()
-		+ &lt;T <span class="kw">as </span>Config&gt;::Deposit::get();
-	CurrencyOf::&lt;T&gt;::set_balance(account, balance);
+	<span class="kw">let </span>balance = &lt;CurrencyOf&lt;T, I&gt; <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::minimum_balance()
+		+ &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get()
+		+ &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get();
+	CurrencyOf::&lt;T, I&gt;::set_balance(account, balance);
 }
 
-<span class="macro">benchmarks! </span>{
+<span class="macro">benchmarks_instance_pallet! </span>{
 	where_clause {
 		<span class="kw">where
 		</span>T::AccountId: From&lt;sr25519::Public&gt; + From&lt;ed25519::Public&gt; + Into&lt;LinkableAccountId&gt; + Into&lt;AccountId32&gt; + From&lt;sp_runtime::AccountId32&gt;,
-		T::DidIdentifier: From&lt;T::AccountId&gt;,
-		T::EnsureOrigin: GenerateBenchmarkOrigin&lt;T::RuntimeOrigin, T::AccountId, T::DidIdentifier&gt;,
-		&lt;T <span class="kw">as </span>Config&gt;::Currency: Mutate&lt;T::AccountId&gt;,
+		&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::DidIdentifier: From&lt;T::AccountId&gt;,
+		&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::EnsureOrigin: GenerateBenchmarkOrigin&lt;T::RuntimeOrigin, T::AccountId, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::DidIdentifier&gt;,
+		&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::AssociateOrigin: GenerateBenchmarkOrigin&lt;T::RuntimeOrigin, T::AccountId, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::DidIdentifier&gt;,
+		&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Currency: Mutate&lt;T::AccountId&gt;,
 	}
 
 	associate_account_multisig_sr25519 {
@@ -398,19 +400,19 @@
 			))
 			.ok_or(<span class="string">&quot;Error while building signature.&quot;</span>)<span class="question-mark">?</span>;
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
 
 		<span class="comment">// Add existing connected_acc -&gt; previous_did connection that will be replaced
-		</span>Pallet::&lt;T&gt;::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create previous association&quot;</span>);
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_some());
-		<span class="kw">let </span>origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		</span>Pallet::&lt;T, I&gt;::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create previous association&quot;</span>);
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_some());
+		<span class="kw">let </span>origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 		<span class="kw">let </span>id_arg = linkable_id.clone();
 		<span class="kw">let </span>req = AssociateAccountRequest::Polkadot(connected_acc_id.into(), sig.into());
 	}: associate_account&lt;T::RuntimeOrigin&gt;(origin, req, expire_at)
 	verify {
-		<span class="macro">assert!</span>(ConnectedDids::&lt;T&gt;::get(linkable_id.clone()).is_some());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_none());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(did, linkable_id).is_some());
+		<span class="macro">assert!</span>(ConnectedDids::&lt;T, I&gt;::get(linkable_id.clone()).is_some());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_none());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(did, linkable_id).is_some());
 	}
 
 	associate_account_multisig_ed25519 {
@@ -431,19 +433,19 @@
 			))
 			.ok_or(<span class="string">&quot;Error while building signature.&quot;</span>)<span class="question-mark">?</span>;
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
 
 		<span class="comment">// Add existing connected_acc -&gt; previous_did connection that will be replaced
-		</span>Pallet::&lt;T&gt;::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create previous association&quot;</span>);
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_some());
-		<span class="kw">let </span>origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		</span>Pallet::&lt;T, I&gt;::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create previous association&quot;</span>);
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_some());
+		<span class="kw">let </span>origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 		<span class="kw">let </span>id_arg = linkable_id.clone();
 		<span class="kw">let </span>req = AssociateAccountRequest::Polkadot(connected_acc_id.into(), sig.into());
 	}: associate_account&lt;T::RuntimeOrigin&gt;(origin, req, expire_at)
 	verify {
-		<span class="macro">assert!</span>(ConnectedDids::&lt;T&gt;::get(linkable_id.clone()).is_some());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_none());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(did, linkable_id).is_some());
+		<span class="macro">assert!</span>(ConnectedDids::&lt;T, I&gt;::get(linkable_id.clone()).is_some());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_none());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(did, linkable_id).is_some());
 	}
 
 	associate_account_multisig_ecdsa {
@@ -464,19 +466,19 @@
 			))
 			.ok_or(<span class="string">&quot;Error while building signature.&quot;</span>)<span class="question-mark">?</span>;
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
 
 		<span class="comment">// Add existing connected_acc -&gt; previous_did connection that will be replaced
-		</span>Pallet::&lt;T&gt;::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create previous association&quot;</span>);
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_some());
-		<span class="kw">let </span>origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		</span>Pallet::&lt;T, I&gt;::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create previous association&quot;</span>);
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_some());
+		<span class="kw">let </span>origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 		<span class="kw">let </span>id_arg = linkable_id.clone();
 		<span class="kw">let </span>req = AssociateAccountRequest::Polkadot(connected_acc_id, sig.into());
 	}: associate_account&lt;T::RuntimeOrigin&gt;(origin, req, expire_at)
 	verify {
-		<span class="macro">assert!</span>(ConnectedDids::&lt;T&gt;::get(linkable_id.clone()).is_some());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_none());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(did, linkable_id).is_some());
+		<span class="macro">assert!</span>(ConnectedDids::&lt;T, I&gt;::get(linkable_id.clone()).is_some());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>previous_did, linkable_id.clone()).is_none());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(did, linkable_id).is_some());
 	}
 
 	associate_eth_account {
@@ -499,18 +501,18 @@
 			<span class="kw-2">&amp;</span>Keccak256::digest(wrapped_payload).try_into().unwrap(),
 		).ok_or(<span class="string">&quot;Error while building signature.&quot;</span>)<span class="question-mark">?</span>;
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
 
 		<span class="comment">// Add existing connected_acc -&gt; previous_did connection that will be replaced
-		</span>Pallet::&lt;T&gt;::add_association(caller.clone(), previous_did.clone(), eth_account.into()).expect(<span class="string">&quot;should create previous association&quot;</span>);
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(<span class="kw-2">&amp;</span>previous_did, LinkableAccountId::from(eth_account)).is_some());
-		<span class="kw">let </span>origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		</span>Pallet::&lt;T, I&gt;::add_association(caller.clone(), previous_did.clone(), eth_account.into()).expect(<span class="string">&quot;should create previous association&quot;</span>);
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>previous_did, LinkableAccountId::from(eth_account)).is_some());
+		<span class="kw">let </span>origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 		<span class="kw">let </span>req = AssociateAccountRequest::Ethereum(eth_account, sig.into());
 	}: associate_account&lt;T::RuntimeOrigin&gt;(origin, req, expire_at)
 	verify {
-		<span class="macro">assert!</span>(ConnectedDids::&lt;T&gt;::get(LinkableAccountId::from(eth_account)).is_some());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(<span class="kw-2">&amp;</span>previous_did, LinkableAccountId::from(eth_account)).is_none());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(did, LinkableAccountId::from(eth_account)).is_some());
+		<span class="macro">assert!</span>(ConnectedDids::&lt;T, I&gt;::get(LinkableAccountId::from(eth_account)).is_some());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>previous_did, LinkableAccountId::from(eth_account)).is_none());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(did, LinkableAccountId::from(eth_account)).is_some());
 	}
 
 	associate_sender {
@@ -519,17 +521,17 @@
 		<span class="kw">let </span>did: T::DidIdentifier = account(<span class="string">&quot;did&quot;</span>, <span class="number">0</span>, SEED);
 		<span class="kw">let </span>previous_did: T::DidIdentifier = account(<span class="string">&quot;prev&quot;</span>, <span class="number">0</span>, SEED + <span class="number">1</span>);
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
 
 		<span class="comment">// Add existing sender -&gt; previous_did connection that will be replaced
-		</span>Pallet::&lt;T&gt;::add_association(caller.clone(), previous_did.clone(), caller.clone().into()).expect(<span class="string">&quot;should create previous association&quot;</span>);
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(<span class="kw-2">&amp;</span>previous_did, <span class="kw-2">&amp;</span>linkable_id).is_some());
-		<span class="kw">let </span>origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		</span>Pallet::&lt;T, I&gt;::add_association(caller.clone(), previous_did.clone(), caller.clone().into()).expect(<span class="string">&quot;should create previous association&quot;</span>);
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>previous_did, <span class="kw-2">&amp;</span>linkable_id).is_some());
+		<span class="kw">let </span>origin = T::AssociateOrigin::generate_origin(caller, did.clone());
 	}: <span class="kw">_</span>&lt;T::RuntimeOrigin&gt;(origin)
 	verify {
-		<span class="macro">assert!</span>(ConnectedDids::&lt;T&gt;::get(<span class="kw-2">&amp;</span>linkable_id).is_some());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(previous_did, <span class="kw-2">&amp;</span>linkable_id).is_none());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(did, linkable_id).is_some());
+		<span class="macro">assert!</span>(ConnectedDids::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>linkable_id).is_some());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(previous_did, <span class="kw-2">&amp;</span>linkable_id).is_none());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(did, linkable_id).is_some());
 	}
 
 	remove_sender_association {
@@ -537,30 +539,30 @@
 		<span class="kw">let </span>linkable_id: LinkableAccountId = caller.clone().into();
 		<span class="kw">let </span>did: T::DidIdentifier = account(<span class="string">&quot;did&quot;</span>, <span class="number">0</span>, SEED);
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
-		Pallet::&lt;T&gt;::add_association(caller.clone(), did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create association&quot;</span>);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
+		Pallet::&lt;T, I&gt;::add_association(caller.clone(), did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create association&quot;</span>);
 
 		<span class="kw">let </span>origin = RawOrigin::Signed(caller);
 	}: <span class="kw">_</span>(origin)
 	verify {
-		<span class="macro">assert!</span>(ConnectedDids::&lt;T&gt;::get(<span class="kw-2">&amp;</span>linkable_id).is_none());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(did, linkable_id).is_none());
+		<span class="macro">assert!</span>(ConnectedDids::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>linkable_id).is_none());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(did, linkable_id).is_none());
 	}
 
 	remove_account_association {
 		<span class="kw">let </span>caller: T::AccountId = account(<span class="string">&quot;caller&quot;</span>, <span class="number">0</span>, SEED);
 		<span class="kw">let </span>linkable_id: LinkableAccountId = caller.clone().into();
 		<span class="kw">let </span>did: T::DidIdentifier = account(<span class="string">&quot;did&quot;</span>, <span class="number">0</span>, SEED);
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
 
-		Pallet::&lt;T&gt;::add_association(caller.clone(), did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create association&quot;</span>);
+		Pallet::&lt;T, I&gt;::add_association(caller.clone(), did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create association&quot;</span>);
 
 		<span class="kw">let </span>origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		<span class="kw">let </span>id_arg = linkable_id.clone();
 	}: <span class="kw">_</span>&lt;T::RuntimeOrigin&gt;(origin, id_arg)
 	verify {
-		<span class="macro">assert!</span>(ConnectedDids::&lt;T&gt;::get(<span class="kw-2">&amp;</span>linkable_id).is_none());
-		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T&gt;::get(did, linkable_id).is_none());
+		<span class="macro">assert!</span>(ConnectedDids::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>linkable_id).is_none());
+		<span class="macro">assert!</span>(ConnectedAccounts::&lt;T, I&gt;::get(did, linkable_id).is_none());
 	}
 
 	change_deposit_owner {
@@ -568,20 +570,20 @@
 		<span class="kw">let </span>deposit_owner_new: T::AccountId = account(<span class="string">&quot;caller&quot;</span>, <span class="number">1</span>, SEED);
 		<span class="kw">let </span>linkable_id: LinkableAccountId = deposit_owner_old.clone().into();
 		<span class="kw">let </span>did: T::DidIdentifier = account(<span class="string">&quot;did&quot;</span>, <span class="number">0</span>, SEED);
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>deposit_owner_old);
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>deposit_owner_new);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>deposit_owner_old);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>deposit_owner_new);
 
-		Pallet::&lt;T&gt;::add_association(deposit_owner_old, did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create association&quot;</span>);
+		Pallet::&lt;T, I&gt;::add_association(deposit_owner_old, did.clone(), linkable_id.clone()).expect(<span class="string">&quot;should create association&quot;</span>);
 
 		<span class="kw">let </span>origin = T::EnsureOrigin::generate_origin(deposit_owner_new.clone(), did);
 		<span class="kw">let </span>id_arg = linkable_id.clone();
 	}: <span class="kw">_</span>&lt;T::RuntimeOrigin&gt;(origin, id_arg)
 	verify {
 		<span class="macro">assert_eq!</span>(
-			ConnectedDids::&lt;T&gt;::get(<span class="kw-2">&amp;</span>linkable_id).expect(<span class="string">&quot;should retain link&quot;</span>).deposit,
+			ConnectedDids::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>linkable_id).expect(<span class="string">&quot;should retain link&quot;</span>).deposit,
 			Deposit {
 				owner: deposit_owner_new,
-				amount: &lt;T <span class="kw">as </span>Config&gt;::Deposit::get(),
+				amount: &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get(),
 			},
 		);
 	}
@@ -590,9 +592,9 @@
 		<span class="kw">let </span>deposit_owner: T::AccountId = account(<span class="string">&quot;caller&quot;</span>, <span class="number">0</span>, SEED);
 		<span class="kw">let </span>linkable_id: LinkableAccountId = deposit_owner.clone().into();
 		<span class="kw">let </span>did: T::DidIdentifier = account(<span class="string">&quot;did&quot;</span>, <span class="number">0</span>, SEED);
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>deposit_owner);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>deposit_owner);
 
-		Pallet::&lt;T&gt;::add_association(
+		Pallet::&lt;T, I&gt;::add_association(
 			deposit_owner.clone(),
 			did,
 			linkable_id.clone()
@@ -603,10 +605,10 @@
 	}: <span class="kw">_</span>(origin, id_arg)
 	verify {
 		<span class="macro">assert_eq!</span>(
-			ConnectedDids::&lt;T&gt;::get(<span class="kw-2">&amp;</span>linkable_id).expect(<span class="string">&quot;should retain link&quot;</span>).deposit,
+			ConnectedDids::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>linkable_id).expect(<span class="string">&quot;should retain link&quot;</span>).deposit,
 			Deposit {
 				owner: deposit_owner,
-				amount: &lt;T <span class="kw">as </span>Config&gt;::Deposit::get(),
+				amount: &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get(),
 			},
 		);
 	}

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEPOSIT","DOT_NAME_SUFFIX","MAX_LENGTH","MAX_NAME_BYTE_LENGTH","MIN_LENGTH"],"struct":["MaxNameLength","MinNameLength","Web3NameDeposit"]};

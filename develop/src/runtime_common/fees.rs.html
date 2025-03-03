@@ -296,10 +296,8 @@
 <a href="#296" id="296">296</a>
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
-<a href="#299" id="299">299</a>
-<a href="#300" id="300">300</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -314,7 +312,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{
 	dispatch::DispatchClass,
@@ -367,8 +365,7 @@
 <span class="kw">impl</span>&lt;R&gt; OnUnbalanced&lt;NegativeImbalanceOf&lt;R&gt;&gt; <span class="kw">for </span>ToAuthor&lt;R&gt;
 <span class="kw">where
 	</span>R: pallet_balances::Config + pallet_authorship::Config,
-	&lt;R <span class="kw">as </span>frame_system::Config&gt;::AccountId: From&lt;AccountId&gt;,
-	&lt;R <span class="kw">as </span>frame_system::Config&gt;::AccountId: Into&lt;AccountId&gt;,
+	&lt;R <span class="kw">as </span>frame_system::Config&gt;::AccountId: From&lt;AccountId&gt; + Into&lt;AccountId&gt;,
 	&lt;R <span class="kw">as </span>pallet_balances::Config&gt;::Balance: Into&lt;u128&gt;,
 {
 	<span class="kw">fn </span>on_nonzero_unbalanced(amount: NegativeImbalanceOf&lt;R&gt;) {
@@ -382,8 +379,7 @@
 <span class="kw">impl</span>&lt;R&gt; OnUnbalanced&lt;CreditOf&lt;R&gt;&gt; <span class="kw">for </span>ToAuthorCredit&lt;R&gt;
 <span class="kw">where
 	</span>R: pallet_balances::Config + pallet_authorship::Config,
-	&lt;R <span class="kw">as </span>frame_system::Config&gt;::AccountId: From&lt;AccountId&gt;,
-	&lt;R <span class="kw">as </span>frame_system::Config&gt;::AccountId: Into&lt;AccountId&gt;,
+	&lt;R <span class="kw">as </span>frame_system::Config&gt;::AccountId: From&lt;AccountId&gt; + Into&lt;AccountId&gt;,
 	&lt;R <span class="kw">as </span>pallet_balances::Config&gt;::Balance: Into&lt;u128&gt;,
 {
 	<span class="kw">fn </span>on_nonzero_unbalanced(amount: CreditOf&lt;R&gt;) {
@@ -409,13 +405,13 @@
 </span><span class="kw">pub struct </span>WeightToFee&lt;R&gt;(sp_std::marker::PhantomData&lt;R&gt;);
 <span class="kw">impl</span>&lt;R&gt; WeightToFeePolynomial <span class="kw">for </span>WeightToFee&lt;R&gt;
 <span class="kw">where
-	</span>R: pallet_transaction_payment::Config,
-	R: frame_system::Config,
-	R: pallet_balances::Config,
+	</span>R: pallet_transaction_payment::Config + frame_system::Config + pallet_balances::Config,
 	u128: From&lt;&lt;&lt;R <span class="kw">as </span>pallet_transaction_payment::Config&gt;::OnChargeTransaction <span class="kw">as </span>OnChargeTransaction&lt;R&gt;&gt;::Balance&gt;,
 {
 	<span class="kw">type </span>Balance = Balance;
-	<span class="kw">fn </span>polynomial() -&gt; WeightToFeeCoefficients&lt;<span class="self">Self</span>::Balance&gt; {
+	<span class="attr">#[allow(clippy::integer_division)]
+	#[allow(clippy::arithmetic_side_effects)]
+	</span><span class="kw">fn </span>polynomial() -&gt; WeightToFeeCoefficients&lt;<span class="self">Self</span>::Balance&gt; {
 		<span class="comment">// The should be fee
 		</span><span class="kw">let </span>wanted_fee: Balance = <span class="number">10 </span>* MILLI_KILT;
 
@@ -543,7 +539,7 @@
 	<span class="kw">pub const </span>TREASURY_ACC: AccountId = <span class="kw">crate</span>::AccountId::new([<span class="number">1u8</span>; <span class="number">32</span>]);
 	<span class="kw">const </span>AUTHOR_ACC: AccountId = AccountId::new([<span class="number">2</span>; <span class="number">32</span>]);
 
-	<span class="kw">pub struct </span>ToBeneficiary();
+	<span class="kw">pub struct </span>ToBeneficiary;
 	<span class="kw">impl </span>OnUnbalanced&lt;CreditOf&lt;Test&gt;&gt; <span class="kw">for </span>ToBeneficiary {
 		<span class="kw">fn </span>on_nonzero_unbalanced(amount: CreditOf&lt;Test&gt;) {
 			<span class="comment">// Must resolve into existing but better to be safe.

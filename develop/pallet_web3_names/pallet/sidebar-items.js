@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Call","Error","Event","HoldReason"],"mod":["dispatchables","storage_types"],"struct":["Pallet"],"trait":["Config"],"type":["AccountIdOf","BalanceOf","Banned","Module","Names","Owner","Web3NameInput","Web3NameOf","Web3NameOwnerOf","Web3OwnershipOf"]};
+window.SIDEBAR_ITEMS = {"enum":["Call","Error","Event","HoldReason"],"mod":["dispatchables","storage_types"],"struct":["Instance1","Pallet"],"trait":["Config"],"type":["AccountIdOf","BalanceOf","Banned","Module","Names","Owner","Web3NameInput","Web3NameOf","Web3NameOwnerOf","Web3OwnershipOf"]};

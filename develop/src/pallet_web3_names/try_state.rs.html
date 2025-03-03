@@ -57,8 +57,8 @@
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::ensure;
 <span class="kw">use </span>kilt_support::test_utils::log_and_return_error_message;
@@ -82,12 +82,12 @@
 
 <span class="kw">use crate</span>::{Banned, Config, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf};
 
-<span class="kw">pub fn </span>do_try_state&lt;T: Config&gt;() -&gt; <span class="prelude-ty">Result</span>&lt;(), TryRuntimeError&gt; {
+<span class="kw">pub fn </span>do_try_state&lt;T: Config&lt;I&gt;, I: <span class="lifetime">&#39;static</span>&gt;() -&gt; <span class="prelude-ty">Result</span>&lt;(), TryRuntimeError&gt; {
 	<span class="comment">// check if for each owner there is a name stored.
-	</span>Owner::&lt;T&gt;::iter().try_for_each(
-		|(w3n, ownership): (Web3NameOf&lt;T&gt;, Web3OwnershipOf&lt;T&gt;)| -&gt; <span class="prelude-ty">Result</span>&lt;(), TryRuntimeError&gt; {
+	</span>Owner::&lt;T, I&gt;::iter().try_for_each(
+		|(w3n, ownership): (Web3NameOf&lt;T, I&gt;, Web3OwnershipOf&lt;T, I&gt;)| -&gt; <span class="prelude-ty">Result</span>&lt;(), TryRuntimeError&gt; {
 			<span class="macro">ensure!</span>(
-				Names::&lt;T&gt;::get(<span class="kw-2">&amp;</span>ownership.owner) == <span class="prelude-val">Some</span>(w3n.clone()),
+				Names::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>ownership.owner) == <span class="prelude-val">Some</span>(w3n.clone()),
 				log_and_return_error_message(<span class="macro">format!</span>(
 					<span class="string">&quot;Owned w3n from owner {:?} does not match with saved w3n {:?}&quot;</span>,
 					ownership.owner, w3n
@@ -98,19 +98,19 @@
 	)<span class="question-mark">?</span>;
 
 	<span class="comment">// check for each name there is an owner.
-	</span>Names::&lt;T&gt;::iter().try_for_each(
-		|(w3n_owner, w3n): (Web3NameOwnerOf&lt;T&gt;, Web3NameOf&lt;T&gt;)| -&gt; <span class="prelude-ty">Result</span>&lt;(), TryRuntimeError&gt; {
+	</span>Names::&lt;T, I&gt;::iter().try_for_each(
+		|(w3n_owner, w3n): (Web3NameOwnerOf&lt;T, I&gt;, Web3NameOf&lt;T, I&gt;)| -&gt; <span class="prelude-ty">Result</span>&lt;(), TryRuntimeError&gt; {
 			<span class="macro">ensure!</span>(
-				Owner::&lt;T&gt;::get(<span class="kw-2">&amp;</span>w3n).expect(<span class="string">&quot;Unknown w3n&quot;</span>).owner == w3n_owner,
+				Owner::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>w3n).expect(<span class="string">&quot;Unknown w3n&quot;</span>).owner == w3n_owner,
 				log_and_return_error_message(<span class="macro">format!</span>(<span class="string">&quot;Owner {:?} with w3n {:?} not found&quot;</span>, w3n_owner, w3n))
 			);
 			<span class="prelude-val">Ok</span>(())
 		},
 	)<span class="question-mark">?</span>;
 	<span class="comment">// a banned name should have no owner.
-	</span>Banned::&lt;T&gt;::iter_keys().try_for_each(|banned_w3n| -&gt; <span class="prelude-ty">Result</span>&lt;(), TryRuntimeError&gt; {
+	</span>Banned::&lt;T, I&gt;::iter_keys().try_for_each(|banned_w3n| -&gt; <span class="prelude-ty">Result</span>&lt;(), TryRuntimeError&gt; {
 		<span class="macro">ensure!</span>(
-			!Owner::&lt;T&gt;::contains_key(<span class="kw-2">&amp;</span>banned_w3n),
+			!Owner::&lt;T, I&gt;::contains_key(<span class="kw-2">&amp;</span>banned_w3n),
 			log_and_return_error_message(<span class="macro">format!</span>(<span class="string">&quot;Owner contains banned name {:?}&quot;</span>, banned_w3n))
 		);
 		<span class="prelude-val">Ok</span>(())

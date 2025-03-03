@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Web3NameValidationError"],"struct":["Web3Name"]};

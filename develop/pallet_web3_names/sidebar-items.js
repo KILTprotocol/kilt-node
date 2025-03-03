@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["migrations","pallet","web3_name"],"trait":["WeightInfo"]};
+window.SIDEBAR_ITEMS = {"mod":["migrations","pallet","web3_name"],"trait":["BenchmarkHelper","WeightInfo"]};

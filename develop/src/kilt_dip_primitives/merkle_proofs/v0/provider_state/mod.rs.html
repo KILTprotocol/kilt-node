@@ -482,8 +482,10 @@
 <a href="#482" id="482">482</a>
 <a href="#483" id="483">483</a>
 <a href="#484" id="484">484</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -498,7 +500,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::ensure;
 <span class="kw">use </span>pallet_dip_provider::IdentityCommitmentOf;
@@ -579,7 +581,7 @@
 		ConsumerBlockNumber,
 	&gt;
 {
-	<span class="kw">pub fn </span>new(
+	<span class="kw">pub const fn </span>new(
 		provider_head_proof: ProviderHeadStateProof&lt;RelayBlockNumber&gt;,
 		dip_commitment_proof: DipCommitmentStateProof,
 		dip_proof: DidMerkleProof&lt;KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId&gt;,
@@ -593,21 +595,21 @@
 		}
 	}
 
-	<span class="kw">pub fn </span>provider_head_proof(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ProviderHeadStateProof&lt;RelayBlockNumber&gt; {
+	<span class="kw">pub const fn </span>provider_head_proof(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ProviderHeadStateProof&lt;RelayBlockNumber&gt; {
 		<span class="kw-2">&amp;</span><span class="self">self</span>.provider_head_proof
 	}
 
-	<span class="kw">pub fn </span>dip_commitment_proof(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>DipCommitmentStateProof {
+	<span class="kw">pub const fn </span>dip_commitment_proof(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>DipCommitmentStateProof {
 		<span class="kw-2">&amp;</span><span class="self">self</span>.dip_commitment_proof
 	}
 
-	<span class="kw">pub fn </span>dip_proof(
+	<span class="kw">pub const fn </span>dip_proof(
 		<span class="kw-2">&amp;</span><span class="self">self</span>,
 	) -&gt; <span class="kw-2">&amp;</span>DidMerkleProof&lt;KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId&gt; {
 		<span class="kw-2">&amp;</span><span class="self">self</span>.dip_proof
 	}
 
-	<span class="kw">pub fn </span>signature(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>TimeBoundDidSignature&lt;ConsumerBlockNumber&gt; {
+	<span class="kw">pub const fn </span>signature(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>TimeBoundDidSignature&lt;ConsumerBlockNumber&gt; {
 		<span class="kw-2">&amp;</span><span class="self">self</span>.signature
 	}
 }
@@ -663,7 +665,7 @@
 		<span class="macro">log::trace!</span>(target: <span class="string">&quot;dip::consumer::ParachainDipDidProofV0&quot;</span>, <span class="string">&quot;Calculated storage key for para ID {:#?} = {:#?}&quot;</span>, provider_para_id, provider_head_storage_key);
 		<span class="comment">// TODO: Figure out why RPC call returns 2 bytes in front which we don&#39;t need
 		//This could be the reason (and the solution): https://substrate.stackexchange.com/a/1891/1795
-		</span><span class="kw">let </span>provider_header = verify_storage_value_proof_with_decoder::&lt;<span class="kw">_</span>, RelayHasher, ProviderHeader&gt;(
+		</span><span class="kw">let </span>provider_header = verify_storage_value_proof_with_decoder::&lt;<span class="kw">_</span>, RelayHasher, <span class="kw">_</span>, ProviderHeader, <span class="kw">_</span>&gt;(
 			<span class="kw-2">&amp;</span>provider_head_storage_key,
 			<span class="kw-2">*</span>relay_state_root,
 			<span class="self">self</span>.provider_head_proof.proof,
@@ -671,7 +673,8 @@
 				<span class="kw">if </span>input.len() &lt; <span class="number">2 </span>{
 					<span class="kw">return </span><span class="prelude-val">None</span>;
 				}
-				<span class="kw">let </span><span class="kw-2">mut </span>trimmed_input = <span class="kw-2">&amp;</span>input[<span class="number">2</span>..];
+				<span class="attr">#[allow(clippy::indexing_slicing)]
+				</span><span class="kw">let </span><span class="kw-2">mut </span>trimmed_input = <span class="kw-2">&amp;</span>input[<span class="number">2</span>..];
 				ProviderHeader::decode(<span class="kw-2">&amp;mut </span>trimmed_input).ok()
 			},
 		)
@@ -809,12 +812,13 @@
 		<span class="kw">let </span>dip_commitment_storage_key =
 			calculate_dip_identity_commitment_storage_key_for_runtime::&lt;ProviderRuntime&gt;(subject, <span class="number">0</span>);
 		<span class="macro">log::trace!</span>(target: <span class="string">&quot;dip::consumer::DipDidProofWithVerifiedStateRootV0&quot;</span>, <span class="string">&quot;Calculated storage key for subject {:#?} = {:#?}&quot;</span>, subject, dip_commitment_storage_key);
-		<span class="kw">let </span>dip_commitment = verify_storage_value_proof::&lt;<span class="kw">_</span>, ParachainHasher, IdentityCommitmentOf&lt;ProviderRuntime&gt;&gt;(
-			<span class="kw-2">&amp;</span>dip_commitment_storage_key,
-			<span class="self">self</span>.state_root,
-			<span class="self">self</span>.dip_commitment_proof.<span class="number">0</span>,
-		)
-		.map_err(Error::DipCommitmentMerkleProof)<span class="question-mark">?</span>;
+		<span class="kw">let </span>dip_commitment =
+			verify_storage_value_proof::&lt;<span class="kw">_</span>, ParachainHasher, IdentityCommitmentOf&lt;ProviderRuntime&gt;, <span class="kw">_</span>&gt;(
+				<span class="kw-2">&amp;</span>dip_commitment_storage_key,
+				<span class="self">self</span>.state_root,
+				<span class="self">self</span>.dip_commitment_proof.<span class="number">0</span>,
+			)
+			.map_err(Error::DipCommitmentMerkleProof)<span class="question-mark">?</span>;
 		<span class="prelude-val">Ok</span>(DipDidProofWithVerifiedSubjectCommitment {
 			dip_commitment,
 			dip_proof: <span class="self">self</span>.dip_proof,
@@ -875,7 +879,7 @@
 		ConsumerBlockNumber,
 	&gt;
 {
-	<span class="kw">pub fn </span>new(
+	<span class="kw">pub const fn </span>new(
 		dip_commitment: Commitment,
 		dip_proof: DidMerkleProof&lt;KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId&gt;,
 		signature: TimeBoundDidSignature&lt;ConsumerBlockNumber&gt;,
@@ -937,7 +941,7 @@
 		</span>DidMerkleHasher: Hash&lt;Output = Commitment&gt;,
 	{
 		<span class="macro">ensure!</span>(
-			<span class="self">self</span>.dip_proof.revealed.len() &lt;= MAX_REVEALED_LEAVES_COUNT.saturated_into(),
+			<span class="self">self</span>.dip_proof.revealed.len() &lt;= MAX_REVEALED_LEAVES_COUNT.saturated_into::&lt;usize&gt;(),
 			Error::TooManyLeavesRevealed
 		);
 

@@ -264,8 +264,8 @@
 <a href="#264" id="264">264</a>
 <a href="#265" id="265">265</a>
 <a href="#266" id="266">266</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -280,7 +280,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{
 	ensure,
@@ -416,7 +416,7 @@
 			<span class="kw">return </span><span class="prelude-val">None</span>;
 		};
 
-		<span class="kw">let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>switch_pair) = <span class="self">self</span>.switch_pair <span class="kw">else </span>{
+		<span class="kw">let </span><span class="prelude-val">Some</span>(switch_pair) = <span class="kw-2">&amp;</span><span class="self">self</span>.switch_pair <span class="kw">else </span>{
 			<span class="macro">log::error!</span>(target: LOG_TARGET, <span class="string">&quot;Stored switch pair should not be None, but it is.&quot;</span>);
 			<span class="kw">return </span><span class="prelude-val">None</span>;
 		};
@@ -439,7 +439,7 @@
 			})
 			.ok()<span class="question-mark">?</span>;
 
-		<span class="kw">let </span>weight_to_refund: Weight = weight.min(<span class="self">self</span>.remaining_weight);
+		<span class="kw">let </span>weight_to_refund = weight.min(<span class="self">self</span>.remaining_weight);
 		<span class="kw">let </span>amount_for_weight_to_refund = WeightToFee::weight_to_fee(<span class="kw-2">&amp;</span>weight_to_refund);
 		<span class="comment">// We can only refund up to the remaining balance of this weigher.
 		</span><span class="kw">let </span>amount_to_refund = amount_for_weight_to_refund.min(<span class="self">self</span>.remaining_fungible_balance);
@@ -513,11 +513,11 @@
 
 				<span class="comment">// No error should ever be thrown from inside this block.
 				</span>SwitchPair::&lt;T, I&gt;::mutate(|entry| {
-					<span class="kw">let </span><span class="prelude-val">Some</span>(entry) = entry.as_mut() <span class="kw">else </span>{
+					<span class="kw">let </span><span class="prelude-val">Some</span>(existing_switch_pair) = entry.as_mut() <span class="kw">else </span>{
 						<span class="macro">log::error!</span>(target: LOG_TARGET, <span class="string">&quot;Stored switch pair should not be None but it is.&quot;</span>);
 						<span class="kw">return</span>;
 					};
-					entry
+					existing_switch_pair
 						.try_process_incoming_switch(<span class="self">self</span>.remaining_fungible_balance)
 						.unwrap_or_else(|<span class="kw">_</span>| {
 							<span class="macro">log::error!</span>(

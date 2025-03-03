@@ -207,8 +207,34 @@
 <a href="#207" id="207">207</a>
 <a href="#208" id="208">208</a>
 <a href="#209" id="209">209</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -223,10 +249,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
-</span><span class="attr">#![cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
-</span><span class="kw">use </span>frame_benchmarking::{account, benchmarks};
+// Old benchmarking macros are a mess.
+</span><span class="attr">#![allow(clippy::tests_outside_test_module)]
+
+</span><span class="kw">use </span>frame_benchmarking::{account, benchmarks_instance_pallet};
 <span class="kw">use </span>frame_support::{
 	pallet_prelude::EnsureOrigin,
 	sp_runtime::{traits::Zero, SaturatedConversion},
@@ -238,175 +266,199 @@
 };
 <span class="kw">use </span>frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 <span class="kw">use </span>sp_runtime::app_crypto::sr25519;
-<span class="kw">use </span>sp_std::{vec, vec::Vec};
+<span class="kw">use </span>sp_std::vec::Vec;
 
 <span class="kw">use </span>kilt_support::{traits::GenerateBenchmarkOrigin, Deposit};
 
 <span class="kw">use crate</span>::{
-	mock::insert_raw_w3n, AccountIdOf, Banned, Call, Config, CurrencyOf, Names, Owner, Pallet, Web3NameOf,
+	mock::insert_raw_w3n, AccountIdOf, Banned, Call, Config, CurrencyOf, Error, Names, Owner, Pallet, Web3NameOf,
 	Web3NameOwnerOf,
 };
+
+<span class="kw">pub trait </span>BenchmarkHelper {
+	<span class="kw">fn </span>generate_name_input_with_length(length: usize) -&gt; Vec&lt;u8&gt;;
+}
+
+<span class="kw">impl </span>BenchmarkHelper <span class="kw">for </span>() {
+	<span class="kw">fn </span>generate_name_input_with_length(length: usize) -&gt; Vec&lt;u8&gt; {
+		<span class="macro">sp_std::vec!</span>[<span class="string">b&#39;a&#39;</span>; length]
+	}
+}
 
 <span class="kw">const </span>CALLER_SEED: u32 = <span class="number">0</span>;
 <span class="kw">const </span>OWNER_SEED: u32 = <span class="number">1</span>;
 
-<span class="kw">fn </span>make_free_for_did&lt;T: Config&gt;(account: <span class="kw-2">&amp;</span>AccountIdOf&lt;T&gt;)
+<span class="kw">fn </span>make_free_for_did&lt;T, I&gt;(account: <span class="kw-2">&amp;</span>AccountIdOf&lt;T&gt;)
 <span class="kw">where
-	</span>&lt;T <span class="kw">as </span>Config&gt;::Currency: Mutate&lt;T::AccountId&gt;,
+	</span>T: Config&lt;I&gt;,
+	I: <span class="lifetime">&#39;static</span>,
+	&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Currency: Mutate&lt;T::AccountId&gt;,
 {
-	<span class="kw">let </span>balance = &lt;CurrencyOf&lt;T&gt; <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::minimum_balance()
-		+ &lt;T <span class="kw">as </span>Config&gt;::Deposit::get()
-		+ &lt;T <span class="kw">as </span>Config&gt;::Deposit::get();
-	CurrencyOf::&lt;T&gt;::set_balance(account, balance);
+	<span class="kw">let </span>balance = &lt;CurrencyOf&lt;T, I&gt; <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::minimum_balance()
+		+ &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get()
+		+ &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get();
+	CurrencyOf::&lt;T, I&gt;::set_balance(account, balance);
 }
 
-<span class="kw">fn </span>generate_web3_name_input(length: usize) -&gt; Vec&lt;u8&gt; {
-	<span class="macro">vec!</span>[<span class="string">b&#39;1&#39;</span>; length]
-}
-
-<span class="macro">benchmarks! </span>{
+<span class="macro">benchmarks_instance_pallet! </span>{
 	where_clause {
 		<span class="kw">where
 		</span>T::AccountId: From&lt;sr25519::Public&gt;,
-		T::Web3NameOwner: From&lt;T::AccountId&gt;,
-		T::OwnerOrigin: GenerateBenchmarkOrigin&lt;T::RuntimeOrigin, T::AccountId, T::Web3NameOwner&gt;,
-		T::BanOrigin: EnsureOrigin&lt;T::RuntimeOrigin&gt;,
-		&lt;T <span class="kw">as </span>Config&gt;::Currency: Mutate&lt;T::AccountId&gt;,
+		&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Web3NameOwner: From&lt;T::AccountId&gt;,
+		&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::OwnerOrigin: GenerateBenchmarkOrigin&lt;T::RuntimeOrigin, T::AccountId, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Web3NameOwner&gt;,
+		&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::ClaimOrigin: GenerateBenchmarkOrigin&lt;T::RuntimeOrigin, T::AccountId, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Web3NameOwner&gt;,
+		&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::BanOrigin: EnsureOrigin&lt;T::RuntimeOrigin&gt;,
+		&lt;&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Web3Name <span class="kw">as </span>TryFrom&lt;Vec&lt;u8&gt;&gt;&gt;::Error: Into&lt;Error&lt;T, I&gt;&gt;,
+		&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Currency: Mutate&lt;T::AccountId&gt;,
 	}
 
 	claim {
-		<span class="kw">let </span>n <span class="kw">in </span>(T::MinNameLength::get()) .. (T::MaxNameLength::get());
+		<span class="kw">let </span>n <span class="kw">in </span>(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MinNameLength::get()) .. (&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength::get());
 		<span class="kw">let </span>caller: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;caller&quot;</span>, <span class="number">0</span>, CALLER_SEED);
-		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
-		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, T::MaxNameLength&gt; = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
+		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T, I&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
+		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength&gt; = BoundedVec::try_from(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::BenchmarkHelper::generate_name_input_with_length(n.saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
 		<span class="kw">let </span>web3_name_input_clone = web3_name_input.clone();
-		<span class="kw">let </span>origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
+		<span class="kw">let </span>origin = &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::ClaimOrigin::generate_origin(caller.clone(), owner.clone());
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
 	}: <span class="kw">_</span>&lt;T::RuntimeOrigin&gt;(origin, web3_name_input_clone)
 	verify {
-		<span class="kw">let </span>web3_name = Web3NameOf::&lt;T&gt;::try_from(web3_name_input.to_vec()).unwrap();
-		<span class="macro">assert!</span>(Names::&lt;T&gt;::get(<span class="kw-2">&amp;</span>owner).is_some());
-		<span class="macro">assert!</span>(Owner::&lt;T&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_some());
+		<span class="kw">let </span><span class="prelude-val">Ok</span>(web3_name) = Web3NameOf::&lt;T, I&gt;::try_from(web3_name_input.to_vec()) <span class="kw">else </span>{
+			<span class="macro">panic!</span>();
+		};
+		<span class="macro">assert!</span>(Names::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>owner).is_some());
+		<span class="macro">assert!</span>(Owner::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_some());
 	}
 
 	release_by_owner {
 		<span class="kw">let </span>caller: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;caller&quot;</span>, <span class="number">0</span>, CALLER_SEED);
-		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
-		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, T::MaxNameLength&gt; = BoundedVec::try_from(generate_web3_name_input(T::MaxNameLength::get().saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
-		<span class="kw">let </span>origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
+		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T, I&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
+		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength&gt; = BoundedVec::try_from(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::BenchmarkHelper::generate_name_input_with_length(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength::get().saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
+		<span class="kw">let </span>origin = &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
-		Pallet::&lt;T&gt;::claim(origin.clone(), web3_name_input.clone()).expect(<span class="string">&quot;Should register the claimed web3 name.&quot;</span>);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
+		Pallet::&lt;T, I&gt;::claim(origin.clone(), web3_name_input.clone()).expect(<span class="string">&quot;Should register the claimed web3 name.&quot;</span>);
 	}: <span class="kw">_</span>&lt;T::RuntimeOrigin&gt;(origin)
 	verify {
-		<span class="kw">let </span>web3_name = Web3NameOf::&lt;T&gt;::try_from(web3_name_input.to_vec()).unwrap();
-		<span class="macro">assert!</span>(Names::&lt;T&gt;::get(<span class="kw-2">&amp;</span>owner).is_none());
-		<span class="macro">assert!</span>(Owner::&lt;T&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
+		<span class="kw">let </span><span class="prelude-val">Ok</span>(web3_name) = Web3NameOf::&lt;T, I&gt;::try_from(web3_name_input.to_vec()) <span class="kw">else </span>{
+			<span class="macro">panic!</span>();
+		};
+		<span class="macro">assert!</span>(Names::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>owner).is_none());
+		<span class="macro">assert!</span>(Owner::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
 	}
 
 	reclaim_deposit {
-		<span class="kw">let </span>n <span class="kw">in </span>(T::MinNameLength::get()) .. (T::MaxNameLength::get());
+		<span class="kw">let </span>n <span class="kw">in </span>(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MinNameLength::get()) .. (&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength::get());
 		<span class="kw">let </span>caller: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;caller&quot;</span>, <span class="number">0</span>, CALLER_SEED);
-		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
-		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, T::MaxNameLength&gt; = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
+		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T, I&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
+		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength&gt; = BoundedVec::try_from(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::BenchmarkHelper::generate_name_input_with_length(n.saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
 		<span class="kw">let </span>web3_name_input_clone = web3_name_input.clone();
-		<span class="kw">let </span>did_origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
+		<span class="kw">let </span>did_origin = &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 		<span class="kw">let </span>signed_origin = RawOrigin::Signed(caller.clone());
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
-		Pallet::&lt;T&gt;::claim(did_origin, web3_name_input.clone()).expect(<span class="string">&quot;Should register the claimed web3 name.&quot;</span>);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
+		Pallet::&lt;T, I&gt;::claim(did_origin, web3_name_input.clone()).expect(<span class="string">&quot;Should register the claimed web3 name.&quot;</span>);
 	}: <span class="kw">_</span>(signed_origin, web3_name_input_clone)
 	verify {
-		<span class="kw">let </span>web3_name = Web3NameOf::&lt;T&gt;::try_from(web3_name_input.to_vec()).unwrap();
-		<span class="macro">assert!</span>(Names::&lt;T&gt;::get(<span class="kw-2">&amp;</span>owner).is_none());
-		<span class="macro">assert!</span>(Owner::&lt;T&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
+		<span class="kw">let </span><span class="prelude-val">Ok</span>(web3_name) = Web3NameOf::&lt;T, I&gt;::try_from(web3_name_input.to_vec()) <span class="kw">else </span>{
+			<span class="macro">panic!</span>();
+		};
+		<span class="macro">assert!</span>(Names::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>owner).is_none());
+		<span class="macro">assert!</span>(Owner::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
 	}
 
 	ban {
-		<span class="kw">let </span>n <span class="kw">in </span>(T::MinNameLength::get()) .. (T::MaxNameLength::get());
+		<span class="kw">let </span>n <span class="kw">in </span>(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MinNameLength::get()) .. (&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength::get());
 		<span class="kw">let </span>caller: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;caller&quot;</span>, <span class="number">0</span>, CALLER_SEED);
-		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
-		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, T::MaxNameLength&gt; = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
+		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T, I&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
+		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength&gt; = BoundedVec::try_from(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::BenchmarkHelper::generate_name_input_with_length(n.saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
 		<span class="kw">let </span>web3_name_input_clone = web3_name_input.clone();
-		<span class="kw">let </span>did_origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
+		<span class="kw">let </span>did_origin = &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 		<span class="kw">let </span>ban_origin = RawOrigin::Root;
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
-		Pallet::&lt;T&gt;::claim(did_origin, web3_name_input.clone()).expect(<span class="string">&quot;Should register the claimed web3 name.&quot;</span>);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
+		Pallet::&lt;T, I&gt;::claim(did_origin, web3_name_input.clone()).expect(<span class="string">&quot;Should register the claimed web3 name.&quot;</span>);
 	}: <span class="kw">_</span>(ban_origin, web3_name_input_clone)
 	verify {
-		<span class="kw">let </span>web3_name = Web3NameOf::&lt;T&gt;::try_from(web3_name_input.to_vec()).unwrap();
-		<span class="macro">assert!</span>(Names::&lt;T&gt;::get(<span class="kw-2">&amp;</span>owner).is_none());
-		<span class="macro">assert!</span>(Owner::&lt;T&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
-		<span class="macro">assert!</span>(Banned::&lt;T&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_some());
+		<span class="kw">let </span><span class="prelude-val">Ok</span>(web3_name) = Web3NameOf::&lt;T, I&gt;::try_from(web3_name_input.to_vec()) <span class="kw">else </span>{
+			<span class="macro">panic!</span>();
+		};
+		<span class="macro">assert!</span>(Names::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>owner).is_none());
+		<span class="macro">assert!</span>(Owner::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
+		<span class="macro">assert!</span>(Banned::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_some());
 	}
 
 	unban {
-		<span class="kw">let </span>n <span class="kw">in </span>(T::MinNameLength::get()) .. (T::MaxNameLength::get());
+		<span class="kw">let </span>n <span class="kw">in </span>(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MinNameLength::get()) .. (&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength::get());
 		<span class="kw">let </span>caller: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;caller&quot;</span>, <span class="number">0</span>, CALLER_SEED);
-		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
-		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, T::MaxNameLength&gt; = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
+		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T, I&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
+		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength&gt; = BoundedVec::try_from(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::BenchmarkHelper::generate_name_input_with_length(n.saturated_into())).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
 		<span class="kw">let </span>web3_name_input_clone = web3_name_input.clone();
 		<span class="kw">let </span>ban_origin = RawOrigin::Root;
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>caller);
-		Pallet::&lt;T&gt;::ban(ban_origin.clone().into(), web3_name_input.clone()).expect(<span class="string">&quot;Should ban the web3 name.&quot;</span>);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>caller);
+		Pallet::&lt;T, I&gt;::ban(ban_origin.clone().into(), web3_name_input.clone()).expect(<span class="string">&quot;Should ban the web3 name.&quot;</span>);
 	}: <span class="kw">_</span>(ban_origin, web3_name_input_clone)
 	verify {
-		<span class="kw">let </span>web3_name = Web3NameOf::&lt;T&gt;::try_from(web3_name_input.to_vec()).unwrap();
-		<span class="macro">assert!</span>(Names::&lt;T&gt;::get(<span class="kw-2">&amp;</span>owner).is_none());
-		<span class="macro">assert!</span>(Owner::&lt;T&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
-		<span class="macro">assert!</span>(Banned::&lt;T&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
+		<span class="kw">let </span><span class="prelude-val">Ok</span>(web3_name) = Web3NameOf::&lt;T, I&gt;::try_from(web3_name_input.to_vec()) <span class="kw">else </span>{
+			<span class="macro">panic!</span>();
+		};
+		<span class="macro">assert!</span>(Names::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>owner).is_none());
+		<span class="macro">assert!</span>(Owner::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
+		<span class="macro">assert!</span>(Banned::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>web3_name).is_none());
 	}
 
 	change_deposit_owner {
 		<span class="kw">let </span>deposit_owner_old: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;caller&quot;</span>, <span class="number">0</span>, CALLER_SEED);
 		<span class="kw">let </span>deposit_owner_new: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;caller&quot;</span>, <span class="number">1</span>, CALLER_SEED);
-		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
-		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, T::MaxNameLength&gt; = BoundedVec::try_from(
-			generate_web3_name_input(T::MaxNameLength::get().saturated_into())
+		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T, I&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
+		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength&gt; = BoundedVec::try_from(
+			&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::BenchmarkHelper::generate_name_input_with_length(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength::get().saturated_into())
 		).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
 		<span class="kw">let </span>web3_name_input_clone = web3_name_input.clone();
-		<span class="kw">let </span>origin_create = T::OwnerOrigin::generate_origin(deposit_owner_old.clone(), owner.clone());
+		<span class="kw">let </span>origin_create = &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::OwnerOrigin::generate_origin(deposit_owner_old.clone(), owner.clone());
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>deposit_owner_old);
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>deposit_owner_new);
-		Pallet::&lt;T&gt;::claim(origin_create, web3_name_input.clone()).expect(<span class="string">&quot;Should register the claimed web3 name.&quot;</span>);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>deposit_owner_old);
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>deposit_owner_new);
+		Pallet::&lt;T, I&gt;::claim(origin_create, web3_name_input.clone()).expect(<span class="string">&quot;Should register the claimed web3 name.&quot;</span>);
 
-		<span class="kw">let </span>origin = T::OwnerOrigin::generate_origin(deposit_owner_new.clone(), owner);
+		<span class="kw">let </span>origin = &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::OwnerOrigin::generate_origin(deposit_owner_new.clone(), owner);
 	}: <span class="kw">_</span>&lt;T::RuntimeOrigin&gt;(origin)
 	verify {
-		<span class="kw">let </span>web3_name = Web3NameOf::&lt;T&gt;::try_from(web3_name_input.to_vec()).unwrap();
-		<span class="macro">assert_eq!</span>(Owner::&lt;T&gt;::get(<span class="kw-2">&amp;</span>web3_name).expect(<span class="string">&quot;w3n should exists&quot;</span>).deposit, Deposit {
+		<span class="kw">let </span><span class="prelude-val">Ok</span>(web3_name) = Web3NameOf::&lt;T, I&gt;::try_from(web3_name_input.to_vec()) <span class="kw">else </span>{
+			<span class="macro">panic!</span>();
+		};
+		<span class="macro">assert_eq!</span>(Owner::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>web3_name).expect(<span class="string">&quot;w3n should exists&quot;</span>).deposit, Deposit {
 			owner: deposit_owner_new,
-			amount: &lt;T <span class="kw">as </span>Config&gt;::Deposit::get(),
+			amount: &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get(),
 		});
 	}
 
 	update_deposit {
 		<span class="kw">let </span>deposit_owner: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;caller&quot;</span>, <span class="number">0</span>, CALLER_SEED);
-		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
-		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, T::MaxNameLength&gt; = BoundedVec::try_from(
-			generate_web3_name_input(T::MaxNameLength::get().saturated_into())
+		<span class="kw">let </span>owner: Web3NameOwnerOf&lt;T, I&gt; = account(<span class="string">&quot;owner&quot;</span>, <span class="number">0</span>, OWNER_SEED);
+		<span class="kw">let </span>web3_name_input: BoundedVec&lt;u8, &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength&gt; = BoundedVec::try_from(
+			&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::BenchmarkHelper::generate_name_input_with_length(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::MaxNameLength::get().saturated_into())
 		).expect(<span class="string">&quot;BoundedVec creation should not fail.&quot;</span>);
-		<span class="kw">let </span>web3_name = Web3NameOf::&lt;T&gt;::try_from(web3_name_input.to_vec()).unwrap();
+		<span class="kw">let </span><span class="prelude-val">Ok</span>(web3_name) = Web3NameOf::&lt;T, I&gt;::try_from(web3_name_input.to_vec()) <span class="kw">else </span>{
+			<span class="macro">panic!</span>();
+		};
 
-		make_free_for_did::&lt;T&gt;(<span class="kw-2">&amp;</span>deposit_owner);
-		insert_raw_w3n::&lt;T&gt;(
+		make_free_for_did::&lt;T, I&gt;(<span class="kw-2">&amp;</span>deposit_owner);
+		insert_raw_w3n::&lt;T, I&gt;(
 			deposit_owner.clone(),
 			owner,
 			web3_name.clone(),
 			BlockNumberFor::&lt;T&gt;::zero(),
-			&lt;T <span class="kw">as </span>Config&gt;::Deposit::get() + &lt;T <span class="kw">as </span>Config&gt;::Deposit::get()
+			&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get() + &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get()
 		);
 
 		<span class="kw">let </span>origin = RawOrigin::Signed(deposit_owner.clone());
 	}: <span class="kw">_</span>(origin, web3_name_input)
 	verify {
-		<span class="macro">assert_eq!</span>(Owner::&lt;T&gt;::get(<span class="kw-2">&amp;</span>web3_name).expect(<span class="string">&quot;w3n should exists&quot;</span>).deposit, Deposit {
+		<span class="macro">assert_eq!</span>(Owner::&lt;T, I&gt;::get(<span class="kw-2">&amp;</span>web3_name).expect(<span class="string">&quot;w3n should exists&quot;</span>).deposit, Deposit {
 			owner: deposit_owner,
-			amount: &lt;T <span class="kw">as </span>Config&gt;::Deposit::get(),
+			amount: &lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::Deposit::get(),
 		});
 	}
 

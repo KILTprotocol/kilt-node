@@ -268,8 +268,26 @@
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -284,7 +302,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::traits::{
 	fungible::hold::Mutate,
@@ -419,10 +437,8 @@
 
 <span class="kw">pub trait </span>StorageDepositCollector&lt;AccountId, Key, RuntimeHoldReason&gt; {
 	<span class="kw">type </span>Currency: MutateHold&lt;AccountId, Reason = RuntimeHoldReason&gt;;
-	<span class="comment">// TODO: This could also be replaced with a `Borrow&lt;RuntimeHoldReason&gt;` or an
-	// `AsRef&lt;RuntimeHoldReason&gt;`, but not sure what trait the runtime composite
-	// enum implements.
-	</span><span class="kw">type </span>Reason: Into&lt;RuntimeHoldReason&gt; + Clone;
+
+	<span class="kw">type </span>Reason: Into&lt;RuntimeHoldReason&gt;;
 
 	<span class="doccomment">/// Returns the hold reason for deposits taken by the deposit collector;
 	</span><span class="kw">fn </span>reason() -&gt; <span class="self">Self</span>::Reason;
@@ -467,7 +483,7 @@
 		reserve_deposit::&lt;AccountId, <span class="self">Self</span>::Currency&gt;(who, amount, <span class="kw-2">&amp;</span>reason.into())
 	}
 
-	<span class="doccomment">/// Change the deposit owner.
+	<span class="doccomment">/// Change the deposit owner and returns the old owner.
 	///
 	/// The deposit balance of the current owner will be freed, while the
 	/// deposit balance of the new owner will get reserved. The deposit amount
@@ -475,7 +491,7 @@
 	</span><span class="kw">fn </span>change_deposit_owner&lt;DepositBalanceMigrationManager&gt;(
 		key: <span class="kw-2">&amp;</span>Key,
 		new_owner: AccountId,
-	) -&gt; <span class="prelude-ty">Result</span>&lt;(), DispatchError&gt;
+	) -&gt; <span class="prelude-ty">Result</span>&lt;AccountId, DispatchError&gt;
 	<span class="kw">where
 		</span>DepositBalanceMigrationManager:
 			BalanceMigrationManager&lt;AccountId, &lt;<span class="self">Self</span>::Currency <span class="kw">as </span>Inspect&lt;AccountId&gt;&gt;::Balance&gt;,
@@ -486,22 +502,28 @@
 		<span class="kw">let </span>reason = <span class="self">Self</span>::reason();
 
 		<span class="kw">if </span>is_key_migrated {
-			free_deposit::&lt;AccountId, <span class="self">Self</span>::Currency&gt;(<span class="kw-2">&amp;</span>deposit, <span class="kw-2">&amp;</span>reason.clone().into())<span class="question-mark">?</span>;
+			free_deposit::&lt;AccountId, <span class="self">Self</span>::Currency&gt;(<span class="kw-2">&amp;</span>deposit, <span class="kw-2">&amp;</span><span class="self">Self</span>::reason().into())<span class="question-mark">?</span>;
 		} <span class="kw">else </span>{
 			DepositBalanceMigrationManager::release_reserved_deposit(<span class="kw-2">&amp;</span>deposit.owner, <span class="kw-2">&amp;</span>deposit.amount);
 			DepositBalanceMigrationManager::exclude_key_from_migration(<span class="kw-2">&amp;</span>hashed_key);
 		}
 
-		<span class="kw">let </span>deposit = Deposit {
+		<span class="kw">let </span>old_deposit_owner = deposit.owner;
+
+		<span class="kw">let </span>deposit_with_new_owner = Deposit {
 			owner: new_owner,
 			..deposit
 		};
 
-		<span class="self">Self</span>::Currency::hold(<span class="kw-2">&amp;</span>reason.into(), <span class="kw-2">&amp;</span>deposit.owner, deposit.amount)<span class="question-mark">?</span>;
+		<span class="self">Self</span>::Currency::hold(
+			<span class="kw-2">&amp;</span>reason.into(),
+			<span class="kw-2">&amp;</span>deposit_with_new_owner.owner,
+			deposit_with_new_owner.amount,
+		)<span class="question-mark">?</span>;
 
-		<span class="self">Self</span>::store_deposit(key, deposit)<span class="question-mark">?</span>;
+		<span class="self">Self</span>::store_deposit(key, deposit_with_new_owner)<span class="question-mark">?</span>;
 
-		<span class="prelude-val">Ok</span>(())
+		<span class="prelude-val">Ok</span>(old_deposit_owner)
 	}
 
 	<span class="doccomment">/// Update the deposit amount.
@@ -521,21 +543,35 @@
 		<span class="kw">let </span>is_key_migrated = DepositBalanceMigrationManager::is_key_migrated(<span class="kw-2">&amp;</span>hashed_key);
 
 		<span class="kw">if </span>is_key_migrated {
-			free_deposit::&lt;AccountId, <span class="self">Self</span>::Currency&gt;(<span class="kw-2">&amp;</span>deposit, <span class="kw-2">&amp;</span>reason.clone().into())<span class="question-mark">?</span>;
+			free_deposit::&lt;AccountId, <span class="self">Self</span>::Currency&gt;(<span class="kw-2">&amp;</span>deposit, <span class="kw-2">&amp;</span><span class="self">Self</span>::reason().into())<span class="question-mark">?</span>;
 		} <span class="kw">else </span>{
 			DepositBalanceMigrationManager::release_reserved_deposit(<span class="kw-2">&amp;</span>deposit.owner, <span class="kw-2">&amp;</span>deposit.amount);
 			DepositBalanceMigrationManager::exclude_key_from_migration(<span class="kw-2">&amp;</span>hashed_key);
 		}
 
-		<span class="kw">let </span>deposit = Deposit {
+		<span class="kw">let </span>deposit_with_new_amount = Deposit {
 			amount: <span class="self">Self</span>::deposit_amount(key),
 			..deposit
 		};
-		<span class="self">Self</span>::Currency::hold(<span class="kw-2">&amp;</span>reason.into(), <span class="kw-2">&amp;</span>deposit.owner, deposit.amount)<span class="question-mark">?</span>;
+		<span class="self">Self</span>::Currency::hold(
+			<span class="kw-2">&amp;</span>reason.into(),
+			<span class="kw-2">&amp;</span>deposit_with_new_amount.owner,
+			deposit_with_new_amount.amount,
+		)<span class="question-mark">?</span>;
 
-		<span class="self">Self</span>::store_deposit(key, deposit)<span class="question-mark">?</span>;
+		<span class="self">Self</span>::store_deposit(key, deposit_with_new_amount)<span class="question-mark">?</span>;
 
 		<span class="prelude-val">Ok</span>(())
 	}
+}
+
+<span class="doccomment">/// Metadata trait for native asset.
+</span><span class="kw">pub trait </span>InspectMetadata {
+	<span class="comment">// Get name for native asset.
+	</span><span class="kw">fn </span>name() -&gt; Vec&lt;u8&gt;;
+	<span class="comment">// Get symbol for native asset.
+	</span><span class="kw">fn </span>symbol() -&gt; Vec&lt;u8&gt;;
+	<span class="comment">// Get decimals for native asset.
+	</span><span class="kw">fn </span>decimals() -&gt; u8;
 }
 </code></pre></div></section></main></body></html>

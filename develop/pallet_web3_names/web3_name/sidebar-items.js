@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["AsciiWeb3Name","Web3NameOwnership"]};
+window.SIDEBAR_ITEMS = {"struct":["Web3NameOwnership"]};

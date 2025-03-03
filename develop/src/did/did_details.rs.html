@@ -715,8 +715,8 @@
 <a href="#715" id="715">715</a>
 <a href="#716" id="716">716</a>
 <a href="#717" id="717">717</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -731,7 +731,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{
 	ensure,
@@ -900,9 +900,9 @@
 <span class="kw">impl </span>From&lt;MultiSignature&gt; <span class="kw">for </span>DidSignature {
 	<span class="kw">fn </span>from(sig: MultiSignature) -&gt; <span class="self">Self </span>{
 		<span class="kw">match </span>sig {
-			MultiSignature::Ed25519(sig) =&gt; <span class="self">Self</span>::Ed25519(sig),
-			MultiSignature::Sr25519(sig) =&gt; <span class="self">Self</span>::Sr25519(sig),
-			MultiSignature::Ecdsa(sig) =&gt; <span class="self">Self</span>::Ecdsa(sig),
+			MultiSignature::Ed25519(ed25519_sig) =&gt; <span class="self">Self</span>::Ed25519(ed25519_sig),
+			MultiSignature::Sr25519(sr25519_sig) =&gt; <span class="self">Self</span>::Sr25519(sr25519_sig),
+			MultiSignature::Ecdsa(ecdsa_sig) =&gt; <span class="self">Self</span>::Ecdsa(ecdsa_sig),
 		}
 	}
 }
@@ -927,7 +927,7 @@
 		<span class="comment">// So far, either the raw Ed25519/Sr25519 public key or the Blake2-256 hashed
 		// ECDSA public key.
 		</span><span class="kw">let </span>raw_public_key: <span class="kw-2">&amp;</span>[u8; <span class="number">32</span>] = <span class="self">self</span>.as_ref();
-		<span class="kw">match </span><span class="kw-2">*</span>signature {
+		<span class="kw">match </span>signature {
 			DidSignature::Ed25519(<span class="kw">_</span>) =&gt; {
 				<span class="comment">// from_raw simply converts a byte array into a public key with no particular
 				// validations
@@ -942,8 +942,8 @@
 					.verify_signature(payload, signature)
 					.map(|<span class="kw">_</span>| sr25519_did_key)
 			}
-			DidSignature::Ecdsa(<span class="kw-2">ref </span>signature) =&gt; {
-				<span class="kw">let </span>ecdsa_signature: [u8; <span class="number">65</span>] = signature
+			DidSignature::Ecdsa(ecdsa_signature) =&gt; {
+				<span class="kw">let </span>encoded_ecdsa_signature: [u8; <span class="number">65</span>] = ecdsa_signature
 					.encode()
 					.try_into()
 					.map_err(|<span class="kw">_</span>| errors::SignatureError::InvalidData)<span class="question-mark">?</span>;
@@ -951,7 +951,7 @@
 				// message to recover the public key.
 				</span><span class="kw">let </span>hashed_message = sp_io::hashing::blake2_256(payload);
 				<span class="kw">let </span>recovered_pk: [u8; <span class="number">33</span>] =
-					sp_io::crypto::secp256k1_ecdsa_recover_compressed(<span class="kw-2">&amp;</span>ecdsa_signature, <span class="kw-2">&amp;</span>hashed_message)
+					sp_io::crypto::secp256k1_ecdsa_recover_compressed(<span class="kw-2">&amp;</span>encoded_ecdsa_signature, <span class="kw-2">&amp;</span>hashed_message)
 						.map_err(|<span class="kw">_</span>| errors::SignatureError::InvalidData)<span class="question-mark">?</span>;
 				<span class="kw">let </span>hashed_recovered_pk = sp_io::hashing::blake2_256(<span class="kw-2">&amp;</span>recovered_pk);
 				<span class="comment">// The hashed recovered public key must be equal to the AccountId32 value, which
@@ -1070,8 +1070,8 @@
 	</span><span class="kw">pub fn </span>calculate_deposit(<span class="kw-2">&amp;</span><span class="self">self</span>, endpoint_count: u32) -&gt; BalanceOf&lt;T&gt; {
 		<span class="kw">let </span><span class="kw-2">mut </span>deposit: BalanceOf&lt;T&gt; = T::BaseDeposit::get();
 
-		<span class="kw">let </span>endpoint_count: BalanceOf&lt;T&gt; = endpoint_count.into();
-		deposit = deposit.saturating_add(endpoint_count.saturating_mul(T::ServiceEndpointDeposit::get()));
+		<span class="kw">let </span>endpoint_count_as_balance: BalanceOf&lt;T&gt; = endpoint_count.into();
+		deposit = deposit.saturating_add(endpoint_count_as_balance.saturating_mul(T::ServiceEndpointDeposit::get()));
 
 		<span class="kw">let </span>key_agreement_count: BalanceOf&lt;T&gt; = <span class="self">self</span>.key_agreement_keys.len().saturated_into();
 		deposit = deposit.saturating_add(key_agreement_count.saturating_mul(T::KeyDeposit::get()));
@@ -1340,7 +1340,7 @@
 &gt;;
 
 <span class="doccomment">/// The details of a new DID to create.
-</span><span class="attr">#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
+</span><span class="attr">#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo)]
 </span><span class="kw">pub struct </span>DidCreationDetails&lt;DidIdentifier, AccountId, MaxNewKeyAgreementKeys, DidEndpoint&gt;
 <span class="kw">where
 	</span>MaxNewKeyAgreementKeys: Get&lt;u32&gt; + Clone,
@@ -1392,7 +1392,7 @@
 <span class="doccomment">/// A DID operation that wraps other extrinsic calls, allowing those
 /// extrinsic to have a DID origin and perform DID-based authorization upon
 /// their invocation.
-</span><span class="attr">#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
+</span><span class="attr">#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo)]
 
 </span><span class="kw">pub struct </span>DidAuthorizedCallOperation&lt;DidIdentifier, DidCallable, BlockNumber, AccountId, TxCounter&gt; {
 	<span class="doccomment">/// The DID identifier.

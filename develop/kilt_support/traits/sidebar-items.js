@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["BalanceMigrationManager","CallSources","GenerateBenchmarkOrigin","GetWorstCase","Instanciate","ItemFilter","StorageDepositCollector","VersionMigratorTrait"]};
+window.SIDEBAR_ITEMS = {"trait":["BalanceMigrationManager","CallSources","GenerateBenchmarkOrigin","GetWorstCase","InspectMetadata","Instanciate","ItemFilter","StorageDepositCollector","VersionMigratorTrait"]};

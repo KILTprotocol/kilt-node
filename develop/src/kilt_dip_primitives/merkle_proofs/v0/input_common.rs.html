@@ -165,8 +165,8 @@
 <a href="#165" id="165">165</a>
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -181,7 +181,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>did::DidSignature;
 <span class="kw">use </span>parity_scale_codec::{Decode, Encode};
@@ -315,7 +315,7 @@
 }
 
 <span class="kw">impl</span>&lt;BlockNumber&gt; TimeBoundDidSignature&lt;BlockNumber&gt; {
-	<span class="kw">pub fn </span>new(signature: DidSignature, valid_until: BlockNumber) -&gt; <span class="self">Self </span>{
+	<span class="kw">pub const fn </span>new(signature: DidSignature, valid_until: BlockNumber) -&gt; <span class="self">Self </span>{
 		<span class="self">Self </span>{ signature, valid_until }
 	}
 }

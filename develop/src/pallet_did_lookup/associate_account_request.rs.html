@@ -124,8 +124,12 @@
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -140,7 +144,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use crate</span>::{
 	account::{AccountId20, EthereumSignature},
@@ -207,6 +211,8 @@
 <span class="comment">// Copied from https://github.com/paritytech/substrate/blob/ad5399644aebc54e32a107ac37ae08e6cd1f0cfb/primitives/core/src/crypto.rs#L324
 // Copyright (C) Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: Apache-2.0
+</span><span class="attr">#[allow(clippy::expect_used)]
+#[allow(clippy::as_conversions)]
 </span><span class="kw">fn </span>to_ss58(public_key: <span class="kw-2">&amp;</span>[u8], prefix: u16) -&gt; String {
 	<span class="comment">// We mask out the upper two bits of the ident - SS58 Prefix currently only
 	// supports 14-bits
@@ -215,17 +221,19 @@
 		<span class="number">0</span>..=<span class="number">63 </span>=&gt; <span class="macro">vec!</span>[ident <span class="kw">as </span>u8],
 		<span class="number">64</span>..=<span class="number">16_383 </span>=&gt; {
 			<span class="comment">// upper six bits of the lower byte(!)
-			</span><span class="kw">let </span>first = ((ident &amp; <span class="number">0b0000_0000_1111_1100</span>) <span class="kw">as </span>u8) &gt;&gt; <span class="number">2</span>;
+			</span><span class="kw">let </span>first = ((ident &amp; <span class="number">0b0000_0000_1111_1100</span>) <span class="kw">as </span>u8) &gt;&gt; <span class="number">2u8</span>;
 			<span class="comment">// lower two bits of the lower byte in the high pos,
 			// lower bits of the upper byte in the low pos
-			</span><span class="kw">let </span>second = ((ident &gt;&gt; <span class="number">8</span>) <span class="kw">as </span>u8) | ((ident &amp; <span class="number">0b0000_0000_0000_0011</span>) <span class="kw">as </span>u8) &lt;&lt; <span class="number">6</span>;
+			</span><span class="kw">let </span>second = ((ident &gt;&gt; <span class="number">8u8</span>) <span class="kw">as </span>u8) | ((ident &amp; <span class="number">0b0000_0000_0000_0011</span>) <span class="kw">as </span>u8) &lt;&lt; <span class="number">6u8</span>;
 			<span class="macro">vec!</span>[first | <span class="number">0b01000000</span>, second]
 		}
-		<span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(<span class="string">&quot;masked out the upper two bits; qed&quot;</span>),
+		<span class="attr">#[allow(clippy::unreachable)]
+		</span><span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(<span class="string">&quot;masked out the upper two bits; qed&quot;</span>),
 	};
 	v.extend(public_key);
 	<span class="kw">let </span>r = ss58hash(<span class="kw-2">&amp;</span>v);
-	v.extend(<span class="kw-2">&amp;</span>r[<span class="number">0</span>..<span class="number">2</span>]);
+	<span class="attr">#[allow(clippy::indexing_slicing)]
+	</span>v.extend(<span class="kw-2">&amp;</span>r[<span class="number">0</span>..<span class="number">2</span>]);
 	v.to_base58()
 }
 

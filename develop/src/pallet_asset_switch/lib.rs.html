@@ -682,8 +682,193 @@
 <a href="#682" id="682">682</a>
 <a href="#683" id="683">683</a>
 <a href="#684" id="684">684</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a>
+<a href="#847" id="847">847</a>
+<a href="#848" id="848">848</a>
+<a href="#849" id="849">849</a>
+<a href="#850" id="850">850</a>
+<a href="#851" id="851">851</a>
+<a href="#852" id="852">852</a>
+<a href="#853" id="853">853</a>
+<a href="#854" id="854">854</a>
+<a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -698,7 +883,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="attr">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]
 #![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../README.md&quot;</span>)]
@@ -723,24 +908,42 @@
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
 </span><span class="kw">pub use </span>benchmarking::{BenchmarkHelper, PartialBenchmarkInfo};
 
-<span class="kw">use </span>::xcm::{VersionedAsset, VersionedAssetId, VersionedLocation};
+<span class="kw">use </span>::xcm::{
+	v4::{
+		Asset, AssetFilter, AssetId,
+		Instruction::{BuyExecution, DepositAsset, RefundSurplus, ReportHolding, SetAppendix, WithdrawAsset},
+		Location, QueryResponseInfo, Weight, WeightLimit, WildAsset, WildFungibility, Xcm,
+	},
+	VersionedAsset, VersionedAssetId, VersionedLocation,
+};
 <span class="kw">use </span>frame_support::traits::{
 	fungible::Inspect,
 	tokens::{Fortitude, Preservation},
 	PalletInfoAccess,
 };
 <span class="kw">use </span>parity_scale_codec::{Decode, Encode};
-<span class="kw">use </span>sp_runtime::traits::TrailingZeroInput;
-<span class="kw">use </span>sp_std::boxed::Box;
+<span class="kw">use </span>sp_runtime::traits::{TrailingZeroInput, Zero};
+<span class="kw">use </span>sp_std::{boxed::Box, vec};
 
 <span class="kw">pub use </span><span class="kw">crate</span>::pallet::<span class="kw-2">*</span>;
 
 <span class="kw">const </span>LOG_TARGET: <span class="kw-2">&amp;</span>str = <span class="string">&quot;runtime::pallet-asset-switch&quot;</span>;
 
 <span class="attr">#[frame_support::pallet]
+</span><span class="comment">// `.expect()` is used in the macro-generated code, and we have to ignore it.
+</span><span class="attr">#[allow(clippy::expect_used)]
+</span><span class="comment">// `unreachable` is used in the macro-generated code, and we have to ignore it.
+</span><span class="attr">#[allow(clippy::unreachable)]
+</span><span class="comment">// `ref` keyword is used in the macro-generated code, and we have to ignore it.
+</span><span class="attr">#[allow(clippy::ref_patterns)]
+</span><span class="comment">// The `pallet::event` macro shadows the `deposit_event` definition of `frame_system::Config`.
+// This means we cannot avoid shadow reuses anymore, and for new pallets this `allow` clause should only be added at the
+// very end of the development cycle of a pallet, and from time to time it should be commented out to catch any issues
+// other than the one generated by the `pallet::event` macro.
+</span><span class="attr">#[allow(clippy::shadow_reuse)]
 </span><span class="kw">pub mod </span>pallet {
 	<span class="kw">use crate</span>::{
-		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairStatus},
+		switch::{NewSwitchPairInfo, SwitchPairInfo, SwitchPairInfoV4, SwitchPairStatus, UnconfirmedSwitchInfo},
 		traits::SwitchHooks,
 		WeightInfo, LOG_TARGET,
 	};
@@ -757,11 +960,7 @@
 	<span class="kw">use </span>sp_runtime::traits::{TryConvert, Zero};
 	<span class="kw">use </span>sp_std::{boxed::Box, vec};
 	<span class="kw">use </span>xcm::{
-		v4::{
-			validate_send, Asset, AssetFilter, AssetId,
-			Instruction::{BuyExecution, DepositAsset, RefundSurplus, SetAppendix, TransferAsset, WithdrawAsset},
-			Junction, Location, SendXcm, WeightLimit, WildAsset, Xcm,
-		},
+		v4::{validate_send, InteriorLocation, Junction, Location, QueryId, SendXcm},
 		VersionedAsset, VersionedAssetId, VersionedLocation,
 	};
 	<span class="kw">use </span>xcm_executor::traits::TransactAsset;
@@ -770,6 +969,8 @@
 		&lt;&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::LocalCurrency <span class="kw">as </span>InspectFungible&lt;&lt;T <span class="kw">as </span>frame_system::Config&gt;::AccountId&gt;&gt;::Balance;
 	<span class="kw">pub type </span>SwitchPairInfoOf&lt;T&gt; = SwitchPairInfo&lt;&lt;T <span class="kw">as </span>frame_system::Config&gt;::AccountId&gt;;
 	<span class="kw">pub type </span>NewSwitchPairInfoOf&lt;T&gt; = NewSwitchPairInfo&lt;&lt;T <span class="kw">as </span>frame_system::Config&gt;::AccountId&gt;;
+	<span class="kw">pub type </span>UnconfirmedSwitchInfoOf&lt;T&gt; =
+		UnconfirmedSwitchInfo&lt;&lt;T <span class="kw">as </span>frame_system::Config&gt;::AccountId, VersionedLocation, u128&gt;;
 
 	<span class="kw">const </span>STORAGE_VERSION: StorageVersion = StorageVersion::new(<span class="number">0</span>);
 
@@ -799,6 +1000,8 @@
 		<span class="doccomment">/// The origin that can set a new switch pair, remove one, or resume
 		/// switches.
 		</span><span class="kw">type </span>SwitchOrigin: EnsureOrigin&lt;<span class="self">Self</span>::RuntimeOrigin&gt;;
+		<span class="doccomment">/// The universal location report messages should be sent to.
+		</span><span class="kw">type </span>UniversalLocation: Get&lt;InteriorLocation&gt;;
 		<span class="kw">type </span>WeightInfo: WeightInfo;
 		<span class="doccomment">/// The XCM router to route XCM transfers to the configured reserve
 		/// location.
@@ -852,6 +1055,19 @@
 		},
 		<span class="doccomment">/// A switch of remote -&gt; local asset has taken place.
 		</span>RemoteToLocalSwitchExecuted { to: T::AccountId, amount: u128 },
+		<span class="doccomment">/// A switch has been reversed because it failed to execute at
+		/// destination.
+		</span>LocalToRemoteSwitchReverted {
+			from: T::AccountId,
+			to: VersionedLocation,
+			amount: u128,
+		},
+		<span class="doccomment">/// A switch has been finalized at destination.
+		</span>LocalToRemoteSwitchFinalized {
+			from: T::AccountId,
+			to: VersionedLocation,
+			amount: u128,
+		},
 	}
 
 	<span class="attr">#[pallet::error]
@@ -884,11 +1100,28 @@
 		</span>Xcm,
 		<span class="doccomment">/// Internal error.
 		</span>Internal,
+		<span class="doccomment">/// Attempt to switch less than the local ED tokens.
+		</span>AmountTooLow,
+		<span class="doccomment">/// Some switches have not yet been processed.
+		</span>PendingSwitches,
 	}
 
-	<span class="attr">#[pallet::storage]
+	<span class="doccomment">/// Stores the switch pair.
+	</span><span class="attr">#[pallet::storage]
 	#[pallet::getter(<span class="kw">fn </span>switch_pair)]
 	</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>SwitchPair&lt;T: Config&lt;I&gt;, I: <span class="lifetime">&#39;static </span>= ()&gt; = StorageValue&lt;<span class="kw">_</span>, SwitchPairInfoOf&lt;T&gt;, OptionQuery&gt;;
+
+	<span class="doccomment">/// Stores the switches that have been applied locally but not yet on the
+	/// remote. Used to rollback failed ones.
+	</span><span class="attr">#[pallet::storage]
+	#[pallet::getter(<span class="kw">fn </span>pending_switch_confirmations)]
+	</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>PendingSwitchConfirmations&lt;T: Config&lt;I&gt;, I: <span class="lifetime">&#39;static </span>= ()&gt; =
+		CountedStorageMap&lt;<span class="kw">_</span>, Twox64Concat, QueryId, UnconfirmedSwitchInfoOf&lt;T&gt;, OptionQuery&gt;;
+
+	<span class="doccomment">/// Stores the next query ID to use for queries.
+	</span><span class="attr">#[pallet::storage]
+	#[pallet::getter(<span class="kw">fn </span>next_query_id)]
+	</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>NextQueryId&lt;T: Config&lt;I&gt;, I: <span class="lifetime">&#39;static </span>= ()&gt; = StorageValue&lt;<span class="kw">_</span>, QueryId, ValueQuery&gt;;
 
 	<span class="attr">#[pallet::call]
 	</span><span class="kw">impl</span>&lt;T: Config&lt;I&gt;, I: <span class="lifetime">&#39;static</span>&gt; Pallet&lt;T, I&gt;
@@ -914,7 +1147,10 @@
 			<span class="comment">// 1. Verify switch pair has not already been set.
 			</span><span class="macro">ensure!</span>(!SwitchPair::&lt;T, I&gt;::exists(), Error::&lt;T, I&gt;::SwitchPairAlreadyExisting);
 
-			<span class="comment">// 2. Verify that total issuance &gt;= circulating supply and that the amount of
+			<span class="comment">// 2. Verify there&#39;s no pending transactions from a previous pair.
+			</span><span class="macro">ensure!</span>(!<span class="self">Self</span>::is_any_transaction_pending(), Error::&lt;T, I&gt;::PendingSwitches);
+
+			<span class="comment">// 3. Verify that total issuance &gt;= circulating supply and that the amount of
 			//    remote assets locked (total - circulating) is greater than the minimum
 			//    amount required at destination (remote ED).
 			</span><span class="macro">ensure!</span>(
@@ -922,7 +1158,7 @@
 				Error::&lt;T, I&gt;::InvalidInput
 			);
 
-			<span class="comment">// 3. Verify the pool account has enough local assets to match the circulating
+			<span class="comment">// 4. Verify the pool account has enough local assets to match the circulating
 			//    supply of eKILTs to cover for all potential remote -&gt; local switches.
 			//    Handle the special case where circulating supply is `0`.
 			</span><span class="kw">let </span>pool_account = <span class="self">Self</span>::pool_account_id_for_remote_asset(<span class="kw-2">&amp;</span>remote_asset_id)<span class="question-mark">?</span>;
@@ -974,6 +1210,13 @@
 			);
 			<span class="kw">let </span>pool_account = <span class="self">Self</span>::pool_account_id_for_remote_asset(<span class="kw-2">&amp;</span>remote_asset_id)<span class="question-mark">?</span>;
 
+			<span class="kw">if </span><span class="self">Self</span>::is_any_transaction_pending() {
+				<span class="macro">log::warn!</span>(
+					target: LOG_TARGET,
+					<span class="string">&quot;Calling `force_set_switch_pair` with a non-empty map of pending swaps.&quot;</span>,
+				)
+			}
+
 			<span class="self">Self</span>::set_switch_pair_bypass_checks(
 				remote_asset_total_supply,
 				<span class="kw-2">*</span>remote_asset_id,
@@ -994,6 +1237,13 @@
 		#[pallet::weight(&lt;T <span class="kw">as </span>Config&lt;I&gt;&gt;::WeightInfo::force_unset_switch_pair())]
 		</span><span class="kw">pub fn </span>force_unset_switch_pair(origin: OriginFor&lt;T&gt;) -&gt; DispatchResult {
 			ensure_root(origin)<span class="question-mark">?</span>;
+
+			<span class="kw">if </span><span class="self">Self</span>::is_any_transaction_pending() {
+				<span class="macro">log::warn!</span>(
+					target: LOG_TARGET,
+					<span class="string">&quot;Calling `force_unset_switch_pair` with a non-empty map of pending swaps.&quot;</span>,
+				)
+			}
 
 			<span class="self">Self</span>::unset_switch_pair_bypass_checks();
 
@@ -1063,17 +1313,28 @@
 		) -&gt; DispatchResult {
 			<span class="kw">let </span>submitter = T::SubmitterOrigin::ensure_origin(origin)<span class="question-mark">?</span>;
 
-			<span class="comment">// 1. Retrieve switch pair info from storage, else fail.
-			</span><span class="kw">let </span>switch_pair =
-				SwitchPair::&lt;T, I&gt;::get().ok_or(DispatchError::from(Error::&lt;T, I&gt;::SwitchPairNotFound))<span class="question-mark">?</span>;
+			<span class="comment">// 1. Prevent switches of less than ED tokens, since there might be a case where
+			//    a switch is reverted, but the user&#39;s balance has been dusted, and when
+			//    trying to revert the transfer, it will fail since the account does not
+			//    exist anymore. Hence, we force the transfer to be &gt;= ED, so that even when
+			//    hitting this edge case, we are still sure the original account is
+			//    re-created.
+			</span><span class="macro">ensure!</span>(
+				local_asset_amount &gt;= T::LocalCurrency::minimum_balance(),
+				Error::&lt;T, I&gt;::AmountTooLow
+			);
 
-			<span class="comment">// 2. Check if switches are enabled.
+			<span class="comment">// 2. Retrieve switch pair info from storage, else fail.
+			</span><span class="kw">let </span>switch_pair =
+				SwitchPair::&lt;T, I&gt;::get().ok_or_else(|| DispatchError::from(Error::&lt;T, I&gt;::SwitchPairNotFound))<span class="question-mark">?</span>;
+
+			<span class="comment">// 3. Check if switches are enabled.
 			</span><span class="macro">ensure!</span>(
 				switch_pair.is_enabled(),
 				DispatchError::from(Error::&lt;T, I&gt;::SwitchPairNotEnabled)
 			);
 
-			<span class="comment">// 3. Verify the tx submitter has enough local assets for the switch, without
+			<span class="comment">// 4. Verify the tx submitter has enough local assets for the switch, without
 			//    having their balance go to zero.
 			</span>T::LocalCurrency::can_withdraw(<span class="kw-2">&amp;</span>submitter, local_asset_amount)
 				.into_result(<span class="bool-val">true</span>)
@@ -1082,7 +1343,7 @@
 					DispatchError::from(Error::&lt;T, I&gt;::UserSwitchBalance)
 				})<span class="question-mark">?</span>;
 
-			<span class="comment">// 4. Verify the local assets can be transferred to the switch pool account.
+			<span class="comment">// 5. Verify the local assets can be transferred to the switch pool account.
 			//    This could fail if the pool&#39;s balance is `0` and the sent amount is less
 			//    than ED.
 			</span>T::LocalCurrency::can_deposit(<span class="kw-2">&amp;</span>switch_pair.pool_account, local_asset_amount, Provenance::Extant)
@@ -1092,7 +1353,7 @@
 					DispatchError::from(Error::&lt;T, I&gt;::LocalPoolBalance)
 				})<span class="question-mark">?</span>;
 
-			<span class="comment">// 5. Verify we have enough balance (minus ED, already substracted from the
+			<span class="comment">// 6. Verify we have enough balance (minus ED, already substracted from the
 			//    stored balance info) on the remote location to perform the transfer.
 			</span><span class="kw">let </span>remote_asset_amount_as_u128 = local_asset_amount.into();
 			<span class="macro">ensure!</span>(
@@ -1100,33 +1361,7 @@
 				Error::&lt;T, I&gt;::Liquidity
 			);
 
-			<span class="kw">let </span>asset_id_v4: AssetId = switch_pair.remote_asset_id.clone().try_into().map_err(|e| {
-				<span class="macro">log::error!</span>(
-					target: LOG_TARGET,
-					<span class="string">&quot;Failed to convert asset ID {:?} into v4 `AssetId` with error {:?}&quot;</span>,
-					switch_pair.remote_asset_id,
-					e
-				);
-				DispatchError::from(Error::&lt;T, I&gt;::Internal)
-			})<span class="question-mark">?</span>;
-			<span class="kw">let </span>remote_asset_fee_v4: Asset = switch_pair.remote_xcm_fee.clone().try_into().map_err(|e| {
-				<span class="macro">log::error!</span>(
-					target: LOG_TARGET,
-					<span class="string">&quot;Failed to convert remote XCM asset fee {:?} into v4 `Asset` with error {:?}&quot;</span>,
-					switch_pair.remote_xcm_fee,
-					e
-				);
-				DispatchError::from(Error::&lt;T, I&gt;::Xcm)
-			})<span class="question-mark">?</span>;
-			<span class="kw">let </span>destination_v4: Location = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
-				<span class="macro">log::error!</span>(
-					target: LOG_TARGET,
-					<span class="string">&quot;Failed to convert remote reserve location {:?} into v4 `Location` with error {:?}&quot;</span>,
-					switch_pair.remote_reserve_location,
-					e
-				);
-				DispatchError::from(Error::&lt;T, I&gt;::Internal)
-			})<span class="question-mark">?</span>;
+			<span class="kw">let </span>switch_pair_v4 = SwitchPairInfoV4::&lt;<span class="kw">_</span>, T, I&gt;::try_from(switch_pair).map_err(DispatchError::from)<span class="question-mark">?</span>;
 			<span class="kw">let </span>beneficiary_v4: Location = (<span class="kw-2">*</span>beneficiary.clone()).try_into().map_err(|e| {
 				<span class="macro">log::info!</span>(
 					target: LOG_TARGET,
@@ -1150,47 +1385,46 @@
 					DispatchError::from(Error::&lt;T, I&gt;::Xcm)
 				})<span class="question-mark">?</span>;
 
-			<span class="comment">// 6. Compose and validate XCM message
-			</span><span class="kw">let </span>appendix: Xcm&lt;()&gt; = <span class="macro">vec!</span>[
-				RefundSurplus,
-				DepositAsset {
-					assets: AssetFilter::Wild(WildAsset::All),
-					beneficiary: submitter_as_location.clone(),
-				},
-			]
-			.into();
-			<span class="kw">let </span>remote_xcm: Xcm&lt;()&gt; = <span class="macro">vec!</span>[
-				WithdrawAsset(remote_asset_fee_v4.clone().into()),
-				BuyExecution {
-					weight_limit: WeightLimit::Unlimited,
-					fees: remote_asset_fee_v4.clone(),
-				},
-				TransferAsset {
-					assets: (asset_id_v4, remote_asset_amount_as_u128).into(),
-					beneficiary: beneficiary_v4,
-				},
-				SetAppendix(appendix),
-			]
-			.into();
-			<span class="kw">let </span>xcm_ticket =
-				validate_send::&lt;T::XcmRouter&gt;(destination_v4.clone(), remote_xcm.clone()).map_err(|e| {
-					<span class="macro">log::info!</span>(
-						<span class="string">&quot;Failed to call validate_send for destination {:?} and remote XCM {:?} with error {:?}&quot;</span>,
-						destination_v4,
-						remote_xcm,
-						e
+			<span class="comment">// 7. Compose and validate XCM message
+			</span><span class="kw">let </span>universal_location = T::UniversalLocation::get();
+			<span class="kw">let </span>our_location_for_destination = universal_location
+				.invert_target(<span class="kw-2">&amp;</span>switch_pair_v4.remote_reserve_location)
+				.map_err(|e| {
+					<span class="macro">log::error!</span>(
+						target: LOG_TARGET,
+						<span class="string">&quot;Failed to invert universal location {:?} for destination {:?} with error {:?}&quot;</span>,
+						universal_location, switch_pair_v4.remote_reserve_location, e
 					);
-					DispatchError::from(Error::&lt;T, I&gt;::Xcm)
+					Error::&lt;T, I&gt;::Internal
 				})<span class="question-mark">?</span>;
+			<span class="kw">let </span>remote_xcm = <span class="self">Self</span>::compute_xcm_for_switch(
+				<span class="kw-2">&amp;</span>our_location_for_destination,
+				<span class="kw-2">&amp;</span>submitter_as_location,
+				<span class="kw-2">&amp;</span>beneficiary_v4,
+				remote_asset_amount_as_u128,
+				<span class="kw-2">&amp;</span>switch_pair_v4.remote_asset_id,
+				<span class="kw-2">&amp;</span>switch_pair_v4.remote_xcm_fee,
+			);
+			<span class="kw">let </span>xcm_ticket =
+				validate_send::&lt;T::XcmRouter&gt;(switch_pair_v4.remote_reserve_location.clone(), remote_xcm.clone())
+					.map_err(|e| {
+						<span class="macro">log::info!</span>(
+							<span class="string">&quot;Failed to call `validate_send` for destination {:?} and remote XCM {:?} with error {:?}&quot;</span>,
+							switch_pair_v4.remote_reserve_location,
+							remote_xcm,
+							e
+						);
+						DispatchError::from(Error::&lt;T, I&gt;::Xcm)
+					})<span class="question-mark">?</span>;
 
-			<span class="comment">// 7. Call into hook pre-switch checks
+			<span class="comment">// 8. Call into hook pre-switch checks
 			</span>T::SwitchHooks::pre_local_to_remote_switch(<span class="kw-2">&amp;</span>submitter, <span class="kw-2">&amp;</span>beneficiary, local_asset_amount)
 				.map_err(|e| DispatchError::from(Error::&lt;T, I&gt;::Hook(e.into())))<span class="question-mark">?</span>;
 
-			<span class="comment">// 8. Transfer funds from user to pool
+			<span class="comment">// 9. Transfer funds from user to pool
 			</span><span class="kw">let </span>transferred_amount = T::LocalCurrency::transfer(
 				<span class="kw-2">&amp;</span>submitter,
-				<span class="kw-2">&amp;</span>switch_pair.pool_account,
+				<span class="kw-2">&amp;</span>switch_pair_v4.pool_account,
 				local_asset_amount,
 				<span class="comment">// We don&#39;t care if the submitter&#39;s account gets dusted, but it should not be killed.
 				</span>Preservation::Protect,
@@ -1204,35 +1438,37 @@
 				<span class="kw">return </span><span class="prelude-val">Err</span>(Error::&lt;T, I&gt;::Internal.into());
 			}
 
-			<span class="comment">// 9. Take XCM fee from submitter.
-			</span><span class="kw">let </span>withdrawn_fees = T::AssetTransactor::withdraw_asset(<span class="kw-2">&amp;</span>remote_asset_fee_v4, <span class="kw-2">&amp;</span>submitter_as_location, <span class="prelude-val">None</span>)
-				.map_err(|e| {
-					<span class="macro">log::info!</span>(
-						target: LOG_TARGET,
-						<span class="string">&quot;Failed to withdraw asset {:?} from location {:?} with error {:?}&quot;</span>,
-						remote_asset_fee_v4,
-						submitter_as_location,
-						e
-					);
-					DispatchError::from(Error::&lt;T, I&gt;::UserXcmBalance)
-				})<span class="question-mark">?</span>;
-			<span class="kw">if </span>withdrawn_fees != <span class="macro">vec!</span>[remote_asset_fee_v4.clone()].into() {
+			<span class="comment">// 10. Take XCM fee from submitter.
+			</span><span class="kw">let </span>withdrawn_fees =
+				T::AssetTransactor::withdraw_asset(<span class="kw-2">&amp;</span>switch_pair_v4.remote_xcm_fee, <span class="kw-2">&amp;</span>submitter_as_location, <span class="prelude-val">None</span>)
+					.map_err(|e| {
+						<span class="macro">log::info!</span>(
+							target: LOG_TARGET,
+							<span class="string">&quot;Failed to withdraw asset {:?} from location {:?} with error {:?}&quot;</span>,
+							switch_pair_v4.remote_xcm_fee,
+							submitter_as_location,
+							e
+						);
+						DispatchError::from(Error::&lt;T, I&gt;::UserXcmBalance)
+					})<span class="question-mark">?</span>;
+			<span class="kw">if </span>withdrawn_fees != <span class="macro">vec!</span>[switch_pair_v4.remote_xcm_fee.clone()].into() {
 				<span class="macro">log::error!</span>(
 					target: LOG_TARGET,
 					<span class="string">&quot;Withdrawn fees {:?} does not match expected fee {:?}.&quot;</span>,
 					withdrawn_fees,
-					remote_asset_fee_v4
+					switch_pair_v4.remote_xcm_fee
 				);
 				<span class="kw">return </span><span class="prelude-val">Err</span>(DispatchError::from(Error::&lt;T, I&gt;::Internal));
 			}
 
-			<span class="comment">// 10. Send XCM out
+			<span class="comment">// 11. Send XCM out
 			</span>T::XcmRouter::deliver(xcm_ticket.<span class="number">0</span>).map_err(|e| {
 				<span class="macro">log::info!</span>(<span class="string">&quot;Failed to deliver ticket with error {:?}&quot;</span>, e);
 				DispatchError::from(Error::&lt;T, I&gt;::Xcm)
 			})<span class="question-mark">?</span>;
 
-			<span class="comment">// 11. Update remote asset balance and circulating supply.
+			<span class="comment">// 12. Update storage elements
+			// 12.1 Remote asset balance and circulating supply.
 			</span>SwitchPair::&lt;T, I&gt;::try_mutate(|entry| {
 				<span class="kw">let </span><span class="prelude-val">Some</span>(switch_pair_info) = entry.as_mut() <span class="kw">else </span>{
 					<span class="macro">log::error!</span>(target: LOG_TARGET, <span class="string">&quot;Failed to borrow stored switch pair info as mut.&quot;</span>);
@@ -1250,9 +1486,40 @@
 					})<span class="question-mark">?</span>;
 				<span class="prelude-val">Ok</span>(())
 			})<span class="question-mark">?</span>;
+			<span class="comment">// 12.2 Update the query ID storage entry. wrapping around the max value since
+			// it&#39;s safe to do so, assuming by the time we wrap the previously pending
+			// transfers have all been processed.
+			</span><span class="kw">let </span>query_id = NextQueryId::&lt;T, I&gt;::mutate(|entry| {
+				<span class="kw">let </span>next = <span class="kw-2">*</span>entry;
+				<span class="kw-2">*</span>entry = entry.wrapping_add(<span class="number">1</span>);
+				next
+			});
+			<span class="comment">// 12.3 Write the query ID into storage, checking for the very unlikely
+			// situation in which one already exists.
+			</span>PendingSwitchConfirmations::&lt;T, I&gt;::try_mutate(query_id, |entry| {
+				<span class="kw">match </span>entry {
+					<span class="comment">// Should never happen.
+					</span><span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
+						<span class="macro">log::error!</span>(
+							target: LOG_TARGET,
+							<span class="string">&quot;Found already an entry for query ID {:?} in storage.&quot;</span>,
+							query_id
+						);
+						<span class="prelude-val">Err</span>(Error::&lt;T, I&gt;::Internal)
+					}
+					<span class="prelude-val">None </span>=&gt; {
+						<span class="kw-2">*</span>entry = <span class="prelude-val">Some</span>(UnconfirmedSwitchInfoOf::&lt;T&gt; {
+							from: submitter.clone(),
+							to: <span class="kw-2">*</span>beneficiary.clone(),
+							amount: remote_asset_amount_as_u128,
+						});
+						<span class="prelude-val">Ok</span>(())
+					}
+				}
+			})<span class="question-mark">?</span>;
 
-			<span class="comment">// 12. Call into hook post-switch checks
-			</span>T::SwitchHooks::post_local_to_remote_switch(<span class="kw-2">&amp;</span>submitter, <span class="kw-2">&amp;</span>beneficiary, local_asset_amount)
+			<span class="comment">// 13. Call into hook post-switch checks
+			</span>T::SwitchHooks::post_local_to_remote_switch_dispatch(<span class="kw-2">&amp;</span>submitter, <span class="kw-2">&amp;</span>beneficiary, local_asset_amount)
 				.map_err(|e| DispatchError::from(Error::&lt;T, I&gt;::Hook(e.into())))<span class="question-mark">?</span>;
 
 			<span class="self">Self</span>::deposit_event(Event::&lt;T, I&gt;::LocalToRemoteSwitchExecuted {
@@ -1299,6 +1566,7 @@
 		});
 
 		SwitchPair::&lt;T, I&gt;::set(<span class="prelude-val">Some</span>(switch_pair_info));
+		NextQueryId::&lt;T, I&gt;::kill();
 
 		<span class="self">Self</span>::deposit_event(Event::&lt;T, I&gt;::SwitchPairCreated {
 			remote_asset_circulating_supply,
@@ -1313,9 +1581,11 @@
 
 	<span class="kw">fn </span>unset_switch_pair_bypass_checks() {
 		<span class="kw">let </span>switch_pair = SwitchPair::&lt;T, I&gt;::take();
-		<span class="kw">if let </span><span class="prelude-val">Some</span>(switch_pair) = switch_pair {
+		NextQueryId::&lt;T, I&gt;::kill();
+
+		<span class="kw">if let </span><span class="prelude-val">Some</span>(existing_switch_pair) = switch_pair {
 			<span class="self">Self</span>::deposit_event(Event::&lt;T, I&gt;::SwitchPairRemoved {
-				remote_asset_id: switch_pair.remote_asset_id,
+				remote_asset_id: existing_switch_pair.remote_asset_id,
 			});
 		};
 	}
@@ -1364,6 +1634,106 @@
 			);
 			Error::&lt;T, I&gt;::Internal
 		})
+	}
+
+	<span class="doccomment">/// Compose the XCM message for a local -&gt; remote switch to be sent to the
+	/// switch pair configured remote location.
+	///
+	/// The message includes an appendix which reports back to this chain the
+	/// result of the operation by the means of sending the content of the
+	/// holding registry after the transfer is supposed to have happened.
+	///
+	/// The XCM program is so composed:
+	/// 1. Withdraw XCM fees from our SA
+	/// 2. Buy execution
+	/// 3. Set the appendix, executed regardless of the outcome of the transfer:
+	///
+	///     3.1 Report back to our chain the assets in the holding registry.
+	/// This will contain either only the XCM fee token in case of successful
+	/// transfer, or the XCM fee token + the amount of funds supposed to be
+	/// transferred.
+	///
+	///     3.2 Deposit the un-transferred asset (only if the transfer
+	/// failed) back into our account.
+	///
+	///     3.3 Refund any surplus weight.
+	///
+	///     3.4 Deposit the remaining XCM fee assets in the user&#39;s account.
+	///
+	/// 4. Withdraw the requested asset (this operation should be infallible
+	///    since we have full control of this balance)
+	/// 5. Try to deposit the withdrawn asset into the user&#39;s account. This
+	///    operation could fail and the error is handled in the appendix.
+	</span><span class="kw">pub fn </span>compute_xcm_for_switch(
+		inverted_universal_location: <span class="kw-2">&amp;</span>Location,
+		from: <span class="kw-2">&amp;</span>Location,
+		to: <span class="kw-2">&amp;</span>Location,
+		amount: u128,
+		asset_id: <span class="kw-2">&amp;</span>AssetId,
+		remote_asset_fee: <span class="kw-2">&amp;</span>Asset,
+	) -&gt; Xcm&lt;()&gt; {
+		<span class="kw">let </span>appendix = <span class="macro">vec!</span>[
+			ReportHolding {
+				response_info: QueryResponseInfo {
+					destination: inverted_universal_location.clone(),
+					max_weight: Weight::zero(),
+					query_id: NextQueryId::&lt;T, I&gt;::get(),
+				},
+				<span class="comment">// Include in the report the assets that were not transferred.
+				</span>assets: AssetFilter::Wild(WildAsset::AllOf {
+					id: asset_id.clone(),
+					fun: WildFungibility::Fungible,
+				}),
+			},
+			<span class="comment">// If the asset to transfer failed to transfer, re-put it back into our own account. Otherwise, if the
+			// transfer succeeded, this asset won&#39;t be present in the holding registry, hence this is effectively a
+			// no-op.
+			</span>DepositAsset {
+				assets: AssetFilter::Wild(WildAsset::AllOf {
+					id: asset_id.clone(),
+					fun: WildFungibility::Fungible,
+				}),
+				beneficiary: inverted_universal_location.clone(),
+			},
+			RefundSurplus,
+			<span class="comment">// Refund the XCM fee left to the user. We are purposefully only selecting the XCM fee asset, although
+			// there should be no cases in which any other assets are present in the holding registry.
+			</span>DepositAsset {
+				assets: AssetFilter::Wild(WildAsset::AllOf {
+					id: remote_asset_fee.id.clone(),
+					fun: WildFungibility::Fungible,
+				}),
+				beneficiary: from.clone(),
+			},
+		]
+		.into();
+		<span class="macro">vec!</span>[
+			WithdrawAsset(remote_asset_fee.clone().into()),
+			BuyExecution {
+				weight_limit: WeightLimit::Unlimited,
+				fees: remote_asset_fee.clone(),
+			},
+			SetAppendix(appendix),
+			<span class="comment">// Because the appendix relies on forwarding the content of the holding registry (there is at the
+			// moment no other way of detecting failed switches), we need to make sure the assets are present in
+			// the holding registry before the execution could fail.
+			// Using `TransferAsset` could result in assets not even being withdrawn, and we would not be able to
+			// detect the failed switch. Hence, we need to force the transfer to happen in two steps: 1. withdraw
+			// (which we assume would never fail since we know we own the required assets)
+			// 2. deposit (which could fail, e.g., if the beneficiary does not have an ED for a sufficient asset).
+			</span>WithdrawAsset((asset_id.clone(), amount).into()),
+			DepositAsset {
+				assets: AssetFilter::Definite((asset_id.clone(), amount).into()),
+				beneficiary: to.clone(),
+			},
+		]
+		.into()
+	}
+
+	<span class="comment">// Read the first item in the storage and returns `true` if `Some`, and `false`
+	// otherwise.
+	</span><span class="kw">fn </span>is_any_transaction_pending() -&gt; bool {
+		PendingSwitchConfirmations::&lt;T, I&gt;::count() &gt; Zero::zero()
 	}
 }
 </code></pre></div></section></main></body></html>

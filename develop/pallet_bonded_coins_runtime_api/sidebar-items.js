@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BondedCurrencyDetails","Coefficient","CollateralDetails","PoolDetails"],"trait":["BondedCurrency","OperationValue"],"type":["CurrenciesOf","CurveOf","PoolDetailsOf"]};

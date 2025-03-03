@@ -158,9 +158,8 @@
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
 <a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -175,7 +174,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{
 	pallet_prelude::DispatchResult,
@@ -187,11 +186,10 @@
 
 <span class="kw">pub fn </span>update_balance_for_did_lookup&lt;T: Config&gt;(key: <span class="kw-2">&amp;</span>LinkableAccountId) -&gt; DispatchResult
 <span class="kw">where
-	</span>&lt;T <span class="kw">as </span>Config&gt;::Currency:
-		ReservableCurrency&lt;T::AccountId, Balance = &lt;&lt;T <span class="kw">as </span>Config&gt;::Currency <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::Balance&gt;,
+	</span>T::Currency: ReservableCurrency&lt;T::AccountId, Balance = &lt;T::Currency <span class="kw">as </span>Inspect&lt;AccountIdOf&lt;T&gt;&gt;&gt;::Balance&gt;,
 {
 	<span class="kw">let </span>details = ConnectedDids::&lt;T&gt;::get(key).ok_or(Error::&lt;T&gt;::NotFound)<span class="question-mark">?</span>;
-	switch_reserved_to_hold::&lt;AccountIdOf&lt;T&gt;, CurrencyOf&lt;T&gt;&gt;(
+	switch_reserved_to_hold::&lt;AccountIdOf&lt;T&gt;, CurrencyOf&lt;T, ()&gt;&gt;(
 		<span class="kw-2">&amp;</span>details.deposit.owner,
 		<span class="kw-2">&amp;</span>HoldReason::Deposit.into(),
 		details.deposit.amount,
@@ -201,7 +199,7 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">pub mod </span>test {
 	<span class="kw">use </span>frame_support::{
-		assert_noop,
+		assert_noop, assert_ok,
 		traits::{fungible::InspectHold, ReservableCurrency},
 	};
 	<span class="kw">use </span>sp_runtime::traits::Zero;
@@ -286,7 +284,7 @@
 					connected_did_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				<span class="macro">assert!</span>(update_balance_for_did_lookup::&lt;Test&gt;(<span class="kw-2">&amp;</span>LINKABLE_ACCOUNT_00).is_ok());
+				<span class="macro">assert_ok!</span>(update_balance_for_did_lookup::&lt;Test&gt;(<span class="kw-2">&amp;</span>LINKABLE_ACCOUNT_00));
 
 				<span class="kw">let </span>connected_did_post_migration = ConnectedDids::&lt;Test&gt;::get(LINKABLE_ACCOUNT_00);
 

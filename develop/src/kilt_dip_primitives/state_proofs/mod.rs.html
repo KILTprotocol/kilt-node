@@ -179,8 +179,22 @@
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -195,7 +209,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>parity_scale_codec::Decode;
 <span class="kw">use </span>sp_runtime::traits::Hash;
@@ -220,18 +234,20 @@
 ///   root.
 /// * `Success`: defines the type expected to be revealed in a valid Merkle
 ///   proof.
-</span><span class="kw">pub fn </span>verify_storage_value_proof&lt;StorageKey, MerkleHasher, Success&gt;(
+/// * `ProofIterator`: defines the type containing the Merkle proof leaves.
+</span><span class="kw">pub fn </span>verify_storage_value_proof&lt;StorageKey, MerkleHasher, Success, ProofIterator&gt;(
 	storage_key: <span class="kw-2">&amp;</span>StorageKey,
 	state_root: OutputOf&lt;MerkleHasher&gt;,
-	state_proof: <span class="kw">impl </span>IntoIterator&lt;Item = Vec&lt;u8&gt;&gt;,
+	state_proof: ProofIterator,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Success, MerkleProofError&gt;
 <span class="kw">where
 	</span>StorageKey: AsRef&lt;[u8]&gt;,
 	MerkleHasher: Hash,
 	OutputOf&lt;MerkleHasher&gt;: Ord,
 	Success: Decode,
+	ProofIterator: IntoIterator&lt;Item = Vec&lt;u8&gt;&gt;,
 {
-	verify_storage_value_proof_with_decoder::&lt;<span class="kw">_</span>, MerkleHasher, <span class="kw">_</span>&gt;(storage_key, state_root, state_proof, |input| {
+	verify_storage_value_proof_with_decoder::&lt;<span class="kw">_</span>, MerkleHasher, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;(storage_key, state_root, state_proof, |input| {
 		Success::decode(input).ok()
 	})
 }
@@ -241,33 +257,45 @@
 /// * `StorageKey`: defines the type of the storage key included in the proof.
 /// * `MerkleHasher`: defines the hashing algorithm used to calculate the Merkle
 ///   root.
+/// * `TransformFunction`: the signature of the transform function.
 /// * `TransformResult`: the type returned by the provided decoding function, if
 ///   successful. The `None` result is interpreted as an error, so it is not possible to return a type for which `None` would be a correct decoding, for now. See &lt;https://github.com/rust-lang/rust/issues/103765&gt; for more details.
-</span><span class="kw">pub fn </span>verify_storage_value_proof_with_decoder&lt;StorageKey, MerkleHasher, TransformResult&gt;(
+/// * `ProofIterator`: defines the type containing the Merkle proof leaves.
+</span><span class="kw">pub fn </span>verify_storage_value_proof_with_decoder&lt;
+	StorageKey,
+	MerkleHasher,
+	TransformFunction,
+	TransformResult,
+	ProofIterator,
+&gt;(
 	storage_key: <span class="kw-2">&amp;</span>StorageKey,
 	state_root: OutputOf&lt;MerkleHasher&gt;,
-	state_proof: <span class="kw">impl </span>IntoIterator&lt;Item = Vec&lt;u8&gt;&gt;,
+	state_proof: ProofIterator,
 	<span class="comment">// TODO: Switch to `Error` from `Option` for the closure.
 	// `Error` is not yet available in core.
 	// It was merged recently and will be stabilized at some point. See https://github.com/rust-lang/rust/issues/103765 for more.
-	</span><span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut &amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;TransformResult&gt;,
+	</span><span class="kw-2">mut </span>transform: TransformFunction,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;TransformResult, MerkleProofError&gt;
 <span class="kw">where
 	</span>StorageKey: AsRef&lt;[u8]&gt;,
 	MerkleHasher: Hash,
+	TransformFunction: FnMut(<span class="kw-2">&amp;mut &amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;TransformResult&gt;,
 	OutputOf&lt;MerkleHasher&gt;: Ord,
+	ProofIterator: IntoIterator&lt;Item = Vec&lt;u8&gt;&gt;,
 {
 	<span class="kw">const </span>LOG_TARGET: <span class="kw-2">&amp;</span>str = <span class="string">&quot;dip::consumer::verify_storage_value_proof_with_decoder&quot;</span>;
 	<span class="kw">let </span>storage_proof = StorageProof::new(state_proof);
-	<span class="kw">let </span><span class="kw-2">mut </span>revealed_leaves = read_proof_check::&lt;MerkleHasher, <span class="kw">_</span>&gt;(state_root, storage_proof, [storage_key].iter())
-		.map_err(|e| {
-			<span class="macro">log::info!</span>(
-				target: LOG_TARGET,
-				<span class="string">&quot;Failed verification of storage proof with error {:#?}&quot;</span>,
-				e
-			);
-			MerkleProofError::InvalidProof
-		})<span class="question-mark">?</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>revealed_leaves =
+		read_proof_check::&lt;MerkleHasher, <span class="kw">_</span>&gt;(state_root, storage_proof, sp_std::iter::once(<span class="kw-2">&amp;</span>storage_key)).map_err(
+			|e| {
+				<span class="macro">log::info!</span>(
+					target: LOG_TARGET,
+					<span class="string">&quot;Failed verification of storage proof with error {:#?}&quot;</span>,
+					e
+				);
+				MerkleProofError::InvalidProof
+			},
+		)<span class="question-mark">?</span>;
 
 	<span class="macro">debug_assert!</span>(
 		revealed_leaves.len() == <span class="number">1usize</span>,
@@ -316,7 +344,7 @@
 		// results in the key
 		// &quot;0x26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850&quot;
 		</span><span class="kw">let </span>expected_event_count_at_block = <span class="number">5u32</span>;
-		<span class="kw">let </span>event_count_at_block = verify_storage_value_proof::&lt;<span class="kw">_</span>, BlakeTwo256, u32&gt;(
+		<span class="kw">let </span>event_count_at_block = verify_storage_value_proof::&lt;<span class="kw">_</span>, BlakeTwo256, u32, <span class="kw">_</span>&gt;(
 			<span class="kw-2">&amp;</span>events_count_storage_key,
 			spiritnet_state_root,
 			spiritnet_event_count_proof_at_block,
@@ -349,7 +377,7 @@
 		// (16_363_919) which results in the key
 		// &quot;0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000&quot;
 		</span><span class="kw">let </span>expected_spiritnet_head_at_block = <span class="macro">hex!</span>(<span class="string">&quot;65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c&quot;</span>).to_vec();
-		<span class="kw">let </span>spiritnet_head_at_block = verify_storage_value_proof::&lt;<span class="kw">_</span>, BlakeTwo256, HeadData&gt;(
+		<span class="kw">let </span>spiritnet_head_at_block = verify_storage_value_proof::&lt;<span class="kw">_</span>, BlakeTwo256, HeadData, <span class="kw">_</span>&gt;(
 			<span class="kw-2">&amp;</span>spiritnet_head_storage_key,
 			polkadot_state_root,
 			spiritnet_head_proof_at_block,

@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"peregrine_runtime":[["impl <a class=\"trait\" href=\"kilt_support/traits/trait.InspectMetadata.html\" title=\"trait kilt_support::traits::InspectMetadata\">InspectMetadata</a> for <a class=\"struct\" href=\"peregrine_runtime/struct.MetadataProvider.html\" title=\"struct peregrine_runtime::MetadataProvider\">MetadataProvider</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

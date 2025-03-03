@@ -322,8 +322,13 @@
 <a href="#322" id="322">322</a>
 <a href="#323" id="323">323</a>
 <a href="#324" id="324">324</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -338,7 +343,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>did::KeyIdOf;
 <span class="kw">use </span>frame_system::pallet_prelude::{BlockNumberFor, HeaderFor};
@@ -470,7 +475,8 @@
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	&gt;;
 
-	<span class="kw">fn </span>verify_proof_for_call_against_details(
+	<span class="attr">#[allow(clippy::as_conversions)]
+	</span><span class="kw">fn </span>verify_proof_for_call_against_details(
 		call: <span class="kw-2">&amp;</span>RuntimeCallOf&lt;ConsumerRuntime&gt;,
 		subject: <span class="kw-2">&amp;</span>ConsumerRuntime::Identifier,
 		submitter: <span class="kw-2">&amp;</span>ConsumerRuntime::AccountId,
@@ -489,7 +495,9 @@
 		);
 
 		<span class="comment">// 2. Verify parachain state is finalized by relay chain and fresh.
-		</span><span class="kw">if </span>proof_without_header.provider_head_proof.proof.len() &gt; MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into() {
+		</span><span class="kw">if </span>proof_without_header.provider_head_proof.proof.len()
+			&gt; MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into::&lt;usize&gt;()
+		{
 			<span class="kw">let </span>inner_error = DipProofComponentTooLargeError::ParachainHeadProofTooManyLeaves;
 			<span class="macro">log::info!</span>(
 				target: LOG_TARGET,
@@ -505,7 +513,7 @@
 			.provider_head_proof
 			.proof
 			.iter()
-			.any(|l| l.len() &gt; MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into())
+			.any(|l| l.len() &gt; MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into::&lt;usize&gt;())
 		{
 			<span class="kw">let </span>inner_error = DipProofComponentTooLargeError::ParachainHeadProofLeafTooLarge;
 			<span class="macro">log::info!</span>(
@@ -528,7 +536,8 @@
 		);
 
 		<span class="comment">// 3. Verify commitment is included in provider parachain state.
-		</span><span class="kw">if </span>proof_without_relaychain.dip_commitment_proof.<span class="number">0</span>.len() &gt; MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into()
+		</span><span class="kw">if </span>proof_without_relaychain.dip_commitment_proof.<span class="number">0</span>.len()
+			&gt; MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into::&lt;usize&gt;()
 		{
 			<span class="kw">let </span>inner_error = DipProofComponentTooLargeError::DipCommitmentProofTooManyLeaves;
 			<span class="macro">log::info!</span>(
@@ -544,7 +553,7 @@
 			.dip_commitment_proof
 			.<span class="number">0
 			</span>.iter()
-			.any(|l| l.len() &gt; MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into())
+			.any(|l| l.len() &gt; MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into::&lt;usize&gt;())
 		{
 			<span class="kw">let </span>inner_error = DipProofComponentTooLargeError::DipCommitmentProofLeafTooLarge;
 			<span class="macro">log::info!</span>(
@@ -567,7 +576,8 @@
 		);
 
 		<span class="comment">// 4. Verify DIP Merkle proof.
-		</span><span class="kw">if </span>proof_without_parachain.dip_proof.blinded.len() &gt; MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into() {
+		</span><span class="kw">if </span>proof_without_parachain.dip_proof.blinded.len() &gt; MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into::&lt;usize&gt;()
+		{
 			<span class="kw">let </span>inner_error = DipProofComponentTooLargeError::DipProofTooManyLeaves;
 			<span class="macro">log::info!</span>(
 				target: LOG_TARGET,
@@ -583,7 +593,7 @@
 			.dip_proof
 			.blinded
 			.iter()
-			.any(|l| l.len() &gt; MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into())
+			.any(|l| l.len() &gt; MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into::&lt;usize&gt;())
 		{
 			<span class="kw">let </span>inner_error = DipProofComponentTooLargeError::DipProofLeafTooLarge;
 			<span class="macro">log::info!</span>(

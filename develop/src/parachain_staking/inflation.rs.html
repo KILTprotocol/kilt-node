@@ -384,8 +384,10 @@
 <a href="#384" id="384">384</a>
 <a href="#385" id="385">385</a>
 <a href="#386" id="386">386</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -400,7 +402,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="doccomment">//! Helper methods for computing issuance based on inflation
 </span><span class="kw">use crate</span>::{pallet::Config, types::BalanceOf};
@@ -423,6 +425,7 @@
 }
 
 <span class="doccomment">/// Convert annual reward rate to per_block.
+</span><span class="attr">#[allow(clippy::arithmetic_side_effects)]
 </span><span class="kw">fn </span>annual_to_per_block(blocks_per_year: u64, rate: Perquintill) -&gt; Perquintill {
 	rate / blocks_per_year.max(<span class="number">1</span>)
 }
@@ -466,6 +469,7 @@
 	///
 	/// NOTE: If we exceed the max staking rate, the reward will be reduced by
 	/// max_rate / current_rate.
+	</span><span class="attr">#[allow(clippy::arithmetic_side_effects)]
 	</span><span class="kw">pub fn </span>compute_reward&lt;T: Config&gt;(
 		<span class="kw-2">&amp;</span><span class="self">self</span>,
 		stake: BalanceOf&lt;T&gt;,

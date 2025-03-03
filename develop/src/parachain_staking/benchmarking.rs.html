@@ -647,8 +647,15 @@
 <a href="#647" id="647">647</a>
 <a href="#648" id="648">648</a>
 <a href="#649" id="649">649</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -663,10 +670,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
-</span><span class="attr">#![cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
-</span><span class="doccomment">//! Benchmarking
+// Old benchmarking macros are a mess.
+</span><span class="attr">#![allow(clippy::tests_outside_test_module)]
+
 </span><span class="kw">use crate</span>::{types::RoundInfo, <span class="kw-2">*</span>};
 <span class="kw">use </span>frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 <span class="kw">use </span>frame_support::{
@@ -755,17 +763,20 @@
 	<span class="kw">let </span>who = delegator.unwrap_or(collator);
 	<span class="macro">assert_eq!</span>(Unstaking::&lt;T&gt;::get(who).len(), <span class="number">0</span>);
 	<span class="kw">while </span>System::&lt;T&gt;::block_number() &lt; unstaked.into() {
-		<span class="kw">if let </span><span class="prelude-val">Some</span>(delegator) = delegator {
-			<span class="macro">assert_ok!</span>(Pallet::&lt;T&gt;::delegator_stake_less(
-				RawOrigin::Signed(delegator.clone()).into(),
-				T::CurrencyBalance::one()
-			));
-		} <span class="kw">else </span>{
-			<span class="macro">assert_ok!</span>(Pallet::&lt;T&gt;::candidate_stake_less(
-				RawOrigin::Signed(collator.clone()).into(),
-				T::CurrencyBalance::one()
-			));
-		}
+		delegator.map_or_else(
+			|| {
+				<span class="macro">assert_ok!</span>(Pallet::&lt;T&gt;::candidate_stake_less(
+					RawOrigin::Signed(collator.clone()).into(),
+					T::CurrencyBalance::one()
+				));
+			},
+			|delegator| {
+				<span class="macro">assert_ok!</span>(Pallet::&lt;T&gt;::delegator_stake_less(
+					RawOrigin::Signed(delegator.clone()).into(),
+					T::CurrencyBalance::one()
+				));
+			},
+		);
 		System::&lt;T&gt;::set_block_number(System::&lt;T&gt;::block_number() + BlockNumberFor::&lt;T&gt;::one());
 	}
 	<span class="macro">assert_eq!</span>(Unstaking::&lt;T&gt;::get(who).len() <span class="kw">as </span>u64, unstaked);
@@ -847,7 +858,9 @@
 			Perquintill::from_percent(<span class="number">40</span>),
 			Perquintill::from_percent(<span class="number">10</span>)
 		);
-	}: <span class="kw">_</span>(RawOrigin::Root, inflation.collator.max_rate, inflation.collator.reward_rate.annual, inflation.delegator.max_rate, inflation.delegator.reward_rate.annual)
+
+		<span class="kw">let </span>candidate_pool_size = candidates.len() <span class="kw">as </span>u32;
+	}: <span class="kw">_</span>(RawOrigin::Root, inflation.collator.max_rate, inflation.collator.reward_rate.annual, inflation.delegator.max_rate, inflation.delegator.reward_rate.annual, candidate_pool_size)
 	verify {
 		<span class="macro">assert_eq!</span>(InflationConfig::&lt;T&gt;::get(), inflation);
 		candidates.into_iter().for_each(|candidate| {
@@ -1276,7 +1289,8 @@
 		<span class="kw">let </span>old = InflationConfig::&lt;T&gt;::get();
 		<span class="macro">assert_eq!</span>(LastRewardReduction::&lt;T&gt;::get(), BlockNumberFor::&lt;T&gt;::zero());
 		System::&lt;T&gt;::set_block_number(T::BLOCKS_PER_YEAR + BlockNumberFor::&lt;T&gt;::one());
-	}: <span class="kw">_</span>(RawOrigin::Signed(collator))
+		<span class="kw">let </span>candidate_pool_size = candidates.len() <span class="kw">as </span>u32;
+	}: <span class="kw">_</span>(RawOrigin::Signed(collator), candidate_pool_size)
 	verify {
 		<span class="kw">let </span>new = InflationConfig::&lt;T&gt;::get();
 		<span class="macro">assert_eq!</span>(LastRewardReduction::&lt;T&gt;::get(), BlockNumberFor::&lt;T&gt;::one());

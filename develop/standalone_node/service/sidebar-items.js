@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["GRANDPA_JUSTIFICATION_PERIOD"],"fn":["new_full","new_partial"],"struct":["ExecutorDispatch"],"type":["FullBackend","FullClient","FullSelectChain","PartialComponents"]};
+window.SIDEBAR_ITEMS = {"constant":["GRANDPA_JUSTIFICATION_PERIOD"],"fn":["new_full","new_partial"],"struct":["ExecutorDispatch"],"type":["FullBackend","FullClient","FullSelectChain","HostFunctions","PartialComponents"]};

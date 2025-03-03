@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["mock_origin"],"struct":["SubjectId"]};
+window.SIDEBAR_ITEMS = {"mod":["mock_origin"],"struct":["MockCurrency","SubjectId"]};

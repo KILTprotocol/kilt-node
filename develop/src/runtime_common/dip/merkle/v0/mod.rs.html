@@ -361,8 +361,10 @@
 <a href="#361" id="361">361</a>
 <a href="#362" id="362">362</a>
 <a href="#363" id="363">363</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -377,7 +379,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>did::{did_details::DidDetails, DidVerificationKeyRelationship, KeyIdOf};
 <span class="kw">use </span>frame_system::pallet_prelude::BlockNumberFor;
@@ -387,7 +389,7 @@
 <span class="kw">use </span>pallet_did_lookup::linkable_account::LinkableAccountId;
 <span class="kw">use </span>pallet_dip_provider::{traits::IdentityProvider, IdentityOf};
 <span class="kw">use </span>pallet_web3_names::Web3NameOf;
-<span class="kw">use </span>sp_std::{prelude::ToOwned, vec, vec::Vec};
+<span class="kw">use </span>sp_std::{iter::once, prelude::ToOwned, vec, vec::Vec};
 <span class="kw">use </span>sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
 <span class="kw">use </span><span class="kw">crate</span>::dip::{
@@ -421,12 +423,11 @@
 			);
 			DidMerkleProofError::Internal
 		})<span class="question-mark">?</span>;
-	<span class="prelude-val">Ok</span>([RevealedDidKey {
+	<span class="prelude-val">Ok</span>(once(RevealedDidKey {
 		id: did_details.authentication_key,
 		relationship: DidVerificationKeyRelationship::Authentication.into(),
 		details: auth_key_details.clone(),
-	}]
-	.into_iter())
+	}))
 }
 
 <span class="kw">fn </span>get_att_leaves&lt;Runtime&gt;(
@@ -563,36 +564,39 @@
 	<span class="comment">// Key agreement keys.
 	</span><span class="kw">let </span>enc_leaves = get_enc_leaves(did_details)<span class="question-mark">?</span>;
 	<span class="comment">// Linked accounts.
-	</span><span class="kw">let </span>linked_accounts = get_linked_account_leaves(linked_accounts);
+	</span><span class="kw">let </span>linked_account_leaves = get_linked_account_leaves(linked_accounts);
 	<span class="comment">// Web3name.
-	</span><span class="kw">let </span>web3_name = web3_name_details.as_ref().map(get_web3name_leaf::&lt;Runtime&gt;);
+	</span><span class="kw">let </span>web3_name_leaf = web3_name_details.as_ref().map(get_web3name_leaf::&lt;Runtime&gt;);
 
 	<span class="comment">// Add all leaves to the proof builder.
-	</span><span class="kw">let </span>keys = auth_leaves
+	</span><span class="kw">let </span>revealed_keys = auth_leaves
 		.chain(att_leaves)
 		.chain(del_leaves)
 		.chain(enc_leaves)
 		.map(RevealedDidMerkleProofLeaf::from);
-	<span class="kw">let </span>linked_accounts = linked_accounts.map(RevealedDidMerkleProofLeaf::from);
-	<span class="kw">let </span>web3_names = web3_name
+	<span class="kw">let </span>revealed_linked_accounts = linked_account_leaves.map(RevealedDidMerkleProofLeaf::from);
+	<span class="kw">let </span>revealed_web3_names = web3_name_leaf
 		.map(|n| <span class="macro">vec!</span>[n])
 		.unwrap_or_default()
 		.into_iter()
 		.map(RevealedDidMerkleProofLeaf::from);
 
-	keys.chain(linked_accounts).chain(web3_names).try_for_each(|leaf| {
-		trie_builder
-			.insert(leaf.encoded_key().as_slice(), leaf.encoded_value().as_slice())
-			.map_err(|<span class="kw">_</span>| {
-				<span class="macro">log::error!</span>(
-					target: LOG_TARGET,
-					<span class="string">&quot;Failed to insert leaf {:#?} in the trie builder.&quot;</span>,
-					leaf
-				);
-				DidMerkleProofError::Internal
-			})<span class="question-mark">?</span>;
-		<span class="prelude-val">Ok</span>(())
-	})<span class="question-mark">?</span>;
+	revealed_keys
+		.chain(revealed_linked_accounts)
+		.chain(revealed_web3_names)
+		.try_for_each(|leaf| {
+			trie_builder
+				.insert(leaf.encoded_key().as_slice(), leaf.encoded_value().as_slice())
+				.map_err(|<span class="kw">_</span>| {
+					<span class="macro">log::error!</span>(
+						target: LOG_TARGET,
+						<span class="string">&quot;Failed to insert leaf {:#?} in the trie builder.&quot;</span>,
+						leaf
+					);
+					DidMerkleProofError::Internal
+				})<span class="question-mark">?</span>;
+			<span class="prelude-val">Ok</span>(())
+		})<span class="question-mark">?</span>;
 
 	trie_builder.commit();
 	<span class="prelude-val">Ok</span>(trie_builder.root().to_owned())

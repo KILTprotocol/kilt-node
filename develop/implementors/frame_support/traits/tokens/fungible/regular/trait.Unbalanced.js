@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"kilt_support":[["impl&lt;AccountId, Balance, RuntimeHoldReason&gt; Unbalanced&lt;AccountId&gt; for <a class=\"struct\" href=\"kilt_support/mock/struct.MockCurrency.html\" title=\"struct kilt_support::mock::MockCurrency\">MockCurrency</a>&lt;Balance, RuntimeHoldReason&gt;<span class=\"where fmt-newline\">where\n    Balance: BalanceT,</span>"]],
+"pallet_deposit_storage":[["impl&lt;T&gt; Unbalanced&lt;&lt;T as Config&gt;::AccountId&gt; for <a class=\"struct\" href=\"pallet_deposit_storage/pallet/struct.Pallet.html\" title=\"struct pallet_deposit_storage::pallet::Pallet\">Pallet</a>&lt;T&gt;<span class=\"where fmt-newline\">where\n    T: <a class=\"trait\" href=\"pallet_deposit_storage/pallet/trait.Config.html\" title=\"trait pallet_deposit_storage::pallet::Config\">Config</a>,</span>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

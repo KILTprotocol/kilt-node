@@ -1440,8 +1440,8 @@
 // --template=.maintain/weight-template.hbs
 
 </span><span class="attr">#![cfg_attr(rustfmt, rustfmt_skip)]
-#![allow(unused_parens)]
 #![allow(unused_imports)]
+#![allow(clippy::as_conversions)]
 
 </span><span class="kw">use </span>frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 <span class="kw">use </span>sp_std::marker::PhantomData;

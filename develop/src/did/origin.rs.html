@@ -137,8 +137,48 @@
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -153,12 +193,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::traits::{EnsureOrigin, EnsureOriginWithArg};
 <span class="kw">use </span>kilt_support::traits::CallSources;
 <span class="kw">use </span>parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 <span class="kw">use </span>scale_info::TypeInfo;
+<span class="kw">use </span>sp_core::Get;
 <span class="kw">use </span>sp_runtime::RuntimeDebug;
 <span class="kw">use </span>sp_std::marker::PhantomData;
 
@@ -170,24 +211,72 @@
 }
 
 <span class="kw">impl</span>&lt;DidIdentifier, AccountId&gt; DidRawOrigin&lt;DidIdentifier, AccountId&gt; {
-	<span class="kw">pub fn </span>new(id: DidIdentifier, submitter: AccountId) -&gt; <span class="self">Self </span>{
+	<span class="kw">pub const fn </span>new(id: DidIdentifier, submitter: AccountId) -&gt; <span class="self">Self </span>{
 		<span class="self">Self </span>{ id, submitter }
 	}
 }
 
-<span class="kw">pub struct </span>EnsureDidOrigin&lt;DidIdentifier, AccountId&gt;(PhantomData&lt;(DidIdentifier, AccountId)&gt;);
+<span class="kw">impl</span>&lt;DidIdentifier: Clone, AccountId: Clone&gt; CallSources&lt;AccountId, DidIdentifier&gt;
+	<span class="kw">for </span>DidRawOrigin&lt;DidIdentifier, AccountId&gt;
+{
+	<span class="kw">fn </span>sender(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AccountId {
+		<span class="self">self</span>.submitter.clone()
+	}
 
-<span class="kw">impl</span>&lt;OuterOrigin, DidIdentifier, AccountId&gt; EnsureOrigin&lt;OuterOrigin&gt; <span class="kw">for </span>EnsureDidOrigin&lt;DidIdentifier, AccountId&gt;
+	<span class="kw">fn </span>subject(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; DidIdentifier {
+		<span class="self">self</span>.id.clone()
+	}
+}
+
+<span class="doccomment">/// Flag for which entity is authorised to submit DID-authenticated
+/// transactions.
+</span><span class="kw">pub enum </span>AuthorisedSubmitter&lt;AccountId&gt; {
+	<span class="doccomment">/// Nobody.
+	</span><span class="prelude-val">None</span>,
+	<span class="doccomment">/// Everyone (i.e., permissionless).
+	</span>Everyone,
+	<span class="doccomment">/// The specified account.
+	</span>One(AccountId),
+}
+
+<span class="kw">impl</span>&lt;AccountId&gt; From&lt;AccountId&gt; <span class="kw">for </span>AuthorisedSubmitter&lt;AccountId&gt; {
+	<span class="kw">fn </span>from(value: AccountId) -&gt; <span class="self">Self </span>{
+		<span class="self">Self</span>::One(value)
+	}
+}
+
+<span class="kw">pub struct </span>Everyone;
+
+<span class="kw">impl</span>&lt;AccountId&gt; Get&lt;AuthorisedSubmitter&lt;AccountId&gt;&gt; <span class="kw">for </span>Everyone {
+	<span class="kw">fn </span>get() -&gt; AuthorisedSubmitter&lt;AccountId&gt; {
+		AuthorisedSubmitter::Everyone
+	}
+}
+
+<span class="kw">pub struct </span>EnsureDidOrigin&lt;DidIdentifier, AccountId, ExpectedSubmitter = Everyone&gt;(
+	PhantomData&lt;(DidIdentifier, AccountId, ExpectedSubmitter)&gt;,
+);
+
+<span class="kw">impl</span>&lt;OuterOrigin, DidIdentifier, AccountId, ExpectedSubmitter&gt; EnsureOrigin&lt;OuterOrigin&gt;
+	<span class="kw">for </span>EnsureDidOrigin&lt;DidIdentifier, AccountId, ExpectedSubmitter&gt;
 <span class="kw">where
 	</span>OuterOrigin: Into&lt;<span class="prelude-ty">Result</span>&lt;DidRawOrigin&lt;DidIdentifier, AccountId&gt;, OuterOrigin&gt;&gt;
-		+ From&lt;DidRawOrigin&lt;DidIdentifier, AccountId&gt;&gt;,
+		+ From&lt;DidRawOrigin&lt;DidIdentifier, AccountId&gt;&gt;
+		+ Clone,
 	DidIdentifier: From&lt;AccountId&gt;,
-	AccountId: Clone + Decode,
+	AccountId: Clone + Decode + PartialEq,
+	ExpectedSubmitter: Get&lt;AuthorisedSubmitter&lt;AccountId&gt;&gt;,
 {
 	<span class="kw">type </span>Success = DidRawOrigin&lt;DidIdentifier, AccountId&gt;;
 
 	<span class="kw">fn </span>try_origin(o: OuterOrigin) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Success, OuterOrigin&gt; {
-		o.into()
+		<span class="kw">let </span>did_raw_origin = o.clone().into()<span class="question-mark">?</span>;
+		<span class="kw">match </span>ExpectedSubmitter::get() {
+			AuthorisedSubmitter::Everyone =&gt; <span class="prelude-val">Ok</span>(did_raw_origin),
+			AuthorisedSubmitter::One(authorised) <span class="kw">if </span>authorised == did_raw_origin.submitter =&gt; <span class="prelude-val">Ok</span>(did_raw_origin),
+			<span class="comment">// If either `None` or the wrong account, fail.
+			</span><span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(o),
+		}
 	}
 
 	<span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
@@ -202,8 +291,8 @@
 	}
 }
 
-<span class="kw">impl</span>&lt;OuterOrigin, DidIdentifier, AccountId&gt; EnsureOriginWithArg&lt;OuterOrigin, DidIdentifier&gt;
-	<span class="kw">for </span>EnsureDidOrigin&lt;DidIdentifier, AccountId&gt;
+<span class="kw">impl</span>&lt;OuterOrigin, DidIdentifier, AccountId, ExpectedSubmitter&gt; EnsureOriginWithArg&lt;OuterOrigin, DidIdentifier&gt;
+	<span class="kw">for </span>EnsureDidOrigin&lt;DidIdentifier, AccountId, ExpectedSubmitter&gt;
 <span class="kw">where
 	</span>OuterOrigin: Into&lt;<span class="prelude-ty">Result</span>&lt;DidRawOrigin&lt;DidIdentifier, AccountId&gt;, OuterOrigin&gt;&gt;
 		+ From&lt;DidRawOrigin&lt;DidIdentifier, AccountId&gt;&gt;
@@ -234,22 +323,10 @@
 	}
 }
 
-<span class="kw">impl</span>&lt;DidIdentifier: Clone, AccountId: Clone&gt; CallSources&lt;AccountId, DidIdentifier&gt;
-	<span class="kw">for </span>DidRawOrigin&lt;DidIdentifier, AccountId&gt;
-{
-	<span class="kw">fn </span>sender(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AccountId {
-		<span class="self">self</span>.submitter.clone()
-	}
-
-	<span class="kw">fn </span>subject(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; DidIdentifier {
-		<span class="self">self</span>.id.clone()
-	}
-}
-
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
-</span><span class="kw">impl</span>&lt;OuterOrigin, AccountId, DidIdentifier&gt;
+</span><span class="kw">impl</span>&lt;OuterOrigin, AccountId, DidIdentifier, ExpectedSubmitter&gt;
 	kilt_support::traits::GenerateBenchmarkOrigin&lt;OuterOrigin, AccountId, DidIdentifier&gt;
-	<span class="kw">for </span>EnsureDidOrigin&lt;DidIdentifier, AccountId&gt;
+	<span class="kw">for </span>EnsureDidOrigin&lt;DidIdentifier, AccountId, ExpectedSubmitter&gt;
 <span class="kw">where
 	</span>OuterOrigin: Into&lt;<span class="prelude-ty">Result</span>&lt;DidRawOrigin&lt;DidIdentifier, AccountId&gt;, OuterOrigin&gt;&gt;
 		+ From&lt;DidRawOrigin&lt;DidIdentifier, AccountId&gt;&gt;,
@@ -262,18 +339,21 @@
 	}
 }
 
-<span class="attr">#[cfg(all(test, feature = <span class="string">&quot;runtime-benchmarks&quot;</span>))]
+<span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-	<span class="kw">use </span><span class="kw">super</span>::EnsureDidOrigin;
-
-	<span class="attr">#[test]
+	<span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
+	#[test]
 	</span><span class="kw">pub fn </span>successful_origin() {
-		<span class="kw">use </span><span class="kw">crate</span>::mock::Test;
+		<span class="kw">use crate</span>::{
+			mock::{AccountId, DidIdentifier, Test},
+			EnsureDidOrigin,
+		};
 		<span class="kw">use </span>frame_support::{assert_ok, traits::EnsureOrigin};
 
 		<span class="kw">let </span>origin: &lt;Test <span class="kw">as </span>frame_system::Config&gt;::RuntimeOrigin =
-			EnsureDidOrigin::try_successful_origin().expect(<span class="string">&quot;Successful origin creation should not fail.&quot;</span>);
-		<span class="macro">assert_ok!</span>(EnsureDidOrigin::try_origin(origin));
+			EnsureDidOrigin::&lt;DidIdentifier, AccountId&gt;::try_successful_origin()
+				.expect(<span class="string">&quot;Successful origin creation should not fail.&quot;</span>);
+		<span class="macro">assert_ok!</span>(EnsureDidOrigin::&lt;DidIdentifier, AccountId&gt;::try_origin(origin));
 	}
 }
 </code></pre></div></section></main></body></html>

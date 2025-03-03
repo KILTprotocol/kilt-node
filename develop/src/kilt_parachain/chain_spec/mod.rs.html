@@ -138,8 +138,14 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -154,9 +160,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="doccomment">//! KILT chain specification
+
+</span><span class="comment">// Triggered by the `ChainSpecGroup` derive macro used for the custom chainspec
+// extension.
+</span><span class="attr">#![allow(clippy::derive_partial_eq_without_eq)]
 
 </span><span class="kw">use </span>std::str::FromStr;
 
@@ -274,7 +284,9 @@
 			<span class="comment">// Any other Spiritnet-based chainspec
 			</span>s <span class="kw">if </span>s.contains(<span class="string">&quot;spiritnet&quot;</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Spiritnet(SpiritnetRuntime::Other(s.to_string()))),
 
-			<span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">&quot;Unknown chainspec id provided: {s}&quot;</span>)),
+			<span class="comment">// Instead of panicking, we use the Peregrine runtime, since we don&#39;t expect Spiritnet to ever be used in
+			// this way
+			</span>path =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Peregrine(PeregrineRuntime::Other(path.to_string()))),
 		}
 	}
 }

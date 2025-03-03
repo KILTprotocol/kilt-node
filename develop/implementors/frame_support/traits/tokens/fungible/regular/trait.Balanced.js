@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"kilt_support":[["impl&lt;AccountId, Balance, RuntimeHoldReason&gt; Balanced&lt;AccountId&gt; for <a class=\"struct\" href=\"kilt_support/mock/struct.MockCurrency.html\" title=\"struct kilt_support::mock::MockCurrency\">MockCurrency</a>&lt;Balance, RuntimeHoldReason&gt;<span class=\"where fmt-newline\">where\n    Balance: BalanceT,</span>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

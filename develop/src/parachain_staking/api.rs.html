@@ -93,8 +93,9 @@
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#96" id="96">96</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -109,7 +110,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use crate</span>::{
 	types::BalanceOf, BlocksAuthored, BlocksRewarded, CandidatePool, Config, DelegatorState, InflationConfig, Pallet,
@@ -165,6 +166,7 @@
 	/// delegators.
 	///
 	/// At least used in Runtime API.
+	</span><span class="attr">#[allow(clippy::arithmetic_side_effects)]
 	</span><span class="kw">pub fn </span>get_staking_rates() -&gt; kilt_runtime_api_staking::StakingRates {
 		<span class="kw">let </span>total_issuance = T::Currency::total_issuance();
 		<span class="kw">let </span>total_stake = TotalCollatorStake::&lt;T&gt;::get();

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["DidRawOrigin","EnsureDidOrigin"]};
+window.SIDEBAR_ITEMS = {"enum":["AuthorisedSubmitter"],"struct":["DidRawOrigin","EnsureDidOrigin","Everyone"]};

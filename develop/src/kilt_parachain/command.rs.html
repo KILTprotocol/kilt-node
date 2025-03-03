@@ -312,9 +312,8 @@
 <a href="#312" id="312">312</a>
 <a href="#313" id="313">313</a>
 <a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -329,14 +328,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 </span><span class="kw">use </span>cumulus_primitives_core::ParaId;
 <span class="kw">use </span>frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 <span class="kw">use </span>log::info;
-<span class="kw">use </span>runtime_common::Block;
+<span class="kw">use </span>runtime_common::opaque::Block;
 <span class="kw">use </span>sc_cli::SubstrateCli;
 <span class="kw">use </span>sc_executor::NativeExecutionDispatch;
 <span class="kw">use </span>sp_runtime::traits::AccountIdConversion;
+<span class="kw">use </span>std::iter::once;
 
 <span class="kw">use crate</span>::{
 	chain_spec::{<span class="self">self</span>, ParachainRuntime},
@@ -361,9 +361,9 @@
 		<span class="kw">match </span>runtime {
 			ParachainRuntime::Spiritnet(<span class="kw">_</span>) =&gt; {
 				runner.async_run(|<span class="macro-nonterminal">$config</span>| {
-					<span class="kw">let </span><span class="macro-nonterminal">$components </span>= new_partial::&lt;spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, <span class="kw">_</span>&gt;(
+					<span class="kw">let </span><span class="macro-nonterminal">$components </span>= new_partial::&lt;spiritnet_runtime::RuntimeApi, <span class="kw">_</span>&gt;(
 						<span class="kw-2">&amp;</span><span class="macro-nonterminal">$config</span>,
-						<span class="kw">crate</span>::service::build_import_queue::&lt;SpiritnetRuntimeExecutor, spiritnet_runtime::RuntimeApi&gt;,
+						<span class="kw">crate</span>::service::build_import_queue::&lt;spiritnet_runtime::RuntimeApi&gt;,
 					)<span class="question-mark">?</span>;
 					<span class="kw">let </span>task_manager = <span class="macro-nonterminal">$components</span>.task_manager;
 					{ $( <span class="macro-nonterminal">$code </span>)* }.map(|v| (v, task_manager))
@@ -371,9 +371,9 @@
 			},
 			ParachainRuntime::Peregrine(<span class="kw">_</span>) =&gt; {
 				runner.async_run(|<span class="macro-nonterminal">$config</span>| {
-					<span class="kw">let </span><span class="macro-nonterminal">$components </span>= new_partial::&lt;peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, <span class="kw">_</span>&gt;(
+					<span class="kw">let </span><span class="macro-nonterminal">$components </span>= new_partial::&lt;peregrine_runtime::RuntimeApi, <span class="kw">_</span>&gt;(
 						<span class="kw-2">&amp;</span><span class="macro-nonterminal">$config</span>,
-						<span class="kw">crate</span>::service::build_import_queue::&lt;PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi&gt;,
+						<span class="kw">crate</span>::service::build_import_queue::&lt;peregrine_runtime::RuntimeApi&gt;,
 					)<span class="question-mark">?</span>;
 					<span class="kw">let </span>task_manager = <span class="macro-nonterminal">$components</span>.task_manager;
 					{ $( <span class="macro-nonterminal">$code </span>)* }.map(|v| (v, task_manager))
@@ -419,8 +419,7 @@
 			runner.sync_run(|config| {
 				<span class="kw">let </span>polkadot_cli = RelayChainCli::new(
 					<span class="kw-2">&amp;</span>config,
-					[RelayChainCli::executable_name()]
-						.iter()
+					once(<span class="kw-2">&amp;</span>RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 
@@ -438,7 +437,7 @@
 
 			<span class="kw">match </span>runtime {
 				ParachainRuntime::Spiritnet(<span class="kw">_</span>) =&gt; runner.sync_run(|config| {
-					<span class="kw">let </span>partials = new_partial::&lt;spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, <span class="kw">_</span>&gt;(
+					<span class="kw">let </span>partials = new_partial::&lt;spiritnet_runtime::RuntimeApi, <span class="kw">_</span>&gt;(
 						<span class="kw-2">&amp;</span>config,
 						<span class="kw">crate</span>::service::build_import_queue,
 					)<span class="question-mark">?</span>;
@@ -446,7 +445,7 @@
 					cmd.run(partials.client)
 				}),
 				ParachainRuntime::Peregrine(<span class="kw">_</span>) =&gt; runner.sync_run(|config| {
-					<span class="kw">let </span>partials = new_partial::&lt;peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, <span class="kw">_</span>&gt;(
+					<span class="kw">let </span>partials = new_partial::&lt;peregrine_runtime::RuntimeApi, <span class="kw">_</span>&gt;(
 						<span class="kw-2">&amp;</span>config,
 						<span class="kw">crate</span>::service::build_import_queue,
 					)<span class="question-mark">?</span>;
@@ -502,14 +501,14 @@
 					}
 				}
 				(BenchmarkCmd::Block(cmd), ParachainRuntime::Spiritnet(<span class="kw">_</span>)) =&gt; runner.sync_run(|config| {
-					<span class="kw">let </span>partials = new_partial::&lt;spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, <span class="kw">_</span>&gt;(
+					<span class="kw">let </span>partials = new_partial::&lt;spiritnet_runtime::RuntimeApi, <span class="kw">_</span>&gt;(
 						<span class="kw-2">&amp;</span>config,
 						<span class="kw">crate</span>::service::build_import_queue,
 					)<span class="question-mark">?</span>;
 					cmd.run(partials.client)
 				}),
 				(BenchmarkCmd::Block(cmd), ParachainRuntime::Peregrine(<span class="kw">_</span>)) =&gt; runner.sync_run(|config| {
-					<span class="kw">let </span>partials = new_partial::&lt;peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, <span class="kw">_</span>&gt;(
+					<span class="kw">let </span>partials = new_partial::&lt;peregrine_runtime::RuntimeApi, <span class="kw">_</span>&gt;(
 						<span class="kw-2">&amp;</span>config,
 						<span class="kw">crate</span>::service::build_import_queue,
 					)<span class="question-mark">?</span>;
@@ -523,7 +522,7 @@
 				)),
 				<span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
 				</span>(BenchmarkCmd::Storage(cmd), ParachainRuntime::Spiritnet(<span class="kw">_</span>)) =&gt; runner.sync_run(|config| {
-					<span class="kw">let </span>partials = new_partial::&lt;spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, <span class="kw">_</span>&gt;(
+					<span class="kw">let </span>partials = new_partial::&lt;spiritnet_runtime::RuntimeApi, <span class="kw">_</span>&gt;(
 						<span class="kw-2">&amp;</span>config,
 						<span class="kw">crate</span>::service::build_import_queue,
 					)<span class="question-mark">?</span>;
@@ -531,11 +530,11 @@
 					<span class="kw">let </span>db = partials.backend.expose_db();
 					<span class="kw">let </span>storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, std::sync::Arc::clone(<span class="kw-2">&amp;</span>partials.client), db, storage)
 				}),
 				<span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
 				</span>(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(<span class="kw">_</span>)) =&gt; runner.sync_run(|config| {
-					<span class="kw">let </span>partials = new_partial::&lt;peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, <span class="kw">_</span>&gt;(
+					<span class="kw">let </span>partials = new_partial::&lt;peregrine_runtime::RuntimeApi, <span class="kw">_</span>&gt;(
 						<span class="kw-2">&amp;</span>config,
 						<span class="kw">crate</span>::service::build_import_queue,
 					)<span class="question-mark">?</span>;
@@ -543,7 +542,7 @@
 					<span class="kw">let </span>db = partials.backend.expose_db();
 					<span class="kw">let </span>storage = partials.backend.expose_storage();
 
-					cmd.run(config, partials.client.clone(), db, storage)
+					cmd.run(config, std::sync::Arc::clone(<span class="kw-2">&amp;</span>partials.client), db, storage)
 				}),
 				(BenchmarkCmd::Overhead(<span class="kw">_</span>), <span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="string">&quot;Unsupported benchmarking command&quot;</span>.into()),
 				(BenchmarkCmd::Machine(cmd), <span class="kw">_</span>) =&gt; {
@@ -575,8 +574,7 @@
 
 				<span class="kw">let </span>polkadot_cli = RelayChainCli::new(
 					<span class="kw-2">&amp;</span>config,
-					[RelayChainCli::executable_name()]
-						.iter()
+					once(<span class="kw-2">&amp;</span>RelayChainCli::executable_name())
 						.chain(cli.relay_chain_args.iter()),
 				);
 
@@ -600,7 +598,7 @@
 
 				<span class="kw">match </span>runtime {
 					ParachainRuntime::Peregrine(<span class="kw">_</span>) =&gt; {
-						<span class="kw">crate</span>::service::start_node::&lt;PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi&gt;(
+						<span class="kw">crate</span>::service::start_node::&lt;peregrine_runtime::RuntimeApi&gt;(
 							config,
 							polkadot_config,
 							collator_options,
@@ -612,7 +610,7 @@
 						.map_err(Into::into)
 					},
 					ParachainRuntime::Spiritnet(<span class="kw">_</span>) =&gt; {
-						<span class="kw">crate</span>::service::start_node::&lt;SpiritnetRuntimeExecutor, spiritnet_runtime::RuntimeApi&gt;(
+						<span class="kw">crate</span>::service::start_node::&lt;spiritnet_runtime::RuntimeApi&gt;(
 							config,
 							polkadot_config,
 							collator_options,

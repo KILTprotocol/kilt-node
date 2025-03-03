@@ -899,8 +899,14 @@
 <a href="#899" id="899">899</a>
 <a href="#900" id="900">900</a>
 <a href="#901" id="901">901</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -915,7 +921,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 // Exported types. This will always only re-export the latest version by
 // default.
@@ -946,12 +952,14 @@
 	</span><span class="kw">pub const </span>MINIMUM_CHAIN_NAMESPACE_LENGTH: usize = <span class="number">3</span>;
 	<span class="doccomment">/// The maximum length of a valid chain ID namespace.
 	</span><span class="kw">pub const </span>MAXIMUM_CHAIN_NAMESPACE_LENGTH: usize = <span class="number">8</span>;
-	<span class="kw">const </span>MAXIMUM_CHAIN_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_CHAIN_NAMESPACE_LENGTH <span class="kw">as </span>u32;
+	<span class="attr">#[allow(clippy::as_conversions)]
+	</span><span class="kw">const </span>MAXIMUM_CHAIN_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_CHAIN_NAMESPACE_LENGTH <span class="kw">as </span>u32;
 	<span class="doccomment">/// The minimum length of a valid chain ID reference.
 	</span><span class="kw">pub const </span>MINIMUM_CHAIN_REFERENCE_LENGTH: usize = <span class="number">1</span>;
 	<span class="doccomment">/// The maximum length of a valid chain ID reference.
 	</span><span class="kw">pub const </span>MAXIMUM_CHAIN_REFERENCE_LENGTH: usize = <span class="number">32</span>;
-	<span class="kw">const </span>MAXIMUM_CHAIN_REFERENCE_LENGTH_U32: u32 = MAXIMUM_CHAIN_REFERENCE_LENGTH <span class="kw">as </span>u32;
+	<span class="attr">#[allow(clippy::as_conversions)]
+	</span><span class="kw">const </span>MAXIMUM_CHAIN_REFERENCE_LENGTH_U32: u32 = MAXIMUM_CHAIN_REFERENCE_LENGTH <span class="kw">as </span>u32;
 
 	<span class="doccomment">/// Separator between chain namespace and chain reference.
 	</span><span class="kw">const </span>CHAIN_NAMESPACE_REFERENCE_SEPARATOR: u8 = <span class="string">b&#39;:&#39;</span>;
@@ -1018,27 +1026,27 @@
 		}
 
 		<span class="doccomment">/// The chain ID for the Bitcoin mainnet.
-		</span><span class="kw">pub fn </span>bitcoin_mainnet() -&gt; <span class="self">Self </span>{
+		</span><span class="kw">pub const fn </span>bitcoin_mainnet() -&gt; <span class="self">Self </span>{
 			<span class="self">Self</span>::Bip122(GenesisHexHash32Reference::bitcoin_mainnet())
 		}
 
 		<span class="doccomment">/// The chain ID for the Litecoin mainnet.
-		</span><span class="kw">pub fn </span>litecoin_mainnet() -&gt; <span class="self">Self </span>{
+		</span><span class="kw">pub const fn </span>litecoin_mainnet() -&gt; <span class="self">Self </span>{
 			<span class="self">Self</span>::Bip122(GenesisHexHash32Reference::litecoin_mainnet())
 		}
 
 		<span class="doccomment">/// The chain ID for the Polkadot relaychain.
-		</span><span class="kw">pub fn </span>polkadot() -&gt; <span class="self">Self </span>{
+		</span><span class="kw">pub const fn </span>polkadot() -&gt; <span class="self">Self </span>{
 			<span class="self">Self</span>::Dotsama(GenesisHexHash32Reference::polkadot())
 		}
 
 		<span class="doccomment">/// The chain ID for the Kusama relaychain.
-		</span><span class="kw">pub fn </span>kusama() -&gt; <span class="self">Self </span>{
+		</span><span class="kw">pub const fn </span>kusama() -&gt; <span class="self">Self </span>{
 			<span class="self">Self</span>::Dotsama(GenesisHexHash32Reference::kusama())
 		}
 
 		<span class="doccomment">/// The chain ID for the KILT Spiritnet parachain.
-		</span><span class="kw">pub fn </span>kilt_spiritnet() -&gt; <span class="self">Self </span>{
+		</span><span class="kw">pub const fn </span>kilt_spiritnet() -&gt; <span class="self">Self </span>{
 			<span class="self">Self</span>::Dotsama(GenesisHexHash32Reference::kilt_spiritnet())
 		}
 
@@ -1055,8 +1063,8 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			<span class="kw">let </span>input_length = input.len();
+			<span class="kw">let </span>input_ref = input.as_ref();
+			<span class="kw">let </span>input_length = input_ref.len();
 			<span class="kw">if </span>!(MINIMUM_CHAIN_ID_LENGTH..=MAXIMUM_CHAIN_ID_LENGTH).contains(<span class="kw-2">&amp;</span>input_length) {
 				<span class="macro">log::trace!</span>(
 					<span class="string">&quot;Length of provided input {} is not included in the inclusive range [{},{}]&quot;</span>,
@@ -1067,7 +1075,7 @@
 				<span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidFormat);
 			}
 
-			<span class="kw">let </span>ChainComponents { namespace, reference } = split_components(input);
+			<span class="kw">let </span>ChainComponents { namespace, reference } = split_components(input_ref);
 
 			<span class="kw">match </span>(namespace, reference) {
 				<span class="comment">// &quot;eip155:&quot; chains -&gt; https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md
@@ -1087,13 +1095,14 @@
 					GenesisBase58Hash32Reference::from_utf8_encoded(solana_reference).map(<span class="self">Self</span>::Solana)
 				}
 				<span class="comment">// Other chains that are still compatible with the CAIP-2 spec -&gt; https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
-				</span><span class="kw">_ </span>=&gt; GenericChainId::from_utf8_encoded(input).map(<span class="self">Self</span>::Generic),
+				</span><span class="kw">_ </span>=&gt; GenericChainId::from_utf8_encoded(input_ref).map(<span class="self">Self</span>::Generic),
 			}
 		}
 	}
 
 	<span class="kw">impl </span>Display <span class="kw">for </span>ChainId {
-		<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
+		<span class="attr">#[allow(clippy::expect_used)]
+		</span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
 			<span class="kw">match </span><span class="self">self </span>{
 				<span class="self">Self</span>::Bip122(reference) =&gt; {
 					<span class="macro">write!</span>(
@@ -1214,10 +1223,10 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_reference_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			<span class="kw">let </span>decoded = str::from_utf8(input).map_err(|<span class="kw">_</span>| {
+			<span class="kw">let </span>decoded = str::from_utf8(input_ref).map_err(|<span class="kw">_</span>| {
 				<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input is not a valid UTF8 string as expected by an Eip155 reference.&quot;</span>);
 				ReferenceError::InvalidFormat
 			})<span class="question-mark">?</span>;
@@ -1232,7 +1241,7 @@
 
 	<span class="comment">// Getters
 	</span><span class="kw">impl </span>Eip155Reference {
-		<span class="kw">pub fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>u128 {
+		<span class="kw">pub const fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>u128 {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
 		</span>}
 	}
@@ -1304,10 +1313,10 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_reference_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			<span class="kw">let </span>decoded = hex::decode(input).map_err(|<span class="kw">_</span>| {
+			<span class="kw">let </span>decoded = hex::decode(input_ref).map_err(|<span class="kw">_</span>| {
 				<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input is not a valid hex value as expected by a genesis HEX reference.&quot;</span>);
 				ReferenceError::InvalidFormat
 			})<span class="question-mark">?</span>;
@@ -1321,7 +1330,7 @@
 
 	<span class="comment">// Getters
 	</span><span class="kw">impl </span>GenesisHexHash32Reference {
-		<span class="kw">pub fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
+		<span class="kw">pub const fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
 		</span>}
 	}
@@ -1339,6 +1348,7 @@
 
 	<span class="kw">impl </span>GenesisBase58Hash32Reference {
 		<span class="doccomment">/// The CAIP-2 reference for the Solana mainnet.
+		</span><span class="attr">#[allow(clippy::expect_used)]
 		</span><span class="kw">pub fn </span>solana_mainnet() -&gt; <span class="self">Self </span>{
 			<span class="comment">// Base58 decoding of Solana genesis hash 4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ
 			</span><span class="self">Self</span>(
@@ -1359,10 +1369,10 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_reference_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			<span class="kw">let </span>decoded_string = str::from_utf8(input).map_err(|<span class="kw">_</span>| {
+			<span class="kw">let </span>decoded_string = str::from_utf8(input_ref).map_err(|<span class="kw">_</span>| {
 				<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input is not a valid UTF8 string as expected by a genesis base58 reference.&quot;</span>);
 				ReferenceError::InvalidFormat
 			})<span class="question-mark">?</span>;
@@ -1407,9 +1417,9 @@
 			<span class="kw">let </span>ChainComponents { namespace, reference } = split_components(input.as_ref());
 
 			<span class="kw">match </span>(namespace, reference) {
-				(<span class="prelude-val">Some</span>(namespace), <span class="prelude-val">Some</span>(reference)) =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-					namespace: GenericChainNamespace::from_utf8_encoded(namespace)<span class="question-mark">?</span>,
-					reference: GenericChainReference::from_utf8_encoded(reference)<span class="question-mark">?</span>,
+				(<span class="prelude-val">Some</span>(encoded_namespace), <span class="prelude-val">Some</span>(encoded_reference)) =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+					namespace: GenericChainNamespace::from_utf8_encoded(encoded_namespace)<span class="question-mark">?</span>,
+					reference: GenericChainReference::from_utf8_encoded(encoded_reference)<span class="question-mark">?</span>,
 				}),
 				<span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::InvalidFormat),
 			}
@@ -1418,10 +1428,10 @@
 
 	<span class="comment">// Getters
 	</span><span class="kw">impl </span>GenericChainId {
-		<span class="kw">pub fn </span>namespace(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GenericChainNamespace {
+		<span class="kw">pub const fn </span>namespace(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GenericChainNamespace {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.namespace
 		}
-		<span class="kw">pub fn </span>reference(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GenericChainReference {
+		<span class="kw">pub const fn </span>reference(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GenericChainReference {
 			<span class="kw-2">&amp;</span><span class="self">self</span>.reference
 		}
 	}
@@ -1439,11 +1449,11 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_namespace_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_namespace_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			input.iter().try_for_each(|c| {
-				<span class="kw">if </span>!<span class="macro">matches!</span>(c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
+			input_ref.iter().try_for_each(|c| {
+				<span class="kw">if </span>!<span class="macro">matches!</span>(<span class="kw-2">*</span>c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
 					<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input has some invalid values as expected by a generic chain namespace.&quot;</span>);
 					<span class="prelude-val">Err</span>(NamespaceError::InvalidFormat)
 				} <span class="kw">else </span>{
@@ -1451,7 +1461,7 @@
 				}
 			})<span class="question-mark">?</span>;
 			<span class="prelude-val">Ok</span>(<span class="self">Self</span>(
-				Vec::&lt;u8&gt;::from(input)
+				Vec::&lt;u8&gt;::from(input_ref)
 					.try_into()
 					.map_err(|<span class="kw">_</span>| NamespaceError::InvalidFormat)<span class="question-mark">?</span>,
 			))
@@ -1466,7 +1476,8 @@
 	}
 
 	<span class="kw">impl </span>Display <span class="kw">for </span>GenericChainNamespace {
-		<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
+		<span class="attr">#[allow(clippy::expect_used)]
+		</span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
 			<span class="comment">// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
 			</span><span class="macro">write!</span>(
@@ -1488,11 +1499,11 @@
 		<span class="kw">where
 			</span>I: AsRef&lt;[u8]&gt; + Into&lt;Vec&lt;u8&gt;&gt;,
 		{
-			<span class="kw">let </span>input = input.as_ref();
-			check_reference_length_bounds(input)<span class="question-mark">?</span>;
+			<span class="kw">let </span>input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)<span class="question-mark">?</span>;
 
-			input.iter().try_for_each(|c| {
-				<span class="kw">if </span>!<span class="macro">matches!</span>(c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;_&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;A&#39;</span>..=<span class="string">b&#39;Z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
+			input_ref.iter().try_for_each(|c| {
+				<span class="kw">if </span>!<span class="macro">matches!</span>(<span class="kw-2">*</span>c, <span class="string">b&#39;-&#39; </span>| <span class="string">b&#39;_&#39; </span>| <span class="string">b&#39;a&#39;</span>..=<span class="string">b&#39;z&#39; </span>| <span class="string">b&#39;A&#39;</span>..=<span class="string">b&#39;Z&#39; </span>| <span class="string">b&#39;0&#39;</span>..=<span class="string">b&#39;9&#39;</span>) {
 					<span class="macro">log::trace!</span>(<span class="string">&quot;Provided input has some invalid values as expected by a generic chain reference.&quot;</span>);
 					<span class="prelude-val">Err</span>(ReferenceError::InvalidFormat)
 				} <span class="kw">else </span>{
@@ -1500,7 +1511,7 @@
 				}
 			})<span class="question-mark">?</span>;
 			<span class="prelude-val">Ok</span>(<span class="self">Self</span>(
-				Vec::&lt;u8&gt;::from(input)
+				Vec::&lt;u8&gt;::from(input_ref)
 					.try_into()
 					.map_err(|<span class="kw">_</span>| ReferenceError::InvalidFormat)<span class="question-mark">?</span>,
 			))
@@ -1515,7 +1526,8 @@
 	}
 
 	<span class="kw">impl </span>Display <span class="kw">for </span>GenericChainReference {
-		<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
+		<span class="attr">#[allow(clippy::expect_used)]
+		</span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
 			<span class="comment">// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
 			</span><span class="macro">write!</span>(

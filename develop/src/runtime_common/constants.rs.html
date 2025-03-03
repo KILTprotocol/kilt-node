@@ -554,8 +554,77 @@
 <a href="#554" id="554">554</a>
 <a href="#555" id="555">555</a>
 <a href="#556" id="556">556</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -570,7 +639,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::{
 	parameter_types,
@@ -603,10 +672,13 @@
 <span class="kw">pub const </span>SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 
 <span class="comment">// Time is measured by number of blocks.
+</span><span class="attr">#[allow(clippy::integer_division)]
+#[allow(clippy::as_conversions)]
 </span><span class="kw">pub const </span>MINUTES: BlockNumber = <span class="number">60_000 </span>/ (MILLISECS_PER_BLOCK <span class="kw">as </span>BlockNumber);
 <span class="kw">pub const </span>HOURS: BlockNumber = MINUTES * <span class="number">60</span>;
 <span class="kw">pub const </span>DAYS: BlockNumber = HOURS * <span class="number">24</span>;
 <span class="comment">// Julian year as Substrate handles it
+</span><span class="attr">#[allow(clippy::integer_division)]
 </span><span class="kw">pub const </span>BLOCKS_PER_YEAR: BlockNumber = DAYS * <span class="number">36525 </span>/ <span class="number">100</span>;
 
 <span class="kw">pub const </span>MAX_COLLATOR_STAKE: Balance = <span class="number">200_000 </span>* KILT;
@@ -638,6 +710,7 @@
 /// used by  Operational  extrinsics.
 </span><span class="kw">pub const </span>NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(<span class="number">75</span>);
 <span class="doccomment">/// We allow for 0.5 seconds of compute with a 12 second average block time.
+</span><span class="attr">#[allow(clippy::as_conversions)]
 </span><span class="kw">pub const </span>MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
 	WEIGHT_REF_TIME_PER_SECOND.saturating_div(<span class="number">2</span>),
 	cumulus_primitives_core::relay_chain::MAX_POV_SIZE <span class="kw">as </span>u64,
@@ -671,6 +744,8 @@
 
 <span class="doccomment">/// Calculate the storage deposit based on the number of storage items and the
 /// combined byte size of those items.
+</span><span class="attr">#[allow(clippy::as_conversions)]
+#[allow(clippy::arithmetic_side_effects)]
 </span><span class="kw">pub const fn </span>deposit(items: u32, bytes: u32) -&gt; Balance {
 	items <span class="kw">as </span>Balance * DEPOSIT_STORAGE_ITEM + (bytes <span class="kw">as </span>Balance) * DEPOSIT_STORAGE_BYTE
 }
@@ -706,6 +781,31 @@
 		<span class="kw">pub const </span>MaxDelegatedAttestations: u32 = <span class="number">1000</span>;
 		<span class="kw">pub const </span>AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
 	}
+}
+
+<span class="kw">pub mod </span>bonded_coins {
+	<span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+	<span class="doccomment">/// The size is checked in the runtime by a test.
+	</span><span class="kw">pub const </span>MAX_POOL_BYTE_LENGTH: u32 = <span class="number">986</span>;
+	<span class="kw">pub const </span>BASE_DEPOSIT: Balance = deposit(<span class="number">1</span>, MAX_POOL_BYTE_LENGTH);
+	<span class="kw">const </span>ASSET_ID_BYTE_LENGTH: u32 = <span class="number">8</span>;
+	<span class="doccomment">/// https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/assets/src/types.rs#L188
+	</span><span class="kw">const </span>ASSET_METADATA_BYTE_LENGTH: u32 = <span class="number">26</span>;
+	<span class="kw">pub const </span>DEPOSIT_PER_CURRENCY: Balance = deposit(<span class="number">1</span>, ASSET_ID_BYTE_LENGTH + (<span class="number">2 </span>* ASSET_METADATA_BYTE_LENGTH));
+	<span class="kw">pub const </span>MAX_CURRENCIES: u32 = <span class="number">50</span>;
+	<span class="kw">pub const </span>MAX_DENOMINATION: u8 = <span class="number">15</span>;
+	<span class="kw">pub const </span>MAX_STRING_LENGTH: u32 = <span class="kw">crate</span>::constants::bonded_assets::STRING_LIMIT;
+}
+
+<span class="kw">pub mod </span>bonded_assets {
+	<span class="kw">pub const </span>APPROVAL_DEPOSIT: u128 = <span class="number">0</span>;
+	<span class="kw">pub const </span>ASSET_ACCOUNT_DEPOSIT: u128 = <span class="number">0</span>;
+	<span class="kw">pub const </span>ASSET_DEPOSIT: u128 = <span class="number">0</span>;
+	<span class="kw">pub const </span>META_DEPOSIT_BASE: u128 = <span class="number">0</span>;
+	<span class="kw">pub const </span>META_DEPOSIT_PER_BYTE: u128 = <span class="number">0</span>;
+	<span class="kw">pub const </span>REMOVE_ITEMS_LIMIT: u32 = <span class="number">1000</span>;
+	<span class="kw">pub const </span>STRING_LIMIT: u32 = <span class="number">50</span>;
 }
 
 <span class="kw">pub mod </span>assets {
@@ -913,6 +1013,13 @@
 	}
 }
 
+<span class="kw">pub mod </span>timestamp {
+	<span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+	<span class="attr">#[allow(clippy::integer_division)]
+	</span><span class="kw">pub const </span>MINIMUM_PERIOD: u64 = SLOT_DURATION / <span class="number">2</span>;
+}
+
 <span class="kw">pub mod </span>multisig {
 	<span class="kw">use super</span>::<span class="kw-2">*</span>;
 
@@ -1014,7 +1121,9 @@
 
 	<span class="kw">pub const </span>INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(<span class="number">5</span>);
 	<span class="kw">const </span>YEARLY_REWARD: Balance = <span class="number">2_000_000u128 </span>* KILT;
-	<span class="kw">pub const </span>INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR <span class="kw">as </span>Balance);
+	<span class="attr">#[allow(clippy::as_conversions)]
+	#[allow(clippy::integer_division)]
+	</span><span class="kw">pub const </span>INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR <span class="kw">as </span>Balance);
 
 	<span class="macro">parameter_types! </span>{
 		<span class="kw">pub const </span>InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
@@ -1055,6 +1164,29 @@
 	}
 }
 
+<span class="kw">pub mod </span>dot_names {
+	<span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+	<span class="kw">const </span>MIN_NAME_LENGTH: u32 = <span class="number">3</span>;
+	<span class="kw">const </span>MAX_NAME_LENGTH: u32 = <span class="number">28</span>;
+
+	<span class="kw">pub const </span>DOT_NAME_SUFFIX: <span class="kw-2">&amp;</span>str = <span class="string">&quot;.dot&quot;</span>;
+	<span class="attr">#[allow(clippy::as_conversions)]
+	</span><span class="kw">pub const </span>MIN_LENGTH: u32 = MIN_NAME_LENGTH + DOT_NAME_SUFFIX.len() <span class="kw">as </span>u32;
+	<span class="attr">#[allow(clippy::as_conversions)]
+	</span><span class="kw">pub const </span>MAX_LENGTH: u32 = MAX_NAME_LENGTH + DOT_NAME_SUFFIX.len() <span class="kw">as </span>u32;
+
+	<span class="doccomment">/// The size is checked in the runtime by a test.
+	</span><span class="kw">pub const </span>MAX_NAME_BYTE_LENGTH: u32 = <span class="number">121</span>;
+	<span class="kw">pub const </span>DEPOSIT: Balance = deposit(<span class="number">2</span>, MAX_NAME_BYTE_LENGTH);
+
+	<span class="macro">parameter_types! </span>{
+		<span class="kw">pub const </span>Web3NameDeposit: Balance = DEPOSIT;
+		<span class="kw">pub const </span>MinNameLength: u32 = MIN_LENGTH;
+		<span class="kw">pub const </span>MaxNameLength: u32 = MAX_LENGTH;
+	}
+}
+
 <span class="kw">pub mod </span>preimage {
 	<span class="kw">use super</span>::<span class="kw-2">*</span>;
 	<span class="macro">parameter_types! </span>{
@@ -1062,11 +1194,14 @@
 	}
 }
 
+<span class="attr">#[allow(clippy::decimal_literal_representation)]
+</span><span class="kw">const </span>MAXIMUM_REASON_LENGTH: u32 = <span class="number">16384</span>;
+
 <span class="kw">pub mod </span>tips {
 	<span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 	<span class="macro">parameter_types! </span>{
-		<span class="kw">pub const </span>MaximumReasonLength: u32 = <span class="number">16384</span>;
+		<span class="kw">pub const </span>MaximumReasonLength: u32 = MAXIMUM_REASON_LENGTH;
 		<span class="kw">pub const </span>TipCountdown: BlockNumber = DAYS;
 		<span class="kw">pub const </span>TipFindersFee: Percent = Percent::from_percent(<span class="number">0</span>);
 		<span class="kw">pub const </span>TipReportDepositBase: Balance = deposit(<span class="number">1</span>, <span class="number">1</span>);
@@ -1085,6 +1220,9 @@
 	}
 }
 
+<span class="attr">#[allow(clippy::as_conversions)]
+</span><span class="kw">const </span>MAX_SUBJECT_ID_LENGTH: u32 = kilt_asset_dids::MAXIMUM_ASSET_DID_LENGTH <span class="kw">as </span>u32;
+
 <span class="kw">pub mod </span>public_credentials {
 	<span class="kw">use super</span>::<span class="kw-2">*</span>;
 
@@ -1096,7 +1234,7 @@
 	<span class="macro">parameter_types! </span>{
 		<span class="kw">pub const </span>Deposit: Balance = PUBLIC_CREDENTIAL_DEPOSIT;
 		<span class="kw">pub const </span>MaxEncodedClaimsLength: u32 = <span class="number">100_000</span>;	<span class="comment">// 100 Kb
-		</span><span class="kw">pub const </span>MaxSubjectIdLength: u32 = kilt_asset_dids::MAXIMUM_ASSET_DID_LENGTH <span class="kw">as </span>u32;
+		</span><span class="kw">pub const </span>MaxSubjectIdLength: u32 = MAX_SUBJECT_ID_LENGTH;
 	}
 }
 

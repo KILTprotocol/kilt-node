@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["NextAssetIdGenerator","NextAssetId_Storage_Instance"],"type":["NextAssetId"]};

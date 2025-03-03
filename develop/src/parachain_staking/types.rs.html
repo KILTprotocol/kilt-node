@@ -309,16 +309,8 @@
 <a href="#309" id="309">309</a>
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
-<a href="#312" id="312">312</a>
-<a href="#313" id="313">313</a>
-<a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
-<a href="#316" id="316">316</a>
-<a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
-<a href="#319" id="319">319</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -333,7 +325,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>frame_support::traits::{
 	fungible::{Credit, Inspect},
@@ -359,12 +351,7 @@
 /// The stake has a destination account (to which the stake is directed) and an
 /// amount of funds staked.
 </span><span class="attr">#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-#[codec(mel_bound(AccountId: MaxEncodedLen, Balance: MaxEncodedLen))]
-</span><span class="kw">pub struct </span>Stake&lt;AccountId, Balance&gt;
-<span class="kw">where
-	</span>AccountId: Eq + Ord,
-	Balance: Eq + Ord,
-{
+</span><span class="kw">pub struct </span>Stake&lt;AccountId, Balance&gt; {
 	<span class="doccomment">/// The account that is backed by the stake.
 	</span><span class="kw">pub </span>owner: AccountId,
 
@@ -420,13 +407,10 @@
 
 <span class="attr">#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(MaxDelegatorsPerCandidate))]
-#[codec(mel_bound(AccountId: MaxEncodedLen, Balance: MaxEncodedLen))]
 </span><span class="doccomment">/// Global collator state with commission fee, staked funds, and delegations
 </span><span class="kw">pub struct </span>Candidate&lt;AccountId, Balance, MaxDelegatorsPerCandidate&gt;
 <span class="kw">where
-	</span>AccountId: Eq + Ord + Debug,
-	Balance: Eq + Ord + Debug,
-	MaxDelegatorsPerCandidate: Get&lt;u32&gt; + Debug + PartialEq,
+	</span>MaxDelegatorsPerCandidate: Get&lt;u32&gt; + Debug + PartialEq,
 {
 	<span class="doccomment">/// Account id of the candidate.
 	</span><span class="kw">pub </span>id: AccountId,
@@ -447,7 +431,9 @@
 	</span><span class="kw">pub </span>status: CandidateStatus,
 }
 
-<span class="kw">impl</span>&lt;A, B, S&gt; Candidate&lt;A, B, S&gt;
+<span class="comment">// We access indices only after making sure they are properly verified.
+</span><span class="attr">#[allow(clippy::indexing_slicing)]
+</span><span class="kw">impl</span>&lt;A, B, S&gt; Candidate&lt;A, B, S&gt;
 <span class="kw">where
 	</span>A: Ord + Clone + Debug,
 	B: AtLeast32BitUnsigned + Ord + Copy + Saturating + Debug + Zero,
@@ -468,11 +454,11 @@
 		<span class="self">self</span>.status == CandidateStatus::Active
 	}
 
-	<span class="kw">pub fn </span>is_leaving(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+	<span class="kw">pub const fn </span>is_leaving(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 		<span class="macro">matches!</span>(<span class="self">self</span>.status, CandidateStatus::Leaving(<span class="kw">_</span>))
 	}
 
-	<span class="kw">pub fn </span>can_exit(<span class="kw-2">&amp;</span><span class="self">self</span>, when: u32) -&gt; bool {
+	<span class="kw">pub const fn </span>can_exit(<span class="kw-2">&amp;</span><span class="self">self</span>, when: u32) -&gt; bool {
 		<span class="macro">matches!</span>(<span class="self">self</span>.status, CandidateStatus::Leaving(at) <span class="kw">if </span>at &lt;= when )
 	}
 
@@ -488,13 +474,11 @@
 	<span class="comment">// Returns None if underflow or less == self.stake (in which case collator
 	// should leave).
 	</span><span class="kw">pub fn </span>stake_less(<span class="kw-2">&amp;mut </span><span class="self">self</span>, less: B) -&gt; <span class="prelude-ty">Option</span>&lt;B&gt; {
-		<span class="kw">if </span><span class="self">self</span>.stake &gt; less {
+		(<span class="self">self</span>.stake &gt; less).then(|| {
 			<span class="self">self</span>.stake = <span class="self">self</span>.stake.saturating_sub(less);
 			<span class="self">self</span>.total = <span class="self">self</span>.total.saturating_sub(less);
-			<span class="prelude-val">Some</span>(<span class="self">self</span>.stake)
-		} <span class="kw">else </span>{
-			<span class="prelude-val">None
-		</span>}
+			<span class="self">self</span>.stake
+		})
 	}
 
 	<span class="kw">pub fn </span>inc_delegator(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delegator: A, more: B) {
@@ -583,7 +567,7 @@
 <span class="kw">where
 	</span>B: Copy + Saturating + From&lt;u32&gt; + PartialOrd,
 {
-	<span class="kw">pub fn </span>new(current: SessionIndex, first: B, length: B) -&gt; RoundInfo&lt;B&gt; {
+	<span class="kw">pub const fn </span>new(current: SessionIndex, first: B, length: B) -&gt; RoundInfo&lt;B&gt; {
 		RoundInfo { current, first, length }
 	}
 

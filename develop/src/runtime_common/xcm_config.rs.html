@@ -168,8 +168,14 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
-</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+</pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -184,7 +190,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
 </span><span class="kw">use </span>core::{marker::PhantomData, ops::ControlFlow};
 <span class="kw">use </span>cumulus_primitives_core::AggregateMessageOrigin;
@@ -197,6 +203,12 @@
 
 <span class="kw">use crate</span>::{AccountId, BlockWeights};
 
+<span class="attr">#[allow(clippy::arithmetic_side_effects)]
+#[inline]
+</span><span class="kw">fn </span>service_weight() -&gt; Weight {
+	Perbill::from_percent(<span class="number">35</span>) * BlockWeights::get().max_block
+}
+
 <span class="macro">parameter_types! </span>{
 	<span class="comment">// One XCM operation is 200_000_000 weight, cross-chain transfer ~= 2x of transfer.
 	</span><span class="kw">pub </span>UnitWeightCost: Weight = Weight::from_parts(<span class="number">200_000_000</span>, <span class="number">0</span>);
@@ -204,7 +216,7 @@
 	<span class="kw">pub const </span>MaxAssetsIntoHolding: u32 = <span class="number">64</span>;
 	<span class="kw">pub const </span>MaxStale: u32 = <span class="number">8</span>;
 	<span class="kw">pub const </span>HeapSize: u32 = <span class="number">64 </span>* <span class="number">1024</span>;
-	<span class="kw">pub </span>ServiceWeight: Weight = Perbill::from_percent(<span class="number">35</span>) * BlockWeights::get().max_block;
+	<span class="kw">pub </span>ServiceWeight: Weight = service_weight();
 	<span class="kw">pub const </span>RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
