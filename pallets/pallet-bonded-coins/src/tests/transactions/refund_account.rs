@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use frame_support::{
 	assert_err, assert_ok,
-	traits::fungibles::{Create, Inspect, Mutate},
+	traits::fungibles::{roles::Inspect as InspectRole, Create, Inspect, Mutate},
 };
 use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 use sp_runtime::TokenError;
@@ -263,6 +263,47 @@ fn refund_below_min_balance() {
 			assert_eq!(Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_01), 0);
 			// each would get half, which is below minimum - should not get transferred
 			assert_eq!(Assets::total_balance(collateral_id, &pool_id), total_collateral);
+		});
+}
+
+#[test]
+fn refund_account_fails_when_account_blocked() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		false,
+		Some(PoolStatus::Refunding),
+		Some(ACCOUNT_00),
+		None,
+		None,
+		None,
+	);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_01, ONE_HUNDRED_KILT)])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), ONE_HUNDRED_KILT),
+			(DEFAULT_COLLATERAL_CURRENCY_ID, ACCOUNT_01, ONE_HUNDRED_KILT),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, ONE_HUNDRED_KILT),
+		])
+		.build_and_execute_with_sanity_tests(|| {
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_01).into();
+
+			Assets::block(
+				RawOrigin::Signed(Assets::owner(DEFAULT_COLLATERAL_CURRENCY_ID).unwrap()).into(),
+				DEFAULT_COLLATERAL_CURRENCY_ID,
+				ACCOUNT_01,
+			)
+			.expect("Failed to block account for test");
+
+			// Ensure the refund_account call fails due to pool not being in refunding state
+			assert_err!(
+				BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1),
+				TokenError::Blocked
+			);
 		});
 }
 
