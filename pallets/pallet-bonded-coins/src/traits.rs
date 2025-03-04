@@ -93,11 +93,13 @@ where
 		freezer: AccountIdOf<T>,
 	) -> DispatchResult {
 		let current_owner = AssetsPallet::<T, I>::owner(id.clone()).ok_or(DispatchError::Unavailable)?;
-		AssetsPallet::<T, I>::transfer_ownership(
-			RawOrigin::Signed(current_owner).into(),
-			id.clone().into(),
-			owner.clone().into(),
-		)?;
+		if current_owner != owner {
+			AssetsPallet::<T, I>::transfer_ownership(
+				RawOrigin::Signed(current_owner).into(),
+				id.clone().into(),
+				owner.clone().into(),
+			)?;
+		}
 		AssetsPallet::<T, I>::set_team(
 			RawOrigin::Signed(owner).into(),
 			id.into(),
