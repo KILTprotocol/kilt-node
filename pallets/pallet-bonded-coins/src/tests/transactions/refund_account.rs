@@ -299,7 +299,7 @@ fn refund_account_fails_when_account_blocked() {
 			)
 			.expect("Failed to block account for test");
 
-			// Ensure the refund_account call fails due to pool not being in refunding state
+			// Ensure the refund_account call fails due to failing can_deposit check
 			assert_err!(
 				BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1),
 				TokenError::Blocked
