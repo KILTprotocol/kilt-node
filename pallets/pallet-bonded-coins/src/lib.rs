@@ -449,18 +449,17 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Changes the managing team of a bonded currency which is issued by
-		/// this pool. The new team will be set to the provided team. The
-		/// currency index is used to select the currency that the team will
-		/// manage. The origin account must be a manager of the pool.
+		/// Changes the managing team of all bonded currencies issued by this
+		/// pool, setting it to the provided `team`. The origin account must be
+		/// a manager of the pool.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call, requiring the caller to be a
 		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool.
 		/// - `team`: The new managing team.
-		/// - `currency_idx`: The index of the currency in the bonded currencies
-		///   vector.
+		/// - `currency_count`: The number of bonded currencies vector linked to
+		///   the pool. Required for weight estimations.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
@@ -469,8 +468,8 @@ pub mod pallet {
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
 		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
 		///   pool.
-		/// - `Error::<T>::IndexOutOfBounds`: If the currency index is out of
-		///   bounds.
+		/// - `Error::<T>::CurrencyCount`: If the actual number of currencies in
+		///   the pool is larger than `currency_count`.
 		/// - Other errors depending on the types in the config.
 		#[pallet::call_index(1)]
 		#[pallet::weight(T::WeightInfo::reset_team())]
