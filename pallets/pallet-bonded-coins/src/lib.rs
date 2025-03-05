@@ -478,31 +478,31 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			team: PoolManagingTeam<AccountIdOf<T>>,
-			currency_idx: u32,
+			currency_count: u32,
 		) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
+			let number_of_currencies = Self::get_currencies_number(&pool_details);
+			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
+
 			ensure!(pool_details.is_manager(&who), Error::<T>::NoPermission);
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
-
-			let asset_id = pool_details
-				.bonded_currencies
-				.get(currency_idx.saturated_into::<usize>())
-				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
 			let pool_id_account = pool_id.into();
 
 			let PoolManagingTeam { freezer, admin } = team;
 
-			T::Fungibles::reset_team(
-				asset_id.to_owned(),
-				pool_id_account.clone(),
-				admin,
-				pool_id_account,
-				freezer,
-			)
+			pool_details.bonded_currencies.into_iter().try_for_each(|asset_id| {
+				T::Fungibles::reset_team(
+					asset_id,
+					pool_id_account.clone(),
+					admin.clone(),
+					pool_id_account.clone(),
+					freezer.clone(),
+				)
+			})
 		}
 
 		/// Resets the manager of a pool. The new manager will be set to the
