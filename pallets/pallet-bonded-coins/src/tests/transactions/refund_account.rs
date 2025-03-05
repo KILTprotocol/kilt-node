@@ -19,7 +19,7 @@ use frame_support::{
 	assert_err, assert_ok,
 	traits::fungibles::{roles::Inspect as InspectRole, Create, Inspect, Mutate},
 };
-use frame_system::{pallet_prelude::OriginFor, RawOrigin};
+use frame_system::{pallet_prelude::OriginFor, ConsumerLimits, RawOrigin};
 use sp_runtime::TokenError;
 
 use crate::{
@@ -303,6 +303,71 @@ fn refund_account_fails_when_account_blocked() {
 			assert_err!(
 				BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1),
 				TokenError::Blocked
+			);
+		});
+}
+
+#[test]
+fn refund_account_fails_if_account_cannot_be_created() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		false,
+		Some(PoolStatus::Refunding),
+		Some(ACCOUNT_00),
+		None,
+		None,
+		None,
+	);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	// get MaxConsumers value
+	let max_consumers: usize = <Test as frame_system::Config>::MaxConsumers::max_consumers()
+		.try_into()
+		.expect("");
+	// Collateral must be non-sufficient for these tests to work, so we'll create a
+	// new collateral asset in the test
+	let collateral_id = DEFAULT_BONDED_CURRENCY_ID + 1;
+
+	ExtBuilder::default()
+		.with_native_balances(vec![
+			(ACCOUNT_01, ONE_HUNDRED_KILT),
+			(pool_id.clone(), ONE_HUNDRED_KILT),
+		])
+		.with_pools(vec![(pool_id.clone(), pool_details)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), ONE_HUNDRED_KILT),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, ONE_HUNDRED_KILT),
+		])
+		// Freeze some funds for ACCOUNT_01 so refund can only be partial
+		.with_freezes(vec![(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_01, 100_000)])
+		.build_and_execute_with_sanity_tests(|| {
+			// switch pool's collateral to a non-sufficient one
+			assert_ok!(<Assets as Create<_>>::create(collateral_id, ACCOUNT_00, false, 1));
+			Pools::<Test>::mutate(&pool_id, |details| details.as_mut().unwrap().collateral = collateral_id);
+			// make sure pool account holds collateral - this should work because it also
+			// holds the (sufficient) original collateral
+			assert_ok!(Assets::mint_into(collateral_id, &pool_id, ONE_HUNDRED_KILT));
+			// create non-sufficient assets to increase ACCOUNT_01 consumers count
+			// the assets pallet requires at least two references to be available for
+			// creating an account, but creates only one, meaning we create max_consumers -
+			// 2 currencies (resulting in max_consumers - 1 consumers because we created one
+			// previously)
+			for i in 1..max_consumers - 1 {
+				let i_u32: u32 = i.try_into().expect("Failed to convert to u32");
+				let asset_id = collateral_id + i_u32;
+				assert_ok!(<Assets as Create<_>>::create(asset_id, ACCOUNT_00, false, 1));
+				assert_ok!(Assets::mint_into(asset_id, &ACCOUNT_01, ONE_HUNDRED_KILT));
+			}
+
+			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_01).into();
+
+			// Collateral is non-sufficient and thus would create additional consumer
+			// references on ACCOUNT_01, which is too many
+			assert_err!(
+				BondingPallet::refund_account(origin, pool_id.clone(), ACCOUNT_01, 0, 1),
+				TokenError::CannotCreate
 			);
 		});
 }
