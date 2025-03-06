@@ -64,7 +64,7 @@ pub mod pallet {
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
-			tokens::{Fortitude, Precision as WithdrawalPrecision, Preservation, Provenance},
+			tokens::{DepositConsequence, Fortitude, Precision as WithdrawalPrecision, Preservation, Provenance},
 			AccountTouch,
 		},
 		Hashable, Parameter,
@@ -449,18 +449,17 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Changes the managing team of a bonded currency which is issued by
-		/// this pool. The new team will be set to the provided team. The
-		/// currency index is used to select the currency that the team will
-		/// manage. The origin account must be a manager of the pool.
+		/// Changes the managing team of all bonded currencies issued by this
+		/// pool, setting it to the provided `team`. The origin account must be
+		/// a manager of the pool.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call, requiring the caller to be a
 		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool.
 		/// - `team`: The new managing team.
-		/// - `currency_idx`: The index of the currency in the bonded currencies
-		///   vector.
+		/// - `currency_count`: The number of bonded currencies vector linked to
+		///   the pool. Required for weight estimations.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
@@ -469,8 +468,8 @@ pub mod pallet {
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
 		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
 		///   pool.
-		/// - `Error::<T>::IndexOutOfBounds`: If the currency index is out of
-		///   bounds.
+		/// - `Error::<T>::CurrencyCount`: If the actual number of currencies in
+		///   the pool is larger than `currency_count`.
 		/// - Other errors depending on the types in the config.
 		#[pallet::call_index(1)]
 		#[pallet::weight(T::WeightInfo::reset_team())]
@@ -478,31 +477,31 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			team: PoolManagingTeam<AccountIdOf<T>>,
-			currency_idx: u32,
+			currency_count: u32,
 		) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
+			let number_of_currencies = Self::get_currencies_number(&pool_details);
+			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
+
 			ensure!(pool_details.is_manager(&who), Error::<T>::NoPermission);
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
-
-			let asset_id = pool_details
-				.bonded_currencies
-				.get(currency_idx.saturated_into::<usize>())
-				.ok_or(Error::<T>::IndexOutOfBounds)?;
 
 			let pool_id_account = pool_id.into();
 
 			let PoolManagingTeam { freezer, admin } = team;
 
-			T::Fungibles::reset_team(
-				asset_id.to_owned(),
-				pool_id_account.clone(),
-				admin,
-				pool_id_account,
-				freezer,
-			)
+			pool_details.bonded_currencies.into_iter().try_for_each(|asset_id| {
+				T::Fungibles::reset_team(
+					asset_id,
+					pool_id_account.clone(),
+					admin.clone(),
+					pool_id_account.clone(),
+					freezer.clone(),
+				)
+			})
 		}
 
 		/// Resets the manager of a pool. The new manager will be set to the
@@ -1119,8 +1118,7 @@ pub mod pallet {
 
 			if amount.is_zero()
 				|| T::Collaterals::can_deposit(pool_details.collateral.clone(), &who, amount, Provenance::Extant)
-					.into_result()
-					.is_err()
+					== DepositConsequence::BelowMinimum
 			{
 				// Funds are burnt but the collateral received is not sufficient to be deposited
 				// to the account. This is tolerated as otherwise we could have edge cases where

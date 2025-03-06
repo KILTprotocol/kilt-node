@@ -355,7 +355,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn reset_team() {
+	fn reset_team(c: Linear<1, { T::MaxCurrenciesPerPool::get() }>) {
 		let origin = T::DefaultOrigin::try_successful_origin().expect("creating origin should not fail");
 		let account_origin = origin
 			.clone()
@@ -363,17 +363,10 @@ mod benchmarks {
 			.expect("generating account_id from origin should not fail");
 		make_free_for_deposit::<T>(&account_origin);
 
-		let bonded_coin_id = T::BenchmarkHelper::calculate_bonded_asset_id(0);
-		create_bonded_asset::<T>(bonded_coin_id.clone());
+		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
-		let pool_id = create_pool::<T>(
-			curve,
-			[bonded_coin_id.clone()].to_vec(),
-			Some(account_origin),
-			None,
-			None,
-		);
+		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), Some(account_origin), None, None);
 
 		let admin: AccountIdOf<T> = account("admin", 0, 0);
 		let freezer: AccountIdOf<T> = account("freezer", 0, 0);
@@ -382,12 +375,15 @@ mod benchmarks {
 			freezer: freezer.clone(),
 		};
 
+		let max_currencies = T::MaxCurrenciesPerPool::get();
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id, fungibles_team, 0);
+		_(origin as T::RuntimeOrigin, pool_id, fungibles_team, max_currencies);
 
 		// Verify
-		assert_eq!(T::Fungibles::admin(bonded_coin_id.clone()), Some(admin));
-		assert_eq!(T::Fungibles::freezer(bonded_coin_id), Some(freezer));
+		bonded_currencies.iter().for_each(|asset_id| {
+			assert_eq!(T::Fungibles::admin(asset_id.clone()), Some(admin.clone()));
+			assert_eq!(T::Fungibles::freezer(asset_id.clone()), Some(freezer.clone()));
+		});
 	}
 
 	#[benchmark]

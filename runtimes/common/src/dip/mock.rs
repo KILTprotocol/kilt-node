@@ -74,7 +74,7 @@ impl frame_system::Config for TestRuntime {
 	type Hash = Hash;
 	type Hashing = Hasher;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type MaxConsumers = ConstU32<16>;
+	type MaxConsumers = ConstU32<100>;
 	type Nonce = Nonce;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
