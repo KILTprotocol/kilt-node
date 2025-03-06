@@ -60,8 +60,10 @@ where
 	}
 }
 
-/// Copy from the Polkadot SDK. once we are at version 1.13.0, we can remove
-/// this.
+/// Copy of a trait from a later version of the Polkadot SDK
+/// (frame_support::traits::tokens::fungibles::roles::ResetTeam). Once we
+/// upgraded to Polkadot SDK version 1.13.0, this can be retired in favor of the
+/// original trait.
 pub trait ResetTeam<AccountId>: Inspect<AccountId> {
 	/// Reset the team for the asset with the given `id`.
 	///
@@ -80,6 +82,10 @@ pub trait ResetTeam<AccountId>: Inspect<AccountId> {
 	) -> DispatchResult;
 }
 
+/// Implementation of the back-ported ResetTeam trait for the assets pallet,
+/// relying on its `transfer_ownership` and `set_team` calls. Later versions of
+/// the assets pallet implement the original trait, so this is a stop-gap
+/// solution until we upgraded to at least Polkadot SDK version 1.13.0.
 impl<T, I: 'static> ResetTeam<AccountIdOf<T>> for AssetsPallet<T, I>
 where
 	T: AssetConfig<I>,
