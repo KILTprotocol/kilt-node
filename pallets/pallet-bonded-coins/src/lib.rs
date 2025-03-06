@@ -64,7 +64,7 @@ pub mod pallet {
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
-			tokens::{Fortitude, Precision as WithdrawalPrecision, Preservation, Provenance},
+			tokens::{DepositConsequence, Fortitude, Precision as WithdrawalPrecision, Preservation, Provenance},
 			AccountTouch,
 		},
 		Hashable, Parameter,
@@ -1119,8 +1119,7 @@ pub mod pallet {
 
 			if amount.is_zero()
 				|| T::Collaterals::can_deposit(pool_details.collateral.clone(), &who, amount, Provenance::Extant)
-					.into_result()
-					.is_err()
+					== DepositConsequence::BelowMinimum
 			{
 				// Funds are burnt but the collateral received is not sufficient to be deposited
 				// to the account. This is tolerated as otherwise we could have edge cases where
