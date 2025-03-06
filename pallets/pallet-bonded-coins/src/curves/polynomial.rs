@@ -153,7 +153,7 @@ where
 			.ok_or(ArithmeticError::Overflow)?;
 
 		// Calculate m * (high^2 + high * low + low^2)
-		let term1 = if self.m != 0 {
+		let term1 = if self.m != Coefficient::from_num(0u8) {
 			let high_low_mul = high.checked_mul(low).ok_or(ArithmeticError::Overflow)?;
 			let high_square = square(high)?;
 			let low_square = square(low)?;
@@ -172,7 +172,7 @@ where
 		}?;
 
 		// Calculate n * (high + low)
-		let term2 = if self.n != 0 {
+		let term2 = if self.n != Coefficient::from_num(0u8) {
 			let high_plus_low = high.checked_add(low).ok_or(ArithmeticError::Overflow)?;
 			self.n.checked_mul(high_plus_low).ok_or(ArithmeticError::Overflow)
 		} else {
