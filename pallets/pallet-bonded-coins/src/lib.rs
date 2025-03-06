@@ -426,10 +426,7 @@ pub mod pallet {
 					// insert() returns true if the set did not contain the inserted value
 					let name_ok = name.is_empty() || names_seen.insert(name.clone());
 					let symbol_ok = symbol.is_empty() || symbols_seen.insert(symbol.clone());
-
-					if !name_ok || !symbol_ok {
-						return Err(Error::<T>::InvalidInput.into());
-					};
+					ensure!(name_ok && symbol_ok, Error::<T>::InvalidInput);
 
 					T::Fungibles::create(asset_id.clone(), pool_account.to_owned(), false, min_balance)?;
 
