@@ -338,7 +338,8 @@ pub mod pallet {
 		/// - `curve`: The curve parameters for the pool.
 		/// - `collateral_id`: The ID of the collateral currency.
 		/// - `currencies`: A bounded vector of token metadata for the bonded
-		///   currencies.
+		///   currencies. Note that no two currencies may use the same name or
+		///   symbol.
 		/// - `denomination`: The denomination for the bonded currencies.
 		/// - `transferable`: A boolean indicating if the bonded currencies are
 		///   transferable.
@@ -347,8 +348,10 @@ pub mod pallet {
 		/// - `DispatchResult`: The result of the dispatch.
 		///
 		/// # Errors
-		/// - `Error::<T>::InvalidInput`: If the denomination is greater than
-		///   the maximum allowed or if the curve input is invalid.
+		/// - `Error::<T>::InvalidInput`: If either
+		///   - the denomination is greater than the maximum allowed
+		///   - the curve input is invalid
+		///   - two currencies use the same name or symbol
 		/// - `Error::<T>::Internal`: If the conversion to `BoundedVec` fails.
 		/// - Other errors depending on the types in the config.
 		#[pallet::call_index(0)]
@@ -408,6 +411,7 @@ pub mod pallet {
 			// currency to it. This should also verify that the currency actually exists.
 			T::Collaterals::touch(collateral_id.clone(), pool_account, &who)?;
 
+			// Enforce unique names and symbols by recording seen values in a set
 			let mut names_seen = BTreeSet::<StringInputOf<T>>::new();
 			let mut symbols_seen = BTreeSet::<StringInputOf<T>>::new();
 
@@ -419,6 +423,7 @@ pub mod pallet {
 						symbol,
 					} = token_metadata;
 
+					// insert() returns true if the set did not contain the inserted value
 					let name_ok = name.is_empty() || names_seen.insert(name.clone());
 					let symbol_ok = symbol.is_empty() || symbols_seen.insert(symbol.clone());
 
