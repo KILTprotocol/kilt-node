@@ -70,6 +70,7 @@ pub mod pallet {
 		Hashable, Parameter,
 	};
 	use frame_system::pallet_prelude::*;
+	use parity_scale_codec::alloc::collections::HashSet;
 	use sp_arithmetic::ArithmeticError;
 	use sp_core::U256;
 	use sp_runtime::{
@@ -407,6 +408,9 @@ pub mod pallet {
 			// currency to it. This should also verify that the currency actually exists.
 			T::Collaterals::touch(collateral_id.clone(), pool_account, &who)?;
 
+			let mut names_seen = HashSet::<StringInputOf<T>>::with_capacity(currencies.len());
+			let mut symbols_seen = HashSet::<StringInputOf<T>>::with_capacity(currencies.len());
+
 			currencies.into_iter().zip(currency_ids.iter()).try_for_each(
 				|(token_metadata, asset_id)| -> DispatchResult {
 					let TokenMeta {
@@ -414,6 +418,13 @@ pub mod pallet {
 						name,
 						symbol,
 					} = token_metadata;
+
+					let name_ok = name.is_empty() || names_seen.insert(name.clone());
+					let symbol_ok = symbol.is_empty() || symbols_seen.insert(symbol.clone());
+
+					if !name_ok || !symbol_ok {
+						return Err(Error::<T>::InvalidInput.into());
+					};
 
 					T::Fungibles::create(asset_id.clone(), pool_account.to_owned(), false, min_balance)?;
 
