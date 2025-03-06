@@ -557,7 +557,8 @@ pub mod pallet {
 		/// - `origin`: The origin of the call, requiring the caller to be a
 		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool to be locked.
-		/// - `lock`: The locks to be applied to the pool.
+		/// - `lock`: The locks to be applied to the pool. At least one lock
+		///   flag must be set to `false` for a valid lock.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
@@ -568,10 +569,21 @@ pub mod pallet {
 		///   pool.
 		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live (locked or
 		///   active) state.
+		/// - `Error::<T>::InvalidInput`: If all lock flags are `true` (all
+		///   operations enabled), which would be equivalent to an unlocked
+		///   (active) pool state.
 		#[pallet::call_index(3)]
 		#[pallet::weight(T::WeightInfo::set_lock())]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
+
+			ensure!(
+				lock != (Locks {
+					allow_mint: true,
+					allow_burn: true,
+				}),
+				Error::<T>::InvalidInput
+			);
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
