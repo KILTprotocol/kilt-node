@@ -327,7 +327,6 @@ pub mod pallet {
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
 		CollateralBalanceOf<T>: Into<U256> + TryFrom<U256>,
 		FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
-		// TODO: make large integer type configurable
 	{
 		/// Creates a new bonded token pool. The pool will be created with the
 		/// given curve, collateral currency, and bonded currencies. The pool
@@ -1430,7 +1429,6 @@ pub mod pallet {
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
 			if let Some(caller) = maybe_check_manager {
-				// TODO: should the owner be authorized as well?
 				ensure!(pool_details.is_manager(caller), Error::<T>::NoPermission);
 			}
 
@@ -1503,7 +1501,6 @@ pub mod pallet {
 			);
 
 			if let Some(caller) = maybe_check_manager {
-				// TODO: should this be permissionless if the pool is in refunding state?
 				ensure!(
 					pool_details.is_owner(caller) || pool_details.is_manager(caller),
 					Error::<T>::NoPermission

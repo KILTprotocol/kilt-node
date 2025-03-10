@@ -166,7 +166,7 @@ pub fn balance_to_fixed<Balance, FixedType: Fixed>(
 	round_kind: Round,
 ) -> Result<FixedType, ArithmeticError>
 where
-	FixedType::Bits: TryFrom<U256>, // TODO: make large integer type configurable in runtime
+	FixedType::Bits: TryFrom<U256>,
 	Balance: TryInto<U256>,
 {
 	let decimals = U256::from(10u8)
