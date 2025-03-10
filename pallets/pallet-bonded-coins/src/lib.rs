@@ -1090,11 +1090,6 @@ pub mod pallet {
 				.checked_add(burnt)
 				.ok_or(ArithmeticError::Overflow)?;
 
-			defensive_assert!(
-				sum_of_issuances >= burnt,
-				"burnt amount exceeds the total supply of all bonded currencies"
-			);
-
 			let amount: CollateralBalanceOf<T> = burnt
 				.checked_mul(total_collateral_issuance.into())
 				// As long as the balance type is half the size of a U256, this won't overflow.
