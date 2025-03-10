@@ -153,7 +153,10 @@ where
 			.ok_or(ArithmeticError::Overflow)?;
 
 		// Calculate m * (high^2 + high * low + low^2)
-		let term1 = if self.m != Coefficient::from_num(0u8) {
+		let term1 = if self.m == Coefficient::from_num(0u8) {
+			// if m is 0 the product is 0
+			Ok(self.m)
+		} else {
 			let high_low_mul = high.checked_mul(low).ok_or(ArithmeticError::Overflow)?;
 			let high_square = square(high)?;
 			let low_square = square(low)?;
@@ -166,18 +169,15 @@ where
 				.ok_or(ArithmeticError::Overflow)?;
 
 			self.m.checked_mul(cubic_term).ok_or(ArithmeticError::Overflow)
-		} else {
-			// if m is 0 the product is 0
-			Ok(self.m)
 		}?;
 
 		// Calculate n * (high + low)
-		let term2 = if self.n != Coefficient::from_num(0u8) {
-			let high_plus_low = high.checked_add(low).ok_or(ArithmeticError::Overflow)?;
-			self.n.checked_mul(high_plus_low).ok_or(ArithmeticError::Overflow)
-		} else {
+		let term2 = if self.n == Coefficient::from_num(0u8) {
 			// if n is 0 the product is 0
 			Ok(self.n)
+		} else {
+			let high_plus_low = high.checked_add(low).ok_or(ArithmeticError::Overflow)?;
+			self.n.checked_mul(high_plus_low).ok_or(ArithmeticError::Overflow)
 		}?;
 
 		// Final calculation with factored (high - low)
