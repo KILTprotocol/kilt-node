@@ -26,7 +26,7 @@ pub struct Locks {
 }
 
 impl Locks {
-	pub fn any_lock_set(&self) -> bool {
+	pub const fn any_lock_set(&self) -> bool {
 		!(self.allow_mint && self.allow_burn)
 	}
 }
