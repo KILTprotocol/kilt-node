@@ -536,6 +536,8 @@ pub mod pallet {
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
 		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
 		///   pool.
+		/// - `Error::<T>::PoolNotLive`: If the pool is not in active or locked
+		///   state.
 		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::reset_manager())]
 		pub fn reset_manager(
@@ -546,6 +548,7 @@ pub mod pallet {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			Pools::<T>::try_mutate(&pool_id, |maybe_entry| -> DispatchResult {
 				let entry = maybe_entry.as_mut().ok_or(Error::<T>::PoolUnknown)?;
+				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 				entry.manager = new_manager.clone();
 
