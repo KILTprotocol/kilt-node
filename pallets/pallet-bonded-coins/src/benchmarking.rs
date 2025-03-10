@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use frame_benchmarking::v2::*;
 use frame_support::traits::fungibles::roles::Inspect as InspectRoles;
+use scale_info::prelude::format;
 use sp_core::U256;
 use sp_std::{
 	ops::{AddAssign, BitOrAssign, ShlAssign},
@@ -233,11 +234,11 @@ mod benchmarks {
 
 	fn generate_token_metadata<T: Config>(c: u32) -> BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool> {
 		let mut token_meta = Vec::new();
-		for _ in 1..=c {
+		for i in 1..=c {
 			token_meta.push(TokenMetaOf::<T> {
 				min_balance: 1u128.saturated_into(),
-				name: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
-				symbol: BoundedVec::try_from(b"BTC".to_vec()).expect("Failed to create BoundedVec"),
+				name: BoundedVec::try_from(format!("Coin_{}", &i).into_bytes()).expect("Failed to create BoundedVec"),
+				symbol: BoundedVec::try_from(format!("BTC_{}", &i).into_bytes()).expect("Failed to create BoundedVec"),
 			})
 		}
 		BoundedVec::try_from(token_meta).expect("creating bounded Vec should not fail")
