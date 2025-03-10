@@ -536,6 +536,8 @@ pub mod pallet {
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
 		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
 		///   pool.
+		/// - `Error::<T>::PoolNotLive`: If the pool is not in active or locked
+		///   state.
 		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::reset_manager())]
 		pub fn reset_manager(
