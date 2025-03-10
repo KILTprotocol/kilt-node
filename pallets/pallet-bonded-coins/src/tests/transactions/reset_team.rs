@@ -20,6 +20,7 @@ use frame_system::RawOrigin;
 
 use crate::{
 	mock::{runtime::*, *},
+	traits::ResetTeam,
 	types::{PoolManagingTeam, PoolStatus},
 	AccountIdOf, Error as BondingPalletErrors,
 };
@@ -56,6 +57,57 @@ fn resets_team() {
 
 			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_00));
 			assert_eq!(Assets::freezer(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_01));
+			assert_eq!(Assets::owner(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
+			assert_eq!(Assets::issuer(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
+		})
+}
+
+#[test]
+fn resets_owner_if_changed() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		false,
+		Some(PoolStatus::Active),
+		Some(ACCOUNT_00),
+		None,
+		None,
+		None,
+	);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	ExtBuilder::default()
+		.with_pools(vec![(pool_id.clone(), pool_details)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build_and_execute_with_sanity_tests(|| {
+			Assets::reset_team(
+				DEFAULT_BONDED_CURRENCY_ID,
+				ACCOUNT_00,
+				pool_id.clone(),
+				pool_id.clone(),
+				pool_id.clone(),
+			)
+			.expect("Failed to use reset_team trait");
+
+			assert_eq!(Assets::owner(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_00));
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
+			assert_eq!(Assets::issuer(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
+			assert_eq!(Assets::freezer(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
+
+			let manager_origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_ok!(BondingPallet::reset_team(
+				manager_origin,
+				pool_id.clone(),
+				PoolManagingTeam {
+					admin: pool_id.clone(),
+					freezer: pool_id.clone(),
+				},
+				1
+			));
+
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
+			assert_eq!(Assets::freezer(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
 			assert_eq!(Assets::owner(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
 			assert_eq!(Assets::issuer(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
 		})

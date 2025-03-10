@@ -369,6 +369,10 @@ mod benchmarks {
 		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
 		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), Some(account_origin), None, None);
 
+		// Although these would rarely happen in practice, for benchmarking we assume
+		// the worst case where the owner must be changed as well
+		assert!(T::Fungibles::owner(bonded_currencies[0].clone()) != Some(pool_id.clone().into()));
+
 		let admin: AccountIdOf<T> = account("admin", 0, 0);
 		let freezer: AccountIdOf<T> = account("freezer", 0, 0);
 		let fungibles_team = PoolManagingTeam {
@@ -376,14 +380,23 @@ mod benchmarks {
 			freezer: freezer.clone(),
 		};
 
+		let pool_id_for_call = pool_id.clone();
+
 		let max_currencies = T::MaxCurrenciesPerPool::get();
 		#[extrinsic_call]
-		_(origin as T::RuntimeOrigin, pool_id, fungibles_team, max_currencies);
+		_(
+			origin as T::RuntimeOrigin,
+			pool_id_for_call,
+			fungibles_team,
+			max_currencies,
+		);
 
 		// Verify
 		bonded_currencies.iter().for_each(|asset_id| {
 			assert_eq!(T::Fungibles::admin(asset_id.clone()), Some(admin.clone()));
 			assert_eq!(T::Fungibles::freezer(asset_id.clone()), Some(freezer.clone()));
+			assert_eq!(T::Fungibles::owner(asset_id.clone()), Some(pool_id.clone().into()));
+			assert_eq!(T::Fungibles::issuer(asset_id.clone()), Some(pool_id.clone().into()));
 		});
 	}
 
