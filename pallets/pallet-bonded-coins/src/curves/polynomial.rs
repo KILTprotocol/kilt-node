@@ -34,13 +34,19 @@
 /// ### Antiderivative
 /// The indefinite integral of the cost function is:
 /// ```text
-/// C(s) = (m / 3) * s^3 + (n / 2) * s^2 + o * s
+/// C(s) = (m / 3) * s^3 + (n / 2) * s^2 + o * s = M * s^3 + N * s^2 + O * s
 /// ```
 /// Where:
 /// - `m` is the coefficient for the quadratic term,
 /// - `n` is the coefficient for the linear term,
-/// - `o` is the constant term.
+/// - `o` is the constant term,
+/// - `M` is the coefficient of the first (cubic) term in the antiderivative,
+/// - `N` is the coefficient of the second (quadratic) term in the
+///   antiderivative,
+/// - `O=o` is the coefficient of the third (linear) term in the antiderivative.
 ///
+/// Coefficients of the antiderivative `N`, `M` & `O` are used to parametrize
+/// functions in this module.
 ///
 /// `C(s)` represents the accumulated cost of purchasing or selling assets up to
 /// the current supply `s`. The integral between two supply points, `s*`
@@ -81,9 +87,11 @@ use crate::PassiveSupply;
 ///
 /// For a polynomial cost function `c(s) = 3 * s^2 + 2 * s + 2`
 ///
-/// which is resulting into the antiderivative
-/// `C(s) = (3 / 3) * s^3 + (2 / 2) * s^2 + 2 * s`
-/// the input parameters would be:
+/// which results in the antiderivative
+/// `C(s) = (3 / 3) * s^3 + (2 / 2) * s^2 + 2 * s = 1 * s^3 + 1 * s^2 + 2 * s`
+///
+/// the input parameters `M`, `N` & `O` (coefficients of the antiderivative)
+/// would be:
 /// ```rust, ignore
 /// PolynomialParametersInput {
 ///    m: 1,

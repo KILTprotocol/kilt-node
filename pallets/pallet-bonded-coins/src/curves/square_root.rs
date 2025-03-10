@@ -33,12 +33,19 @@
 /// ### Antiderivative
 /// The indefinite integral of the cost function is:
 /// ```text
-/// C(s) = (2/3) * m * s^(3/2) + n * s
+/// C(s) = (2/3) * m * s^(3/2) + n * s = M * s^(3/2) + N * s
 /// ```
 /// Where:
 /// - `s` is the supply of assets,
 /// - `m` is the coefficient for the square root term,
-/// - `n` is the coefficient for the linear term.
+/// - `n` is the coefficient for the constant term,
+/// - `M` is the coefficient for the first (fractional power) term in the
+///   antiderivative,
+/// - `N=n` is the coefficient of the second (linear) term in the
+///   antiderivative.
+///
+/// Coefficients of the antiderivative `N` & `M` are used to parametrize
+/// functions in this module.
 ///
 /// `C(s)` represents the total cost of purchasing or selling assets up to the
 /// current supply `s`. To calculate the incremental cost of a transaction, use
@@ -72,14 +79,19 @@ use crate::{PassiveSupply, Precision};
 /// bonding curve. This struct is used to convert the input parameters to the
 /// correct fixed-point type.
 ///
-/// The input struct assumes that the coefficients are precomputed according to
-/// the integral rules of the square root function./// ### Example
+/// The input struct expects coefficients of terms in the antiderivative of the
+/// square root function, which must be precomputed according to the integral
+/// rules of the square root function.
 ///
-/// For a square root cost function `c(s) = 3 * s^1/2 + 2
+/// ### Example
 ///
-/// which is resulting into the antiderivative
-/// `C(s) = (6 / 3) * s^(1/2) + 2 * s`
-/// the input parameters would be:
+/// For a square root cost function `c(s) = 3 * s^1/2 + 2`
+///
+/// which results in the antiderivative
+/// `C(s) = (2 / 3) * 3 * s^(3/2) + 2 * s = 2s^(3/2) + 2s`
+///
+/// the input parameters `M` & `N` (coefficients of the antiderivative) would
+/// be:
 /// ```rust, ignore
 /// SquareRootParametersInput {
 ///    m: 2,
