@@ -25,6 +25,12 @@ pub struct Locks {
 	pub allow_burn: bool,
 }
 
+impl Locks {
+	pub const fn any_lock_set(&self) -> bool {
+		!(self.allow_mint && self.allow_burn)
+	}
+}
+
 /// Status of a pool.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
 pub enum PoolStatus<LockType> {
