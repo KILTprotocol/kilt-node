@@ -28,6 +28,7 @@ use substrate_fixed::traits::{Fixed, FixedSigned, FixedUnsigned, ToFixed};
 use crate::{
 	curves::{
 		lmsr::{LMSRParameters, LMSRParametersInput},
+		polynomial::PolynomialParameters,
 		square_root::{SquareRootParameters, SquareRootParametersInput},
 		Curve, CurveInput,
 	},
@@ -62,6 +63,13 @@ where
 	}
 
 	fn set_native_balance(_account: &<T>::AccountId, _amount: u128) {}
+}
+
+fn get_2nd_order_polynomial_curve<Float: FixedSigned>() -> Curve<Float> {
+	let m = Float::from_num(0.01);
+	let n = Float::from_num(2);
+	let o = Float::from_num(3);
+	Curve::Polynomial(PolynomialParameters { m, n, o })
 }
 
 fn get_square_root_curve<Float: FixedSigned>() -> Curve<Float> {
@@ -314,7 +322,7 @@ mod benchmarks {
 			Curve::SquareRoot(_) => {
 				assert_eq!(id, expected_pool_id);
 			}
-			_ => panic!("pool.curve is not a Polynomial function"),
+			_ => panic!("pool.curve is not a SquareRoot function"),
 		}
 	}
 
@@ -351,7 +359,7 @@ mod benchmarks {
 			Curve::Lmsr(_) => {
 				assert_eq!(id, expected_pool_id);
 			}
-			_ => panic!("pool.curve is not a Polynomial function"),
+			_ => panic!("pool.curve is not a LSMR curve!"),
 		}
 	}
 
@@ -485,7 +493,7 @@ mod benchmarks {
 		make_free_for_deposit::<T>(&account_origin);
 		set_collateral_balance::<T>(collateral_id.clone(), &account_origin, 10000u128);
 
-		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
+		let curve = get_2nd_order_polynomial_curve::<CurveParameterTypeOf<T>>();
 		let bonded_currencies = create_bonded_currencies_in_range::<T>(c, false);
 
 		let pool_id = create_pool::<T>(curve, bonded_currencies.clone(), None, None, Some(0));
@@ -615,7 +623,7 @@ mod benchmarks {
 		let start_balance = 100u128;
 		set_fungible_balance::<T>(target_asset_id.clone(), &account_origin, start_balance);
 
-		let curve = get_linear_bonding_curve::<CurveParameterTypeOf<T>>();
+		let curve = get_2nd_order_polynomial_curve::<CurveParameterTypeOf<T>>();
 
 		let pool_id = create_pool::<T>(curve, bonded_currencies, None, None, Some(0));
 		let pool_account = pool_id.clone().into();

@@ -759,10 +759,6 @@ fn mint_without_collateral() {
 
 #[test]
 fn mint_more_than_fixed_can_represent() {
-	// denomination is 10
-	// capacity of I75F53 is 1.8+e22
-	// -> we need to get beyond 1.8+e32
-	// check that we can still burn afterwards
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 
 	let curve = Curve::Polynomial(PolynomialParameters {
@@ -771,7 +767,11 @@ fn mint_more_than_fixed_can_represent() {
 		o: Float::from_num(0.1),
 	});
 
-	let amount_to_mint = 10u128.pow(20);
+	// capacity of I75F53 is (2^74)-1
+	// denomination is 10
+	// -> minting 2^74 * 10^10 coins would just barely overflow
+	// we do it in two tranches, first should work, second should fail
+	let amount_to_mint = 2u128.pow(74) * 10u128.pow(10) / 2;
 
 	ExtBuilder::default()
 		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
@@ -798,11 +798,18 @@ fn mint_more_than_fixed_can_represent() {
 		.build_and_execute_with_sanity_tests(|| {
 			let origin: OriginFor<Test> = RawOrigin::Signed(ACCOUNT_00).into();
 
-			// repeatedly mint until we hit balance that cannot be represented
-			let mut result = Ok(().into());
-			let mut mints = 0;
-			while result.is_ok() {
-				result = BondingPallet::mint_into(
+			assert_ok!(BondingPallet::mint_into(
+				origin.clone(),
+				pool_id.clone(),
+				0,
+				ACCOUNT_00,
+				amount_to_mint,
+				u128::MAX,
+				1,
+			));
+
+			assert_err!(
+				BondingPallet::mint_into(
 					origin.clone(),
 					pool_id.clone(),
 					0,
@@ -810,16 +817,13 @@ fn mint_more_than_fixed_can_represent() {
 					amount_to_mint,
 					u128::MAX,
 					1,
-				);
-				mints += 1;
-			}
-
-			assert!(mints > 2);
-			assert_err!(result, ArithmeticError::Overflow);
+				),
+				ArithmeticError::Overflow
+			);
 
 			assert_eq!(
 				Assets::total_balance(DEFAULT_BONDED_CURRENCY_ID, &ACCOUNT_00),
-				amount_to_mint * (mints - 1)
+				amount_to_mint
 			);
 
 			// Make sure the pool is not stuck
