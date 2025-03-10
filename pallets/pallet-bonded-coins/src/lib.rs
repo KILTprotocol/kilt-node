@@ -577,13 +577,7 @@ pub mod pallet {
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
-			ensure!(
-				lock != (Locks {
-					allow_mint: true,
-					allow_burn: true,
-				}),
-				Error::<T>::InvalidInput
-			);
+			ensure!(lock.any_lock_set(), Error::<T>::InvalidInput);
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
