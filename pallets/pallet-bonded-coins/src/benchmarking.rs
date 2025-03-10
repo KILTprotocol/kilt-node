@@ -379,11 +379,13 @@ mod benchmarks {
 			freezer: freezer.clone(),
 		};
 
+		let pool_id_for_call = pool_id.clone();
+
 		let max_currencies = T::MaxCurrenciesPerPool::get();
 		#[extrinsic_call]
 		_(
 			origin as T::RuntimeOrigin,
-			pool_id.clone(),
+			pool_id_for_call,
 			fungibles_team,
 			max_currencies,
 		);
