@@ -57,7 +57,7 @@ fn resets_team() {
 
 			// Ensure the event is emitted
 			System::assert_has_event(
-				Event::TeamReset {
+				Event::TeamChanged {
 					id: pool_id.clone(),
 					team: PoolManagingTeam {
 						admin: ACCOUNT_00,
@@ -120,7 +120,7 @@ fn resets_owner_if_changed() {
 
 			// Ensure the event is emitted
 			System::assert_has_event(
-				Event::TeamReset {
+				Event::TeamChanged {
 					id: pool_id.clone(),
 					team: PoolManagingTeam {
 						admin: ACCOUNT_00,
@@ -171,7 +171,7 @@ fn resets_team_for_all() {
 
 			// Ensure the event is emitted
 			System::assert_has_event(
-				Event::TeamReset {
+				Event::TeamChanged {
 					id: pool_id.clone(),
 					team: PoolManagingTeam {
 						admin: ACCOUNT_00,

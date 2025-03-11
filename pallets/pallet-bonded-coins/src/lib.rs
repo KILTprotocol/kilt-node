@@ -280,7 +280,7 @@ pub mod pallet {
 			manager: Option<T::AccountId>,
 		},
 		/// The asset managing team of a pool has been reset.
-		TeamReset {
+		TeamChanged {
 			id: T::PoolId,
 			team: PoolManagingTeam<T::AccountId>,
 		},
@@ -520,7 +520,7 @@ pub mod pallet {
 				)
 			})?;
 
-			Self::deposit_event(Event::TeamReset { id: pool_id, team });
+			Self::deposit_event(Event::TeamChanged { id: pool_id, team });
 
 			Ok(())
 		}
