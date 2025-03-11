@@ -56,6 +56,7 @@ fn burn_first_coin() {
 				curve: get_linear_bonding_curve(),
 				manager: None,
 				transferable: true,
+				enable_asset_management: true,
 				bonded_currencies: bounded_vec![DEFAULT_BONDED_CURRENCY_ID],
 				state: PoolStatus::Active,
 				collateral: DEFAULT_COLLATERAL_CURRENCY_ID,

@@ -232,6 +232,7 @@ mod benchmarks {
 			denomination,
 			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids.clone()),
 			transferable: true,
+			enable_asset_management: true,
 			min_operation_balance: 1u128.saturated_into(),
 			deposit: Pallet::<T>::calculate_pool_deposit(bonded_coin_ids.len()),
 		};
@@ -274,6 +275,7 @@ mod benchmarks {
 			currencies,
 			10,
 			true,
+			true,
 			1,
 		);
 
@@ -312,6 +314,7 @@ mod benchmarks {
 			currencies,
 			10,
 			true,
+			true,
 			1,
 		);
 
@@ -348,6 +351,7 @@ mod benchmarks {
 			collateral_id,
 			currencies,
 			10,
+			true,
 			true,
 			1,
 		);

@@ -101,6 +101,8 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId,
 	pub min_operation_balance: u128,
 	/// The deposit to be returned upon destruction of this pool.
 	pub deposit: DepositBalance,
+	/// Whether asset management changes are allowed.
+	pub enable_asset_management: bool,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance>
@@ -116,6 +118,7 @@ where
 		collateral: BaseCurrencyId,
 		bonded_currencies: Currencies,
 		transferable: bool,
+		enable_asset_management: bool,
 		denomination: u8,
 		min_operation_balance: u128,
 		deposit: DepositBalance,
@@ -127,6 +130,7 @@ where
 			collateral,
 			bonded_currencies,
 			transferable,
+			enable_asset_management,
 			state: PoolStatus::default(),
 			denomination,
 			min_operation_balance,

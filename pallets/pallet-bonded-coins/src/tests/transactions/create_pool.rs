@@ -57,6 +57,7 @@ fn single_currency() {
 				bounded_vec![bonded_token],
 				DEFAULT_BONDED_DENOMINATION,
 				true,
+				true,
 				1,
 			));
 
@@ -139,6 +140,7 @@ fn multi_currency() {
 				bonded_tokens,
 				DEFAULT_BONDED_DENOMINATION,
 				true,
+				true,
 				1
 			));
 
@@ -190,6 +192,7 @@ fn multi_currency_with_empty_metadata() {
 				bonded_tokens,
 				DEFAULT_BONDED_DENOMINATION,
 				true,
+				true,
 				1
 			));
 
@@ -240,6 +243,7 @@ fn can_create_identical_pools() {
 				bounded_vec![bonded_token.clone()],
 				DEFAULT_BONDED_DENOMINATION,
 				true,
+				true,
 				1
 			));
 
@@ -249,6 +253,7 @@ fn can_create_identical_pools() {
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bounded_vec![bonded_token],
 				DEFAULT_BONDED_DENOMINATION,
+				true,
 				true,
 				1
 			));
@@ -304,6 +309,7 @@ fn cannot_reuse_names() {
 					bonded_tokens,
 					DEFAULT_BONDED_DENOMINATION,
 					true,
+					true,
 					1
 				),
 				Error::<Test>::InvalidInput
@@ -347,6 +353,7 @@ fn cannot_reuse_symbols() {
 					bonded_tokens,
 					DEFAULT_BONDED_DENOMINATION,
 					true,
+					true,
 					1
 				),
 				Error::<Test>::InvalidInput
@@ -375,6 +382,7 @@ fn fails_if_collateral_not_exists() {
 					100,
 					bounded_vec![bonded_token],
 					DEFAULT_BONDED_DENOMINATION,
+					true,
 					true,
 					1
 				),
@@ -408,6 +416,7 @@ fn cannot_create_circular_pool() {
 					bounded_vec![bonded_token],
 					DEFAULT_BONDED_DENOMINATION,
 					true,
+					true,
 					1
 				),
 				AssetsPalletErrors::<Test>::Unknown
@@ -440,6 +449,7 @@ fn handles_asset_id_overflow() {
 					DEFAULT_COLLATERAL_CURRENCY_ID,
 					bounded_vec![bonded_token; 2],
 					DEFAULT_BONDED_DENOMINATION,
+					true,
 					true,
 					1
 				),

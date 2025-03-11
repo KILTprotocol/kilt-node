@@ -369,6 +369,7 @@ pub mod pallet {
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool>,
 			denomination: u8,
 			transferable: bool,
+			enable_asset_management: bool,
 			min_operation_balance: u128,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
@@ -450,6 +451,7 @@ pub mod pallet {
 					collateral_id,
 					currency_ids,
 					transferable,
+					enable_asset_management,
 					denomination,
 					min_operation_balance,
 					deposit_amount,
@@ -498,7 +500,10 @@ pub mod pallet {
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
-			ensure!(pool_details.is_manager(&who), Error::<T>::NoPermission);
+			ensure!(
+				pool_details.enable_asset_management && pool_details.is_manager(&who),
+				Error::<T>::NoPermission
+			);
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
 			let pool_id_account = pool_id.into();

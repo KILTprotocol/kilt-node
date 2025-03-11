@@ -119,6 +119,7 @@ pub mod runtime {
 			curve,
 			manager,
 			transferable,
+			enable_asset_management: true,
 			bonded_currencies,
 			state,
 			collateral,
