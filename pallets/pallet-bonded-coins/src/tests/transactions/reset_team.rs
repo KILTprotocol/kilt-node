@@ -22,7 +22,7 @@ use crate::{
 	mock::{runtime::*, *},
 	traits::ResetTeam,
 	types::{PoolManagingTeam, PoolStatus},
-	AccountIdOf, Error as BondingPalletErrors,
+	AccountIdOf, Error as BondingPalletErrors, Event,
 };
 
 #[test]
@@ -54,6 +54,18 @@ fn resets_team() {
 				},
 				1
 			));
+
+			// Ensure the event is emitted
+			System::assert_has_event(
+				Event::TeamReset {
+					id: pool_id.clone(),
+					team: PoolManagingTeam {
+						admin: ACCOUNT_00,
+						freezer: ACCOUNT_01,
+					},
+				}
+				.into(),
+			);
 
 			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_00));
 			assert_eq!(Assets::freezer(DEFAULT_BONDED_CURRENCY_ID), Some(ACCOUNT_01));
@@ -106,6 +118,18 @@ fn resets_owner_if_changed() {
 				1
 			));
 
+			// Ensure the event is emitted
+			System::assert_has_event(
+				Event::TeamReset {
+					id: pool_id.clone(),
+					team: PoolManagingTeam {
+						admin: ACCOUNT_00,
+						freezer: ACCOUNT_01,
+					},
+				}
+				.into(),
+			);
+
 			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
 			assert_eq!(Assets::freezer(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
 			assert_eq!(Assets::owner(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id.clone()));
@@ -144,6 +168,18 @@ fn resets_team_for_all() {
 				},
 				2
 			));
+
+			// Ensure the event is emitted
+			System::assert_has_event(
+				Event::TeamReset {
+					id: pool_id.clone(),
+					team: PoolManagingTeam {
+						admin: ACCOUNT_00,
+						freezer: ACCOUNT_01,
+					},
+				}
+				.into(),
+			);
 
 			assert_eq!(Assets::admin(currencies[0]), Some(ACCOUNT_00));
 			assert_eq!(Assets::freezer(currencies[0]), Some(ACCOUNT_01));
