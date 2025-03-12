@@ -78,9 +78,22 @@ impl<LockType> PoolStatus<LockType> {
 	}
 }
 
+#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
+pub struct CurrencySettings {
+	/// The minimum amount that can be minted/burnt.
+	pub min_operation_balance: u128,
+	/// The denomination of the pool.
+	pub denomination: u8,
+	/// Whether asset management changes are allowed.
+	pub enable_asset_management: bool,
+	/// Whether the pool is transferable or not.
+	pub transferable: bool,
+}
+
 /// Details of a pool.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
-pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance> {
+pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, BondedCurrencySettings>
+{
 	/// The owner of the pool.
 	pub owner: AccountId,
 	/// The manager of the pool. If a manager is set, the pool is permissioned.
@@ -93,20 +106,14 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId,
 	pub bonded_currencies: Currencies,
 	/// The status of the pool.
 	pub state: PoolStatus<Locks>,
-	/// Whether the pool is transferable or not.
-	pub transferable: bool,
-	/// The denomination of the pool.
-	pub denomination: u8,
-	/// The minimum amount that can be minted/burnt.
-	pub min_operation_balance: u128,
+
+	pub currency_settings: BondedCurrencySettings,
 	/// The deposit to be returned upon destruction of this pool.
 	pub deposit: DepositBalance,
-	/// Whether asset management changes are allowed.
-	pub enable_asset_management: bool,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance>
-	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance>
+	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, CurrencySettings>
 where
 	AccountId: PartialEq + Clone,
 {
@@ -129,11 +136,13 @@ where
 			curve,
 			collateral,
 			bonded_currencies,
-			transferable,
-			enable_asset_management,
+			currency_settings: CurrencySettings {
+				transferable,
+				enable_asset_management,
+				denomination,
+				min_operation_balance,
+			},
 			state: PoolStatus::default(),
-			denomination,
-			min_operation_balance,
 			deposit,
 		}
 	}

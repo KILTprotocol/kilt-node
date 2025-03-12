@@ -93,7 +93,7 @@ pub mod pallet {
 	use crate::{
 		curves::{balance_to_fixed, fixed_to_balance, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, NextAssetIds, ResetTeam},
-		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
+		types::{CurrencySettings, Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
 	};
 
@@ -131,6 +131,7 @@ pub mod pallet {
 		BoundedCurrencyVec<T>,
 		CollateralAssetIdOf<T>,
 		DepositBalanceOf<T>,
+		CurrencySettings,
 	>;
 
 	/// Minimum required amount of integer and fractional bits to perform ln,
@@ -367,12 +368,16 @@ pub mod pallet {
 			curve: CurveInput<CurveParameterInputOf<T>>,
 			collateral_id: CollateralAssetIdOf<T>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool>,
-			denomination: u8,
-			transferable: bool,
-			enable_asset_management: bool,
-			min_operation_balance: u128,
+			currency_settings: CurrencySettings,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+
+			let CurrencySettings {
+				denomination,
+				transferable,
+				enable_asset_management,
+				min_operation_balance,
+			} = currency_settings;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
 			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
@@ -501,7 +506,7 @@ pub mod pallet {
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
 			ensure!(
-				pool_details.enable_asset_management && pool_details.is_manager(&who),
+				pool_details.currency_settings.enable_asset_management && pool_details.is_manager(&who),
 				Error::<T>::NoPermission
 			);
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
@@ -709,7 +714,7 @@ pub mod pallet {
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
 			ensure!(
-				amount_to_mint >= pool_details.min_operation_balance.saturated_into(),
+				amount_to_mint >= pool_details.currency_settings.min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -729,14 +734,14 @@ pub mod pallet {
 
 			let (active_pre, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
-				pool_details.denomination,
+				pool_details.currency_settings.denomination,
 				currency_idx,
 				round_kind,
 			)?;
 
 			let normalized_amount_to_mint = balance_to_fixed(
 				amount_to_mint.saturated_into::<u128>(),
-				pool_details.denomination,
+				pool_details.currency_settings.denomination,
 				round_kind,
 			)?;
 
@@ -769,7 +774,7 @@ pub mod pallet {
 
 			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
 
-			if !pool_details.transferable {
+			if !pool_details.currency_settings.transferable {
 				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
 					freeze_error.into()
@@ -838,7 +843,7 @@ pub mod pallet {
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
 			ensure!(
-				amount_to_burn >= pool_details.min_operation_balance.saturated_into(),
+				amount_to_burn >= pool_details.currency_settings.min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -859,12 +864,13 @@ pub mod pallet {
 
 			let (high, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
-				pool_details.denomination,
+				pool_details.currency_settings.denomination,
 				currency_idx,
 				round_kind,
 			)?;
 
-			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, round_kind)?;
+			let normalized_amount_to_burn =
+				balance_to_fixed(amount_to_burn, pool_details.currency_settings.denomination, round_kind)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -910,7 +916,7 @@ pub mod pallet {
 
 			let account_exists = T::Fungibles::total_balance(target_currency_id.clone(), &who) > Zero::zero();
 
-			if !pool_details.transferable && account_exists {
+			if !pool_details.currency_settings.transferable && account_exists {
 				// Restore locks.
 				T::Fungibles::freeze(target_currency_id, &who).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);

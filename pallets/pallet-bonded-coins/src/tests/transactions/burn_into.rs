@@ -27,7 +27,7 @@ use sp_runtime::{assert_eq_error_rate, bounded_vec, traits::Scale, TokenError};
 
 use crate::{
 	mock::{runtime::*, *},
-	types::{Locks, PoolStatus},
+	types::{CurrencySettings, Locks, PoolStatus},
 	AccountIdOf, Error, PoolDetailsOf,
 };
 
@@ -55,14 +55,16 @@ fn burn_first_coin() {
 			PoolDetailsOf::<Test> {
 				curve: get_linear_bonding_curve(),
 				manager: None,
-				transferable: true,
-				enable_asset_management: true,
 				bonded_currencies: bounded_vec![DEFAULT_BONDED_CURRENCY_ID],
 				state: PoolStatus::Active,
 				collateral: DEFAULT_COLLATERAL_CURRENCY_ID,
-				denomination: 0,
+				currency_settings: CurrencySettings {
+					transferable: true,
+					enable_asset_management: true,
+					denomination: 0,
+					min_operation_balance: 1,
+				},
 				owner: ACCOUNT_99,
-				min_operation_balance: 1,
 				deposit: BondingPallet::calculate_pool_deposit(1),
 			},
 		)])
