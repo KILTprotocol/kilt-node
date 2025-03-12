@@ -123,8 +123,8 @@ fn resets_owner_if_changed() {
 				Event::TeamChanged {
 					id: pool_id.clone(),
 					team: PoolManagingTeam {
-						admin: ACCOUNT_00,
-						freezer: ACCOUNT_01,
+						admin: pool_id.clone(),
+						freezer: pool_id.clone(),
 					},
 				}
 				.into(),
