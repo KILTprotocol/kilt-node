@@ -59,7 +59,8 @@ fn single_currency() {
 					denomination: DEFAULT_BONDED_DENOMINATION,
 					allow_reset_team: true,
 					transferable: true,
-					min_operation_balance: 1
+					min_operation_balance: 1,
+					max_supply: 10_000u128
 				},
 			));
 
@@ -144,7 +145,8 @@ fn multi_currency() {
 					denomination: DEFAULT_BONDED_DENOMINATION,
 					allow_reset_team: true,
 					transferable: true,
-					min_operation_balance: 1
+					min_operation_balance: 1,
+					max_supply: 10_000u128
 				}
 			));
 
@@ -198,7 +200,8 @@ fn multi_currency_with_empty_metadata() {
 					denomination: DEFAULT_BONDED_DENOMINATION,
 					allow_reset_team: true,
 					transferable: true,
-					min_operation_balance: 1
+					min_operation_balance: 1,
+					max_supply: 10_000u128
 				}
 			));
 
@@ -251,7 +254,8 @@ fn can_create_identical_pools() {
 					denomination: DEFAULT_BONDED_DENOMINATION,
 					allow_reset_team: true,
 					transferable: true,
-					min_operation_balance: 1
+					min_operation_balance: 1,
+					max_supply: 10_000u128
 				}
 			));
 
@@ -264,7 +268,8 @@ fn can_create_identical_pools() {
 					denomination: DEFAULT_BONDED_DENOMINATION,
 					allow_reset_team: true,
 					transferable: true,
-					min_operation_balance: 1
+					min_operation_balance: 1,
+					max_supply: 10_000u128
 				}
 			));
 
@@ -321,7 +326,8 @@ fn cannot_reuse_names() {
 						denomination: DEFAULT_BONDED_DENOMINATION,
 						allow_reset_team: true,
 						transferable: true,
-						min_operation_balance: 1
+						min_operation_balance: 1,
+						max_supply: 10_000u128
 					}
 				),
 				Error::<Test>::InvalidInput
@@ -367,7 +373,8 @@ fn cannot_reuse_symbols() {
 						denomination: DEFAULT_BONDED_DENOMINATION,
 						allow_reset_team: true,
 						transferable: true,
-						min_operation_balance: 1
+						min_operation_balance: 1,
+						max_supply: 10_000u128
 					}
 				),
 				Error::<Test>::InvalidInput
@@ -399,7 +406,8 @@ fn fails_if_collateral_not_exists() {
 						denomination: DEFAULT_BONDED_DENOMINATION,
 						allow_reset_team: true,
 						transferable: true,
-						min_operation_balance: 1
+						min_operation_balance: 1,
+						max_supply: 10_000u128
 					}
 				),
 				AssetsPalletErrors::<Test>::Unknown
@@ -434,7 +442,8 @@ fn cannot_create_circular_pool() {
 						denomination: DEFAULT_BONDED_DENOMINATION,
 						allow_reset_team: true,
 						transferable: true,
-						min_operation_balance: 1
+						min_operation_balance: 1,
+						max_supply: 10_000u128
 					}
 				),
 				AssetsPalletErrors::<Test>::Unknown
@@ -470,7 +479,8 @@ fn handles_asset_id_overflow() {
 						denomination: DEFAULT_BONDED_DENOMINATION,
 						allow_reset_team: true,
 						transferable: true,
-						min_operation_balance: 1
+						min_operation_balance: 1,
+						max_supply: 10_000u128
 					}
 				),
 				ArithmeticError::Overflow

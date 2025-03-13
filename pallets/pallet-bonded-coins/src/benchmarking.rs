@@ -236,6 +236,7 @@ mod benchmarks {
 				transferable: true,
 				allow_reset_team: true,
 				min_operation_balance: 1u128.saturated_into(),
+				max_supply: u128::MAX.saturated_into(),
 			},
 			deposit: Pallet::<T>::calculate_pool_deposit(bonded_coin_ids.len()),
 		};
@@ -280,7 +281,8 @@ mod benchmarks {
 				denomination: 10,
 				allow_reset_team: true,
 				transferable: true,
-				min_operation_balance: 1,
+				min_operation_balance: 1u128.saturated_into(),
+				max_supply: 10_000u128.saturated_into(),
 			},
 		);
 
@@ -321,7 +323,8 @@ mod benchmarks {
 				denomination: 10,
 				allow_reset_team: true,
 				transferable: true,
-				min_operation_balance: 1,
+				min_operation_balance: 1u128.saturated_into(),
+				max_supply: 10_000u128.saturated_into(),
 			},
 		);
 
@@ -361,7 +364,8 @@ mod benchmarks {
 				denomination: 10,
 				allow_reset_team: true,
 				transferable: true,
-				min_operation_balance: 1,
+				min_operation_balance: 1u128.saturated_into(),
+				max_supply: 10_000u128.saturated_into(),
 			},
 		);
 

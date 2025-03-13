@@ -74,7 +74,8 @@ pub mod pallet {
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{
-			Bounded, CheckedConversion, SaturatedConversion, Saturating, StaticLookup, UniqueSaturatedInto, Zero,
+			Bounded, CheckedAdd, CheckedConversion, CheckedSub, SaturatedConversion, Saturating, StaticLookup,
+			UniqueSaturatedInto, Zero,
 		},
 		BoundedVec, DispatchError, TokenError,
 	};
@@ -128,13 +129,15 @@ pub mod pallet {
 
 	pub(crate) type CurveParameterInputOf<T> = <T as Config>::CurveParameterInput;
 
+	pub(crate) type BondedCurrenciesSettingsOf<T> = BondedCurrenciesSettings<FungiblesBalanceOf<T>>;
+
 	pub type PoolDetailsOf<T> = PoolDetails<
 		<T as frame_system::Config>::AccountId,
 		Curve<CurveParameterTypeOf<T>>,
 		BoundedCurrencyVec<T>,
 		CollateralAssetIdOf<T>,
 		DepositBalanceOf<T>,
-		BondedCurrenciesSettings,
+		BondedCurrenciesSettingsOf<T>,
 	>;
 
 	/// Minimum required amount of integer and fractional bits to perform ln,
@@ -329,6 +332,8 @@ pub mod pallet {
 		ZeroCollateral,
 		/// A pool has to contain at least one bonded currency.
 		ZeroBondedCurrency,
+		/// Above Maximum
+		AboveMaximum,
 	}
 
 	#[pallet::call]
@@ -384,7 +389,7 @@ pub mod pallet {
 			curve: CurveInput<CurveParameterInputOf<T>>,
 			collateral_id: CollateralAssetIdOf<T>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool>,
-			currencies_settings: BondedCurrenciesSettings,
+			currencies_settings: BondedCurrenciesSettingsOf<T>,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
@@ -393,6 +398,7 @@ pub mod pallet {
 				transferable,
 				allow_reset_team,
 				min_operation_balance,
+				max_supply,
 			} = currencies_settings;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
@@ -403,17 +409,21 @@ pub mod pallet {
 			ensure!(!currency_length.is_zero(), Error::<T>::ZeroBondedCurrency);
 
 			// maximum bonded currency balance scaled down by the denomination
-			let max_supply_scaled = balance_to_fixed(
-				U256::MAX.saturated_into::<FungiblesBalanceOf<T>>(),
+			let max_supply_scaled =
+				balance_to_fixed(max_supply, denomination, Round::Up).map_err(|_| Error::<T>::InvalidInput)?;
+			let max_supply_after_smallest_burn = balance_to_fixed(
+				max_supply
+					.checked_sub(&min_operation_balance)
+					.ok_or(Error::<T>::InvalidInput)?,
 				denomination,
 				Round::Up,
-			)
-			.map_err(|_| Error::<T>::InvalidInput)?;
-			// do a dry-run mint to maximum bonded currency balance to make sure we don't
+			)?;
+
+			// do a dry-run burn from maximum bonded currency balance to make sure we don't
 			// encounter overflow with the chosen curve parameters
 			checked_curve
 				.calculate_costs(
-					CurveParameterTypeOf::<T>::from_num(0),
+					max_supply_after_smallest_burn,
 					max_supply_scaled,
 					vec![max_supply_scaled; currency_length],
 				)
@@ -493,6 +503,7 @@ pub mod pallet {
 					allow_reset_team,
 					denomination,
 					min_operation_balance,
+					max_supply,
 					deposit_amount,
 				)),
 			);
@@ -762,6 +773,7 @@ pub mod pallet {
 				min_operation_balance,
 				denomination,
 				transferable,
+				max_supply,
 				..
 			} = pool_details.currencies_settings;
 
@@ -781,6 +793,16 @@ pub mod pallet {
 			let target_currency_id = bonded_currencies
 				.get(currency_idx)
 				.ok_or(Error::<T>::IndexOutOfBounds)?;
+
+			// Ensure that the total supply of the target currency does not exceed the
+			// maximum supply
+			ensure!(
+				T::Fungibles::total_issuance(target_currency_id.clone())
+					.checked_add(&amount_to_mint)
+					.and_then(|final_supply| (final_supply <= max_supply).then_some(()))
+					.is_some(),
+				Error::<T>::AboveMaximum
+			);
 
 			let round_kind = Round::Up;
 

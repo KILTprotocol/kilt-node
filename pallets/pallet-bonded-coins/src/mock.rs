@@ -126,6 +126,7 @@ pub mod runtime {
 				transferable,
 				min_operation_balance,
 				denomination: DEFAULT_BONDED_DENOMINATION,
+				max_supply: u128::MAX,
 			},
 			owner,
 			deposit: BondingPallet::calculate_pool_deposit(currencies.len()),

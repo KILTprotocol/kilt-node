@@ -63,6 +63,7 @@ fn burn_first_coin() {
 					allow_reset_team: true,
 					denomination: 0,
 					min_operation_balance: 1,
+					max_supply: u128::MAX,
 				},
 				owner: ACCOUNT_99,
 				deposit: BondingPallet::calculate_pool_deposit(1),
