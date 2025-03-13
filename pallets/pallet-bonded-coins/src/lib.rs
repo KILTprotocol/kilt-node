@@ -505,8 +505,13 @@ pub mod pallet {
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
+			let CurrencySettings {
+				enable_asset_management,
+				..
+			} = pool_details.currency_settings;
+
 			ensure!(
-				pool_details.currency_settings.enable_asset_management && pool_details.is_manager(&who),
+				enable_asset_management && pool_details.is_manager(&who),
 				Error::<T>::NoPermission
 			);
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
@@ -713,8 +718,15 @@ pub mod pallet {
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
+			let CurrencySettings {
+				min_operation_balance,
+				denomination,
+				transferable,
+				..
+			} = pool_details.currency_settings;
+
 			ensure!(
-				amount_to_mint >= pool_details.currency_settings.min_operation_balance.saturated_into(),
+				amount_to_mint >= min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -734,16 +746,13 @@ pub mod pallet {
 
 			let (active_pre, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
-				pool_details.currency_settings.denomination,
+				denomination,
 				currency_idx,
 				round_kind,
 			)?;
 
-			let normalized_amount_to_mint = balance_to_fixed(
-				amount_to_mint.saturated_into::<u128>(),
-				pool_details.currency_settings.denomination,
-				round_kind,
-			)?;
+			let normalized_amount_to_mint =
+				balance_to_fixed(amount_to_mint.saturated_into::<u128>(), denomination, round_kind)?;
 
 			let active_post = active_pre
 				.checked_add(normalized_amount_to_mint)
@@ -774,7 +783,7 @@ pub mod pallet {
 
 			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
 
-			if !pool_details.currency_settings.transferable {
+			if !transferable {
 				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
 					freeze_error.into()
@@ -842,8 +851,15 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
+			let CurrencySettings {
+				min_operation_balance,
+				denomination,
+				transferable,
+				..
+			} = pool_details.currency_settings;
+
 			ensure!(
-				amount_to_burn >= pool_details.currency_settings.min_operation_balance.saturated_into(),
+				amount_to_burn >= min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -864,13 +880,12 @@ pub mod pallet {
 
 			let (high, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
-				pool_details.currency_settings.denomination,
+				denomination,
 				currency_idx,
 				round_kind,
 			)?;
 
-			let normalized_amount_to_burn =
-				balance_to_fixed(amount_to_burn, pool_details.currency_settings.denomination, round_kind)?;
+			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, denomination, round_kind)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -916,7 +931,7 @@ pub mod pallet {
 
 			let account_exists = T::Fungibles::total_balance(target_currency_id.clone(), &who) > Zero::zero();
 
-			if !pool_details.currency_settings.transferable && account_exists {
+			if !transferable && account_exists {
 				// Restore locks.
 				T::Fungibles::freeze(target_currency_id, &who).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
