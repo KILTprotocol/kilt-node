@@ -22,8 +22,7 @@ use pallet_bonded_coins::{
 	curves::{
 		balance_to_fixed, fixed_to_balance, lmsr::LMSRParameters, polynomial::PolynomialParameters,
 		square_root::SquareRootParameters, BondingFunction, Curve,
-	},
-	PoolDetailsOf, Pools, Round,
+	}, PoolDetailsOf, Pools, Round,
 };
 use pallet_bonded_coins_runtime_api::{
 	BondedCurrencyDetails, Coefficient, CollateralDetails, PoolDetailsOf as PoolDetails,
@@ -521,7 +520,8 @@ impl_runtime_apis! {
 			high: Balance,
 		) -> Result<Balance, BondedCurrencyError> {
 			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
-			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, denomination, collateral, .. } = pool;
+			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, currencies_settings, collateral, .. } = pool;
+			let denomination = currencies_settings.denomination;
 			let currency_id = bonded_currencies.get(currency_idx.saturated_into::<usize>()).ok_or(BondedCurrencyError::CurrencyNotFound)?;
 
 			let collateral_denomination = NativeAndForeignAssets::decimals(collateral);
@@ -578,15 +578,13 @@ impl_runtime_apis! {
 			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
 			let PoolDetailsOf::<Runtime> {
 				curve,
+				currencies_settings,
 				bonded_currencies,
 				owner,
 				collateral,
-				denomination,
 				deposit,
-				min_operation_balance,
 				manager,
 				state,
-				transferable,
 			} = pool;
 
 			let currencies = bonded_currencies.iter().map(|currency_id| -> Result<BondedCurrencyDetails<BondedAssetId, Balance>, BondedCurrencyError> {
@@ -629,12 +627,10 @@ impl_runtime_apis! {
 				curve: fmt_curve,
 				collateral: collateral_details,
 				owner,
-				denomination,
 				deposit,
-				min_operation_balance,
 				manager,
 				state,
-				transferable,
+				currencies_settings
 			})
 		}
 

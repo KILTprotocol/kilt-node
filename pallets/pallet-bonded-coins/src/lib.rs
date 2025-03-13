@@ -36,7 +36,7 @@ mod types;
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarking::BenchmarkHelper;
 
-pub use types::{PoolDetails, Round};
+pub use types::{BondedCurrenciesSettings, PoolDetails, Round};
 
 pub use default_weights::WeightInfo;
 
