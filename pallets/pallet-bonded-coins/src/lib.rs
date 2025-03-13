@@ -190,7 +190,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type BaseDeposit: Get<DepositBalanceOf<Self>>;
 
-		/// The origin for most permissionless and priviledged operations.
+		/// The origin for most permissionless and privileged operations.
 		type DefaultOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The dedicated origin for creating new bonded currency pools
 		/// (typically permissionless).
@@ -340,9 +340,15 @@ pub mod pallet {
 		/// - `currencies`: A bounded vector of token metadata for the bonded
 		///   currencies. Note that no two currencies may use the same name or
 		///   symbol.
-		/// - `denomination`: The denomination for the bonded currencies.
-		/// - `transferable`: A boolean indicating if the bonded currencies are
-		///   transferable.
+		/// - `currencies_settings`: Options and settings shared by all bonded
+		///   currencies. These cannot be changed after the pool is created.
+		///   - `denomination`: The denomination for the bonded currencies.
+		///   - `transferable`: A boolean indicating if the bonded currencies
+		///     are transferable.
+		///   - `allow_reset_team`: Whether asset management team changes are
+		///     allowed for this pool.
+		///   - `min_operation_balance`: The minimum amount that can be
+		///     minted/burnt.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
@@ -485,8 +491,9 @@ pub mod pallet {
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
-		///   pool.
+		/// - `Error::<T>::NoPermission`: If this pool does not allow changing
+		///   the asset management team, or if the caller is not a manager of
+		///   the pool.
 		/// - `Error::<T>::CurrencyCount`: If the actual number of currencies in
 		///   the pool is larger than `currency_count`.
 		/// - Other errors depending on the types in the config.

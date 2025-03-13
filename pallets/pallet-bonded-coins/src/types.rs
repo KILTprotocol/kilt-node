@@ -82,11 +82,11 @@ impl<LockType> PoolStatus<LockType> {
 pub struct BondedCurrenciesSettings {
 	/// The minimum amount that can be minted/burnt.
 	pub min_operation_balance: u128,
-	/// The denomination of the pool.
+	/// The denomination of all bonded assets the pool.
 	pub denomination: u8,
-	/// Whether asset management changes are allowed.
+	/// Whether asset management team changes are allowed.
 	pub allow_reset_team: bool,
-	/// Whether the pool is transferable or not.
+	/// Whether assets are transferable or not.
 	pub transferable: bool,
 }
 
@@ -95,7 +95,7 @@ pub struct BondedCurrenciesSettings {
 pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, SharedSettings> {
 	/// The owner of the pool.
 	pub owner: AccountId,
-	/// The manager of the pool. If a manager is set, the pool is permissioned.
+	/// The manager of the pool, who can execute privileged transactions.
 	pub manager: Option<AccountId>,
 	/// The curve of the pool.
 	pub curve: ParametrizedCurve,
@@ -105,7 +105,7 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId,
 	pub bonded_currencies: Currencies,
 	/// The status of the pool.
 	pub state: PoolStatus<Locks>,
-
+	/// Shared settings of the currencies in the pool.
 	pub currencies_settings: SharedSettings,
 	/// The deposit to be returned upon destruction of this pool.
 	pub deposit: DepositBalance,
