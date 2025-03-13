@@ -27,7 +27,7 @@ use sp_runtime::{assert_eq_error_rate, bounded_vec, traits::Scale, TokenError};
 
 use crate::{
 	mock::{runtime::*, *},
-	types::{CurrencySettings, Locks, PoolStatus},
+	types::{BondedCurrenciesSettings, Locks, PoolStatus},
 	AccountIdOf, Error, PoolDetailsOf,
 };
 
@@ -58,9 +58,9 @@ fn burn_first_coin() {
 				bonded_currencies: bounded_vec![DEFAULT_BONDED_CURRENCY_ID],
 				state: PoolStatus::Active,
 				collateral: DEFAULT_COLLATERAL_CURRENCY_ID,
-				currency_settings: CurrencySettings {
+				currencies_settings: BondedCurrenciesSettings {
 					transferable: true,
-					enable_asset_management: true,
+					allow_reset_team: true,
 					denomination: 0,
 					min_operation_balance: 1,
 				},

@@ -93,7 +93,7 @@ pub mod pallet {
 	use crate::{
 		curves::{balance_to_fixed, fixed_to_balance, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, NextAssetIds, ResetTeam},
-		types::{CurrencySettings, Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
+		types::{BondedCurrenciesSettings, Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
 	};
 
@@ -131,7 +131,7 @@ pub mod pallet {
 		BoundedCurrencyVec<T>,
 		CollateralAssetIdOf<T>,
 		DepositBalanceOf<T>,
-		CurrencySettings,
+		BondedCurrenciesSettings,
 	>;
 
 	/// Minimum required amount of integer and fractional bits to perform ln,
@@ -368,16 +368,16 @@ pub mod pallet {
 			curve: CurveInput<CurveParameterInputOf<T>>,
 			collateral_id: CollateralAssetIdOf<T>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool>,
-			currency_settings: CurrencySettings,
+			currencies_settings: BondedCurrenciesSettings,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 
-			let CurrencySettings {
+			let BondedCurrenciesSettings {
 				denomination,
 				transferable,
-				enable_asset_management,
+				allow_reset_team,
 				min_operation_balance,
-			} = currency_settings;
+			} = currencies_settings;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
 			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
@@ -456,7 +456,7 @@ pub mod pallet {
 					collateral_id,
 					currency_ids,
 					transferable,
-					enable_asset_management,
+					allow_reset_team,
 					denomination,
 					min_operation_balance,
 					deposit_amount,
@@ -505,13 +505,10 @@ pub mod pallet {
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
-			let CurrencySettings {
-				enable_asset_management,
-				..
-			} = pool_details.currency_settings;
+			let BondedCurrenciesSettings { allow_reset_team, .. } = pool_details.currencies_settings;
 
 			ensure!(
-				enable_asset_management && pool_details.is_manager(&who),
+				allow_reset_team && pool_details.is_manager(&who),
 				Error::<T>::NoPermission
 			);
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
@@ -718,12 +715,12 @@ pub mod pallet {
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
-			let CurrencySettings {
+			let BondedCurrenciesSettings {
 				min_operation_balance,
 				denomination,
 				transferable,
 				..
-			} = pool_details.currency_settings;
+			} = pool_details.currencies_settings;
 
 			ensure!(
 				amount_to_mint >= min_operation_balance.saturated_into(),
@@ -851,12 +848,12 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			let CurrencySettings {
+			let BondedCurrenciesSettings {
 				min_operation_balance,
 				denomination,
 				transferable,
 				..
-			} = pool_details.currency_settings;
+			} = pool_details.currencies_settings;
 
 			ensure!(
 				amount_to_burn >= min_operation_balance.saturated_into(),

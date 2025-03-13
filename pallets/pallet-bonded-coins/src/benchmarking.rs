@@ -32,7 +32,7 @@ use crate::{
 		square_root::{SquareRootParameters, SquareRootParametersInput},
 		Curve, CurveInput,
 	},
-	types::CurrencySettings,
+	types::BondedCurrenciesSettings,
 	Call, CollateralAssetIdOf, CollateralBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf,
 	FungiblesBalanceOf, Pallet,
 };
@@ -231,10 +231,10 @@ mod benchmarks {
 			state,
 			collateral,
 			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids.clone()),
-			currency_settings: CurrencySettings {
+			currencies_settings: BondedCurrenciesSettings {
 				denomination,
 				transferable: true,
-				enable_asset_management: true,
+				allow_reset_team: true,
 				min_operation_balance: 1u128.saturated_into(),
 			},
 			deposit: Pallet::<T>::calculate_pool_deposit(bonded_coin_ids.len()),
@@ -276,9 +276,9 @@ mod benchmarks {
 			curve,
 			collateral_id,
 			currencies,
-			CurrencySettings {
+			BondedCurrenciesSettings {
 				denomination: 10,
-				enable_asset_management: true,
+				allow_reset_team: true,
 				transferable: true,
 				min_operation_balance: 1,
 			},
@@ -317,9 +317,9 @@ mod benchmarks {
 			curve,
 			collateral_id,
 			currencies,
-			CurrencySettings {
+			BondedCurrenciesSettings {
 				denomination: 10,
-				enable_asset_management: true,
+				allow_reset_team: true,
 				transferable: true,
 				min_operation_balance: 1,
 			},
@@ -357,9 +357,9 @@ mod benchmarks {
 			curve,
 			collateral_id,
 			currencies,
-			CurrencySettings {
+			BondedCurrenciesSettings {
 				denomination: 10,
-				enable_asset_management: true,
+				allow_reset_team: true,
 				transferable: true,
 				min_operation_balance: 1,
 			},

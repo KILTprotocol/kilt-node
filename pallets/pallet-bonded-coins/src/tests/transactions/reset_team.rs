@@ -262,7 +262,7 @@ fn fails_if_asset_team_flag_not_set() {
 		Some(ACCOUNT_00),
 		None,
 	);
-	pool_details.currency_settings.enable_asset_management = false;
+	pool_details.currencies_settings.allow_reset_team = false;
 	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
 	ExtBuilder::default()
 		.with_pools(vec![(pool_id.clone(), pool_details)])

@@ -79,21 +79,20 @@ impl<LockType> PoolStatus<LockType> {
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
-pub struct CurrencySettings {
+pub struct BondedCurrenciesSettings {
 	/// The minimum amount that can be minted/burnt.
 	pub min_operation_balance: u128,
 	/// The denomination of the pool.
 	pub denomination: u8,
 	/// Whether asset management changes are allowed.
-	pub enable_asset_management: bool,
+	pub allow_reset_team: bool,
 	/// Whether the pool is transferable or not.
 	pub transferable: bool,
 }
 
 /// Details of a pool.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
-pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, BondedCurrencySettings>
-{
+pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, SharedSettings> {
 	/// The owner of the pool.
 	pub owner: AccountId,
 	/// The manager of the pool. If a manager is set, the pool is permissioned.
@@ -107,13 +106,13 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId,
 	/// The status of the pool.
 	pub state: PoolStatus<Locks>,
 
-	pub currency_settings: BondedCurrencySettings,
+	pub currencies_settings: SharedSettings,
 	/// The deposit to be returned upon destruction of this pool.
 	pub deposit: DepositBalance,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance>
-	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, CurrencySettings>
+	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, BondedCurrenciesSettings>
 where
 	AccountId: PartialEq + Clone,
 {
@@ -125,7 +124,7 @@ where
 		collateral: BaseCurrencyId,
 		bonded_currencies: Currencies,
 		transferable: bool,
-		enable_asset_management: bool,
+		allow_reset_team: bool,
 		denomination: u8,
 		min_operation_balance: u128,
 		deposit: DepositBalance,
@@ -136,9 +135,9 @@ where
 			curve,
 			collateral,
 			bonded_currencies,
-			currency_settings: CurrencySettings {
+			currencies_settings: BondedCurrenciesSettings {
 				transferable,
-				enable_asset_management,
+				allow_reset_team,
 				denomination,
 				min_operation_balance,
 			},
