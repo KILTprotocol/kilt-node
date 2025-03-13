@@ -59,10 +59,8 @@ fn resets_team() {
 			System::assert_has_event(
 				Event::TeamChanged {
 					id: pool_id.clone(),
-					team: PoolManagingTeam {
-						admin: ACCOUNT_00,
-						freezer: ACCOUNT_01,
-					},
+					admin: ACCOUNT_00,
+					freezer: ACCOUNT_01,
 				}
 				.into(),
 			);
@@ -122,10 +120,8 @@ fn resets_owner_if_changed() {
 			System::assert_has_event(
 				Event::TeamChanged {
 					id: pool_id.clone(),
-					team: PoolManagingTeam {
-						admin: pool_id.clone(),
-						freezer: pool_id.clone(),
-					},
+					admin: pool_id.clone(),
+					freezer: pool_id.clone(),
 				}
 				.into(),
 			);
@@ -173,10 +169,8 @@ fn resets_team_for_all() {
 			System::assert_has_event(
 				Event::TeamChanged {
 					id: pool_id.clone(),
-					team: PoolManagingTeam {
-						admin: ACCOUNT_00,
-						freezer: ACCOUNT_01,
-					},
+					admin: ACCOUNT_00,
+					freezer: ACCOUNT_01,
 				}
 				.into(),
 			);

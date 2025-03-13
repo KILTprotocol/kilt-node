@@ -282,7 +282,8 @@ pub mod pallet {
 		/// The asset managing team of a pool has been reset.
 		TeamChanged {
 			id: T::PoolId,
-			team: PoolManagingTeam<T::AccountId>,
+			admin: T::AccountId,
+			freezer: T::AccountId,
 		},
 	}
 
@@ -508,7 +509,7 @@ pub mod pallet {
 
 			let pool_id_account = pool_id.clone().into();
 
-			let PoolManagingTeam { ref freezer, ref admin } = team;
+			let PoolManagingTeam { freezer, admin } = team;
 
 			pool_details.bonded_currencies.into_iter().try_for_each(|asset_id| {
 				T::Fungibles::reset_team(
@@ -520,7 +521,11 @@ pub mod pallet {
 				)
 			})?;
 
-			Self::deposit_event(Event::TeamChanged { id: pool_id, team });
+			Self::deposit_event(Event::TeamChanged {
+				id: pool_id,
+				admin,
+				freezer,
+			});
 
 			Ok(())
 		}
