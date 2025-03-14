@@ -279,6 +279,12 @@ pub mod pallet {
 			id: T::PoolId,
 			manager: Option<T::AccountId>,
 		},
+		/// The asset managing team of a pool has been reset.
+		TeamChanged {
+			id: T::PoolId,
+			admin: T::AccountId,
+			freezer: T::AccountId,
+		},
 	}
 
 	#[pallet::error]
@@ -501,7 +507,7 @@ pub mod pallet {
 			ensure!(pool_details.is_manager(&who), Error::<T>::NoPermission);
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
-			let pool_id_account = pool_id.into();
+			let pool_id_account = pool_id.clone().into();
 
 			let PoolManagingTeam { freezer, admin } = team;
 
@@ -513,7 +519,15 @@ pub mod pallet {
 					pool_id_account.clone(),
 					freezer.clone(),
 				)
-			})
+			})?;
+
+			Self::deposit_event(Event::TeamChanged {
+				id: pool_id,
+				admin,
+				freezer,
+			});
+
+			Ok(())
 		}
 
 		/// Resets the manager of a pool. The new manager will be set to the
