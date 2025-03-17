@@ -22,7 +22,8 @@ use pallet_bonded_coins::{
 	curves::{
 		balance_to_fixed, fixed_to_balance, lmsr::LMSRParameters, polynomial::PolynomialParameters,
 		square_root::SquareRootParameters, BondingFunction, Curve,
-	}, PoolDetailsOf, Pools, Round,
+	},
+	PoolDetailsOf, Pools, Round,
 };
 use pallet_bonded_coins_runtime_api::{
 	BondedCurrencyDetails, Coefficient, CollateralDetails, PoolDetailsOf as PoolDetails,
