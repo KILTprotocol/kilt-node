@@ -413,7 +413,7 @@ pub mod pallet {
 				balance_to_fixed(max_supply, denomination, Round::Up).map_err(|_| Error::<T>::InvalidInput)?;
 			let max_supply_after_smallest_burn = balance_to_fixed(
 				max_supply
-					.checked_sub(&min_operation_balance)
+					.checked_sub(&min_operation_balance.max(1u128.saturated_into()))
 					.ok_or(Error::<T>::InvalidInput)?,
 				denomination,
 				Round::Up,
