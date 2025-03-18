@@ -69,7 +69,7 @@ pub mod runtime {
 	use crate::{
 		self as pallet_bonded_coins,
 		traits::NextAssetIds,
-		types::{Locks, PoolStatus},
+		types::{BondedCurrenciesSettings, Locks, PoolStatus},
 		AccountIdOf, Config, DepositBalanceOf, FungiblesAssetIdOf, FungiblesBalanceOf, PoolDetailsOf,
 	};
 
@@ -118,13 +118,16 @@ pub mod runtime {
 		PoolDetailsOf::<Test> {
 			curve,
 			manager,
-			transferable,
 			bonded_currencies,
 			state,
 			collateral,
-			denomination: DEFAULT_BONDED_DENOMINATION,
+			currencies_settings: BondedCurrenciesSettings {
+				allow_reset_team: true,
+				transferable,
+				min_operation_balance,
+				denomination: DEFAULT_BONDED_DENOMINATION,
+			},
 			owner,
-			min_operation_balance,
 			deposit: BondingPallet::calculate_pool_deposit(currencies.len()),
 		}
 	}
@@ -446,7 +449,7 @@ pub mod runtime {
 						pool_details
 							.bonded_currencies
 							.iter()
-							.map(|id| (*id, vec![], vec![], pool_details.denomination))
+							.map(|id| (*id, vec![], vec![], pool_details.currencies_settings.denomination))
 							.collect::<Vec<(u32, Vec<u8>, Vec<u8>, u8)>>()
 					})
 					.chain(

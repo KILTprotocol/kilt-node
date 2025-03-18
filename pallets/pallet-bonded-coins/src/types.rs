@@ -78,12 +78,24 @@ impl<LockType> PoolStatus<LockType> {
 	}
 }
 
+#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
+pub struct BondedCurrenciesSettings {
+	/// The minimum amount that can be minted/burnt.
+	pub min_operation_balance: u128,
+	/// The denomination of all bonded assets the pool.
+	pub denomination: u8,
+	/// Whether asset management team changes are allowed.
+	pub allow_reset_team: bool,
+	/// Whether assets are transferable or not.
+	pub transferable: bool,
+}
+
 /// Details of a pool.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
-pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance> {
+pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, SharedSettings> {
 	/// The owner of the pool.
 	pub owner: AccountId,
-	/// The manager of the pool. If a manager is set, the pool is permissioned.
+	/// The manager of the pool, who can execute privileged transactions.
 	pub manager: Option<AccountId>,
 	/// The curve of the pool.
 	pub curve: ParametrizedCurve,
@@ -93,18 +105,14 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId,
 	pub bonded_currencies: Currencies,
 	/// The status of the pool.
 	pub state: PoolStatus<Locks>,
-	/// Whether the pool is transferable or not.
-	pub transferable: bool,
-	/// The denomination of the pool.
-	pub denomination: u8,
-	/// The minimum amount that can be minted/burnt.
-	pub min_operation_balance: u128,
+	/// Shared settings of the currencies in the pool.
+	pub currencies_settings: SharedSettings,
 	/// The deposit to be returned upon destruction of this pool.
 	pub deposit: DepositBalance,
 }
 
 impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance>
-	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance>
+	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, BondedCurrenciesSettings>
 where
 	AccountId: PartialEq + Clone,
 {
@@ -116,6 +124,7 @@ where
 		collateral: BaseCurrencyId,
 		bonded_currencies: Currencies,
 		transferable: bool,
+		allow_reset_team: bool,
 		denomination: u8,
 		min_operation_balance: u128,
 		deposit: DepositBalance,
@@ -126,10 +135,13 @@ where
 			curve,
 			collateral,
 			bonded_currencies,
-			transferable,
+			currencies_settings: BondedCurrenciesSettings {
+				transferable,
+				allow_reset_team,
+				denomination,
+				min_operation_balance,
+			},
 			state: PoolStatus::default(),
-			denomination,
-			min_operation_balance,
 			deposit,
 		}
 	}

@@ -36,7 +36,7 @@ mod types;
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarking::BenchmarkHelper;
 
-pub use types::{PoolDetails, Round};
+pub use types::{BondedCurrenciesSettings, PoolDetails, Round};
 
 pub use default_weights::WeightInfo;
 
@@ -93,9 +93,12 @@ pub mod pallet {
 	use crate::{
 		curves::{balance_to_fixed, fixed_to_balance, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, NextAssetIds, ResetTeam},
-		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
+		types::{BondedCurrenciesSettings, Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
 	};
+
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub(crate) type AccountIdLookupOf<T> =
 		<<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -131,6 +134,7 @@ pub mod pallet {
 		BoundedCurrencyVec<T>,
 		CollateralAssetIdOf<T>,
 		DepositBalanceOf<T>,
+		BondedCurrenciesSettings,
 	>;
 
 	/// Minimum required amount of integer and fractional bits to perform ln,
@@ -189,7 +193,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type BaseDeposit: Get<DepositBalanceOf<Self>>;
 
-		/// The origin for most permissionless and priviledged operations.
+		/// The origin for most permissionless and privileged operations.
 		type DefaultOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The dedicated origin for creating new bonded currency pools
 		/// (typically permissionless).
@@ -227,6 +231,7 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]
@@ -345,9 +350,15 @@ pub mod pallet {
 		/// - `currencies`: A bounded vector of token metadata for the bonded
 		///   currencies. Note that no two currencies may use the same name or
 		///   symbol.
-		/// - `denomination`: The denomination for the bonded currencies.
-		/// - `transferable`: A boolean indicating if the bonded currencies are
-		///   transferable.
+		/// - `currencies_settings`: Options and settings shared by all bonded
+		///   currencies. These cannot be changed after the pool is created.
+		///   - `denomination`: The denomination for the bonded currencies.
+		///   - `transferable`: A boolean indicating if the bonded currencies
+		///     are transferable.
+		///   - `allow_reset_team`: Whether asset management team changes are
+		///     allowed for this pool.
+		///   - `min_operation_balance`: The minimum amount that can be
+		///     minted/burnt.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
@@ -373,11 +384,16 @@ pub mod pallet {
 			curve: CurveInput<CurveParameterInputOf<T>>,
 			collateral_id: CollateralAssetIdOf<T>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool>,
-			denomination: u8,
-			transferable: bool,
-			min_operation_balance: u128,
+			currencies_settings: BondedCurrenciesSettings,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+
+			let BondedCurrenciesSettings {
+				denomination,
+				transferable,
+				allow_reset_team,
+				min_operation_balance,
+			} = currencies_settings;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
 			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
@@ -456,6 +472,7 @@ pub mod pallet {
 					collateral_id,
 					currency_ids,
 					transferable,
+					allow_reset_team,
 					denomination,
 					min_operation_balance,
 					deposit_amount,
@@ -484,8 +501,9 @@ pub mod pallet {
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
-		///   pool.
+		/// - `Error::<T>::NoPermission`: If this pool does not allow changing
+		///   the asset management team, or if the caller is not a manager of
+		///   the pool.
 		/// - `Error::<T>::CurrencyCount`: If the actual number of currencies in
 		///   the pool is larger than `currency_count`.
 		/// - Other errors depending on the types in the config.
@@ -504,7 +522,12 @@ pub mod pallet {
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
-			ensure!(pool_details.is_manager(&who), Error::<T>::NoPermission);
+			let BondedCurrenciesSettings { allow_reset_team, .. } = pool_details.currencies_settings;
+
+			ensure!(
+				allow_reset_team && pool_details.is_manager(&who),
+				Error::<T>::NoPermission
+			);
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
 			let pool_id_account = pool_id.clone().into();
@@ -717,8 +740,15 @@ pub mod pallet {
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
+			let BondedCurrenciesSettings {
+				min_operation_balance,
+				denomination,
+				transferable,
+				..
+			} = pool_details.currencies_settings;
+
 			ensure!(
-				amount_to_mint >= pool_details.min_operation_balance.saturated_into(),
+				amount_to_mint >= min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -738,16 +768,13 @@ pub mod pallet {
 
 			let (active_pre, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
-				pool_details.denomination,
+				denomination,
 				currency_idx,
 				round_kind,
 			)?;
 
-			let normalized_amount_to_mint = balance_to_fixed(
-				amount_to_mint.saturated_into::<u128>(),
-				pool_details.denomination,
-				round_kind,
-			)?;
+			let normalized_amount_to_mint =
+				balance_to_fixed(amount_to_mint.saturated_into::<u128>(), denomination, round_kind)?;
 
 			let active_post = active_pre
 				.checked_add(normalized_amount_to_mint)
@@ -778,7 +805,7 @@ pub mod pallet {
 
 			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
 
-			if !pool_details.transferable {
+			if !transferable {
 				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
 					freeze_error.into()
@@ -846,8 +873,15 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
+			let BondedCurrenciesSettings {
+				min_operation_balance,
+				denomination,
+				transferable,
+				..
+			} = pool_details.currencies_settings;
+
 			ensure!(
-				amount_to_burn >= pool_details.min_operation_balance.saturated_into(),
+				amount_to_burn >= min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -868,12 +902,12 @@ pub mod pallet {
 
 			let (high, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
-				pool_details.denomination,
+				denomination,
 				currency_idx,
 				round_kind,
 			)?;
 
-			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, round_kind)?;
+			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, denomination, round_kind)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -919,7 +953,7 @@ pub mod pallet {
 
 			let account_exists = T::Fungibles::total_balance(target_currency_id.clone(), &who) > Zero::zero();
 
-			if !pool_details.transferable && account_exists {
+			if !transferable && account_exists {
 				// Restore locks.
 				T::Fungibles::freeze(target_currency_id, &who).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);

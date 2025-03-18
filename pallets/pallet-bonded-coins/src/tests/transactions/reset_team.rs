@@ -279,6 +279,46 @@ fn only_manager_can_change_team() {
 }
 
 #[test]
+fn fails_if_asset_team_flag_not_set() {
+	let curve = get_linear_bonding_curve();
+
+	let mut pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		curve,
+		false,
+		Some(PoolStatus::Active),
+		Some(ACCOUNT_00),
+		None,
+		Some(ACCOUNT_00),
+		None,
+	);
+	pool_details.currencies_settings.allow_reset_team = false;
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+	ExtBuilder::default()
+		.with_pools(vec![(pool_id.clone(), pool_details)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build_and_execute_with_sanity_tests(|| {
+			let manager_origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_err!(
+				BondingPallet::reset_team(
+					manager_origin,
+					pool_id.clone(),
+					PoolManagingTeam {
+						admin: ACCOUNT_00,
+						freezer: ACCOUNT_00,
+					},
+					1
+				),
+				BondingPalletErrors::<Test>::NoPermission
+			);
+
+			assert_eq!(Assets::admin(DEFAULT_BONDED_CURRENCY_ID), Some(pool_id));
+		})
+}
+
+#[test]
 fn handles_currency_number_incorrect() {
 	let pool_details = generate_pool_details(
 		vec![DEFAULT_BONDED_CURRENCY_ID],

@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use pallet_bonded_coins::{curves::Curve, PoolDetails};
+use pallet_bonded_coins::{curves::Curve, BondedCurrenciesSettings, PoolDetails};
 use parity_scale_codec::{alloc::string::String, Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -28,8 +28,14 @@ pub type CurveOf = Curve<String>;
 pub type CurrenciesOf<AssetId, Balance> = Vec<BondedCurrencyDetails<AssetId, Balance>>;
 
 /// Human readable pool details.
-pub type PoolDetailsOf<AccountId, Balance, AssetId, CollateralAssetId> =
-	PoolDetails<AccountId, CurveOf, CurrenciesOf<AssetId, Balance>, CollateralDetails<CollateralAssetId>, Balance>;
+pub type PoolDetailsOf<AccountId, Balance, AssetId, CollateralAssetId> = PoolDetails<
+	AccountId,
+	CurveOf,
+	CurrenciesOf<AssetId, Balance>,
+	CollateralDetails<CollateralAssetId>,
+	Balance,
+	BondedCurrenciesSettings,
+>;
 
 /// Collateral currency details used for the runtime API.
 #[derive(Decode, Encode, TypeInfo)]

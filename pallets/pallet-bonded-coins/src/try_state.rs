@@ -18,7 +18,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 			owner,
 			bonded_currencies,
 			state,
-			denomination,
+			currencies_settings,
 			..
 		} = pool_details;
 
@@ -61,7 +61,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 					// The Currency in the fungibles pallet should always match with the
 					// denomination stored in the pool.
 					let currency_denomination = T::Fungibles::decimals(currency_id.clone());
-					assert_eq!(currency_denomination, denomination);
+					assert_eq!(currency_denomination, currencies_settings.denomination);
 
 					// if currency has on-zero supply -> collateral in pool account must be
 					// non-zero.

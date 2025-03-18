@@ -28,7 +28,7 @@ use sp_std::ops::Sub;
 
 use crate::{
 	mock::{runtime::*, *},
-	types::{Locks, PoolStatus},
+	types::{BondedCurrenciesSettings, Locks, PoolStatus},
 	AccountIdOf, Error, Event as BondingPalletEvents, Pools, TokenMetaOf,
 };
 
@@ -55,9 +55,12 @@ fn single_currency() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bounded_vec![bonded_token],
-				DEFAULT_BONDED_DENOMINATION,
-				true,
-				1,
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				},
 			));
 
 			let pool_id: AccountIdOf<Test> = calculate_pool_id(&[new_asset_id]);
@@ -66,7 +69,7 @@ fn single_currency() {
 
 			assert!(details.is_owner(&ACCOUNT_00));
 			assert!(details.is_manager(&ACCOUNT_00));
-			assert!(details.transferable);
+			assert!(details.currencies_settings.transferable);
 			assert_eq!(
 				details.state,
 				PoolStatus::Locked(Locks {
@@ -74,7 +77,7 @@ fn single_currency() {
 					allow_burn: false,
 				})
 			);
-			assert_eq!(details.denomination, DEFAULT_BONDED_DENOMINATION);
+			assert_eq!(details.currencies_settings.denomination, DEFAULT_BONDED_DENOMINATION);
 			assert_eq!(details.collateral, DEFAULT_COLLATERAL_CURRENCY_ID);
 			assert_eq!(details.bonded_currencies, vec![new_asset_id]);
 
@@ -137,9 +140,12 @@ fn multi_currency() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bonded_tokens,
-				DEFAULT_BONDED_DENOMINATION,
-				true,
-				1
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				}
 			));
 
 			assert_eq!(NextAssetId::<BondingPallet>::get(), next_asset_id + 3);
@@ -188,9 +194,12 @@ fn multi_currency_with_empty_metadata() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bonded_tokens,
-				DEFAULT_BONDED_DENOMINATION,
-				true,
-				1
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				}
 			));
 
 			assert_eq!(NextAssetId::<BondingPallet>::get(), next_asset_id + 3);
@@ -238,9 +247,12 @@ fn can_create_identical_pools() {
 				curve.clone(),
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bounded_vec![bonded_token.clone()],
-				DEFAULT_BONDED_DENOMINATION,
-				true,
-				1
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				}
 			));
 
 			assert_ok!(BondingPallet::create_pool(
@@ -248,9 +260,12 @@ fn can_create_identical_pools() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bounded_vec![bonded_token],
-				DEFAULT_BONDED_DENOMINATION,
-				true,
-				1
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				}
 			));
 
 			assert_eq!(NextAssetId::<BondingPallet>::get(), next_asset_id + 2);
@@ -302,9 +317,12 @@ fn cannot_reuse_names() {
 					curve,
 					DEFAULT_COLLATERAL_CURRENCY_ID,
 					bonded_tokens,
-					DEFAULT_BONDED_DENOMINATION,
-					true,
-					1
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
 				),
 				Error::<Test>::InvalidInput
 			);
@@ -345,9 +363,12 @@ fn cannot_reuse_symbols() {
 					curve,
 					DEFAULT_COLLATERAL_CURRENCY_ID,
 					bonded_tokens,
-					DEFAULT_BONDED_DENOMINATION,
-					true,
-					1
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
 				),
 				Error::<Test>::InvalidInput
 			);
@@ -374,9 +395,12 @@ fn fails_if_collateral_not_exists() {
 					curve,
 					100,
 					bounded_vec![bonded_token],
-					DEFAULT_BONDED_DENOMINATION,
-					true,
-					1
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
 				),
 				AssetsPalletErrors::<Test>::Unknown
 			);
@@ -406,9 +430,12 @@ fn cannot_create_circular_pool() {
 					// try specifying the id of the currency to be created as collateral
 					next_asset_id,
 					bounded_vec![bonded_token],
-					DEFAULT_BONDED_DENOMINATION,
-					true,
-					1
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
 				),
 				AssetsPalletErrors::<Test>::Unknown
 			);
@@ -439,9 +466,12 @@ fn handles_asset_id_overflow() {
 					curve,
 					DEFAULT_COLLATERAL_CURRENCY_ID,
 					bounded_vec![bonded_token; 2],
-					DEFAULT_BONDED_DENOMINATION,
-					true,
-					1
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
 				),
 				ArithmeticError::Overflow
 			);
