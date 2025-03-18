@@ -11,13 +11,6 @@ This pallet provides functionality to:
 - Burn tokens to release collateral.
 - Manage the lifecycle of currency pools, including refunding and destroying pools.
 
-### Rounding 
-
-Rounding issues are a problem and cannot be completely avoided due to the nature of limited resources on a computer, resulting in a lack of representation for irrational numbers. 
-This pallet cannot guarantee mathematically exact calculations. 
-However, it can guarantee the reproducibility of the same result based on the usage of [fixed-point][fixed-point] numbers. 
-
-
 ## Key Concepts
 
 ### Bonding Curve
@@ -235,6 +228,94 @@ Unprivileged pools where bonded currency supplies are non-zero thus cannot be pu
 
 The pallet implements several transactions, prefixed with `force_*`, that are restricted to use by a ‘force’-origin. This origin can be configured differently in each chain/runtime this pallet is integrated into, but is assumed to be the blockchain’s governing body which can also decide on runtime upgrades and thus has unlimited control over blockchain state and state transition functions.  
 The transactions `force_start_refund` & `force_start_destroy` are designed to allow the forced closure of pools, which may be necessary, e.g., because of inactive accounts preventing purge of a pool which is otherwise unused, or because the pool has been found to be involved in illegitimate activities.  
+
+## Known Limitations
+
+### Rounding 
+
+Rounding issues are a problem and cannot be completely avoided due to the nature of limited resources on a computer, resulting in a lack of representation for irrational numbers. 
+This pallet cannot guarantee mathematically exact calculations. 
+However, it can guarantee the reproducibility of the same result based on the usage of [fixed-point][fixed-point] numbers. 
+
+### Numerical Overflow
+
+Working with fixed precision numerical representations imposes limits on the supply of bonded tokens that can exist, as well as on the amount that can be burnt or minted at once. These boundaries depend on multiple factors, including the data types chosen for representing balances in the pallets and in the bonding curves module, the denominations of collateral and bonded tokens, and the chosen curve and parameters.
+
+The following types of boundaries related to numerical overflow of token amounts exist in the system:
+
+#### Limits independent of curve- and parameter choice
+
+##### **Limited total supply due to capacity of assets pallet / fungibles balance type**
+
+Bonded coin balances are stored in an external pallet implementing the Fungibles interfaces defined in [`frame_support::traits::tokens::fungibles`](https://docs.rs/frame-support/35.0.0/frame_support/traits/tokens/fungibles/index.html). The size of the integer type used to represent balances limits the maximum balance that can be stored for any given bonded currency. And because the same type is used for representing the total supply of this asset, this limit applies to the sum of all balances as well.
+
+*Example:*   
+The u128 integer type frequently used to store balances in polkadot imposes a maximum supply of 2128 \= 3.40 \* 10³⁸.
+
+##### **Limited total supply due to capacity of bonding curves module parameter type**
+
+The bonding curves module uses fixed-precision fractional numbers for cost calculations. To do so, total supplies received from the Fungibles implementation are scaled by their denomination to account for the typically reduced whole-number capacity of fixed-precision fractionals compared to integer types. Depending on the choice of denomination for a pool, this limit may still be magnitudes lower than the limit imposed by the capacity of the balance (integer) type.
+
+*Example:*
+[Using a fixed-point number with a maximum value of 274 and a denomination of 15, overflow would occur for any total supply \>= 274 \* 1015 \= 1.89 \* 10³⁷, which is still an order of magnitude below the capacity of a u128.
+
+#### Limits depending on curve- and parameter choice
+
+##### **LMSR**
+
+The following boundaries apply to all currencies in a pool, at all times. If these are violated either before or as a consequence of a mint or burn the operation will fail.
+
+supply \+ m × ln(N) \<= MAX(coefficient)  
+and  
+(min \- supply) / m \>= MIN(coefficient)  
+and  
+(supply \- max) / m \>= MIN(coefficient)
+
+where  
+*supply \= the token’s supply, scaled by its denomination*  
+*max \= largest supply in the pool’s set of bonded currencies*  
+*min \= smallest supply in the pool’s set of bonded currencies*   
+*m \= liquidity parameter m*  
+*N \= number of bonded currencies*  
+*MAX(coefficient) \= Maximum value for fixed precision number type; e.g., around 274 for a signed type with 75 integer bits.*  
+*MIN(coefficient) \= Minimum value for fixed precision number type; e.g., \-274 for a signed type with 75 integer bits.*
+
+##### **Polynomial**
+
+This type of curve sums up the supply of all bonded coins in a pool, so limits apply to their sum.
+
+Due to the curve’s exponential nature, minting large amounts at once can lead to very high cost, possibly overflowing the fixed precision number type. In scenarios where users hold large amounts of collateral that exceed the limit of the fixed type (as the collateral balance type is likely to have a larger capacity), minting in multiple increments may work.
+
+For very low amounts minted (-\> lim(0)) the following limits hold:
+
+total \<= MAX(coefficient)  
+and  
+3m x total^2 \+ 2n x total \+ o \<= MAX(coefficient)  
+and  
+3 x total^2 \<= MAX(coefficient) IF m \> 0  
+and  
+2 x total \<= MAX(coefficient) IF n \> 0  
+   
+where   
+*total \= the sum of all token’s supplies, scaled by their denomination*  
+*m \= curve coefficient m*  
+*n \= curve coefficient n*  
+*o \= curve coefficient o*  
+*MAX(coefficient) \= Maximum value for fixed precision number type; e.g., around 274 for a signed type with 75 integer bits.*
+
+##### **Square Root**
+
+As for the polynomial, this type of curve sums up the supply of all bonded coins in a pool, so limits apply to their sum.
+
+The following limits apply, beyond cost limits given by the capacity of the fixed precision type: 
+
+total \<= MAX(coefficient)   
+and  
+total^(3/2) \<= MAX(coefficient)
+
+where   
+*total \= the sum of all token’s supplies, scaled by their denomination*  
+*MAX(coefficient) \= Maximum value for fixed precision number type; e.g., around 274 for a signed type with 75 integer bits.*
 
 [bonding-curve]: ./src/curves/mod.rs
 [pool-details]: ./src/types.rs
