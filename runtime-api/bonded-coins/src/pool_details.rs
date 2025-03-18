@@ -34,7 +34,7 @@ pub type PoolDetailsOf<AccountId, Balance, AssetId, CollateralAssetId> = PoolDet
 	CurrenciesOf<AssetId, Balance>,
 	CollateralDetails<CollateralAssetId>,
 	Balance,
-	BondedCurrenciesSettings,
+	BondedCurrenciesSettings<Balance>,
 >;
 
 /// Collateral currency details used for the runtime API.
