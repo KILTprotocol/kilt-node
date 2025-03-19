@@ -1180,15 +1180,16 @@ pub mod pallet {
 					Error::<T>::Internal
 				})?;
 
-			if amount.is_zero()
-				|| T::Collaterals::can_deposit(pool_details.collateral.clone(), &who, amount, Provenance::Extant)
-					== DepositConsequence::BelowMinimum
-			{
+			let deposit_consequence =
+				T::Collaterals::can_deposit(pool_details.collateral.clone(), &who, amount, Provenance::Extant);
+			if amount.is_zero() || deposit_consequence == DepositConsequence::BelowMinimum {
 				// Funds are burnt but the collateral received is not sufficient to be deposited
 				// to the account. This is tolerated as otherwise we could have edge cases where
 				// it's impossible to refund at least some accounts.
 				return Ok(Some(T::WeightInfo::refund_account(currency_count.to_owned())).into());
 			}
+			// Return error if not Success
+			deposit_consequence.into_result()?;
 
 			let transferred = T::Collaterals::transfer(
 				pool_details.collateral,
