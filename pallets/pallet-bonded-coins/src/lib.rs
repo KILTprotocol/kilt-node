@@ -20,6 +20,8 @@
 
 pub use pallet::*;
 
+pub mod migrations;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
