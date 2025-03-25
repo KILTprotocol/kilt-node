@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Withdraw Asset > Hydration -> KILT DEV > receiver events {"section":"system","method":"NewAccount"} 1`] = `
+[
+  {
+    "data": {
+      "account": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
+    },
+    "method": "NewAccount",
+    "section": "system",
+  },
+]
+`;
+
+exports[`Withdraw Asset > Hydration -> KILT live > receiver events {"section":"system","method":"NewAccount"} 1`] = `
+[
+  {
+    "data": {
+      "account": "4rsmbFBYpVmWE2LHRsSZKxf22a8cbJLxMZqvVGkGkSDmDBcr",
+    },
+    "method": "NewAccount",
+    "section": "system",
+  },
+]
+`;

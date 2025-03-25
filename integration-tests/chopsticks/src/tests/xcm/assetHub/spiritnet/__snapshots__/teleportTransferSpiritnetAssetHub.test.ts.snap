@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`Teleport assets from Spiritnet Account Alice -> AH Account Alice 1`] = `[RpcError: 1010: {"invalid":{"exhaustsResources":null}}]`;
