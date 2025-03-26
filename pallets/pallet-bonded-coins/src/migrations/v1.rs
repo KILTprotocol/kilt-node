@@ -16,6 +16,8 @@ use crate::{
 	DepositBalanceOf, FungiblesBalanceOf,
 };
 
+const LOG_TARGET: &str = "migration::pallet-bonded-coins";
+
 /// Collection of storage item formats from the previous storage version.
 ///
 /// Required so we can read values in the v0 storage format during the
@@ -144,6 +146,8 @@ impl<T: crate::Config> OnRuntimeUpgrade for InnerMigrateV0ToV1<T> {
 			"the pool count before and after the migration should be the same"
 		);
 
+		log::info!(target: LOG_TARGET, "Migrated {} pool entries", post_count);
+
 		old_values.into_iter().try_for_each(|(pool_id, old_value)| {
 			let expected_new_value = v0_to_v1::<T>(old_value);
 			let actual_new_value = crate::Pools::<T>::get(&pool_id);
@@ -163,3 +167,11 @@ impl<T: crate::Config> OnRuntimeUpgrade for InnerMigrateV0ToV1<T> {
 		})
 	}
 }
+
+pub type MigrateV0ToV1<T> = frame_support::migrations::VersionedMigration<
+	0, // The migration will only execute when the on-chain storage version is 0
+	1, // The on-chain storage version will be set to 1 after the migration is complete
+	InnerMigrateV0ToV1<T>,
+	crate::pallet::Pallet<T>,
+	<T as frame_system::Config>::DbWeight,
+>;
