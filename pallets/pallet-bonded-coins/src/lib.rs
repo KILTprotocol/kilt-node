@@ -128,13 +128,15 @@ pub mod pallet {
 
 	pub(crate) type CurveParameterInputOf<T> = <T as Config>::CurveParameterInput;
 
+	pub(crate) type BondedCurrenciesSettingsOf<T> = BondedCurrenciesSettings<FungiblesBalanceOf<T>>;
+
 	pub type PoolDetailsOf<T> = PoolDetails<
 		<T as frame_system::Config>::AccountId,
 		Curve<CurveParameterTypeOf<T>>,
 		BoundedCurrencyVec<T>,
 		CollateralAssetIdOf<T>,
 		DepositBalanceOf<T>,
-		BondedCurrenciesSettings,
+		BondedCurrenciesSettingsOf<T>,
 	>;
 
 	/// Minimum required amount of integer and fractional bits to perform ln,
@@ -384,7 +386,7 @@ pub mod pallet {
 			curve: CurveInput<CurveParameterInputOf<T>>,
 			collateral_id: CollateralAssetIdOf<T>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool>,
-			currencies_settings: BondedCurrenciesSettings,
+			currencies_settings: BondedCurrenciesSettingsOf<T>,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
 

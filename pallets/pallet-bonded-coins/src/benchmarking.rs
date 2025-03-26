@@ -280,7 +280,7 @@ mod benchmarks {
 				denomination: 10,
 				allow_reset_team: true,
 				transferable: true,
-				min_operation_balance: 1,
+				min_operation_balance: 1u128.saturated_into(),
 			},
 		);
 
@@ -321,7 +321,7 @@ mod benchmarks {
 				denomination: 10,
 				allow_reset_team: true,
 				transferable: true,
-				min_operation_balance: 1,
+				min_operation_balance: 1u128.saturated_into(),
 			},
 		);
 
@@ -361,7 +361,7 @@ mod benchmarks {
 				denomination: 10,
 				allow_reset_team: true,
 				transferable: true,
-				min_operation_balance: 1,
+				min_operation_balance: 1u128.saturated_into(),
 			},
 		);
 

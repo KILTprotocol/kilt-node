@@ -78,10 +78,10 @@ impl<LockType> PoolStatus<LockType> {
 	}
 }
 
-#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
-pub struct BondedCurrenciesSettings {
+#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug, Default)]
+pub struct BondedCurrenciesSettings<FungiblesBalance> {
 	/// The minimum amount that can be minted/burnt.
-	pub min_operation_balance: u128,
+	pub min_operation_balance: FungiblesBalance,
 	/// The denomination of all bonded assets the pool.
 	pub denomination: u8,
 	/// Whether asset management team changes are allowed.
@@ -111,9 +111,15 @@ pub struct PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId,
 	pub deposit: DepositBalance,
 }
 
-impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance>
-	PoolDetails<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, BondedCurrenciesSettings>
-where
+impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, FungiblesBalance>
+	PoolDetails<
+		AccountId,
+		ParametrizedCurve,
+		Currencies,
+		BaseCurrencyId,
+		DepositBalance,
+		BondedCurrenciesSettings<FungiblesBalance>,
+	> where
 	AccountId: PartialEq + Clone,
 {
 	#[allow(clippy::too_many_arguments)]
@@ -126,7 +132,7 @@ where
 		transferable: bool,
 		allow_reset_team: bool,
 		denomination: u8,
-		min_operation_balance: u128,
+		min_operation_balance: FungiblesBalance,
 		deposit: DepositBalance,
 	) -> Self {
 		Self {
