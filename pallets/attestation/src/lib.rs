@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 //! # Attestation Pallet
 //!
@@ -226,26 +226,26 @@ pub mod pallet {
 		},
 		/// An attestation has been revoked.
 		AttestationRevoked {
-			/// Who authorized the revocation of the attestation.
-			authorized_by: AuthorizedByOf<T>,
 			/// The attester who initially created the attestation.
 			attester: AttesterOf<T>,
-			/// The ctype of the attested credential.
-			ctype_hash: CtypeHashOf<T>,
 			/// The claim hash of the credential that is revoked.
 			claim_hash: ClaimHashOf<T>,
+			/// The ctype of the attested credential.
+			ctype_hash: CtypeHashOf<T>,
+			/// Who authorized the revocation of the attestation.
+			authorized_by: AuthorizedByOf<T>,
 		},
 		/// An attestation has been removed.
 		AttestationRemoved {
-			/// Who authorized the deletion of the attestation.
-			authorized_by: AuthorizedByOf<T>,
 			/// The attester who initially created the attestation.
 			attester: AttesterOf<T>,
-			/// The ctype of the attested credential.
-			ctype_hash: CtypeHashOf<T>,
 			/// The claim hash of the credential for which the attestation entry
 			/// was deleted.
 			claim_hash: ClaimHashOf<T>,
+			/// The ctype of the attested credential.
+			ctype_hash: CtypeHashOf<T>,
+			/// Who authorized the deletion of the attestation.
+			authorized_by: AuthorizedByOf<T>,
 		},
 		/// The deposit for an attestation has changed owner.
 		DepositOwnerChanged {

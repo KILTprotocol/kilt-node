@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use pallet_bonded_coins::Round;
 use parity_scale_codec::{alloc::string::String, Codec, Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -71,6 +72,7 @@ sp_api::decl_runtime_apis! {
 				currency_idx: u8,
 				low: Balance,
 				high: Balance,
+				rounding: Round
 			) -> Result<Balance, Error>;
 
 			/// Query all pool IDs where the given account is the manager.

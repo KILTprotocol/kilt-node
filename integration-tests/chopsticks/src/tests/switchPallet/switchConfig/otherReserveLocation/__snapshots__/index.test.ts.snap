@@ -1,0 +1,123 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Switch other reserve location > V4 LIVE > Switch eKILTs from untrusted location receiver: {"section":"messageQueue","method":"ProcessingFailed"} 1`] = `
+[
+  {
+    "data": {
+      "error": "Unsupported",
+      "id": "(hash)",
+      "origin": "Parent",
+    },
+    "method": "ProcessingFailed",
+    "section": "messageQueue",
+  },
+]
+`;
+
+exports[`Switch other reserve location > V4 LIVE > Switch eKILTs from untrusted location sender: {"section":"xcmPallet","method":"Sent"} 1`] = `
+[
+  {
+    "data": {
+      "destination": {
+        "interior": {
+          "X1": [
+            {
+              "Parachain": "(rounded 2100)",
+            },
+          ],
+        },
+        "parents": 0,
+      },
+      "message": [
+        {
+          "ReserveAssetDeposited": [
+            {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X2": [
+                    {
+                      "GlobalConsensus": {
+                        "Ethereum": {
+                          "chainId": 1,
+                        },
+                      },
+                    },
+                    {
+                      "AccountKey20": {
+                        "key": "0x5d3d01fd6d2ad1169b17918eb4f153c6616288eb",
+                        "network": null,
+                      },
+                    },
+                  ],
+                },
+                "parents": 2,
+              },
+            },
+          ],
+        },
+        "ClearOrigin",
+        {
+          "BuyExecution": {
+            "fees": {
+              "fun": {
+                "Fungible": 1000000000000000,
+              },
+              "id": {
+                "interior": {
+                  "X2": [
+                    {
+                      "GlobalConsensus": {
+                        "Ethereum": {
+                          "chainId": 1,
+                        },
+                      },
+                    },
+                    {
+                      "AccountKey20": {
+                        "key": "0x5d3d01fd6d2ad1169b17918eb4f153c6616288eb",
+                        "network": null,
+                      },
+                    },
+                  ],
+                },
+                "parents": 2,
+              },
+            },
+            "weightLimit": "Unlimited",
+          },
+        },
+        {
+          "DepositAsset": {
+            "assets": {
+              "Wild": "All",
+            },
+            "beneficiary": {
+              "interior": {
+                "X1": [
+                  {
+                    "AccountId32": {
+                      "id": "(hash)",
+                      "network": null,
+                    },
+                  },
+                ],
+              },
+              "parents": 0,
+            },
+          },
+        },
+      ],
+      "messageId": "(hash)",
+      "origin": {
+        "interior": "Here",
+        "parents": 0,
+      },
+    },
+    "method": "Sent",
+    "section": "xcmPallet",
+  },
+]
+`;

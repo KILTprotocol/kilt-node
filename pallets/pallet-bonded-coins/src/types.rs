@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
@@ -198,7 +198,7 @@ pub struct PoolManagingTeam<AccountId> {
 }
 
 /// Enum, to specify the rounding direction.
-#[derive(PartialEq, Clone, Copy, Eq)]
+#[derive(PartialEq, Clone, Copy, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum Round {
 	/// Round up.
 	Up,

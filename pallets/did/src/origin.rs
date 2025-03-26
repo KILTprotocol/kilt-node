@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 use frame_support::traits::{EnsureOrigin, EnsureOriginWithArg};
 use kilt_support::traits::CallSources;
@@ -49,7 +49,32 @@ impl<DidIdentifier: Clone, AccountId: Clone> CallSources<AccountId, DidIdentifie
 	}
 }
 
-pub struct EnsureDidOrigin<DidIdentifier, AccountId, ExpectedSubmitter = ()>(
+/// Flag for which entity is authorised to submit DID-authenticated
+/// transactions.
+pub enum AuthorisedSubmitter<AccountId> {
+	/// Nobody.
+	None,
+	/// Everyone (i.e., permissionless).
+	Everyone,
+	/// The specified account.
+	One(AccountId),
+}
+
+impl<AccountId> From<AccountId> for AuthorisedSubmitter<AccountId> {
+	fn from(value: AccountId) -> Self {
+		Self::One(value)
+	}
+}
+
+pub struct Everyone;
+
+impl<AccountId> Get<AuthorisedSubmitter<AccountId>> for Everyone {
+	fn get() -> AuthorisedSubmitter<AccountId> {
+		AuthorisedSubmitter::Everyone
+	}
+}
+
+pub struct EnsureDidOrigin<DidIdentifier, AccountId, ExpectedSubmitter = Everyone>(
 	PhantomData<(DidIdentifier, AccountId, ExpectedSubmitter)>,
 );
 
@@ -61,17 +86,16 @@ where
 		+ Clone,
 	DidIdentifier: From<AccountId>,
 	AccountId: Clone + Decode + PartialEq,
-	ExpectedSubmitter: Get<Option<AccountId>>,
+	ExpectedSubmitter: Get<AuthorisedSubmitter<AccountId>>,
 {
 	type Success = DidRawOrigin<DidIdentifier, AccountId>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
 		let did_raw_origin = o.clone().into()?;
-		// Origin check succeeds if no authorized account is configured, or if the one
-		// configured matches the tx submitter. Fails otherwise.
 		match ExpectedSubmitter::get() {
-			None => Ok(did_raw_origin),
-			Some(authorised_submitter) if authorised_submitter == did_raw_origin.submitter => Ok(did_raw_origin),
+			AuthorisedSubmitter::Everyone => Ok(did_raw_origin),
+			AuthorisedSubmitter::One(authorised) if authorised == did_raw_origin.submitter => Ok(did_raw_origin),
+			// If either `None` or the wrong account, fail.
 			_ => Err(o),
 		}
 	}

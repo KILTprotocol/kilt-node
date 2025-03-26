@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 //! # DID Pallet
 //!
@@ -88,6 +88,7 @@ pub mod errors;
 pub mod migrations;
 pub mod origin;
 pub mod service_endpoints;
+pub mod traits;
 
 #[cfg(test)]
 mod mock;
@@ -171,6 +172,7 @@ pub mod pallet {
 			DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey, RelationshipDeriveError,
 		},
 		service_endpoints::{utils as service_endpoints_utils, ServiceEndpointId},
+		traits::{DidDeletionHook, DidLifecycleHooks},
 	};
 
 	/// The current storage version.
@@ -328,6 +330,10 @@ pub mod pallet {
 
 		/// Migration manager to handle new created entries
 		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
+
+		/// Runtime-injected logic to be called at each stage of a DID's
+		/// lifecycle.
+		type DidLifecycleHooks: DidLifecycleHooks<Self>;
 	}
 
 	#[pallet::pallet]
@@ -455,6 +461,9 @@ pub mod pallet {
 		/// The number of service endpoints stored under the DID is larger than
 		/// the number of endpoints to delete.
 		MaxStoredEndpointsCountExceeded,
+		/// The DID cannot be deleted because the runtime logic returned an
+		/// error.
+		CannotDelete,
 		/// An error that is not supposed to take place, yet it happened.
 		Internal,
 	}
@@ -1002,7 +1011,7 @@ pub mod pallet {
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
 		#[pallet::call_index(11)]
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit(*endpoints_to_remove))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete(*endpoints_to_remove))]
 		pub fn reclaim_deposit(
 			origin: OriginFor<T>,
 			did_subject: DidIdentifierOf<T>,
@@ -1511,6 +1520,16 @@ pub mod pallet {
 
 			// `take` calls `kill` internally
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
+
+			// Make sure this check happens after the line where we check if a DID exists,
+			// else we would start getting `CannotDelete` errors when we should be getting
+			// `NotFound`.
+			ensure!(
+				<<T::DidLifecycleHooks as DidLifecycleHooks<T>>::DeletionHook as DidDeletionHook<T>>::can_delete(
+					&did_subject,
+				),
+				Error::<T>::CannotDelete
+			);
 
 			DidEndpointsCount::<T>::remove(&did_subject);
 

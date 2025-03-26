@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 //! The KILT runtime. This can be compiled with `#[no_std]`, ready for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -33,6 +33,7 @@ use core::str;
 
 // Polkadot-sdk crates
 use cumulus_pallet_parachain_system::register_validate_block;
+use frame_metadata_hash_extension::CheckMetadataHash;
 use frame_support::construct_runtime;
 use frame_system::{
 	ChainContext, CheckEra, CheckGenesis, CheckNonZeroSender, CheckNonce, CheckSpecVersion, CheckTxVersion, CheckWeight,
@@ -50,7 +51,7 @@ use runtime_common::{constants, fees::WeightToFee, Address, Signature};
 
 mod governance;
 mod kilt;
-pub use kilt::{DotName, Web3Name};
+pub use kilt::Web3Name;
 mod migrations;
 pub use migrations::RuntimeMigrations;
 mod parachain;
@@ -77,7 +78,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 11500,
+	spec_version: 11600,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSION,
 	transaction_version: 8,
@@ -163,8 +164,8 @@ construct_runtime! {
 		Migration: pallet_migration = 70,
 		DipProvider: pallet_dip_provider = 71,
 		DepositStorage: pallet_deposit_storage = 72,
-		DotNames: pallet_web3_names::<Instance2> = 73,
-		UniqueLinking: pallet_did_lookup::<Instance2> = 74,
+		// DELETED: DotNames: pallet_web3_names::<Instance2> = 73,
+		// DELETED: UniqueLinking: pallet_did_lookup::<Instance2> = 74,
 		BondedCurrencies: pallet_bonded_coins = 75,
 
 		// Parachains pallets. Start indices at 80 to leave room.
@@ -217,4 +218,5 @@ pub type SignedExtra = (
 	CheckNonce<Runtime>,
 	CheckWeight<Runtime>,
 	ChargeTransactionPayment<Runtime>,
+	CheckMetadataHash<Runtime>,
 );

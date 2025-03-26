@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 use frame_support::traits::InstanceFilter;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -72,7 +72,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					| RuntimeCall::Did(..)
 					| RuntimeCall::DidLookup(..)
 					| RuntimeCall::DipProvider(..)
-					| RuntimeCall::DotNames(..)
 					| RuntimeCall::Indices(
 						// Excludes `force_transfer`, and `transfer`
 						pallet_indices::Call::claim { .. }
@@ -93,7 +92,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					| RuntimeCall::TipsMembership(..)
 					| RuntimeCall::Timestamp(..)
 					| RuntimeCall::Treasury(..)
-					| RuntimeCall::UniqueLinking(..)
 					| RuntimeCall::Utility(..)
 					| RuntimeCall::Vesting(
 						// Excludes `force_vested_transfer`, `merge_schedules`, and `vested_transfer`
@@ -155,14 +153,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| RuntimeCall::DipProvider(..)
-					| RuntimeCall::DotNames(
-						// Excludes `ban`, and `reclaim_deposit`
-						pallet_web3_names::Call::claim { .. }
-							| pallet_web3_names::Call::release_by_owner { .. }
-							| pallet_web3_names::Call::unban { .. }
-							| pallet_web3_names::Call::update_deposit { .. }
-							| pallet_web3_names::Call::change_deposit_owner { .. }
-					)
 					| RuntimeCall::Indices(..)
 					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
@@ -186,15 +176,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					| RuntimeCall::TipsMembership(..)
 					| RuntimeCall::Timestamp(..)
 					| RuntimeCall::Treasury(..)
-					| RuntimeCall::UniqueLinking(
-						// Excludes `reclaim_deposit`
-						pallet_did_lookup::Call::associate_account { .. }
-							| pallet_did_lookup::Call::associate_sender { .. }
-							| pallet_did_lookup::Call::remove_account_association { .. }
-							| pallet_did_lookup::Call::remove_sender_association { .. }
-							| pallet_did_lookup::Call::update_deposit { .. }
-							| pallet_did_lookup::Call::change_deposit_owner { .. }
-					)
 					| RuntimeCall::Utility(..)
 					| RuntimeCall::Vesting(..)
 					| RuntimeCall::Web3Names(

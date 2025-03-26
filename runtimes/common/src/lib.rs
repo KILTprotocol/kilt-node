@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -49,9 +49,8 @@ pub mod authorization;
 pub mod bonded_coins;
 pub mod constants;
 pub mod deposits;
+pub mod did;
 pub mod dip;
-pub mod dot_names;
-pub use dot_names::DotName;
 pub mod errors;
 pub mod fees;
 pub mod migrations;

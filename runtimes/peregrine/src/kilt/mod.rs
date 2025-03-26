@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 use frame_support::{parameter_types, traits::AsEnsureOriginWithArg};
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
@@ -45,8 +45,7 @@ use crate::{
 
 pub(crate) mod credential;
 pub(crate) mod did;
-pub(crate) use did::UniqueLinkingDeployment;
-pub use did::{DotName, Web3Name};
+pub use did::Web3Name;
 pub(crate) mod dip;
 pub use dip::{DipProofError, DipProofRequest};
 
@@ -196,9 +195,9 @@ impl pallet_bonded_coins::Config for Runtime {
 
 pub(crate) type BondedFungiblesInstance = pallet_assets::Instance2;
 impl pallet_assets::Config<BondedFungiblesInstance> for Runtime {
-	type ApprovalDeposit = constants::assets::ApprovalDeposit;
-	type AssetAccountDeposit = constants::assets::AssetAccountDeposit;
-	type AssetDeposit = constants::assets::AssetDeposit;
+	type ApprovalDeposit = ConstU128<{ constants::bonded_assets::APPROVAL_DEPOSIT }>;
+	type AssetAccountDeposit = ConstU128<{ constants::bonded_assets::ASSET_ACCOUNT_DEPOSIT }>;
+	type AssetDeposit = ConstU128<{ constants::bonded_assets::ASSET_DEPOSIT }>;
 	type AssetId = AssetId;
 	type AssetIdParameter = AssetId;
 	type Balance = Balance;
@@ -208,11 +207,11 @@ impl pallet_assets::Config<BondedFungiblesInstance> for Runtime {
 	type Extra = ();
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type Freezer = ();
-	type MetadataDepositBase = constants::assets::MetaDepositBase;
-	type MetadataDepositPerByte = constants::assets::MetaDepositPerByte;
-	type RemoveItemsLimit = constants::assets::RemoveItemsLimit;
+	type MetadataDepositBase = ConstU128<{ constants::bonded_assets::META_DEPOSIT_BASE }>;
+	type MetadataDepositPerByte = ConstU128<{ constants::bonded_assets::META_DEPOSIT_PER_BYTE }>;
+	type RemoveItemsLimit = ConstU32<{ constants::bonded_assets::REMOVE_ITEMS_LIMIT }>;
 	type RuntimeEvent = RuntimeEvent;
-	type StringLimit = constants::assets::StringLimit;
+	type StringLimit = ConstU32<{ constants::bonded_assets::STRING_LIMIT }>;
 	type WeightInfo = weights::pallet_bonded_assets::WeightInfo<Runtime>;
 
 	#[cfg(feature = "runtime-benchmarks")]

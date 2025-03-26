@@ -1,138 +1,49 @@
-import { ExpectStatic } from 'vitest'
-import { setTimeout } from 'timers/promises'
-import { u8aToHex } from '@polkadot/util'
-import { decodeAddress } from '@polkadot/util-crypto'
+import { SetupConfig } from '@acala-network/chopsticks-testing'
 
-import { Config } from '../network/types.js'
-import {
-	getCurrentBlockNumber,
-	getFreeBalancePeregrine,
-	getFreeBalancePeregrineAt,
-	getFreeEkiltAssetHub,
-	peregrineContext,
-} from './index.js'
-import * as PeregrineConfig from '../network/peregrine.js'
+import { createBlock, scheduleTx, setStorage, setupNetwork, shutDownNetwork } from '../network/utils.js'
+import { BasicConfig } from './types.js'
 
-/// Creates a new block for the given context
-export async function createBlock(context: Config) {
-	// fixes api runtime disconnect warning
-	await setTimeout(50)
-	await context.dev.newBlock()
-}
+export async function spinUpNetwork({ network }: BasicConfig) {
+	const { parachains, relay } = network
+	const parachainOptions = parachains.map((parachain) => parachain.option)
+	const { parachainContexts, relayChainContext } = await setupNetwork(relay.option, parachainOptions)
 
-/// sets the storage for the given context.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function setStorage(context: Config, storage: { [key: string]: any }) {
-	await context.dev.setStorage(storage)
-	await createBlock(context)
-}
-
-/// checks the balance of an account and expects it to be the given amount
-export async function checkBalance(
-	getFreeBalanceFunction: (account: string) => Promise<bigint>,
-	account: string,
-	expect: ExpectStatic,
-	expectedAmount = BigInt(0)
-) {
-	const balance = await getFreeBalanceFunction(account)
-	expect(balance).eq(BigInt(expectedAmount))
-}
-
-/// checks the balance of an account and expects it to be in the given range
-export async function checkBalanceInRange(
-	getFreeBalanceFunction: (account: string) => Promise<bigint>,
-	account: string,
-	expect: ExpectStatic,
-	expectedRange: [bigint, bigint]
-) {
-	const balance = await getFreeBalanceFunction(account)
-	expect(balance >= expectedRange[0])
-	expect(balance <= expectedRange[1])
-}
-
-export function hexAddress(addr: string) {
-	return u8aToHex(decodeAddress(addr))
-}
-
-export function getXcmMessageV4ToSendEkilt(address: string) {
-	return {
-		V4: [
-			{
-				DepositAsset: {
-					assets: { Wild: 'All' },
-					beneficiary: {
-						parents: 0,
-						interior: {
-							X1: [
-								{
-									AccountId32: {
-										id: hexAddress(address),
-									},
-								},
-							],
-						},
-					},
-				},
-			},
-		],
-	}
-}
-
-// Delta represents the amount of trapped assets on the KILT side
-export async function checkSwitchPalletInvariant(expect: ExpectStatic, deltaStoredSovereignSupply = BigInt(0)) {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const switchPairInfo: any = await peregrineContext.api.query.assetSwitchPool1.switchPair()
-	if (switchPairInfo.isNone) {
-		return
-	}
-
-	// check pool account balance
-	const switchPoolAccount = switchPairInfo.unwrap().poolAccount
-
-	const poolAccountBalance = await getFreeBalancePeregrine(switchPoolAccount)
-
-	const sovereignEKiltSupply = await getFreeEkiltAssetHub(PeregrineConfig.sovereignAccountAsSibling)
-
-	const remoteAssetSovereignTotalBalance = switchPairInfo.unwrap().remoteAssetSovereignTotalBalance.toBigInt()
-	const remoteAssetCirculatingSupply = switchPairInfo.unwrap().remoteAssetCirculatingSupply.toBigInt()
-	const remoteAssetTotalSupply = switchPairInfo.unwrap().remoteAssetTotalSupply.toBigInt()
-
-	const lockedBalanceFromTotalAndCirculating = remoteAssetTotalSupply - remoteAssetCirculatingSupply
-
-	// Check pool account has enough funds to cover the circulating supply
-
-	expect(poolAccountBalance).toBe(remoteAssetCirculatingSupply)
-	expect(remoteAssetSovereignTotalBalance).toBe(lockedBalanceFromTotalAndCirculating)
-	expect(sovereignEKiltSupply).toBe(remoteAssetSovereignTotalBalance + deltaStoredSovereignSupply)
-}
-
-export async function checkBalanceMovementIncomingSwitch(
-	transferredBalance: bigint,
-	expect: ExpectStatic,
-	receiver: string,
-	deltaBlockNumber = 1
-) {
-	const currentBlockNumber = await getCurrentBlockNumber(peregrineContext)
-
-	// the inital balance before the incoming switch
-	const initialBalanceTreasury = await getFreeBalancePeregrineAt(
-		PeregrineConfig.treasuryAccount,
-		currentBlockNumber - deltaBlockNumber
+	await setStorage(relayChainContext, relay.storage)
+	await Promise.all(
+		relay.setUpTx.map(async (tx) => {
+			const rawTx = tx(relayChainContext)
+			await scheduleTx(relayChainContext, rawTx.method.toHex())
+			await createBlock(relayChainContext)
+		})
 	)
-	const initialBalanceReciver = await getFreeBalancePeregrineAt(receiver, currentBlockNumber - deltaBlockNumber)
 
-	// Current balance
-	const currentBalanceReciever = await getFreeBalancePeregrine(receiver)
-	const currentBalanceTreasury = await getFreeBalancePeregrine(PeregrineConfig.treasuryAccount)
+	await Promise.all(
+		parachains.map(async (parachain, index) => {
+			// fetch the right context
+			const currentContext = parachainContexts[index]
+			// set the storage
+			await setStorage(currentContext, parachain.storage)
 
-	// deltas of the balance between receiver and treasury
-	const deltaReceivedBalance = currentBalanceReciever - initialBalanceReciver
+			// schedule txs.
+			await Promise.all(
+				parachain.setUpTx.map(async (tx) => {
+					const rawTx = tx(currentContext)
+					await scheduleTx(currentContext, rawTx.method.toHex())
+					await createBlock(currentContext)
+				})
+			)
+		})
+	)
 
-	// remove staking rewards
-	const deltaTreasuryBalance =
-		currentBalanceTreasury -
-		initialBalanceTreasury -
-		PeregrineConfig.parachainStakingRewards * BigInt(deltaBlockNumber)
+	return { parachainContexts, relayChainContext }
+}
 
-	expect(deltaReceivedBalance + deltaTreasuryBalance).toBe(transferredBalance)
+export async function tearDownNetwork(chains: SetupConfig[]) {
+	try {
+		await shutDownNetwork(chains)
+	} catch (error) {
+		if (!(error instanceof TypeError)) {
+			console.error(error)
+		}
+	}
 }

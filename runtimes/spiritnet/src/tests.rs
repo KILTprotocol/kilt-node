@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 use frame_support::{traits::Currency, BoundedVec};
 use pallet_dip_provider::IdentityCommitmentOf;
@@ -37,8 +37,6 @@ use runtime_common::{
 	dip::deposit::DepositKey,
 	AccountId, BlockNumber,
 };
-
-use crate::kilt::did::DotNamesDeployment;
 
 use super::{Runtime, RuntimeCall};
 
@@ -101,17 +99,6 @@ fn web3_name_storage_sizes() {
 	assert_eq!(
 		owner_size + name_size,
 		runtime_common::constants::web3_names::MAX_NAME_BYTE_LENGTH as usize
-	)
-}
-
-#[test]
-fn dot_name_storage_sizes() {
-	let owner_size = Web3NameOf::<Runtime, DotNamesDeployment>::max_encoded_len();
-	let name_size = Web3OwnershipOf::<Runtime, DotNamesDeployment>::max_encoded_len();
-
-	assert_eq!(
-		owner_size + name_size,
-		runtime_common::constants::dot_names::MAX_NAME_BYTE_LENGTH as usize
 	)
 }
 

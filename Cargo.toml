@@ -21,7 +21,7 @@ homepage      = "https://kilt.io/"
 license-file  = "LICENSE"
 readme        = "README.md"
 repository    = "https://github.com/KILTprotocol/kilt-node"
-version       = "1.15.0-dev"
+version       = "1.16.0-dev"
 
 [workspace.dependencies]
 # Build deps
@@ -90,7 +90,6 @@ kilt-runtime-api-public-credentials = { path = "runtime-api/public-credentials",
 kilt-runtime-api-staking            = { path = "runtime-api/staking", default-features = false }
 pallet-asset-switch-runtime-api     = { path = "runtime-api/asset-switch", default-features = false }
 pallet-bonded-coins-runtime-api     = { path = "runtime-api/bonded-coins", default-features = false }
-unique-linking-runtime-api          = { path = "runtime-api/unique-linking", default-features = false }
 
 # Internal KILT runtimes (with default disabled)
 kestrel-runtime   = { path = "runtimes/kestrel", default-features = false }
@@ -134,6 +133,7 @@ xcm-emulator                      = { git = "https://github.com/paritytech/polka
 frame-benchmarking                         = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-benchmarking-cli                     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-executive                            = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+frame-metadata-hash-extension              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-support                              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-system                               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-system-rpc-runtime-api               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
