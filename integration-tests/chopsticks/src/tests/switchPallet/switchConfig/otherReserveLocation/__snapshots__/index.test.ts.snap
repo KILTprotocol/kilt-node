@@ -1,19 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch other reserve location > V4 LIVE > Switch eKILTs from untrusted location receiver: {"section":"messageQueue","method":"ProcessingFailed"} 1`] = `
-[
-  {
-    "data": {
-      "error": "Unsupported",
-      "id": "(hash)",
-      "origin": "Parent",
-    },
-    "method": "ProcessingFailed",
-    "section": "messageQueue",
-  },
-]
-`;
-
 exports[`Switch other reserve location > V4 LIVE > Switch eKILTs from untrusted location sender: {"section":"xcmPallet","method":"Sent"} 1`] = `
 [
   {
