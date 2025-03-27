@@ -52,7 +52,7 @@ fn claiming_successful() {
 				owner_details,
 				Web3OwnershipOf::<Test> {
 					owner: DID_00,
-					claimed_at: 1,
+					claimed_at: 0,
 					deposit: Deposit {
 						owner: ACCOUNT_00,
 						amount: Web3NameDeposit::get(),

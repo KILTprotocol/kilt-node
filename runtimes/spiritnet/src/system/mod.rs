@@ -159,6 +159,7 @@ impl pallet_aura::Config for Runtime {
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<{ constants::staking::MAX_CANDIDATES }>;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+	type SlotDuration = ConstU64<1000>;
 }
 
 impl pallet_authorship::Config for Runtime {

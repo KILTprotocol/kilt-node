@@ -375,7 +375,7 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(247), added: 2722, mode: `MaxEncodedLen`)
 	fn remove_ed25519_delegation_key() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1735`
+		//  Measured:  `1772`
 		//  Estimated: `5777`
 		// Minimum execution time: 72_426_000 picoseconds.
 		Weight::from_parts(73_660_000, 0)
@@ -455,7 +455,7 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(247), added: 2722, mode: `MaxEncodedLen`)
 	fn set_sr25519_attestation_key() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1735`
+		//  Measured:  `1772`
 		//  Estimated: `5777`
 		// Minimum execution time: 74_656_000 picoseconds.
 		Weight::from_parts(75_616_000, 0)
@@ -555,7 +555,7 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(247), added: 2722, mode: `MaxEncodedLen`)
 	fn add_ed25519_key_agreement_key() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1629`
+		//  Measured:  `1666`
 		//  Estimated: `5777`
 		// Minimum execution time: 73_622_000 picoseconds.
 		Weight::from_parts(75_081_000, 0)
@@ -575,7 +575,7 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(247), added: 2722, mode: `MaxEncodedLen`)
 	fn add_sr25519_key_agreement_key() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1629`
+		//  Measured:  `1666`
 		//  Estimated: `5777`
 		// Minimum execution time: 74_134_000 picoseconds.
 		Weight::from_parts(75_044_000, 0)
@@ -615,7 +615,7 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(247), added: 2722, mode: `MaxEncodedLen`)
 	fn remove_ed25519_key_agreement_key() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1735`
+		//  Measured:  `1772`
 		//  Estimated: `5777`
 		// Minimum execution time: 73_980_000 picoseconds.
 		Weight::from_parts(74_699_000, 0)
@@ -777,7 +777,7 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	fn update_deposit() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `463`
+		//  Measured:  `500`
 		//  Estimated: `5777`
 		// Minimum execution time: 33_713_000 picoseconds.
 		Weight::from_parts(34_653_000, 0)

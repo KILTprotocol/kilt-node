@@ -65,7 +65,7 @@ fn add_successful_without_authorization() {
 			// Test this pallet logic
 			assert_eq!(stored_public_credential_details.attester, attester);
 			assert!(!stored_public_credential_details.revoked);
-			assert_eq!(stored_public_credential_details.block_number, 1);
+			assert_eq!(stored_public_credential_details.block_number, 0);
 			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash_1);
 			assert_eq!(stored_public_credential_details.authorization_id, None);
 			assert_eq!(CredentialSubjects::<Test>::get(credential_id_1), Some(subject_id));
@@ -146,7 +146,7 @@ fn add_successful_with_authorization() {
 			// Test this pallet logic
 			assert_eq!(stored_public_credential_details.attester, attester);
 			assert!(!stored_public_credential_details.revoked);
-			assert_eq!(stored_public_credential_details.block_number, 1);
+			assert_eq!(stored_public_credential_details.block_number, 0);
 			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash);
 			assert_eq!(stored_public_credential_details.authorization_id, Some(attester));
 			assert_eq!(CredentialSubjects::<Test>::get(credential_id), Some(subject_id));

@@ -66,7 +66,7 @@ impl<T: frame_system::Config> frame_system::WeightInfo for WeightInfo<T> {
 		Weight::from_parts(6_076_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 			// Standard Error: 0
-			.saturating_add(Weight::from_parts(1_557, 0).saturating_mul(b.into()))
+			.saturating_add(Weight::from_parts(1_601, 0).saturating_mul(b.into()))
 	}
 	/// Storage: `System::Digest` (r:1 w:1)
 	/// Proof: `System::Digest` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)

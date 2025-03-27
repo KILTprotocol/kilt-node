@@ -33,7 +33,7 @@ frame-executive                            = { workspace = true }
 frame-support                              = { workspace = true }
 frame-system                               = { workspace = true }
 frame-system-rpc-runtime-api               = { workspace = true }
-pallet-aura                                = { workspace = true }
+pallet-aura                                = { workspace = true, features = ["experimental"] }
 pallet-authorship                          = { workspace = true }
 pallet-balances                            = { workspace = true }
 pallet-session                             = { workspace = true }
