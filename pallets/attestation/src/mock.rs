@@ -193,7 +193,7 @@ pub(crate) mod runtime {
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
 	use kilt_support::mock::{mock_origin, SubjectId};
 
-	use crate::{self as attestation};
+	use crate as attestation;
 
 	type Block = frame_system::mocking::MockBlock<Test>;
 
