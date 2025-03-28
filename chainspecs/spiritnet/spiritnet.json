@@ -3,8 +3,8 @@
   "id": "kilt",
   "chainType": "Live",
   "bootNodes": [
-    "/dns4/hetzner-1.kilt.io/tcp/30333/p2p/12D3KooWKU8ehzuKAzHEMCy4i4kpJtgCFBCYYhqcub4Y1HR8FRoT",
-    "/dns4/hetzner-2.kilt.io/tcp/30333/p2p/12D3KooWDJzJ7TRNKvE2DWXMSSsoKR5TgxsnNy3W1eCBPveX6g9i",
+    "/dns4/boot-1.kilt.io/tcp/30333/p2p/12D3KooWSoH5HHwhMmiwLNrQWnFqUkjiLiN7pJfSdjqBzbNJbJTu",
+    "/dns4/boot-2.kilt.io/tcp/30333/p2p/12D3KooWDJzJ7TRNKvE2DWXMSSsoKR5TgxsnNy3W1eCBPveX6g9i",
     "/dns/kilt.boot.stake.plus/tcp/30332/wss/p2p/12D3KooWHZ6ftYNVQDm5gbHvtGgkPStaBBQBje8rrtxdH1jJonkW",
     "/dns/kilt.boot.stake.plus/tcp/31332/wss/p2p/12D3KooWMgyhbAKBkEqvKP5bPGTCJZ4nYziJhQep9aHRAkZW8xyy",
     "/dns4/boot.helikon.io/tcp/8570/p2p/12D3KooWGaE81VE2rzD5TbeRqpTgQwh2sWXMVfMJLBMHQH8AfoXu",
