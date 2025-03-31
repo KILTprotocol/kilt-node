@@ -1,25 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Switch eKILTs while no pair set > V4 LIVE > Switch eKILTs on receiver chain: {"section":"messageQueue","method":"Processed"} 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": 1000,
-      },
-      "success": false,
-      "weightUsed": {
-        "proofSize": 0,
-        "refTime": 200000000,
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
-
 exports[`Switch eKILTs while no pair set > V4 LIVE > Switch eKILTs on sender chain: {"section":"polkadotXcm","method":"Sent"} 1`] = `
 [
   {

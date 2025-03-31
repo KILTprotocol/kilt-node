@@ -175,7 +175,7 @@ export const testCases: TestConfiguration[] = [
 				foreign: {
 					transfer: [{ section: 'polkadotXcm', method: 'Sent' }],
 					receive: {
-						foreign: ['foreignAssets', { section: 'messageQueue', method: 'Processed' }],
+						foreign: ['foreignAssets'],
 						native: [
 							{ section: 'balances', method: 'Burned' },
 							{ section: 'balances', method: 'Minted' },

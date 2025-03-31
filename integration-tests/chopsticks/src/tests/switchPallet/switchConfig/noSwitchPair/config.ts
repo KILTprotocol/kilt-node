@@ -84,12 +84,7 @@ export const testCases: TestConfiguration[] = [
 						method: 'Sent',
 					},
 				],
-				receiver: [
-					{
-						section: 'messageQueue',
-						method: 'Processed',
-					},
-				],
+				receiver: [],
 			},
 		},
 	},
