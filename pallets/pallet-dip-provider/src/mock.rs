@@ -54,7 +54,7 @@ impl frame_system::Config for TestRuntime {
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type MaxConsumers = ConstU32<100>;
+	type MaxConsumers = ConstU32<16>;
 	type Nonce = u64;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();

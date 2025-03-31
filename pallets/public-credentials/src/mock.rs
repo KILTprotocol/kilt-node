@@ -302,7 +302,7 @@ pub(crate) mod runtime {
 		type BlockLength = ();
 		type SS58Prefix = ConstU16<38>;
 		type OnSetCode = ();
-		type MaxConsumers = ConstU32<100>;
+		type MaxConsumers = ConstU32<16>;
 	}
 
 	impl pallet_balances::Config for Test {
