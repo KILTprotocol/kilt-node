@@ -12,11 +12,6 @@ use crate::{
 };
 
 #[cfg(feature = "try-runtime")]
-use sp_runtime::traits::SaturatedConversion;
-#[cfg(feature = "try-runtime")]
-use sp_std::vec::Vec;
-
-#[cfg(feature = "try-runtime")]
 const LOG_TARGET: &str = "migration::pallet-bonded-coins";
 
 /// Collection of storage item formats from the previous storage version.
@@ -103,22 +98,21 @@ fn v0_to_v1<T: Config>(old_value: v0::PoolDetailsOf<T>) -> crate::PoolDetailsOf<
 
 pub struct InnerMigrateV0ToV1<T: crate::Config>(core::marker::PhantomData<T>);
 
-impl<T: crate::Config> OnRuntimeUpgrade for InnerMigrateV0ToV1<T> {
-	/// Return the existing [`crate::Value`] so we can check that it was
-	/// correctly set in `InnerMigrateV0ToV1::post_upgrade`.
+impl<T: crate::Config> OnRuntimeUpgrade for InnerMigrateV0ToV1<T>
+where
+	T::PoolId: sp_std::fmt::Display,
+{
+	/// Return a vector of existing [`crate::Pools`] values so we can check that
+	/// they were correctly set in `InnerMigrateV0ToV1::post_upgrade`.
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::TryRuntimeError> {
+	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, sp_runtime::TryRuntimeError> {
 		// Access the old value using the `storage_alias` type
-		let old_value: Vec<(T::PoolId, v0::PoolDetailsOf<T>)> = v0::Pools::<T>::iter().collect();
+		let old_value: sp_std::vec::Vec<(T::PoolId, v0::PoolDetailsOf<T>)> = v0::Pools::<T>::iter().collect();
 		// Return it as an encoded `Vec<u8>`
 		Ok(old_value.encode())
 	}
 
 	/// Migrate the storage from V0 to V1.
-	///
-	/// - If the value doesn't exist, there is nothing to do.
-	/// - If the value exists, it is read and then written back to storage
-	///   inside a [`crate::CurrentAndPreviousValue`].
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		let mut translated = 0u64;
 		// Read values in-place
@@ -132,13 +126,11 @@ impl<T: crate::Config> OnRuntimeUpgrade for InnerMigrateV0ToV1<T> {
 	}
 
 	/// Verifies the storage was migrated correctly.
-	///
-	/// - If there was no old value, the new value should not be set.
-	/// - If there was an old value, the new value should be a
-	///   [`crate::CurrentAndPreviousValue`].
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::TryRuntimeError> {
-		let old_values = Vec::<(T::PoolId, v0::PoolDetailsOf<T>)>::decode(&mut &state[..])
+	fn post_upgrade(state: sp_std::vec::Vec<u8>) -> Result<(), sp_runtime::TryRuntimeError> {
+		use sp_runtime::traits::SaturatedConversion;
+
+		let old_values = sp_std::vec::Vec::<(T::PoolId, v0::PoolDetailsOf<T>)>::decode(&mut &state[..])
 			.map_err(|_| sp_runtime::TryRuntimeError::Other("Failed to decode old value from storage"))?;
 
 		let prev_count: u32 = old_values.len().saturated_into();
@@ -155,16 +147,21 @@ impl<T: crate::Config> OnRuntimeUpgrade for InnerMigrateV0ToV1<T> {
 			let expected_new_value = v0_to_v1::<T>(old_value);
 			let actual_new_value = crate::Pools::<T>::get(&pool_id);
 
-			ensure!(actual_new_value.is_some(), "New value not set");
-			ensure!(
-				actual_new_value == Some(expected_new_value),
-				"New value not set correctly"
-			);
+			ensure!(actual_new_value.is_some(), {
+				log::error!(target: LOG_TARGET, "Expected pool with id {} but found none", &pool_id);
+				sp_runtime::TryRuntimeError::Other("Pool not migrated")
+			});
+			ensure!(actual_new_value == Some(expected_new_value), {
+				log::error!(target: LOG_TARGET, "Pool with id {} contains unexpected data", &pool_id);
+				sp_runtime::TryRuntimeError::Other("Incorrect Pool Data")
+			});
 
-			ensure!(
-				actual_new_value.unwrap().currencies_settings.allow_reset_team,
-				"all migrated pools should have the allow_reset_team flag set to true"
-			);
+			ensure!(actual_new_value.unwrap().currencies_settings.allow_reset_team, {
+				log::error!(target: LOG_TARGET, "Pool with id {} has allow_reset_team = false", &pool_id);
+				sp_runtime::TryRuntimeError::Other(
+					"all migrated pools should have the allow_reset_team flag set to true",
+				)
+			});
 
 			Ok(())
 		})
