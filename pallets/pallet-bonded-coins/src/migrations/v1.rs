@@ -1,13 +1,8 @@
 use frame_support::{
 	pallet_prelude::*,
-	storage_alias,
 	traits::{Get, OnRuntimeUpgrade},
-	Twox64Concat,
 };
-use parity_scale_codec::{Decode, Encode};
-use scale_info::TypeInfo;
-use sp_runtime::{traits::Saturating, SaturatedConversion};
-use sp_std::vec::Vec;
+use sp_runtime::traits::Saturating;
 
 use crate::{
 	curves::Curve,
@@ -16,6 +11,12 @@ use crate::{
 	DepositBalanceOf, FungiblesBalanceOf,
 };
 
+#[cfg(feature = "try-runtime")]
+use sp_runtime::traits::SaturatedConversion;
+#[cfg(feature = "try-runtime")]
+use sp_std::vec::Vec;
+
+#[cfg(feature = "try-runtime")]
 const LOG_TARGET: &str = "migration::pallet-bonded-coins";
 
 /// Collection of storage item formats from the previous storage version.
@@ -23,8 +24,10 @@ const LOG_TARGET: &str = "migration::pallet-bonded-coins";
 /// Required so we can read values in the v0 storage format during the
 /// migration.
 mod v0 {
-
 	use super::*;
+	use frame_support::{storage_alias, Twox64Concat};
+	use parity_scale_codec::{Decode, Encode};
+	use scale_info::TypeInfo;
 
 	// V0 pool details
 	#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
