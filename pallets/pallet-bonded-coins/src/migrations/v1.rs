@@ -100,7 +100,7 @@ pub struct InnerMigrateV0ToV1<T: crate::Config>(core::marker::PhantomData<T>);
 
 impl<T: crate::Config> OnRuntimeUpgrade for InnerMigrateV0ToV1<T>
 where
-	T::PoolId: sp_std::fmt::Display,
+	T::PoolId: sp_std::fmt::Debug,
 {
 	/// Return a vector of existing [`crate::Pools`] values so we can check that
 	/// they were correctly set in `InnerMigrateV0ToV1::post_upgrade`.
@@ -148,16 +148,16 @@ where
 			let actual_new_value = crate::Pools::<T>::get(&pool_id);
 
 			ensure!(actual_new_value.is_some(), {
-				log::error!(target: LOG_TARGET, "Expected pool with id {} but found none", &pool_id);
+				log::error!(target: LOG_TARGET, "Expected pool with id {:?} but found none", &pool_id);
 				sp_runtime::TryRuntimeError::Other("Pool not migrated")
 			});
 			ensure!(actual_new_value == Some(expected_new_value), {
-				log::error!(target: LOG_TARGET, "Pool with id {} contains unexpected data", &pool_id);
+				log::error!(target: LOG_TARGET, "Pool with id {:?} contains unexpected data", &pool_id);
 				sp_runtime::TryRuntimeError::Other("Incorrect Pool Data")
 			});
 
 			ensure!(actual_new_value.unwrap().currencies_settings.allow_reset_team, {
-				log::error!(target: LOG_TARGET, "Pool with id {} has allow_reset_team = false", &pool_id);
+				log::error!(target: LOG_TARGET, "Pool with id {:?} has allow_reset_team = false", &pool_id);
 				sp_runtime::TryRuntimeError::Other(
 					"all migrated pools should have the allow_reset_team flag set to true",
 				)
