@@ -7897,6 +7897,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-permissioned-collators"
+version = "0.0.1"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-session",
+ "parachain-staking",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-postit"
 version = "1.16.0-dev"
 dependencies = [
@@ -8772,6 +8793,7 @@ dependencies = [
  "pallet-message-queue",
  "pallet-migration",
  "pallet-multisig",
+ "pallet-permissioned-collators",
  "pallet-preimage",
  "pallet-proxy",
  "pallet-scheduler",
