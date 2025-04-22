@@ -41,7 +41,7 @@ use sp_weights::ConstantMultiplier;
 use xcm::v4::Location;
 
 use crate::{
-	governance::{CouncilCollective, RootOrCollectiveProportion},
+	governance::{CouncilCollective, RootOrCollectiveProportion, RootOrMoreThanHalfCouncil},
 	weights, Aura, Balances, Block, OriginCaller, PalletInfo, ParachainStaking, Preimage, Runtime, RuntimeCall,
 	RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
 };
@@ -163,7 +163,7 @@ impl pallet_aura::Config for Runtime {
 
 impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type EventHandler = ParachainStaking;
+	type EventHandler = ();
 }
 
 impl pallet_utility::Config for Runtime {
@@ -279,4 +279,18 @@ impl pallet_scheduler::Config for Runtime {
 	type WeightInfo = weights::pallet_scheduler::WeightInfo<Runtime>;
 	type OriginPrivilegeCmp = OriginPrivilegeCmp;
 	type Preimages = Preimage;
+}
+
+type CollatorMembershipProvider = pallet_membership::Instance3;
+impl pallet_membership::Config<CollatorMembershipProvider> for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type AddOrigin = RootOrMoreThanHalfCouncil;
+	type RemoveOrigin = RootOrMoreThanHalfCouncil;
+	type SwapOrigin = EnsureRoot<AccountId>;
+	type ResetOrigin = EnsureRoot<AccountId>;
+	type PrimeOrigin = EnsureRoot<AccountId>;
+	type MembershipInitialized = ();
+	type MembershipChanged = ();
+	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type WeightInfo = weights::pallet_technical_membership::WeightInfo<Runtime>;
 }
