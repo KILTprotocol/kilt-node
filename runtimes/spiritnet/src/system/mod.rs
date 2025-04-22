@@ -41,9 +41,10 @@ use sp_weights::ConstantMultiplier;
 use xcm::v4::Location;
 
 use crate::{
-	governance::{CouncilCollective, RootOrCollectiveProportion},
-	weights, Aura, Balances, Block, OriginCaller, PalletInfo, ParachainStaking, Preimage, Runtime, RuntimeCall,
-	RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
+	governance::{CouncilCollective, RootOrCollectiveProportion, RootOrMoreThanHalfCouncil},
+	weights, Aura, Balances, Block, OriginCaller, PalletInfo, ParachainStaking, PermissionedCollator, Preimage,
+	Runtime, RuntimeCall, RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System,
+	VERSION,
 };
 
 pub(crate) mod proxy;
@@ -141,13 +142,50 @@ impl_opaque_keys! {
 	}
 }
 
+/// The session manager for the collator set.
+pub struct SessionManager;
+
+impl pallet_session::SessionManager<AccountId> for SessionManager {
+	fn new_session(new_index: sp_staking::SessionIndex) -> Option<Vec<AccountId>> {
+		let collators = PermissionedCollator::members().to_vec();
+
+		log::debug!(
+			"assembling new collators for new session {} at #{:?} with {:?}",
+			new_index,
+			System::block_number(),
+			collators
+		);
+
+		System::register_extra_weight_unchecked(
+			<Runtime as frame_system::Config>::DbWeight::get().reads(2),
+			frame_support::pallet_prelude::DispatchClass::Mandatory,
+		);
+
+		if collators.is_empty() {
+			// we never want to pass an empty set of collators. This would brick the chain.
+			log::error!("💥 keeping old session because of empty collator set!");
+			return None;
+		}
+
+		Some(collators)
+	}
+
+	fn start_session(_start_index: sp_staking::SessionIndex) {
+		// We don't care
+	}
+
+	fn end_session(_end_index: sp_staking::SessionIndex) {
+		// We don't care
+	}
+}
+
 impl pallet_session::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = ConvertInto;
 	type ShouldEndSession = ParachainStaking;
 	type NextSessionRotation = ParachainStaking;
-	type SessionManager = ParachainStaking;
+	type SessionManager = SessionManager;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
 	type WeightInfo = weights::pallet_session::WeightInfo<Runtime>;
@@ -163,7 +201,7 @@ impl pallet_aura::Config for Runtime {
 
 impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type EventHandler = ParachainStaking;
+	type EventHandler = ();
 }
 
 impl pallet_utility::Config for Runtime {
@@ -273,4 +311,18 @@ impl pallet_scheduler::Config for Runtime {
 	type WeightInfo = weights::pallet_scheduler::WeightInfo<Runtime>;
 	type OriginPrivilegeCmp = OriginPrivilegeCmp;
 	type Preimages = Preimage;
+}
+
+type CollatorMembershipProvider = pallet_membership::Instance3;
+impl pallet_membership::Config<CollatorMembershipProvider> for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type AddOrigin = RootOrMoreThanHalfCouncil;
+	type RemoveOrigin = RootOrMoreThanHalfCouncil;
+	type SwapOrigin = EnsureRoot<AccountId>;
+	type ResetOrigin = EnsureRoot<AccountId>;
+	type PrimeOrigin = EnsureRoot<AccountId>;
+	type MembershipInitialized = ();
+	type MembershipChanged = ();
+	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type WeightInfo = weights::pallet_technical_membership::WeightInfo<Runtime>;
 }

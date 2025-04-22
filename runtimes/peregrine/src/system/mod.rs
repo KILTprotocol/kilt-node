@@ -142,6 +142,7 @@ impl_opaque_keys! {
 	}
 }
 
+/// The session manager for the collator set.
 pub struct SessionManager;
 
 impl pallet_session::SessionManager<AccountId> for SessionManager {

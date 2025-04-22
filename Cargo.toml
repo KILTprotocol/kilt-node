@@ -71,6 +71,7 @@ pallet-relay-store     = { path = "pallets/pallet-relay-store", default-features
 pallet-web3-names      = { path = "pallets/pallet-web3-names", default-features = false }
 parachain-staking      = { path = "pallets/parachain-staking", default-features = false }
 public-credentials     = { path = "pallets/public-credentials", default-features = false }
+
 # Internal support (with default disabled)
 kilt-asset-dids     = { path = "crates/assets", default-features = false }
 kilt-dip-primitives = { path = "crates/kilt-dip-primitives", default-features = false }
