@@ -322,7 +322,10 @@ impl pallet_membership::Config<CollatorMembershipProvider> for Runtime {
 	type ResetOrigin = EnsureRoot<AccountId>;
 	type PrimeOrigin = EnsureRoot<AccountId>;
 	type MembershipInitialized = ();
+	#[cfg(feature = "runtime-benchmarks")]
+	type MembershipChanged = crate::benchmarks::governance::MockMembershipChangedForBenchmarks;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type MembershipChanged = ();
-	type MaxMembers = constants::governance::TechnicalMaxMembers;
-	type WeightInfo = weights::pallet_technical_membership::WeightInfo<Runtime>;
+	type MaxMembers = constants::staking::MaxCollators;
+	type WeightInfo = weights::pallet_collators::WeightInfo<Runtime>;
 }
