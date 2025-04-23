@@ -28,7 +28,7 @@ use runtime_common::{
 		NativeAndForeignAssets as NativeAndForeignAssetsType, TargetFromLeft,
 	},
 	deposits::DepositNamespace,
-	AccountId, Balance, SendDustAndFeesToTreasury,
+	AccountId, Balance,
 };
 use sp_core::{crypto::ByteArray, ConstU128, ConstU32, ConstU8};
 use sp_runtime::AccountId32;
@@ -69,7 +69,7 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-	type NetworkRewardBeneficiary = SendDustAndFeesToTreasury<Runtime>;
+	type NetworkRewardBeneficiary = ();
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
 	const BLOCKS_PER_YEAR: BlockNumberFor<Self> = constants::BLOCKS_PER_YEAR;
@@ -79,7 +79,7 @@ impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;
 	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
 	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
-	type Beneficiary = SendDustAndFeesToTreasury<Runtime>;
+	type Beneficiary = ();
 	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
 }
 
