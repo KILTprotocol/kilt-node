@@ -40,7 +40,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, Bounded, IdentifyAccount, Verify},
 	FixedPointNumber, MultiAddress, MultiSignature, Perquintill, SaturatedConversion,
 };
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 use sp_weights::Weight;
 
 pub mod asset_switch;
@@ -237,5 +237,47 @@ where
 		let treasury_account_id = pallet_treasury::Pallet::<T>::account_id();
 		let result = pallet_balances::Pallet::<T>::resolve(&treasury_account_id, amount);
 		debug_assert!(result.is_ok(), "The whole credit cannot be countered");
+	}
+}
+
+type AccountIdOf<Runtime> = <Runtime as frame_system::Config>::AccountId;
+
+/// The session manager for the collator set.
+pub struct SessionManager<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> pallet_session::SessionManager<AccountIdOf<Runtime>> for SessionManager<Runtime>
+where
+	Runtime: pallet_membership::Config<pallet_membership::Instance3>,
+{
+	fn new_session(new_index: sp_staking::SessionIndex) -> Option<Vec<AccountIdOf<Runtime>>> {
+		let collators = pallet_membership::Pallet::<Runtime, pallet_membership::Instance3>::members().to_vec();
+
+		log::debug!(
+			"assembling new collators for new session {} at #{:?} with {:?}",
+			new_index,
+			frame_system::Pallet::<Runtime>::block_number(),
+			collators
+		);
+
+		frame_system::Pallet::<Runtime>::register_extra_weight_unchecked(
+			<Runtime as frame_system::Config>::DbWeight::get().reads(2),
+			frame_support::pallet_prelude::DispatchClass::Mandatory,
+		);
+
+		if collators.is_empty() {
+			// we never want to pass an empty set of collators. This would brick the chain.
+			log::error!("💥 keeping old session because of empty collator set!");
+			return None;
+		}
+
+		Some(collators)
+	}
+
+	fn start_session(_start_index: sp_staking::SessionIndex) {
+		// We don't care
+	}
+
+	fn end_session(_end_index: sp_staking::SessionIndex) {
+		// We don't care
 	}
 }
