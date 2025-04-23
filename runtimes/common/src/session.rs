@@ -22,6 +22,7 @@ use pallet_membership::{Config as MembershipConfig, Instance3, Pallet as Members
 use pallet_session::SessionManager as SessionManagerTrait;
 pub use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::Get;
+use sp_runtime::SaturatedConversion;
 use sp_staking::SessionIndex;
 use sp_std::{marker::PhantomData, vec::Vec};
 
@@ -34,7 +35,8 @@ pub struct SessionManager<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> SessionManagerTrait<AccountIdOf<Runtime>> for SessionManager<Runtime>
 where
-	Runtime: MembershipConfig<Instance3>,
+	Runtime: MembershipConfig<Instance3> + pallet_session::Config,
+	<Runtime as pallet_session::Config>::ValidatorId: From<AccountIdOf<Runtime>>,
 {
 	fn new_session(new_index: SessionIndex) -> Option<Vec<AccountIdOf<Runtime>>> {
 		let collators = MembershipPallet::<Runtime, Instance3>::members().to_vec();
@@ -46,12 +48,18 @@ where
 			collators
 		);
 
+		let has_collator_keys = collators.iter().any(|collator| {
+			pallet_session::NextKeys::<Runtime>::contains_key(<Runtime as pallet_session::Config>::ValidatorId::from(
+				collator.clone(),
+			))
+		});
+
 		SystemPallet::<Runtime>::register_extra_weight_unchecked(
-			<Runtime as frame_system::Config>::DbWeight::get().reads(2),
+			<Runtime as frame_system::Config>::DbWeight::get().reads(2 + collators.len().saturated_into::<u64>()),
 			frame_support::pallet_prelude::DispatchClass::Mandatory,
 		);
 
-		if collators.is_empty() {
+		if collators.is_empty() || !has_collator_keys {
 			// we never want to pass an empty set of collators. This would brick the chain.
 			log::error!("💥 keeping old session because of empty collator set!");
 			return None;
