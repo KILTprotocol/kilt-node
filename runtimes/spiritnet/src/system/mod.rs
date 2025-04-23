@@ -26,8 +26,9 @@ use runtime_common::{
 	asset_switch::EnsureRootAsTreasury,
 	constants,
 	fees::{ToAuthorCredit, WeightToFee},
+	session::{FixedLengthSession, SessionManager},
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
-	SendDustAndFeesToTreasury, SessionManager, SlowAdjustingFeeUpdate,
+	SendDustAndFeesToTreasury, SlowAdjustingFeeUpdate,
 };
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64};
 use sp_runtime::{
@@ -42,8 +43,8 @@ use xcm::v4::Location;
 
 use crate::{
 	governance::{CouncilCollective, RootOrCollectiveProportion, RootOrMoreThanHalfCouncil},
-	weights, Aura, Balances, Block, OriginCaller, PalletInfo, ParachainStaking, Preimage, Runtime, RuntimeCall,
-	RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
+	weights, Aura, Balances, Block, OriginCaller, PalletInfo, Preimage, Runtime, RuntimeCall, RuntimeEvent,
+	RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
 };
 
 pub(crate) mod proxy;
@@ -145,8 +146,8 @@ impl pallet_session::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = ConvertInto;
-	type ShouldEndSession = ParachainStaking;
-	type NextSessionRotation = ParachainStaking;
+	type ShouldEndSession = FixedLengthSession;
+	type NextSessionRotation = FixedLengthSession;
 	type SessionManager = SessionManager<Runtime>;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
