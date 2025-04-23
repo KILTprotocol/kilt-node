@@ -49,8 +49,8 @@ use pallet_membership as pallet_collators;
 /// Weight functions for `pallet_collators`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_collators::WeightInfo for WeightInfo<T> {
-	/// Storage: `PermissionedCollator::Members` (r:1 w:1)
-	/// Proof: `PermissionedCollator::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Members` (r:1 w:1)
+	/// Proof: `Collators::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
 	/// The range of component `m` is `[1, 31]`.
 	fn add_member(m: u32, ) -> Weight {
 		// Proof Size summary in bytes:
@@ -64,10 +64,10 @@ impl<T: frame_system::Config> pallet_collators::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `PermissionedCollator::Members` (r:1 w:1)
-	/// Proof: `PermissionedCollator::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
-	/// Storage: `PermissionedCollator::Prime` (r:1 w:0)
-	/// Proof: `PermissionedCollator::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Members` (r:1 w:1)
+	/// Proof: `Collators::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Prime` (r:1 w:0)
+	/// Proof: `Collators::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// The range of component `m` is `[2, 32]`.
@@ -84,10 +84,10 @@ impl<T: frame_system::Config> pallet_collators::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(2))
 			.saturating_add(Weight::from_parts(0, 32).saturating_mul(m.into()))
 	}
-	/// Storage: `PermissionedCollator::Members` (r:1 w:1)
-	/// Proof: `PermissionedCollator::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
-	/// Storage: `PermissionedCollator::Prime` (r:1 w:0)
-	/// Proof: `PermissionedCollator::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Members` (r:1 w:1)
+	/// Proof: `Collators::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Prime` (r:1 w:0)
+	/// Proof: `Collators::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// The range of component `m` is `[2, 32]`.
@@ -104,10 +104,10 @@ impl<T: frame_system::Config> pallet_collators::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(2))
 			.saturating_add(Weight::from_parts(0, 32).saturating_mul(m.into()))
 	}
-	/// Storage: `PermissionedCollator::Members` (r:1 w:1)
-	/// Proof: `PermissionedCollator::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
-	/// Storage: `PermissionedCollator::Prime` (r:1 w:0)
-	/// Proof: `PermissionedCollator::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Members` (r:1 w:1)
+	/// Proof: `Collators::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Prime` (r:1 w:0)
+	/// Proof: `Collators::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// The range of component `m` is `[1, 32]`.
@@ -124,10 +124,10 @@ impl<T: frame_system::Config> pallet_collators::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(2))
 			.saturating_add(Weight::from_parts(0, 32).saturating_mul(m.into()))
 	}
-	/// Storage: `PermissionedCollator::Members` (r:1 w:1)
-	/// Proof: `PermissionedCollator::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
-	/// Storage: `PermissionedCollator::Prime` (r:1 w:1)
-	/// Proof: `PermissionedCollator::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Members` (r:1 w:1)
+	/// Proof: `Collators::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Prime` (r:1 w:1)
+	/// Proof: `Collators::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// The range of component `m` is `[1, 32]`.
@@ -144,10 +144,10 @@ impl<T: frame_system::Config> pallet_collators::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(3))
 			.saturating_add(Weight::from_parts(0, 32).saturating_mul(m.into()))
 	}
-	/// Storage: `PermissionedCollator::Members` (r:1 w:0)
-	/// Proof: `PermissionedCollator::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
-	/// Storage: `PermissionedCollator::Prime` (r:0 w:1)
-	/// Proof: `PermissionedCollator::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Members` (r:1 w:0)
+	/// Proof: `Collators::Members` (`max_values`: Some(1), `max_size`: Some(1025), added: 1520, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Prime` (r:0 w:1)
+	/// Proof: `Collators::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// The range of component `m` is `[1, 32]`.
@@ -164,8 +164,8 @@ impl<T: frame_system::Config> pallet_collators::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(2))
 			.saturating_add(Weight::from_parts(0, 32).saturating_mul(m.into()))
 	}
-	/// Storage: `PermissionedCollator::Prime` (r:0 w:1)
-	/// Proof: `PermissionedCollator::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Collators::Prime` (r:0 w:1)
+	/// Proof: `Collators::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0xdfe4dad7b89644d5962c7bb034ca6f7bb10896c85af113f86bae1ab193a37922` (r:0 w:1)
 	/// The range of component `m` is `[1, 32]`.
