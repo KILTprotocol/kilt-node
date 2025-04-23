@@ -60,14 +60,6 @@ impl parachain_staking::Config for Runtime {
 	const BLOCKS_PER_YEAR: BlockNumberFor<Self> = constants::BLOCKS_PER_YEAR;
 }
 
-impl pallet_inflation::Config for Runtime {
-	type Currency = Balances;
-	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
-	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
-	type Beneficiary = ();
-	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
-}
-
 parameter_types! {
 	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }

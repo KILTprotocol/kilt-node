@@ -153,7 +153,7 @@ construct_runtime! {
 		Delegation: delegation = 63,
 		Did: did = 64,
 		// DELETED: CrowdloanContributors = 65,
-		Inflation: pallet_inflation = 66,
+		// DELETED: Inflation: pallet_inflation = 66,
 		DidLookup: pallet_did_lookup = 67,
 		Web3Names: pallet_web3_names = 68,
 		PublicCredentials: public_credentials = 69,
