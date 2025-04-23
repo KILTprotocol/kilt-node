@@ -37,11 +37,11 @@ use sp_std::{boxed::Box, vec, vec::Vec};
 use xcm::v4::{Asset, Assets, Fungibility, Location};
 
 use crate::{
-	xcm::XcmConfig, AllPalletsWithSystem, AssetSwitchPool1, Attestation, Balances, Council, Ctype, Delegation,
-	Democracy, DepositStorage, Did, DidLookup, DipProvider, Fungibles, Indices, Inflation, MessageQueue, Migration,
-	Multisig, ParachainStaking, ParachainSystem, Collators, Preimage, Proxy, PublicCredentials, Runtime,
-	RuntimeEvent, Scheduler, System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership,
-	Treasury, Utility, Vesting, Web3Names,
+	xcm::XcmConfig, AllPalletsWithSystem, AssetSwitchPool1, Attestation, Balances, Collators, Council, Ctype,
+	Delegation, Democracy, DepositStorage, Did, DidLookup, DipProvider, Fungibles, Indices, Inflation, MessageQueue,
+	Migration, Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy, PublicCredentials, Runtime, RuntimeEvent,
+	Scheduler, System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership, Treasury, Utility,
+	Vesting, Web3Names,
 };
 
 pub(crate) mod asset_switch;
