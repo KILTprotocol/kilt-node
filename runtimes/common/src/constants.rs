@@ -553,7 +553,7 @@ pub mod tips {
 		pub const MaximumReasonLength: u32 = MAXIMUM_REASON_LENGTH;
 		pub const TipCountdown: BlockNumber = DAYS;
 		pub const TipFindersFee: Percent = Percent::from_percent(0);
-		pub const TipReportDepositBase: Balance = 0;
+		pub const TipReportDepositBase: Balance = 1;
 		pub const MaxTipAmount: Balance = 100_000 * KILT;
 	}
 }
