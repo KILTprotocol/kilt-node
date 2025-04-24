@@ -56,7 +56,7 @@ where
 
 		SystemPallet::<Runtime>::register_extra_weight_unchecked(
 			<Runtime as frame_system::Config>::DbWeight::get()
-				.reads(2.saturating_add(collators.len().saturated_into::<u64>())),
+				.reads(2u64.saturating_add(collators.len().saturated_into::<u64>())),
 			frame_support::pallet_prelude::DispatchClass::Mandatory,
 		);
 
