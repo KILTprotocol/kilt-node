@@ -271,9 +271,9 @@ pub mod staking {
 	pub const MAX_CANDIDATES: u32 = 75;
 
 	pub const MAX_DELEGATORS_PER_COLLATOR: u32 = 35;
-	pub const MIN_DELEGATOR_STAKE: Balance = 0;
+	pub const MIN_DELEGATOR_STAKE: Balance = 20 * KILT;
 
-	pub const NETWORK_REWARD_RATE: Perquintill = Perquintill::from_percent(0);
+	pub const NETWORK_REWARD_RATE: Perquintill = Perquintill::from_percent(10);
 
 	parameter_types! {
 		/// Minimum round length is 1 hour
@@ -294,7 +294,7 @@ pub mod staking {
 		#[derive(Debug, Eq, PartialEq)]
 		pub const MaxDelegatorsPerCollator: u32 = MAX_DELEGATORS_PER_COLLATOR;
 		/// Minimum stake required to be reserved to be a collator is 10_000
-		pub const MinCollatorStake: Balance = 0;
+		pub const MinCollatorStake: Balance = 10_000 * KILT;
 		/// Minimum stake required to be reserved to be a delegator is 1000
 		pub const MinDelegatorStake: Balance = MIN_DELEGATOR_STAKE;
 		/// Maximum number of collator candidates
@@ -492,7 +492,7 @@ pub mod treasury {
 	use super::*;
 
 	pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
-	const YEARLY_REWARD: Balance = 0;
+	const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
 	#[allow(clippy::as_conversions)]
 	#[allow(clippy::integer_division)]
 	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
