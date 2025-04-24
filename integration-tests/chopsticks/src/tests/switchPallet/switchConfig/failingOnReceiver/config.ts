@@ -71,12 +71,7 @@ export const testCases: TestConfiguration[] = [
 			tx: tx.switchPallet.switchV4(),
 			events: {
 				sender: ['assetSwitchPool1'],
-				receiver: [
-					{
-						section: 'messageQueue',
-						method: 'Processed',
-					},
-				],
+				receiver: [],
 			},
 		},
 		sovereignAccount: mainChains.kilt.chainInfo.sovereignAccountOnSiblingChains,

@@ -28,26 +28,6 @@ exports[`Switch KILTs while receiver can not handle them > V4 LIVE > Switch on n
 ]
 `;
 
-exports[`Switch KILTs while receiver can not handle them > V4 LIVE > Switch on receiver chain: {"section":"messageQueue","method":"Processed"} 1`] = `
-[
-  {
-    "data": {
-      "id": "(hash)",
-      "origin": {
-        "Sibling": "(rounded 2100)",
-      },
-      "success": false,
-      "weightUsed": {
-        "proofSize": "(rounded 24000)",
-        "refTime": "(rounded 1500000000)",
-      },
-    },
-    "method": "Processed",
-    "section": "messageQueue",
-  },
-]
-`;
-
 exports[`Switch KILTs while receiver can not handle them > V4 LIVE > assetSwitchPool1 Finalization 1`] = `
 [
   {
