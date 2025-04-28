@@ -879,6 +879,8 @@ pub mod pallet {
 				target_currency_id.clone(),
 				&who,
 				amount_to_burn,
+				// We don't care, if account gets dusted.
+				Preservation::Expendable,
 				WithdrawalPrecision::Exact,
 				Fortitude::Force,
 			)?;
@@ -1061,6 +1063,7 @@ pub mod pallet {
 				asset_id.clone(),
 				&who,
 				Bounded::max_value(),
+				Preservation::Expendable,
 				WithdrawalPrecision::BestEffort,
 				Fortitude::Force,
 			)?

@@ -162,14 +162,14 @@ pub mod pallet {
 			fungible::Balanced,
 			tokens::{
 				fungible::{Inspect, MutateFreeze, Unbalanced},
-				Fortitude, Precision, Preservation,
+				Fortitude, IdAmount, Precision, Preservation,
 			},
 			BuildGenesisConfig, EstimateNextSessionRotation, Get, OnUnbalanced, StorageVersion,
 		},
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use pallet_balances::{Freezes, IdAmount};
+	use pallet_balances::Freezes;
 	use pallet_session::ShouldEndSession;
 	use scale_info::TypeInfo;
 	use sp_runtime::{

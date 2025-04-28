@@ -58,7 +58,7 @@ sp-weights                                 = { workspace = true }
 
 # Cumulus
 cumulus-pallet-aura-ext         = { workspace = true }
-cumulus-pallet-parachain-system = { workspace = true, features = ["parameterized-consensus-hook"] }
+cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-aura         = { workspace = true }
 cumulus-primitives-core         = { workspace = true }
 cumulus-primitives-timestamp    = { workspace = true }

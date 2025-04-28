@@ -40,7 +40,7 @@ fn no_did() {
 #[test]
 fn deleted_did() {
 	let did_identifier = ACCOUNT_02;
-	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	let did_details = generate_base_did_details(authentication_key, Some(ACCOUNT_01.clone()));
 
 	blueprint_failed_dispatch(

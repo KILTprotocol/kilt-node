@@ -65,6 +65,11 @@ impl frame_system::Config for TestRuntime {
 	type SS58Prefix = ();
 	type SystemWeightInfo = ();
 	type Version = ();
+	type MultiBlockMigrator = ();
+	type PostInherents = ();
+	type PostTransactions = ();
+	type PreInherents = ();
+	type SingleBlockMigrations = ();
 }
 
 parameter_types! {
