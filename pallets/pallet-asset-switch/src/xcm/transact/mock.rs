@@ -74,6 +74,11 @@ impl frame_system::Config for MockRuntime {
 	type SS58Prefix = ConstU16<0>;
 	type SystemWeightInfo = ();
 	type Version = ();
+	type MultiBlockMigrator = ();
+	type SingleBlockMigrations = ();
+	type PostInherents = ();
+	type PostTransactions = ();
+	type PreInherents = ();
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, MaxEncodedLen, Encode, Decode, Debug, TypeInfo, Default)]

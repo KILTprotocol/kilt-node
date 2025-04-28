@@ -114,7 +114,7 @@ pub mod pallet {
 		pub(crate) fn on_finalize_internal(_n: BlockNumberFor<T>) {
 			// Called before the validation data is cleaned in the
 			// parachain_system::on_finalize hook
-			let Some(new_validation_data) = cumulus_pallet_parachain_system::Pallet::<T>::validation_data() else {
+			let Some(new_validation_data) = cumulus_pallet_parachain_system::ValidationData::<T>::get() else {
 				return;
 			};
 			Self::store_new_validation_data(new_validation_data)

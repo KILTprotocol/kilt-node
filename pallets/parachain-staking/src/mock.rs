@@ -28,7 +28,7 @@ use frame_support::{
 use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
-use sp_core::{ConstBool, H256};
+use sp_core::{ConstBool, ConstU64, H256};
 use sp_runtime::{
 	impl_opaque_keys,
 	testing::UintAuthorityId,
@@ -93,6 +93,11 @@ impl frame_system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type MultiBlockMigrator = ();
+	type SingleBlockMigrations = ();
+	type PostInherents = ();
+	type PostTransactions = ();
+	type PreInherents = ();
 }
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 1;
@@ -120,6 +125,7 @@ impl pallet_aura::Config for Test {
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxCollatorCandidates;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+	type SlotDuration = ConstU64<500>;
 }
 
 impl pallet_authorship::Config for Test {
@@ -331,9 +337,12 @@ impl ExtBuilder {
 
 		// NOTE: this will initialize the aura authorities
 		// through OneSessionHandler::on_genesis_session
-		pallet_session::GenesisConfig::<Test> { keys: session_keys }
-			.assimilate_storage(&mut t)
-			.expect("Session Pallet's storage can be assimilated");
+		pallet_session::GenesisConfig::<Test> {
+			keys: session_keys,
+			..Default::default()
+		}
+		.assimilate_storage(&mut t)
+		.expect("Session Pallet's storage can be assimilated");
 
 		let mut ext = sp_io::TestExternalities::new(t);
 

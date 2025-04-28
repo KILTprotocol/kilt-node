@@ -239,6 +239,11 @@ pub mod runtime {
 		type SS58Prefix = SS58Prefix;
 		type SystemWeightInfo = ();
 		type Version = ();
+		type MultiBlockMigrator = ();
+		type SingleBlockMigrations = ();
+		type PostInherents = ();
+		type PostTransactions = ();
+		type PreInherents = ();
 	}
 
 	parameter_types! {
@@ -426,6 +431,7 @@ pub mod runtime {
 							.map(|id| (id, vec![], vec![], DEFAULT_COLLATERAL_DENOMINATION)),
 					)
 					.collect(),
+				next_asset_id: None,
 			}
 			.assimilate_storage(&mut storage)
 			.expect("assimilate should not fail");

@@ -205,7 +205,13 @@ pub mod pallet {
 				if #[cfg(not(feature = "runtime-benchmarks"))] {
 					call.dispatch(did_origin.into())
 				} else {
-					().into()
+					log::debug!(
+						target: LOG_TARGET,
+						"Dispatching call {:#?} with origin {:#?}",
+						call,
+						did_origin
+					);
+					Ok(().into())
 				}
 			}
 		}

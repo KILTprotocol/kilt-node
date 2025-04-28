@@ -116,6 +116,11 @@ pub(crate) mod runtime {
 		type OnSetCode = ();
 		type MaxConsumers = frame_support::traits::ConstU32<16>;
 		type RuntimeTask = RuntimeTask;
+		type MultiBlockMigrator = ();
+		type SingleBlockMigrations = ();
+		type PostInherents = ();
+		type PostTransactions = ();
+		type PreInherents = ();
 	}
 
 	parameter_types! {

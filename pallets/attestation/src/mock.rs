@@ -169,7 +169,9 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 }
 
 pub fn sr25519_did_from_public_key(public_key: &[u8; 32]) -> SubjectId {
-	MultiSigner::from(sr25519::Public(*public_key)).into_account().into()
+	MultiSigner::from(sr25519::Public::from_raw(*public_key))
+		.into_account()
+		.into()
 }
 
 pub fn claim_hash_from_seed(seed: u64) -> Hash {
@@ -262,6 +264,12 @@ pub(crate) mod runtime {
 		type SS58Prefix = SS58Prefix;
 		type OnSetCode = ();
 		type MaxConsumers = frame_support::traits::ConstU32<16>;
+
+		type MultiBlockMigrator = ();
+		type SingleBlockMigrations = ();
+		type PostInherents = ();
+		type PostTransactions = ();
+		type PreInherents = ();
 	}
 
 	parameter_types! {
