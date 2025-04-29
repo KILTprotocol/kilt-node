@@ -16,19 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
-use std::{fs::create_dir_all, iter::once, net::SocketAddr};
+use std::{fs::create_dir_all, iter::once};
 
 use cumulus_primitives_core::ParaId;
 use dip_provider_runtime_template::Block;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
 use sc_cli::{
-	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, LoggerBuilder,
-	NetworkParams, Result, SharedParams, SubstrateCli,
+	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
+	SharedParams, SubstrateCli,
 };
 use sc_service::{
 	config::{BasePath, PrometheusConfig},
-	Configuration, Role, RpcMethods, TransactionPoolOptions,
+	Role, RpcMethods, TransactionPoolOptions,
 };
 use sc_sysinfo::gather_hwbench;
 use sc_telemetry::TelemetryEndpoints;
@@ -196,7 +196,9 @@ pub fn run() -> Result<()> {
 			match cmd {
 				BenchmarkCmd::Pallet(cmd) => {
 					if cfg!(feature = "runtime-benchmarks") {
-						runner.sync_run(|config| cmd.run::<Block, ()>(config))
+						runner.sync_run(|config| {
+							cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, ()>(Some(config.chain_spec))
+						})
 					} else {
 						Err("Benchmarking wasn't enabled when building the node. \
 					You can enable it with `--features runtime-benchmarks`."
@@ -235,7 +237,7 @@ pub fn run() -> Result<()> {
 				let hwbench = (!cli.no_hardware_benchmarks)
 					.then_some(config.database.path().map(|database_path| {
 						let _ = create_dir_all(database_path);
-						gather_hwbench(Some(database_path))
+						gather_hwbench(Some(database_path), &SUBSTRATE_REFERENCE_HARDWARE)
 					}))
 					.flatten();
 
@@ -310,7 +312,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 			.or_else(|| self.base_path.clone().map(Into::into)))
 	}
 
-	fn rpc_addr(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
+	fn rpc_addr(&self, default_listen_port: u16) -> Result<Option<Vec<sc_cli::RpcEndpoint>>> {
 		self.base.base.rpc_addr(default_listen_port)
 	}
 
@@ -322,16 +324,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 		self.base.base.prometheus_config(default_listen_port, chain_spec)
 	}
 
-	fn init<F>(
-		&self,
-		_support_url: &String,
-		_impl_version: &String,
-		_logger_hook: F,
-		_config: &Configuration,
-	) -> Result<()>
-	where
-		F: FnOnce(&mut LoggerBuilder, &Configuration),
-	{
+	fn init<F>(&self, _support_url: &String, _impl_version: &String, _logger_hook: F) -> Result<()> {
 		unreachable!("PolkadotCli is never initialized; qed");
 	}
 

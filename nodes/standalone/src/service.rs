@@ -90,11 +90,11 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 
 	#[allow(deprecated)]
 	let executor = WasmExecutor::<HostFunctions>::new(
-		config.wasm_method,
-		config.default_heap_pages,
-		config.max_runtime_instances,
+		config.executor.wasm_method,
+		config.executor.default_heap_pages,
+		config.executor.max_runtime_instances,
 		None,
-		config.runtime_cache_size,
+		config.executor.runtime_cache_size,
 	);
 
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -180,7 +180,7 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		&config.chain_spec,
 	);
 
-	let mut net_config = sc_network::config::FullNetworkConfiguration::new(&config.network);
+	let mut net_config = sc_network::config::FullNetworkConfiguration::new(&config.network, None);
 	let (grandpa_protocol_config, grandpa_notification_service) =
 		sc_consensus_grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone());
 
@@ -235,11 +235,10 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		let client = client.clone();
 		let pool = transaction_pool.clone();
 
-		Box::new(move |deny_unsafe, _| {
+		Box::new(move |_| {
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
-				deny_unsafe,
 			};
 			crate::rpc::create_full(deps).map_err(Into::into)
 		})

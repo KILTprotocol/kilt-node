@@ -37,6 +37,7 @@ use frame_benchmarking::benchmarking::HostFunctions;
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use sc_client_api::Backend;
 use sc_consensus::{DefaultImportQueue, ImportQueue};
+#[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
 use sc_network::NetworkBlock;
 use sc_network_sync::SyncingService;
@@ -67,6 +68,7 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
 	}
 }
 
+#[allow(deprecated)]
 type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
@@ -97,6 +99,7 @@ pub fn new_partial(
 		})
 		.transpose()?;
 
+	#[allow(deprecated)]
 	let executor = sc_service::new_native_or_wasm_executor(config);
 
 	let (client, backend, keystore_container, task_manager) = new_full_parts::<Block, RuntimeApi, _>(
@@ -175,7 +178,10 @@ async fn start_node_impl(
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
 	let transaction_pool = Arc::clone(&params.transaction_pool);
 	let import_queue_service = params.import_queue.service();
-	let net_config = sc_network::config::FullNetworkConfiguration::new(&parachain_config.network);
+	let net_config = sc_network::config::FullNetworkConfiguration::<_, _, sc_network::NetworkWorker<Block, Hash>>::new(
+		&parachain_config.network,
+		prometheus_registry.clone(),
+	);
 
 	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
 		build_network(BuildNetworkParams {
@@ -194,22 +200,23 @@ async fn start_node_impl(
 	if parachain_config.offchain_worker.enabled {
 		use futures::FutureExt;
 
+		let offchain_workers = sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+			runtime_api_provider: client.clone(),
+			keystore: Some(params.keystore_container.keystore()),
+			offchain_db: backend.offchain_storage(),
+			transaction_pool: Some(OffchainTransactionPoolFactory::new(transaction_pool.clone())),
+			network_provider: Arc::new(network.clone()),
+			is_validator: parachain_config.role.is_authority(),
+			enable_http_requests: false,
+			custom_extensions: move |_| vec![],
+		});
+
 		task_manager.spawn_handle().spawn(
 			"offchain-workers-runner",
 			"offchain-work",
-			sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
-				runtime_api_provider: Arc::clone(&client),
-				keystore: Some(params.keystore_container.keystore()),
-				offchain_db: backend.offchain_storage(),
-				transaction_pool: Some(OffchainTransactionPoolFactory::new(Arc::clone(&transaction_pool))),
-				#[allow(clippy::clone_on_ref_ptr)]
-				network_provider: network.clone(),
-				is_validator: parachain_config.role.is_authority(),
-				enable_http_requests: false,
-				custom_extensions: move |_| vec![],
-			})
-			.run(Arc::clone(&client), task_manager.spawn_handle())
-			.boxed(),
+			offchain_workers
+				.run(Arc::clone(&client), task_manager.spawn_handle())
+				.boxed(),
 		);
 	}
 
@@ -217,11 +224,10 @@ async fn start_node_impl(
 		let client = Arc::clone(&client);
 		let transaction_pool = Arc::clone(&transaction_pool);
 
-		Box::new(move |deny_unsafe, _| {
+		Box::new(move |_| {
 			let deps = FullDeps {
 				client: Arc::clone(&client),
 				pool: Arc::clone(&transaction_pool),
-				deny_unsafe,
 			};
 
 			create_full(deps).map_err(Into::into)
@@ -245,7 +251,7 @@ async fn start_node_impl(
 
 	if let Some(hwbench) = hwbench {
 		print_hwbench(&hwbench);
-		match SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
+		match SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench, false) {
 			Err(err) if validator => {
 				log::warn!(
 					"⚠️  The hardware does not meet the minimal requirements {} for role 'Authority'.",
@@ -357,7 +363,7 @@ fn start_consensus(
 	task_manager: &TaskManager,
 	relay_chain_interface: Arc<dyn RelayChainInterface>,
 	transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
-	sync_oracle: Arc<SyncingService<Block>>,
+	_sync_oracle: Arc<SyncingService<Block>>,
 	keystore: KeystorePtr,
 	relay_chain_slot_duration: Duration,
 	para_id: ParaId,
@@ -366,8 +372,6 @@ fn start_consensus(
 	announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) -> Result<(), sc_service::Error> {
 	use cumulus_client_consensus_aura::collators::lookahead::{self as aura, Params as AuraParams};
-
-	let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
 	let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
 		task_manager.spawn_handle(),
@@ -393,12 +397,10 @@ fn start_consensus(
 		para_backend: backend,
 		relay_client: relay_chain_interface,
 		code_hash_provider: move |block_hash| client.code_at(block_hash).ok().map(|c| ValidationCode::from(c).hash()),
-		sync_oracle,
 		keystore,
 		collator_key,
 		para_id,
 		overseer_handle,
-		slot_duration,
 		relay_chain_slot_duration,
 		proposer,
 		collator_service,
@@ -406,7 +408,7 @@ fn start_consensus(
 		reinitialize: false,
 	};
 
-	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _, _>(params);
+	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _>(params);
 	task_manager.spawn_essential_handle().spawn("aura", None, fut);
 
 	Ok(())

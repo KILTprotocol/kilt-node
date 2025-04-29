@@ -34,7 +34,7 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 
 const PARA_ID: u32 = 2_000;
 
-pub type ChainSpec = GenericChainSpec<RuntimeGenesisConfig, Extensions>;
+pub type ChainSpec = GenericChainSpec<Extensions>;
 type AccountPublic = <Signature as Verify>::Signer;
 
 pub(crate) fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -97,6 +97,7 @@ fn testnet_genesis(
 				.into_iter()
 				.map(|(acc, aura)| (acc.clone(), acc, template_session_keys(aura)))
 				.collect(),
+			..Default::default()
 		},
 		..Default::default()
 	}
