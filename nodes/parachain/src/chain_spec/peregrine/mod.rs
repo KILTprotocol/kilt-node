@@ -24,8 +24,7 @@ pub(crate) mod new;
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub(crate) type ChainSpec =
-	sc_service::GenericChainSpec<peregrine_runtime::RuntimeGenesisConfig, crate::chain_spec::Extensions>;
+pub(crate) type ChainSpec = sc_service::GenericChainSpec<crate::chain_spec::Extensions>;
 
 pub(crate) fn load_chain_spec(path: &str) -> Result<ChainSpec, String> {
 	ChainSpec::from_json_file(path.into())

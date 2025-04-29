@@ -40,6 +40,7 @@ pub(crate) fn generate_chain_spec(relaychain_name: &str) -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
 	let genesis_state = to_value(generate_genesis_state()).expect("Creating genesis state failed");
 
+	#[allow(deprecated)]
 	ChainSpec::builder(
 		wasm_binary,
 		Extensions {
@@ -81,6 +82,7 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 			keys: [alice.clone(), bob.clone()]
 				.map(|(acc, key)| (acc.clone(), acc, SessionKeys { aura: key }))
 				.to_vec(),
+			..Default::default()
 		},
 		parachain_info: ParachainInfoConfig {
 			parachain_id: KILT_PARA_ID.into(),

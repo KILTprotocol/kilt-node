@@ -153,11 +153,11 @@ where
 
 	#[allow(deprecated)]
 	let executor = ParachainExecutor::new(
-		config.wasm_method,
-		config.default_heap_pages,
-		config.max_runtime_instances,
+		config.executor.wasm_method,
+		config.executor.default_heap_pages,
+		config.executor.max_runtime_instances,
 		None,
-		config.runtime_cache_size,
+		config.executor.runtime_cache_size,
 	);
 
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -275,7 +275,10 @@ where
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
 	let transaction_pool = Arc::clone(&params.transaction_pool);
 	let import_queue_service = params.import_queue.service();
-	let net_config = sc_network::config::FullNetworkConfiguration::new(&parachain_config.network);
+	let net_config = sc_network::config::FullNetworkConfiguration::<_, _, sc_network::NetworkWorker<Block, Hash>>::new(
+		&parachain_config.network,
+		prometheus_registry.clone(),
+	);
 	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
 		cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
 			parachain_config: &parachain_config,
@@ -291,14 +294,13 @@ where
 		.await?;
 
 	let rpc_builder = {
-		let client = Arc::clone(&client);
-		let transaction_pool = Arc::clone(&transaction_pool);
+		let client = client.clone();
+		let transaction_pool = transaction_pool.clone();
 
-		Box::new(move |deny_unsafe, _| {
+		Box::new(move |_| {
 			let deps = crate::rpc::FullDeps {
-				client: Arc::clone(&client),
-				pool: Arc::clone(&transaction_pool),
-				deny_unsafe,
+				client: client.clone(),
+				pool: transaction_pool.clone(),
 			};
 
 			crate::rpc::create_full(deps).map_err(Into::into)
@@ -479,7 +481,7 @@ fn start_consensus<RuntimeApi>(
 	task_manager: &TaskManager,
 	relay_chain_interface: Arc<dyn RelayChainInterface>,
 	transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient<RuntimeApi>>>,
-	sync_oracle: Arc<SyncingService<Block>>,
+	_sync_oracle: Arc<SyncingService<Block>>,
 	keystore: KeystorePtr,
 	relay_chain_slot_duration: Duration,
 	para_id: ParaId,
@@ -503,8 +505,6 @@ where
 		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
 {
 	use cumulus_client_consensus_aura::collators::lookahead::{self as aura, Params as AuraParams};
-
-	let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
 	let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
 		task_manager.spawn_handle(),
@@ -530,12 +530,10 @@ where
 		para_backend: backend,
 		relay_client: relay_chain_interface,
 		code_hash_provider: move |block_hash| client.code_at(block_hash).ok().map(|c| ValidationCode::from(c).hash()),
-		sync_oracle,
 		keystore,
 		collator_key,
 		para_id,
 		overseer_handle,
-		slot_duration,
 		relay_chain_slot_duration,
 		proposer,
 		collator_service,
@@ -543,7 +541,7 @@ where
 		reinitialize: false,
 	};
 
-	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _, _>(params);
+	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _>(params);
 	task_manager
 		.spawn_essential_handle()
 		.spawn(TASK_MANAGER_IDENTIFIER, None, fut);

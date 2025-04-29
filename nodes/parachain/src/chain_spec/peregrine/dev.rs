@@ -88,6 +88,7 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 			keys: [alice.clone(), bob.clone()]
 				.map(|(acc, key)| (acc.clone(), acc, SessionKeys { aura: key }))
 				.to_vec(),
+			..Default::default()
 		},
 		sudo: SudoConfig {
 			key: Some(alice.0.clone()),

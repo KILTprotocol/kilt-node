@@ -167,7 +167,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				(BenchmarkCmd::Pallet(cmd), ParachainRuntime::Spiritnet(_)) => {
 					if cfg!(feature = "runtime-benchmarks") {
 						runner.sync_run(|config| {
-							cmd.run::<Block, <SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
+							cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, <SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(Some(config.chain_spec))
 						})
 					} else {
 						Err("Benchmarking wasn't enabled when building the node. \
@@ -178,7 +178,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				(BenchmarkCmd::Pallet(cmd), ParachainRuntime::Peregrine(_)) => {
 					if cfg!(feature = "runtime-benchmarks") {
 						runner.sync_run(|config| {
-							cmd.run::<Block, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
+							cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(Some(config.chain_spec))
 						})
 					} else {
 						Err("Benchmarking wasn't enabled when building the node. \
@@ -216,7 +216,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
+					cmd.run_with_spec(config, std::sync::Arc::clone(&partials.client), db, storage)
 				}),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
@@ -228,7 +228,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 					let db = partials.backend.expose_db();
 					let storage = partials.backend.expose_storage();
 
-					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
+					cmd.run_with_spec(config, std::sync::Arc::clone(&partials.client), db, storage)
 				}),
 				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
 				(BenchmarkCmd::Machine(cmd), _) => {
@@ -250,7 +250,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				let hwbench = (!cli.no_hardware_benchmarks)
 					.then_some(config.database.path().map(|database_path| {
 						let _ = std::fs::create_dir_all(database_path);
-						sc_sysinfo::gather_hwbench(Some(database_path))
+						sc_sysinfo::gather_hwbench(Some(database_path) , &SUBSTRATE_REFERENCE_HARDWARE)
 					}))
 					.flatten();
 
