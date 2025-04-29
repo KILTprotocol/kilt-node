@@ -49,6 +49,15 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `pallet_balances`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_balances::WeightInfo for WeightInfo<T> {
+	
+
+	fn burn_allow_death() -> Weight {
+		todo!()
+	}
+
+	fn burn_keep_alive() -> Weight {
+		todo!()
+	}
 	/// Storage: `System::Account` (r:2 w:2)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
 	fn transfer_allow_death() -> Weight {

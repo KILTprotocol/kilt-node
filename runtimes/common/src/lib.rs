@@ -53,7 +53,6 @@ pub mod did;
 pub mod dip;
 pub mod errors;
 pub mod fees;
-pub mod migrations;
 pub mod pallet_id;
 pub mod web3_names;
 pub mod xcm_config;

@@ -51,6 +51,10 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `pallet_assets`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_assets::WeightInfo for WeightInfo<T> {
+
+	fn transfer_all() -> Weight {
+		todo!()
+	}
 	/// Storage: `Fungibles::Asset` (r:1 w:1)
 	/// Proof: `Fungibles::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
 	fn create() -> Weight {

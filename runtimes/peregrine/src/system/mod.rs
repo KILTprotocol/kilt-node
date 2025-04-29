@@ -94,6 +94,12 @@ impl frame_system::Config for Runtime {
 	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+
+	type MultiBlockMigrator = ();
+	type PostInherents = ();
+	type PostTransactions = ();
+	type PreInherents = ();
+	type SingleBlockMigrations = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -159,6 +165,7 @@ impl pallet_aura::Config for Runtime {
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<{ constants::staking::MAX_CANDIDATES }>;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+	type SlotDuration = ConstU64<12_000>;
 }
 
 impl pallet_authorship::Config for Runtime {

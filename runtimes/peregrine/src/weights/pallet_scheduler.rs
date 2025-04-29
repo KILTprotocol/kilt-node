@@ -49,6 +49,18 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `pallet_scheduler`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_scheduler::WeightInfo for WeightInfo<T> {
+
+
+	fn cancel_retry_named() -> cumulus_primitives_core::Weight { todo!() }
+
+	fn cancel_retry() -> cumulus_primitives_core::Weight { todo!() }
+
+	fn set_retry_named() -> cumulus_primitives_core::Weight { todo!() }
+
+	fn schedule_retry(_: u32) -> cumulus_primitives_core::Weight { todo!() }
+
+	fn set_retry() -> cumulus_primitives_core::Weight { todo!() }
+
 	/// Storage: `Scheduler::IncompleteSince` (r:1 w:1)
 	/// Proof: `Scheduler::IncompleteSince` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	fn service_agendas_base() -> Weight {

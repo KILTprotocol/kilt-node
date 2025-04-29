@@ -49,6 +49,10 @@ use pallet_assets as pallet_bonded_assets;
 /// Weight functions for `pallet_bonded_assets`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_bonded_assets::WeightInfo for WeightInfo<T> {
+
+	fn transfer_all() -> Weight {
+		todo!()
+	}
 	/// Storage: `BondedFungibles::Asset` (r:1 w:1)
 	/// Proof: `BondedFungibles::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
 	fn create() -> Weight {

@@ -249,6 +249,10 @@ impl xcm_executor::Config for XcmConfig {
 	type SafeCallFilter = SafeCallFilter;
 	type Aliasers = Nothing;
 	type TransactionalProcessor = FrameTransactionalProcessor;
+	type HrmpChannelAcceptedHandler = ();
+	type HrmpChannelClosingHandler = ();
+	type HrmpNewChannelOpenRequestHandler = ();
+	type XcmRecorder = ();
 }
 
 /// Allows only local `Signed` origins to be converted into `MultiLocation`s by
@@ -311,6 +315,8 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
 	type MaxInboundSuspended = MaxInboundSuspended;
 	type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
+	type MaxActiveOutboundChannels = ();
+	type MaxPageSize = ();
 }
 
 impl pallet_message_queue::Config for Runtime {
@@ -327,4 +333,5 @@ impl pallet_message_queue::Config for Runtime {
 	type HeapSize = HeapSize;
 	type MaxStale = MaxStale;
 	type ServiceWeight = ServiceWeight;
+	type IdleMaxServiceWeight = ();
 }
