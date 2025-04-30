@@ -99,7 +99,7 @@ impl frame_system::Config for Runtime {
 	type PostInherents = ();
 	type PostTransactions = ();
 	type PreInherents = ();
-	type SingleBlockMigrations = ();
+	type SingleBlockMigrations = crate::migrations::RuntimeMigrations;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -165,7 +165,7 @@ impl pallet_aura::Config for Runtime {
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<{ constants::staking::MAX_CANDIDATES }>;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type SlotDuration = ConstU64<12_000>;
+	type SlotDuration = ConstU64<{ constants::SLOT_DURATION }>;
 }
 
 impl pallet_authorship::Config for Runtime {

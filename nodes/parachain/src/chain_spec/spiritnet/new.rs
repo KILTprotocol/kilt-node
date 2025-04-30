@@ -32,7 +32,6 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("WASM binary not available");
 	let genesis_state = to_value(generate_genesis_state()).expect("Creating genesis state failed");
 
-	#[allow(deprecated)]
 	ChainSpec::builder(
 		wasm_binary,
 		Extensions {

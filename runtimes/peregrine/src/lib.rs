@@ -53,7 +53,6 @@ mod governance;
 mod kilt;
 pub use kilt::Web3Name;
 mod migrations;
-pub use migrations::RuntimeMigrations;
 mod parachain;
 mod runtime_apis;
 use runtime_apis::_InternalImplRuntimeApis;
@@ -198,7 +197,6 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	RuntimeMigrations,
 >;
 
 /// Block header type as expected by this runtime.

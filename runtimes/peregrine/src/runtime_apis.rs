@@ -7,6 +7,7 @@ use ::xcm::{
 use cumulus_primitives_aura::Slot;
 use cumulus_primitives_core::CollationInfo;
 use frame_support::{
+	genesis_builder_helper::{build_state, get_preset},
 	pallet_prelude::{TransactionSource, TransactionValidity},
 	traits::{
 		fungibles::{metadata::Inspect as MetadataInspect, Inspect},
@@ -239,20 +240,17 @@ impl_runtime_apis! {
 	}
 
 	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+		fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_state::<RuntimeGenesisConfig>(config)
+		}
+
+		fn get_preset(id: &Option<PresetId>) -> Option<Vec<u8>> {
+			get_preset::<RuntimeGenesisConfig>(id, |_| None)
+		}
 
 		fn preset_names() -> Vec<PresetId> {
-			todo!()
+			Default::default()
 		}
-
-		fn get_preset(_id: &Option<PresetId>) -> Option<Vec<u8>> {
-			todo!()
-		}
-
-
-		fn build_state(_json: Vec<u8>) -> sp_genesis_builder::Result {
-			todo!()
-		}
-
 	}
 
 	impl kilt_runtime_api_did::Did<

@@ -41,6 +41,7 @@ use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberMonotonically
 use cumulus_primitives_core::{AggregateMessageOrigin, CollationInfo};
 use did::{DidRawOrigin, EnsureDidOrigin};
 use frame_support::{
+	genesis_builder_helper::{build_state, get_preset}
 	construct_runtime,
 	dispatch::DispatchClass,
 	parameter_types,
@@ -232,7 +233,6 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = ConstU16<SS58_PREFIX>;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type Version = Version;
-
 	type MultiBlockMigrator = ();
 	type PostInherents = ();
 	type PostTransactions = ();
@@ -783,18 +783,17 @@ impl_runtime_apis! {
 			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(runtime_api::DipProofError::MerkleProof)
 		}
 	}
-
 	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+		fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_state::<RuntimeGenesisConfig>(config)
+		}
+
+		fn get_preset(id: &Option<PresetId>) -> Option<Vec<u8>> {
+			get_preset::<RuntimeGenesisConfig>(id, |_| None)
+		}
+
 		fn preset_names() -> Vec<PresetId> {
-			todo!()
-		}
-
-		fn get_preset(_id: &Option<PresetId>) -> Option<Vec<u8>> {
-			todo!()
-		}
-
-		fn build_state(_json: Vec<u8>) -> sp_genesis_builder::Result {
-			todo!()
+			Default::default()
 		}
 	}
 

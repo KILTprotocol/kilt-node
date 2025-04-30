@@ -30,7 +30,9 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
-	construct_runtime, parameter_types,
+	construct_runtime,
+	genesis_builder_helper::{build_state, get_preset},
+	parameter_types,
 	traits::{Everything, InstanceFilter},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee, Weight},
 };
@@ -198,7 +200,6 @@ impl frame_system::Config for Runtime {
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
 	type MaxConsumers = ConstU32<16>;
-
 	type MultiBlockMigrator = ();
 	type PostInherents = ();
 	type PostTransactions = ();
@@ -1230,16 +1231,16 @@ impl_runtime_apis! {
 	}
 
 	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+		fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_state::<RuntimeGenesisConfig>(config)
+		}
+
+		fn get_preset(id: &Option<PresetId>) -> Option<Vec<u8>> {
+			get_preset::<RuntimeGenesisConfig>(id, |_| None)
+		}
+
 		fn preset_names() -> Vec<PresetId> {
-			todo!()
-		}
-
-		fn get_preset(_id: &Option<PresetId>) -> Option<Vec<u8>> {
-			todo!()
-		}
-
-		fn build_state(_json: Vec<u8>) -> sp_genesis_builder::Result {
-			todo!()
+			Default::default()
 		}
 	}
 
