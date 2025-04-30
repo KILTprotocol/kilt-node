@@ -231,7 +231,7 @@ impl_runtime_apis! {
 		}
 
 		fn preset_names() -> Vec<PresetId> {
-			Default::default()
+			vec![PresetId::from("kilt")]
 		}
 	}
 

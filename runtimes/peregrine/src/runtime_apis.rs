@@ -249,7 +249,7 @@ impl_runtime_apis! {
 		}
 
 		fn preset_names() -> Vec<PresetId> {
-			Default::default()
+			vec![PresetId::from("peregrine_kilt_paseo"), PresetId::from("peregrine_stg_kilt"), PresetId::from("rilt_peregrine_new")]
 		}
 	}
 
