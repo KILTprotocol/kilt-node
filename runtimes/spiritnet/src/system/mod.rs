@@ -94,7 +94,6 @@ impl frame_system::Config for Runtime {
 	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
-
 	type MultiBlockMigrator = ();
 	type PostInherents = ();
 	type PostTransactions = ();

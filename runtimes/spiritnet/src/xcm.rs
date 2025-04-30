@@ -253,7 +253,7 @@ impl xcm_executor::Config for XcmConfig {
 	type HrmpChannelAcceptedHandler = ();
 	type HrmpChannelClosingHandler = ();
 	type HrmpNewChannelOpenRequestHandler = ();
-	type XcmRecorder = ();
+	type XcmRecorder = PolkadotXcm;
 }
 
 /// Allows only local `Signed` origins to be converted into `MultiLocation`s by
