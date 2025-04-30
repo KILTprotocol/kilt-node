@@ -223,11 +223,11 @@ impl_runtime_apis! {
 
 	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
 		fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
-			build_state::<RuntimeGenesisConfig>(config)
+			build_state::<crate::RuntimeGenesisConfig>(config)
 		}
 
 		fn get_preset(id: &Option<PresetId>) -> Option<Vec<u8>> {
-			get_preset::<RuntimeGenesisConfig>(id, |_| None)
+			get_preset::<crate::RuntimeGenesisConfig>(id, |_| None)
 		}
 
 		fn preset_names() -> Vec<PresetId> {

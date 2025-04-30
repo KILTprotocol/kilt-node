@@ -41,9 +41,9 @@ use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberMonotonically
 use cumulus_primitives_core::{AggregateMessageOrigin, CollationInfo};
 use did::{DidRawOrigin, EnsureDidOrigin};
 use frame_support::{
-	genesis_builder_helper::{build_state, get_preset}
 	construct_runtime,
 	dispatch::DispatchClass,
+	genesis_builder_helper::{build_state, get_preset},
 	parameter_types,
 	traits::{ConstU32, ConstU64, ConstU8, EnqueueWithOrigin, Everything},
 	weights::{

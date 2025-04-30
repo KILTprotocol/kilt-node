@@ -198,6 +198,8 @@ impl ExtBuilder {
 			for (subject, details) in self.1 {
 				IdentityEntries::<TestRuntime>::insert(subject, details)
 			}
+
+			System::set_block_number(System::block_number() + 1);
 		});
 
 		ext
