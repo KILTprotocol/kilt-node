@@ -278,6 +278,8 @@ pub mod staking {
 
 	pub const NETWORK_REWARD_RATE: Perquintill = Perquintill::from_percent(10);
 
+	pub const MAX_COLLATORS: u32 = 32;
+
 	parameter_types! {
 		/// Minimum round length is 1 hour
 		pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
@@ -309,6 +311,8 @@ pub mod staking {
 		pub const NetworkRewardStart: BlockNumber = super::treasury::INITIAL_PERIOD_LENGTH;
 		/// The rate in percent for the network rewards
 		pub const NetworkRewardRate: Perquintill = NETWORK_REWARD_RATE;
+		/// The maximum number of collators
+		pub const MaxCollators: u32 = MAX_COLLATORS;
 	}
 }
 

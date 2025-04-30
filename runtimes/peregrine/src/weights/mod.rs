@@ -28,6 +28,7 @@ pub mod pallet_assets;
 pub mod pallet_balances;
 pub mod pallet_bonded_assets;
 pub mod pallet_bonded_coins;
+pub mod pallet_collators;
 pub mod pallet_collective;
 pub mod pallet_democracy;
 pub mod pallet_deposit_storage;
