@@ -58,6 +58,7 @@ pub mod runtime {
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::{EnsureRoot, EnsureSigned};
+	use pallet_assets::FrozenBalance;
 	use sp_core::U256;
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -68,8 +69,8 @@ pub mod runtime {
 	use crate::{
 		self as pallet_bonded_coins,
 		traits::NextAssetIds,
-		types::{Locks, PoolStatus},
-		Config, DepositBalanceOf, FungiblesAssetIdOf, PoolDetailsOf,
+		types::{BondedCurrenciesSettings, Locks, PoolStatus},
+		AccountIdOf, Config, DepositBalanceOf, FungiblesAssetIdOf, FungiblesBalanceOf, PoolDetailsOf,
 	};
 
 	pub type Hash = sp_core::H256;
@@ -117,13 +118,16 @@ pub mod runtime {
 		PoolDetailsOf::<Test> {
 			curve,
 			manager,
-			transferable,
 			bonded_currencies,
 			state,
 			collateral,
-			denomination: DEFAULT_BONDED_DENOMINATION,
+			currencies_settings: BondedCurrenciesSettings {
+				allow_reset_team: true,
+				transferable,
+				min_operation_balance,
+				denomination: DEFAULT_BONDED_DENOMINATION,
+			},
 			owner,
-			min_operation_balance,
 			deposit: BondingPallet::calculate_pool_deposit(currencies.len()),
 		}
 	}
@@ -187,6 +191,28 @@ pub mod runtime {
 			let new_next_asset_id = next_asset_id.checked_add(n).ok_or(ArithmeticError::Overflow)?;
 			NextAssetId::<BondingPallet>::set(new_next_asset_id);
 			Ok((next_asset_id..new_next_asset_id).map(|id| id.into()).collect())
+		}
+	}
+
+	/// Store freezes for the assets pallet.
+	#[storage_alias]
+	pub type Freezes<Assets: PalletInfoAccess> = StorageDoubleMap<
+		Assets,
+		Blake2_128Concat,
+		FungiblesAssetIdOf<Test>,
+		Blake2_128Concat,
+		AccountIdOf<Test>,
+		FungiblesBalanceOf<Test>,
+		OptionQuery,
+	>;
+
+	pub struct FreezesHook;
+
+	impl FrozenBalance<AssetId, AccountId, Balance> for FreezesHook {
+		fn died(_asset: AssetId, _who: &AccountId) {}
+
+		fn frozen_balance(asset: AssetId, who: &AccountId) -> Option<Balance> {
+			Freezes::<Assets>::get(asset, who)
 		}
 	}
 
@@ -279,7 +305,7 @@ pub mod runtime {
 		type Currency = Balances;
 		type Extra = ();
 		type ForceOrigin = EnsureRoot<AccountId>;
-		type Freezer = ();
+		type Freezer = FreezesHook;
 		type MetadataDepositBase = ConstU128<0>;
 		type MetadataDepositPerByte = ConstU128<0>;
 		type RemoveItemsLimit = ConstU32<5>;
@@ -355,6 +381,7 @@ pub mod runtime {
 		//  pool_id, PoolDetails
 		pools: Vec<(AccountId, PoolDetailsOf<Test>)>,
 		collaterals: Vec<AssetId>,
+		freezes: Vec<(AssetId, AccountId, Balance)>,
 	}
 
 	impl ExtBuilder {
@@ -375,6 +402,11 @@ pub mod runtime {
 
 		pub(crate) fn with_bonded_balance(mut self, bonded_balance: Vec<(AssetId, AccountId, Balance)>) -> Self {
 			self.bonded_balance = bonded_balance;
+			self
+		}
+
+		pub(crate) fn with_freezes(mut self, freezes: Vec<(AssetId, AccountId, Balance)>) -> Self {
+			self.freezes = freezes;
 			self
 		}
 
@@ -417,7 +449,7 @@ pub mod runtime {
 						pool_details
 							.bonded_currencies
 							.iter()
-							.map(|id| (*id, vec![], vec![], pool_details.denomination))
+							.map(|id| (*id, vec![], vec![], pool_details.currencies_settings.denomination))
 							.collect::<Vec<(u32, Vec<u8>, Vec<u8>, u8)>>()
 					})
 					.chain(
@@ -448,6 +480,10 @@ pub mod runtime {
 				});
 
 				NextAssetId::<BondingPallet>::set(next_asset_id);
+
+				self.freezes.iter().for_each(|(asset_id, account, amount)| {
+					Freezes::<Assets>::set(asset_id, account, Some(*amount));
+				});
 			});
 
 			ext

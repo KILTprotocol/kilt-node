@@ -117,6 +117,45 @@ fn set_lock_works_when_locked() {
 }
 
 #[test]
+fn set_lock_requires_at_least_one_flag_set() {
+	let pool_details = generate_pool_details(
+		vec![DEFAULT_BONDED_CURRENCY_ID],
+		get_linear_bonding_curve(),
+		true,
+		Some(PoolStatus::Active),
+		Some(ACCOUNT_00),
+		Some(DEFAULT_COLLATERAL_CURRENCY_ID),
+		Some(ACCOUNT_00),
+		None,
+	);
+	let pool_id: AccountIdOf<Test> = calculate_pool_id(&[DEFAULT_BONDED_CURRENCY_ID]);
+
+	ExtBuilder::default()
+		.with_pools(vec![(pool_id.clone(), pool_details)])
+		.with_native_balances(vec![(ACCOUNT_00, ONE_HUNDRED_KILT)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.with_bonded_balance(vec![
+			(DEFAULT_COLLATERAL_CURRENCY_ID, pool_id.clone(), u128::MAX / 10),
+			(DEFAULT_BONDED_CURRENCY_ID, ACCOUNT_00, u128::MAX / 10),
+		])
+		.build_and_execute_with_sanity_tests(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+
+			assert_err!(
+				BondingPallet::set_lock(
+					origin,
+					pool_id.clone(),
+					Locks {
+						allow_burn: true,
+						allow_mint: true
+					}
+				),
+				Error::<Test>::InvalidInput
+			);
+		});
+}
+
+#[test]
 fn set_lock_fails_when_not_authorized() {
 	let pool_details = generate_pool_details(
 		vec![DEFAULT_BONDED_CURRENCY_ID],

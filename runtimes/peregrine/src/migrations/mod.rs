@@ -32,6 +32,7 @@ pub type RuntimeMigrations = (
 	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>,
 	frame_support::migrations::RemovePallet<DotNames, <Runtime as frame_system::Config>::DbWeight>,
 	frame_support::migrations::RemovePallet<UniqueLinking, <Runtime as frame_system::Config>::DbWeight>,
+	pallet_bonded_coins::migrations::v1::MigrateV0ToV1<Runtime>,
 );
 
 impl pallet_migration::Config for Runtime {

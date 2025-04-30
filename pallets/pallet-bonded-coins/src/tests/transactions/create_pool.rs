@@ -28,8 +28,8 @@ use sp_std::ops::Sub;
 
 use crate::{
 	mock::{runtime::*, *},
-	types::{Locks, PoolStatus},
-	AccountIdOf, Event as BondingPalletEvents, Pools, TokenMetaOf,
+	types::{BondedCurrenciesSettings, Locks, PoolStatus},
+	AccountIdOf, Error, Event as BondingPalletEvents, Pools, TokenMetaOf,
 };
 
 #[test]
@@ -55,9 +55,12 @@ fn single_currency() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bounded_vec![bonded_token],
-				DEFAULT_BONDED_DENOMINATION,
-				true,
-				1,
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				},
 			));
 
 			let pool_id: AccountIdOf<Test> = calculate_pool_id(&[new_asset_id]);
@@ -66,7 +69,7 @@ fn single_currency() {
 
 			assert!(details.is_owner(&ACCOUNT_00));
 			assert!(details.is_manager(&ACCOUNT_00));
-			assert!(details.transferable);
+			assert!(details.currencies_settings.transferable);
 			assert_eq!(
 				details.state,
 				PoolStatus::Locked(Locks {
@@ -74,7 +77,7 @@ fn single_currency() {
 					allow_burn: false,
 				})
 			);
-			assert_eq!(details.denomination, DEFAULT_BONDED_DENOMINATION);
+			assert_eq!(details.currencies_settings.denomination, DEFAULT_BONDED_DENOMINATION);
 			assert_eq!(details.collateral, DEFAULT_COLLATERAL_CURRENCY_ID);
 			assert_eq!(details.bonded_currencies, vec![new_asset_id]);
 
@@ -112,13 +115,23 @@ fn multi_currency() {
 			let origin = RawOrigin::Signed(ACCOUNT_00).into();
 			let curve = get_linear_bonding_curve_input();
 
-			let bonded_token = TokenMetaOf::<Test> {
-				name: BoundedVec::truncate_from(b"Bitcoin".to_vec()),
-				symbol: BoundedVec::truncate_from(b"btc".to_vec()),
-				min_balance: 1,
-			};
-
-			let bonded_tokens = bounded_vec![bonded_token; 3];
+			let bonded_tokens = bounded_vec![
+				TokenMetaOf::<Test> {
+					name: BoundedVec::truncate_from(b"Bitcoin".to_vec()),
+					symbol: BoundedVec::truncate_from(b"BTC".to_vec()),
+					min_balance: 1,
+				},
+				TokenMetaOf::<Test> {
+					name: BoundedVec::truncate_from(b"Ether".to_vec()),
+					symbol: BoundedVec::truncate_from(b"ETH".to_vec()),
+					min_balance: 1,
+				},
+				TokenMetaOf::<Test> {
+					name: BoundedVec::truncate_from(b"Dogecoin".to_vec()),
+					symbol: BoundedVec::truncate_from(b"DOGE".to_vec()),
+					min_balance: 1,
+				}
+			];
 
 			let next_asset_id = NextAssetId::<BondingPallet>::get();
 
@@ -127,9 +140,66 @@ fn multi_currency() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bonded_tokens,
-				DEFAULT_BONDED_DENOMINATION,
-				true,
-				1
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				}
+			));
+
+			assert_eq!(NextAssetId::<BondingPallet>::get(), next_asset_id + 3);
+
+			let new_assets = Vec::from_iter(next_asset_id..next_asset_id + 3);
+			let pool_id: AccountIdOf<Test> = calculate_pool_id(&new_assets);
+
+			let details = Pools::<Test>::get(pool_id.clone()).unwrap();
+
+			assert_eq!(BondingPallet::get_currencies_number(&details), 3);
+			assert_eq!(details.bonded_currencies, new_assets);
+
+			assert_eq!(
+				Balances::free_balance(ACCOUNT_00),
+				initial_balance.sub(BondingPallet::calculate_pool_deposit(3))
+			);
+
+			for new_asset_id in new_assets {
+				assert!(Assets::asset_exists(new_asset_id));
+				assert_eq!(Assets::owner(new_asset_id), Some(pool_id.clone()));
+			}
+		});
+}
+
+#[test]
+fn multi_currency_with_empty_metadata() {
+	let initial_balance = ONE_HUNDRED_KILT;
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build_and_execute_with_sanity_tests(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+			let curve = get_linear_bonding_curve_input();
+
+			let bonded_token = TokenMetaOf::<Test> {
+				name: BoundedVec::new(),
+				symbol: BoundedVec::new(),
+				min_balance: 1,
+			};
+
+			let bonded_tokens = bounded_vec![bonded_token; 3];
+			let next_asset_id = NextAssetId::<BondingPallet>::get();
+
+			assert_ok!(BondingPallet::create_pool(
+				origin,
+				curve,
+				DEFAULT_COLLATERAL_CURRENCY_ID,
+				bonded_tokens,
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				}
 			));
 
 			assert_eq!(NextAssetId::<BondingPallet>::get(), next_asset_id + 3);
@@ -177,9 +247,12 @@ fn can_create_identical_pools() {
 				curve.clone(),
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bounded_vec![bonded_token.clone()],
-				DEFAULT_BONDED_DENOMINATION,
-				true,
-				1
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				}
 			));
 
 			assert_ok!(BondingPallet::create_pool(
@@ -187,9 +260,12 @@ fn can_create_identical_pools() {
 				curve,
 				DEFAULT_COLLATERAL_CURRENCY_ID,
 				bounded_vec![bonded_token],
-				DEFAULT_BONDED_DENOMINATION,
-				true,
-				1
+				BondedCurrenciesSettings {
+					denomination: DEFAULT_BONDED_DENOMINATION,
+					allow_reset_team: true,
+					transferable: true,
+					min_operation_balance: 1
+				}
 			));
 
 			assert_eq!(NextAssetId::<BondingPallet>::get(), next_asset_id + 2);
@@ -204,6 +280,98 @@ fn can_create_identical_pools() {
 
 			assert!(Assets::asset_exists(next_asset_id));
 			assert!(Assets::asset_exists(next_asset_id + 1));
+		});
+}
+
+#[test]
+fn cannot_reuse_names() {
+	let initial_balance = ONE_HUNDRED_KILT;
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build_and_execute_with_sanity_tests(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+			let curve = get_linear_bonding_curve_input();
+
+			let bonded_tokens = bounded_vec![
+				TokenMetaOf::<Test> {
+					name: BoundedVec::truncate_from(b"Bitcoin".to_vec()),
+					symbol: BoundedVec::truncate_from(b"BTC".to_vec()),
+					min_balance: 1,
+				},
+				TokenMetaOf::<Test> {
+					name: BoundedVec::truncate_from(b"Ether".to_vec()),
+					symbol: BoundedVec::truncate_from(b"ETH".to_vec()),
+					min_balance: 1,
+				},
+				TokenMetaOf::<Test> {
+					name: BoundedVec::truncate_from(b"Bitcoin".to_vec()),
+					symbol: BoundedVec::truncate_from(b"DOGE".to_vec()),
+					min_balance: 1,
+				}
+			];
+
+			assert_err!(
+				BondingPallet::create_pool(
+					origin,
+					curve,
+					DEFAULT_COLLATERAL_CURRENCY_ID,
+					bonded_tokens,
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
+				),
+				Error::<Test>::InvalidInput
+			);
+		});
+}
+
+#[test]
+fn cannot_reuse_symbols() {
+	let initial_balance = ONE_HUNDRED_KILT;
+	ExtBuilder::default()
+		.with_native_balances(vec![(ACCOUNT_00, initial_balance)])
+		.with_collaterals(vec![DEFAULT_COLLATERAL_CURRENCY_ID])
+		.build_and_execute_with_sanity_tests(|| {
+			let origin = RawOrigin::Signed(ACCOUNT_00).into();
+			let curve = get_linear_bonding_curve_input();
+
+			let bonded_tokens = bounded_vec![
+				TokenMetaOf::<Test> {
+					name: BoundedVec::truncate_from(b"Bitcoin".to_vec()),
+					symbol: BoundedVec::truncate_from(b"BTC".to_vec()),
+					min_balance: 1,
+				},
+				TokenMetaOf::<Test> {
+					name: BoundedVec::truncate_from(b"Ether".to_vec()),
+					symbol: BoundedVec::truncate_from(b"ETH".to_vec()),
+					min_balance: 1,
+				},
+				TokenMetaOf::<Test> {
+					name: BoundedVec::truncate_from(b"Dogecoin".to_vec()),
+					symbol: BoundedVec::truncate_from(b"BTC".to_vec()),
+					min_balance: 1,
+				}
+			];
+
+			assert_err!(
+				BondingPallet::create_pool(
+					origin,
+					curve,
+					DEFAULT_COLLATERAL_CURRENCY_ID,
+					bonded_tokens,
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
+				),
+				Error::<Test>::InvalidInput
+			);
 		});
 }
 
@@ -227,9 +395,12 @@ fn fails_if_collateral_not_exists() {
 					curve,
 					100,
 					bounded_vec![bonded_token],
-					DEFAULT_BONDED_DENOMINATION,
-					true,
-					1
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
 				),
 				AssetsPalletErrors::<Test>::Unknown
 			);
@@ -259,9 +430,12 @@ fn cannot_create_circular_pool() {
 					// try specifying the id of the currency to be created as collateral
 					next_asset_id,
 					bounded_vec![bonded_token],
-					DEFAULT_BONDED_DENOMINATION,
-					true,
-					1
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
 				),
 				AssetsPalletErrors::<Test>::Unknown
 			);
@@ -292,9 +466,12 @@ fn handles_asset_id_overflow() {
 					curve,
 					DEFAULT_COLLATERAL_CURRENCY_ID,
 					bounded_vec![bonded_token; 2],
-					DEFAULT_BONDED_DENOMINATION,
-					true,
-					1
+					BondedCurrenciesSettings {
+						denomination: DEFAULT_BONDED_DENOMINATION,
+						allow_reset_team: true,
+						transferable: true,
+						min_operation_balance: 1
+					}
 				),
 				ArithmeticError::Overflow
 			);
