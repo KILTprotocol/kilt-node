@@ -674,9 +674,6 @@
 <a href="#674" id="674">674</a>
 <a href="#675" id="675">675</a>
 <a href="#676" id="676">676</a>
-<a href="#677" id="677">677</a>
-<a href="#678" id="678">678</a>
-<a href="#679" id="679">679</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::str;
 
 <span class="kw">use </span>::xcm::{
@@ -1178,7 +1175,8 @@
 			rounding: Round,
 		) -&gt; <span class="prelude-ty">Result</span>&lt;Balance, BondedCurrencyError&gt; {
 			<span class="kw">let </span>pool = Pools::&lt;Runtime&gt;::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)<span class="question-mark">?</span>;
-			<span class="kw">let </span>PoolDetailsOf::&lt;Runtime&gt; { curve, bonded_currencies, denomination, collateral, .. } = pool;
+			<span class="kw">let </span>PoolDetailsOf::&lt;Runtime&gt; { curve, bonded_currencies, currencies_settings, collateral, .. } = pool;
+			<span class="kw">let </span>denomination = currencies_settings.denomination;
 			<span class="kw">let </span>collateral_denomination = NativeAndForeignAssets::decimals(collateral);
 
 			<span class="kw">let </span>normalized_low = balance_to_fixed(low, denomination, rounding).map_err(|<span class="kw">_</span>| BondedCurrencyError::BalanceConversion)<span class="question-mark">?</span>;
@@ -1231,15 +1229,13 @@
 			<span class="kw">let </span>pool = Pools::&lt;Runtime&gt;::get(<span class="kw-2">&amp;</span>pool_id).ok_or(BondedCurrencyError::PoolNotFound)<span class="question-mark">?</span>;
 			<span class="kw">let </span>PoolDetailsOf::&lt;Runtime&gt; {
 				curve,
+				currencies_settings,
 				bonded_currencies,
 				owner,
 				collateral,
-				denomination,
 				deposit,
-				min_operation_balance,
 				manager,
 				state,
-				transferable,
 			} = pool;
 
 			<span class="kw">let </span>currencies = bonded_currencies.iter().map(|currency_id| -&gt; <span class="prelude-ty">Result</span>&lt;BondedCurrencyDetails&lt;BondedAssetId, Balance&gt;, BondedCurrencyError&gt; {
@@ -1283,12 +1279,10 @@
 				curve: fmt_curve,
 				collateral: collateral_details,
 				owner,
-				denomination,
 				deposit,
-				min_operation_balance,
 				manager,
 				state,
-				transferable,
+				currencies_settings
 			})
 		}
 

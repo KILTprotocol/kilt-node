@@ -927,6 +927,37 @@
 <a href="#927" id="927">927</a>
 <a href="#928" id="928">928</a>
 <a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
+<a href="#955" id="955">955</a>
+<a href="#956" id="956">956</a>
+<a href="#957" id="957">957</a>
+<a href="#958" id="958">958</a>
+<a href="#959" id="959">959</a>
+<a href="#960" id="960">960</a>
 </pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
 // Copyright (C) 2025, KILT Foundation
 
@@ -946,6 +977,7 @@
 // If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 </span><span class="kw">use </span>frame_benchmarking::v2::<span class="kw-2">*</span>;
 <span class="kw">use </span>frame_support::traits::fungibles::roles::Inspect <span class="kw">as </span>InspectRoles;
+<span class="kw">use </span>scale_info::prelude::format;
 <span class="kw">use </span>sp_core::U256;
 <span class="kw">use </span>sp_std::{
 	ops::{AddAssign, BitOrAssign, ShlAssign},
@@ -956,9 +988,11 @@
 <span class="kw">use crate</span>::{
 	curves::{
 		lmsr::{LMSRParameters, LMSRParametersInput},
+		polynomial::PolynomialParameters,
 		square_root::{SquareRootParameters, SquareRootParametersInput},
 		Curve, CurveInput,
 	},
+	types::BondedCurrenciesSettings,
 	Call, CollateralAssetIdOf, CollateralBalanceOf, Config, CurveParameterTypeOf, FungiblesAssetIdOf,
 	FungiblesBalanceOf, Pallet,
 };
@@ -990,6 +1024,13 @@
 	}
 
 	<span class="kw">fn </span>set_native_balance(_account: <span class="kw-2">&amp;</span>&lt;T&gt;::AccountId, _amount: u128) {}
+}
+
+<span class="kw">fn </span>get_2nd_order_polynomial_curve&lt;Float: FixedSigned&gt;() -&gt; Curve&lt;Float&gt; {
+	<span class="kw">let </span>m = Float::from_num(<span class="number">0.01</span>);
+	<span class="kw">let </span>n = Float::from_num(<span class="number">2</span>);
+	<span class="kw">let </span>o = Float::from_num(<span class="number">3</span>);
+	Curve::Polynomial(PolynomialParameters { m, n, o })
 }
 
 <span class="kw">fn </span>get_square_root_curve&lt;Float: FixedSigned&gt;() -&gt; Curve&lt;Float&gt; {
@@ -1149,10 +1190,13 @@
 			owner,
 			state,
 			collateral,
-			denomination,
 			bonded_currencies: BoundedVec::truncate_from(bonded_coin_ids.clone()),
-			transferable: <span class="bool-val">true</span>,
-			min_operation_balance: <span class="number">1u128</span>.saturated_into(),
+			currencies_settings: BondedCurrenciesSettings {
+				denomination,
+				transferable: <span class="bool-val">true</span>,
+				allow_reset_team: <span class="bool-val">true</span>,
+				min_operation_balance: <span class="number">1u128</span>.saturated_into(),
+			},
 			deposit: Pallet::&lt;T&gt;::calculate_pool_deposit(bonded_coin_ids.len()),
 		};
 		Pools::&lt;T&gt;::insert(<span class="kw-2">&amp;</span>pool_id, pool_details);
@@ -1162,11 +1206,11 @@
 
 	<span class="kw">fn </span>generate_token_metadata&lt;T: Config&gt;(c: u32) -&gt; BoundedVec&lt;TokenMetaOf&lt;T&gt;, T::MaxCurrenciesPerPool&gt; {
 		<span class="kw">let </span><span class="kw-2">mut </span>token_meta = Vec::new();
-		<span class="kw">for _ in </span><span class="number">1</span>..=c {
+		<span class="kw">for </span>i <span class="kw">in </span><span class="number">1</span>..=c {
 			token_meta.push(TokenMetaOf::&lt;T&gt; {
 				min_balance: <span class="number">1u128</span>.saturated_into(),
-				name: BoundedVec::try_from(<span class="string">b&quot;BTC&quot;</span>.to_vec()).expect(<span class="string">&quot;Failed to create BoundedVec&quot;</span>),
-				symbol: BoundedVec::try_from(<span class="string">b&quot;BTC&quot;</span>.to_vec()).expect(<span class="string">&quot;Failed to create BoundedVec&quot;</span>),
+				name: BoundedVec::try_from(<span class="macro">format!</span>(<span class="string">&quot;Coin_{}&quot;</span>, <span class="kw-2">&amp;</span>i).into_bytes()).expect(<span class="string">&quot;Failed to create BoundedVec&quot;</span>),
+				symbol: BoundedVec::try_from(<span class="macro">format!</span>(<span class="string">&quot;BTC_{}&quot;</span>, <span class="kw-2">&amp;</span>i).into_bytes()).expect(<span class="string">&quot;Failed to create BoundedVec&quot;</span>),
 			})
 		}
 		BoundedVec::try_from(token_meta).expect(<span class="string">&quot;creating bounded Vec should not fail&quot;</span>)
@@ -1192,9 +1236,12 @@
 			curve,
 			collateral_id,
 			currencies,
-			<span class="number">10</span>,
-			<span class="bool-val">true</span>,
-			<span class="number">1</span>,
+			BondedCurrenciesSettings {
+				denomination: <span class="number">10</span>,
+				allow_reset_team: <span class="bool-val">true</span>,
+				transferable: <span class="bool-val">true</span>,
+				min_operation_balance: <span class="number">1u128</span>.saturated_into(),
+			},
 		);
 
 		<span class="comment">// Verify
@@ -1230,9 +1277,12 @@
 			curve,
 			collateral_id,
 			currencies,
-			<span class="number">10</span>,
-			<span class="bool-val">true</span>,
-			<span class="number">1</span>,
+			BondedCurrenciesSettings {
+				denomination: <span class="number">10</span>,
+				allow_reset_team: <span class="bool-val">true</span>,
+				transferable: <span class="bool-val">true</span>,
+				min_operation_balance: <span class="number">1u128</span>.saturated_into(),
+			},
 		);
 
 		<span class="comment">// Verify
@@ -1242,7 +1292,7 @@
 			Curve::SquareRoot(<span class="kw">_</span>) =&gt; {
 				<span class="macro">assert_eq!</span>(id, expected_pool_id);
 			}
-			<span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;pool.curve is not a Polynomial function&quot;</span>),
+			<span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;pool.curve is not a SquareRoot function&quot;</span>),
 		}
 	}
 
@@ -1267,9 +1317,12 @@
 			curve,
 			collateral_id,
 			currencies,
-			<span class="number">10</span>,
-			<span class="bool-val">true</span>,
-			<span class="number">1</span>,
+			BondedCurrenciesSettings {
+				denomination: <span class="number">10</span>,
+				allow_reset_team: <span class="bool-val">true</span>,
+				transferable: <span class="bool-val">true</span>,
+				min_operation_balance: <span class="number">1u128</span>.saturated_into(),
+			},
 		);
 
 		<span class="comment">// Verify
@@ -1279,12 +1332,12 @@
 			Curve::Lmsr(<span class="kw">_</span>) =&gt; {
 				<span class="macro">assert_eq!</span>(id, expected_pool_id);
 			}
-			<span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;pool.curve is not a Polynomial function&quot;</span>),
+			<span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;pool.curve is not a LSMR curve!&quot;</span>),
 		}
 	}
 
 	<span class="attr">#[benchmark]
-	</span><span class="kw">fn </span>reset_team() {
+	</span><span class="kw">fn </span>reset_team(c: Linear&lt;<span class="number">1</span>, { T::MaxCurrenciesPerPool::get() }&gt;) {
 		<span class="kw">let </span>origin = T::DefaultOrigin::try_successful_origin().expect(<span class="string">&quot;creating origin should not fail&quot;</span>);
 		<span class="kw">let </span>account_origin = origin
 			.clone()
@@ -1292,17 +1345,14 @@
 			.expect(<span class="string">&quot;generating account_id from origin should not fail&quot;</span>);
 		make_free_for_deposit::&lt;T&gt;(<span class="kw-2">&amp;</span>account_origin);
 
-		<span class="kw">let </span>bonded_coin_id = T::BenchmarkHelper::calculate_bonded_asset_id(<span class="number">0</span>);
-		create_bonded_asset::&lt;T&gt;(bonded_coin_id.clone());
+		<span class="kw">let </span>bonded_currencies = create_bonded_currencies_in_range::&lt;T&gt;(c, <span class="bool-val">false</span>);
 
 		<span class="kw">let </span>curve = get_linear_bonding_curve::&lt;CurveParameterTypeOf&lt;T&gt;&gt;();
-		<span class="kw">let </span>pool_id = create_pool::&lt;T&gt;(
-			curve,
-			[bonded_coin_id.clone()].to_vec(),
-			<span class="prelude-val">Some</span>(account_origin),
-			<span class="prelude-val">None</span>,
-			<span class="prelude-val">None</span>,
-		);
+		<span class="kw">let </span>pool_id = create_pool::&lt;T&gt;(curve, bonded_currencies.clone(), <span class="prelude-val">Some</span>(account_origin), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>);
+
+		<span class="comment">// Although these would rarely happen in practice, for benchmarking we assume
+		// the worst case where the owner must be changed as well
+		</span><span class="macro">assert!</span>(T::Fungibles::owner(bonded_currencies[<span class="number">0</span>].clone()) != <span class="prelude-val">Some</span>(pool_id.clone().into()));
 
 		<span class="kw">let </span>admin: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;admin&quot;</span>, <span class="number">0</span>, <span class="number">0</span>);
 		<span class="kw">let </span>freezer: AccountIdOf&lt;T&gt; = account(<span class="string">&quot;freezer&quot;</span>, <span class="number">0</span>, <span class="number">0</span>);
@@ -1311,12 +1361,24 @@
 			freezer: freezer.clone(),
 		};
 
+		<span class="kw">let </span>pool_id_for_call = pool_id.clone();
+
+		<span class="kw">let </span>max_currencies = T::MaxCurrenciesPerPool::get();
 		<span class="attr">#[extrinsic_call]
-		</span><span class="kw">_</span>(origin <span class="kw">as </span>T::RuntimeOrigin, pool_id, fungibles_team, <span class="number">0</span>);
+		</span><span class="kw">_</span>(
+			origin <span class="kw">as </span>T::RuntimeOrigin,
+			pool_id_for_call,
+			fungibles_team,
+			max_currencies,
+		);
 
 		<span class="comment">// Verify
-		</span><span class="macro">assert_eq!</span>(T::Fungibles::admin(bonded_coin_id.clone()), <span class="prelude-val">Some</span>(admin));
-		<span class="macro">assert_eq!</span>(T::Fungibles::freezer(bonded_coin_id), <span class="prelude-val">Some</span>(freezer));
+		</span>bonded_currencies.iter().for_each(|asset_id| {
+			<span class="macro">assert_eq!</span>(T::Fungibles::admin(asset_id.clone()), <span class="prelude-val">Some</span>(admin.clone()));
+			<span class="macro">assert_eq!</span>(T::Fungibles::freezer(asset_id.clone()), <span class="prelude-val">Some</span>(freezer.clone()));
+			<span class="macro">assert_eq!</span>(T::Fungibles::owner(asset_id.clone()), <span class="prelude-val">Some</span>(pool_id.clone().into()));
+			<span class="macro">assert_eq!</span>(T::Fungibles::issuer(asset_id.clone()), <span class="prelude-val">Some</span>(pool_id.clone().into()));
+		});
 	}
 
 	<span class="attr">#[benchmark]
@@ -1404,7 +1466,7 @@
 		make_free_for_deposit::&lt;T&gt;(<span class="kw-2">&amp;</span>account_origin);
 		set_collateral_balance::&lt;T&gt;(collateral_id.clone(), <span class="kw-2">&amp;</span>account_origin, <span class="number">10000u128</span>);
 
-		<span class="kw">let </span>curve = get_linear_bonding_curve::&lt;CurveParameterTypeOf&lt;T&gt;&gt;();
+		<span class="kw">let </span>curve = get_2nd_order_polynomial_curve::&lt;CurveParameterTypeOf&lt;T&gt;&gt;();
 		<span class="kw">let </span>bonded_currencies = create_bonded_currencies_in_range::&lt;T&gt;(c, <span class="bool-val">false</span>);
 
 		<span class="kw">let </span>pool_id = create_pool::&lt;T&gt;(curve, bonded_currencies.clone(), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>));
@@ -1534,7 +1596,7 @@
 		<span class="kw">let </span>start_balance = <span class="number">100u128</span>;
 		set_fungible_balance::&lt;T&gt;(target_asset_id.clone(), <span class="kw-2">&amp;</span>account_origin, start_balance);
 
-		<span class="kw">let </span>curve = get_linear_bonding_curve::&lt;CurveParameterTypeOf&lt;T&gt;&gt;();
+		<span class="kw">let </span>curve = get_2nd_order_polynomial_curve::&lt;CurveParameterTypeOf&lt;T&gt;&gt;();
 
 		<span class="kw">let </span>pool_id = create_pool::&lt;T&gt;(curve, bonded_currencies, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>));
 		<span class="kw">let </span>pool_account = pool_id.clone().into();

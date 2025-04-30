@@ -412,8 +412,8 @@
 	round_kind: Round,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;FixedType, ArithmeticError&gt;
 <span class="kw">where
-	</span>FixedType::Bits: TryFrom&lt;U256&gt;, <span class="comment">// TODO: make large integer type configurable in runtime
-	</span>Balance: TryInto&lt;U256&gt;,
+	</span>FixedType::Bits: TryFrom&lt;U256&gt;,
+	Balance: TryInto&lt;U256&gt;,
 {
 	<span class="kw">let </span>decimals = U256::from(<span class="number">10u8</span>)
 		.checked_pow(denomination.into())

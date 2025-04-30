@@ -167,6 +167,18 @@
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
 </pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
 // Copyright (C) 2025, KILT Foundation
 
@@ -202,12 +214,19 @@
 /// ### Antiderivative
 /// The indefinite integral of the cost function is:
 /// ```text
-/// C(s) = (2/3) * m * s^(3/2) + n * s
+/// C(s) = (2/3) * m * s^(3/2) + n * s = M * s^(3/2) + N * s
 /// ```
 /// Where:
 /// - `s` is the supply of assets,
 /// - `m` is the coefficient for the square root term,
-/// - `n` is the coefficient for the linear term.
+/// - `n` is the coefficient for the constant term,
+/// - `M` is the coefficient for the first (fractional power) term in the
+///   antiderivative,
+/// - `N=n` is the coefficient of the second (linear) term in the
+///   antiderivative.
+///
+/// Coefficients of the antiderivative `N` &amp; `M` are used to parametrize
+/// functions in this module.
 ///
 /// `C(s)` represents the total cost of purchasing or selling assets up to the
 /// current supply `s`. To calculate the incremental cost of a transaction, use
@@ -241,14 +260,19 @@
 /// bonding curve. This struct is used to convert the input parameters to the
 /// correct fixed-point type.
 ///
-/// The input struct assumes that the coefficients are precomputed according to
-/// the integral rules of the square root function./// ### Example
+/// The input struct expects coefficients of terms in the antiderivative of the
+/// square root function, which must be precomputed according to the integral
+/// rules of the square root function.
 ///
-/// For a square root cost function `c(s) = 3 * s^1/2 + 2
+/// ### Example
 ///
-/// which is resulting into the antiderivative
-/// `C(s) = (6 / 3) * s^(1/2) + 2 * s`
-/// the input parameters would be:
+/// For a square root cost function `c(s) = 3 * s^1/2 + 2`
+///
+/// which results in the antiderivative
+/// `C(s) = (2 / 3) * 3 * s^(3/2) + 2 * s = 2s^(3/2) + 2s`
+///
+/// the input parameters `M` &amp; `N` (coefficients of the antiderivative) would
+/// be:
 /// ```rust, ignore
 /// SquareRootParametersInput {
 ///    m: 2,

@@ -18,7 +18,7 @@ var srcIndex = JSON.parse('{\
 "kilt_support":["",[],["benchmark.rs","deposit.rs","lib.rs","migration.rs","mock.rs","signature.rs","test_utils.rs","traits.rs","xcm.rs"]],\
 "pallet_asset_switch":["",[["xcm",[["convert",[],["mod.rs"]],["match",[],["mod.rs"]],["query",[],["mod.rs"]],["trade",[["switch_pair_remote_asset",[],["mod.rs"]],["xcm_fee_asset",[],["mod.rs"]]],["mod.rs"]],["transact",[],["mod.rs"]],["transfer",[["switch_pair_remote_asset",[],["mod.rs"]],["xcm_fee_asset",[],["mod.rs"]]],["mod.rs"]]],["mod.rs"]]],["benchmarking.rs","default_weights.rs","lib.rs","switch.rs","traits.rs","try_state.rs"]],\
 "pallet_asset_switch_runtime_api":["",[],["lib.rs"]],\
-"pallet_bonded_coins":["",[["curves",[],["lmsr.rs","mod.rs","polynomial.rs","square_root.rs"]]],["benchmarking.rs","default_weights.rs","lib.rs","mock.rs","traits.rs","try_state.rs","types.rs"]],\
+"pallet_bonded_coins":["",[["curves",[],["lmsr.rs","mod.rs","polynomial.rs","square_root.rs"]],["migrations",[],["mod.rs","v1.rs"]]],["benchmarking.rs","default_weights.rs","lib.rs","mock.rs","traits.rs","try_state.rs","types.rs"]],\
 "pallet_bonded_coins_runtime_api":["",[],["lib.rs","pool_details.rs"]],\
 "pallet_configuration":["",[],["benchmarking.rs","configuration.rs","default_weights.rs","lib.rs"]],\
 "pallet_deposit_storage":["",[["deposit",[],["mod.rs"]],["fungible",[],["mod.rs","try_state.rs"]]],["benchmarking.rs","default_weights.rs","lib.rs","traits.rs","try_state.rs"]],\

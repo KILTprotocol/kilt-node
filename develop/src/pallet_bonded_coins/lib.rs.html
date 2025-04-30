@@ -1575,6 +1575,71 @@
 <a href="#1575" id="1575">1575</a>
 <a href="#1576" id="1576">1576</a>
 <a href="#1577" id="1577">1577</a>
+<a href="#1578" id="1578">1578</a>
+<a href="#1579" id="1579">1579</a>
+<a href="#1580" id="1580">1580</a>
+<a href="#1581" id="1581">1581</a>
+<a href="#1582" id="1582">1582</a>
+<a href="#1583" id="1583">1583</a>
+<a href="#1584" id="1584">1584</a>
+<a href="#1585" id="1585">1585</a>
+<a href="#1586" id="1586">1586</a>
+<a href="#1587" id="1587">1587</a>
+<a href="#1588" id="1588">1588</a>
+<a href="#1589" id="1589">1589</a>
+<a href="#1590" id="1590">1590</a>
+<a href="#1591" id="1591">1591</a>
+<a href="#1592" id="1592">1592</a>
+<a href="#1593" id="1593">1593</a>
+<a href="#1594" id="1594">1594</a>
+<a href="#1595" id="1595">1595</a>
+<a href="#1596" id="1596">1596</a>
+<a href="#1597" id="1597">1597</a>
+<a href="#1598" id="1598">1598</a>
+<a href="#1599" id="1599">1599</a>
+<a href="#1600" id="1600">1600</a>
+<a href="#1601" id="1601">1601</a>
+<a href="#1602" id="1602">1602</a>
+<a href="#1603" id="1603">1603</a>
+<a href="#1604" id="1604">1604</a>
+<a href="#1605" id="1605">1605</a>
+<a href="#1606" id="1606">1606</a>
+<a href="#1607" id="1607">1607</a>
+<a href="#1608" id="1608">1608</a>
+<a href="#1609" id="1609">1609</a>
+<a href="#1610" id="1610">1610</a>
+<a href="#1611" id="1611">1611</a>
+<a href="#1612" id="1612">1612</a>
+<a href="#1613" id="1613">1613</a>
+<a href="#1614" id="1614">1614</a>
+<a href="#1615" id="1615">1615</a>
+<a href="#1616" id="1616">1616</a>
+<a href="#1617" id="1617">1617</a>
+<a href="#1618" id="1618">1618</a>
+<a href="#1619" id="1619">1619</a>
+<a href="#1620" id="1620">1620</a>
+<a href="#1621" id="1621">1621</a>
+<a href="#1622" id="1622">1622</a>
+<a href="#1623" id="1623">1623</a>
+<a href="#1624" id="1624">1624</a>
+<a href="#1625" id="1625">1625</a>
+<a href="#1626" id="1626">1626</a>
+<a href="#1627" id="1627">1627</a>
+<a href="#1628" id="1628">1628</a>
+<a href="#1629" id="1629">1629</a>
+<a href="#1630" id="1630">1630</a>
+<a href="#1631" id="1631">1631</a>
+<a href="#1632" id="1632">1632</a>
+<a href="#1633" id="1633">1633</a>
+<a href="#1634" id="1634">1634</a>
+<a href="#1635" id="1635">1635</a>
+<a href="#1636" id="1636">1636</a>
+<a href="#1637" id="1637">1637</a>
+<a href="#1638" id="1638">1638</a>
+<a href="#1639" id="1639">1639</a>
+<a href="#1640" id="1640">1640</a>
+<a href="#1641" id="1641">1641</a>
+<a href="#1642" id="1642">1642</a>
 </pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
 // Copyright (C) 2025, KILT Foundation
 
@@ -1597,6 +1662,8 @@
 
 </span><span class="kw">pub use </span>pallet::<span class="kw-2">*</span>;
 
+<span class="kw">pub mod </span>migrations;
+
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
 </span><span class="kw">mod </span>benchmarking;
 <span class="attr">#[cfg(any(test, feature = <span class="string">&quot;runtime-benchmarks&quot;</span>))]
@@ -1613,7 +1680,7 @@
 <span class="attr">#[cfg(feature = <span class="string">&quot;runtime-benchmarks&quot;</span>)]
 </span><span class="kw">pub use </span>benchmarking::BenchmarkHelper;
 
-<span class="kw">pub use </span>types::{Locks, PoolStatus, Round};
+<span class="kw">pub use </span>types::{BondedCurrenciesSettings, Locks, PoolStatus, Round};
 
 <span class="kw">pub use </span>default_weights::WeightInfo;
 
@@ -1641,7 +1708,7 @@
 				Create <span class="kw">as </span>CreateFungibles, Destroy <span class="kw">as </span>DestroyFungibles, Inspect <span class="kw">as </span>InspectFungibles,
 				Mutate <span class="kw">as </span>MutateFungibles,
 			},
-			tokens::{Fortitude, Precision <span class="kw">as </span>WithdrawalPrecision, Preservation, Provenance},
+			tokens::{DepositConsequence, Fortitude, Precision <span class="kw">as </span>WithdrawalPrecision, Preservation, Provenance},
 			AccountTouch,
 		},
 		Hashable, Parameter,
@@ -1656,6 +1723,7 @@
 		BoundedVec, DispatchError, TokenError,
 	};
 	<span class="kw">use </span>sp_std::{
+		collections::btree_set::BTreeSet,
 		iter::Iterator,
 		ops::{AddAssign, BitOrAssign, ShlAssign},
 		prelude::<span class="kw-2">*</span>,
@@ -1669,9 +1737,12 @@
 	<span class="kw">use crate</span>::{
 		curves::{balance_to_fixed, fixed_to_balance, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, NextAssetIds, ResetTeam},
-		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
+		types::{BondedCurrenciesSettings, Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
 	};
+
+	<span class="doccomment">/// The current storage version.
+	</span><span class="kw">const </span>STORAGE_VERSION: StorageVersion = StorageVersion::new(<span class="number">1</span>);
 
 	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>AccountIdLookupOf&lt;T&gt; =
 		&lt;&lt;T <span class="kw">as </span>frame_system::Config&gt;::Lookup <span class="kw">as </span>sp_runtime::traits::StaticLookup&gt;::Source;
@@ -1701,12 +1772,15 @@
 
 	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>CurveParameterInputOf&lt;T&gt; = &lt;T <span class="kw">as </span>Config&gt;::CurveParameterInput;
 
+	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>BondedCurrenciesSettingsOf&lt;T&gt; = BondedCurrenciesSettings&lt;FungiblesBalanceOf&lt;T&gt;&gt;;
+
 	<span class="kw">pub type </span>PoolDetailsOf&lt;T&gt; = PoolDetails&lt;
 		&lt;T <span class="kw">as </span>frame_system::Config&gt;::AccountId,
 		Curve&lt;CurveParameterTypeOf&lt;T&gt;&gt;,
 		BoundedCurrencyVec&lt;T&gt;,
 		CollateralAssetIdOf&lt;T&gt;,
 		DepositBalanceOf&lt;T&gt;,
+		BondedCurrenciesSettingsOf&lt;T&gt;,
 	&gt;;
 
 	<span class="doccomment">/// Minimum required amount of integer and fractional bits to perform ln,
@@ -1765,7 +1839,7 @@
 		</span><span class="attr">#[pallet::constant]
 		</span><span class="kw">type </span>BaseDeposit: Get&lt;DepositBalanceOf&lt;<span class="self">Self</span>&gt;&gt;;
 
-		<span class="doccomment">/// The origin for most permissionless and priviledged operations.
+		<span class="doccomment">/// The origin for most permissionless and privileged operations.
 		</span><span class="kw">type </span>DefaultOrigin: EnsureOrigin&lt;<span class="self">Self</span>::RuntimeOrigin, Success = <span class="self">Self</span>::AccountId&gt;;
 		<span class="doccomment">/// The dedicated origin for creating new bonded currency pools
 		/// (typically permissionless).
@@ -1803,6 +1877,7 @@
 	}
 
 	<span class="attr">#[pallet::pallet]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	</span><span class="kw">pub struct </span>Pallet&lt;T&gt;(<span class="kw">_</span>);
 
 	<span class="attr">#[pallet::hooks]
@@ -1855,6 +1930,12 @@
 			id: T::PoolId,
 			manager: <span class="prelude-ty">Option</span>&lt;T::AccountId&gt;,
 		},
+		<span class="doccomment">/// The asset managing team of a pool has been reset.
+		</span>TeamChanged {
+			id: T::PoolId,
+			admin: T::AccountId,
+			freezer: T::AccountId,
+		},
 	}
 
 	<span class="attr">#[pallet::error]
@@ -1903,8 +1984,7 @@
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom&lt;U256&gt; + TryInto&lt;U256&gt;,
 		CollateralBalanceOf&lt;T&gt;: Into&lt;U256&gt; + TryFrom&lt;U256&gt;,
 		FungiblesBalanceOf&lt;T&gt;: Into&lt;U256&gt; + TryFrom&lt;U256&gt;,
-		<span class="comment">// TODO: make large integer type configurable
-	</span>{
+	{
 		<span class="doccomment">/// Creates a new bonded token pool. The pool will be created with the
 		/// given curve, collateral currency, and bonded currencies. The pool
 		/// will be owned by the origin account.
@@ -1914,17 +1994,26 @@
 		/// - `curve`: The curve parameters for the pool.
 		/// - `collateral_id`: The ID of the collateral currency.
 		/// - `currencies`: A bounded vector of token metadata for the bonded
-		///   currencies.
-		/// - `denomination`: The denomination for the bonded currencies.
-		/// - `transferable`: A boolean indicating if the bonded currencies are
-		///   transferable.
+		///   currencies. Note that no two currencies may use the same name or
+		///   symbol.
+		/// - `currencies_settings`: Options and settings shared by all bonded
+		///   currencies. These cannot be changed after the pool is created.
+		///   - `denomination`: The denomination for the bonded currencies.
+		///   - `transferable`: A boolean indicating if the bonded currencies
+		///     are transferable.
+		///   - `allow_reset_team`: Whether asset management team changes are
+		///     allowed for this pool.
+		///   - `min_operation_balance`: The minimum amount that can be
+		///     minted/burnt.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
 		///
 		/// # Errors
-		/// - `Error::&lt;T&gt;::InvalidInput`: If the denomination is greater than
-		///   the maximum allowed or if the curve input is invalid.
+		/// - `Error::&lt;T&gt;::InvalidInput`: If either
+		///   - the denomination is greater than the maximum allowed
+		///   - the curve input is invalid
+		///   - two currencies use the same name or symbol
 		/// - `Error::&lt;T&gt;::Internal`: If the conversion to `BoundedVec` fails.
 		/// - Other errors depending on the types in the config.
 		</span><span class="attr">#[pallet::call_index(<span class="number">0</span>)]
@@ -1941,11 +2030,16 @@
 			curve: CurveInput&lt;CurveParameterInputOf&lt;T&gt;&gt;,
 			collateral_id: CollateralAssetIdOf&lt;T&gt;,
 			currencies: BoundedVec&lt;TokenMetaOf&lt;T&gt;, T::MaxCurrenciesPerPool&gt;,
-			denomination: u8,
-			transferable: bool,
-			min_operation_balance: u128,
+			currencies_settings: BondedCurrenciesSettingsOf&lt;T&gt;,
 		) -&gt; DispatchResult {
 			<span class="kw">let </span>who = T::PoolCreateOrigin::ensure_origin(origin)<span class="question-mark">?</span>;
+
+			<span class="kw">let </span>BondedCurrenciesSettings {
+				denomination,
+				transferable,
+				allow_reset_team,
+				min_operation_balance,
+			} = currencies_settings;
 
 			<span class="macro">ensure!</span>(denomination &lt;= T::MaxDenomination::get(), Error::&lt;T&gt;::InvalidInput);
 			<span class="kw">let </span>checked_curve = curve.try_into().map_err(|<span class="kw">_</span>| Error::&lt;T&gt;::InvalidInput)<span class="question-mark">?</span>;
@@ -1984,6 +2078,10 @@
 			// currency to it. This should also verify that the currency actually exists.
 			</span>T::Collaterals::touch(collateral_id.clone(), pool_account, <span class="kw-2">&amp;</span>who)<span class="question-mark">?</span>;
 
+			<span class="comment">// Enforce unique names and symbols by recording seen values in a set
+			</span><span class="kw">let </span><span class="kw-2">mut </span>names_seen = BTreeSet::&lt;StringInputOf&lt;T&gt;&gt;::new();
+			<span class="kw">let </span><span class="kw-2">mut </span>symbols_seen = BTreeSet::&lt;StringInputOf&lt;T&gt;&gt;::new();
+
 			currencies.into_iter().zip(currency_ids.iter()).try_for_each(
 				|(token_metadata, asset_id)| -&gt; DispatchResult {
 					<span class="kw">let </span>TokenMeta {
@@ -1991,6 +2089,11 @@
 						name,
 						symbol,
 					} = token_metadata;
+
+					<span class="comment">// insert() returns true if the set did not contain the inserted value
+					</span><span class="kw">let </span>name_ok = name.is_empty() || names_seen.insert(name.clone());
+					<span class="kw">let </span>symbol_ok = symbol.is_empty() || symbols_seen.insert(symbol.clone());
+					<span class="macro">ensure!</span>(name_ok &amp;&amp; symbol_ok, Error::&lt;T&gt;::InvalidInput);
 
 					T::Fungibles::create(asset_id.clone(), pool_account.to_owned(), <span class="bool-val">false</span>, min_balance)<span class="question-mark">?</span>;
 
@@ -2015,6 +2118,7 @@
 					collateral_id,
 					currency_ids,
 					transferable,
+					allow_reset_team,
 					denomination,
 					min_operation_balance,
 					deposit_amount,
@@ -2026,28 +2130,28 @@
 			<span class="prelude-val">Ok</span>(())
 		}
 
-		<span class="doccomment">/// Changes the managing team of a bonded currency which is issued by
-		/// this pool. The new team will be set to the provided team. The
-		/// currency index is used to select the currency that the team will
-		/// manage. The origin account must be a manager of the pool.
+		<span class="doccomment">/// Changes the managing team of all bonded currencies issued by this
+		/// pool, setting it to the provided `team`. The origin account must be
+		/// a manager of the pool.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call, requiring the caller to be a
 		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool.
 		/// - `team`: The new managing team.
-		/// - `currency_idx`: The index of the currency in the bonded currencies
-		///   vector.
+		/// - `currency_count`: The number of bonded currencies vector linked to
+		///   the pool. Required for weight estimations.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
 		///
 		/// # Errors
 		/// - `Error::&lt;T&gt;::PoolUnknown`: If the pool does not exist.
-		/// - `Error::&lt;T&gt;::NoPermission`: If the caller is not a manager of the
-		///   pool.
-		/// - `Error::&lt;T&gt;::IndexOutOfBounds`: If the currency index is out of
-		///   bounds.
+		/// - `Error::&lt;T&gt;::NoPermission`: If this pool does not allow changing
+		///   the asset management team, or if the caller is not a manager of
+		///   the pool.
+		/// - `Error::&lt;T&gt;::CurrencyCount`: If the actual number of currencies in
+		///   the pool is larger than `currency_count`.
 		/// - Other errors depending on the types in the config.
 		</span><span class="attr">#[pallet::call_index(<span class="number">1</span>)]
 		#[pallet::weight(T::WeightInfo::reset_team())]
@@ -2055,31 +2159,44 @@
 			origin: OriginFor&lt;T&gt;,
 			pool_id: T::PoolId,
 			team: PoolManagingTeam&lt;AccountIdOf&lt;T&gt;&gt;,
-			currency_idx: u32,
+			currency_count: u32,
 		) -&gt; DispatchResult {
 			<span class="kw">let </span>who = T::DefaultOrigin::ensure_origin(origin)<span class="question-mark">?</span>;
 
 			<span class="kw">let </span>pool_details = Pools::&lt;T&gt;::get(<span class="kw-2">&amp;</span>pool_id).ok_or(Error::&lt;T&gt;::PoolUnknown)<span class="question-mark">?</span>;
 
-			<span class="macro">ensure!</span>(pool_details.is_manager(<span class="kw-2">&amp;</span>who), Error::&lt;T&gt;::NoPermission);
+			<span class="kw">let </span>number_of_currencies = <span class="self">Self</span>::get_currencies_number(<span class="kw-2">&amp;</span>pool_details);
+			<span class="macro">ensure!</span>(number_of_currencies &lt;= currency_count, Error::&lt;T&gt;::CurrencyCount);
+
+			<span class="kw">let </span>BondedCurrenciesSettings { allow_reset_team, .. } = pool_details.currencies_settings;
+
+			<span class="macro">ensure!</span>(
+				allow_reset_team &amp;&amp; pool_details.is_manager(<span class="kw-2">&amp;</span>who),
+				Error::&lt;T&gt;::NoPermission
+			);
 			<span class="macro">ensure!</span>(pool_details.state.is_live(), Error::&lt;T&gt;::PoolNotLive);
 
-			<span class="kw">let </span>asset_id = pool_details
-				.bonded_currencies
-				.get(currency_idx.saturated_into::&lt;usize&gt;())
-				.ok_or(Error::&lt;T&gt;::IndexOutOfBounds)<span class="question-mark">?</span>;
-
-			<span class="kw">let </span>pool_id_account = pool_id.into();
+			<span class="kw">let </span>pool_id_account = pool_id.clone().into();
 
 			<span class="kw">let </span>PoolManagingTeam { freezer, admin } = team;
 
-			T::Fungibles::reset_team(
-				asset_id.to_owned(),
-				pool_id_account.clone(),
+			pool_details.bonded_currencies.into_iter().try_for_each(|asset_id| {
+				T::Fungibles::reset_team(
+					asset_id,
+					pool_id_account.clone(),
+					admin.clone(),
+					pool_id_account.clone(),
+					freezer.clone(),
+				)
+			})<span class="question-mark">?</span>;
+
+			<span class="self">Self</span>::deposit_event(Event::TeamChanged {
+				id: pool_id,
 				admin,
-				pool_id_account,
 				freezer,
-			)
+			});
+
+			<span class="prelude-val">Ok</span>(())
 		}
 
 		<span class="doccomment">/// Resets the manager of a pool. The new manager will be set to the
@@ -2102,6 +2219,8 @@
 		/// - `Error::&lt;T&gt;::PoolUnknown`: If the pool does not exist.
 		/// - `Error::&lt;T&gt;::NoPermission`: If the caller is not a manager of the
 		///   pool.
+		/// - `Error::&lt;T&gt;::PoolNotLive`: If the pool is not in active or locked
+		///   state.
 		</span><span class="attr">#[pallet::call_index(<span class="number">2</span>)]
 		#[pallet::weight(T::WeightInfo::reset_manager())]
 		</span><span class="kw">pub fn </span>reset_manager(
@@ -2112,6 +2231,7 @@
 			<span class="kw">let </span>who = T::DefaultOrigin::ensure_origin(origin)<span class="question-mark">?</span>;
 			Pools::&lt;T&gt;::try_mutate(<span class="kw-2">&amp;</span>pool_id, |maybe_entry| -&gt; DispatchResult {
 				<span class="kw">let </span>entry = maybe_entry.as_mut().ok_or(Error::&lt;T&gt;::PoolUnknown)<span class="question-mark">?</span>;
+				<span class="macro">ensure!</span>(entry.state.is_live(), Error::&lt;T&gt;::PoolNotLive);
 				<span class="macro">ensure!</span>(entry.is_manager(<span class="kw-2">&amp;</span>who), Error::&lt;T&gt;::NoPermission);
 				entry.manager = new_manager.clone();
 
@@ -2135,7 +2255,8 @@
 		/// - `origin`: The origin of the call, requiring the caller to be a
 		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool to be locked.
-		/// - `lock`: The locks to be applied to the pool.
+		/// - `lock`: The locks to be applied to the pool. At least one lock
+		///   flag must be set to `false` for a valid lock.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
@@ -2146,10 +2267,15 @@
 		///   pool.
 		/// - `Error::&lt;T&gt;::PoolNotLive`: If the pool is not in a live (locked or
 		///   active) state.
+		/// - `Error::&lt;T&gt;::InvalidInput`: If all lock flags are `true` (all
+		///   operations enabled), which would be equivalent to an unlocked
+		///   (active) pool state.
 		</span><span class="attr">#[pallet::call_index(<span class="number">3</span>)]
 		#[pallet::weight(T::WeightInfo::set_lock())]
 		</span><span class="kw">pub fn </span>set_lock(origin: OriginFor&lt;T&gt;, pool_id: T::PoolId, lock: Locks) -&gt; DispatchResult {
 			<span class="kw">let </span>who = T::DefaultOrigin::ensure_origin(origin)<span class="question-mark">?</span>;
+
+			<span class="macro">ensure!</span>(lock.any_lock_set(), Error::&lt;T&gt;::InvalidInput);
 
 			Pools::&lt;T&gt;::try_mutate(<span class="kw-2">&amp;</span>pool_id, |pool| -&gt; DispatchResult {
 				<span class="kw">let </span>entry = pool.as_mut().ok_or(Error::&lt;T&gt;::PoolUnknown)<span class="question-mark">?</span>;
@@ -2260,8 +2386,15 @@
 			<span class="kw">let </span>number_of_currencies = <span class="self">Self</span>::get_currencies_number(<span class="kw-2">&amp;</span>pool_details);
 			<span class="macro">ensure!</span>(number_of_currencies &lt;= currency_count, Error::&lt;T&gt;::CurrencyCount);
 
+			<span class="kw">let </span>BondedCurrenciesSettings {
+				min_operation_balance,
+				denomination,
+				transferable,
+				..
+			} = pool_details.currencies_settings;
+
 			<span class="macro">ensure!</span>(
-				amount_to_mint &gt;= pool_details.min_operation_balance.saturated_into(),
+				amount_to_mint &gt;= min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -2281,16 +2414,13 @@
 
 			<span class="kw">let </span>(active_pre, passive) = <span class="self">Self</span>::calculate_normalized_passive_issuance(
 				<span class="kw-2">&amp;</span>bonded_currencies,
-				pool_details.denomination,
+				denomination,
 				currency_idx,
 				round_kind,
 			)<span class="question-mark">?</span>;
 
-			<span class="kw">let </span>normalized_amount_to_mint = balance_to_fixed(
-				amount_to_mint.saturated_into::&lt;u128&gt;(),
-				pool_details.denomination,
-				round_kind,
-			)<span class="question-mark">?</span>;
+			<span class="kw">let </span>normalized_amount_to_mint =
+				balance_to_fixed(amount_to_mint.saturated_into::&lt;u128&gt;(), denomination, round_kind)<span class="question-mark">?</span>;
 
 			<span class="kw">let </span>active_post = active_pre
 				.checked_add(normalized_amount_to_mint)
@@ -2321,7 +2451,7 @@
 
 			T::Fungibles::mint_into(target_currency_id.clone(), <span class="kw-2">&amp;</span>beneficiary, amount_to_mint)<span class="question-mark">?</span>;
 
-			<span class="kw">if </span>!pool_details.transferable {
+			<span class="kw">if </span>!transferable {
 				T::Fungibles::freeze(target_currency_id, <span class="kw-2">&amp;</span>beneficiary).map_err(|freeze_error| {
 					<span class="macro">log::info!</span>(target: LOG_TARGET, <span class="string">&quot;Failed to freeze account: {:?}&quot;</span>, freeze_error);
 					freeze_error.into()
@@ -2389,8 +2519,15 @@
 
 			<span class="kw">let </span>pool_details = Pools::&lt;T&gt;::get(<span class="kw-2">&amp;</span>pool_id).ok_or(Error::&lt;T&gt;::PoolUnknown)<span class="question-mark">?</span>;
 
+			<span class="kw">let </span>BondedCurrenciesSettings {
+				min_operation_balance,
+				denomination,
+				transferable,
+				..
+			} = pool_details.currencies_settings;
+
 			<span class="macro">ensure!</span>(
-				amount_to_burn &gt;= pool_details.min_operation_balance.saturated_into(),
+				amount_to_burn &gt;= min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -2411,12 +2548,12 @@
 
 			<span class="kw">let </span>(high, passive) = <span class="self">Self</span>::calculate_normalized_passive_issuance(
 				<span class="kw-2">&amp;</span>bonded_currencies,
-				pool_details.denomination,
+				denomination,
 				currency_idx,
 				round_kind,
 			)<span class="question-mark">?</span>;
 
-			<span class="kw">let </span>normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, round_kind)<span class="question-mark">?</span>;
+			<span class="kw">let </span>normalized_amount_to_burn = balance_to_fixed(amount_to_burn, denomination, round_kind)<span class="question-mark">?</span>;
 
 			<span class="kw">let </span>low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -2462,7 +2599,7 @@
 
 			<span class="kw">let </span>account_exists = T::Fungibles::total_balance(target_currency_id.clone(), <span class="kw-2">&amp;</span>who) &gt; Zero::zero();
 
-			<span class="kw">if </span>!pool_details.transferable &amp;&amp; account_exists {
+			<span class="kw">if </span>!transferable &amp;&amp; account_exists {
 				<span class="comment">// Restore locks.
 				</span>T::Fungibles::freeze(target_currency_id, <span class="kw-2">&amp;</span>who).map_err(|freeze_error| {
 					<span class="macro">log::info!</span>(target: LOG_TARGET, <span class="string">&quot;Failed to freeze account: {:?}&quot;</span>, freeze_error);
@@ -2655,11 +2792,6 @@
 				</span>.checked_add(burnt)
 				.ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
 
-			<span class="macro">defensive_assert!</span>(
-				sum_of_issuances &gt;= burnt,
-				<span class="string">&quot;burnt amount exceeds the total supply of all bonded currencies&quot;
-			</span>);
-
 			<span class="kw">let </span>amount: CollateralBalanceOf&lt;T&gt; = burnt
 				.checked_mul(total_collateral_issuance.into())
 				<span class="comment">// As long as the balance type is half the size of a U256, this won&#39;t overflow.
@@ -2694,16 +2826,16 @@
 					Error::&lt;T&gt;::Internal
 				})<span class="question-mark">?</span>;
 
-			<span class="kw">if </span>amount.is_zero()
-				|| T::Collaterals::can_deposit(pool_details.collateral.clone(), <span class="kw-2">&amp;</span>who, amount, Provenance::Extant)
-					.into_result()
-					.is_err()
-			{
+			<span class="kw">let </span>deposit_consequence =
+				T::Collaterals::can_deposit(pool_details.collateral.clone(), <span class="kw-2">&amp;</span>who, amount, Provenance::Extant);
+			<span class="kw">if </span>amount.is_zero() || deposit_consequence == DepositConsequence::BelowMinimum {
 				<span class="comment">// Funds are burnt but the collateral received is not sufficient to be deposited
 				// to the account. This is tolerated as otherwise we could have edge cases where
 				// it&#39;s impossible to refund at least some accounts.
 				</span><span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(T::WeightInfo::refund_account(currency_count.to_owned())).into());
 			}
+			<span class="comment">// Return error if not Success
+			</span>deposit_consequence.into_result()<span class="question-mark">?</span>;
 
 			<span class="kw">let </span>transferred = T::Collaterals::transfer(
 				pool_details.collateral,
@@ -2995,8 +3127,7 @@
 			</span><span class="macro">ensure!</span>(pool_details.state.is_live(), Error::&lt;T&gt;::PoolNotLive);
 
 			<span class="kw">if let </span><span class="prelude-val">Some</span>(caller) = maybe_check_manager {
-				<span class="comment">// TODO: should the owner be authorized as well?
-				</span><span class="macro">ensure!</span>(pool_details.is_manager(caller), Error::&lt;T&gt;::NoPermission);
+				<span class="macro">ensure!</span>(pool_details.is_manager(caller), Error::&lt;T&gt;::NoPermission);
 			}
 
 			<span class="kw">let </span>total_collateral_issuance =
@@ -3068,8 +3199,7 @@
 			);
 
 			<span class="kw">if let </span><span class="prelude-val">Some</span>(caller) = maybe_check_manager {
-				<span class="comment">// TODO: should this be permissionless if the pool is in refunding state?
-				</span><span class="macro">ensure!</span>(
+				<span class="macro">ensure!</span>(
 					pool_details.is_owner(caller) || pool_details.is_manager(caller),
 					Error::&lt;T&gt;::NoPermission
 				);

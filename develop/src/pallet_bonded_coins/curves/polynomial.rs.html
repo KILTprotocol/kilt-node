@@ -184,6 +184,23 @@
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
 <a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
 </pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
 // Copyright (C) 2025, KILT Foundation
 
@@ -220,13 +237,19 @@
 /// ### Antiderivative
 /// The indefinite integral of the cost function is:
 /// ```text
-/// C(s) = (m / 3) * s^3 + (n / 2) * s^2 + o * s
+/// C(s) = (m / 3) * s^3 + (n / 2) * s^2 + o * s = M * s^3 + N * s^2 + O * s
 /// ```
 /// Where:
 /// - `m` is the coefficient for the quadratic term,
 /// - `n` is the coefficient for the linear term,
-/// - `o` is the constant term.
+/// - `o` is the constant term,
+/// - `M` is the coefficient of the first (cubic) term in the antiderivative,
+/// - `N` is the coefficient of the second (quadratic) term in the
+///   antiderivative,
+/// - `O=o` is the coefficient of the third (linear) term in the antiderivative.
 ///
+/// Coefficients of the antiderivative `N`, `M` &amp; `O` are used to parametrize
+/// functions in this module.
 ///
 /// `C(s)` represents the accumulated cost of purchasing or selling assets up to
 /// the current supply `s`. The integral between two supply points, `s*`
@@ -267,9 +290,11 @@
 ///
 /// For a polynomial cost function `c(s) = 3 * s^2 + 2 * s + 2`
 ///
-/// which is resulting into the antiderivative
-/// `C(s) = (3 / 3) * s^3 + (2 / 2) * s^2 + 2 * s`
-/// the input parameters would be:
+/// which results in the antiderivative
+/// `C(s) = (3 / 3) * s^3 + (2 / 2) * s^2 + 2 * s = 1 * s^3 + 1 * s^2 + 2 * s`
+///
+/// the input parameters `M`, `N` &amp; `O` (coefficients of the antiderivative)
+/// would be:
 /// ```rust, ignore
 /// PolynomialParametersInput {
 ///    m: 1,
@@ -338,27 +363,33 @@
 			.checked_add(accumulated_passive_issuance)
 			.ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
 
-		<span class="comment">// Calculate high - low
-		</span><span class="kw">let </span>delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)<span class="question-mark">?</span>;
-
-		<span class="kw">let </span>high_low_mul = high.checked_mul(low).ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
-		<span class="kw">let </span>high_square = square(high)<span class="question-mark">?</span>;
-		<span class="kw">let </span>low_square = square(low)<span class="question-mark">?</span>;
-
-		<span class="comment">// Factorized cubic term:  (high^2 + high * low + low^2)
-		</span><span class="kw">let </span>cubic_term = high_square
-			.checked_add(high_low_mul)
-			.ok_or(ArithmeticError::Overflow)<span class="question-mark">?
-			</span>.checked_add(low_square)
-			.ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
-
 		<span class="comment">// Calculate m * (high^2 + high * low + low^2)
-		</span><span class="kw">let </span>term1 = <span class="self">self</span>.m.checked_mul(cubic_term).ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
+		</span><span class="kw">let </span>term1 = <span class="kw">if </span><span class="self">self</span>.m == Coefficient::from_num(<span class="number">0u8</span>) {
+			<span class="comment">// if m is 0 the product is 0
+			</span><span class="prelude-val">Ok</span>(<span class="self">self</span>.m)
+		} <span class="kw">else </span>{
+			<span class="kw">let </span>high_low_mul = high.checked_mul(low).ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
+			<span class="kw">let </span>high_square = square(high)<span class="question-mark">?</span>;
+			<span class="kw">let </span>low_square = square(low)<span class="question-mark">?</span>;
 
-		<span class="kw">let </span>high_plus_low = high.checked_add(low).ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
+			<span class="comment">// Factorized cubic term:  (high^2 + high * low + low^2)
+			</span><span class="kw">let </span>cubic_term = high_square
+				.checked_add(high_low_mul)
+				.ok_or(ArithmeticError::Overflow)<span class="question-mark">?
+				</span>.checked_add(low_square)
+				.ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
+
+			<span class="self">self</span>.m.checked_mul(cubic_term).ok_or(ArithmeticError::Overflow)
+		}<span class="question-mark">?</span>;
 
 		<span class="comment">// Calculate n * (high + low)
-		</span><span class="kw">let </span>term2 = <span class="self">self</span>.n.checked_mul(high_plus_low).ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
+		</span><span class="kw">let </span>term2 = <span class="kw">if </span><span class="self">self</span>.n == Coefficient::from_num(<span class="number">0u8</span>) {
+			<span class="comment">// if n is 0 the product is 0
+			</span><span class="prelude-val">Ok</span>(<span class="self">self</span>.n)
+		} <span class="kw">else </span>{
+			<span class="kw">let </span>high_plus_low = high.checked_add(low).ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
+			<span class="self">self</span>.n.checked_mul(high_plus_low).ok_or(ArithmeticError::Overflow)
+		}<span class="question-mark">?</span>;
 
 		<span class="comment">// Final calculation with factored (high - low)
 		</span><span class="kw">let </span>result = term1
@@ -366,6 +397,9 @@
 			.ok_or(ArithmeticError::Overflow)<span class="question-mark">?
 			</span>.checked_add(<span class="self">self</span>.o)
 			.ok_or(ArithmeticError::Overflow)<span class="question-mark">?</span>;
+
+		<span class="comment">// Calculate high - low
+		</span><span class="kw">let </span>delta_x = high.checked_sub(low).ok_or(ArithmeticError::Underflow)<span class="question-mark">?</span>;
 
 		result.checked_mul(delta_x).ok_or(ArithmeticError::Overflow)
 	}

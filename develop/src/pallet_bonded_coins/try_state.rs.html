@@ -99,7 +99,7 @@
 			owner,
 			bonded_currencies,
 			state,
-			denomination,
+			currencies_settings,
 			..
 		} = pool_details;
 
@@ -142,7 +142,7 @@
 					<span class="comment">// The Currency in the fungibles pallet should always match with the
 					// denomination stored in the pool.
 					</span><span class="kw">let </span>currency_denomination = T::Fungibles::decimals(currency_id.clone());
-					<span class="macro">assert_eq!</span>(currency_denomination, denomination);
+					<span class="macro">assert_eq!</span>(currency_denomination, currencies_settings.denomination);
 
 					<span class="comment">// if currency has on-zero supply -&gt; collateral in pool account must be
 					// non-zero.

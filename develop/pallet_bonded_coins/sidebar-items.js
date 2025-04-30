@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["PoolStatus","Round"],"mod":["curves","pallet","traits"],"struct":["Locks"],"trait":["BenchmarkHelper","WeightInfo"]};
+window.SIDEBAR_ITEMS = {"enum":["PoolStatus","Round"],"mod":["curves","migrations","pallet","traits"],"struct":["BondedCurrenciesSettings","Locks"],"trait":["BenchmarkHelper","WeightInfo"]};

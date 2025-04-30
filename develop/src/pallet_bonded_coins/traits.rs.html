@@ -105,6 +105,22 @@
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
 </pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
 // Copyright (C) 2025, KILT Foundation
 
@@ -167,8 +183,10 @@
 	}
 }
 
-<span class="doccomment">/// Copy from the Polkadot SDK. once we are at version 1.13.0, we can remove
-/// this.
+<span class="doccomment">/// Copy of a trait from a later version of the Polkadot SDK
+/// (frame_support::traits::tokens::fungibles::roles::ResetTeam). Once we
+/// upgraded to Polkadot SDK version 1.13.0, this can be retired in favor of the
+/// original trait.
 </span><span class="kw">pub trait </span>ResetTeam&lt;AccountId&gt;: Inspect&lt;AccountId&gt; {
 	<span class="doccomment">/// Reset the team for the asset with the given `id`.
 	///
@@ -187,21 +205,35 @@
 	) -&gt; DispatchResult;
 }
 
-<span class="kw">impl</span>&lt;T, I: <span class="lifetime">&#39;static</span>&gt; ResetTeam&lt;AccountIdOf&lt;T&gt;&gt; <span class="kw">for </span>AssetsPallet&lt;T, I&gt;
+<span class="doccomment">/// Implementation of the back-ported ResetTeam trait for the assets pallet,
+/// relying on its `transfer_ownership` and `set_team` calls. Later versions of
+/// the assets pallet implement the original trait, so this is a stop-gap
+/// solution until we upgraded to at least Polkadot SDK version 1.13.0.
+</span><span class="kw">impl</span>&lt;T, I: <span class="lifetime">&#39;static</span>&gt; ResetTeam&lt;AccountIdOf&lt;T&gt;&gt; <span class="kw">for </span>AssetsPallet&lt;T, I&gt;
 <span class="kw">where
 	</span>T: AssetConfig&lt;I&gt;,
 	&lt;&lt;T <span class="kw">as </span>frame_system::Config&gt;::Lookup <span class="kw">as </span>StaticLookup&gt;::Source: From&lt;AccountIdOf&lt;T&gt;&gt;,
 {
 	<span class="kw">fn </span>reset_team(
 		id: <span class="self">Self</span>::AssetId,
-		_owner: AccountIdOf&lt;T&gt;,
+		owner: AccountIdOf&lt;T&gt;,
 		admin: AccountIdOf&lt;T&gt;,
 		issuer: AccountIdOf&lt;T&gt;,
 		freezer: AccountIdOf&lt;T&gt;,
 	) -&gt; DispatchResult {
-		<span class="kw">let </span>owner = AssetsPallet::&lt;T, I&gt;::owner(id.clone()).ok_or(DispatchError::Unavailable)<span class="question-mark">?</span>;
-		<span class="kw">let </span>origin = RawOrigin::Signed(owner);
-		AssetsPallet::&lt;T, I&gt;::set_team(origin.into(), id.into(), issuer.into(), admin.into(), freezer.into())
+		<span class="kw">let </span>current_owner = AssetsPallet::&lt;T, I&gt;::owner(id.clone()).ok_or(DispatchError::Unavailable)<span class="question-mark">?</span>;
+		AssetsPallet::&lt;T, I&gt;::transfer_ownership(
+			RawOrigin::Signed(current_owner).into(),
+			id.clone().into(),
+			owner.clone().into(),
+		)<span class="question-mark">?</span>;
+		AssetsPallet::&lt;T, I&gt;::set_team(
+			RawOrigin::Signed(owner).into(),
+			id.into(),
+			issuer.into(),
+			admin.into(),
+			freezer.into(),
+		)
 	}
 }
 

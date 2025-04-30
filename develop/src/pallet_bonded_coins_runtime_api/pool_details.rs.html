@@ -79,6 +79,11 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
 </pre></div><pre class="rust"><code><span class="comment">// KILT Blockchain – &lt;https://kilt.io&gt;
 // Copyright (C) 2025, KILT Foundation
 
@@ -97,7 +102,7 @@
 
 // If you feel like getting in touch with us, you can do so at &lt;hello@kilt.io&gt;
 
-</span><span class="kw">use </span>pallet_bonded_coins::{curves::Curve, Locks, PoolStatus};
+</span><span class="kw">use </span>pallet_bonded_coins::{curves::Curve, BondedCurrenciesSettings, Locks, PoolStatus};
 <span class="kw">use </span>parity_scale_codec::{alloc::string::String, Decode, Encode, MaxEncodedLen};
 <span class="kw">use </span>scale_info::TypeInfo;
 <span class="kw">use </span>sp_std::vec::Vec;
@@ -116,10 +121,19 @@
 	CurrenciesOf&lt;AssetId, Balance&gt;,
 	CollateralDetails&lt;CollateralAssetId&gt;,
 	Balance,
+	Balance,
 &gt;;
 
 <span class="attr">#[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
-</span><span class="kw">pub struct </span>PoolDetails&lt;AccountId, PoolId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance&gt; {
+</span><span class="kw">pub struct </span>PoolDetails&lt;
+	AccountId,
+	PoolId,
+	ParametrizedCurve,
+	Currencies,
+	BaseCurrencyId,
+	DepositBalance,
+	FungiblesBalance,
+&gt; {
 	<span class="doccomment">/// The ID of the pool.
 	</span><span class="kw">pub </span>id: PoolId,
 	<span class="doccomment">/// The owner of the pool.
@@ -134,12 +148,8 @@
 	</span><span class="kw">pub </span>bonded_currencies: Currencies,
 	<span class="doccomment">/// The status of the pool.
 	</span><span class="kw">pub </span>state: PoolStatus&lt;Locks&gt;,
-	<span class="doccomment">/// Whether the pool is transferable or not.
-	</span><span class="kw">pub </span>transferable: bool,
-	<span class="doccomment">/// The denomination of the pool.
-	</span><span class="kw">pub </span>denomination: u8,
-	<span class="doccomment">/// The minimum amount that can be minted/burnt.
-	</span><span class="kw">pub </span>min_operation_balance: u128,
+	<span class="doccomment">/// Shared settings of the currencies in the pool.
+	</span><span class="kw">pub </span>currencies_settings: BondedCurrenciesSettings&lt;FungiblesBalance&gt;,
 	<span class="doccomment">/// The deposit to be returned upon destruction of this pool.
 	</span><span class="kw">pub </span>deposit: DepositBalance,
 }
