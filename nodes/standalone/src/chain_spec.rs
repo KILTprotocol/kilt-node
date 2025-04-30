@@ -39,7 +39,7 @@ pub(crate) fn load_spec(id: &str) -> Result<Box<dyn sc_service::ChainSpec>, Stri
 	Ok(Box::new(chain_spec))
 }
 
-type ChainSpec = sc_service::GenericChainSpec<Option<RuntimeGenesisConfig>>;
+type ChainSpec = sc_service::GenericChainSpec;
 
 fn generate_dev_chain_spec() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("Development WASM binary not available");
