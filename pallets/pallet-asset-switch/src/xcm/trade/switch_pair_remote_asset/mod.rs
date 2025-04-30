@@ -224,9 +224,8 @@ where
 			// We don't care if the pool is enabled, since we're sending all non-refunded
 			// weight to the configured destination account (e.g., treasury).
 			if self.remaining_fungible_balance > Zero::zero() {
-				let Ok(remaining_balance_as_local_currency) = LocalCurrencyBalanceOf::<T, I>::try_from(self.remaining_fungible_balance).inspect_err(|e| {
+				let Ok(remaining_balance_as_local_currency) = LocalCurrencyBalanceOf::<T, I>::try_from(self.remaining_fungible_balance).inspect_err(|_| {
 					log::error!(target: LOG_TARGET, "Failed to convert remaining balance {:?} to local currency balance", self.remaining_fungible_balance);
-					*e
 				}) else { return; };
 
 				// No error should ever be thrown from inside this block.
@@ -235,9 +234,8 @@ where
 					&FeeDestinationAccount::get(),
 					remaining_balance_as_local_currency,
 					Preservation::Preserve,
-				).inspect_err(|e| {
+				).inspect_err(|_| {
 					log::error!(target: LOG_TARGET, "Failed to transfer unused balance {:?} from switch pair pool account {:?} to specified account {:?}", remaining_balance_as_local_currency, switch_pair.pool_account, FeeDestinationAccount::get());
-					*e
 				});
 
 				debug_assert!(

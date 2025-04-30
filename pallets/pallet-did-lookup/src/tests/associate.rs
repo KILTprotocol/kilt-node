@@ -201,7 +201,7 @@ fn test_add_eth_association() {
 				crate::signature::WrapType::Ethereum,
 			);
 
-			let sig = eth_pair.sign_prehashed(&Keccak256::digest(wrapped_payload).try_into().unwrap());
+			let sig = eth_pair.sign_prehashed(&Keccak256::digest(wrapped_payload).into());
 
 			// new association. No overwrite
 			assert_ok!(DidLookup::associate_account(
