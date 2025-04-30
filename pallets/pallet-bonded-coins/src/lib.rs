@@ -20,6 +20,8 @@
 
 pub use pallet::*;
 
+pub mod migrations;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
@@ -36,7 +38,7 @@ mod types;
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarking::BenchmarkHelper;
 
-pub use types::{Locks, PoolStatus, Round};
+pub use types::{BondedCurrenciesSettings, Locks, PoolStatus, Round};
 
 pub use default_weights::WeightInfo;
 
@@ -64,7 +66,7 @@ pub mod pallet {
 				Create as CreateFungibles, Destroy as DestroyFungibles, Inspect as InspectFungibles,
 				Mutate as MutateFungibles,
 			},
-			tokens::{Fortitude, Precision as WithdrawalPrecision, Preservation, Provenance},
+			tokens::{DepositConsequence, Fortitude, Precision as WithdrawalPrecision, Preservation, Provenance},
 			AccountTouch,
 		},
 		Hashable, Parameter,
@@ -79,6 +81,7 @@ pub mod pallet {
 		BoundedVec, DispatchError, TokenError,
 	};
 	use sp_std::{
+		collections::btree_set::BTreeSet,
 		iter::Iterator,
 		ops::{AddAssign, BitOrAssign, ShlAssign},
 		prelude::*,
@@ -92,9 +95,12 @@ pub mod pallet {
 	use crate::{
 		curves::{balance_to_fixed, fixed_to_balance, BondingFunction, Curve, CurveInput},
 		traits::{FreezeAccounts, NextAssetIds, ResetTeam},
-		types::{Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
+		types::{BondedCurrenciesSettings, Locks, PoolDetails, PoolManagingTeam, PoolStatus, Round, TokenMeta},
 		WeightInfo,
 	};
+
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub(crate) type AccountIdLookupOf<T> =
 		<<T as frame_system::Config>::Lookup as sp_runtime::traits::StaticLookup>::Source;
@@ -124,12 +130,15 @@ pub mod pallet {
 
 	pub(crate) type CurveParameterInputOf<T> = <T as Config>::CurveParameterInput;
 
+	pub(crate) type BondedCurrenciesSettingsOf<T> = BondedCurrenciesSettings<FungiblesBalanceOf<T>>;
+
 	pub type PoolDetailsOf<T> = PoolDetails<
 		<T as frame_system::Config>::AccountId,
 		Curve<CurveParameterTypeOf<T>>,
 		BoundedCurrencyVec<T>,
 		CollateralAssetIdOf<T>,
 		DepositBalanceOf<T>,
+		BondedCurrenciesSettingsOf<T>,
 	>;
 
 	/// Minimum required amount of integer and fractional bits to perform ln,
@@ -188,7 +197,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type BaseDeposit: Get<DepositBalanceOf<Self>>;
 
-		/// The origin for most permissionless and priviledged operations.
+		/// The origin for most permissionless and privileged operations.
 		type DefaultOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		/// The dedicated origin for creating new bonded currency pools
 		/// (typically permissionless).
@@ -226,6 +235,7 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]
@@ -278,6 +288,12 @@ pub mod pallet {
 			id: T::PoolId,
 			manager: Option<T::AccountId>,
 		},
+		/// The asset managing team of a pool has been reset.
+		TeamChanged {
+			id: T::PoolId,
+			admin: T::AccountId,
+			freezer: T::AccountId,
+		},
 	}
 
 	#[pallet::error]
@@ -326,7 +342,6 @@ pub mod pallet {
 			Copy + ToFixed + AddAssign + BitOrAssign + ShlAssign + TryFrom<U256> + TryInto<U256>,
 		CollateralBalanceOf<T>: Into<U256> + TryFrom<U256>,
 		FungiblesBalanceOf<T>: Into<U256> + TryFrom<U256>,
-		// TODO: make large integer type configurable
 	{
 		/// Creates a new bonded token pool. The pool will be created with the
 		/// given curve, collateral currency, and bonded currencies. The pool
@@ -337,17 +352,26 @@ pub mod pallet {
 		/// - `curve`: The curve parameters for the pool.
 		/// - `collateral_id`: The ID of the collateral currency.
 		/// - `currencies`: A bounded vector of token metadata for the bonded
-		///   currencies.
-		/// - `denomination`: The denomination for the bonded currencies.
-		/// - `transferable`: A boolean indicating if the bonded currencies are
-		///   transferable.
+		///   currencies. Note that no two currencies may use the same name or
+		///   symbol.
+		/// - `currencies_settings`: Options and settings shared by all bonded
+		///   currencies. These cannot be changed after the pool is created.
+		///   - `denomination`: The denomination for the bonded currencies.
+		///   - `transferable`: A boolean indicating if the bonded currencies
+		///     are transferable.
+		///   - `allow_reset_team`: Whether asset management team changes are
+		///     allowed for this pool.
+		///   - `min_operation_balance`: The minimum amount that can be
+		///     minted/burnt.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
 		///
 		/// # Errors
-		/// - `Error::<T>::InvalidInput`: If the denomination is greater than
-		///   the maximum allowed or if the curve input is invalid.
+		/// - `Error::<T>::InvalidInput`: If either
+		///   - the denomination is greater than the maximum allowed
+		///   - the curve input is invalid
+		///   - two currencies use the same name or symbol
 		/// - `Error::<T>::Internal`: If the conversion to `BoundedVec` fails.
 		/// - Other errors depending on the types in the config.
 		#[pallet::call_index(0)]
@@ -364,11 +388,16 @@ pub mod pallet {
 			curve: CurveInput<CurveParameterInputOf<T>>,
 			collateral_id: CollateralAssetIdOf<T>,
 			currencies: BoundedVec<TokenMetaOf<T>, T::MaxCurrenciesPerPool>,
-			denomination: u8,
-			transferable: bool,
-			min_operation_balance: u128,
+			currencies_settings: BondedCurrenciesSettingsOf<T>,
 		) -> DispatchResult {
 			let who = T::PoolCreateOrigin::ensure_origin(origin)?;
+
+			let BondedCurrenciesSettings {
+				denomination,
+				transferable,
+				allow_reset_team,
+				min_operation_balance,
+			} = currencies_settings;
 
 			ensure!(denomination <= T::MaxDenomination::get(), Error::<T>::InvalidInput);
 			let checked_curve = curve.try_into().map_err(|_| Error::<T>::InvalidInput)?;
@@ -407,6 +436,10 @@ pub mod pallet {
 			// currency to it. This should also verify that the currency actually exists.
 			T::Collaterals::touch(collateral_id.clone(), pool_account, &who)?;
 
+			// Enforce unique names and symbols by recording seen values in a set
+			let mut names_seen = BTreeSet::<StringInputOf<T>>::new();
+			let mut symbols_seen = BTreeSet::<StringInputOf<T>>::new();
+
 			currencies.into_iter().zip(currency_ids.iter()).try_for_each(
 				|(token_metadata, asset_id)| -> DispatchResult {
 					let TokenMeta {
@@ -414,6 +447,11 @@ pub mod pallet {
 						name,
 						symbol,
 					} = token_metadata;
+
+					// insert() returns true if the set did not contain the inserted value
+					let name_ok = name.is_empty() || names_seen.insert(name.clone());
+					let symbol_ok = symbol.is_empty() || symbols_seen.insert(symbol.clone());
+					ensure!(name_ok && symbol_ok, Error::<T>::InvalidInput);
 
 					T::Fungibles::create(asset_id.clone(), pool_account.to_owned(), false, min_balance)?;
 
@@ -438,6 +476,7 @@ pub mod pallet {
 					collateral_id,
 					currency_ids,
 					transferable,
+					allow_reset_team,
 					denomination,
 					min_operation_balance,
 					deposit_amount,
@@ -449,28 +488,28 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Changes the managing team of a bonded currency which is issued by
-		/// this pool. The new team will be set to the provided team. The
-		/// currency index is used to select the currency that the team will
-		/// manage. The origin account must be a manager of the pool.
+		/// Changes the managing team of all bonded currencies issued by this
+		/// pool, setting it to the provided `team`. The origin account must be
+		/// a manager of the pool.
 		///
 		/// # Parameters
 		/// - `origin`: The origin of the call, requiring the caller to be a
 		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool.
 		/// - `team`: The new managing team.
-		/// - `currency_idx`: The index of the currency in the bonded currencies
-		///   vector.
+		/// - `currency_count`: The number of bonded currencies vector linked to
+		///   the pool. Required for weight estimations.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
 		///
 		/// # Errors
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
-		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
-		///   pool.
-		/// - `Error::<T>::IndexOutOfBounds`: If the currency index is out of
-		///   bounds.
+		/// - `Error::<T>::NoPermission`: If this pool does not allow changing
+		///   the asset management team, or if the caller is not a manager of
+		///   the pool.
+		/// - `Error::<T>::CurrencyCount`: If the actual number of currencies in
+		///   the pool is larger than `currency_count`.
 		/// - Other errors depending on the types in the config.
 		#[pallet::call_index(1)]
 		#[pallet::weight(T::WeightInfo::reset_team())]
@@ -478,31 +517,44 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			team: PoolManagingTeam<AccountIdOf<T>>,
-			currency_idx: u32,
+			currency_count: u32,
 		) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
-			ensure!(pool_details.is_manager(&who), Error::<T>::NoPermission);
+			let number_of_currencies = Self::get_currencies_number(&pool_details);
+			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
+
+			let BondedCurrenciesSettings { allow_reset_team, .. } = pool_details.currencies_settings;
+
+			ensure!(
+				allow_reset_team && pool_details.is_manager(&who),
+				Error::<T>::NoPermission
+			);
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
-			let asset_id = pool_details
-				.bonded_currencies
-				.get(currency_idx.saturated_into::<usize>())
-				.ok_or(Error::<T>::IndexOutOfBounds)?;
-
-			let pool_id_account = pool_id.into();
+			let pool_id_account = pool_id.clone().into();
 
 			let PoolManagingTeam { freezer, admin } = team;
 
-			T::Fungibles::reset_team(
-				asset_id.to_owned(),
-				pool_id_account.clone(),
+			pool_details.bonded_currencies.into_iter().try_for_each(|asset_id| {
+				T::Fungibles::reset_team(
+					asset_id,
+					pool_id_account.clone(),
+					admin.clone(),
+					pool_id_account.clone(),
+					freezer.clone(),
+				)
+			})?;
+
+			Self::deposit_event(Event::TeamChanged {
+				id: pool_id,
 				admin,
-				pool_id_account,
 				freezer,
-			)
+			});
+
+			Ok(())
 		}
 
 		/// Resets the manager of a pool. The new manager will be set to the
@@ -525,6 +577,8 @@ pub mod pallet {
 		/// - `Error::<T>::PoolUnknown`: If the pool does not exist.
 		/// - `Error::<T>::NoPermission`: If the caller is not a manager of the
 		///   pool.
+		/// - `Error::<T>::PoolNotLive`: If the pool is not in active or locked
+		///   state.
 		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::reset_manager())]
 		pub fn reset_manager(
@@ -535,6 +589,7 @@ pub mod pallet {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
 			Pools::<T>::try_mutate(&pool_id, |maybe_entry| -> DispatchResult {
 				let entry = maybe_entry.as_mut().ok_or(Error::<T>::PoolUnknown)?;
+				ensure!(entry.state.is_live(), Error::<T>::PoolNotLive);
 				ensure!(entry.is_manager(&who), Error::<T>::NoPermission);
 				entry.manager = new_manager.clone();
 
@@ -558,7 +613,8 @@ pub mod pallet {
 		/// - `origin`: The origin of the call, requiring the caller to be a
 		///   manager of the pool.
 		/// - `pool_id`: The identifier of the pool to be locked.
-		/// - `lock`: The locks to be applied to the pool.
+		/// - `lock`: The locks to be applied to the pool. At least one lock
+		///   flag must be set to `false` for a valid lock.
 		///
 		/// # Returns
 		/// - `DispatchResult`: The result of the dispatch.
@@ -569,10 +625,15 @@ pub mod pallet {
 		///   pool.
 		/// - `Error::<T>::PoolNotLive`: If the pool is not in a live (locked or
 		///   active) state.
+		/// - `Error::<T>::InvalidInput`: If all lock flags are `true` (all
+		///   operations enabled), which would be equivalent to an unlocked
+		///   (active) pool state.
 		#[pallet::call_index(3)]
 		#[pallet::weight(T::WeightInfo::set_lock())]
 		pub fn set_lock(origin: OriginFor<T>, pool_id: T::PoolId, lock: Locks) -> DispatchResult {
 			let who = T::DefaultOrigin::ensure_origin(origin)?;
+
+			ensure!(lock.any_lock_set(), Error::<T>::InvalidInput);
 
 			Pools::<T>::try_mutate(&pool_id, |pool| -> DispatchResult {
 				let entry = pool.as_mut().ok_or(Error::<T>::PoolUnknown)?;
@@ -683,8 +744,15 @@ pub mod pallet {
 			let number_of_currencies = Self::get_currencies_number(&pool_details);
 			ensure!(number_of_currencies <= currency_count, Error::<T>::CurrencyCount);
 
+			let BondedCurrenciesSettings {
+				min_operation_balance,
+				denomination,
+				transferable,
+				..
+			} = pool_details.currencies_settings;
+
 			ensure!(
-				amount_to_mint >= pool_details.min_operation_balance.saturated_into(),
+				amount_to_mint >= min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -704,16 +772,13 @@ pub mod pallet {
 
 			let (active_pre, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
-				pool_details.denomination,
+				denomination,
 				currency_idx,
 				round_kind,
 			)?;
 
-			let normalized_amount_to_mint = balance_to_fixed(
-				amount_to_mint.saturated_into::<u128>(),
-				pool_details.denomination,
-				round_kind,
-			)?;
+			let normalized_amount_to_mint =
+				balance_to_fixed(amount_to_mint.saturated_into::<u128>(), denomination, round_kind)?;
 
 			let active_post = active_pre
 				.checked_add(normalized_amount_to_mint)
@@ -744,7 +809,7 @@ pub mod pallet {
 
 			T::Fungibles::mint_into(target_currency_id.clone(), &beneficiary, amount_to_mint)?;
 
-			if !pool_details.transferable {
+			if !transferable {
 				T::Fungibles::freeze(target_currency_id, &beneficiary).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
 					freeze_error.into()
@@ -812,8 +877,15 @@ pub mod pallet {
 
 			let pool_details = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolUnknown)?;
 
+			let BondedCurrenciesSettings {
+				min_operation_balance,
+				denomination,
+				transferable,
+				..
+			} = pool_details.currencies_settings;
+
 			ensure!(
-				amount_to_burn >= pool_details.min_operation_balance.saturated_into(),
+				amount_to_burn >= min_operation_balance.saturated_into(),
 				TokenError::BelowMinimum
 			);
 
@@ -834,12 +906,12 @@ pub mod pallet {
 
 			let (high, passive) = Self::calculate_normalized_passive_issuance(
 				&bonded_currencies,
-				pool_details.denomination,
+				denomination,
 				currency_idx,
 				round_kind,
 			)?;
 
-			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, pool_details.denomination, round_kind)?;
+			let normalized_amount_to_burn = balance_to_fixed(amount_to_burn, denomination, round_kind)?;
 
 			let low = high
 				.checked_sub(normalized_amount_to_burn)
@@ -887,7 +959,7 @@ pub mod pallet {
 
 			let account_exists = T::Fungibles::total_balance(target_currency_id.clone(), &who) > Zero::zero();
 
-			if !pool_details.transferable && account_exists {
+			if !transferable && account_exists {
 				// Restore locks.
 				T::Fungibles::freeze(target_currency_id, &who).map_err(|freeze_error| {
 					log::info!(target: LOG_TARGET, "Failed to freeze account: {:?}", freeze_error);
@@ -1081,11 +1153,6 @@ pub mod pallet {
 				.checked_add(burnt)
 				.ok_or(ArithmeticError::Overflow)?;
 
-			defensive_assert!(
-				sum_of_issuances >= burnt,
-				"burnt amount exceeds the total supply of all bonded currencies"
-			);
-
 			let amount: CollateralBalanceOf<T> = burnt
 				.checked_mul(total_collateral_issuance.into())
 				// As long as the balance type is half the size of a U256, this won't overflow.
@@ -1120,16 +1187,16 @@ pub mod pallet {
 					Error::<T>::Internal
 				})?;
 
-			if amount.is_zero()
-				|| T::Collaterals::can_deposit(pool_details.collateral.clone(), &who, amount, Provenance::Extant)
-					.into_result()
-					.is_err()
-			{
+			let deposit_consequence =
+				T::Collaterals::can_deposit(pool_details.collateral.clone(), &who, amount, Provenance::Extant);
+			if amount.is_zero() || deposit_consequence == DepositConsequence::BelowMinimum {
 				// Funds are burnt but the collateral received is not sufficient to be deposited
 				// to the account. This is tolerated as otherwise we could have edge cases where
 				// it's impossible to refund at least some accounts.
 				return Ok(Some(T::WeightInfo::refund_account(currency_count.to_owned())).into());
 			}
+			// Return error if not Success
+			deposit_consequence.into_result()?;
 
 			let transferred = T::Collaterals::transfer(
 				pool_details.collateral,
@@ -1421,7 +1488,6 @@ pub mod pallet {
 			ensure!(pool_details.state.is_live(), Error::<T>::PoolNotLive);
 
 			if let Some(caller) = maybe_check_manager {
-				// TODO: should the owner be authorized as well?
 				ensure!(pool_details.is_manager(caller), Error::<T>::NoPermission);
 			}
 
@@ -1494,7 +1560,6 @@ pub mod pallet {
 			);
 
 			if let Some(caller) = maybe_check_manager {
-				// TODO: should this be permissionless if the pool is in refunding state?
 				ensure!(
 					pool_details.is_owner(caller) || pool_details.is_manager(caller),
 					Error::<T>::NoPermission

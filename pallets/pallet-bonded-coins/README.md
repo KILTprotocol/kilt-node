@@ -11,13 +11,6 @@ This pallet provides functionality to:
 - Burn tokens to release collateral.
 - Manage the lifecycle of currency pools, including refunding and destroying pools.
 
-### Rounding 
-
-Rounding issues are a problem and cannot be completely avoided due to the nature of limited resources on a computer, resulting in a lack of representation for irrational numbers. 
-This pallet cannot guarantee mathematically exact calculations. 
-However, it can guarantee the reproducibility of the same result based on the usage of [fixed-point][fixed-point] numbers. 
-
-
 ## Key Concepts
 
 ### Bonding Curve
@@ -115,57 +108,214 @@ The `Config` trait defines the configuration parameters and associated types req
 
 ## Life Cycle of a Pool
 
-1. **Creation**:
-   - A pool is created using the `create_pool` function.
-   - The manager specifies the bonding curve, collateral type, currencies, and whether the bonded coins are transferable.
-   - A deposit is taken from the caller, which can be reclaimed once the pool is destroyed.
-
-2. **Refund Process**:
-   - The refund process can be started by the manager using the `start_refund` function.
-   - The refund process can be forced to start using the `force_start_refund` function, which requires force privileges.
-   - Collateral can be refunded to a specific account using the `refund_account` function, based on the owned bonded currency.
-
-3. **Destruction**:
-   - The destruction process can be started by the manager using the `start_destroy` function. This operation will fail if accounts with bonded currencies still exist.
-   - The destruction process can be forced to start using the `force_start_destroy` function, which requires force privileges. 
-   - The destruction process is completed using the `finish_destroy` function, which refunds any taken deposits.
+1. An __Owner__ initializes a new pool by calling `create_pool`, specifying the bonding curve, metadata of the new currencies, which currency to use as a collateral, and whether currencies should be `transferable`. The __Owner__ will be the new pool’s first __Manager__. 
+   - A storage deposit will be paid by the __Owner__ in addition to transaction fees.
+2. Optional: __Owner__ makes manager-level changes to the new pool or associated assets, such as setting locks on mint/burn functionality, or changing the asset management team.
+3. Optional: __Owner__ re-assigns or un-assigns management privileges. In the second case, no further management-level changes can be made, including the initialization of the refund mechanism.
+4. __Traders__ buy into one of the associated currencies by calling `mint_into`.
+   - If the __Owner__ has flagged the pool’s associated assets as `transferable` upon creation, __Traders__ may transfer their holdings to other accounts, enabling, for example, secondary markets. This is done by interacting with the assets pallet directly via its extrinsics (`transfer`, `transfer_keep_alive`, `approve_transfer`, etc).
+5. __Traders__ sell their holdings of any of the associated currencies by calling `burn_into`.
+6. Optional: __Manager__ can end trading of the associated assets and distribute all collateral collected among holders. To do so, they call `start_refund`. All minting and burning is halted.
+   - This is followed by calling `refund_account` for each asset and account holding funds. This call can be called by anyone for any account.
+7. When no collateral remains in the pool _OR_ when all linked assets have a total supply of 0 (all funds burnt), the pool __Owner__ or __Manager__ can initialize the destruction of the pool by calling start_destroy. All minting, burning, transferring, and refunding is halted.
+   - If the pool __Manager__ has been unassigned, the pool cannot be drained forcefully by the __Owner__. Either all __Traders__ need to be convinced to burn their holdings, or an appeal must be made to the configured force origin (typically blockchain governance) to call `force_start_refund` (enabling collateral distribution as in 6.) or `force_start_destroy` (forcefully destroying the pool despite value still being locked in the pool).
+8. If any balance remains for some account on any asset associated with the pool, these accounts have to be destroyed by calling the asset pallet’s `destroy_accounts` extrinsic for that asset.
+   - This can be called by any account.
+   - This scenario may occur either because destruction was initiated via `force_start_destroy`, or in rare cases where during refunding there is less collateral than bonded currency and not all accounts receive a share of collateral, leaving the collateral exhausted before all accounts have been refunded.
+9. If any approvals have been created for some account by __Traders__ (via calling `approve_transfer` on the assets pallet) on any asset associated with the pool, these approvals have to be destroyed by calling the asset pallet’s `destroy_approvals` extrinsic for that asset.
+   - This can be called by any account.
+10. Once no accounts or approvals remain on any associated asset, the pool record can be purged from the blockchain state by calling `finish_destroy`.
+   - The storage deposit and (if any) residual collateral will be transferred to the __Owner__.
+   - This can be called by any account.
 
 ## Functions
 
 ### Public Functions
 
+#### Permissionless
+
+Can be called by any regular origin (`DefaultOrigin`/`PoolCreateOrigin`; subject to runtime configuration).
+
 - `create_pool`:  Creates a new pool with the specified bonding curve, collateral type, and currencies. 
-                  During the pool creation step, the manager must specify whether the bonded coins are transferable or not. 
-                  This flag can not be changed later on. 
-                  The selected denomination is used not only as metadata but also to scale down the existing supply or the amount specified in a mint or burn operation. 
+                  Additional configuration determines the denomination of bonded coins, whether they are 
+                  transferable or not, and whether their asset management teams may be re-assigned.
+                  These settings cannot be changed after pool creation.
+                  The selected denomination is used not only as metadata but also to scale down the existing supply or the amount specified in a mint or burn operation.
                   A deposit is taken from the caller, which is returned once the pool is destroyed. 
-- `reset_team`:   Resets the managing team of a pool. 
-                  Only the admin and the freezer can be updated in this operation. 
-- `reset_manager`: Resets the manager of a pool. 
-- `set_lock`:  Sets a lock on a pool. 
-               Locks specify who is able to mint and burn a bonded currency. 
-               After applying the lock, the pool becomes permissioned, and only the manager is able to mint or burn bonded currencies.
-- `unlock`:    Unlocks the pool. 
-               Can only be called by the manager.
 - `mint_into`:    Mints new tokens by locking up collateral. 
                   In the mint_into operation the beneficiary must be specified. 
                   The collateral is taken from the caller. 
 - `burn_into`:    Burns tokens to release collateral. 
                   In the burn_into operation the beneficiary must be specified. 
                   The funds are burned from the caller.
+- `refund_account`:  Can only be called on pools in 'Refunding' state. Refunds collateral to a specific account. 
+                     The amount of refunded collateral is determined by the owned bonded currency.
+- `finish_destroy`:  Can only be called on pools in 'Destroying' state. Completes the destruction process for a pool. 
+                     Refunds any taken deposits.
+
+#### Permissioned
+
+Can only be called by a pool's manager origin.
+
+- `reset_team`:   Resets the managing team of a pool. 
+                  Only the admin and the freezer can be updated in this operation.
+                  This will always fail for pools where the `allow_reset_team` setting is `false`.
+- `reset_manager`: Resets the manager of a pool. 
+- `set_lock`:  Sets a lock on a pool. 
+               Locks specify who is able to mint and burn a bonded currency. 
+               After applying the lock, the pool becomes permissioned, and only the manager is able to mint or burn bonded currencies.
+- `unlock`:    Unlocks the pool. 
 - `start_refund`:    Starts the refund process for a pool. 
-                     Only the manager is able to start the refund process. 
+- `start_destroy`:   Starts the destruction process for a pool. 
+                     Both the manager and the owner are able to start the destroy process. 
+                     If accounts with bonded currencies still exist, this operation will fail.
+
+#### Privileged
+
+Can only be called by the force origin (`ForceOrigin`; subject to runtime configuration).
+
 - `force_start_refund`:    Forces the start of the refund process for a pool. 
                            Requires force privileges. 
-- `refund_account`:  Refunds collateral to a specific account. 
-                     The amount of refunded collateral is determined by the owned bonded currency.
-- `start_destroy`:   Starts the destruction process for a pool. 
-                     Only the manager and the owner is able to start the destroy process. 
-                     If accounts with bonded currencies still exist, this operation will fail.
 - `force_start_destroy`:   Forces the start of the destruction process for a pool. 
                            Requires force privileges. 
-- `finish_destroy`:  Completes the destruction process for a pool. 
-                     Refunds any taken deposits.
+
+## Permissions Structure & (De-)Centralization
+
+In its current form, the pallet allows three different levels of central control over a pool:
+
+#### Full manager authority
+
+Upon creation, every pool has the `manager` field set to the account creating the pool (the __Owner__). The __Owner__ can also choose to set the `allow_reset_team` flag on the pool to `true` during creation (this cannot be changed afterwards\!). In this configuration, the __Owner__/__Manager__ has near-total authority over the pool’s lifecycle and its associated assets, allowing them to:
+
+- Transfer pool management privileges to another account  
+- Impose and lift a Lock on the pool, halting/resuming all minting and/or burning  
+- Mint and burn bonded tokens even though mint/burn is locked for all others  
+- Initiate the refund process, halting bonded token mints and burns  
+  - Since the `refund_account` extrinsic applies for refunds proportionally across all bonded currencies, assuming equal value, the refund process could potentially be abused to perform market manipulations.  
+- Assign or modify the currency management team, and thereby exercise control over bonded currency funds held by other wallets, including:  
+  - Freeze or unfreeze funds  
+  - Force-transfer a wallet’s balance to another account  
+  - Slash/destroy a wallet’s balance
+
+For these reasons users are advised to exercise caution when a pool’s `allow_reset_team` is set to `true`. **This is true even if the `manager` field is set to `None`**; even though the pool configuration is now immutable, asset management team changes may have been made prior to un-assigning the __Manager__, which means that individuals may still exercise privileged control over the bonded assets linked to the pool.
+
+#### Restricted manager authority
+
+Pools where the `allow_reset_team` is set to `false` do not allow changes to the asset management team, even if a pool `manager` exists. Therefore, the __Manager__ has a much more restricted set of privileges, limited to:
+
+- Transferring pool management privileges to another account  
+- Imposing and lifting a Lock on the pool, halting/resuming all minting and/or burning  
+- Minting and burning bonded tokens even though mint/burn is locked for all others  
+- Initiating the refund process, halting bonded token mints and burns
+
+Still, these permissions can potentially allow a __Manager__ to:
+
+- Trap user’s funds by imposing burn locks after they minted coins in exchange for collateral  
+- Perform market manipulations via imposing locks or via initiating refund when token distribution and price conditions are in their favor
+
+#### Unmanaged / unprivileged pools
+
+While the `manager` field is set to the pool creator at the time of creation, a __Manager__ can drop all privileges by calling the `reset_manager` transaction with a `None` argument, resulting in the `manager` field being unset.  
+Pools with no __Manager__ and the `allow_reset_team` set to `false` can be considered unprivileged, as:
+
+- Their current configuration is immutable  
+- The pool __Owner__ has given up all relevant privileges and control over the pool’s bonded assets
+
+While there is still a single transaction that only the __Owner__ is privileged to make (`start_destroy`), this does not significantly impact bonded token economics, as it can only be called once all users have burnt all their holdings of bonded tokens linked to this pool.  
+Unprivileged pools where bonded currency supplies are non-zero thus cannot be purged unless by force origin intervention.
+
+### Force Origin
+
+The pallet implements several transactions, prefixed with `force_*`, that are restricted to use by a ‘force’-origin. This origin can be configured differently in each chain/runtime this pallet is integrated into, but is assumed to be the blockchain’s governing body which can also decide on runtime upgrades and thus has unlimited control over blockchain state and state transition functions.  
+The transactions `force_start_refund` & `force_start_destroy` are designed to allow the forced closure of pools, which may be necessary, e.g., because of inactive accounts preventing purge of a pool which is otherwise unused, or because the pool has been found to be involved in illegitimate activities.  
+
+## Known Limitations
+
+### Rounding 
+
+Rounding issues are a problem and cannot be completely avoided due to the nature of limited resources on a computer, resulting in a lack of representation for irrational numbers. 
+This pallet cannot guarantee mathematically exact calculations. 
+However, it can guarantee the reproducibility of the same result based on the usage of [fixed-point][fixed-point] numbers. 
+
+### Numerical Overflow
+
+Working with fixed precision numerical representations imposes limits on the supply of bonded tokens that can exist, as well as on the amount that can be burnt or minted at once. These boundaries depend on multiple factors, including the data types chosen for representing balances in the pallets and in the bonding curves module, the denominations of collateral and bonded tokens, and the chosen curve and parameters.
+
+The following types of boundaries related to numerical overflow of token amounts exist in the system:
+
+#### Limits independent of curve- and parameter choice
+
+##### **Limited total supply due to capacity of assets pallet / fungibles balance type**
+
+Bonded coin balances are stored in an external pallet implementing the Fungibles interfaces defined in [`frame_support::traits::tokens::fungibles`](https://docs.rs/frame-support/35.0.0/frame_support/traits/tokens/fungibles/index.html). The size of the integer type used to represent balances limits the maximum balance that can be stored for any given bonded currency. And because the same type is used for representing the total supply of this asset, this limit applies to the sum of all balances as well.
+
+*Example:*   
+The u128 integer type frequently used to store balances in polkadot imposes a maximum supply of 2128 \= 3.40 \* 10³⁸.
+
+##### **Limited total supply due to capacity of bonding curves module parameter type**
+
+The bonding curves module uses fixed-precision fractional numbers for cost calculations. To do so, total supplies received from the Fungibles implementation are scaled by their denomination to account for the typically reduced whole-number capacity of fixed-precision fractionals compared to integer types. Depending on the choice of denomination for a pool, this limit may still be magnitudes lower than the limit imposed by the capacity of the balance (integer) type.
+
+*Example:*
+[Using a fixed-point number with a maximum value of 274 and a denomination of 15, overflow would occur for any total supply \>= 274 \* 1015 \= 1.89 \* 10³⁷, which is still an order of magnitude below the capacity of a u128.
+
+#### Limits depending on curve- and parameter choice
+
+##### **LMSR**
+
+The following boundaries apply to all currencies in a pool, at all times. If these are violated either before or as a consequence of a mint or burn the operation will fail.
+
+supply \+ m × ln(N) \<= MAX(coefficient)  
+and  
+(min \- supply) / m \>= MIN(coefficient)  
+and  
+(supply \- max) / m \>= MIN(coefficient)
+
+where  
+*supply \= the token’s supply, scaled by its denomination*  
+*max \= largest supply in the pool’s set of bonded currencies*  
+*min \= smallest supply in the pool’s set of bonded currencies*   
+*m \= liquidity parameter m*  
+*N \= number of bonded currencies*  
+*MAX(coefficient) \= Maximum value for fixed precision number type; e.g., around 274 for a signed type with 75 integer bits.*  
+*MIN(coefficient) \= Minimum value for fixed precision number type; e.g., \-274 for a signed type with 75 integer bits.*
+
+##### **Polynomial**
+
+This type of curve sums up the supply of all bonded coins in a pool, so limits apply to their sum.
+
+Due to the curve’s exponential nature, minting large amounts at once can lead to very high cost, possibly overflowing the fixed precision number type. In scenarios where users hold large amounts of collateral that exceed the limit of the fixed type (as the collateral balance type is likely to have a larger capacity), minting in multiple increments may work.
+
+For very low amounts minted (-\> lim(0)) the following limits hold:
+
+total \<= MAX(coefficient)  
+and  
+3m x total^2 \+ 2n x total \+ o \<= MAX(coefficient)  
+and  
+3 x total^2 \<= MAX(coefficient) IF m \> 0  
+and  
+2 x total \<= MAX(coefficient) IF n \> 0  
+   
+where   
+*total \= the sum of all token’s supplies, scaled by their denomination*  
+*m \= curve coefficient m*  
+*n \= curve coefficient n*  
+*o \= curve coefficient o*  
+*MAX(coefficient) \= Maximum value for fixed precision number type; e.g., around 274 for a signed type with 75 integer bits.*
+
+##### **Square Root**
+
+As for the polynomial, this type of curve sums up the supply of all bonded coins in a pool, so limits apply to their sum.
+
+The following limits apply, beyond cost limits given by the capacity of the fixed precision type: 
+
+total \<= MAX(coefficient)   
+and  
+total^(3/2) \<= MAX(coefficient)
+
+where   
+*total \= the sum of all token’s supplies, scaled by their denomination*  
+*MAX(coefficient) \= Maximum value for fixed precision number type; e.g., around 274 for a signed type with 75 integer bits.*
 
 [bonding-curve]: ./src/curves/mod.rs
 [pool-details]: ./src/types.rs

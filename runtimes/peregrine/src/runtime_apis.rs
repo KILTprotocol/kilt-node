@@ -502,7 +502,8 @@ impl_runtime_apis! {
 			rounding: Round,
 		) -> Result<Balance, BondedCurrencyError> {
 			let pool = Pools::<Runtime>::get(pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
-			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, denomination, collateral, .. } = pool;
+			let PoolDetailsOf::<Runtime> { curve, bonded_currencies, currencies_settings, collateral, .. } = pool;
+			let denomination = currencies_settings.denomination;
 			let collateral_denomination = NativeAndForeignAssets::decimals(collateral);
 
 			let normalized_low = balance_to_fixed(low, denomination, rounding).map_err(|_| BondedCurrencyError::BalanceConversion)?;
@@ -555,15 +556,13 @@ impl_runtime_apis! {
 			let pool = Pools::<Runtime>::get(&pool_id).ok_or(BondedCurrencyError::PoolNotFound)?;
 			let PoolDetailsOf::<Runtime> {
 				curve,
+				currencies_settings,
 				bonded_currencies,
 				owner,
 				collateral,
-				denomination,
 				deposit,
-				min_operation_balance,
 				manager,
 				state,
-				transferable,
 			} = pool;
 
 			let currencies = bonded_currencies.iter().map(|currency_id| -> Result<BondedCurrencyDetails<BondedAssetId, Balance>, BondedCurrencyError> {
@@ -607,12 +606,10 @@ impl_runtime_apis! {
 				curve: fmt_curve,
 				collateral: collateral_details,
 				owner,
-				denomination,
 				deposit,
-				min_operation_balance,
 				manager,
 				state,
-				transferable,
+				currencies_settings
 			})
 		}
 
