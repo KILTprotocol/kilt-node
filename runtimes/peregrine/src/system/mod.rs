@@ -94,7 +94,7 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = ConstU16<SS_58_PREFIX>;
 	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
-	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type MaxConsumers = frame_support::traits::ConstU32<100>;
 }
 
 impl pallet_timestamp::Config for Runtime {

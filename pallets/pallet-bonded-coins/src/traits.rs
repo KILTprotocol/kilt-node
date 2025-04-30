@@ -60,8 +60,10 @@ where
 	}
 }
 
-/// Copy from the Polkadot SDK. once we are at version 1.13.0, we can remove
-/// this.
+/// Copy of a trait from a later version of the Polkadot SDK
+/// (frame_support::traits::tokens::fungibles::roles::ResetTeam). Once we
+/// upgraded to Polkadot SDK version 1.13.0, this can be retired in favor of the
+/// original trait.
 pub trait ResetTeam<AccountId>: Inspect<AccountId> {
 	/// Reset the team for the asset with the given `id`.
 	///
@@ -80,6 +82,10 @@ pub trait ResetTeam<AccountId>: Inspect<AccountId> {
 	) -> DispatchResult;
 }
 
+/// Implementation of the back-ported ResetTeam trait for the assets pallet,
+/// relying on its `transfer_ownership` and `set_team` calls. Later versions of
+/// the assets pallet implement the original trait, so this is a stop-gap
+/// solution until we upgraded to at least Polkadot SDK version 1.13.0.
 impl<T, I: 'static> ResetTeam<AccountIdOf<T>> for AssetsPallet<T, I>
 where
 	T: AssetConfig<I>,
@@ -87,14 +93,24 @@ where
 {
 	fn reset_team(
 		id: Self::AssetId,
-		_owner: AccountIdOf<T>,
+		owner: AccountIdOf<T>,
 		admin: AccountIdOf<T>,
 		issuer: AccountIdOf<T>,
 		freezer: AccountIdOf<T>,
 	) -> DispatchResult {
-		let owner = AssetsPallet::<T, I>::owner(id.clone()).ok_or(DispatchError::Unavailable)?;
-		let origin = RawOrigin::Signed(owner);
-		AssetsPallet::<T, I>::set_team(origin.into(), id.into(), issuer.into(), admin.into(), freezer.into())
+		let current_owner = AssetsPallet::<T, I>::owner(id.clone()).ok_or(DispatchError::Unavailable)?;
+		AssetsPallet::<T, I>::transfer_ownership(
+			RawOrigin::Signed(current_owner).into(),
+			id.clone().into(),
+			owner.clone().into(),
+		)?;
+		AssetsPallet::<T, I>::set_team(
+			RawOrigin::Signed(owner).into(),
+			id.into(),
+			issuer.into(),
+			admin.into(),
+			freezer.into(),
+		)
 	}
 }
 
