@@ -98,7 +98,7 @@ impl frame_system::Config for Runtime {
 	type PostInherents = ();
 	type PostTransactions = ();
 	type PreInherents = ();
-	type SingleBlockMigrations = crate::migrations::RuntimeMigrations;
+	type SingleBlockMigrations = ();
 }
 
 impl pallet_timestamp::Config for Runtime {

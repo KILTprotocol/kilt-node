@@ -197,6 +197,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
+	crate::migrations::RuntimeMigrations,
 >;
 
 /// Block header type as expected by this runtime.
