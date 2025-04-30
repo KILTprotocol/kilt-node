@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
-use pallet_bonded_coins::{curves::Curve, Locks, PoolStatus};
+use pallet_bonded_coins::{curves::Curve, BondedCurrenciesSettings, Locks, PoolStatus};
 use parity_scale_codec::{alloc::string::String, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -35,10 +35,19 @@ pub type PoolDetailsOf<AccountId, Balance, AssetId, CollateralAssetId> = PoolDet
 	CurrenciesOf<AssetId, Balance>,
 	CollateralDetails<CollateralAssetId>,
 	Balance,
+	Balance,
 >;
 
 #[derive(Default, Clone, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen, Debug)]
-pub struct PoolDetails<AccountId, PoolId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance> {
+pub struct PoolDetails<
+	AccountId,
+	PoolId,
+	ParametrizedCurve,
+	Currencies,
+	BaseCurrencyId,
+	DepositBalance,
+	FungiblesBalance,
+> {
 	/// The ID of the pool.
 	pub id: PoolId,
 	/// The owner of the pool.
@@ -53,12 +62,8 @@ pub struct PoolDetails<AccountId, PoolId, ParametrizedCurve, Currencies, BaseCur
 	pub bonded_currencies: Currencies,
 	/// The status of the pool.
 	pub state: PoolStatus<Locks>,
-	/// Whether the pool is transferable or not.
-	pub transferable: bool,
-	/// The denomination of the pool.
-	pub denomination: u8,
-	/// The minimum amount that can be minted/burnt.
-	pub min_operation_balance: u128,
+	/// Shared settings of the currencies in the pool.
+	pub currencies_settings: BondedCurrenciesSettings<FungiblesBalance>,
 	/// The deposit to be returned upon destruction of this pool.
 	pub deposit: DepositBalance,
 }

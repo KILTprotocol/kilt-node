@@ -28,6 +28,7 @@ parameter_types! {
 pub type RuntimeMigrations = (
 	pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 	frame_support::migrations::RemovePallet<Inflation, <Runtime as frame_system::Config>::DbWeight>,
+	pallet_bonded_coins::migrations::v1::MigrateV0ToV1<Runtime>,
 );
 
 impl pallet_migration::Config for Runtime {

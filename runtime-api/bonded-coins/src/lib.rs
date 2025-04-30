@@ -44,7 +44,7 @@ pub trait OperationValue {
 sp_api::decl_runtime_apis! {
 	/// Runtime API to compute the collateral for a given amount and pool ID
 	/// and to query all pool IDs where the given account is the manager or owner.
-	#[api_version(1)]
+	#[api_version(2)]
 	pub trait BondedCurrency<Balance, PoolId, Operation, AccountId, BondedAssetId, CollateralAssetId, BitType, Error> where
 		Balance: Codec,
 		PoolId: Codec,
