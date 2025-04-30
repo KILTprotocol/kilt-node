@@ -19,12 +19,16 @@
 use frame_support::parameter_types;
 use runtime_common::constants;
 
-use crate::{weights, Balances, Runtime, RuntimeEvent};
+use crate::{weights, Balances, ParachainSystem, Runtime, RuntimeEvent};
 
 parameter_types! {
 	pub const DmpPalletName: &'static str = "DmpQueue";
 	pub const DotNames: &'static str = "DotNames";
 	pub const UniqueLinking: &'static str = "UniqueLinking";
+}
+
+impl cumulus_pallet_xcmp_queue::migration::v5::V5Config for Runtime {
+	type ChannelList = ParachainSystem;
 }
 
 pub type RuntimeMigrations = (
@@ -33,6 +37,7 @@ pub type RuntimeMigrations = (
 	frame_support::migrations::RemovePallet<DotNames, <Runtime as frame_system::Config>::DbWeight>,
 	frame_support::migrations::RemovePallet<UniqueLinking, <Runtime as frame_system::Config>::DbWeight>,
 	pallet_bonded_coins::migrations::v1::MigrateV0ToV1<Runtime>,
+	cumulus_pallet_xcmp_queue::migration::v5::MigrateV4ToV5<Runtime>,
 );
 
 impl pallet_migration::Config for Runtime {
