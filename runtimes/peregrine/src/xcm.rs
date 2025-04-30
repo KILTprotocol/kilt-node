@@ -48,6 +48,7 @@ use xcm_builder::{
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
 use runtime_common::{
+	constants,
 	xcm_config::{
 		DenyReserveTransferToRelayChain, DenyThenTry, HeapSize, HereLocation, LocalAssetTransactor,
 		LocationToAccountId, MaxAssetsIntoHolding, MaxInstructions, MaxStale, ParentLocation, ParentOrSiblings,
@@ -316,8 +317,8 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
 	type MaxInboundSuspended = ConstU32<1_000>;
 	type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
-	type MaxActiveOutboundChannels = ();
-	type MaxPageSize = ();
+	type MaxActiveOutboundChannels = ConstU32<{ constants::pallet_xcmp_queue::MAX_ACTIVE_OUTBOUND_CHANNELS }>;
+	type MaxPageSize = ConstU32<{ constants::pallet_xcmp_queue::MAX_PAGE_SIZE }>;
 }
 
 impl pallet_message_queue::Config for Runtime {

@@ -613,6 +613,11 @@ pub mod public_credentials {
 	}
 }
 
+pub mod pallet_xcmp_queue {
+	pub const MAX_PAGE_SIZE: u32 = 128 * 1024;
+	pub const MAX_ACTIVE_OUTBOUND_CHANNELS: u32 = 128;
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;

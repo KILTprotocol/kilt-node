@@ -263,6 +263,12 @@ mod dip_did_proof_with_verified_relay_state_root {
 		type SS58Prefix = ConstU16<1>;
 		type SystemWeightInfo = ();
 		type Version = ();
+
+		type MultiBlockMigrator = ();
+		type SingleBlockMigrations = ();
+		type PostInherents = ();
+		type PostTransactions = ();
+		type PreInherents = ();
 	}
 
 	impl pallet_dip_provider::Config for TestProviderRuntime {
@@ -482,7 +488,7 @@ mod dip_did_proof_with_verified_subject_commitment {
 					id: hex!("50da6646d21f19b4d7d9f80d5beb103fbef7f4bb95eb94e0c02552175b1bff3a").into(),
 					relationship: DidVerificationKeyRelationship::Authentication.into(),
 					details: DidPublicKeyDetails {
-						key: DidVerificationKey::Ed25519(ed25519::Public(hex!(
+						key: DidVerificationKey::Ed25519(ed25519::Public::from_raw(hex!(
 							"43a72e714401762df66b68c26dfbdf2682aaec9f2474eca4613e424a0fbafd3c"
 						)))
 						.into(),

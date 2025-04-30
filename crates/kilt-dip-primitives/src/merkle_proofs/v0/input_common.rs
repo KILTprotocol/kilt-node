@@ -160,7 +160,7 @@ where
 {
 	fn default() -> Self {
 		Self {
-			signature: DidSignature::Ed25519(sp_core::ed25519::Signature([0u8; 64])),
+			signature: DidSignature::Ed25519(sp_core::ed25519::Signature::from_raw([0u8; 64])),
 			valid_until: BlockNumber::default(),
 		}
 	}

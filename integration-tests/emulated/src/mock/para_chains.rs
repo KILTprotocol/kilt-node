@@ -51,6 +51,7 @@ pub mod spiritnet {
 				))
 				.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
 				.collect::<Vec<_>>(),
+				..Default::default()
 			},
 			balances: BalancesConfig {
 				balances: accounts::init_balances()
@@ -92,6 +93,7 @@ pub mod peregrine {
 				))
 				.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
 				.collect::<Vec<_>>(),
+				..Default::default()
 			},
 			balances: BalancesConfig {
 				balances: accounts::init_balances()
