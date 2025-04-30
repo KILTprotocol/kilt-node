@@ -49,9 +49,9 @@ where
 		};
 
 		// 2. We only trust the EXACT configured remote location (no parent is allowed).
-		let Ok(stored_remote_reserve_location_v4): Result<Location, _> = switch_pair.remote_reserve_location.clone().try_into().map_err(|e| {
+		let Ok(stored_remote_reserve_location_v4): Result<Location, _> = switch_pair.remote_reserve_location.clone().try_into().inspect_err(|e| {
 				log::error!(target: LOG_TARGET, "Failed to convert stored remote reserve location {:?} into v4 xcm version with error {:?}.", switch_pair.remote_reserve_location, e);
-				e
+				*e
 			 }) else { return false; };
 		if stored_remote_reserve_location_v4 != *b {
 			log::trace!(

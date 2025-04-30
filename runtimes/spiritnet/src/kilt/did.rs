@@ -33,8 +33,7 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
 		/// ensure that all calls have the same VerificationKeyRelationship
 		fn single_key_relationship(calls: &[RuntimeCall]) -> DeriveDidCallKeyRelationshipResult {
-			let init = calls
-				.get(0)
+			let init = calls.first()
 				.ok_or(RelationshipDeriveError::InvalidCallParameter)?
 				.derive_verification_key_relationship()?;
 			calls

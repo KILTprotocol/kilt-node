@@ -249,7 +249,7 @@ impl_runtime_apis! {
 		}
 
 		fn preset_names() -> Vec<PresetId> {
-			vec![PresetId::from("peregrine_kilt_paseo"), PresetId::from("peregrine_stg_kilt"), PresetId::from("rilt_peregrine_new")]
+			sp_std::vec![PresetId::from("peregrine_kilt_paseo"), PresetId::from("peregrine_stg_kilt"), PresetId::from("rilt_peregrine_new")]
 		}
 	}
 

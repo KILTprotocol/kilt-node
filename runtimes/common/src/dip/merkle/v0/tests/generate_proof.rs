@@ -78,7 +78,7 @@ fn generate_proof_for_complete_linked_info() {
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
 		root,
 		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
+		TimeBoundDidSignature::new(signature.into(), 100),
 	);
 
 	let dip_origin_info = cross_chain_proof
@@ -164,7 +164,7 @@ fn generate_proof_for_complete_linked_info() {
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
 		root,
 		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
+		TimeBoundDidSignature::new(signature.into(), 100),
 	);
 	// Should verify the merkle proof successfully.
 	assert_ok!(cross_chain_proof.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>());
@@ -180,7 +180,7 @@ fn generate_proof_for_complete_linked_info() {
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
 		root,
 		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
+		TimeBoundDidSignature::new(signature.into(), 100),
 	);
 
 	let dip_origin_info = cross_chain_proof
@@ -219,7 +219,7 @@ fn generate_proof_for_complete_linked_info() {
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
 		root,
 		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
+		TimeBoundDidSignature::new(signature.into(), 100),
 	);
 	// Should verify the merkle proof successfully.
 	assert_ok!(cross_chain_proof.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>());
@@ -230,7 +230,7 @@ fn generate_proof_for_complete_linked_info() {
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
 		root,
 		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
+		TimeBoundDidSignature::new(signature.into(), 100),
 	);
 	// Should verify the merkle proof successfully.
 	assert_ok!(cross_chain_proof.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>());
@@ -247,7 +247,7 @@ fn generate_proof_for_complete_linked_info() {
 	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
 		root,
 		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
+		TimeBoundDidSignature::new(signature.into(), 100),
 	);
 	let dip_origin_info = cross_chain_proof
 		.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>()

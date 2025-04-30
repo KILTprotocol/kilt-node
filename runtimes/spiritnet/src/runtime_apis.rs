@@ -231,7 +231,7 @@ impl_runtime_apis! {
 		}
 
 		fn preset_names() -> Vec<PresetId> {
-			vec![PresetId::from("kilt")]
+			sp_std::vec![PresetId::from("kilt")]
 		}
 	}
 
