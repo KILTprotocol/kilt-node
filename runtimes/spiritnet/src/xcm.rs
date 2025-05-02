@@ -126,7 +126,7 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 /// 1. Have a fixed weight;
 /// 2. Cannot lead to another call being made;
 /// 3. Have a defined proof size weight, e.g. no unbounded vecs in call
-/// parameters.
+///    parameters.
 pub struct SafeCallFilter;
 impl Contains<RuntimeCall> for SafeCallFilter {
 	fn contains(c: &RuntimeCall) -> bool {

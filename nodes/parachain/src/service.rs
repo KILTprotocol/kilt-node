@@ -294,13 +294,13 @@ where
 		.await?;
 
 	let rpc_builder = {
-		let client = client.clone();
-		let transaction_pool = transaction_pool.clone();
+		let client = Arc::clone(&client);
+		let transaction_pool = Arc::clone(&transaction_pool);
 
 		Box::new(move |_| {
 			let deps = crate::rpc::FullDeps {
-				client: client.clone(),
-				pool: transaction_pool.clone(),
+				client: Arc::clone(&client),
+				pool: Arc::clone(&transaction_pool),
 			};
 
 			crate::rpc::create_full(deps).map_err(Into::into)

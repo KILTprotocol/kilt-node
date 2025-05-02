@@ -291,11 +291,7 @@ pub fn new_full<N: sc_network::NetworkBackend<Block, <Block as sp_runtime::trait
 	if enable_grandpa {
 		// if the node isn't actively participating in consensus then it doesn't
 		// need a keystore, regardless of which protocol we use below.
-		let keystore = if role.is_authority() {
-			Some(keystore_container.keystore())
-		} else {
-			None
-		};
+		let keystore = role.is_authority().then(|| keystore_container.keystore());
 
 		let grandpa_config = sc_consensus_grandpa::Config {
 			// FIXME #1578 make this available through chainspec

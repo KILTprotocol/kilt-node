@@ -782,6 +782,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	/// 3. Set the appendix, executed regardless of the outcome of the transfer:
 	///
 	///     3.1 Report back to our chain the assets in the holding registry.
+	///
 	/// This will contain either only the XCM fee token in case of successful
 	/// transfer, or the XCM fee token + the amount of funds supposed to be
 	/// transferred.

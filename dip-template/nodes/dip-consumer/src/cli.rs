@@ -79,7 +79,10 @@ pub struct RelayChainCli {
 }
 
 impl RelayChainCli {
-	pub fn new<'a>(para_config: &Configuration, relay_chain_args: impl Iterator<Item = &'a String>) -> Self {
+	pub fn new<'a, I>(para_config: &Configuration, relay_chain_args: I) -> Self
+	where
+		I: Iterator<Item = &'a String>,
+	{
 		let extension = Extensions::try_get(&*para_config.chain_spec);
 		let chain_id = extension.map(|e| e.relay_chain.clone());
 		let base_path = Some(para_config.base_path.path().join("polkadot"));
