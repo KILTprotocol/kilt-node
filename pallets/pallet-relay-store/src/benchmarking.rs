@@ -20,6 +20,7 @@ use crate::{Config, Pallet};
 use frame_benchmarking::v2::*;
 use sp_std::vec::Vec;
 
+#[allow(clippy::multiple_bound_locations)]
 #[benchmarks(
 	where
 	T: cumulus_pallet_parachain_system::Config

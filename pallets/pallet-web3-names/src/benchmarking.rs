@@ -180,7 +180,6 @@ benchmarks_instance_pallet! {
 		let web3_name_input: BoundedVec<u8, <T as Config<I>>::MaxNameLength> = BoundedVec::try_from(
 			<T as Config<I>>::BenchmarkHelper::generate_name_input_with_length(<T as Config<I>>::MaxNameLength::get().saturated_into())
 		).expect("BoundedVec creation should not fail.");
-		let web3_name_input_clone = web3_name_input.clone();
 		let origin_create = <T as Config<I>>::OwnerOrigin::generate_origin(deposit_owner_old.clone(), owner.clone());
 
 		make_free_for_did::<T, I>(&deposit_owner_old);
