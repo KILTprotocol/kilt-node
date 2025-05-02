@@ -86,19 +86,23 @@ fn claiming_successful() {
 
 #[test]
 fn claiming_invalid() {
-	let too_short_web3_names = [BoundedVec::try_from(b"".to_vec()).unwrap(),
+	let too_short_web3_names = [
+		BoundedVec::try_from(b"".to_vec()).unwrap(),
 		// Single-char name
 		BoundedVec::try_from(b"1".to_vec()).unwrap(),
 		// Two-letter name
-		BoundedVec::try_from(b"10".to_vec()).unwrap()];
+		BoundedVec::try_from(b"10".to_vec()).unwrap(),
+	];
 
-	let invalid_web3_names = [BoundedVec::try_from(b"10:1".to_vec()).unwrap(),
+	let invalid_web3_names = [
+		BoundedVec::try_from(b"10:1".to_vec()).unwrap(),
 		// Not allowed ASCII character name (uppercase letter)
 		BoundedVec::try_from(b"abcdE".to_vec()).unwrap(),
 		// Not allowed ASCII character name (whitespace)
 		BoundedVec::try_from(b"    ".to_vec()).unwrap(),
 		// Non-ASCII character name
-		BoundedVec::try_from(String::from("notascii😁").as_bytes().to_owned()).unwrap()];
+		BoundedVec::try_from(String::from("notascii😁").as_bytes().to_owned()).unwrap(),
+	];
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
 		.build_and_execute_with_sanity_tests(|| {

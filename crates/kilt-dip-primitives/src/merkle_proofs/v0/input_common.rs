@@ -122,7 +122,8 @@ impl<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name,
 		ProviderBlockNumber,
 		ProviderWeb3Name,
 		ProviderLinkableAccountId,
-	> where
+	>
+where
 	ProviderDidKeyId: Default,
 	ProviderBlockNumber: Default,
 {

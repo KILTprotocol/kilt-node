@@ -742,7 +742,8 @@ construct_runtime!(
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
 		fn single_key_relationship(calls: &[RuntimeCall]) -> did::DeriveDidCallKeyRelationshipResult {
-			let init = calls.first()
+			let init = calls
+				.first()
 				.ok_or(did::RelationshipDeriveError::InvalidCallParameter)?
 				.derive_verification_key_relationship()?;
 			calls

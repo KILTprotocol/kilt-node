@@ -47,7 +47,8 @@ mod parachain_dip_did_proof {
 			KiltWeb3Name,
 			KiltLinkableAccountId,
 			ConsumerBlockNumber,
-		> where
+		>
+	where
 		KiltDidKeyId: Default,
 		KiltBlockNumber: Default,
 		ConsumerBlockNumber: Default,
@@ -213,7 +214,8 @@ mod dip_did_proof_with_verified_relay_state_root {
 			KiltWeb3Name,
 			KiltLinkableAccountId,
 			ConsumerBlockNumber,
-		> where
+		>
+	where
 		KiltDidKeyId: Default,
 		KiltBlockNumber: Default,
 		ConsumerBlockNumber: Default,
@@ -440,7 +442,8 @@ mod dip_did_proof_with_verified_subject_commitment {
 			KiltWeb3Name,
 			KiltLinkableAccountId,
 			ConsumerBlockNumber,
-		> where
+		>
+	where
 		ConsumerBlockNumber: Default,
 	{
 		fn with_commitment_and_dip_proof(

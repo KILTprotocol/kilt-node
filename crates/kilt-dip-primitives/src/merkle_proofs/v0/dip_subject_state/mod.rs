@@ -87,7 +87,8 @@ impl<
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
 		MAX_REVEALED_LEAVES_COUNT,
-	> where
+	>
+where
 	ConsumerBlockNumber: PartialOrd,
 {
 	/// Verifies that the DIP proof signature is anchored to a block that has
