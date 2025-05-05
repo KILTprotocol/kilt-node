@@ -38,8 +38,7 @@ mod dip_revealed_details_and_unverified_did_signature {
 			KiltLinkableAccountId,
 			ConsumerBlockNumber,
 			MAX_REVEALED_LEAVES_COUNT,
-		>
-	where
+		> where
 		KiltDidKeyId: Default,
 		KiltBlockNumber: Default,
 		ConsumerBlockNumber: Default,

@@ -53,8 +53,7 @@ mod relay_did_dip_proof {
 			KiltBlockNumber,
 			KiltWeb3Name,
 			KiltLinkableAccountId,
-		>
-	where
+		> where
 		RelayBlockNumber: Default,
 		KiltDidKeyId: Default,
 		KiltBlockNumber: Default,
@@ -151,8 +150,7 @@ mod relay_dip_did_proof_with_verified_relay_state_root {
 			KiltBlockNumber,
 			KiltWeb3Name,
 			KiltLinkableAccountId,
-		>
-	where
+		> where
 		RelayBlockNumber: Default,
 		KiltDidKeyId: Default,
 		KiltBlockNumber: Default,

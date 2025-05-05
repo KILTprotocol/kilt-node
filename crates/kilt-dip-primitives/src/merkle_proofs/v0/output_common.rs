@@ -145,8 +145,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		MAX_REVEALED_LEAVES_COUNT,
-	>
-where
+	> where
 	KiltDidKeyId: crate::traits::BenchmarkDefault,
 	KiltBlockNumber: crate::traits::BenchmarkDefault,
 {

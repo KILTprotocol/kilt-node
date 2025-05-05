@@ -119,8 +119,7 @@ impl<AccountId, ParametrizedCurve, Currencies, BaseCurrencyId, DepositBalance, F
 		BaseCurrencyId,
 		DepositBalance,
 		BondedCurrenciesSettings<FungiblesBalance>,
-	>
-where
+	> where
 	AccountId: PartialEq + Clone,
 {
 	#[allow(clippy::too_many_arguments)]

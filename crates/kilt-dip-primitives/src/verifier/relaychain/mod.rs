@@ -165,8 +165,7 @@ impl<
 		MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
 		MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
 		MAX_DID_MERKLE_LEAVES_REVEALED,
-	>
-where
+	> where
 	ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
 	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
 	BlockNumberFor<ConsumerRuntime>: Into<U256> + TryFrom<U256>,

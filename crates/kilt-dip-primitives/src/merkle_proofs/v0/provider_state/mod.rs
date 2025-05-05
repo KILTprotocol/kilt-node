@@ -423,8 +423,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
-	>
-where
+	> where
 	KiltDidKeyId: Encode,
 	KiltAccountId: Encode,
 	KiltBlockNumber: Encode,
