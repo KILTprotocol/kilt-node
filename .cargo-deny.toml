@@ -9,11 +9,9 @@ no-default-features = true
 [advisories]
 ignore = [
   { id = "RUSTSEC-2020-0168", reason = "`mach` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
-  { id = "RUSTSEC-2021-0139", reason = "`ansi_term` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2022-0061", reason = "`parity-wasm` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2022-0080", reason = "`parity-util-mem` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0336", reason = "`rustls` vulnerability. Re-verify upon next polkadot-sdk updates." },
-  { id = "RUSTSEC-2024-0344", reason = "`curve25519-dalek` vulnerability. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0370", reason = "`proc-macro-error` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0384", reason = "`instant` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0388", reason = "`derivative` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
@@ -35,13 +33,16 @@ allow = [
   "BSD-2-Clause",
   "BSD-3-Clause",
   "CC0-1.0",
+  "CDLA-Permissive-2.0",
   "GPL-3.0 WITH Classpath-exception-2.0",
   "GPL-3.0",
   "ISC",
   "MIT",
+  "MIT-0",
   "MPL-2.0",
   "OpenSSL",
   "SSPL-1.0",
+  "Unicode-3.0",
   "Unicode-DFS-2016",
   "Zlib",
 ]
