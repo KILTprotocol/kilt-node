@@ -9289,6 +9289,7 @@ dependencies = [
  "public-credentials",
  "runtime-common",
  "scale-info",
+ "serde_json",
  "sp-api",
  "sp-block-builder",
  "sp-consensus-aura",

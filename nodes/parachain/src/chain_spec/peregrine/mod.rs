@@ -21,8 +21,6 @@
 pub(crate) mod dev;
 pub(crate) mod new;
 
-const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
-
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub(crate) type ChainSpec = sc_service::GenericChainSpec<crate::chain_spec::Extensions>;
 

@@ -16,18 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 use cumulus_primitives_core::ParaId;
-use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
+use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use log::info;
-use runtime_common::opaque::Block;
 use sc_cli::SubstrateCli;
-use sc_executor::NativeExecutionDispatch;
 use sp_runtime::traits::AccountIdConversion;
 use std::iter::once;
 
 use crate::{
 	chain_spec::{self, ParachainRuntime},
 	cli::{Cli, RelayChainCli, Subcommand},
-	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
+	service::new_partial,
 };
 
 // Returns the provided (`--chain`, <selected_runtime>) given only a reference
@@ -148,99 +146,7 @@ pub(crate) fn run() -> sc_cli::Result<()> {
 				cmd.run(&*spec)
 			})
 		}
-		Some(Subcommand::Benchmark(cmd)) => {
-
-			let shared_params = match cmd {
-				BenchmarkCmd::Block(c) => &c.shared_params,
-				BenchmarkCmd::Pallet(c) => &c.shared_params,
-				BenchmarkCmd::Extrinsic(c) => &c.shared_params,
-				BenchmarkCmd::Machine(c) => &c.shared_params,
-				BenchmarkCmd::Overhead(c) => &c.shared_params,
-				BenchmarkCmd::Storage(c) => &c.shared_params,
-			};
-
-			let (_, runtime) = get_selected_chainspec(shared_params)?;
-
-			let runner = cli.create_runner(cmd)?;
-
-			match (cmd, runtime) {
-				(BenchmarkCmd::Pallet(cmd), ParachainRuntime::Spiritnet(_)) => {
-					if cfg!(feature = "runtime-benchmarks") {
-						runner.sync_run(|config| {
-							cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, <SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(Some(config.chain_spec))
-						})
-					} else {
-						Err("Benchmarking wasn't enabled when building the node. \
-							You can enable it with `--features runtime-benchmarks`."
-							.into())
-					}
-				}
-				(BenchmarkCmd::Pallet(cmd), ParachainRuntime::Peregrine(_)) => {
-					if cfg!(feature = "runtime-benchmarks") {
-						runner.sync_run(|config| {
-							cmd.run_with_spec::<sp_runtime::traits::HashingFor<Block>, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(Some(config.chain_spec))
-						})
-					} else {
-						Err("Benchmarking wasn't enabled when building the node. \
-							You can enable it with `--features runtime-benchmarks`."
-							.into())
-					}
-				}
-				(BenchmarkCmd::Block(cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
-					let partials = new_partial::<spiritnet_runtime::RuntimeApi, _>(
-						&config,
-						crate::service::build_import_queue,
-					)?;
-					cmd.run(partials.client)
-				}),
-				(BenchmarkCmd::Block(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
-					let partials = new_partial::<peregrine_runtime::RuntimeApi, _>(
-						&config,
-						crate::service::build_import_queue,
-					)?;
-					cmd.run(partials.client)
-				}),
-				#[cfg(not(feature = "runtime-benchmarks"))]
-				(BenchmarkCmd::Storage(_), _) => Err(sc_cli::Error::Input(
-					"Compile with --features=runtime-benchmarks \
-						to enable storage benchmarks."
-						.into(),
-				)),
-				#[cfg(feature = "runtime-benchmarks")]
-				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Spiritnet(_)) => runner.sync_run(|config| {
-					let partials = new_partial::<spiritnet_runtime::RuntimeApi, _>(
-						&config,
-						crate::service::build_import_queue,
-					)?;
-
-					let db = partials.backend.expose_db();
-					let storage = partials.backend.expose_storage();
-
-					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
-				}),
-				#[cfg(feature = "runtime-benchmarks")]
-				(BenchmarkCmd::Storage(cmd), ParachainRuntime::Peregrine(_)) => runner.sync_run(|config| {
-					let partials = new_partial::<peregrine_runtime::RuntimeApi, _>(
-						&config,
-						crate::service::build_import_queue,
-					)?;
-
-					let db = partials.backend.expose_db();
-					let storage = partials.backend.expose_storage();
-
-					cmd.run(config, std::sync::Arc::clone(&partials.client), db, storage)
-				}),
-				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
-				(BenchmarkCmd::Machine(cmd), _) => {
-					runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
-				}
-				// NOTE: this allows the Client to leniently implement
-				// new benchmark commands without requiring a companion MR.
-				(_, ParachainRuntime::Spiritnet(_)) | (_, ParachainRuntime::Peregrine(_)) => {
-					Err("Benchmarking sub-command unsupported".into())
-				}
-			}
-		}
+		Some(Subcommand::Benchmark(_)) => Err("The `benchmark` subcommand has been migrated to a standalone CLI (https://crates.io/crates/frame-omni-bencher). It is no longer being maintained here.".into()), 
 		Some(Subcommand::TryRuntime) => Err("The `try-runtime` subcommand has been migrated to a standalone CLI (https://github.com/paritytech/try-runtime-cli). It is no longer being maintained here.".into()),
 		None => {
 			let runner = cli.create_runner(&cli.run.normalize())?;

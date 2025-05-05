@@ -88,36 +88,6 @@ type PartialComponents<Block, RuntimeApi, Telemetry, TelemetryWorkerHandle> = sc
 	),
 >;
 
-/// Native Spiritnet executor instance.
-pub(crate) struct SpiritnetRuntimeExecutor;
-
-impl sc_executor::NativeExecutionDispatch for SpiritnetRuntimeExecutor {
-	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-
-	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		spiritnet_runtime::api::dispatch(method, data)
-	}
-
-	fn native_version() -> sc_executor::NativeVersion {
-		spiritnet_runtime::native_version()
-	}
-}
-
-/// Native Peregrine executor instance.
-pub(crate) struct PeregrineRuntimeExecutor;
-
-impl sc_executor::NativeExecutionDispatch for PeregrineRuntimeExecutor {
-	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-
-	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		peregrine_runtime::api::dispatch(method, data)
-	}
-
-	fn native_version() -> sc_executor::NativeVersion {
-		peregrine_runtime::native_version()
-	}
-}
-
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the

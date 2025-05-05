@@ -52,6 +52,7 @@ use runtime_common::{constants, fees::WeightToFee, Address, Signature};
 mod governance;
 mod kilt;
 pub use kilt::Web3Name;
+pub mod genesis_state;
 mod migrations;
 mod parachain;
 mod runtime_apis;
