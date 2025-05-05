@@ -18,7 +18,7 @@
 
 use crate::{
 	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
-	RuntimeGenesisConfig, SessionConfig, SessionKeys, SudoConfig, TechnicalCommitteeConfig,
+	RuntimeGenesisConfig, SessionConfig, SessionKeys, TechnicalCommitteeConfig,
 };
 use runtime_common::{
 	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
@@ -63,9 +63,6 @@ pub mod development {
 					.map(|(acc, key)| (acc.clone(), acc, SessionKeys { aura: key }))
 					.to_vec(),
 				..Default::default()
-			},
-			sudo: SudoConfig {
-				key: Some(alice.0.clone()),
 			},
 			parachain_info: ParachainInfoConfig {
 				parachain_id: KILT_PARA_ID.into(),

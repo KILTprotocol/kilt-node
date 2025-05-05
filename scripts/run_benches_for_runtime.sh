@@ -8,9 +8,8 @@ set -x
 runtime=${1-"peregrine"}
 profile=${2-"release"}
 
-chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 # Dev profile is the debug target
-standard_args="--profile $profile --locked --features=runtime-benchmarks --bin=kilt-parachain"
+standard_args="--profile $profile --locked --features=runtime-benchmarks --package $runtime-runtime"
 
 pallets=(
 	pallet-migration
@@ -63,27 +62,31 @@ if [ "$runtime" = "peregrine" ]; then
 	)
 fi
 
-echo "[+] Running all runtime benchmarks for \"$runtime\", \"--chain=$chain\" and profile \"$profile\""
+echo "[+] Running all runtime benchmarks for \"$runtime\", and profile \"$profile\""
 
 cargo build $standard_args
 
-if [ $profile == "dev" ]; then
+if [ "$profile" = "dev" ]; then
 	target_folder="debug"
+	file_extension=".wasm"
 	# We care about benchmark correctness, not accuracy.
 	additional_args="--steps=2 --repeat=1 --default-pov-mode=ignored"
 else
 	target_folder=$profile
+	file_extension=".compact.compressed.wasm"
 	additional_args="--header=HEADER-GPL --template=.maintain/runtime-weight-template.hbs --output=./runtimes/${runtime}/src/weights/"
 fi
+
+wasm_path="./target/$target_folder/wbuild/$runtime-runtime/${runtime}_runtime$file_extension"
 
 for pallet in "${pallets[@]}"; do
 	echo "Runtime: $runtime. Pallet: $pallet"
 	# shellcheck disable=SC2086
-	./target/$target_folder/kilt-parachain benchmark pallet \
-		--heap-pages=4096 \
-		--chain="${chain}" \
+	frame-omni-bencher v1 benchmark pallet \
 		--pallet="$pallet" \
 		--extrinsic="*" \
+		--genesis-builder="runtime" \
+		--runtime=$wasm_path \
 		$additional_args
 
 	bench_status=$?

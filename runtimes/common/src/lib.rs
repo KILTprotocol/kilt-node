@@ -35,8 +35,9 @@ use frame_support::{
 use frame_system::limits;
 use pallet_balances::Pallet as PalletBalance;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
+use sp_core::{crypto::Pair, Public};
 use sp_runtime::{
-	generic,
+	format, generic,
 	traits::{BlakeTwo256, Bounded, IdentifyAccount, Verify},
 	FixedPointNumber, MultiAddress, MultiSignature, Perquintill, SaturatedConversion,
 };
@@ -237,4 +238,18 @@ where
 		let result = pallet_balances::Pallet::<T>::resolve(&treasury_account_id, amount);
 		debug_assert!(result.is_ok(), "The whole credit cannot be countered");
 	}
+}
+
+/// Helper function to generate an account ID from seed
+pub fn get_account_id_from_secret<TPublic: Public>(seed: &str) -> AccountId
+where
+	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
+{
+	AccountPublic::from(get_public_key_from_secret::<TPublic>(seed)).into_account()
+}
+
+pub fn get_public_key_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
+	TPublic::Pair::from_string(&format!("//{}", seed), None)
+		.expect("static values are valid; qed")
+		.public()
 }

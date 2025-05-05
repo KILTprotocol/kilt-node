@@ -19,10 +19,10 @@
 //! KILT chain specification
 
 use kilt_support::traits::InspectMetadata;
-use peregrine_runtime::{MetadataProvider, SS_58_PREFIX, WASM_BINARY};
+use peregrine_runtime::{genesis_state::KILT_PARA_ID, MetadataProvider, SS_58_PREFIX, WASM_BINARY};
 use sc_service::ChainType;
 
-use crate::chain_spec::{peregrine::ChainSpec, utils::get_properties, Extensions, KILT_PARA_ID};
+use crate::chain_spec::{peregrine::ChainSpec, utils::get_properties, Extensions};
 
 pub(crate) fn generate_chain_spec() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("WASM binary not available");

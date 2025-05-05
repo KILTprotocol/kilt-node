@@ -59,6 +59,7 @@ pub use runtime_apis::{api, RuntimeApi};
 mod system;
 use sp_version::RuntimeVersion;
 pub use system::{SessionKeys, SS_58_PREFIX};
+pub mod genesis_state;
 
 use crate::runtime_apis::RUNTIME_API_VERSION;
 mod weights;
