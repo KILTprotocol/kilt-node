@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at <hello@kilt.io>
+#![allow(clippy::expect_used)]
 
 use crate::{
 	BalancesConfig, CouncilConfig, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
@@ -74,7 +75,7 @@ pub mod development {
 			parachain_staking: ParachainStakingConfig {
 				stakers: [alice.clone(), bob.clone()]
 					.map(|(acc, _)| -> (AccountId, Option<AccountId>, Balance) {
-						(acc, None, 2 * MinCollatorStake::get())
+						(acc, None, 2u128.saturating_mul(MinCollatorStake::get()))
 					})
 					.to_vec(),
 				inflation_config: kilt_inflation_config(),

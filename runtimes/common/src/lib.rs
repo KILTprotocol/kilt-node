@@ -240,7 +240,9 @@ where
 	}
 }
 
-/// Helper function to generate an account ID from seed
+/// Generates an account ID from a given seed. This function is primarily
+/// intended for use in genesis state generation and should not be used at
+/// runtime, as it may panic if the seed is invalid.
 pub fn get_account_id_from_secret<TPublic: Public>(seed: &str) -> AccountId
 where
 	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
@@ -249,6 +251,7 @@ where
 }
 
 pub fn get_public_key_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
+	#[allow(clippy::expect_used)]
 	TPublic::Pair::from_string(&format!("//{}", seed), None)
 		.expect("static values are valid; qed")
 		.public()
