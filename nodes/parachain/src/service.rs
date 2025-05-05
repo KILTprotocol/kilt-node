@@ -57,7 +57,11 @@ pub(crate) type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExt
 #[cfg(not(feature = "runtime-benchmarks"))]
 type HostFunctions = SubstrateHostFunctions;
 #[cfg(feature = "runtime-benchmarks")]
-type HostFunctions = (SubstrateHostFunctions, frame_benchmarking::benchmarking::HostFunctions);
+type HostFunctions = (
+	SubstrateHostFunctions,
+	cumulus_client_service::storage_proof_size::HostFunctions,
+	frame_benchmarking::benchmarking::HostFunctions,
+);
 
 type ParachainExecutor = WasmExecutor<HostFunctions>;
 
