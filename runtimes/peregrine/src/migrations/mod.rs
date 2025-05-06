@@ -22,16 +22,12 @@ use runtime_common::constants;
 use crate::{weights, Balances, Runtime, RuntimeEvent};
 
 parameter_types! {
-	pub const DmpPalletName: &'static str = "DmpQueue";
-	pub const DotNames: &'static str = "DotNames";
-	pub const UniqueLinking: &'static str = "UniqueLinking";
+	pub const Inflation: &'static str = "Inflation";
 }
 
 pub type RuntimeMigrations = (
 	pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	frame_support::migrations::RemovePallet<DmpPalletName, <Runtime as frame_system::Config>::DbWeight>,
-	frame_support::migrations::RemovePallet<DotNames, <Runtime as frame_system::Config>::DbWeight>,
-	frame_support::migrations::RemovePallet<UniqueLinking, <Runtime as frame_system::Config>::DbWeight>,
+	frame_support::migrations::RemovePallet<Inflation, <Runtime as frame_system::Config>::DbWeight>,
 	pallet_bonded_coins::migrations::v1::MigrateV0ToV1<Runtime>,
 );
 

@@ -38,10 +38,10 @@ use xcm::v4::{Asset, Assets, Fungibility, Location};
 
 use crate::{
 	xcm::XcmConfig, AllPalletsWithSystem, AssetSwitchPool1, Attestation, Balances, Collators, Council, Ctype,
-	Delegation, Democracy, DepositStorage, Did, DidLookup, DipProvider, Fungibles, Indices, Inflation, MessageQueue,
-	Migration, Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy, PublicCredentials, Runtime, RuntimeEvent,
-	Scheduler, System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership, Treasury, Utility,
-	Vesting, Web3Names,
+	Delegation, Democracy, DepositStorage, Did, DidLookup, DipProvider, Fungibles, Indices, MessageQueue, Migration,
+	Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy, PublicCredentials, Runtime, RuntimeEvent, Scheduler,
+	System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership, Treasury, Utility, Vesting,
+	Web3Names,
 };
 
 pub(crate) mod asset_switch;
@@ -79,7 +79,6 @@ define_benchmarks!(
 	[attestation, Attestation]
 	[delegation, Delegation]
 	[did, Did]
-	[pallet_inflation, Inflation]
 	[public_credentials, PublicCredentials]
 	[pallet_xcm, pallet_xcm::benchmarking::Pallet::<Runtime>]
 	[pallet_migration, Migration]
