@@ -113,6 +113,7 @@ construct_runtime! {
 		ParachainStaking: parachain_staking = 21,
 		Authorship: pallet_authorship = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
+		Collators: pallet_membership::<Instance3> = 25,
 
 		Democracy: pallet_democracy = 30,
 		Council: pallet_collective::<Instance1> = 31,
