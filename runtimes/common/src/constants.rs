@@ -162,7 +162,7 @@ pub mod bonded_coins {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_POOL_BYTE_LENGTH: u32 = 986;
+	pub const MAX_POOL_BYTE_LENGTH: u32 = 987;
 	pub const BASE_DEPOSIT: Balance = 0;
 	pub const DEPOSIT_PER_CURRENCY: Balance = 0;
 	pub const MAX_CURRENCIES: u32 = 50;
