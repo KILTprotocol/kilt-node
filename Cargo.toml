@@ -21,7 +21,7 @@ homepage      = "https://kilt.io/"
 license-file  = "LICENSE"
 readme        = "README.md"
 repository    = "https://github.com/KILTprotocol/kilt-node"
-version       = "1.14.5"
+version       = "1.15.2"
 
 [workspace.dependencies]
 # Build deps
@@ -48,6 +48,7 @@ serde              = { version = "1.0.144", default-features = false }
 serde_json         = { version = "1.0.85" }
 sha3               = { version = "0.10.0", default-features = false }
 smallvec           = { version = "1.8.0" }
+substrate-fixed    = { version = "0.5.9", default-features = false }
 
 #tests
 xcm-integration-tests = { path = "integration-tests/emulated", default-features = false }
@@ -58,6 +59,7 @@ ctype                  = { path = "pallets/ctype", default-features = false }
 delegation             = { path = "pallets/delegation", default-features = false }
 did                    = { path = "pallets/did", default-features = false }
 pallet-asset-switch    = { path = "pallets/pallet-asset-switch", default-features = false }
+pallet-bonded-coins    = { path = "pallets/pallet-bonded-coins", default-features = false }
 pallet-configuration   = { path = "pallets/pallet-configuration", default-features = false }
 pallet-deposit-storage = { path = "pallets/pallet-deposit-storage", default-features = false }
 pallet-did-lookup      = { path = "pallets/pallet-did-lookup", default-features = false }
@@ -87,6 +89,7 @@ kilt-runtime-api-dip-provider       = { path = "runtime-api/dip-provider", defau
 kilt-runtime-api-public-credentials = { path = "runtime-api/public-credentials", default-features = false }
 kilt-runtime-api-staking            = { path = "runtime-api/staking", default-features = false }
 pallet-asset-switch-runtime-api     = { path = "runtime-api/asset-switch", default-features = false }
+pallet-bonded-coins-runtime-api     = { path = "runtime-api/bonded-coins", default-features = false }
 
 # Internal KILT runtimes (with default disabled)
 kestrel-runtime   = { path = "runtimes/kestrel", default-features = false }
@@ -130,6 +133,7 @@ xcm-emulator                      = { git = "https://github.com/paritytech/polka
 frame-benchmarking                         = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-benchmarking-cli                     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-executive                            = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+frame-metadata-hash-extension              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-support                              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-system                               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 frame-system-rpc-runtime-api               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
@@ -160,6 +164,7 @@ pallet-treasury                            = { git = "https://github.com/parityt
 pallet-utility                             = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 pallet-vesting                             = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-api                                     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+sp-arithmetic                              = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-authority-discovery                     = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-block-builder                           = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-consensus-aura                          = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
@@ -168,6 +173,7 @@ sp-core                                    = { git = "https://github.com/parityt
 sp-genesis-builder                         = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-inherents                               = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-io                                      = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
+sp-metadata-ir                             = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-offchain                                = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-runtime                                 = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }
 sp-session                                 = { git = "https://github.com/paritytech/polkadot-sdk", default-features = false, branch = "release-crates-io-v1.7.0" }

@@ -15,6 +15,9 @@ ignore = [
   { id = "RUSTSEC-2024-0336", reason = "`rustls` vulnerability. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0344", reason = "`curve25519-dalek` vulnerability. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0370", reason = "`proc-macro-error` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2024-0384", reason = "`instant` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2024-0388", reason = "`derivative` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2024-0421", reason = "`idna` has a security vulnerability but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
 ]
 yanked = "deny"
 

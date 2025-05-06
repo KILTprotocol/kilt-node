@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use core::{marker::PhantomData, ops::ControlFlow};
 use cumulus_primitives_core::AggregateMessageOrigin;
@@ -27,6 +27,12 @@ use xcm_executor::traits::{Properties, ShouldExecute};
 
 use crate::{AccountId, BlockWeights};
 
+#[allow(clippy::arithmetic_side_effects)]
+#[inline]
+fn service_weight() -> Weight {
+	Perbill::from_percent(35) * BlockWeights::get().max_block
+}
+
 parameter_types! {
 	// One XCM operation is 200_000_000 weight, cross-chain transfer ~= 2x of transfer.
 	pub UnitWeightCost: Weight = Weight::from_parts(200_000_000, 0);
@@ -34,7 +40,7 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 	pub const MaxStale: u32 = 8;
 	pub const HeapSize: u32 = 64 * 1024;
-	pub ServiceWeight: Weight = Perbill::from_percent(35) * BlockWeights::get().max_block;
+	pub ServiceWeight: Weight = service_weight();
 	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 

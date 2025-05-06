@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use cumulus_pallet_parachain_system::CheckAssociatedRelayNumber;
 use frame_support::{assert_noop, assert_ok};
@@ -25,7 +25,7 @@ use crate::{mock::runtime::*, Configuration, ConfigurationStore, Pallet};
 #[test]
 #[should_panic(expected = "Relay chain block number needs to strictly increase between Parachain blocks!")]
 fn test_set_strict_blocknumber_check() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder.build().execute_with(|| {
 		assert_eq!(ConfigurationStore::<Test>::try_get(), Err(()));
 
 		assert_ok!(Pallet::<Test>::set_configuration(
@@ -46,7 +46,7 @@ fn test_set_strict_blocknumber_check() {
 
 #[test]
 fn test_set_no_blocknumber_check() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder.build().execute_with(|| {
 		assert_eq!(ConfigurationStore::<Test>::try_get(), Err(()));
 
 		assert_ok!(Pallet::<Test>::set_configuration(
@@ -67,7 +67,7 @@ fn test_set_no_blocknumber_check() {
 
 #[test]
 fn test_set_config_unauthorized() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder.build().execute_with(|| {
 		assert_noop!(
 			Pallet::<Test>::set_configuration(
 				RuntimeOrigin::signed(ACCOUNT_01),

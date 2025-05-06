@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 
@@ -88,7 +88,7 @@ fn test_update_deposit() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.build_and_execute_with_sanity_tests(|| {
-			insert_raw_w3n::<Test>(
+			insert_raw_w3n::<Test, _>(
 				ACCOUNT_00,
 				DID_00,
 				web3_name_00.clone(),
@@ -126,7 +126,7 @@ fn test_update_deposit_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.build_and_execute_with_sanity_tests(|| {
-			insert_raw_w3n::<Test>(
+			insert_raw_w3n::<Test, _>(
 				ACCOUNT_00,
 				DID_00,
 				web3_name_00.clone(),

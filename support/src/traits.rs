@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::traits::{
 	fungible::hold::Mutate,
@@ -149,10 +149,8 @@ impl<AccountId, Balance> BalanceMigrationManager<AccountId, Balance> for () {
 
 pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 	type Currency: MutateHold<AccountId, Reason = RuntimeHoldReason>;
-	// TODO: This could also be replaced with a `Borrow<RuntimeHoldReason>` or an
-	// `AsRef<RuntimeHoldReason>`, but not sure what trait the runtime composite
-	// enum implements.
-	type Reason: Into<RuntimeHoldReason> + Clone;
+
+	type Reason: Into<RuntimeHoldReason>;
 
 	/// Returns the hold reason for deposits taken by the deposit collector;
 	fn reason() -> Self::Reason;
@@ -197,7 +195,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		reserve_deposit::<AccountId, Self::Currency>(who, amount, &reason.into())
 	}
 
-	/// Change the deposit owner.
+	/// Change the deposit owner and returns the old owner.
 	///
 	/// The deposit balance of the current owner will be freed, while the
 	/// deposit balance of the new owner will get reserved. The deposit amount
@@ -205,7 +203,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 	fn change_deposit_owner<DepositBalanceMigrationManager>(
 		key: &Key,
 		new_owner: AccountId,
-	) -> Result<(), DispatchError>
+	) -> Result<AccountId, DispatchError>
 	where
 		DepositBalanceMigrationManager:
 			BalanceMigrationManager<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
@@ -216,22 +214,28 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		let reason = Self::reason();
 
 		if is_key_migrated {
-			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
+			free_deposit::<AccountId, Self::Currency>(&deposit, &Self::reason().into())?;
 		} else {
 			DepositBalanceMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
 			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);
 		}
 
-		let deposit = Deposit {
+		let old_deposit_owner = deposit.owner;
+
+		let deposit_with_new_owner = Deposit {
 			owner: new_owner,
 			..deposit
 		};
 
-		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
+		Self::Currency::hold(
+			&reason.into(),
+			&deposit_with_new_owner.owner,
+			deposit_with_new_owner.amount,
+		)?;
 
-		Self::store_deposit(key, deposit)?;
+		Self::store_deposit(key, deposit_with_new_owner)?;
 
-		Ok(())
+		Ok(old_deposit_owner)
 	}
 
 	/// Update the deposit amount.
@@ -251,20 +255,34 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		let is_key_migrated = DepositBalanceMigrationManager::is_key_migrated(&hashed_key);
 
 		if is_key_migrated {
-			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
+			free_deposit::<AccountId, Self::Currency>(&deposit, &Self::reason().into())?;
 		} else {
 			DepositBalanceMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
 			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);
 		}
 
-		let deposit = Deposit {
+		let deposit_with_new_amount = Deposit {
 			amount: Self::deposit_amount(key),
 			..deposit
 		};
-		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
+		Self::Currency::hold(
+			&reason.into(),
+			&deposit_with_new_amount.owner,
+			deposit_with_new_amount.amount,
+		)?;
 
-		Self::store_deposit(key, deposit)?;
+		Self::store_deposit(key, deposit_with_new_amount)?;
 
 		Ok(())
 	}
+}
+
+/// Metadata trait for native asset.
+pub trait InspectMetadata {
+	// Get name for native asset.
+	fn name() -> Vec<u8>;
+	// Get symbol for native asset.
+	fn symbol() -> Vec<u8>;
+	// Get decimals for native asset.
+	fn decimals() -> u8;
 }

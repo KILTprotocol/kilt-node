@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 //! Unit testing
 
@@ -185,9 +185,7 @@ fn authorities_per_round() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2]);
 			// reward 1 once per round
-			let authors: Vec<Option<AccountId>> = (0u64..=100)
-				.map(|i| if i % 5 == 2 { Some(1u64) } else { None })
-				.collect();
+			let authors: Vec<Option<AccountId>> = (0u64..=100).map(|i| (i % 5 == 2).then_some(1u64)).collect();
 			let inflation = StakePallet::inflation_config();
 
 			// roll to last block of round 0

@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_benchmarking::v2::instance_benchmarks;
 use xcm::{VersionedAsset, VersionedAssetId, VersionedInteriorLocation, VersionedLocation};
@@ -74,12 +74,12 @@ mod benchmarks {
 			parents: 1,
 			interior: Junctions::X1([Junction::Parachain(1_000)].into()),
 		};
-		let default_remote_asset_id: AssetId = AssetId(default_reserve_location.clone());
+		let default_remote_asset_id = AssetId(default_reserve_location.clone());
 		let default_remote_xcm_fee: Asset = Asset {
 			id: default_remote_asset_id.clone(),
 			fun: Fungibility::Fungible(100_000),
 		};
-		let default_beneficiary: Junctions = Junctions::X1(
+		let default_beneficiary = Junctions::X1(
 			[Junction::AccountId32 {
 				network: None,
 				id: [0; 32],

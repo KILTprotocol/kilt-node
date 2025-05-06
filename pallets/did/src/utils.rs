@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use fluent_uri::Uri;
 use parity_scale_codec::Encode;
@@ -52,9 +52,13 @@ pub(crate) fn is_valid_uri_fragment(input: &str) -> bool {
 	Uri::parse(&full_test_uri).is_ok()
 }
 
-#[test]
-fn check_is_valid_ascii_string() {
-	let test_cases = [
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn check_is_valid_ascii_string() {
+		let test_cases = [
 		("kilt.io", true),
 		("super.long.domain.com:12345/path/to/directory#fragment?arg=value", true),
 		("super.long.domain.com:12345/path/to/directory/file.txt", true),
@@ -69,19 +73,19 @@ fn check_is_valid_ascii_string() {
 		("https://gist.githubusercontent.com/lukeg90/50c384ce10e3ec10e4d6a257fae8850d/raw/0ec6f2adb26b002b299825568685d3b1fa360b18/v2.json", true),
 	];
 
-	test_cases.iter().for_each(|(input, expected_result)| {
-		assert_eq!(
-			is_valid_ascii_string(input),
-			*expected_result,
-			"Test case for \"{}\" returned wrong result.",
-			input
-		);
-	});
-}
+		test_cases.iter().for_each(|(input, expected_result)| {
+			assert_eq!(
+				is_valid_ascii_string(input),
+				*expected_result,
+				"Test case for \"{}\" returned wrong result.",
+				input
+			);
+		});
+	}
 
-#[test]
-fn check_is_valid_uri() {
-	let test_cases = [
+	#[test]
+	fn check_is_valid_uri() {
+		let test_cases = [
 		("kilt.io", true),
 		("super.long.domain.com:12345/path/to/directory#fragment?arg=value", true),
 		("super.long.domain.com:12345/path/to/directory/file.txt", true),
@@ -101,19 +105,19 @@ fn check_is_valid_uri() {
 		("https://gist.githubusercontent.com/lukeg90/50c384ce10e3ec10e4d6a257fae8850d/raw/0ec6f2adb26b002b299825568685d3b1fa360b18/v2.json", true),
 	];
 
-	test_cases.iter().for_each(|(input, expected_result)| {
-		assert_eq!(
-			is_valid_uri(input),
-			*expected_result,
-			"Test case for \"{}\" returned wrong result.",
-			input
-		);
-	});
-}
+		test_cases.iter().for_each(|(input, expected_result)| {
+			assert_eq!(
+				is_valid_uri(input),
+				*expected_result,
+				"Test case for \"{}\" returned wrong result.",
+				input
+			);
+		});
+	}
 
-#[test]
-fn check_is_valid_uri_fragment_string() {
-	let test_cases = [
+	#[test]
+	fn check_is_valid_uri_fragment_string() {
+		let test_cases = [
 		("kilt.io", true),
 		// Will fail because a fragment cannot have a '#' inside it.
 		(
@@ -137,12 +141,13 @@ fn check_is_valid_uri_fragment_string() {
 		("https://gist.githubusercontent.com/lukeg90/50c384ce10e3ec10e4d6a257fae8850d/raw/0ec6f2adb26b002b299825568685d3b1fa360b18/v2.json", true),
 	];
 
-	test_cases.iter().for_each(|(input, expected_result)| {
-		assert_eq!(
-			is_valid_uri_fragment(input),
-			*expected_result,
-			"Test case for \"{}\" returned wrong result.",
-			input
-		);
-	});
+		test_cases.iter().for_each(|(input, expected_result)| {
+			assert_eq!(
+				is_valid_uri_fragment(input),
+				*expected_result,
+				"Test case for \"{}\" returned wrong result.",
+				input
+			);
+		});
+	}
 }

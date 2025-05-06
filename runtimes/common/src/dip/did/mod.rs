@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use did::did_details::DidDetails;
 use frame_support::ensure;
@@ -175,8 +175,10 @@ where
 		+ pallet_did_lookup::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
 		+ pallet_dip_provider::Config
 		+ pallet_balances::Config,
-	<Runtime as frame_system::Config>::AccountId: Into<LinkableAccountId> + From<sp_core::sr25519::Public>,
-	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+	<Runtime as frame_system::Config>::AccountId:
+		Into<LinkableAccountId> + From<sp_core::sr25519::Public> + AsRef<[u8; 32]> + From<[u8; 32]>,
+	<<Runtime as pallet_web3_names::Config>::Web3Name as TryFrom<Vec<u8>>>::Error:
+		Into<pallet_web3_names::Error<Runtime>>,
 {
 	type Output = Self;
 
@@ -238,11 +240,15 @@ where
 		let web3_name_input: BoundedVec<u8, <Runtime as pallet_web3_names::Config>::MaxNameLength> =
 			BoundedVec::try_from(vec![b'1'; max_name_length]).expect("BoundedVec creation should not fail.");
 
-		let web3_name = pallet_web3_names::Web3NameOf::<Runtime>::try_from(web3_name_input.to_vec())
-			.expect("Creation of w3n from w3n input should not fail.");
+		let Ok(web3_name) = pallet_web3_names::Web3NameOf::<Runtime>::try_from(web3_name_input.to_vec()) else {
+			panic!("Creation of w3n from w3n input should not fail.");
+		};
 
-		pallet_web3_names::Pallet::<Runtime>::register_name(web3_name.clone(), did.clone(), submitter.clone())
-			.expect("Inserting w3n into storage should not fail.");
+		let Ok(_) =
+			pallet_web3_names::Pallet::<Runtime>::register_name(web3_name.clone(), did.clone(), submitter.clone())
+		else {
+			panic!("Inserting w3n into storage should not fail.");
+		};
 
 		let web3_name_details = Some(RevealedWeb3Name {
 			web3_name,

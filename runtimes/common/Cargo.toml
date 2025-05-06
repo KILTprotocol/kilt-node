@@ -13,7 +13,9 @@ version       = { workspace = true }
 [dev-dependencies]
 did                 = { workspace = true, features = ["mock", "std"] }
 enum-iterator       = { workspace = true }
+env_logger          = { workspace = true }
 kilt-dip-primitives = { workspace = true, features = ["std"] }
+kilt-support        = { workspace = true, features = ["mock", "std"] }
 sp-io               = { workspace = true, features = ["std"] }
 
 [dependencies]
@@ -24,12 +26,14 @@ log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info         = { workspace = true, features = ["derive"] }
 smallvec           = { workspace = true }
+substrate-fixed    = { workspace = true }
 
 attestation            = { workspace = true }
 did                    = { workspace = true }
 kilt-dip-primitives    = { workspace = true }
 kilt-support           = { workspace = true }
 pallet-asset-switch    = { workspace = true }
+pallet-bonded-coins    = { workspace = true }
 pallet-deposit-storage = { workspace = true }
 pallet-did-lookup      = { workspace = true }
 pallet-dip-provider    = { workspace = true }
@@ -86,11 +90,13 @@ runtime-benchmarks = [
   "pallet-asset-switch/runtime-benchmarks",
   "pallet-assets/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
+  "pallet-bonded-coins/runtime-benchmarks",
   "pallet-deposit-storage/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
   "pallet-multisig/runtime-benchmarks",
   "pallet-tips/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "polkadot-runtime-common/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
@@ -115,6 +121,7 @@ std = [
   "pallet-assets/std",
   "pallet-authorship/std",
   "pallet-balances/std",
+  "pallet-bonded-coins/std",
   "pallet-deposit-storage/std",
   "pallet-did-lookup/std",
   "pallet-dip-provider/std",
@@ -138,6 +145,7 @@ std = [
   "sp-runtime/std",
   "sp-std/std",
   "sp-trie/std",
+  "substrate-fixed/std",
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
@@ -153,6 +161,7 @@ try-runtime = [
   "pallet-assets/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
+  "pallet-bonded-coins/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-multisig/try-runtime",
   "pallet-transaction-payment/try-runtime",

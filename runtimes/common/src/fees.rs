@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{
 	dispatch::DispatchClass,
@@ -67,8 +67,7 @@ pub struct ToAuthor<R>(sp_std::marker::PhantomData<R>);
 impl<R> OnUnbalanced<NegativeImbalanceOf<R>> for ToAuthor<R>
 where
 	R: pallet_balances::Config + pallet_authorship::Config,
-	<R as frame_system::Config>::AccountId: From<AccountId>,
-	<R as frame_system::Config>::AccountId: Into<AccountId>,
+	<R as frame_system::Config>::AccountId: From<AccountId> + Into<AccountId>,
 	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<R>) {
@@ -82,8 +81,7 @@ pub struct ToAuthorCredit<R>(sp_std::marker::PhantomData<R>);
 impl<R> OnUnbalanced<CreditOf<R>> for ToAuthorCredit<R>
 where
 	R: pallet_balances::Config + pallet_authorship::Config,
-	<R as frame_system::Config>::AccountId: From<AccountId>,
-	<R as frame_system::Config>::AccountId: Into<AccountId>,
+	<R as frame_system::Config>::AccountId: From<AccountId> + Into<AccountId>,
 	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
@@ -109,12 +107,12 @@ where
 pub struct WeightToFee<R>(sp_std::marker::PhantomData<R>);
 impl<R> WeightToFeePolynomial for WeightToFee<R>
 where
-	R: pallet_transaction_payment::Config,
-	R: frame_system::Config,
-	R: pallet_balances::Config,
+	R: pallet_transaction_payment::Config + frame_system::Config + pallet_balances::Config,
 	u128: From<<<R as pallet_transaction_payment::Config>::OnChargeTransaction as OnChargeTransaction<R>>::Balance>,
 {
 	type Balance = Balance;
+	#[allow(clippy::integer_division)]
+	#[allow(clippy::arithmetic_side_effects)]
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
 		// The should be fee
 		let wanted_fee: Balance = 10 * MILLI_KILT;
@@ -243,7 +241,7 @@ mod tests {
 	pub const TREASURY_ACC: AccountId = crate::AccountId::new([1u8; 32]);
 	const AUTHOR_ACC: AccountId = AccountId::new([2; 32]);
 
-	pub struct ToBeneficiary();
+	pub struct ToBeneficiary;
 	impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
 		fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 			// Must resolve into existing but better to be safe.

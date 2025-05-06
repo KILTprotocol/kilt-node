@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg(feature = "runtime-benchmarks")]
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
-//! Benchmarking
+// Old benchmarking macros are a mess.
+#![allow(clippy::tests_outside_test_module)]
+
 use crate::{types::RoundInfo, *};
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
@@ -106,17 +107,20 @@ where
 	let who = delegator.unwrap_or(collator);
 	assert_eq!(Unstaking::<T>::get(who).len(), 0);
 	while System::<T>::block_number() < unstaked.into() {
-		if let Some(delegator) = delegator {
-			assert_ok!(Pallet::<T>::delegator_stake_less(
-				RawOrigin::Signed(delegator.clone()).into(),
-				T::CurrencyBalance::one()
-			));
-		} else {
-			assert_ok!(Pallet::<T>::candidate_stake_less(
-				RawOrigin::Signed(collator.clone()).into(),
-				T::CurrencyBalance::one()
-			));
-		}
+		delegator.map_or_else(
+			|| {
+				assert_ok!(Pallet::<T>::candidate_stake_less(
+					RawOrigin::Signed(collator.clone()).into(),
+					T::CurrencyBalance::one()
+				));
+			},
+			|delegator| {
+				assert_ok!(Pallet::<T>::delegator_stake_less(
+					RawOrigin::Signed(delegator.clone()).into(),
+					T::CurrencyBalance::one()
+				));
+			},
+		);
 		System::<T>::set_block_number(System::<T>::block_number() + BlockNumberFor::<T>::one());
 	}
 	assert_eq!(Unstaking::<T>::get(who).len() as u64, unstaked);

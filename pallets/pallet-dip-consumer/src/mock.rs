@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{
 	construct_runtime,
@@ -23,7 +23,7 @@ use frame_support::{
 		traits::{BlakeTwo256, IdentityLookup},
 		AccountId32,
 	},
-	traits::{ConstU16, ConstU32, ConstU64, Contains, Currency, Everything},
+	traits::{ConstBool, ConstU16, ConstU32, ConstU64, Contains, Currency, Everything},
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
 
@@ -86,6 +86,7 @@ impl pallet_balances::Config for TestRuntime {
 }
 
 impl pallet_did_lookup::Config for TestRuntime {
+	type AssociateOrigin = Self::EnsureOrigin;
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = ConstU64<1>;
@@ -94,6 +95,7 @@ impl pallet_did_lookup::Config for TestRuntime {
 	type OriginSuccess = DipOrigin<AccountId32, AccountId32, ()>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type UniqueLinkingEnabled = ConstBool<false>;
 	type WeightInfo = ();
 }
 
@@ -127,7 +129,9 @@ impl IdentityProofVerifier<TestRuntime> for BooleanProofVerifier {
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		if proof {
-			*identity_details = identity_details.map(|d| Some(d + 1)).unwrap_or(Some(u128::default()));
+			*identity_details = identity_details
+				.map(|d| Some(d + 1))
+				.unwrap_or_else(|| Some(u128::default()));
 			Ok(())
 		} else {
 			Err(1)

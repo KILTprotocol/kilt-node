@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use kilt_support::Deposit;
@@ -30,8 +30,7 @@ fn add_deposit_new() {
 	ExtBuilder::default()
 		//	Deposit amount + existential deposit
 		.with_balances(vec![(OWNER, 500 + 10_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let deposit = DepositEntryOf::<TestRuntime> {
 				reason: HoldReason::Deposit.into(),
 				deposit: Deposit {
@@ -69,8 +68,7 @@ fn add_deposit_existing() {
 	let key = DepositKeyOf::<TestRuntime>::default();
 	ExtBuilder::default()
 		.with_deposits(vec![(namespace.clone(), key.clone(), deposit.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<TestRuntime>::add_deposit(namespace.clone(), key.clone(), deposit),
 				Error::<TestRuntime>::DepositExisting
@@ -80,7 +78,7 @@ fn add_deposit_existing() {
 
 #[test]
 fn add_deposit_failed_to_hold() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		let deposit = DepositEntryOf::<TestRuntime> {
 			reason: HoldReason::Deposit.into(),
 			deposit: Deposit {

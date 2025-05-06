@@ -770,7 +770,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "attestation"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -1976,7 +1976,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -2695,7 +2695,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "attestation",
  "bitflags 1.3.2",
@@ -2798,7 +2798,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "ctype",
  "env_logger 0.10.2",
@@ -2858,7 +2858,7 @@ dependencies = [
 
 [[package]]
 name = "dip-consumer-node-template"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -2912,7 +2912,7 @@ dependencies = [
 
 [[package]]
 name = "dip-consumer-runtime-template"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
@@ -2966,7 +2966,7 @@ dependencies = [
 
 [[package]]
 name = "dip-provider-node-template"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -3020,7 +3020,7 @@ dependencies = [
 
 [[package]]
 name = "dip-provider-runtime-template"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
@@ -5125,7 +5125,7 @@ dependencies = [
 
 [[package]]
 name = "kestrel-runtime"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "attestation",
  "ctype",
@@ -5133,6 +5133,7 @@ dependencies = [
  "did",
  "frame-benchmarking",
  "frame-executive",
+ "frame-metadata-hash-extension",
  "frame-support",
  "frame-system",
  "frame-system-benchmarking",
@@ -5185,7 +5186,7 @@ checksum = "c33070833c9ee02266356de0c43f723152bd38bd96ddf52c82b3af10c9138b28"
 
 [[package]]
 name = "kilt-asset-dids"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "base58",
  "frame-support",
@@ -5200,7 +5201,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-dip-primitives"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -5232,7 +5233,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-parachain"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -5251,6 +5252,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "hex-literal 0.3.4",
  "jsonrpsee",
+ "kilt-support",
  "log",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
@@ -5299,7 +5301,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-did"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "did",
  "frame-system",
@@ -5312,7 +5314,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-dip-provider"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -5320,7 +5322,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-public-credentials"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "kilt-support",
  "parity-scale-codec",
@@ -5330,7 +5332,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-staking"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -5340,7 +5342,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6199,6 +6201,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "merkleized-metadata"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f313fcff1d2a4bcaa2deeaa00bf7530d77d5f7bd0467a117dde2e29a75a7a17a"
+dependencies = [
+ "array-bytes 6.2.3",
+ "blake3",
+ "frame-metadata",
+ "parity-scale-codec",
+ "scale-decode",
+ "scale-info",
+]
+
+[[package]]
 name = "merlin"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6895,12 +6911,13 @@ dependencies = [
 
 [[package]]
 name = "pallet-asset-switch"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "env_logger 0.10.2",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "kilt-support",
  "log",
  "pallet-balances",
  "parity-scale-codec",
@@ -6917,7 +6934,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-asset-switch-runtime-api"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -7113,6 +7130,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-bonded-coins"
+version = "1.15.2"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-assets",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+ "substrate-fixed",
+]
+
+[[package]]
+name = "pallet-bonded-coins-runtime-api"
+version = "1.15.2"
+dependencies = [
+ "pallet-bonded-coins",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-bounties"
 version = "28.0.0"
 source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.7.0#e046d3b2caaca6c43a60f26594052c5c806b980e"
@@ -7286,7 +7336,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-configuration"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "frame-benchmarking",
@@ -7340,7 +7390,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-deposit-storage"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -7359,7 +7409,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-did-lookup"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "base58",
  "blake2 0.10.6",
@@ -7386,7 +7436,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dip-consumer"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "cfg-if",
  "frame-benchmarking",
@@ -7406,7 +7456,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dip-provider"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "did",
  "frame-benchmarking",
@@ -7576,7 +7626,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-inflation"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -7629,7 +7679,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-migration"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "attestation",
  "ctype",
@@ -7848,7 +7898,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-postit"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -7945,7 +7995,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-relay-store"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -8289,7 +8339,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-web3-names"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -8384,7 +8434,7 @@ dependencies = [
 
 [[package]]
 name = "parachain-staking"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -8671,7 +8721,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "attestation",
  "cfg-if",
@@ -8690,6 +8740,7 @@ dependencies = [
  "enum-iterator",
  "frame-benchmarking",
  "frame-executive",
+ "frame-metadata-hash-extension",
  "frame-support",
  "frame-system",
  "frame-system-benchmarking",
@@ -8708,6 +8759,8 @@ dependencies = [
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-bonded-coins",
+ "pallet-bonded-coins-runtime-api",
  "pallet-collective",
  "pallet-democracy",
  "pallet-deposit-storage",
@@ -8747,6 +8800,7 @@ dependencies = [
  "sp-genesis-builder",
  "sp-inherents",
  "sp-io",
+ "sp-metadata-ir",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -10300,7 +10354,7 @@ dependencies = [
 
 [[package]]
 name = "public-credentials"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -10876,7 +10930,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-common"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "attestation",
  "cfg-if",
@@ -10885,6 +10939,7 @@ dependencies = [
  "cumulus-primitives-core",
  "did",
  "enum-iterator",
+ "env_logger 0.10.2",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -10896,6 +10951,7 @@ dependencies = [
  "pallet-assets",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-bonded-coins",
  "pallet-deposit-storage",
  "pallet-did-lookup",
  "pallet-dip-provider",
@@ -10922,6 +10978,7 @@ dependencies = [
  "staging-xcm",
  "staging-xcm-builder",
  "staging-xcm-executor",
+ "substrate-fixed",
 ]
 
 [[package]]
@@ -12255,6 +12312,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "scale-bits"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e57b1e7f6b65ed1f04e79a85a57d755ad56d76fdf1e9bddcc9ae14f71fcdcf54"
+dependencies = [
+ "parity-scale-codec",
+ "scale-type-resolver",
+]
+
+[[package]]
+name = "scale-decode"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e98f3262c250d90e700bb802eb704e1f841e03331c2eb815e46516c4edbf5b27"
+dependencies = [
+ "derive_more",
+ "parity-scale-codec",
+ "scale-bits",
+ "scale-type-resolver",
+ "smallvec",
+]
+
+[[package]]
 name = "scale-info"
 version = "2.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12279,6 +12359,12 @@ dependencies = [
  "quote",
  "syn 1.0.109",
 ]
+
+[[package]]
+name = "scale-type-resolver"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0cded6518aa0bd6c1be2b88ac81bf7044992f0f154bfbabd5ad34f43512abcb"
 
 [[package]]
 name = "schannel"
@@ -13726,7 +13812,7 @@ dependencies = [
 
 [[package]]
 name = "spiritnet-runtime"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "attestation",
  "cfg-if",
@@ -13745,6 +13831,7 @@ dependencies = [
  "enum-iterator",
  "frame-benchmarking",
  "frame-executive",
+ "frame-metadata-hash-extension",
  "frame-support",
  "frame-system",
  "frame-system-benchmarking",
@@ -13801,6 +13888,7 @@ dependencies = [
  "sp-genesis-builder",
  "sp-inherents",
  "sp-io",
+ "sp-metadata-ir",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -13946,7 +14034,7 @@ dependencies = [
 
 [[package]]
 name = "standalone-node"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "clap",
  "frame-benchmarking",
@@ -14104,6 +14192,18 @@ version = "11.0.0"
 source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.7.0#e046d3b2caaca6c43a60f26594052c5c806b980e"
 
 [[package]]
+name = "substrate-fixed"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e83ba2b4f68f12ec6b0f55bac0a23a5bcaaf2676f1109c7a5ead6121c7f0622"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "substrate-typenum",
+]
+
+[[package]]
 name = "substrate-frame-rpc-system"
 version = "29.0.0"
 source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.7.0#e046d3b2caaca6c43a60f26594052c5c806b980e"
@@ -14165,16 +14265,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-typenum"
+version = "1.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0f0091e93c2c75b233ae39424c52cb8a662c0811fb68add149e20e5d7e8a788"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+]
+
+[[package]]
 name = "substrate-wasm-builder"
 version = "18.0.1"
 source = "git+https://github.com/paritytech/polkadot-sdk?branch=release-crates-io-v1.7.0#e046d3b2caaca6c43a60f26594052c5c806b980e"
 dependencies = [
+ "array-bytes 6.2.3",
  "build-helper",
  "cargo_metadata",
  "console",
  "filetime",
+ "frame-metadata",
+ "merkleized-metadata",
+ "parity-scale-codec",
  "parity-wasm",
+ "sc-executor",
+ "sp-core",
+ "sp-io",
  "sp-maybe-compressed-blob",
+ "sp-tracing",
+ "sp-version",
  "strum 0.24.1",
  "tempfile",
  "toml 0.8.14",
@@ -16093,7 +16212,7 @@ dependencies = [
 
 [[package]]
 name = "xcm-integration-tests"
-version = "1.14.5"
+version = "1.15.2"
 dependencies = [
  "asset-hub-rococo-emulated-chain",
  "asset-hub-rococo-runtime",

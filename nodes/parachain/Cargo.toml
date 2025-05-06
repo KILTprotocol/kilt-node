@@ -29,6 +29,7 @@ serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
 
 # Internal dependencies
+kilt-support      = { workspace = true, features = ["std"] }
 peregrine-runtime = { workspace = true, features = ["std"] }
 runtime-common    = { workspace = true, features = ["std"] }
 spiritnet-runtime = { workspace = true, features = ["std"] }
@@ -100,6 +101,7 @@ fast-gov = ["peregrine-runtime/fast-gov", "runtime-common/fast-gov"]
 runtime-benchmarks = [
   "frame-benchmarking-cli/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
   "polkadot-cli/runtime-benchmarks",
   "polkadot-primitives/runtime-benchmarks",
@@ -110,6 +112,7 @@ runtime-benchmarks = [
   "spiritnet-runtime/runtime-benchmarks",
 ]
 try-runtime = [
+  "kilt-support/try-runtime",
   "peregrine-runtime/try-runtime",
   "polkadot-cli/try-runtime",
   "polkadot-service/try-runtime",

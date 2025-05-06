@@ -142,12 +142,12 @@ The pallet itself implements the [OnResponse trait][on-response-trait], that mus
 The trait implementation validates the received query response message based on the state of the switch pair, and then performs the required action on the pending transfer info accordingly.
 
 [asset-switch-runtime-api]: ../../runtime-api/asset-switch/
-[xcm-convert]: ./src/xcm/convert.rs
-[xcm-match]: ./src/xcm/match.rs
+[xcm-convert]: ./src/xcm/convert/mod.rs
+[xcm-match]: ./src/xcm/match/mod.rs
 [XcmExecutorError::AssetNotHandled]: https://github.com/paritytech/polkadot-sdk/blob/33324fe01c5b1f341687cef2aa6e767f6acf40f3/polkadot/xcm/xcm-executor/src/traits/token_matching.rs#L54
 [XcmExecutor::Config]: https://github.com/paritytech/polkadot-sdk/blob/33324fe01c5b1f341687cef2aa6e767f6acf40f3/polkadot/xcm/xcm-executor/src/config.rs#L31
-[xcm-trade]: ./src/xcm/trade.rs
+[xcm-trade]: ./src/xcm/trade/mod.rs
 [Error::AssetNotFound]: https://github.com/paritytech/polkadot-sdk/blob/e5791a56dcc35e308a80985cc3b6b7f2ed1eb6ec/polkadot/xcm/src/v3/traits.rs#L68
-[xcm-transact]: ./src/xcm/transact.rs
-[xcm-transfer]: ./src/xcm/transfer.rs
+[xcm-transact]: ./src/xcm/transact/mod.rs
+[xcm-transfer]: ./src/xcm/transfer/mod.rs
 [on-response-trait]: https://github.com/paritytech/polkadot-sdk/blob/33324fe01c5b1f341687cef2aa6e767f6acf40f3/polkadot/xcm/xcm-executor/src/traits/on_response.rs#L29

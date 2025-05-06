@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::traits::fungible::Inspect;
 use pallet_asset_switch::traits::SwitchHooks;
@@ -112,18 +112,23 @@ impl From<Error> for u8 {
 	}
 }
 
-#[test]
-fn error_value_not_duplicated() {
-	enum_iterator::all::<Error>().fold(
-		sp_std::collections::btree_set::BTreeSet::<u8>::new(),
-		|mut values, new_value| {
-			let new_encoded_value = u8::from(new_value);
-			assert!(
-				values.insert(new_encoded_value),
-				"Failed to add unique value {:#?} for error variant",
-				new_encoded_value
-			);
-			values
-		},
-	);
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn error_value_not_duplicated() {
+		enum_iterator::all::<Error>().fold(
+			sp_std::collections::btree_set::BTreeSet::<u8>::new(),
+			|mut values, new_value| {
+				let new_encoded_value = u8::from(new_value);
+				assert!(
+					values.insert(new_encoded_value),
+					"Failed to add unique value {:#?} for error variant",
+					new_encoded_value
+				);
+				values
+			},
+		);
+	}
 }

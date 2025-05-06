@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use crate::Error;
 
@@ -32,6 +32,8 @@ impl<DidOriginError> From<DipRelaychainStateProofVerifierError<DidOriginError>> 
 where
 	DidOriginError: Into<u8>,
 {
+	#[allow(clippy::as_conversions)]
+	#[allow(clippy::arithmetic_side_effects)]
 	fn from(value: DipRelaychainStateProofVerifierError<DidOriginError>) -> Self {
 		match value {
 			// DO NOT USE 0
@@ -51,31 +53,36 @@ where
 	}
 }
 
-#[test]
-fn dip_relaychain_state_proof_verifier_error_value_never_zero() {
-	assert!(
-		enum_iterator::all::<DipRelaychainStateProofVerifierError<u8>>().all(|e| u16::from(e) != 0),
-		"One of the u8 values for the error is 0, which is not allowed."
-	);
-}
+#[cfg(test)]
+mod tests {
+	use super::*;
 
-#[test]
-fn dip_relaychain_state_proof_verifier_error_value_not_duplicated() {
-	enum_iterator::all::<DipRelaychainStateProofVerifierError<u8>>().fold(
-		sp_std::collections::btree_set::BTreeSet::<u16>::new(),
-		|mut values, new_value| {
-			let new_encoded_value = u16::from(new_value);
-			// DidOriginError is generic, and we cannot test its constraints in this unit
-			// test, so we skip it.
-			if new_encoded_value == u8::MAX as u16 * 3 {
-				return values;
-			}
-			assert!(
-				values.insert(new_encoded_value),
-				"Failed to add unique value {:#?} for error variant",
-				new_encoded_value
-			);
-			values
-		},
-	);
+	#[test]
+	fn dip_relaychain_state_proof_verifier_error_value_never_zero() {
+		assert!(
+			enum_iterator::all::<DipRelaychainStateProofVerifierError<u8>>().all(|e| u16::from(e) != 0),
+			"One of the u8 values for the error is 0, which is not allowed."
+		);
+	}
+
+	#[test]
+	fn dip_relaychain_state_proof_verifier_error_value_not_duplicated() {
+		enum_iterator::all::<DipRelaychainStateProofVerifierError<u8>>().fold(
+			sp_std::collections::btree_set::BTreeSet::<u16>::new(),
+			|mut values, new_value| {
+				let new_encoded_value = u16::from(new_value);
+				// DidOriginError is generic, and we cannot test its constraints in this unit
+				// test, so we skip it.
+				if new_encoded_value == u8::MAX as u16 * 3 {
+					return values;
+				}
+				assert!(
+					values.insert(new_encoded_value),
+					"Failed to add unique value {:#?} for error variant",
+					new_encoded_value
+				);
+				values
+			},
+		);
+	}
 }

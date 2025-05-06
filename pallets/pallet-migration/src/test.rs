@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use attestation::{
 	mock::{claim_hash_from_seed, generate_base_attestation, sr25519_did_from_public_key},
@@ -45,7 +45,7 @@ use pallet_did_lookup::{
 	linkable_account::LinkableAccountId,
 	ConnectedDids,
 };
-use pallet_web3_names::{web3_name::AsciiWeb3Name, Owner};
+use pallet_web3_names::Owner;
 use parity_scale_codec::Encode;
 use public_credentials::{
 	mock::{generate_base_credential_entry, generate_base_public_credential_creation_op, generate_credential_id},
@@ -81,7 +81,7 @@ fn check_succesful_migration() {
 	did_details.deposit.amount = MICRO_KILT;
 
 	//w3n
-	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+	let web3_name_00 = TestWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
 
 	// public credentials
 	let deposit = kilt_support::Deposit {
@@ -233,7 +233,7 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 	did_details.deposit.amount = MICRO_KILT;
 
 	//w3n
-	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+	let web3_name_00 = TestWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
 
 	// public credentials
 	let deposit = kilt_support::Deposit {
@@ -489,7 +489,7 @@ fn check_excluded_keys_lookup() {
 
 #[test]
 fn check_excluded_keys_w3n() {
-	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+	let web3_name_00 = TestWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, KILT)])
@@ -684,7 +684,7 @@ fn migrate_key_by_update_deposit_lookup() {
 
 #[test]
 fn migrate_key_by_update_deposit_w3n() {
-	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+	let web3_name_00 = TestWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, KILT)])

@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use bitflags::bitflags;
 use frame_support::{storage::bounded_btree_set::BoundedBTreeSet, traits::Get};
@@ -37,7 +37,8 @@ bitflags! {
 
 impl Permissions {
 	/// Encode permission bitflags into u8 array.
-	pub fn as_u8(self) -> [u8; 4] {
+	#[allow(clippy::as_conversions)]
+	pub const fn as_u8(self) -> [u8; 4] {
 		let x: u32 = self.bits;
 		let b1: u8 = ((x >> 24) & 0xff) as u8;
 		let b2: u8 = ((x >> 16) & 0xff) as u8;
@@ -141,7 +142,7 @@ impl<DelegatorId> DelegationDetails<DelegatorId> {
 	///
 	/// The default revocation status is false and all permissions are granted
 	/// by default.
-	pub fn default_with_owner(owner: DelegatorId) -> Self {
+	pub const fn default_with_owner(owner: DelegatorId) -> Self {
 		Self {
 			owner,
 			permissions: Permissions::all(),

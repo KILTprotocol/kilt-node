@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{traits::Currency, BoundedVec};
 use pallet_dip_provider::IdentityCommitmentOf;
@@ -27,15 +27,15 @@ use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::{
 	constants::{
 		attestation::MAX_ATTESTATION_BYTE_LENGTH,
+		bonded_coins::MAX_POOL_BYTE_LENGTH,
 		deposit_storage::MAX_DEPOSIT_PALLET_KEY_LENGTH,
 		did::{MAX_KEY_LENGTH, MAX_SERVICE_ENDPOINT_BYTE_LENGTH},
 		did_lookup::MAX_CONNECTION_BYTE_LENGTH,
 		dip_provider::MAX_COMMITMENT_BYTE_LENGTH,
 		public_credentials::MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH,
-		web3_names::MAX_NAME_BYTE_LENGTH,
 		MAX_INDICES_BYTE_LENGTH,
 	},
-	dip::deposit::DepositKey,
+	deposits::DepositKey,
 	AccountId, BlockNumber,
 };
 
@@ -100,7 +100,18 @@ fn web3_name_storage_sizes() {
 	let owner_size = Web3NameOf::<Runtime>::max_encoded_len();
 	let name_size = Web3OwnershipOf::<Runtime>::max_encoded_len();
 
-	assert_eq!(owner_size + name_size, MAX_NAME_BYTE_LENGTH as usize)
+	assert_eq!(
+		owner_size + name_size,
+		runtime_common::constants::web3_names::MAX_NAME_BYTE_LENGTH as usize
+	)
+}
+
+#[test]
+fn test_bonded_coins_pool_max_length() {
+	let value = pallet_bonded_coins::PoolDetailsOf::<Runtime>::max_encoded_len();
+	let id = <Runtime as pallet_bonded_coins::Config>::PoolId::max_encoded_len();
+
+	assert_eq!(id + value, MAX_POOL_BYTE_LENGTH as usize)
 }
 
 #[test]

@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{
 	assert_noop, assert_ok,
@@ -51,8 +51,7 @@ fn on_commitment_removed_successful() {
 				reason: HoldReason::Deposit.into(),
 			},
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
 				Pallet::<TestRuntime>::deposits(&namespace, &key),
 				Some(DepositEntry {
@@ -103,8 +102,7 @@ fn on_commitment_removed_different_owner_successful() {
 				reason: HoldReason::Deposit.into(),
 			},
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
 				Pallet::<TestRuntime>::deposits(&namespace, &key),
 				Some(DepositEntry {
@@ -139,7 +137,7 @@ fn on_commitment_removed_different_owner_successful() {
 
 #[test]
 fn on_commitment_removed_deposit_not_found() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_commitment_removed(
 				&SUBJECT,

@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 // This code originally came from the purestake/moonbeam repo.
 // see https://github.com/PureStake/moonbeam/blob/74324db0cfacaad555064c839f17072b57cb35e3/primitives/account/src/lib.rs for reference.
@@ -115,10 +115,8 @@ impl From<[u8; 20]> for EthereumSigner {
 impl TryFrom<ecdsa::Public> for EthereumSigner {
 	type Error = &'static str;
 	fn try_from(x: ecdsa::Public) -> Result<Self, Self::Error> {
-		match x.to_eth_address() {
-			Ok(x) => Ok(Self(x)),
-			Err(_) => Err("invalid public key"),
-		}
+		x.to_eth_address()
+			.map_or(Err("invalid public key"), |eth_address| Ok(Self(eth_address)))
 	}
 }
 
@@ -152,17 +150,17 @@ impl sp_runtime::traits::Verify for EthereumSignature {
 	fn verify<L: sp_runtime::traits::Lazy<[u8]>>(&self, mut msg: L, signer: &AccountId20) -> bool {
 		let mut hashed_message_buffer = [0u8; 32];
 		hashed_message_buffer.copy_from_slice(Keccak256::digest(msg.get()).as_slice());
-		match sp_io::crypto::secp256k1_ecdsa_recover(self.0.as_ref(), &hashed_message_buffer) {
-			Ok(pubkey) => {
+		sp_io::crypto::secp256k1_ecdsa_recover(self.0.as_ref(), &hashed_message_buffer).map_or_else(
+			|_| {
+				log::trace!("Error verifying signature");
+				false
+			},
+			|pubkey| {
 				// TODO This conversion could use a comment. Why H256 first, then H160?
 				// TODO actually, there is probably just a better way to go from Keccak digest.
 				AccountId20(H160::from(H256::from_slice(Keccak256::digest(pubkey).as_slice())).0) == *signer
-			}
-			Err(_) => {
-				log::trace!("Error verifying signature");
-				false
-			}
-		}
+			},
+		)
 	}
 }
 

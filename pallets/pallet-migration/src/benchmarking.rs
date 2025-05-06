@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+
+// Old benchmarking macros are a mess.
+#![allow(clippy::tests_outside_test_module)]
 
 use attestation::{AttestationDetails, AttestationDetailsOf};
 use ctype::CtypeEntryOf;
@@ -66,6 +69,7 @@ benchmarks! {
 		<T as did::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as did::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		<T as pallet_did_lookup::Config>::Currency: ReservableCurrency<AccountIdOf<T>,Balance = <<T as pallet_did_lookup::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		<T as pallet_web3_names::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as pallet_web3_names::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+		<<T as pallet_web3_names::Config>::Web3Name as TryFrom<Vec<u8>>>::Error: Into<pallet_web3_names::Error<T>>,
 		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as public_credentials::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		<T as did::Config>::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
@@ -188,7 +192,9 @@ benchmarks! {
 		pallet_balances::Pallet::<T>::set_balance(&sender, KILT.saturated_into());
 		pallet_web3_names::Pallet::<T>::claim(origin, web3_name_input.clone()).expect("Should register the claimed web3 name.");
 		kilt_support::migration::translate_holds_to_reserve::<T>(pallet_web3_names::HoldReason::Deposit.into());
-		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
+		let Ok(web3_name) = Web3NameOf::<T>::try_from(web3_name_input.to_vec()) else {
+			panic!();
+		};
 
 		let entries_to_migrate = EntriesToMigrate {
 			w3n: BoundedVec::try_from(vec![web3_name]).expect("Vector initialization should not fail."),
@@ -236,6 +242,6 @@ benchmarks! {
 
 impl_benchmark_test_suite! {
 	Pallet,
-	crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
-	crate::mock::runtime::Test
+	crate::mock::ExtBuilder::default().build_with_keystore(),
+	crate::mock::Test
 }

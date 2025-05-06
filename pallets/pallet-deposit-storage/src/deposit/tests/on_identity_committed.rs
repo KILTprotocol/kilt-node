@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{
 	assert_noop, assert_ok,
@@ -37,8 +37,7 @@ use crate::{
 fn on_identity_committed_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(SUBMITTER, 100_000)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let namespace = DepositNamespaces::get();
 			let key: DepositKeyOf<TestRuntime> = (SUBJECT, SUBMITTER, 0 as IdentityCommitmentVersion)
 				.encode()
@@ -94,8 +93,7 @@ fn on_identity_committed_existing_deposit() {
 				},
 			},
 		)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_identity_committed(
 					&SUBJECT,
@@ -110,7 +108,7 @@ fn on_identity_committed_existing_deposit() {
 
 #[test]
 fn on_identity_committed_insufficient_balance() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_identity_committed(
 				&SUBJECT,

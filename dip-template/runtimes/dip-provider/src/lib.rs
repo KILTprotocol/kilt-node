@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 //! Runtime template of a Decentralized Identity Provider (DIP) provider, which
 //! includes, beyond system pallets, [`did::Pallet`],
@@ -24,12 +24,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
+// Triggered by `impl_runtime_apis` macro
+#![allow(clippy::empty_structs_with_brackets)]
 
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_web3_names::web3_name::AsciiWeb3Name;
+use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -154,7 +156,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("dip-provider-runtime-template"),
 	impl_name: create_runtime_str!("dip-provider-runtime-template"),
 	authoring_version: 1,
-	spec_version: 11405,
+	spec_version: 11502,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -400,6 +402,7 @@ impl did::Config for Runtime {
 	type BaseDeposit = ConstU128<UNIT>;
 	type Currency = Balances;
 	type DidIdentifier = DidIdentifier;
+	type DidLifecycleHooks = ();
 	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type Fee = ConstU128<MILLIUNIT>;
 	type FeeCollector = ();
@@ -424,6 +427,7 @@ impl did::Config for Runtime {
 }
 
 impl pallet_did_lookup::Config for Runtime {
+	type AssociateOrigin = Self::EnsureOrigin;
 	type BalanceMigrationManager = ();
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
@@ -432,14 +436,15 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type UniqueLinkingEnabled = ConstBool<false>;
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
-pub type Web3Name = AsciiWeb3Name<Runtime>;
-
+pub type Web3Name = runtime_common::Web3Name<3, 32>;
 impl pallet_web3_names::Config for Runtime {
 	type BalanceMigrationManager = ();
 	type BanOrigin = EnsureRoot<AccountId>;
+	type ClaimOrigin = Self::OwnerOrigin;
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
 	type MaxNameLength = ConstU32<32>;
@@ -451,6 +456,9 @@ impl pallet_web3_names::Config for Runtime {
 	type Web3Name = Web3Name;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -626,7 +634,9 @@ impl_runtime_apis! {
 		LinkableAccountId,
 		Balance,
 		Hash,
-		BlockNumber
+		BlockNumber,
+		(),
+		()
 	> for Runtime {
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
@@ -637,7 +647,7 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			let name: Web3NameOf<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
@@ -656,6 +666,18 @@ impl_runtime_apis! {
 						details: details.into(),
 					}
 			})
+		}
+
+		fn batch_query_by_web3_name(names: Vec<Vec<u8>>) -> Vec<Option<kilt_runtime_api_did::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			names.into_iter().map(Self::query_by_web3_name).collect()
 		}
 
 		fn query_by_account(account: LinkableAccountId) -> Option<
@@ -687,6 +709,19 @@ impl_runtime_apis! {
 				})
 		}
 
+		fn batch_query_by_account(accounts: Vec<LinkableAccountId>) -> Vec<Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			accounts.into_iter().map(Self::query_by_account).collect()
+		}
+
 		fn query(did: DidIdentifier) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
@@ -709,6 +744,29 @@ impl_runtime_apis! {
 				service_endpoints,
 				details: details.into(),
 			})
+		}
+
+		fn batch_query(dids: Vec<DidIdentifier>) -> Vec<Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		>> {
+			dids.into_iter().map(Self::query).collect()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources(_did: DidIdentifier) -> Vec<()> {
+			[].into()
+		}
+
+		// We don't return anything here, since the runtime does not require the resources to be cleaned up.
+		fn linked_resources_deletion_calls(_did: DidIdentifier) -> Vec<()> {
+			[].into()
 		}
 	}
 

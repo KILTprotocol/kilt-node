@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{assert_noop, assert_ok};
 
@@ -29,7 +29,7 @@ mod authentication;
 mod delegation;
 mod error_cases;
 
-fn blueprint_successful_dispatch<FB: FnOnce() -> (), FA: FnOnce() -> ()>(
+fn blueprint_successful_dispatch<FB: FnOnce(), FA: FnOnce()>(
 	did_identifier: DidIdentifierOf<Test>,
 	caller: AccountIdOf<Test>,
 	did_details: DidDetails<Test>,
@@ -57,7 +57,7 @@ fn blueprint_successful_dispatch<FB: FnOnce() -> (), FA: FnOnce() -> ()>(
 		});
 }
 
-fn blueprint_failed_dispatch<F: FnOnce() -> ()>(
+fn blueprint_failed_dispatch<F: FnOnce()>(
 	did_identifier: DidIdentifierOf<Test>,
 	caller: AccountIdOf<Test>,
 	did_details: Option<DidDetails<Test>>,

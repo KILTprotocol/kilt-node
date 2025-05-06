@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use parity_scale_codec::Decode;
 use sp_runtime::traits::Hash;
@@ -39,18 +39,20 @@ pub use error::*;
 ///   root.
 /// * `Success`: defines the type expected to be revealed in a valid Merkle
 ///   proof.
-pub fn verify_storage_value_proof<StorageKey, MerkleHasher, Success>(
+/// * `ProofIterator`: defines the type containing the Merkle proof leaves.
+pub fn verify_storage_value_proof<StorageKey, MerkleHasher, Success, ProofIterator>(
 	storage_key: &StorageKey,
 	state_root: OutputOf<MerkleHasher>,
-	state_proof: impl IntoIterator<Item = Vec<u8>>,
+	state_proof: ProofIterator,
 ) -> Result<Success, MerkleProofError>
 where
 	StorageKey: AsRef<[u8]>,
 	MerkleHasher: Hash,
 	OutputOf<MerkleHasher>: Ord,
 	Success: Decode,
+	ProofIterator: IntoIterator<Item = Vec<u8>>,
 {
-	verify_storage_value_proof_with_decoder::<_, MerkleHasher, _>(storage_key, state_root, state_proof, |input| {
+	verify_storage_value_proof_with_decoder::<_, MerkleHasher, _, _, _>(storage_key, state_root, state_proof, |input| {
 		Success::decode(input).ok()
 	})
 }
@@ -60,33 +62,45 @@ where
 /// * `StorageKey`: defines the type of the storage key included in the proof.
 /// * `MerkleHasher`: defines the hashing algorithm used to calculate the Merkle
 ///   root.
+/// * `TransformFunction`: the signature of the transform function.
 /// * `TransformResult`: the type returned by the provided decoding function, if
 ///   successful. The `None` result is interpreted as an error, so it is not possible to return a type for which `None` would be a correct decoding, for now. See <https://github.com/rust-lang/rust/issues/103765> for more details.
-pub fn verify_storage_value_proof_with_decoder<StorageKey, MerkleHasher, TransformResult>(
+/// * `ProofIterator`: defines the type containing the Merkle proof leaves.
+pub fn verify_storage_value_proof_with_decoder<
+	StorageKey,
+	MerkleHasher,
+	TransformFunction,
+	TransformResult,
+	ProofIterator,
+>(
 	storage_key: &StorageKey,
 	state_root: OutputOf<MerkleHasher>,
-	state_proof: impl IntoIterator<Item = Vec<u8>>,
+	state_proof: ProofIterator,
 	// TODO: Switch to `Error` from `Option` for the closure.
 	// `Error` is not yet available in core.
 	// It was merged recently and will be stabilized at some point. See https://github.com/rust-lang/rust/issues/103765 for more.
-	mut transform: impl FnMut(&mut &[u8]) -> Option<TransformResult>,
+	mut transform: TransformFunction,
 ) -> Result<TransformResult, MerkleProofError>
 where
 	StorageKey: AsRef<[u8]>,
 	MerkleHasher: Hash,
+	TransformFunction: FnMut(&mut &[u8]) -> Option<TransformResult>,
 	OutputOf<MerkleHasher>: Ord,
+	ProofIterator: IntoIterator<Item = Vec<u8>>,
 {
 	const LOG_TARGET: &str = "dip::consumer::verify_storage_value_proof_with_decoder";
 	let storage_proof = StorageProof::new(state_proof);
-	let mut revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
-		.map_err(|e| {
-			log::info!(
-				target: LOG_TARGET,
-				"Failed verification of storage proof with error {:#?}",
-				e
-			);
-			MerkleProofError::InvalidProof
-		})?;
+	let mut revealed_leaves =
+		read_proof_check::<MerkleHasher, _>(state_root, storage_proof, sp_std::iter::once(&storage_key)).map_err(
+			|e| {
+				log::info!(
+					target: LOG_TARGET,
+					"Failed verification of storage proof with error {:#?}",
+					e
+				);
+				MerkleProofError::InvalidProof
+			},
+		)?;
 
 	debug_assert!(
 		revealed_leaves.len() == 1usize,
@@ -135,7 +149,7 @@ mod test {
 		// results in the key
 		// "0x26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850"
 		let expected_event_count_at_block = 5u32;
-		let event_count_at_block = verify_storage_value_proof::<_, BlakeTwo256, u32>(
+		let event_count_at_block = verify_storage_value_proof::<_, BlakeTwo256, u32, _>(
 			&events_count_storage_key,
 			spiritnet_state_root,
 			spiritnet_event_count_proof_at_block,
@@ -168,7 +182,7 @@ mod test {
 		// (16_363_919) which results in the key
 		// "0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000"
 		let expected_spiritnet_head_at_block = hex!("65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c").to_vec();
-		let spiritnet_head_at_block = verify_storage_value_proof::<_, BlakeTwo256, HeadData>(
+		let spiritnet_head_at_block = verify_storage_value_proof::<_, BlakeTwo256, HeadData, _>(
 			&spiritnet_head_storage_key,
 			polkadot_state_root,
 			spiritnet_head_proof_at_block,

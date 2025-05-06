@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use sp_std::sync::Arc;
 use xcm::v4::{Junction, Junctions, Location, Parent, ParentThen};
@@ -102,7 +102,7 @@ fn origin_checks_with_running_pair() {
 		});
 	// Different location does not work.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {
@@ -193,7 +193,7 @@ fn origin_checks_with_paused_pair() {
 		});
 	// Different location does not work.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {
@@ -301,7 +301,7 @@ fn querier_checks_with_running_pair() {
 		});
 	// Different querier does not work.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {
@@ -409,7 +409,7 @@ fn querier_checks_with_paused_pair() {
 		});
 	// Different querier does not work.
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {
@@ -460,7 +460,7 @@ fn query_id_not_found() {
 	);
 
 	ExtBuilder::default()
-		.with_switch_pair_info(new_switch_pair_info.clone())
+		.with_switch_pair_info(new_switch_pair_info)
 		.with_pending_switches(vec![(
 			0,
 			UnconfirmedSwitchInfo {

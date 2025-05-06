@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use frame_system::RawOrigin;
@@ -39,8 +39,7 @@ fn reclaim_deposit_successful() {
 	let key = DepositKeyOf::<TestRuntime>::default();
 	ExtBuilder::default()
 		.with_deposits(vec![(namespace.clone(), key.clone(), deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_some());
 			assert_eq!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &OWNER), 10_000);
 
@@ -57,7 +56,7 @@ fn reclaim_deposit_successful() {
 
 #[test]
 fn reclaim_deposit_not_found() {
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build_and_execute_with_sanity_tests(|| {
 		assert_noop!(
 			Pallet::<TestRuntime>::reclaim_deposit(
 				RawOrigin::Signed(OWNER).into(),
@@ -82,8 +81,7 @@ fn reclaim_deposit_unauthorized() {
 	let key = DepositKeyOf::<TestRuntime>::default();
 	ExtBuilder::default()
 		.with_deposits(vec![(namespace.clone(), key.clone(), deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<TestRuntime>::reclaim_deposit(
 					RawOrigin::Signed(OTHER_ACCOUNT).into(),

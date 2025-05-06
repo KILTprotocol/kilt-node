@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -66,14 +66,16 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 >;
 
 sp_api::decl_runtime_apis! {
-	#[api_version(2)]
-	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber: MaxEncodedLen> where
+	#[api_version(4)]
+	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber: MaxEncodedLen, LinkedResource, RuntimeCall> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
 		LinkableAccountId: Codec,
 		BlockNumber: Codec,
 		Key: Codec,
 		Balance: Codec,
+		LinkedResource: Codec,
+		RuntimeCall: Codec,
 	{
 		/// Given a web3name this returns:
 		/// * the DID
@@ -84,6 +86,9 @@ sp_api::decl_runtime_apis! {
 		#[changed_in(2)]
 		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		/// Allows for batching multiple `query_by_web3_name` requests into one. For each requested name, the corresponding vector entry contains either `Some` or `None` depending on the result of each query.
+		#[allow(clippy::type_complexity)]
+		fn batch_query_by_web3_name(names: Vec<Vec<u8>>) -> Vec<Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>>;
 		/// Given an account address this returns:
 		/// * the DID
 		/// * public keys stored for the did
@@ -93,6 +98,9 @@ sp_api::decl_runtime_apis! {
 		#[changed_in(2)]
 		fn query_by_account(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query_by_account(account: LinkableAccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		/// Allows for batching multiple `query_by_account` requests into one. For each requested name, the corresponding vector entry contains either `Some` or `None` depending on the result of each query.
+		#[allow(clippy::type_complexity)]
+		fn batch_query_by_account(accounts: Vec<LinkableAccountId>) -> Vec<Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>>;
 		/// Given a did this returns:
 		/// * the DID
 		/// * public keys stored for the did
@@ -102,5 +110,13 @@ sp_api::decl_runtime_apis! {
 		#[changed_in(2)]
 		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		/// Allows for batching multiple `query` requests into one. For each requested name, the corresponding vector entry contains either `Some` or `None` depending on the result of each query.
+		#[allow(clippy::type_complexity)]
+		fn batch_query(dids: Vec<DidIdentifier>) -> Vec<Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>>;
+
+		/// Returns the list of linked resources for a given DID that must be deleted before the DID itself can be deleted.
+		fn linked_resources(did: DidIdentifier) -> Vec<LinkedResource>;
+		/// Returns the list of calls that must be executed to delete the linked resources of a given DID, before deleting the DID itself.
+		fn linked_resources_deletion_calls(did: DidIdentifier) -> Vec<RuntimeCall>;
 	}
 }

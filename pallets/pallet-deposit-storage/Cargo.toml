@@ -58,4 +58,4 @@ std = [
   "sp-runtime/std",
   "sp-std/std",
 ]
-try-runtime = []
+try-runtime = ["frame-system/try-runtime"]

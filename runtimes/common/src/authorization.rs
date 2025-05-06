@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
@@ -50,8 +50,8 @@ where
 		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_revoke(who, ctype, claim, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_revoke(who, ctype, claim, delegation_id)
 	}
 
 	fn can_remove(
@@ -61,8 +61,8 @@ where
 		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_remove(who, ctype, claim, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_remove(who, ctype, claim, delegation_id)
 	}
 
 	fn authorization_id(&self) -> AuthorizationId<DelegationId> {
@@ -107,8 +107,8 @@ where
 		credential_id: &CredentialId,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_revoke(who, ctype, credential_id, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_revoke(who, ctype, credential_id, delegation_id)
 	}
 
 	fn can_unrevoke(
@@ -118,8 +118,8 @@ where
 		credential_id: &CredentialId,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_unrevoke(who, ctype, credential_id, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_unrevoke(who, ctype, credential_id, delegation_id)
 	}
 
 	fn can_remove(
@@ -129,8 +129,8 @@ where
 		credential_id: &CredentialId,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<Weight, DispatchError> {
-		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
-		ac.can_remove(who, ctype, credential_id, auth_id)
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(delegation_id)) = (self, auth_id);
+		ac.can_remove(who, ctype, credential_id, delegation_id)
 	}
 
 	fn authorization_id(&self) -> AuthorizationId<DelegationId> {

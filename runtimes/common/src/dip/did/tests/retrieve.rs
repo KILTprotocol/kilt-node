@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use did::did_details::DidVerificationKey;
 use frame_support::assert_noop;
 use pallet_dip_provider::traits::IdentityProvider;
+use pallet_web3_names::Web3NameOf;
 
 use crate::{
 	constants::dip_provider::MAX_LINKED_ACCOUNTS,
@@ -36,8 +37,7 @@ fn linked_did_info_provider_retrieve_max_capacity() {
 		web3_name_details,
 		linked_accounts,
 	} = create_linked_info(auth_key, Some(b"ntn_x2"), MAX_LINKED_ACCOUNTS);
-	let web3_name: Option<pallet_web3_names::web3_name::AsciiWeb3Name<TestRuntime>> =
-		web3_name_details.map(|n| n.web3_name);
+	let web3_name: Option<Web3NameOf<TestRuntime>> = web3_name_details.map(|n| n.web3_name);
 
 	ExtBuilder::default()
 		.with_dids(vec![(

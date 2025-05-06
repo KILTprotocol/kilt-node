@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
+
+// Old benchmarking macros are a mess.
+#![allow(clippy::tests_outside_test_module)]
 
 use frame_benchmarking::benchmarks;
 use frame_support::traits::EnsureOriginWithArg;
@@ -34,7 +37,7 @@ benchmarks! {
 
 	impl_benchmark_test_suite!(
 		Pallet,
-		crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+		crate::mock::runtime::ExtBuilder.build_with_keystore(),
 		crate::mock::runtime::Test
 	)
 }

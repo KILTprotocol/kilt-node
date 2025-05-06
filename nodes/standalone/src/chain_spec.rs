@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 //! KILT chain specification
 
 use kestrel_runtime::{
-	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	opaque::SessionKeys, BalancesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, WASM_BINARY,
 };
 use runtime_common::{AccountId, AccountPublic};
 
@@ -73,7 +73,7 @@ fn generate_genesis_state() -> RuntimeGenesisConfig {
 	let root_key = get_account_id_from_secret::<ed25519::Public>("//Alice");
 
 	RuntimeGenesisConfig {
-		system: SystemConfig { ..Default::default() },
+		system: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts.into_iter().map(|a| (a, 1u128 << 90)).collect(),
 		},

@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{
 	ensure,
@@ -150,7 +150,7 @@ where
 			return None;
 		};
 
-		let Some(ref switch_pair) = self.switch_pair else {
+		let Some(switch_pair) = &self.switch_pair else {
 			log::error!(target: LOG_TARGET, "Stored switch pair should not be None, but it is.");
 			return None;
 		};
@@ -173,7 +173,7 @@ where
 			})
 			.ok()?;
 
-		let weight_to_refund: Weight = weight.min(self.remaining_weight);
+		let weight_to_refund = weight.min(self.remaining_weight);
 		let amount_for_weight_to_refund = WeightToFee::weight_to_fee(&weight_to_refund);
 		// We can only refund up to the remaining balance of this weigher.
 		let amount_to_refund = amount_for_weight_to_refund.min(self.remaining_fungible_balance);
@@ -247,11 +247,11 @@ where
 
 				// No error should ever be thrown from inside this block.
 				SwitchPair::<T, I>::mutate(|entry| {
-					let Some(entry) = entry.as_mut() else {
+					let Some(existing_switch_pair) = entry.as_mut() else {
 						log::error!(target: LOG_TARGET, "Stored switch pair should not be None but it is.");
 						return;
 					};
-					entry
+					existing_switch_pair
 						.try_process_incoming_switch(self.remaining_fungible_balance)
 						.unwrap_or_else(|_| {
 							log::error!(

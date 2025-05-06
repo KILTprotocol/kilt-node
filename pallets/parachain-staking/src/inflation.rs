@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 //! Helper methods for computing issuance based on inflation
 use crate::{pallet::Config, types::BalanceOf};
@@ -37,6 +37,7 @@ impl MaxEncodedLen for RewardRate {
 }
 
 /// Convert annual reward rate to per_block.
+#[allow(clippy::arithmetic_side_effects)]
 fn annual_to_per_block(blocks_per_year: u64, rate: Perquintill) -> Perquintill {
 	rate / blocks_per_year.max(1)
 }
@@ -80,6 +81,7 @@ impl StakingInfo {
 	///
 	/// NOTE: If we exceed the max staking rate, the reward will be reduced by
 	/// max_rate / current_rate.
+	#[allow(clippy::arithmetic_side_effects)]
 	pub fn compute_reward<T: Config>(
 		&self,
 		stake: BalanceOf<T>,

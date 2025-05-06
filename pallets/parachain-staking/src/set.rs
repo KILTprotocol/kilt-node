@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{traits::Get, BoundedVec, DefaultNoBound};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -53,6 +53,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		let mut v = bv.into_inner();
 		v.sort_by(|a, b| b.cmp(a));
 		v.dedup();
+		#[allow(clippy::expect_used)]
 		Self::from_sorted_set(v.try_into().map_err(|_| ()).expect("No values were added"))
 	}
 
@@ -60,7 +61,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	///
 	/// Assumes that `v` is sorted reversely (from greatest to lowest) and only
 	/// contains unique elements.
-	pub fn from_sorted_set(bv: BoundedVec<T, S>) -> Self {
+	pub const fn from_sorted_set(bv: BoundedVec<T, S>) -> Self {
 		Self(bv)
 	}
 
@@ -74,6 +75,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		let mut i: usize = 0;
 		let mut next = i.saturating_add(1);
 		while next < self.len() {
+			#[allow(clippy::indexing_slicing)]
 			if self[i] == self[next] {
 				self.0.remove(next);
 			} else {
@@ -124,6 +126,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 				// accessing by index wont panic since we checked the index, inserting the item
 				// at the end of the list to ensure last-in-least-priority-rule for collators.
 				// sorting algorithm must be stable!
+				#[allow(clippy::indexing_slicing)]
 				let old = sp_std::mem::replace(&mut self.0[last_idx], value);
 				self.sort_greatest_to_lowest();
 				Ok(Some(old))
@@ -144,6 +147,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	pub fn try_upsert(&mut self, value: T) -> Result<Option<T>, ()> {
 		match self.linear_search(&value) {
 			Ok(i) => {
+				#[allow(clippy::indexing_slicing)]
 				let old = sp_std::mem::replace(&mut self.0[i], value);
 				self.sort_greatest_to_lowest();
 				Ok(Some(old))
@@ -243,6 +247,7 @@ impl<T: Ord + Clone, S: Get<u32>> From<BoundedVec<T, S>> for OrderedSet<T, S> {
 impl<T: Ord + Clone, S: Get<u32>> Index<usize> for OrderedSet<T, S> {
 	type Output = T;
 
+	#[allow(clippy::indexing_slicing)]
 	fn index(&self, index: usize) -> &Self::Output {
 		&self.0[index]
 	}
@@ -251,6 +256,7 @@ impl<T: Ord + Clone, S: Get<u32>> Index<usize> for OrderedSet<T, S> {
 impl<T: Ord + Clone, S: Get<u32>> Index<Range<usize>> for OrderedSet<T, S> {
 	type Output = [T];
 
+	#[allow(clippy::indexing_slicing)]
 	fn index(&self, range: Range<usize>) -> &Self::Output {
 		&self.0[range]
 	}
@@ -259,6 +265,7 @@ impl<T: Ord + Clone, S: Get<u32>> Index<Range<usize>> for OrderedSet<T, S> {
 impl<T: Ord + Clone, S: Get<u32>> Index<RangeFull> for OrderedSet<T, S> {
 	type Output = [T];
 
+	#[allow(clippy::indexing_slicing)]
 	fn index(&self, range: RangeFull) -> &Self::Output {
 		&self.0[range]
 	}
@@ -282,7 +289,7 @@ impl<T: Ord + Clone, S: Get<u32>> From<OrderedSet<T, S>> for BoundedVec<T, S> {
 #[cfg(test)]
 mod tests {
 	use crate::{mock::Test, types::StakeOf};
-	use frame_support::parameter_types;
+	use frame_support::{assert_err, parameter_types};
 	use sp_runtime::RuntimeDebug;
 
 	use super::*;
@@ -388,7 +395,7 @@ mod tests {
 
 		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7]);
 		assert_eq!(set.try_insert_replace(5), Ok(None));
-		assert!(set.try_insert(11).is_err());
+		assert_err!(set.try_insert(11), 0usize);
 
 		assert_eq!(set.try_insert_replace(6), Ok(Some(5)));
 		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7, 6]);
@@ -458,7 +465,8 @@ mod tests {
 		let mut set: OrderedSet<i32, Five> = OrderedSet::from(vec![1, 2, 3, 4, 5].try_into().unwrap());
 		let inserted = set.try_insert(6);
 
-		assert!(inserted.is_err());
+		// Position `0` since the set is sorted from largest to smallest.
+		assert_err!(inserted, 0usize);
 	}
 
 	#[test]

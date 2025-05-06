@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 #![allow(unused_doc_comments)]
 
 pub mod attestation;
@@ -26,8 +26,9 @@ pub mod frame_system;
 pub mod pallet_asset_switch;
 pub mod pallet_assets;
 pub mod pallet_balances;
-pub mod pallet_collective_council;
-pub mod pallet_collective_technical_committee;
+pub mod pallet_bonded_assets;
+pub mod pallet_bonded_coins;
+pub mod pallet_collective;
 pub mod pallet_democracy;
 pub mod pallet_deposit_storage;
 pub mod pallet_did_lookup;
@@ -43,6 +44,8 @@ pub mod pallet_proxy;
 pub mod pallet_scheduler;
 pub mod pallet_session;
 pub mod pallet_sudo;
+pub mod pallet_technical_committee_collective;
+pub mod pallet_technical_membership;
 pub mod pallet_timestamp;
 pub mod pallet_tips;
 pub mod pallet_treasury;

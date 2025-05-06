@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::{
 	pallet_prelude::DispatchResult,
@@ -26,11 +26,10 @@ use crate::{linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedD
 
 pub fn update_balance_for_did_lookup<T: Config>(key: &LinkableAccountId) -> DispatchResult
 where
-	<T as Config>::Currency:
-		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+	T::Currency: ReservableCurrency<T::AccountId, Balance = <T::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
 	let details = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
-	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T, ()>>(
 		&details.deposit.owner,
 		&HoldReason::Deposit.into(),
 		details.deposit.amount,
@@ -40,7 +39,7 @@ where
 #[cfg(test)]
 pub mod test {
 	use frame_support::{
-		assert_noop,
+		assert_noop, assert_ok,
 		traits::{fungible::InspectHold, ReservableCurrency},
 	};
 	use sp_runtime::traits::Zero;
@@ -125,7 +124,7 @@ pub mod test {
 					connected_did_pre_migration.clone().unwrap().deposit.amount
 				);
 
-				assert!(update_balance_for_did_lookup::<Test>(&LINKABLE_ACCOUNT_00).is_ok());
+				assert_ok!(update_balance_for_did_lookup::<Test>(&LINKABLE_ACCOUNT_00));
 
 				let connected_did_post_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
 

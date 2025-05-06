@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 use frame_support::traits::{EnsureOrigin, EnsureOriginWithArg};
 use kilt_support::traits::CallSources;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use sp_core::Get;
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
 
@@ -31,24 +32,72 @@ pub struct DidRawOrigin<DidIdentifier, AccountId> {
 }
 
 impl<DidIdentifier, AccountId> DidRawOrigin<DidIdentifier, AccountId> {
-	pub fn new(id: DidIdentifier, submitter: AccountId) -> Self {
+	pub const fn new(id: DidIdentifier, submitter: AccountId) -> Self {
 		Self { id, submitter }
 	}
 }
 
-pub struct EnsureDidOrigin<DidIdentifier, AccountId>(PhantomData<(DidIdentifier, AccountId)>);
+impl<DidIdentifier: Clone, AccountId: Clone> CallSources<AccountId, DidIdentifier>
+	for DidRawOrigin<DidIdentifier, AccountId>
+{
+	fn sender(&self) -> AccountId {
+		self.submitter.clone()
+	}
 
-impl<OuterOrigin, DidIdentifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureDidOrigin<DidIdentifier, AccountId>
+	fn subject(&self) -> DidIdentifier {
+		self.id.clone()
+	}
+}
+
+/// Flag for which entity is authorised to submit DID-authenticated
+/// transactions.
+pub enum AuthorisedSubmitter<AccountId> {
+	/// Nobody.
+	None,
+	/// Everyone (i.e., permissionless).
+	Everyone,
+	/// The specified account.
+	One(AccountId),
+}
+
+impl<AccountId> From<AccountId> for AuthorisedSubmitter<AccountId> {
+	fn from(value: AccountId) -> Self {
+		Self::One(value)
+	}
+}
+
+pub struct Everyone;
+
+impl<AccountId> Get<AuthorisedSubmitter<AccountId>> for Everyone {
+	fn get() -> AuthorisedSubmitter<AccountId> {
+		AuthorisedSubmitter::Everyone
+	}
+}
+
+pub struct EnsureDidOrigin<DidIdentifier, AccountId, ExpectedSubmitter = Everyone>(
+	PhantomData<(DidIdentifier, AccountId, ExpectedSubmitter)>,
+);
+
+impl<OuterOrigin, DidIdentifier, AccountId, ExpectedSubmitter> EnsureOrigin<OuterOrigin>
+	for EnsureDidOrigin<DidIdentifier, AccountId, ExpectedSubmitter>
 where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
-		+ From<DidRawOrigin<DidIdentifier, AccountId>>,
+		+ From<DidRawOrigin<DidIdentifier, AccountId>>
+		+ Clone,
 	DidIdentifier: From<AccountId>,
-	AccountId: Clone + Decode,
+	AccountId: Clone + Decode + PartialEq,
+	ExpectedSubmitter: Get<AuthorisedSubmitter<AccountId>>,
 {
 	type Success = DidRawOrigin<DidIdentifier, AccountId>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
-		o.into()
+		let did_raw_origin = o.clone().into()?;
+		match ExpectedSubmitter::get() {
+			AuthorisedSubmitter::Everyone => Ok(did_raw_origin),
+			AuthorisedSubmitter::One(authorised) if authorised == did_raw_origin.submitter => Ok(did_raw_origin),
+			// If either `None` or the wrong account, fail.
+			_ => Err(o),
+		}
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
@@ -63,8 +112,8 @@ where
 	}
 }
 
-impl<OuterOrigin, DidIdentifier, AccountId> EnsureOriginWithArg<OuterOrigin, DidIdentifier>
-	for EnsureDidOrigin<DidIdentifier, AccountId>
+impl<OuterOrigin, DidIdentifier, AccountId, ExpectedSubmitter> EnsureOriginWithArg<OuterOrigin, DidIdentifier>
+	for EnsureDidOrigin<DidIdentifier, AccountId, ExpectedSubmitter>
 where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
 		+ From<DidRawOrigin<DidIdentifier, AccountId>>
@@ -95,22 +144,10 @@ where
 	}
 }
 
-impl<DidIdentifier: Clone, AccountId: Clone> CallSources<AccountId, DidIdentifier>
-	for DidRawOrigin<DidIdentifier, AccountId>
-{
-	fn sender(&self) -> AccountId {
-		self.submitter.clone()
-	}
-
-	fn subject(&self) -> DidIdentifier {
-		self.id.clone()
-	}
-}
-
 #[cfg(feature = "runtime-benchmarks")]
-impl<OuterOrigin, AccountId, DidIdentifier>
+impl<OuterOrigin, AccountId, DidIdentifier, ExpectedSubmitter>
 	kilt_support::traits::GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
-	for EnsureDidOrigin<DidIdentifier, AccountId>
+	for EnsureDidOrigin<DidIdentifier, AccountId, ExpectedSubmitter>
 where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
 		+ From<DidRawOrigin<DidIdentifier, AccountId>>,
@@ -123,17 +160,20 @@ where
 	}
 }
 
-#[cfg(all(test, feature = "runtime-benchmarks"))]
+#[cfg(test)]
 mod tests {
-	use super::EnsureDidOrigin;
-
+	#[cfg(feature = "runtime-benchmarks")]
 	#[test]
 	pub fn successful_origin() {
-		use crate::mock::Test;
+		use crate::{
+			mock::{AccountId, DidIdentifier, Test},
+			EnsureDidOrigin,
+		};
 		use frame_support::{assert_ok, traits::EnsureOrigin};
 
 		let origin: <Test as frame_system::Config>::RuntimeOrigin =
-			EnsureDidOrigin::try_successful_origin().expect("Successful origin creation should not fail.");
-		assert_ok!(EnsureDidOrigin::try_origin(origin));
+			EnsureDidOrigin::<DidIdentifier, AccountId>::try_successful_origin()
+				.expect("Successful origin creation should not fail.");
+		assert_ok!(EnsureDidOrigin::<DidIdentifier, AccountId>::try_origin(origin));
 	}
 }

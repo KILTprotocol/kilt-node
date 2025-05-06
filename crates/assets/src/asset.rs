@@ -1,5 +1,5 @@
-// KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2024 BOTLabs GmbH
+// KILT Blockchain – <https://kilt.io>
+// Copyright (C) 2025, KILT Foundation
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at <hello@kilt.org>
 
 // Exported types. This will always only re-export the latest version by
 // default.
@@ -44,16 +44,19 @@ pub mod v1 {
 	pub const MINIMUM_ASSET_NAMESPACE_LENGTH: usize = 3;
 	/// The maximum length of a valid asset ID namespace.
 	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_ASSET_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
 	/// The minimum length of a valid asset ID reference.
 	pub const MINIMUM_ASSET_REFERENCE_LENGTH: usize = 1;
 	/// The maximum length of a valid asset ID reference.
 	pub const MAXIMUM_ASSET_REFERENCE_LENGTH: usize = 128;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_ASSET_REFERENCE_LENGTH_U32: u32 = MAXIMUM_ASSET_REFERENCE_LENGTH as u32;
 	/// The minimum length of a valid asset ID identifier.
 	pub const MINIMUM_ASSET_IDENTIFIER_LENGTH: usize = 1;
 	/// The maximum length of a valid asset ID reference.
 	pub const MAXIMUM_ASSET_IDENTIFIER_LENGTH: usize = 78;
+	#[allow(clippy::as_conversions)]
 	const MAXIMUM_ASSET_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_ASSET_IDENTIFIER_LENGTH as u32;
 
 	/// Separator between asset namespace and asset reference.
@@ -106,8 +109,8 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			let input_length = input.len();
+			let input_ref = input.as_ref();
+			let input_length = input_ref.len();
 			if !(MINIMUM_ASSET_ID_LENGTH..=MAXIMUM_ASSET_ID_LENGTH).contains(&input_length) {
 				log::trace!(
 					"Length of provided input {} is not included in the inclusive range [{},{}]",
@@ -119,12 +122,12 @@ pub mod v1 {
 			}
 
 			let AssetComponents {
-				namespace,
-				reference,
-				identifier,
-			} = split_components(input);
+				namespace: encoded_namespace,
+				reference: encoded_reference,
+				identifier: encoded_identifier,
+			} = split_components(input_ref);
 
-			match (namespace, reference, identifier) {
+			match (encoded_namespace, encoded_reference, encoded_identifier) {
 				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 				(Some(SLIP44_NAMESPACE), _, Some(_)) => {
 					log::trace!("Slip44 namespace does not accept an asset identifier.");
@@ -142,9 +145,9 @@ pub mod v1 {
 					EvmSmartContractFungibleReference::from_utf8_encoded(erc20_reference).map(Self::Erc20)
 				}
 				// "erc721:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md
-				(Some(ERC721_NAMESPACE), Some(erc721_reference), identifier) => {
+				(Some(ERC721_NAMESPACE), Some(erc721_reference), erc721_identifier) => {
 					let reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc721_reference)?;
-					let identifier = identifier.map_or(Ok(None), |id| {
+					let identifier = erc721_identifier.map_or(Ok(None), |id| {
 						EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(Some)
 					})?;
 					Ok(Self::Erc721(EvmSmartContractNonFungibleReference(
@@ -152,9 +155,9 @@ pub mod v1 {
 					)))
 				}
 				// "erc1155:" assets-> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md
-				(Some(ERC1155_NAMESPACE), Some(erc1155_reference), identifier) => {
+				(Some(ERC1155_NAMESPACE), Some(erc1155_reference), erc1155_identifier) => {
 					let reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc1155_reference)?;
-					let identifier = identifier.map_or(Ok(None), |id| {
+					let identifier = erc1155_identifier.map_or(Ok(None), |id| {
 						EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(Some)
 					})?;
 					Ok(Self::Erc1155(EvmSmartContractNonFungibleReference(
@@ -162,12 +165,13 @@ pub mod v1 {
 					)))
 				}
 				// Generic yet valid asset IDs
-				_ => GenericAssetId::from_utf8_encoded(input).map(Self::Generic),
+				_ => GenericAssetId::from_utf8_encoded(input_ref).map(Self::Generic),
 			}
 		}
 	}
 
 	impl Display for AssetId {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			match self {
 				Self::Slip44(reference) => {
@@ -272,23 +276,20 @@ pub mod v1 {
 	/// Split the given input into its components, i.e., namespace, reference,
 	/// and identifier, if the proper separators are found.
 	fn split_components(input: &[u8]) -> AssetComponents {
-		let mut split = input.splitn(2, |c| *c == ASSET_NAMESPACE_REFERENCE_SEPARATOR);
-		let (namespace, reference) = (split.next(), split.next());
+		let mut namespace_reference_split = input.splitn(2, |c| *c == ASSET_NAMESPACE_REFERENCE_SEPARATOR);
+		let (parsed_namespace, reference) = (namespace_reference_split.next(), namespace_reference_split.next());
 
 		// Split the remaining reference to extract the identifier, if present
-		let (reference, identifier) = if let Some(r) = reference {
-			let mut split = r.splitn(2, |c| *c == ASSET_REFERENCE_IDENTIFIER_SEPARATOR);
+		let (parsed_reference, parsed_identifier) = reference.map_or((reference, None), |r| {
+			let mut reference_identifier_split = r.splitn(2, |c| *c == ASSET_REFERENCE_IDENTIFIER_SEPARATOR);
 			// Split the reference further, if present
-			(split.next(), split.next())
-		} else {
-			// Return the old reference, which is None if we are at this point
-			(reference, None)
-		};
+			(reference_identifier_split.next(), reference_identifier_split.next())
+		});
 
 		AssetComponents {
-			namespace,
-			reference,
-			identifier,
+			namespace: parsed_namespace,
+			reference: parsed_reference,
+			identifier: parsed_identifier,
 		}
 	}
 
@@ -311,10 +312,10 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_reference_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)?;
 
-			let decoded = str::from_utf8(input).map_err(|_| {
+			let decoded = str::from_utf8(input_ref).map_err(|_| {
 				log::trace!("Provided input is not a valid UTF8 string as expected by a Slip44 reference.");
 				ReferenceError::InvalidFormat
 			})?;
@@ -335,6 +336,7 @@ pub mod v1 {
 			// TODO: This could be enforced at compilation time once constraints on generics
 			// will be available.
 			// https://rust-lang.github.io/rfcs/2000-const-generics.html
+			#[allow(clippy::expect_used)]
 			if value
 				<= U256::from_str_radix("9999999999999999999999999999999999999999999999999999999999999999", 10)
 					.expect("Casting the maximum value for a Slip44 reference into a U256 should never fail.")
@@ -354,7 +356,7 @@ pub mod v1 {
 
 	// Getters
 	impl Slip44Reference {
-		pub fn inner(&self) -> &U256 {
+		pub const fn inner(&self) -> &U256 {
 			&self.0
 		}
 	}
@@ -378,9 +380,9 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
+			let input_ref = input.as_ref();
 			// If the prefix is "0x" => parse the address
-			if let [b'0', b'x', contract_address @ ..] = input {
+			if let [b'0', b'x', contract_address @ ..] = input_ref {
 				check_reference_length_bounds(contract_address)?;
 
 				let decoded = hex::decode(contract_address).map_err(|_| {
@@ -402,7 +404,7 @@ pub mod v1 {
 
 	// Getters
 	impl EvmSmartContractFungibleReference {
-		pub fn inner(&self) -> &[u8] {
+		pub const fn inner(&self) -> &[u8] {
 			&self.0
 		}
 	}
@@ -426,11 +428,11 @@ pub mod v1 {
 
 	// Getters
 	impl EvmSmartContractNonFungibleReference {
-		pub fn smart_contract(&self) -> &EvmSmartContractFungibleReference {
+		pub const fn smart_contract(&self) -> &EvmSmartContractFungibleReference {
 			&self.0
 		}
 
-		pub fn identifier(&self) -> &Option<EvmSmartContractNonFungibleIdentifier> {
+		pub const fn identifier(&self) -> &Option<EvmSmartContractNonFungibleIdentifier> {
 			&self.1
 		}
 	}
@@ -452,10 +454,10 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_identifier_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_identifier_length_bounds(input_ref)?;
 
-			input.iter().try_for_each(|c| {
+			input_ref.iter().try_for_each(|c| {
 				if !c.is_ascii_digit() {
 					log::trace!("Provided input has some invalid values as expected by a smart contract-based asset identifier.");
 					Err(IdentifierError::InvalidFormat)
@@ -465,7 +467,7 @@ pub mod v1 {
 			})?;
 
 			Ok(Self(
-				Vec::<u8>::from(input)
+				Vec::<u8>::from(input_ref)
 					.try_into()
 					.map_err(|_| IdentifierError::InvalidFormat)?,
 			))
@@ -480,6 +482,7 @@ pub mod v1 {
 	}
 
 	impl Display for EvmSmartContractNonFungibleIdentifier {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid digits.
 			write!(
@@ -513,12 +516,13 @@ pub mod v1 {
 			} = split_components(input.as_ref());
 
 			match (namespace, reference, identifier) {
-				(Some(namespace), Some(reference), identifier) => Ok(Self {
-					namespace: GenericAssetNamespace::from_utf8_encoded(namespace)?,
-					reference: GenericAssetReference::from_utf8_encoded(reference)?,
+				(Some(encoded_namespace), Some(encoded_reference), encoded_identifier) => Ok(Self {
+					namespace: GenericAssetNamespace::from_utf8_encoded(encoded_namespace)?,
+					reference: GenericAssetReference::from_utf8_encoded(encoded_reference)?,
 					// Transform Option<Result> to Result<Option> and bubble Err case up, keeping Ok(Option) for
 					// successful cases.
-					id: identifier.map_or(Ok(None), |id| GenericAssetIdentifier::from_utf8_encoded(id).map(Some))?,
+					id: encoded_identifier
+						.map_or(Ok(None), |id| GenericAssetIdentifier::from_utf8_encoded(id).map(Some))?,
 				}),
 				_ => Err(Error::InvalidFormat),
 			}
@@ -527,13 +531,13 @@ pub mod v1 {
 
 	// Getters
 	impl GenericAssetId {
-		pub fn namespace(&self) -> &GenericAssetNamespace {
+		pub const fn namespace(&self) -> &GenericAssetNamespace {
 			&self.namespace
 		}
-		pub fn reference(&self) -> &GenericAssetReference {
+		pub const fn reference(&self) -> &GenericAssetReference {
 			&self.reference
 		}
-		pub fn id(&self) -> &Option<GenericAssetIdentifier> {
+		pub const fn id(&self) -> &Option<GenericAssetIdentifier> {
 			&self.id
 		}
 	}
@@ -551,11 +555,11 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_namespace_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_namespace_length_bounds(input_ref)?;
 
-			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
+			input_ref.iter().try_for_each(|c| {
+				if !matches!(*c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic asset namespace.");
 					Err(NamespaceError::InvalidFormat)
 				} else {
@@ -563,7 +567,7 @@ pub mod v1 {
 				}
 			})?;
 			Ok(Self(
-				Vec::<u8>::from(input)
+				Vec::<u8>::from(input_ref)
 					.try_into()
 					.map_err(|_| NamespaceError::InvalidFormat)?,
 			))
@@ -578,6 +582,7 @@ pub mod v1 {
 	}
 
 	impl Display for GenericAssetNamespace {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
@@ -600,11 +605,11 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_reference_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_reference_length_bounds(input_ref)?;
 
-			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'.' | b'%' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+			input_ref.iter().try_for_each(|c| {
+				if !matches!(*c, b'-' | b'.' | b'%' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic asset reference.");
 					Err(ReferenceError::InvalidFormat)
 				} else {
@@ -612,7 +617,7 @@ pub mod v1 {
 				}
 			})?;
 			Ok(Self(
-				Vec::<u8>::from(input)
+				Vec::<u8>::from(input_ref)
 					.try_into()
 					.map_err(|_| ReferenceError::InvalidFormat)?,
 			))
@@ -627,6 +632,7 @@ pub mod v1 {
 	}
 
 	impl Display for GenericAssetReference {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
@@ -649,11 +655,11 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			check_identifier_length_bounds(input)?;
+			let input_ref = input.as_ref();
+			check_identifier_length_bounds(input_ref)?;
 
-			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'.' | b'%' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+			input_ref.iter().try_for_each(|c| {
+				if !matches!(*c, b'-' | b'.' | b'%' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic asset identifier.");
 					Err(IdentifierError::InvalidFormat)
 				} else {
@@ -661,7 +667,7 @@ pub mod v1 {
 				}
 			})?;
 			Ok(Self(
-				Vec::<u8>::from(input)
+				Vec::<u8>::from(input_ref)
 					.try_into()
 					.map_err(|_| IdentifierError::InvalidFormat)?,
 			))
@@ -676,6 +682,7 @@ pub mod v1 {
 	}
 
 	impl Display for GenericAssetIdentifier {
+		#[allow(clippy::expect_used)]
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
 			// (actually ASCII) characters.
