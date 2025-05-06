@@ -23,7 +23,7 @@ use crate::{weights, Balances, ParachainSystem, Runtime, RuntimeEvent};
 
 parameter_types! {
 	pub const Inflation: &'static str = "Inflation";
-
+	pub const DmpPalletName: &'static str = "DmpQueue";
 }
 
 impl cumulus_pallet_xcmp_queue::migration::v5::V5Config for Runtime {
