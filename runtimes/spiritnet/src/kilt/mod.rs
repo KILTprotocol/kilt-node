@@ -19,9 +19,7 @@
 use frame_support::parameter_types;
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use pallet_asset_switch::xcm::{AccountId32ToAccountId32JunctionConverter, MatchesSwitchPairXcmFeeFungibleAsset};
-use runtime_common::{
-	asset_switch::hooks::RestrictSwitchDestinationToSelf, AccountId, Balance, SendDustAndFeesToTreasury,
-};
+use runtime_common::{asset_switch::hooks::RestrictSwitchDestinationToSelf, AccountId, Balance};
 use xcm_builder::{FungiblesAdapter, NoChecking};
 
 use crate::{
@@ -56,18 +54,10 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-	type NetworkRewardBeneficiary = SendDustAndFeesToTreasury<Runtime>;
+	type NetworkRewardBeneficiary = ();
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
 	const BLOCKS_PER_YEAR: BlockNumberFor<Self> = constants::BLOCKS_PER_YEAR;
-}
-
-impl pallet_inflation::Config for Runtime {
-	type Currency = Balances;
-	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
-	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
-	type Beneficiary = SendDustAndFeesToTreasury<Runtime>;
-	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
 }
 
 parameter_types! {

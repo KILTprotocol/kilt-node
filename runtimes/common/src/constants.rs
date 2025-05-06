@@ -138,11 +138,11 @@ parameter_types! {
 	pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
 		WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
 	/// Deposits per byte
-	pub const ByteDeposit: Balance = deposit(0, 1);
+	pub const ByteDeposit: Balance = 0;
 	/// Index Pallet. Deposit taken for an account index
-	pub const IndicesDeposit: Balance = deposit(1, MAX_INDICES_BYTE_LENGTH);
+	pub const IndicesDeposit: Balance = 0;
 	/// CType Pallet. Per byte fee for a ctype.
-	pub const CtypeFee: Balance = MILLI_KILT;
+	pub const CtypeFee: Balance = 0;
 }
 
 pub mod attestation {
@@ -150,7 +150,7 @@ pub mod attestation {
 
 	/// The size is checked in the runtime by a test.
 	pub const MAX_ATTESTATION_BYTE_LENGTH: u32 = 179;
-	pub const ATTESTATION_DEPOSIT: Balance = deposit(2, MAX_ATTESTATION_BYTE_LENGTH);
+	pub const ATTESTATION_DEPOSIT: Balance = 0;
 
 	parameter_types! {
 		pub const MaxDelegatedAttestations: u32 = 1000;
@@ -163,11 +163,8 @@ pub mod bonded_coins {
 
 	/// The size is checked in the runtime by a test.
 	pub const MAX_POOL_BYTE_LENGTH: u32 = 987;
-	pub const BASE_DEPOSIT: Balance = deposit(1, MAX_POOL_BYTE_LENGTH);
-	const ASSET_ID_BYTE_LENGTH: u32 = 8;
-	/// https://github.com/paritytech/polkadot-sdk/blob/master/substrate/frame/assets/src/types.rs#L188
-	const ASSET_METADATA_BYTE_LENGTH: u32 = 26;
-	pub const DEPOSIT_PER_CURRENCY: Balance = deposit(1, ASSET_ID_BYTE_LENGTH + (2 * ASSET_METADATA_BYTE_LENGTH));
+	pub const BASE_DEPOSIT: Balance = 0;
+	pub const DEPOSIT_PER_CURRENCY: Balance = 0;
 	pub const MAX_CURRENCIES: u32 = 50;
 	pub const MAX_DENOMINATION: u8 = 15;
 	pub const MAX_STRING_LENGTH: u32 = crate::constants::bonded_assets::STRING_LIMIT;
@@ -210,7 +207,7 @@ pub mod delegation {
 
 	use super::*;
 
-	pub const DELEGATION_DEPOSIT: Balance = KILT;
+	pub const DELEGATION_DEPOSIT: Balance = 0;
 	pub const MAX_SIGNATURE_BYTE_LENGTH: u16 = 64;
 	pub const MAX_PARENT_CHECKS: u32 = 5;
 	pub const MAX_REVOCATIONS: u32 = 5;
@@ -224,7 +221,7 @@ pub mod delegation {
 		pub const MaxRemovals: u32 = MAX_REMOVALS;
 		#[derive(Clone, TypeInfo)]
 		pub const MaxChildren: u32 = MAX_CHILDREN;
-		pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
+		pub const DelegationDeposit: Balance = 0;
 	}
 }
 
@@ -241,7 +238,7 @@ pub mod dip_provider {
 	pub const MAX_LINKED_ACCOUNTS: u32 = 10;
 	// Commitment are 32-byte hashes.
 	pub const MAX_COMMITMENT_BYTE_LENGTH: u32 = 32;
-	pub const COMMITMENT_DEPOSIT: Balance = deposit(1, MAX_COMMITMENT_BYTE_LENGTH);
+	pub const COMMITMENT_DEPOSIT: Balance = 0;
 }
 
 pub mod staking {
@@ -404,8 +401,8 @@ pub mod multisig {
 
 	parameter_types! {
 		pub const MaxSignitors: u32 = 64;
-		pub const DepositBase: Balance = DEPOSIT_STORAGE_ITEM;
-		pub const DepositFactor: Balance = DEPOSIT_STORAGE_BYTE;
+		pub const DepositBase: Balance = 0;
+		pub const DepositFactor: Balance = 0;
 	}
 }
 
@@ -441,11 +438,11 @@ pub mod did {
 		+ MAX_NUMBER_OF_URLS_PER_SERVICE * MAX_SERVICE_URL_LENGTH
 		+ 8;
 
-	pub const DID_BASE_DEPOSIT: Balance = 2 * KILT;
-	pub const KEY_DEPOSIT: Balance = deposit(0, MAX_KEY_LENGTH);
-	pub const SERVICE_ENDPOINT_DEPOSIT: Balance = deposit(1, MAX_SERVICE_ENDPOINT_BYTE_LENGTH);
+	pub const DID_BASE_DEPOSIT: Balance = 0;
+	pub const KEY_DEPOSIT: Balance = 0;
+	pub const SERVICE_ENDPOINT_DEPOSIT: Balance = 0;
 
-	pub const DID_FEE: Balance = 50 * MILLI_KILT;
+	pub const DID_FEE: Balance = 0;
 	pub const MAX_KEY_AGREEMENT_KEYS: u32 = 10;
 	// This has been reduced from the previous 100, but it might still need
 	// fine-tuning depending on our needs.
@@ -488,7 +485,7 @@ pub mod did_lookup {
 
 	/// The size is checked in the runtime by a test.
 	pub const MAX_CONNECTION_BYTE_LENGTH: u32 = 80;
-	pub const DID_CONNECTION_DEPOSIT: Balance = deposit(1, MAX_CONNECTION_BYTE_LENGTH);
+	pub const DID_CONNECTION_DEPOSIT: Balance = 0;
 
 	parameter_types! {
 		pub const DidLookupDeposit: Balance = DID_CONNECTION_DEPOSIT;
@@ -516,12 +513,12 @@ pub mod proxy {
 
 	parameter_types! {
 		// One storage item; key size 32, value size 8; .
-		pub const ProxyDepositBase: Balance = deposit(1, 8);
+		pub const ProxyDepositBase: Balance = 0;
 		// Additional storage item size of 33 bytes.
-		pub const ProxyDepositFactor: Balance = deposit(0, 33);
+		pub const ProxyDepositFactor: Balance = 0;
 		pub const MaxProxies: u16 = 10;
-		pub const AnnouncementDepositBase: Balance = deposit(1, 8);
-		pub const AnnouncementDepositFactor: Balance = deposit(0, 66);
+		pub const AnnouncementDepositBase: Balance = 0;
+		pub const AnnouncementDepositFactor: Balance = 0;
 		pub const MaxPending: u16 = 10;
 	}
 }
@@ -534,30 +531,7 @@ pub mod web3_names {
 
 	/// The size is checked in the runtime by a test.
 	pub const MAX_NAME_BYTE_LENGTH: u32 = 121;
-	pub const DEPOSIT: Balance = deposit(2, MAX_NAME_BYTE_LENGTH);
-
-	parameter_types! {
-		pub const Web3NameDeposit: Balance = DEPOSIT;
-		pub const MinNameLength: u32 = MIN_LENGTH;
-		pub const MaxNameLength: u32 = MAX_LENGTH;
-	}
-}
-
-pub mod dot_names {
-	use super::*;
-
-	const MIN_NAME_LENGTH: u32 = 3;
-	const MAX_NAME_LENGTH: u32 = 28;
-
-	pub const DOT_NAME_SUFFIX: &str = ".dot";
-	#[allow(clippy::as_conversions)]
-	pub const MIN_LENGTH: u32 = MIN_NAME_LENGTH + DOT_NAME_SUFFIX.len() as u32;
-	#[allow(clippy::as_conversions)]
-	pub const MAX_LENGTH: u32 = MAX_NAME_LENGTH + DOT_NAME_SUFFIX.len() as u32;
-
-	/// The size is checked in the runtime by a test.
-	pub const MAX_NAME_BYTE_LENGTH: u32 = 121;
-	pub const DEPOSIT: Balance = deposit(2, MAX_NAME_BYTE_LENGTH);
+	pub const DEPOSIT: Balance = 0;
 
 	parameter_types! {
 		pub const Web3NameDeposit: Balance = DEPOSIT;
@@ -569,7 +543,7 @@ pub mod dot_names {
 pub mod preimage {
 	use super::*;
 	parameter_types! {
-		pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+		pub const PreimageBaseDeposit: Balance = 0;
 	}
 }
 
@@ -583,7 +557,7 @@ pub mod tips {
 		pub const MaximumReasonLength: u32 = MAXIMUM_REASON_LENGTH;
 		pub const TipCountdown: BlockNumber = DAYS;
 		pub const TipFindersFee: Percent = Percent::from_percent(0);
-		pub const TipReportDepositBase: Balance = deposit(1, 1);
+		pub const TipReportDepositBase: Balance = 1;
 		pub const MaxTipAmount: Balance = 100_000 * KILT;
 	}
 }
@@ -608,7 +582,7 @@ pub mod public_credentials {
 	/// The size is checked in the runtime by a test.
 	pub const MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH: u32 = 419;
 	// Each credential would have a different deposit, so no multiplier here
-	pub const PUBLIC_CREDENTIAL_DEPOSIT: Balance = deposit(1, MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH);
+	pub const PUBLIC_CREDENTIAL_DEPOSIT: Balance = 0;
 
 	parameter_types! {
 		pub const Deposit: Balance = PUBLIC_CREDENTIAL_DEPOSIT;

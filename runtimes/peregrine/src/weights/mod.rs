@@ -35,7 +35,6 @@ pub mod pallet_deposit_storage;
 pub mod pallet_did_lookup;
 pub mod pallet_dip_provider;
 pub mod pallet_indices;
-pub mod pallet_inflation;
 pub mod pallet_membership;
 pub mod pallet_message_queue;
 pub mod pallet_migration;
