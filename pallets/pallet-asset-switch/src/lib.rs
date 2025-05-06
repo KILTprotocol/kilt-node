@@ -786,12 +786,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	/// This will contain either only the XCM fee token in case of successful
 	/// transfer, or the XCM fee token + the amount of funds supposed to be
 	/// transferred.
-	///
-	///     3.2 Deposit the un-transferred asset (only if the transfer
-	/// failed) back into our account.
-	///
+	///     3.2 Deposit the un-transferred asset (only if the transfer failed)
+	/// back into our account.     
 	///     3.3 Refund any surplus weight.
-	///
 	///     3.4 Deposit the remaining XCM fee assets in the user's account.
 	///
 	/// 4. Withdraw the requested asset (this operation should be infallible
