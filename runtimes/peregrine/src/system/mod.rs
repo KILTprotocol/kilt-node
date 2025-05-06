@@ -18,7 +18,7 @@
 
 use frame_support::{
 	parameter_types,
-	traits::{AsEnsureOriginWithArg, Everything, NeverEnsureOrigin, PrivilegeCmp},
+	traits::{AsEnsureOriginWithArg, Everything, PrivilegeCmp},
 	weights::Weight,
 };
 use frame_system::EnsureRoot;
@@ -295,9 +295,11 @@ impl pallet_membership::Config<CollatorMembershipProvider> for Runtime {
 	type RemoveOrigin = RootOrMoreThanHalfCouncil;
 	type SwapOrigin = RootOrMoreThanHalfCouncil;
 	type ResetOrigin = RootOrMoreThanHalfCouncil;
-	type PrimeOrigin = NeverEnsureOrigin<AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type PrimeOrigin = frame_support::traits::NeverEnsureOrigin<AccountId>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type PrimeOrigin = frame_system::EnsureSigned<AccountId>;
 	type MembershipInitialized = ();
-
 	#[cfg(feature = "runtime-benchmarks")]
 	type MembershipChanged = crate::benchmarks::governance::MockMembershipChangedForBenchmarks;
 	#[cfg(not(feature = "runtime-benchmarks"))]
