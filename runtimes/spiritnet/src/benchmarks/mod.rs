@@ -37,11 +37,11 @@ use sp_std::{boxed::Box, vec, vec::Vec};
 use xcm::v4::{Asset, Assets, Fungibility, Location};
 
 use crate::{
-	xcm::XcmConfig, AllPalletsWithSystem, AssetSwitchPool1, Attestation, Balances, Council, Ctype, Delegation,
-	Democracy, DepositStorage, Did, DidLookup, DipProvider, Fungibles, Indices, Inflation, MessageQueue, Migration,
-	Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy, PublicCredentials, Runtime, RuntimeEvent, Scheduler,
-	System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership, Treasury, Utility, Vesting,
-	Web3Names,
+	xcm::XcmConfig, AllPalletsWithSystem, AssetSwitchPool1, Attestation, Balances, Collators, Council, Ctype,
+	Delegation, Democracy, DepositStorage, Did, DidLookup, DipProvider, Fungibles, Indices, Inflation, MessageQueue,
+	Migration, Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy, PublicCredentials, Runtime, RuntimeEvent,
+	Scheduler, System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership, Treasury, Utility,
+	Vesting, Web3Names,
 };
 
 pub(crate) mod asset_switch;
@@ -55,6 +55,9 @@ use pallet_collective as pallet_technical_committee_collective;
 
 #[allow(unused_imports)]
 use pallet_membership as pallet_technical_membership;
+
+#[allow(unused_imports)]
+use pallet_membership as pallet_collators;
 
 define_benchmarks!(
 	[frame_system, frame_system_benchmarking::Pallet::<Runtime>]
@@ -93,6 +96,7 @@ define_benchmarks!(
 	// pallet_membership instances
 	[pallet_membership, TipsMembership]
 	[pallet_technical_membership, TechnicalMembership]
+	[pallet_collators, Collators]
 	// pallet_did_lookup instances
 	[pallet_did_lookup, DidLookup]
 	// pallet_web3_names instances

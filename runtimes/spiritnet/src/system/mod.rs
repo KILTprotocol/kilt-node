@@ -18,7 +18,7 @@
 
 use frame_support::{
 	parameter_types,
-	traits::{AsEnsureOriginWithArg, Everything, PrivilegeCmp},
+	traits::{AsEnsureOriginWithArg, Everything, NeverEnsureOrigin, PrivilegeCmp},
 	weights::Weight,
 };
 use frame_system::EnsureRoot;
@@ -26,6 +26,7 @@ use runtime_common::{
 	asset_switch::EnsureRootAsTreasury,
 	constants,
 	fees::{ToAuthorCredit, WeightToFee},
+	session::{FixedLengthSession, SessionManager},
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockWeights, FeeSplit, Hash, Nonce,
 	SendDustAndFeesToTreasury, SlowAdjustingFeeUpdate,
 };
@@ -41,9 +42,9 @@ use sp_weights::ConstantMultiplier;
 use xcm::v4::Location;
 
 use crate::{
-	governance::{CouncilCollective, RootOrCollectiveProportion},
-	weights, Aura, Balances, Block, OriginCaller, PalletInfo, ParachainStaking, Preimage, Runtime, RuntimeCall,
-	RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
+	governance::{CouncilCollective, RootOrCollectiveProportion, RootOrMoreThanHalfCouncil},
+	weights, Aura, Balances, Block, OriginCaller, PalletInfo, Preimage, Runtime, RuntimeCall, RuntimeEvent,
+	RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask, System, VERSION,
 };
 
 pub(crate) mod proxy;
@@ -150,9 +151,9 @@ impl pallet_session::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = ConvertInto;
-	type ShouldEndSession = ParachainStaking;
-	type NextSessionRotation = ParachainStaking;
-	type SessionManager = ParachainStaking;
+	type ShouldEndSession = FixedLengthSession;
+	type NextSessionRotation = FixedLengthSession;
+	type SessionManager = SessionManager<Runtime>;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
 	type WeightInfo = weights::pallet_session::WeightInfo<Runtime>;
@@ -169,7 +170,7 @@ impl pallet_aura::Config for Runtime {
 
 impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type EventHandler = ParachainStaking;
+	type EventHandler = ();
 }
 
 impl pallet_utility::Config for Runtime {
@@ -279,4 +280,21 @@ impl pallet_scheduler::Config for Runtime {
 	type WeightInfo = weights::pallet_scheduler::WeightInfo<Runtime>;
 	type OriginPrivilegeCmp = OriginPrivilegeCmp;
 	type Preimages = Preimage;
+}
+
+type CollatorMembershipProvider = pallet_membership::Instance3;
+impl pallet_membership::Config<CollatorMembershipProvider> for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type AddOrigin = RootOrMoreThanHalfCouncil;
+	type RemoveOrigin = RootOrMoreThanHalfCouncil;
+	type SwapOrigin = RootOrMoreThanHalfCouncil;
+	type ResetOrigin = RootOrMoreThanHalfCouncil;
+	type PrimeOrigin = NeverEnsureOrigin<AccountId>;
+	type MembershipInitialized = ();
+	#[cfg(feature = "runtime-benchmarks")]
+	type MembershipChanged = crate::benchmarks::governance::MockMembershipChangedForBenchmarks;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type MembershipChanged = ();
+	type MaxMembers = constants::staking::MaxCollators;
+	type WeightInfo = weights::pallet_collators::WeightInfo<Runtime>;
 }

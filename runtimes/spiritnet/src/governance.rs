@@ -171,7 +171,7 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
-type RootOrMoreThanHalfCouncil = RootOrCollectiveProportion<CouncilCollective, 1, 2>;
+pub(crate) type RootOrMoreThanHalfCouncil = RootOrCollectiveProportion<CouncilCollective, 1, 2>;
 
 type TechnicalMembershipProvider = pallet_membership::Instance1;
 impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {

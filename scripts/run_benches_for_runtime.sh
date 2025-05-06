@@ -44,6 +44,7 @@ pallets=(
 	# `pallet-membership` instances
 	pallet-membership
 	pallet-technical-membership
+	pallet-collators
 	# `pallet-collective` instances
 	pallet-collective
 	pallet-technical-committee-collective
