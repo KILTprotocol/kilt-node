@@ -11,12 +11,14 @@ ignore = [
   { id = "RUSTSEC-2020-0168", reason = "`mach` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2022-0061", reason = "`parity-wasm` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2022-0080", reason = "`parity-util-mem` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2023-0091", reason = "`wasmtime` 8.0.1 has a security vulnerability but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0336", reason = "`rustls` vulnerability. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0370", reason = "`proc-macro-error` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0384", reason = "`instant` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0388", reason = "`derivative` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0421", reason = "`idna` has a security vulnerability but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2024-0436", reason = "`paste` is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
+  { id = "RUSTSEC-2024-0438", reason = "`wasmtime` 8.0.1 has a security vulnerability but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2025-0009", reason = "`ring` has a security vulnerability but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2025-0010", reason = "`ring` 0.16.20 is unmaintained but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
   { id = "RUSTSEC-2025-0017", reason = "`trust-dns` is unmaintained (renamed) but a Substrate dependency. Re-verify upon next polkadot-sdk updates." },
@@ -44,7 +46,6 @@ allow = [
   "OpenSSL",
   "SSPL-1.0",
   "Unicode-3.0",
-  "Unicode-DFS-2016",
   "Zlib",
 ]
 private = { ignore = false }
