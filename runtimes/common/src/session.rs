@@ -60,7 +60,12 @@ where
 			frame_support::pallet_prelude::DispatchClass::Mandatory,
 		);
 
-		if collators.is_empty() || !has_collator_keys {
+		if !has_collator_keys {
+			log::error!("💥 keeping old session because of missing collator keys!");
+			return None;
+		}
+
+		if collators.is_empty() {
 			// we never want to pass an empty set of collators. This would brick the chain.
 			log::error!("💥 keeping old session because of empty collator set!");
 			return None;
