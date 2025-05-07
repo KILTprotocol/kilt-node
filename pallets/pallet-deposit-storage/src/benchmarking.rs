@@ -18,6 +18,7 @@
 
 use frame_benchmarking::v2::*;
 
+#[allow(clippy::multiple_bound_locations)]
 #[benchmarks(
 	where
         T: Config + pallet_balances::Config,

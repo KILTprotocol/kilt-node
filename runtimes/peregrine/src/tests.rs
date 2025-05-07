@@ -195,7 +195,7 @@ fn test_derive_did_key_lookup() {
 		RuntimeCall::DidLookup(pallet_did_lookup::Call::associate_account {
 			req: AssociateAccountRequest::Polkadot(
 				AccountId::new([1u8; 32]),
-				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64]))
+				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature::from_raw([0; 64]))
 			),
 			expiration: BlockNumber::default(),
 		})

@@ -7,7 +7,7 @@ use ::xcm::{
 use cumulus_primitives_aura::Slot;
 use cumulus_primitives_core::CollationInfo;
 use frame_support::{
-	genesis_builder_helper::{build_config, create_default_config},
+	genesis_builder_helper::{build_state, get_preset},
 	pallet_prelude::{TransactionSource, TransactionValidity},
 	traits::{
 		fungibles::{metadata::Inspect as MetadataInspect, Inspect},
@@ -63,7 +63,7 @@ use crate::{
 	kilt::{DipProofError, DipProofRequest, NativeAndForeignAssets},
 	parachain::ConsensusHook,
 	xcm::UniversalLocation,
-	AssetSwitchPool1, Aura, Block, BondedCurrencies, BondedFungibles, Executive, InherentDataExt, ParachainStaking,
+	AssetSwitchPool1, Block, BondedCurrencies, BondedFungibles, Executive, InherentDataExt, ParachainStaking,
 	ParachainSystem, Runtime, RuntimeCall, RuntimeGenesisConfig, SessionKeys, TransactionPayment, Web3Name, VERSION,
 };
 
@@ -97,7 +97,7 @@ impl_runtime_apis! {
 			Executive::execute_block(block);
 		}
 
-		fn initialize_block(header: &<Block as BlockT>::Header) {
+		fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
 			Executive::initialize_block(header)
 		}
 	}
@@ -219,7 +219,7 @@ impl_runtime_apis! {
 		}
 
 		fn authorities() -> Vec<AuthorityId> {
-			Aura::authorities().into_inner()
+			pallet_aura::Authorities::<Runtime>::get().into_inner()
 		}
 	}
 
@@ -239,15 +239,17 @@ impl_runtime_apis! {
 	}
 
 	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
-
-		fn create_default_config() -> Vec<u8> {
-			create_default_config::<RuntimeGenesisConfig>()
+		fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_state::<RuntimeGenesisConfig>(config)
 		}
 
-		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
-			build_config::<RuntimeGenesisConfig>(config)
+		fn get_preset(id: &Option<sp_genesis_builder::PresetId>) -> Option<Vec<u8>> {
+			get_preset::<RuntimeGenesisConfig>(id, crate::genesis_state::get_preset)
 		}
 
+		fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
+			crate::genesis_state::preset_names()
+		}
 	}
 
 	impl kilt_runtime_api_did::Did<

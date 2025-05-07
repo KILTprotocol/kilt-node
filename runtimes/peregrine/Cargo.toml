@@ -23,6 +23,7 @@ cfg-if             = { workspace = true }
 log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info         = { workspace = true, features = ["derive"] }
+serde_json         = { workspace = true }
 
 hex-literal = { workspace = true, optional = true }
 
@@ -99,7 +100,7 @@ sp-genesis-builder            = { workspace = true }
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext         = { workspace = true }
-cumulus-pallet-parachain-system = { workspace = true, features = ["parameterized-consensus-hook"] }
+cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-xcm              = { workspace = true }
 cumulus-pallet-xcmp-queue       = { workspace = true }
 cumulus-primitives-aura         = { workspace = true }

@@ -34,6 +34,7 @@ use sp_std::marker::PhantomData;
 /// WARNING: This is only used for testing!
 #[frame_support::pallet]
 #[allow(dead_code)]
+#[allow(clippy::manual_inspect)]
 pub mod mock_origin {
 	use sp_std::marker::PhantomData;
 

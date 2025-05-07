@@ -23,47 +23,25 @@ use futures::FutureExt;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
-use sc_executor::WasmExecutor;
-use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
+use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncConfig};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
-use sp_io::SubstrateHostFunctions;
 
 use std::{sync::Arc, time::Duration};
 
 use kestrel_runtime::{self, opaque::Block, RuntimeApi};
 
-// Our native executor instance.
-pub(crate) struct ExecutorDispatch;
-
-impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
-	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-
-	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		kestrel_runtime::api::dispatch(method, data)
-	}
-
-	fn native_version() -> sc_executor::NativeVersion {
-		kestrel_runtime::native_version()
-	}
-}
-
-#[cfg(not(feature = "runtime-benchmarks"))]
-type HostFunctions = SubstrateHostFunctions;
-#[cfg(feature = "runtime-benchmarks")]
-type HostFunctions = (SubstrateHostFunctions, frame_benchmarking::benchmarking::HostFunctions);
-
-type FullClient = sc_service::TFullClient<Block, RuntimeApi, WasmExecutor<HostFunctions>>;
+pub(crate) type FullClient =
+	sc_service::TFullClient<Block, RuntimeApi, sc_executor::WasmExecutor<sp_io::SubstrateHostFunctions>>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
 /// The minimum period of blocks on which justifications will be
 /// imported and generated.
-/// Value is copied from the solo chain template: <https://github.com/paritytech/polkadot-sdk/blob/2352982717edc8976b55525274b1f9c9aa01aadd/templates/solochain/node/src/service.rs#L24>
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
-type PartialComponents = sc_service::PartialComponents<
+pub type Service = sc_service::PartialComponents<
 	FullClient,
 	FullBackend,
 	FullSelectChain,
@@ -76,7 +54,7 @@ type PartialComponents = sc_service::PartialComponents<
 	),
 >;
 
-pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceError> {
+pub fn new_partial(config: &Configuration) -> Result<Service, ServiceError> {
 	let telemetry = config
 		.telemetry_endpoints
 		.clone()
@@ -88,15 +66,7 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 		})
 		.transpose()?;
 
-	#[allow(deprecated)]
-	let executor = WasmExecutor::<HostFunctions>::new(
-		config.wasm_method,
-		config.default_heap_pages,
-		config.max_runtime_instances,
-		None,
-		config.runtime_cache_size,
-	);
-
+	let executor = sc_service::new_wasm_executor::<sp_io::SubstrateHostFunctions>(&config.executor);
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
 		config,
 		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
@@ -122,26 +92,29 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 	let (grandpa_block_import, grandpa_link) = sc_consensus_grandpa::block_import(
 		client.clone(),
 		GRANDPA_JUSTIFICATION_PERIOD,
-		&(Arc::clone(&client)),
+		&client,
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
 
-	let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
-
+	let cidp_client = client.clone();
 	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _>(ImportQueueParams {
 		block_import: grandpa_block_import.clone(),
 		justification_import: Some(Box::new(grandpa_block_import.clone())),
 		client: client.clone(),
-		create_inherent_data_providers: move |_, ()| async move {
-			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+		create_inherent_data_providers: move |parent_hash, _| {
+			let cidp_client = cidp_client.clone();
+			async move {
+				let slot_duration = sc_consensus_aura::standalone::slot_duration_at(&*cidp_client, parent_hash)?;
+				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-				*timestamp,
-				slot_duration,
-			);
+				let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+					*timestamp,
+					slot_duration,
+				);
 
-			Ok((slot, timestamp))
+				Ok((slot, timestamp))
+			}
 		},
 		spawner: &task_manager.spawn_essential_handle(),
 		registry: config.prometheus_registry(),
@@ -163,7 +136,9 @@ pub(crate) fn new_partial(config: &Configuration) -> Result<PartialComponents, S
 }
 
 /// Builds a new service for a full client.
-pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
+pub fn new_full<N: sc_network::NetworkBackend<Block, <Block as sp_runtime::traits::Block>::Hash>>(
+	config: Configuration,
+) -> Result<TaskManager, ServiceError> {
 	let sc_service::PartialComponents {
 		client,
 		backend,
@@ -175,15 +150,23 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		other: (block_import, grandpa_link, mut telemetry),
 	} = new_partial(&config)?;
 
+	let mut net_config = sc_network::config::FullNetworkConfiguration::<
+		Block,
+		<Block as sp_runtime::traits::Block>::Hash,
+		N,
+	>::new(&config.network, config.prometheus_registry().cloned());
+	let metrics = N::register_notification_metrics(config.prometheus_registry());
+
+	let peer_store_handle = net_config.peer_store_handle();
 	let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
 		&client.block_hash(0).ok().flatten().expect("Genesis block exists; qed"),
 		&config.chain_spec,
 	);
-
-	let mut net_config = sc_network::config::FullNetworkConfiguration::new(&config.network);
-	let (grandpa_protocol_config, grandpa_notification_service) =
-		sc_consensus_grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone());
-
+	let (grandpa_protocol_config, grandpa_notification_service) = sc_consensus_grandpa::grandpa_peers_set_config::<_, N>(
+		grandpa_protocol_name.clone(),
+		metrics.clone(),
+		peer_store_handle,
+	);
 	net_config.add_notification_protocol(grandpa_protocol_config);
 
 	let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
@@ -192,17 +175,18 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		Vec::default(),
 	));
 
-	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync) =
+	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
-			client: client.clone(),
 			net_config,
+			client: client.clone(),
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
-			block_announce_validator_builder: None,
 			import_queue,
-			warp_sync_params: Some(WarpSyncParams::WithProvider(warp_sync)),
+			block_announce_validator_builder: None,
+			warp_sync_config: Some(WarpSyncConfig::WithProvider(warp_sync)),
 			block_relay: None,
+			metrics,
 		})?;
 
 	if config.offchain_worker.enabled {
@@ -215,7 +199,7 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 				keystore: Some(keystore_container.keystore()),
 				offchain_db: backend.offchain_storage(),
 				transaction_pool: Some(OffchainTransactionPoolFactory::new(transaction_pool.clone())),
-				network_provider: network.clone(),
+				network_provider: Arc::new(network.clone()),
 				enable_http_requests: true,
 				custom_extensions: |_| vec![],
 			})
@@ -224,7 +208,7 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		);
 	}
 
-	let role = config.role.clone();
+	let role = config.role;
 	let force_authoring = config.force_authoring;
 	let backoff_authoring_blocks: Option<()> = None;
 	let name = config.network.node_name.clone();
@@ -235,20 +219,18 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		let client = client.clone();
 		let pool = transaction_pool.clone();
 
-		Box::new(move |deny_unsafe, _| {
+		Box::new(move |_| {
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
-				deny_unsafe,
 			};
 			crate::rpc::create_full(deps).map_err(Into::into)
 		})
 	};
 
 	let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-		network: network.clone(),
+		network: Arc::new(network.clone()),
 		client: client.clone(),
-		sync_service: sync.clone(),
 		keystore: keystore_container.keystore(),
 		task_manager: &mut task_manager,
 		transaction_pool: transaction_pool.clone(),
@@ -256,6 +238,7 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		backend,
 		system_rpc_tx,
 		tx_handler_controller,
+		sync_service: sync_service.clone(),
 		config,
 		telemetry: telemetry.as_mut(),
 	})?;
@@ -290,8 +273,8 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 			force_authoring,
 			backoff_authoring_blocks,
 			keystore: keystore_container.keystore(),
-			sync_oracle: sync.clone(),
-			justification_sync_link: sync.clone(),
+			sync_oracle: sync_service.clone(),
+			justification_sync_link: sync_service.clone(),
 			block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
 			max_block_proposal_slot_portion: None,
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
@@ -331,14 +314,14 @@ pub(crate) fn new_full(config: Configuration) -> Result<TaskManager, ServiceErro
 		let grandpa_config = sc_consensus_grandpa::GrandpaParams {
 			config: grandpa_config,
 			link: grandpa_link,
-			sync,
 			network,
+			sync: Arc::new(sync_service),
+			notification_service: grandpa_notification_service,
 			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
 			prometheus_registry,
 			shared_voter_state: SharedVoterState::empty(),
-			offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool),
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
-			notification_service: grandpa_notification_service,
+			offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool),
 		};
 
 		// the GRANDPA voter task is considered infallible, i.e.

@@ -67,6 +67,11 @@ impl frame_system::Config for TestRuntime {
 	type SS58Prefix = ConstU16<1>;
 	type SystemWeightInfo = ();
 	type Version = ();
+	type MultiBlockMigrator = ();
+	type SingleBlockMigrations = ();
+	type PostInherents = ();
+	type PostTransactions = ();
+	type PreInherents = ();
 }
 
 impl pallet_balances::Config for TestRuntime {
@@ -193,6 +198,8 @@ impl ExtBuilder {
 			for (subject, details) in self.1 {
 				IdentityEntries::<TestRuntime>::insert(subject, details)
 			}
+
+			System::set_block_number(System::block_number() + 1);
 		});
 
 		ext

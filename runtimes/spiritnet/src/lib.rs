@@ -52,7 +52,6 @@ mod governance;
 mod kilt;
 pub use kilt::Web3Name;
 mod migrations;
-pub use migrations::RuntimeMigrations;
 mod parachain;
 mod runtime_apis;
 use runtime_apis::_InternalImplRuntimeApis;
@@ -60,6 +59,7 @@ pub use runtime_apis::{api, RuntimeApi};
 mod system;
 use sp_version::RuntimeVersion;
 pub use system::{SessionKeys, SS_58_PREFIX};
+pub mod genesis_state;
 
 use crate::runtime_apis::RUNTIME_API_VERSION;
 mod weights;
@@ -192,7 +192,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	RuntimeMigrations,
+	crate::migrations::RuntimeMigrations,
 >;
 
 /// Block header type as expected by this runtime.

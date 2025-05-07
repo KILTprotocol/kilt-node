@@ -124,7 +124,7 @@ impl<T: frame_system::Config> pallet_technical_membership::WeightInfo for Weight
 	/// Storage: `TechnicalCommittee::Prime` (r:0 w:1)
 	/// Proof: `TechnicalCommittee::Prime` (`max_values`: Some(1), `max_size`: None, mode: `Ignored`)
 	/// The range of component `m` is `[1, 100]`.
-	fn reset_member(_m: u32, ) -> Weight {
+	fn reset_members(_m: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `237 + m * (64 ±0)`
 		//  Estimated: `990`
@@ -177,7 +177,7 @@ impl<T: frame_system::Config> pallet_technical_membership::WeightInfo for Weight
 	/// Storage: `TechnicalCommittee::Prime` (r:0 w:1)
 	/// Proof: `TechnicalCommittee::Prime` (`max_values`: Some(1), `max_size`: None, mode: `Ignored`)
 	/// The range of component `m` is `[1, 100]`.
-	fn clear_prime(_m: u32, ) -> Weight {
+	fn clear_prime( ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`

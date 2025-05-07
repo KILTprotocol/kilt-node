@@ -245,7 +245,7 @@ impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 				);
 				// Safe to reconstruct the public key using the recovered value from
 				// secp256k1_ecdsa_recover_compressed
-				Ok(DidVerificationKey::from(ecdsa::Public(recovered_pk)))
+				Ok(DidVerificationKey::from(ecdsa::Public::from_raw(recovered_pk)))
 			}
 		}
 	}

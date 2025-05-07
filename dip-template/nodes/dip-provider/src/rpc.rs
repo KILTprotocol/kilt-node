@@ -18,7 +18,6 @@
 
 #![warn(missing_docs)]
 
-pub use sc_rpc_api::DenyUnsafe;
 use substrate_frame_rpc_system::AccountNonceApi;
 
 use std::{error::Error, sync::Arc};
@@ -37,7 +36,6 @@ pub type RpcExtension = RpcModule<()>;
 pub struct FullDeps<C, P> {
 	pub client: Arc<C>,
 	pub pool: Arc<P>,
-	pub deny_unsafe: DenyUnsafe,
 }
 
 pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcExtension, Box<dyn Error + Send + Sync>>
@@ -57,13 +55,9 @@ where
 	use substrate_frame_rpc_system::{System, SystemApiServer};
 
 	let mut module = RpcExtension::new(());
-	let FullDeps {
-		client,
-		pool,
-		deny_unsafe,
-	} = deps;
+	let FullDeps { client, pool } = deps;
 
-	module.merge(System::new(Arc::clone(&client), pool, deny_unsafe).into_rpc())?;
+	module.merge(System::new(Arc::clone(&client), pool).into_rpc())?;
 	module.merge(TransactionPayment::new(client).into_rpc())?;
 	Ok(module)
 }

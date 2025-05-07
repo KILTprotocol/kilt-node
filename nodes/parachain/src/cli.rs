@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
-use std::net::SocketAddr;
-
 use clap::Parser;
 use polkadot_service::PrometheusConfig;
 use sc_cli::{
@@ -234,7 +232,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 			.or_else(|| self.base_path.clone().map(Into::into)))
 	}
 
-	fn rpc_addr(&self, default_listen_port: u16) -> sc_cli::Result<Option<SocketAddr>> {
+	fn rpc_addr(&self, default_listen_port: u16) -> sc_cli::Result<Option<Vec<sc_cli::RpcEndpoint>>> {
 		self.base.base.rpc_addr(default_listen_port)
 	}
 
@@ -246,16 +244,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 		self.base.base.prometheus_config(default_listen_port, chain_spec)
 	}
 
-	fn init<F>(
-		&self,
-		_support_url: &String,
-		_impl_version: &String,
-		_logger_hook: F,
-		_config: &sc_service::Configuration,
-	) -> sc_cli::Result<()>
-	where
-		F: FnOnce(&mut sc_cli::LoggerBuilder, &sc_service::Configuration),
-	{
+	fn init<F>(&self, _support_url: &String, _impl_version: &String, _logger_hook: F) -> sc_cli::Result<()> {
 		unreachable!("PolkadotCli is never initialized; qed");
 	}
 

@@ -87,6 +87,11 @@ impl frame_system::Config for TestRuntime {
 	type SS58Prefix = ConstU16<1>;
 	type SystemWeightInfo = ();
 	type Version = ();
+	type MultiBlockMigrator = ();
+	type SingleBlockMigrations = ();
+	type PostInherents = ();
+	type PostTransactions = ();
+	type PreInherents = ();
 }
 
 impl pallet_balances::Config for TestRuntime {
@@ -201,7 +206,7 @@ pub(crate) fn create_linked_info(
 ) -> LinkedDidInfoOf<TestRuntime, MAX_LINKED_ACCOUNTS> {
 	let did_details = {
 		let mut details = generate_base_did_details(auth_key.clone(), Some(SUBMITTER));
-		let att_key = DidVerificationKey::Sr25519(sr25519::Public(auth_key.blake2_256()));
+		let att_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(auth_key.blake2_256()));
 		let del_key = DidVerificationKey::Account(SUBMITTER);
 		details
 			.update_attestation_key(att_key, BlockNumberFor::<TestRuntime>::default())

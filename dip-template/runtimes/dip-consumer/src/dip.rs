@@ -189,7 +189,7 @@ mod get_worst_case_impl {
 						id: hex!("78e54fc7807f8c1cbd6e3dac9f3291096e7a2d8ab879934edb402f320a3d46a0").into(),
 						relationship: DidVerificationKeyRelationship::Authentication.into(),
 						details: DidPublicKeyDetails {
-							key: DidVerificationKey::Sr25519(sr25519::Public(hex!(
+							key: DidVerificationKey::Sr25519(sr25519::Public::from_raw(hex!(
 								"e68a94309d0adee950b6a63a0a141a3166c15e8ef25c301531f75e25086fe05a"
 							)))
 							.into(),
@@ -405,7 +405,7 @@ mod get_worst_case_impl {
 						id: hex!("106e6b1fa2d0ac6b81387fce6eb985b760f70a43a6d8e0c3f9e78c8a9d9e548e").into(),
 						relationship: DidVerificationKeyRelationship::CapabilityDelegation.into(),
 						details: DidPublicKeyDetails {
-							key: DidVerificationKey::Ed25519(ed25519::Public(hex!(
+							key: DidVerificationKey::Ed25519(ed25519::Public::from_raw(hex!(
 								"39985b639d8d21629190f2a310b0e2b935894a6261e45ba58f0fbf2bd6c0c832"
 							)))
 							.into(),
@@ -417,7 +417,7 @@ mod get_worst_case_impl {
 						id: hex!("5e14c0826d524d79a17cb5bc5fd61f9b2d364c9af73a5db87408f389e83afcdf").into(),
 						relationship: DidVerificationKeyRelationship::AssertionMethod.into(),
 						details: DidPublicKeyDetails {
-							key: DidVerificationKey::Ed25519(ed25519::Public(hex!(
+							key: DidVerificationKey::Ed25519(ed25519::Public::from_raw(hex!(
 								"6c89991144954da6d916f88e59ce0c52bc2dcea2e7edd065e750234ebbb8d8eb"
 							)))
 							.into(),
@@ -482,7 +482,7 @@ mod get_worst_case_impl {
 					.into(),
 				],
 			);
-			let signature = TimeBoundDidSignature::new(DidSignature::Sr25519(sr25519::Signature(hex!("1ca20d39357dba602862e6b6371887c6b1ec46c86ead3c92178cca814e3ff45f7fd6a58395d422b53b6e1d1ab7be5944dbc2c6e640ecfac67c02a218607cc881"))), 282 as BlockNumberFor<Runtime>);
+			let signature = TimeBoundDidSignature::new(DidSignature::Sr25519(sr25519::Signature::from_raw(hex!("1ca20d39357dba602862e6b6371887c6b1ec46c86ead3c92178cca814e3ff45f7fd6a58395d422b53b6e1d1ab7be5944dbc2c6e640ecfac67c02a218607cc881"))), 282 as BlockNumberFor<Runtime>);
 			let proof =
 				ParachainDipDidProof::new(provider_head_state_proof, dip_commitment_proof, dip_proof, signature);
 

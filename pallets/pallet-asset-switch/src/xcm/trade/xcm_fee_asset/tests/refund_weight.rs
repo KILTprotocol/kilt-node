@@ -495,6 +495,7 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3_with_zero_remaining_balance_an
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_v2() {
+	#[allow(deprecated)]
 	let location = xcm::v2::MultiLocation {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),

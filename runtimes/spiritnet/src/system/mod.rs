@@ -18,7 +18,7 @@
 
 use frame_support::{
 	parameter_types,
-	traits::{AsEnsureOriginWithArg, Everything, NeverEnsureOrigin, PrivilegeCmp},
+	traits::{AsEnsureOriginWithArg, Everything, PrivilegeCmp},
 	weights::Weight,
 };
 use frame_system::EnsureRoot;
@@ -95,6 +95,11 @@ impl frame_system::Config for Runtime {
 	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
 	type MaxConsumers = frame_support::traits::ConstU32<100>;
+	type MultiBlockMigrator = ();
+	type PostInherents = ();
+	type PostTransactions = ();
+	type PreInherents = ();
+	type SingleBlockMigrations = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -160,6 +165,7 @@ impl pallet_aura::Config for Runtime {
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<{ constants::staking::MAX_CANDIDATES }>;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+	type SlotDuration = ConstU64<{ constants::SLOT_DURATION }>;
 }
 
 impl pallet_authorship::Config for Runtime {
@@ -283,7 +289,10 @@ impl pallet_membership::Config<CollatorMembershipProvider> for Runtime {
 	type RemoveOrigin = RootOrMoreThanHalfCouncil;
 	type SwapOrigin = RootOrMoreThanHalfCouncil;
 	type ResetOrigin = RootOrMoreThanHalfCouncil;
-	type PrimeOrigin = NeverEnsureOrigin<AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type PrimeOrigin = frame_support::traits::NeverEnsureOrigin<AccountId>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type PrimeOrigin = frame_system::EnsureSigned<AccountId>;
 	type MembershipInitialized = ();
 	#[cfg(feature = "runtime-benchmarks")]
 	type MembershipChanged = crate::benchmarks::governance::MockMembershipChangedForBenchmarks;

@@ -224,11 +224,17 @@ impl<
 		asset: Self::AssetId,
 		who: &AccountId,
 		amount: Self::Balance,
+		preservation: Preservation,
 		precision: Precision,
 		force: Fortitude,
 	) -> Result<Self::Balance, DispatchError> {
 		UnionOf::<NativeAsset, ForeignAssets, Criterion, AssetKind, AccountId>::burn_from(
-			asset, who, amount, precision, force,
+			asset,
+			who,
+			amount,
+			preservation,
+			precision,
+			force,
 		)
 	}
 	fn shelve(asset: Self::AssetId, who: &AccountId, amount: Self::Balance) -> Result<Self::Balance, DispatchError> {
