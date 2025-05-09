@@ -18,7 +18,7 @@
 
 pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 use frame_system::Pallet as SystemPallet;
-use pallet_membership::{Config as MembershipConfig, Instance3, Pallet as MembershipPallet};
+use pallet_membership::{Config as MembershipConfig, Pallet as MembershipPallet};
 use pallet_session::SessionManager as SessionManagerTrait;
 pub use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::Get;
@@ -31,15 +31,15 @@ use crate::constants::staking::DefaultBlocksPerRound;
 type AccountIdOf<Runtime> = <Runtime as frame_system::Config>::AccountId;
 
 /// The session manager for the collator set.
-pub struct SessionManager<Runtime>(PhantomData<Runtime>);
+pub struct SessionManager<Runtime, Instance>(PhantomData<Runtime>, PhantomData<Instance>);
 
-impl<Runtime> SessionManagerTrait<AccountIdOf<Runtime>> for SessionManager<Runtime>
+impl<Runtime, Instance: 'static> SessionManagerTrait<AccountIdOf<Runtime>> for SessionManager<Runtime, Instance>
 where
-	Runtime: MembershipConfig<Instance3> + pallet_session::Config,
+	Runtime: MembershipConfig<Instance> + pallet_session::Config,
 	<Runtime as pallet_session::Config>::ValidatorId: From<AccountIdOf<Runtime>>,
 {
 	fn new_session(new_index: SessionIndex) -> Option<Vec<AccountIdOf<Runtime>>> {
-		let collators = MembershipPallet::<Runtime, Instance3>::members().to_vec();
+		let collators = MembershipPallet::<Runtime, Instance>::members().to_vec();
 
 		log::debug!(
 			"assembling new collators for new session {} at #{:?} with {:?}",
@@ -56,11 +56,16 @@ where
 
 		SystemPallet::<Runtime>::register_extra_weight_unchecked(
 			<Runtime as frame_system::Config>::DbWeight::get()
-				.reads(2u64.saturating_add(collators.len().saturated_into::<u64>())),
+				.reads(1u64.saturating_add(collators.len().saturated_into::<u64>())),
 			frame_support::pallet_prelude::DispatchClass::Mandatory,
 		);
 
-		if collators.is_empty() || !has_collator_keys {
+		if !has_collator_keys {
+			log::error!("💥 keeping old session because of missing collator keys!");
+			return None;
+		}
+
+		if collators.is_empty() {
 			// we never want to pass an empty set of collators. This would brick the chain.
 			log::error!("💥 keeping old session because of empty collator set!");
 			return None;
