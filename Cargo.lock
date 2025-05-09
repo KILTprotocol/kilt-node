@@ -6985,22 +6985,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ismp-parachain-inherent"
-version = "16.1.0"
-source = "git+https://github.com/polytope-labs/hyperbridge?branch=polkadot-stable2409#c7237a7388c210a60177ce74fc512e814d331da0"
-dependencies = [
- "anyhow",
- "async-trait",
- "ismp",
- "ismp-parachain",
- "ismp-parachain-runtime-api",
- "log",
- "pallet-ismp-runtime-api",
- "parity-scale-codec",
- "polkadot-sdk",
-]
-
-[[package]]
 name = "ismp-parachain-runtime-api"
 version = "16.0.0"
 source = "git+https://github.com/polytope-labs/hyperbridge?branch=polkadot-stable2409#c7237a7388c210a60177ce74fc512e814d331da0"
@@ -10798,27 +10782,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-ismp-rpc"
-version = "16.0.0"
-source = "git+https://github.com/polytope-labs/hyperbridge?branch=polkadot-stable2409#c7237a7388c210a60177ce74fc512e814d331da0"
-dependencies = [
- "anyhow",
- "hash-db",
- "hex",
- "hex-literal 0.4.1",
- "ismp",
- "jsonrpsee",
- "pallet-ismp",
- "pallet-ismp-runtime-api",
- "parity-scale-codec",
- "polkadot-sdk",
- "serde",
- "serde_json",
- "tower",
- "trie-db",
-]
-
-[[package]]
 name = "pallet-ismp-runtime-api"
 version = "16.0.0"
 source = "git+https://github.com/polytope-labs/hyperbridge?branch=polkadot-stable2409#c7237a7388c210a60177ce74fc512e814d331da0"
@@ -13060,7 +13023,6 @@ dependencies = [
  "hex-literal 0.3.4",
  "ismp",
  "ismp-parachain",
- "ismp-parachain-inherent",
  "ismp-parachain-runtime-api",
  "kilt-runtime-api-did",
  "kilt-runtime-api-dip-provider",
@@ -13084,7 +13046,6 @@ dependencies = [
  "pallet-indices 38.0.0 (git+https://github.com/paritytech/polkadot-sdk?tag=polkadot-stable2409-5)",
  "pallet-inflation",
  "pallet-ismp",
- "pallet-ismp-rpc",
  "pallet-ismp-runtime-api",
  "pallet-membership 38.0.0 (git+https://github.com/paritytech/polkadot-sdk?tag=polkadot-stable2409-5)",
  "pallet-message-queue 41.0.2 (git+https://github.com/paritytech/polkadot-sdk?tag=polkadot-stable2409-5)",
@@ -15206,7 +15167,6 @@ dependencies = [
  "cumulus-primitives-storage-weight-reclaim 8.0.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "cumulus-primitives-timestamp 0.16.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "cumulus-primitives-utility 0.17.1",
- "cumulus-relay-chain-interface 0.18.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "cumulus-test-relay-sproof-builder 0.16.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "frame-benchmarking 38.0.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "frame-benchmarking-cli 43.0.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
@@ -15336,10 +15296,8 @@ dependencies = [
  "polkadot-runtime-parachains 17.0.2 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "polkadot-sdk-frame",
  "polkadot-service 19.0.2",
- "sc-client-api 37.0.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "sc-client-db 0.44.1 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "sc-executor 0.40.1 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
- "sc-rpc 40.0.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "sc-service 0.46.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "slot-range-helper 15.0.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "snowbridge-beacon-primitives 0.10.1",
@@ -15363,7 +15321,6 @@ dependencies = [
  "sp-arithmetic 26.0.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "sp-authority-discovery 34.0.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "sp-block-builder 34.0.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
- "sp-blockchain 37.0.1 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "sp-consensus-aura 0.40.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "sp-consensus-babe 0.40.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
  "sp-consensus-beefy 22.1.0 (git+https://github.com/paritytech/polkadot-sdk?branch=stable2409)",
