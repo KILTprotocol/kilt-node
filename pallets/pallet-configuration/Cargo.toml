@@ -34,7 +34,7 @@ frame-benchmarking = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
-mock = ["std"]
+mock = []
 runtime-benchmarks = [
   "cumulus-pallet-parachain-system/runtime-benchmarks",
   "frame-benchmarking",
