@@ -158,7 +158,6 @@ where
 					switch_pair.remote_xcm_fee,
 					e
 				);
-				*e
 			})
 			.ok()?;
 		// Double check the store asset fungibility type, in case it changes between
