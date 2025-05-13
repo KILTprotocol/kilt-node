@@ -13043,6 +13043,7 @@ dependencies = [
  "pallet-deposit-storage",
  "pallet-did-lookup",
  "pallet-dip-provider",
+ "pallet-hyperbridge",
  "pallet-indices 38.0.0 (git+https://github.com/paritytech/polkadot-sdk?tag=polkadot-stable2409-5)",
  "pallet-inflation",
  "pallet-ismp",
