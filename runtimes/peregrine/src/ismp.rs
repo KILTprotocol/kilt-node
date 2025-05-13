@@ -59,10 +59,23 @@ impl pallet_hyperbridge::Config for Runtime {
 	type IsmpHost = Ismp;
 }
 
+pub struct WeightInfo;
+impl ismp_parachain::WeightInfo for WeightInfo {
+	fn add_parachain(_n: u32) -> Weight {
+		Weight::from_parts(0, 0)
+	}
+	fn remove_parachain(_n: u32) -> Weight {
+		Weight::from_parts(0, 0)
+	}
+	fn update_parachain_consensus() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+}
+
 impl ismp_parachain::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type IsmpHost = Ismp;
-	type WeightInfo = ();
+	type WeightInfo = WeightInfo;
 }
 
 pub struct AssetAdmin;
@@ -74,7 +87,7 @@ impl Get<AccountId> for AssetAdmin {
 
 parameter_types! {
 	// The hyperbridge parachain on Polkadot
-	pub const NativeAssetId: AssetId = AssetId::from(0);
+	pub const NativeAssetId: AssetId = AssetId(Location::here());
 
 }
 

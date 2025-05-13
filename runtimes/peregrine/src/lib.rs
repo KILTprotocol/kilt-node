@@ -189,6 +189,7 @@ construct_runtime! {
 		Ismp: pallet_ismp = 90,
 		Hyperbridge: pallet_hyperbridge = 91,
 		IsmpParachain: ismp_parachain = 92,
+		TokenGateway: pallet_token_gateway = 93,
 	}
 }
 
