@@ -102,7 +102,7 @@ impl pallet_token_gateway::Config for Runtime {
 	type AssetAdmin = AssetAdmin;
 	type Decimals = ConstU8<15>;
 	type NativeCurrency = Balances;
-	type NativeAssetId = ();
+	type NativeAssetId = NativeAssetId;
 	type EvmToSubstrate = ();
 	type WeightInfo = ();
 }
