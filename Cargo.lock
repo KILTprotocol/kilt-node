@@ -6334,6 +6334,8 @@ dependencies = [
  "jsonrpsee",
  "kilt-support",
  "log",
+ "pallet-ismp-rpc",
+ "pallet-ismp-runtime-api",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
  "peregrine-runtime",
@@ -9161,6 +9163,27 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-io",
+]
+
+[[package]]
+name = "pallet-ismp-rpc"
+version = "16.0.0"
+source = "git+https://github.com/polytope-labs/hyperbridge?branch=polkadot-stable2409#c7237a7388c210a60177ce74fc512e814d331da0"
+dependencies = [
+ "anyhow",
+ "hash-db",
+ "hex",
+ "hex-literal 0.4.1",
+ "ismp",
+ "jsonrpsee",
+ "pallet-ismp",
+ "pallet-ismp-runtime-api",
+ "parity-scale-codec",
+ "polkadot-sdk",
+ "serde",
+ "serde_json",
+ "tower",
+ "trie-db",
 ]
 
 [[package]]
@@ -11995,8 +12018,10 @@ dependencies = [
  "polkadot-runtime-parachains",
  "polkadot-sdk-frame",
  "polkadot-service",
+ "sc-client-api",
  "sc-client-db",
  "sc-executor",
+ "sc-rpc",
  "sc-service",
  "slot-range-helper",
  "snowbridge-beacon-primitives",
@@ -12020,6 +12045,7 @@ dependencies = [
  "sp-arithmetic",
  "sp-authority-discovery",
  "sp-block-builder",
+ "sp-blockchain",
  "sp-consensus-aura",
  "sp-consensus-babe",
  "sp-consensus-beefy",
@@ -16948,6 +16974,7 @@ dependencies = [
 name = "spiritnet-runtime"
 version = "1.16.0-dev"
 dependencies = [
+ "anyhow",
  "attestation",
  "cfg-if",
  "ctype",
@@ -16972,6 +16999,9 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal 0.3.4",
+ "ismp",
+ "ismp-parachain",
+ "ismp-parachain-runtime-api",
  "kilt-runtime-api-did",
  "kilt-runtime-api-dip-provider",
  "kilt-runtime-api-public-credentials",
@@ -16984,13 +17014,18 @@ dependencies = [
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-bonded-coins",
+ "pallet-bonded-coins-runtime-api",
  "pallet-collective",
  "pallet-democracy",
  "pallet-deposit-storage",
  "pallet-did-lookup",
  "pallet-dip-provider",
+ "pallet-hyperbridge",
  "pallet-indices",
  "pallet-inflation",
+ "pallet-ismp",
+ "pallet-ismp-runtime-api",
  "pallet-membership",
  "pallet-message-queue",
  "pallet-migration",
@@ -17001,6 +17036,7 @@ dependencies = [
  "pallet-session",
  "pallet-timestamp",
  "pallet-tips",
+ "pallet-token-gateway",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
@@ -17024,6 +17060,7 @@ dependencies = [
  "sp-inherents",
  "sp-io",
  "sp-metadata-ir",
+ "sp-mmr-primitives",
  "sp-offchain",
  "sp-runtime",
  "sp-session",

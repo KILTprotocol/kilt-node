@@ -60,6 +60,7 @@ mod system;
 use sp_version::RuntimeVersion;
 pub use system::{SessionKeys, SS_58_PREFIX};
 pub mod genesis_state;
+mod ismp;
 
 use crate::runtime_apis::RUNTIME_API_VERSION;
 mod weights;
@@ -176,6 +177,12 @@ construct_runtime! {
 		// DmpQueue: cumulus_pallet_dmp_queue = 85,
 		// Queue and pass DMP messages on to be executed.
 		MessageQueue: pallet_message_queue = 86,
+
+		// ISMP
+		Ismp: pallet_ismp = 90,
+		Hyperbridge: pallet_hyperbridge = 91,
+		IsmpParachain: ismp_parachain = 92,
+		TokenGateway: pallet_token_gateway = 93,
 	}
 }
 

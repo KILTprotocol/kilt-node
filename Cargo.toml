@@ -253,6 +253,7 @@ ismp-parachain             = { git = "https://github.com/polytope-labs/hyperbrid
 ismp-parachain-runtime-api = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 pallet-hyperbridge         = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 pallet-ismp                = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
+pallet-ismp-rpc            = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409" }
 pallet-ismp-runtime-api    = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 pallet-token-gateway       = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 

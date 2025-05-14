@@ -210,7 +210,8 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
-		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 	RB: FnOnce(
 			Arc<TFullClient<Block, RuntimeApi, WasmExecutor<HostFunctions>>>,
@@ -270,11 +271,13 @@ where
 	let rpc_builder = {
 		let client = Arc::clone(&client);
 		let transaction_pool = Arc::clone(&transaction_pool);
+		let backend = Arc::clone(&backend);
 
 		Box::new(move |_| {
 			let deps = crate::rpc::FullDeps {
 				client: Arc::clone(&client),
 				pool: Arc::clone(&transaction_pool),
+				backend: Arc::clone(&backend),
 			};
 
 			crate::rpc::create_full(deps).map_err(Into::into)
@@ -430,7 +433,8 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
-		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 {
 	start_node_impl::<API, _, _>(

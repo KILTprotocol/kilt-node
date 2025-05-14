@@ -92,6 +92,10 @@ xcm                 = { workspace = true, features = ["std"] }
 frame-benchmarking     = { workspace = true, features = ["std"] }
 frame-benchmarking-cli = { workspace = true }
 
+#ISMP
+pallet-ismp-rpc         = { workspace = true }
+pallet-ismp-runtime-api = { workspace = true }
+
 [features]
 default = []
 fast-gov = ["peregrine-runtime/fast-gov", "runtime-common/fast-gov"]
