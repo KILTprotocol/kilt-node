@@ -21,7 +21,6 @@ use ismp::{host::StateMachine, module::IsmpModule, router::IsmpRouter};
 use runtime_common::{AccountId, Balance};
 use sp_core::{ConstU8, Get};
 use sp_std::{boxed::Box, vec::Vec};
-use sp_weights::Weight;
 use xcm::v4::Location;
 
 use crate::{
