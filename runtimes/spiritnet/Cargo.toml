@@ -153,6 +153,7 @@ runtime-benchmarks = [
   "frame-system-benchmarking/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "hex-literal",
+  "ismp-parachain/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-asset-switch/runtime-benchmarks",
   "pallet-assets/runtime-benchmarks",

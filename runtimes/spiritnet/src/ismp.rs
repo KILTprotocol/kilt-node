@@ -54,23 +54,10 @@ impl pallet_hyperbridge::Config for Runtime {
 	type IsmpHost = Ismp;
 }
 
-pub struct WeightInfo;
-impl ismp_parachain::WeightInfo for WeightInfo {
-	fn add_parachain(_n: u32) -> Weight {
-		Weight::from_parts(0, 0)
-	}
-	fn remove_parachain(_n: u32) -> Weight {
-		Weight::from_parts(0, 0)
-	}
-	fn update_parachain_consensus() -> Weight {
-		Weight::from_parts(0, 0)
-	}
-}
-
 impl ismp_parachain::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type IsmpHost = Ismp;
-	type WeightInfo = WeightInfo;
+	type WeightInfo = crate::weights::ismp_parachain::WeightInfo<Runtime>;
 }
 
 pub struct AssetAdmin;
@@ -90,12 +77,15 @@ impl pallet_token_gateway::Config for Runtime {
 	// Configured as Pallet Ismp
 	type Dispatcher = Ismp;
 	type Assets = Fungibles;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type CreateOrigin = RootOrCollectiveProportion<TechnicalCollective, 2, 3>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type CreateOrigin = frame_system::EnsureSigned<AccountId>;
 	// AssetAdmin account
 	type AssetAdmin = AssetAdmin;
 	type Decimals = ConstU8<15>;
 	type NativeCurrency = Balances;
 	type NativeAssetId = NativeAssetId;
 	type EvmToSubstrate = ();
-	type WeightInfo = ();
+	type WeightInfo = crate::weights::pallet_token_gateway::WeightInfo<Runtime>;
 }
