@@ -53,7 +53,6 @@ impl IsmpRouter for Router {
 impl pallet_ismp::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type AdminOrigin = RootOrCollectiveProportion<TechnicalCollective, 1, 2>;
-	// The state machine identifier of the chain -- parachain id
 	type HostStateMachine = HostStateMachine;
 	type TimestampProvider = Timestamp;
 	type Balance = Balance;
@@ -89,16 +88,13 @@ parameter_types! {
 }
 
 impl pallet_token_gateway::Config for Runtime {
-	// configure the runtime event
 	type RuntimeEvent = RuntimeEvent;
-	// Configured as Pallet Ismp
 	type Dispatcher = Ismp;
 	type Assets = Fungibles;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type CreateOrigin = RootOrCollectiveProportion<TechnicalCollective, 2, 3>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type CreateOrigin = frame_system::EnsureSigned<AccountId>;
-	// AssetAdmin account
 	type AssetAdmin = AssetAdmin;
 	type Decimals = ConstU8<15>;
 	type NativeCurrency = Balances;

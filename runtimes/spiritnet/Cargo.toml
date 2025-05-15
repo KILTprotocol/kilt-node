@@ -96,7 +96,6 @@ pallet-transaction-payment    = { workspace = true }
 pallet-treasury               = { workspace = true }
 pallet-utility                = { workspace = true }
 pallet-vesting                = { workspace = true }
-sp-genesis-builder            = { workspace = true }
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext         = { workspace = true }
@@ -109,6 +108,7 @@ cumulus-primitives-timestamp    = { workspace = true }
 cumulus-primitives-utility      = { workspace = true }
 parachain-info                  = { workspace = true }
 parachains-common               = { workspace = true }
+sp-genesis-builder              = { workspace = true }
 
 # Polkadot dependencies
 pallet-xcm              = { workspace = true }
