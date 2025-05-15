@@ -35,7 +35,7 @@ jobs:
     name: Run Clippy checks
     runs-on: ubuntu-latest
     container:
-      image: paritytech/ci-unified:bullseye-1.74.0
+      image: paritytech/ci-unified:bullseye-1.81.0
     env:
       # Configured by the Docker image. We can't change this unless the image does it.
       CARGO_HOME: /usr/local/cargo
@@ -76,11 +76,11 @@ jobs:
     name: Check formatting
     runs-on: ubuntu-latest
     container:
-      image: paritytech/ci-unified:bullseye-1.74.0
+      image: paritytech/ci-unified:bullseye-1.81.0
     env:
       # Configured by the Docker image. We can't change this unless the image does it.
       CARGO_HOME: /usr/local/cargo
-      # Latest nightly version matching the base rustc version (1.74.0).
+      # Latest nightly version matching the base rustc version (1.18.0).
       RUSTUP_NIGHTLY_VERSION: nightly-2023-10-02
     needs: get-commit-head
     if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
@@ -232,14 +232,14 @@ jobs:
             -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
             -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
             -w /workspace \
-            paritytech/ci-unified:bullseye-1.74.0 \
+            paritytech/ci-unified:bullseye-1.81.0 \
             bash -c "cargo test --all-targets --locked ${{ matrix.features }}"
 
   cargo-doc:
     name: Check Rustdoc
     runs-on: ubuntu-latest
     container:
-      image: paritytech/ci-unified:bullseye-1.74.0
+      image: paritytech/ci-unified:bullseye-1.81.0
     env:
       # Configured by the Docker image. We can't change this unless the image does it.
       CARGO_HOME: /usr/local/cargo
@@ -276,7 +276,7 @@ jobs:
     name: Run try-runtime
     runs-on: ubuntu-latest
     container:
-      image: paritytech/ci-unified:bullseye-1.74.0
+      image: paritytech/ci-unified:bullseye-1.81.0
     env:
       # Configured by the Docker image. We can't change this unless the image does it.
       CARGO_HOME: /usr/local/cargo
@@ -368,7 +368,7 @@ jobs:
             -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
             -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
             -w /workspace \
-            paritytech/ci-unified:bullseye-1.74.0 \
+            paritytech/ci-unified:bullseye-1.81.0 \
             bash -c "bash -x scripts/run_benches_for_runtime.sh ${{ matrix.runtime }} dev"
 
   trigger-gitlab:
