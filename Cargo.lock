@@ -6348,6 +6348,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "hex-literal 0.3.4",
  "ismp-parachain-inherent",
+ "ismp-parachain-runtime-api",
  "jsonrpsee",
  "kilt-support",
  "log",
