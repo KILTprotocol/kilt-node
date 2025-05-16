@@ -241,7 +241,6 @@ sp-consensus-beefy                      = { git = "https://github.com/paritytech
 sp-consensus-grandpa                    = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2409" }
 sp-keyring                              = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2409" }
 sp-keystore                             = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2409" }
-sp-mmr-primitives                       = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2409", default-features = false }
 sp-timestamp                            = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2409" }
 substrate-build-script-utils            = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2409" }
 substrate-frame-rpc-system              = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2409" }
