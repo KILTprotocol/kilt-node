@@ -5959,6 +5959,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ismp-parachain-inherent"
+version = "16.1.0"
+source = "git+https://github.com/polytope-labs/hyperbridge?branch=polkadot-stable2409#c7237a7388c210a60177ce74fc512e814d331da0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "ismp",
+ "ismp-parachain",
+ "ismp-parachain-runtime-api",
+ "log",
+ "pallet-ismp-runtime-api",
+ "parity-scale-codec",
+ "polkadot-sdk",
+]
+
+[[package]]
 name = "ismp-parachain-runtime-api"
 version = "16.0.0"
 source = "git+https://github.com/polytope-labs/hyperbridge?branch=polkadot-stable2409#c7237a7388c210a60177ce74fc512e814d331da0"
@@ -6331,6 +6347,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "hex-literal 0.3.4",
+ "ismp-parachain-inherent",
  "jsonrpsee",
  "kilt-support",
  "log",
@@ -11888,6 +11905,7 @@ dependencies = [
  "cumulus-primitives-storage-weight-reclaim",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
+ "cumulus-relay-chain-interface",
  "cumulus-test-relay-sproof-builder",
  "frame-benchmarking",
  "frame-benchmarking-cli",

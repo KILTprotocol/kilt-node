@@ -249,6 +249,7 @@ substrate-prometheus-endpoint           = { git = "https://github.com/paritytech
 # ISMP 
 ismp                       = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 ismp-parachain             = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
+ismp-parachain-inherent    = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 ismp-parachain-runtime-api = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 pallet-hyperbridge         = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 pallet-ismp                = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
