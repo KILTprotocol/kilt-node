@@ -25,7 +25,7 @@ use xcm::v4::Location;
 
 use crate::{
 	governance::{RootOrCollectiveProportion, TechnicalCollective},
-	Balances, Fungibles, Ismp, IsmpParachain, Runtime, RuntimeEvent, Timestamp, TokenGateway, Treasury,
+	Balances, Fungibles, Hyperbridge, Ismp, IsmpParachain, Runtime, RuntimeEvent, Timestamp, TokenGateway, Treasury,
 };
 
 parameter_types! {
@@ -88,7 +88,7 @@ parameter_types! {
 
 impl pallet_token_gateway::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Dispatcher = Ismp;
+	type Dispatcher = Hyperbridge;
 	type Assets = Fungibles;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type CreateOrigin = RootOrCollectiveProportion<TechnicalCollective, 2, 3>;
