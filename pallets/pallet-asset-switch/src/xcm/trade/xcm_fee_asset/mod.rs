@@ -151,14 +151,13 @@ where
 			.remote_xcm_fee
 			.clone()
 			.try_into()
-			.map_err(|e| {
+			.inspect_err(|e| {
 				log::error!(
 					target: LOG_TARGET,
 					"Failed to convert stored asset ID {:?} into v4 AssetId with error {:?}",
 					switch_pair.remote_xcm_fee,
 					e
 				);
-				e
 			})
 			.ok()?;
 		// Double check the store asset fungibility type, in case it changes between

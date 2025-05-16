@@ -39,9 +39,9 @@ use xcm::v4::{Asset, Assets, Fungibility, Location};
 use crate::{
 	xcm::XcmConfig, AllPalletsWithSystem, AssetSwitchPool1, Attestation, Balances, BondedCurrencies, BondedFungibles,
 	Collators, Council, Ctype, Delegation, Democracy, DepositStorage, Did, DidLookup, DipProvider, Fungibles, Indices,
-	MessageQueue, Migration, Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy, PublicCredentials, Runtime,
-	RuntimeEvent, Scheduler, Sudo, System, TechnicalCommittee, TechnicalMembership, Timestamp, Tips, TipsMembership,
-	Treasury, Utility, Vesting, Web3Names,
+	IsmpParachain, MessageQueue, Migration, Multisig, ParachainStaking, ParachainSystem, Preimage, Proxy,
+	PublicCredentials, Runtime, RuntimeEvent, Scheduler, Sudo, System, TechnicalCommittee, TechnicalMembership,
+	Timestamp, Tips, TipsMembership, TokenGateway, Treasury, Utility, Vesting, Web3Names,
 };
 
 pub(crate) mod asset_switch;
@@ -105,6 +105,9 @@ define_benchmarks!(
 	// pallet assets instances
 	[pallet_assets, Fungibles]
 	[pallet_bonded_assets, BondedFungibles]
+	// ISMP
+	[ismp_parachain, IsmpParachain]
+	[pallet_token_gateway, TokenGateway]
 );
 
 impl pallet_xcm::benchmarking::Config for Runtime {

@@ -72,20 +72,20 @@ fn blueprint_test_successful(account_id: AccountIdOf<Test>, verification_key: Di
 
 #[test]
 fn successful_ed25519() {
-	let verification_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let verification_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_test_successful(ACCOUNT_00, verification_key);
 }
 
 #[test]
 fn successful_sr25519() {
-	let verification_key = DidVerificationKey::Sr25519(sr25519::Public(*ACCOUNT_00.as_ref()));
+	let verification_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_test_successful(ACCOUNT_00, verification_key);
 }
 
 #[test]
 fn successful_ecdsa() {
 	// these values where generated with `subkey generate -n kilt --scheme ecdsa`
-	let verification_key = DidVerificationKey::Ecdsa(ecdsa::Public(hex_literal::hex!(
+	let verification_key = DidVerificationKey::Ecdsa(ecdsa::Public::from_raw(hex_literal::hex!(
 		"02484c08122e16f2cbce7697b5a9393280ca67dd8b91a907c1bc4b93451ebf4093"
 	)));
 	let account_id: AccountIdOf<Test> =
@@ -101,7 +101,7 @@ fn successful_account() {
 
 #[test]
 fn should_not_overwrite() {
-	let verification_key = DidVerificationKey::Sr25519(sr25519::Public(*ACCOUNT_00.as_ref()));
+	let verification_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	let account_id = ACCOUNT_00;
 
 	let balance = <Test as Config>::BaseDeposit::get()
@@ -128,7 +128,7 @@ fn should_not_overwrite() {
 
 #[test]
 fn should_not_recreate_deleted_did() {
-	let verification_key = DidVerificationKey::Sr25519(sr25519::Public(*ACCOUNT_00.as_ref()));
+	let verification_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	let account_id = ACCOUNT_00;
 
 	let balance = <Test as Config>::BaseDeposit::get()
@@ -157,7 +157,7 @@ fn should_not_recreate_deleted_did() {
 
 #[test]
 fn should_not_create_without_funds() {
-	let verification_key = DidVerificationKey::Sr25519(sr25519::Public(*ACCOUNT_00.as_ref()));
+	let verification_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	let account_id = ACCOUNT_00;
 
 	ExtBuilder::default().build_and_execute_with_sanity_tests(None, || {

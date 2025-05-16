@@ -79,7 +79,7 @@ fn test_unpaid_execution_from_asset_hub_to_peregrine() {
 		assert_expected_events!(
 			Peregrine,
 			vec![
-				PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::ProcessingFailed { .. }) => {},
+				PeregrineRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 			]
 		);
 	});

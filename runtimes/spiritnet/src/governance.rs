@@ -27,10 +27,10 @@ use frame_support::{
 };
 use frame_system::{EnsureRoot, EnsureSigned};
 use runtime_common::{
-	constants::{self, KILT},
+	constants::{self},
 	pallet_id, AccountId, Balance, BlockWeights, Tippers,
 };
-use sp_core::{ConstBool, ConstU128, ConstU32, ConstU64};
+use sp_core::{ConstBool, ConstU32, ConstU64};
 use sp_runtime::{traits::AccountIdLookup, Perbill, Permill};
 
 use crate::{
@@ -96,19 +96,14 @@ parameter_types! {
 impl pallet_treasury::Config for Runtime {
 	type PalletId = pallet_id::Treasury;
 	type Currency = Balances;
-	type ApproveOrigin = RootOrCollectiveProportion<CouncilCollective, 3, 5>;
 	type RejectOrigin = RootOrCollectiveProportion<CouncilCollective, 1, 2>;
 	type RuntimeEvent = RuntimeEvent;
-	type OnSlash = Treasury;
-	type ProposalBond = ProposalBond;
-	type ProposalBondMinimum = ConstU128<{ 20 * KILT }>;
-	type ProposalBondMaximum = ();
 	type SpendPeriod = ConstU64<{ constants::governance::SPEND_PERIOD }>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type SpendOrigin =
-		frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, ConstU128<{ Balance::max_value() }>>;
+		frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, sp_core::ConstU128<{ Balance::MAX }>>;
 	type Burn = Burn;
 	type BurnDestination = ();
 	type SpendFunds = ();
@@ -135,6 +130,7 @@ impl pallet_tips::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pallet_tips::WeightInfo<Runtime>;
 	type MaxTipAmount = constants::tips::MaxTipAmount;
+	type OnSlash = Treasury;
 }
 
 #[allow(clippy::arithmetic_side_effects)]
@@ -161,7 +157,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
-type TechnicalCollective = pallet_collective::Instance2;
+pub(crate) type TechnicalCollective = pallet_collective::Instance2;
 impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type MaxProposalWeight = MaxProposalWeight;

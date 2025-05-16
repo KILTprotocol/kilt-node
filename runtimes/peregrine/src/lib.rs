@@ -52,8 +52,8 @@ use runtime_common::{constants, fees::WeightToFee, Address, Signature};
 mod governance;
 mod kilt;
 pub use kilt::Web3Name;
+pub mod genesis_state;
 mod migrations;
-pub use migrations::RuntimeMigrations;
 mod parachain;
 mod runtime_apis;
 use runtime_apis::_InternalImplRuntimeApis;
@@ -61,6 +61,7 @@ pub use runtime_apis::{api, RuntimeApi};
 mod system;
 use sp_version::RuntimeVersion;
 pub use system::{SessionKeys, SS_58_PREFIX};
+mod ismp;
 
 use crate::runtime_apis::RUNTIME_API_VERSION;
 mod weights;
@@ -183,6 +184,12 @@ construct_runtime! {
 		// DmpQueue: cumulus_pallet_dmp_queue = 85,
 		// Queue and pass DMP messages on to be executed.
 		MessageQueue: pallet_message_queue = 86,
+
+		// ISMP
+		Ismp: pallet_ismp = 90,
+		Hyperbridge: pallet_hyperbridge = 91,
+		IsmpParachain: ismp_parachain = 92,
+		TokenGateway: pallet_token_gateway = 93,
 	}
 }
 
@@ -199,7 +206,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	RuntimeMigrations,
+	crate::migrations::RuntimeMigrations,
 >;
 
 /// Block header type as expected by this runtime.

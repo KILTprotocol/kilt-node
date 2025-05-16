@@ -143,7 +143,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 				details: DidPublicKeyDetails {
 					// This key should be filtered out from the result, since it does not verify successfully for the
 					// provided payload and signature.
-					key: DidVerificationKey::from(ed25519::Public([100; 32])).into(),
+					key: DidVerificationKey::from(ed25519::Public::from_raw([100; 32])).into(),
 					block_number: 0u32,
 				},
 			}
@@ -176,7 +176,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 
 	#[test]
 	fn retrieve_signing_leaves_for_payload_no_key_present() {
-		let did_auth_key: DidVerificationKey<AccountId32> = ed25519::Public([0u8; 32]).into();
+		let did_auth_key: DidVerificationKey<AccountId32> = ed25519::Public::from_raw([0u8; 32]).into();
 		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<1>> =
 			vec![RevealedDidKey {
 				id: 0u32,
@@ -192,7 +192,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 		let revealed_details: DipRevealedDetailsAndVerifiedDidSignatureFreshness<_, _, _, _, _, 1> =
 			DipRevealedDetailsAndVerifiedDidSignatureFreshness {
 				revealed_leaves,
-				signature: ed25519::Signature([100u8; 64]).into(),
+				signature: ed25519::Signature::from_raw([100u8; 64]).into(),
 			};
 		assert_err!(
 			revealed_details.retrieve_signing_leaves_for_payload(&().encode()),

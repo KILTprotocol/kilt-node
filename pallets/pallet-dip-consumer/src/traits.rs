@@ -34,7 +34,7 @@ where
 	/// The accepted type for a DIP identity proof.
 	type Proof: Parameter;
 	/// The type returned upon successful DIP proof verification.
-	type VerificationResult;
+	type VerificationResult: Debug;
 
 	/// Verify a given DIP proof given the calling context, including the call
 	/// being dispatched, the DIP subject dispatching it, the account submitting

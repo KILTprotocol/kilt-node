@@ -179,10 +179,10 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	/// given element.
 	///
 	/// 1. If the value is found, then Result::Ok is returned, containing the
-	/// index of the matching element.
+	///    index of the matching element.
 	/// 2. If the value is not found, then Result::Err is returned, containing
-	/// the index where a matching element could be inserted while maintaining
-	/// sorted order.
+	///    the index where a matching element could be inserted while
+	///    maintaining sorted order.
 	pub fn linear_search(&self, value: &T) -> Result<usize, usize> {
 		let size = self.0.len();
 		let mut loc: usize = size;

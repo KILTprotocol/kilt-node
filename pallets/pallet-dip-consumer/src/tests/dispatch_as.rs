@@ -20,7 +20,7 @@ use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 
 use crate::{
-	mock::{ExtBuilder, System, TestRuntime, SUBJECT, SUBMITTER},
+	mock::{ExtBuilder, TestRuntime, SUBJECT, SUBMITTER},
 	Error, IdentityEntries, Pallet,
 };
 
@@ -30,8 +30,6 @@ fn dispatch_as_successful_no_details() {
 		.with_balances(vec![(SUBMITTER, 10_000)])
 		.build()
 		.execute_with(|| {
-			// Needed to test event generation. See <https://substrate.stackexchange.com/a/1105/1795> for more context.
-			frame_system::Pallet::<TestRuntime>::set_block_number(1);
 			assert!(IdentityEntries::<TestRuntime>::get(SUBJECT).is_none());
 			assert_ok!(Pallet::<TestRuntime>::dispatch_as(
 				RawOrigin::Signed(SUBMITTER).into(),
@@ -39,7 +37,9 @@ fn dispatch_as_successful_no_details() {
 				true,
 				Box::new(pallet_did_lookup::Call::associate_sender {}.into())
 			));
-			System::assert_last_event(
+
+			#[cfg(not(feature = "runtime-benchmarks"))]
+			crate::mock::System::assert_last_event(
 				pallet_did_lookup::Event::<TestRuntime>::AssociationEstablished(SUBMITTER.into(), SUBJECT).into(),
 			);
 			assert_eq!(IdentityEntries::<TestRuntime>::get(SUBJECT), Some(0));
@@ -53,15 +53,15 @@ fn dispatch_as_successful_existing_details() {
 		.with_identity_details(vec![(SUBJECT, 100)])
 		.build()
 		.execute_with(|| {
-			// Needed to test event generation. See <https://substrate.stackexchange.com/a/1105/1795> for more context.
-			frame_system::Pallet::<TestRuntime>::set_block_number(1);
 			assert_ok!(Pallet::<TestRuntime>::dispatch_as(
 				RawOrigin::Signed(SUBMITTER).into(),
 				SUBJECT,
 				true,
 				Box::new(pallet_did_lookup::Call::associate_sender {}.into())
 			));
-			System::assert_last_event(
+
+			#[cfg(not(feature = "runtime-benchmarks"))]
+			crate::mock::System::assert_last_event(
 				pallet_did_lookup::Event::<TestRuntime>::AssociationEstablished(SUBMITTER.into(), SUBJECT).into(),
 			);
 			// Details have been bumped up by the proof verifier, and correctly stored in

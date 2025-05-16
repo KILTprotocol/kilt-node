@@ -80,7 +80,7 @@ fn test_unpaid_execution_to_spiritnet() {
 		assert_expected_events!(
 			Spiritnet,
 			vec![
-				SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::ProcessingFailed { .. }) => {},
+				SpiritnetRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
 			]
 		);
 	});

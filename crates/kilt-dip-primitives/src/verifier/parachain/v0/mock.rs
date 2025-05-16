@@ -84,6 +84,11 @@ impl frame_system::Config for TestRuntime {
 	type SS58Prefix = ConstU16<1>;
 	type SystemWeightInfo = ();
 	type Version = ();
+	type MultiBlockMigrator = ();
+	type SingleBlockMigrations = ();
+	type PostInherents = ();
+	type PostTransactions = ();
+	type PreInherents = ();
 }
 
 parameter_types! {
@@ -227,7 +232,7 @@ pub(crate) fn cross_chain_proof_with_authentication_key_and_web3_name() -> Parac
 			id: hex!("a99e99fc7ce5529bc72a0846778d0f62137ddcbab51a1af2d3e91752962d91b4").into(),
 			relationship: DidVerificationKeyRelationship::Authentication.into(),
 			details: DidPublicKeyDetails {
-				key: DidVerificationKey::Sr25519(sr25519::Public(hex!("9cf53cf19360e5cac6055254c77d91a79701381c47e03e17c3284aa85edc851e"))).into(),
+				key: DidVerificationKey::Sr25519(sr25519::Public::from_raw(hex!("9cf53cf19360e5cac6055254c77d91a79701381c47e03e17c3284aa85edc851e"))).into(),
 				block_number: 144
 			}
 		}.into(),
@@ -235,7 +240,7 @@ pub(crate) fn cross_chain_proof_with_authentication_key_and_web3_name() -> Parac
 			web3_name: b"9f61d55037c5886b03966c9".to_vec().try_into().unwrap(),
 			claimed_at: 144
 		}.into()
-	] }, signature: TimeBoundDidSignature::new(did::DidSignature::Sr25519(sr25519::Signature(hex!("3cd5e72f04d248e5155bfdabb94c308a88368db63a8a0cafc15fb3204a709b07da028cf85bd450d9a2bdb6679f2b07ac69188101185ab3acd9f41419cbfb3c81"))), SIGNATURE_VALID_UNTIL) }
+	] }, signature: TimeBoundDidSignature::new(did::DidSignature::Sr25519(sr25519::Signature::from_raw(hex!("3cd5e72f04d248e5155bfdabb94c308a88368db63a8a0cafc15fb3204a709b07da028cf85bd450d9a2bdb6679f2b07ac69188101185ab3acd9f41419cbfb3c81"))), SIGNATURE_VALID_UNTIL) }
 }
 
 // Aliases requires because the pallet does not expose anything public.
