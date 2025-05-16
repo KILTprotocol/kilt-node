@@ -211,7 +211,8 @@ where
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
-		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>,
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>
+		+ ismp_parachain_runtime_api::IsmpParachainApi<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 	RB: FnOnce(
 			Arc<TFullClient<Block, RuntimeApi, WasmExecutor<HostFunctions>>>,
@@ -434,7 +435,8 @@ where
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
-		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>,
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>
+		+ ismp_parachain_runtime_api::IsmpParachainApi<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 {
 	start_node_impl::<API, _, _>(
@@ -480,7 +482,9 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
-		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
+		+ ismp_parachain_runtime_api::IsmpParachainApi<Block>
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>,
 {
 	use cumulus_client_consensus_aura::collators::lookahead::{self as aura, Params as AuraParams};
 
@@ -501,10 +505,12 @@ where
 		Arc::clone(&client),
 	);
 
+	let (client_clone, relay_chain_interface_clone) = (Arc::clone(&client), Arc::clone(&relay_chain_interface));
+
 	let params = AuraParams {
 		create_inherent_data_providers: move |parent, ()| {
-			let client = client_clone.clone();
-			let relay_chain_interface = relay_chain_interface_clone.clone();
+			let client = Arc::clone(&client_clone);
+			let relay_chain_interface = Arc::clone(&relay_chain_interface_clone);
 			async move {
 				let inherent =
 					ismp_parachain_inherent::ConsensusInherentProvider::create(parent, client, relay_chain_interface)

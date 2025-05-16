@@ -93,9 +93,10 @@ frame-benchmarking     = { workspace = true, features = ["std"] }
 frame-benchmarking-cli = { workspace = true }
 
 #ISMP
-ismp-parachain-inherent = { workspace = true }
-pallet-ismp-rpc         = { workspace = true }
-pallet-ismp-runtime-api = { workspace = true }
+ismp-parachain-inherent    = { workspace = true }
+ismp-parachain-runtime-api = { workspace = true }
+pallet-ismp-rpc            = { workspace = true }
+pallet-ismp-runtime-api    = { workspace = true }
 
 [features]
 default = []
