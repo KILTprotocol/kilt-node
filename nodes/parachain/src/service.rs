@@ -210,7 +210,9 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
-		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>
+		+ ismp_parachain_runtime_api::IsmpParachainApi<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 	RB: FnOnce(
 			Arc<TFullClient<Block, RuntimeApi, WasmExecutor<HostFunctions>>>,
@@ -270,11 +272,13 @@ where
 	let rpc_builder = {
 		let client = Arc::clone(&client);
 		let transaction_pool = Arc::clone(&transaction_pool);
+		let backend = Arc::clone(&backend);
 
 		Box::new(move |_| {
 			let deps = crate::rpc::FullDeps {
 				client: Arc::clone(&client),
 				pool: Arc::clone(&transaction_pool),
+				backend: Arc::clone(&backend),
 			};
 
 			crate::rpc::create_full(deps).map_err(Into::into)
@@ -430,7 +434,9 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
-		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>
+		+ ismp_parachain_runtime_api::IsmpParachainApi<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 {
 	start_node_impl::<API, _, _>(
@@ -476,7 +482,9 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
-		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
+		+ ismp_parachain_runtime_api::IsmpParachainApi<Block>
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>,
 {
 	use cumulus_client_consensus_aura::collators::lookahead::{self as aura, Params as AuraParams};
 
@@ -497,8 +505,20 @@ where
 		Arc::clone(&client),
 	);
 
+	let (client_clone, relay_chain_interface_clone) = (Arc::clone(&client), Arc::clone(&relay_chain_interface));
+
 	let params = AuraParams {
-		create_inherent_data_providers: move |_, ()| async move { Ok(()) },
+		create_inherent_data_providers: move |parent, ()| {
+			let client = Arc::clone(&client_clone);
+			let relay_chain_interface = Arc::clone(&relay_chain_interface_clone);
+			async move {
+				let inherent =
+					ismp_parachain_inherent::ConsensusInherentProvider::create(parent, client, relay_chain_interface)
+						.await?;
+
+				Ok(inherent)
+			}
+		},
 		block_import,
 		para_client: Arc::clone(&client),
 		para_backend: backend,

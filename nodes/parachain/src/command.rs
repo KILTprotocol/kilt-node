@@ -69,7 +69,11 @@ macro_rules! construct_async_run {
 
 /// Parse command line arguments into service configuration.
 pub(crate) fn run() -> sc_cli::Result<()> {
-	let cli = Cli::from_args();
+	let mut cli = Cli::from_args();
+
+	// all full nodes should store request/responses, otherwise they'd basically be
+	// useless without it. https://docs.hyperbridge.network/developers/polkadot/pallet-ismp#offchain-indexing
+	cli.run.base.offchain_worker_params.indexing_enabled = true;
 
 	match &cli.subcommand {
 		Some(Subcommand::BuildSpec(cmd)) => {

@@ -19,6 +19,7 @@ sp-io         = { workspace = true }
 
 [dependencies]
 # External dependencies
+anyhow             = { workspace = true }
 cfg-if             = { workspace = true }
 log                = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
@@ -125,6 +126,15 @@ frame-system-benchmarking           = { workspace = true, optional = true }
 # Runtime tests
 frame-try-runtime = { workspace = true, optional = true }
 
+# ISMP
+ismp                       = { workspace = true }
+ismp-parachain             = { workspace = true }
+ismp-parachain-runtime-api = { workspace = true }
+pallet-hyperbridge         = { workspace = true }
+pallet-ismp                = { workspace = true, features = ["unsigned"] }
+pallet-ismp-runtime-api    = { workspace = true }
+pallet-token-gateway       = { workspace = true }
+
 [features]
 default = ["std"]
 fast-gov = ["runtime-common/fast-gov"]
@@ -143,6 +153,7 @@ runtime-benchmarks = [
   "frame-system-benchmarking/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "hex-literal",
+  "ismp-parachain/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-asset-switch/runtime-benchmarks",
   "pallet-assets/runtime-benchmarks",
@@ -165,6 +176,7 @@ runtime-benchmarks = [
   "pallet-sudo/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-tips/runtime-benchmarks",
+  "pallet-token-gateway/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
@@ -199,6 +211,9 @@ std = [
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime?/std",
+  "ismp-parachain-runtime-api/std",
+  "ismp-parachain/std",
+  "ismp/std",
   "kilt-runtime-api-did/std",
   "kilt-runtime-api-dip-provider/std",
   "kilt-runtime-api-public-credentials/std",
@@ -220,6 +235,8 @@ std = [
   "pallet-dip-provider/std",
   "pallet-indices/std",
   "pallet-inflation/std",
+  "pallet-ismp-runtime-api/std",
+  "pallet-ismp/std",
   "pallet-membership/std",
   "pallet-message-queue/std",
   "pallet-migration/std",
@@ -231,6 +248,7 @@ std = [
   "pallet-sudo/std",
   "pallet-timestamp/std",
   "pallet-tips/std",
+  "pallet-token-gateway/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
@@ -276,6 +294,7 @@ try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
+  "ismp-parachain/try-runtime",
   "kilt-support/try-runtime",
   "pallet-asset-switch/try-runtime",
   "pallet-assets/try-runtime",
@@ -290,6 +309,7 @@ try-runtime = [
   "pallet-dip-provider/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-inflation/try-runtime",
+  "pallet-ismp/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-message-queue/try-runtime",
   "pallet-migration/try-runtime",
@@ -301,6 +321,7 @@ try-runtime = [
   "pallet-sudo/try-runtime",
   "pallet-timestamp/try-runtime",
   "pallet-tips/try-runtime",
+  "pallet-token-gateway/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
   "pallet-utility/try-runtime",

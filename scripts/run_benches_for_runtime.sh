@@ -52,6 +52,9 @@ pallets=(
 	pallet-did-lookup
 	# `pallet-web3-names` instances
 	pallet-web3-names
+	# ISMP
+	ismp-parachain
+	pallet-token-gateway
 )
 
 # Add Peregrine-only pallets here!

@@ -157,7 +157,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
-type TechnicalCollective = pallet_collective::Instance2;
+pub(crate) type TechnicalCollective = pallet_collective::Instance2;
 impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type MaxProposalWeight = MaxProposalWeight;
