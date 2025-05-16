@@ -153,7 +153,7 @@ impl pallet_session::Config for Runtime {
 	type ValidatorIdOf = ConvertInto;
 	type ShouldEndSession = FixedLengthSession;
 	type NextSessionRotation = FixedLengthSession;
-	type SessionManager = SessionManager<Runtime>;
+	type SessionManager = SessionManager<Runtime, CollatorMembershipProvider>;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
 	type WeightInfo = weights::pallet_session::WeightInfo<Runtime>;
