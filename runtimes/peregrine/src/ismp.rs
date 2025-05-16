@@ -30,7 +30,7 @@ use crate::{
 
 parameter_types! {
 	// The hyperbridge parachain on Polkadot
-	pub const Coprocessor: Option<StateMachine> = Some(StateMachine::Polkadot(3367));
+	pub const Coprocessor: Option<StateMachine> = Some(StateMachine::Polkadot(4009));
 	pub const HostStateMachine: StateMachine = StateMachine::Polkadot(2086);
 }
 
