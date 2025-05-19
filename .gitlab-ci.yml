@@ -8,7 +8,7 @@ stages:
 
 build-production-wasm:
   image:
-    name: paritytech/srtool:1.75.0
+    name: paritytech/srtool:1.81.0
     entrypoint: [""]
   stage: build
   parallel:
