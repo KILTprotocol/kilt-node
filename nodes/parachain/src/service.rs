@@ -53,6 +53,10 @@ type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::Blake
 
 pub(crate) type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+type HostFunctions = cumulus_client_service::ParachainHostFunctions;
+
+#[cfg(feature = "runtime-benchmarks")]
 type HostFunctions = (
 	cumulus_client_service::ParachainHostFunctions,
 	frame_benchmarking::benchmarking::HostFunctions,
