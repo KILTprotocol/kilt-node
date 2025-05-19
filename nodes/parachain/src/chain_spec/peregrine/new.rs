@@ -19,21 +19,14 @@
 //! KILT chain specification
 
 use kilt_support::traits::InspectMetadata;
-use peregrine_runtime::{
-	MetadataProvider, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SS_58_PREFIX, WASM_BINARY,
-};
+use peregrine_runtime::{genesis_state::KILT_PARA_ID, MetadataProvider, SS_58_PREFIX, WASM_BINARY};
 use sc_service::ChainType;
-use serde_json::to_value;
 
-use crate::chain_spec::{
-	peregrine::{ChainSpec, SAFE_XCM_VERSION},
-	utils::get_properties,
-	Extensions, KILT_PARA_ID,
-};
+use crate::chain_spec::{peregrine::ChainSpec, utils::get_properties, Extensions};
 
 pub(crate) fn generate_chain_spec() -> ChainSpec {
 	let wasm_binary = WASM_BINARY.expect("WASM binary not available");
-	let genesis_config = to_value(generate_genesis_state()).expect("Creating genesis state failed");
+	let genesis_config = peregrine_runtime::genesis_state::production::generate_genesis_state();
 	let currency_symbol = String::from_utf8(MetadataProvider::symbol()).expect("Creating currency symbol failed");
 	let denomination = MetadataProvider::decimals();
 
@@ -54,18 +47,4 @@ pub(crate) fn generate_chain_spec() -> ChainSpec {
 	))
 	.with_genesis_config(genesis_config)
 	.build()
-}
-
-fn generate_genesis_state() -> RuntimeGenesisConfig {
-	RuntimeGenesisConfig {
-		parachain_info: ParachainInfoConfig {
-			parachain_id: KILT_PARA_ID.into(),
-			..Default::default()
-		},
-		polkadot_xcm: PolkadotXcmConfig {
-			safe_xcm_version: Some(SAFE_XCM_VERSION),
-			..Default::default()
-		},
-		..Default::default()
-	}
 }

@@ -97,7 +97,7 @@ impl<T: frame_system::Config> pallet_membership::WeightInfo for WeightInfo<T> {
 	/// Storage: `TipsMembership::Prime` (r:1 w:0)
 	/// Proof: `TipsMembership::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `Ignored`)
 	/// The range of component `m` is `[1, 21]`.
-	fn reset_member(_m: u32, ) -> Weight {
+	fn reset_members(_m: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `187 + m * (32 ±0)`
 		//  Estimated: `990`
@@ -140,7 +140,7 @@ impl<T: frame_system::Config> pallet_membership::WeightInfo for WeightInfo<T> {
 	/// Storage: `TipsMembership::Prime` (r:0 w:1)
 	/// Proof: `TipsMembership::Prime` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `Ignored`)
 	/// The range of component `m` is `[1, 21]`.
-	fn clear_prime(_m: u32, ) -> Weight {
+	fn clear_prime( ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`

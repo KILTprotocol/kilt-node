@@ -86,8 +86,7 @@ fn claiming_successful() {
 
 #[test]
 fn claiming_invalid() {
-	let too_short_web3_names = vec![
-		// Empty name
+	let too_short_web3_names = [
 		BoundedVec::try_from(b"".to_vec()).unwrap(),
 		// Single-char name
 		BoundedVec::try_from(b"1".to_vec()).unwrap(),
@@ -95,8 +94,7 @@ fn claiming_invalid() {
 		BoundedVec::try_from(b"10".to_vec()).unwrap(),
 	];
 
-	let invalid_web3_names = vec![
-		// Not allowed ASCII character name (invalid symbol)
+	let invalid_web3_names = [
 		BoundedVec::try_from(b"10:1".to_vec()).unwrap(),
 		// Not allowed ASCII character name (uppercase letter)
 		BoundedVec::try_from(b"abcdE".to_vec()).unwrap(),

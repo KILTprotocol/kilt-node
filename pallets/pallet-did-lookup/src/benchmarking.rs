@@ -186,7 +186,7 @@ benchmarks_instance_pallet! {
 		let sig = sp_io::crypto::ecdsa_sign_prehashed(
 			KeyTypeId(*b"aura"),
 			&eth_public_key,
-			&Keccak256::digest(wrapped_payload).try_into().unwrap(),
+			&Keccak256::digest(wrapped_payload).into(),
 		).ok_or("Error while building signature.")?;
 
 		make_free_for_did::<T, I>(&caller);

@@ -1,6 +1,6 @@
 use frame_support::{
 	pallet_prelude::*,
-	traits::{Get, OnRuntimeUpgrade},
+	traits::{Get, UncheckedOnRuntimeUpgrade},
 };
 use sp_runtime::traits::Saturating;
 
@@ -98,7 +98,7 @@ fn v0_to_v1<T: Config>(old_value: v0::PoolDetailsOf<T>) -> crate::PoolDetailsOf<
 
 pub struct InnerMigrateV0ToV1<T: crate::Config>(core::marker::PhantomData<T>);
 
-impl<T: crate::Config> OnRuntimeUpgrade for InnerMigrateV0ToV1<T>
+impl<T: crate::Config> UncheckedOnRuntimeUpgrade for InnerMigrateV0ToV1<T>
 where
 	T::PoolId: sp_std::fmt::Debug,
 {

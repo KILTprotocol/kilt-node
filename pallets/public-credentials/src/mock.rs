@@ -303,6 +303,11 @@ pub(crate) mod runtime {
 		type SS58Prefix = ConstU16<38>;
 		type OnSetCode = ();
 		type MaxConsumers = ConstU32<16>;
+		type MultiBlockMigrator = ();
+		type SingleBlockMigrations = ();
+		type PostInherents = ();
+		type PostTransactions = ();
+		type PreInherents = ();
 	}
 
 	impl pallet_balances::Config for Test {

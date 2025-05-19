@@ -115,6 +115,7 @@ fn successful_with_stored_v3() {
 
 #[test]
 fn successful_with_stored_v2() {
+	#[allow(deprecated)]
 	let location = xcm::v2::MultiLocation {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),

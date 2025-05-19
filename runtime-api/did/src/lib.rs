@@ -67,12 +67,12 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 
 sp_api::decl_runtime_apis! {
 	#[api_version(4)]
-	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber: MaxEncodedLen, LinkedResource, RuntimeCall> where
+	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber, LinkedResource, RuntimeCall> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
 		LinkableAccountId: Codec,
-		BlockNumber: Codec,
-		Key: Codec,
+		BlockNumber: Codec + MaxEncodedLen,
+		Key: Codec +Ord,
 		Balance: Codec,
 		LinkedResource: Codec,
 		RuntimeCall: Codec,

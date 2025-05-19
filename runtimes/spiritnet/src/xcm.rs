@@ -48,6 +48,7 @@ use xcm_builder::{
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
 use runtime_common::{
+	constants,
 	xcm_config::{
 		DenyReserveTransferToRelayChain, DenyThenTry, HeapSize, HereLocation, LocalAssetTransactor,
 		LocationToAccountId, MaxAssetsIntoHolding, MaxInstructions, MaxStale, ParentLocation, ParentOrSiblings,
@@ -125,7 +126,7 @@ pub type XcmBarrier = TrailingSetTopicAsId<
 /// 1. Have a fixed weight;
 /// 2. Cannot lead to another call being made;
 /// 3. Have a defined proof size weight, e.g. no unbounded vecs in call
-/// parameters.
+///    parameters.
 pub struct SafeCallFilter;
 impl Contains<RuntimeCall> for SafeCallFilter {
 	fn contains(c: &RuntimeCall) -> bool {
@@ -249,6 +250,10 @@ impl xcm_executor::Config for XcmConfig {
 	type SafeCallFilter = SafeCallFilter;
 	type Aliasers = Nothing;
 	type TransactionalProcessor = FrameTransactionalProcessor;
+	type HrmpChannelAcceptedHandler = ();
+	type HrmpChannelClosingHandler = ();
+	type HrmpNewChannelOpenRequestHandler = ();
+	type XcmRecorder = PolkadotXcm;
 }
 
 /// Allows only local `Signed` origins to be converted into `MultiLocation`s by
@@ -311,6 +316,8 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
 	type MaxInboundSuspended = MaxInboundSuspended;
 	type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
+	type MaxActiveOutboundChannels = ConstU32<{ constants::pallet_xcmp_queue::MAX_ACTIVE_OUTBOUND_CHANNELS }>;
+	type MaxPageSize = ConstU32<{ constants::pallet_xcmp_queue::MAX_PAGE_SIZE }>;
 }
 
 impl pallet_message_queue::Config for Runtime {
@@ -327,4 +334,5 @@ impl pallet_message_queue::Config for Runtime {
 	type HeapSize = HeapSize;
 	type MaxStale = MaxStale;
 	type ServiceWeight = ServiceWeight;
+	type IdleMaxServiceWeight = ();
 }

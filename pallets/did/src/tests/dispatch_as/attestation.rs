@@ -64,8 +64,8 @@ fn successful_key_dispatch_ed25519() {
 	let deposit_owner = ACCOUNT_01;
 	let caller = ACCOUNT_00;
 	let did_identifier = ACCOUNT_02;
-	let verification_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_02.as_ref()));
-	let attestation_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let verification_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_02.as_ref()));
+	let attestation_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_successful_dispatch_with_key(did_identifier, caller, verification_key, attestation_key, deposit_owner);
 }
 
@@ -74,15 +74,15 @@ fn successful_key_dispatch_sr25519() {
 	let deposit_owner = ACCOUNT_01;
 	let caller = ACCOUNT_00;
 	let did_identifier = ACCOUNT_02;
-	let attestation_key = DidVerificationKey::Sr25519(sr25519::Public(*ACCOUNT_00.as_ref()));
-	let verification_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let attestation_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(*ACCOUNT_00.as_ref()));
+	let verification_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_successful_dispatch_with_key(did_identifier, caller, verification_key, attestation_key, deposit_owner);
 }
 
 #[test]
 fn successful_key_dispatch_ecdsa() {
 	// these values where generated with `subkey generate -n kilt --scheme ecdsa`
-	let attestation_key = DidVerificationKey::Ecdsa(ecdsa::Public(hex_literal::hex!(
+	let attestation_key = DidVerificationKey::Ecdsa(ecdsa::Public::from_raw(hex_literal::hex!(
 		"02484c08122e16f2cbce7697b5a9393280ca67dd8b91a907c1bc4b93451ebf4093"
 	)));
 	let caller: AccountIdOf<Test> =
@@ -90,7 +90,7 @@ fn successful_key_dispatch_ecdsa() {
 
 	let deposit_owner = ACCOUNT_01;
 	let did_identifier = ACCOUNT_02;
-	let verification_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let verification_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_successful_dispatch_with_key(did_identifier, caller, verification_key, attestation_key, deposit_owner);
 }
 
@@ -100,7 +100,7 @@ fn successful_key_dispatch_account() {
 	let caller = ACCOUNT_00;
 	let did_identifier = ACCOUNT_02;
 	let attestation_key = DidVerificationKey::Account(ACCOUNT_00);
-	let verification_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let verification_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_successful_dispatch_with_key(did_identifier, caller, verification_key, attestation_key, deposit_owner);
 }
 
@@ -129,34 +129,34 @@ fn blueprint_failed_dispatch_with_key(
 
 #[test]
 fn failed_no_match_ed25519() {
-	let attestation_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_01.as_ref()));
-	let delegation_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
-	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let attestation_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_01.as_ref()));
+	let delegation_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
+	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_failed_dispatch_with_key(ACCOUNT_00, authentication_key, attestation_key, delegation_key);
 }
 
 #[test]
 fn failed_no_match_sr25519() {
-	let attestation_key = DidVerificationKey::Sr25519(sr25519::Public(*ACCOUNT_01.as_ref()));
-	let delegation_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
-	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let attestation_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(*ACCOUNT_01.as_ref()));
+	let delegation_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
+	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_failed_dispatch_with_key(ACCOUNT_00, authentication_key, attestation_key, delegation_key);
 }
 
 #[test]
 fn failed_no_match_ecdsa() {
-	let attestation_key = DidVerificationKey::Ecdsa(ecdsa::Public(hex_literal::hex!(
+	let attestation_key = DidVerificationKey::Ecdsa(ecdsa::Public::from_raw(hex_literal::hex!(
 		"02484c08122e16f2cbce7697b5a9393280ca67dd8b91a907c1bc4b93451ebf4093"
 	)));
-	let delegation_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
-	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let delegation_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
+	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_failed_dispatch_with_key(ACCOUNT_00, authentication_key, attestation_key, delegation_key);
 }
 
 #[test]
 fn failed_no_match_account() {
 	let attestation_key = DidVerificationKey::Account(ACCOUNT_01);
-	let delegation_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
-	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
+	let delegation_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
+	let authentication_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*ACCOUNT_00.as_ref()));
 	blueprint_failed_dispatch_with_key(ACCOUNT_00, authentication_key, attestation_key, delegation_key);
 }

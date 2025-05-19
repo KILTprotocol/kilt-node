@@ -92,8 +92,11 @@ xcm                 = { workspace = true, features = ["std"] }
 frame-benchmarking     = { workspace = true, features = ["std"] }
 frame-benchmarking-cli = { workspace = true }
 
-# Runtime tests
-try-runtime-cli = { workspace = true, optional = true }
+#ISMP
+ismp-parachain-inherent    = { workspace = true }
+ismp-parachain-runtime-api = { workspace = true }
+pallet-ismp-rpc            = { workspace = true }
+pallet-ismp-runtime-api    = { workspace = true }
 
 [features]
 default = []
@@ -118,5 +121,4 @@ try-runtime = [
   "polkadot-service/try-runtime",
   "runtime-common/try-runtime",
   "spiritnet-runtime/try-runtime",
-  "try-runtime-cli",
 ]

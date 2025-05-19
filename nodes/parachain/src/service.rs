@@ -57,7 +57,11 @@ pub(crate) type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExt
 #[cfg(not(feature = "runtime-benchmarks"))]
 type HostFunctions = SubstrateHostFunctions;
 #[cfg(feature = "runtime-benchmarks")]
-type HostFunctions = (SubstrateHostFunctions, frame_benchmarking::benchmarking::HostFunctions);
+type HostFunctions = (
+	SubstrateHostFunctions,
+	cumulus_client_service::storage_proof_size::HostFunctions,
+	frame_benchmarking::benchmarking::HostFunctions,
+);
 
 type ParachainExecutor = WasmExecutor<HostFunctions>;
 
@@ -83,36 +87,6 @@ type PartialComponents<Block, RuntimeApi, Telemetry, TelemetryWorkerHandle> = sc
 		Option<TelemetryWorkerHandle>,
 	),
 >;
-
-/// Native Spiritnet executor instance.
-pub(crate) struct SpiritnetRuntimeExecutor;
-
-impl sc_executor::NativeExecutionDispatch for SpiritnetRuntimeExecutor {
-	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-
-	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		spiritnet_runtime::api::dispatch(method, data)
-	}
-
-	fn native_version() -> sc_executor::NativeVersion {
-		spiritnet_runtime::native_version()
-	}
-}
-
-/// Native Peregrine executor instance.
-pub(crate) struct PeregrineRuntimeExecutor;
-
-impl sc_executor::NativeExecutionDispatch for PeregrineRuntimeExecutor {
-	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-
-	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		peregrine_runtime::api::dispatch(method, data)
-	}
-
-	fn native_version() -> sc_executor::NativeVersion {
-		peregrine_runtime::native_version()
-	}
-}
 
 /// Starts a `ServiceBuilder` for a full service.
 ///
@@ -153,11 +127,11 @@ where
 
 	#[allow(deprecated)]
 	let executor = ParachainExecutor::new(
-		config.wasm_method,
-		config.default_heap_pages,
-		config.max_runtime_instances,
+		config.executor.wasm_method,
+		config.executor.default_heap_pages,
+		config.executor.max_runtime_instances,
 		None,
-		config.runtime_cache_size,
+		config.executor.runtime_cache_size,
 	);
 
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -236,7 +210,9 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
-		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>
+		+ ismp_parachain_runtime_api::IsmpParachainApi<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 	RB: FnOnce(
 			Arc<TFullClient<Block, RuntimeApi, WasmExecutor<HostFunctions>>>,
@@ -275,7 +251,10 @@ where
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
 	let transaction_pool = Arc::clone(&params.transaction_pool);
 	let import_queue_service = params.import_queue.service();
-	let net_config = sc_network::config::FullNetworkConfiguration::new(&parachain_config.network);
+	let net_config = sc_network::config::FullNetworkConfiguration::<_, _, sc_network::NetworkWorker<Block, Hash>>::new(
+		&parachain_config.network,
+		prometheus_registry.clone(),
+	);
 	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
 		cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
 			parachain_config: &parachain_config,
@@ -293,12 +272,13 @@ where
 	let rpc_builder = {
 		let client = Arc::clone(&client);
 		let transaction_pool = Arc::clone(&transaction_pool);
+		let backend = Arc::clone(&backend);
 
-		Box::new(move |deny_unsafe, _| {
+		Box::new(move |_| {
 			let deps = crate::rpc::FullDeps {
 				client: Arc::clone(&client),
 				pool: Arc::clone(&transaction_pool),
-				deny_unsafe,
+				backend: Arc::clone(&backend),
 			};
 
 			crate::rpc::create_full(deps).map_err(Into::into)
@@ -454,7 +434,9 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
-		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>
+		+ ismp_parachain_runtime_api::IsmpParachainApi<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_state_machine::Backend<BlakeTwo256>,
 {
 	start_node_impl::<API, _, _>(
@@ -479,7 +461,7 @@ fn start_consensus<RuntimeApi>(
 	task_manager: &TaskManager,
 	relay_chain_interface: Arc<dyn RelayChainInterface>,
 	transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient<RuntimeApi>>>,
-	sync_oracle: Arc<SyncingService<Block>>,
+	_sync_oracle: Arc<SyncingService<Block>>,
 	keystore: KeystorePtr,
 	relay_chain_slot_duration: Duration,
 	para_id: ParaId,
@@ -500,11 +482,11 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
-		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>,
+		+ cumulus_primitives_aura::AuraUnincludedSegmentApi<Block>
+		+ ismp_parachain_runtime_api::IsmpParachainApi<Block>
+		+ pallet_ismp_runtime_api::IsmpRuntimeApi<Block, sp_core::H256>,
 {
 	use cumulus_client_consensus_aura::collators::lookahead::{self as aura, Params as AuraParams};
-
-	let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
 	let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
 		task_manager.spawn_handle(),
@@ -523,19 +505,29 @@ where
 		Arc::clone(&client),
 	);
 
+	let (client_clone, relay_chain_interface_clone) = (Arc::clone(&client), Arc::clone(&relay_chain_interface));
+
 	let params = AuraParams {
-		create_inherent_data_providers: move |_, ()| async move { Ok(()) },
+		create_inherent_data_providers: move |parent, ()| {
+			let client = Arc::clone(&client_clone);
+			let relay_chain_interface = Arc::clone(&relay_chain_interface_clone);
+			async move {
+				let inherent =
+					ismp_parachain_inherent::ConsensusInherentProvider::create(parent, client, relay_chain_interface)
+						.await?;
+
+				Ok(inherent)
+			}
+		},
 		block_import,
 		para_client: Arc::clone(&client),
 		para_backend: backend,
 		relay_client: relay_chain_interface,
 		code_hash_provider: move |block_hash| client.code_at(block_hash).ok().map(|c| ValidationCode::from(c).hash()),
-		sync_oracle,
 		keystore,
 		collator_key,
 		para_id,
 		overseer_handle,
-		slot_duration,
 		relay_chain_slot_duration,
 		proposer,
 		collator_service,
@@ -543,7 +535,7 @@ where
 		reinitialize: false,
 	};
 
-	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _, _>(params);
+	let fut = aura::run::<Block, sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _, _, _>(params);
 	task_manager
 		.spawn_essential_handle()
 		.spawn(TASK_MANAGER_IDENTIFIER, None, fut);

@@ -75,11 +75,8 @@ fn generate_proof_for_complete_linked_info() {
 		linked_info.linked_accounts.iter(),
 	)
 	.unwrap();
-	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
-		root,
-		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
-	);
+	let cross_chain_proof =
+		DipDidProofWithVerifiedSubjectCommitment::new(root, proof, TimeBoundDidSignature::new(signature.into(), 100));
 
 	let dip_origin_info = cross_chain_proof
 		.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>()
@@ -161,11 +158,8 @@ fn generate_proof_for_complete_linked_info() {
 
 	// 2. Generate a proof without any parts revealed.
 	let CompleteMerkleProof { proof, root } = generate_proof(&linked_info, empty(), false, empty()).unwrap();
-	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
-		root,
-		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
-	);
+	let cross_chain_proof =
+		DipDidProofWithVerifiedSubjectCommitment::new(root, proof, TimeBoundDidSignature::new(signature.into(), 100));
 	// Should verify the merkle proof successfully.
 	assert_ok!(cross_chain_proof.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>());
 
@@ -177,11 +171,8 @@ fn generate_proof_for_complete_linked_info() {
 		empty(),
 	)
 	.unwrap();
-	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
-		root,
-		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
-	);
+	let cross_chain_proof =
+		DipDidProofWithVerifiedSubjectCommitment::new(root, proof, TimeBoundDidSignature::new(signature.into(), 100));
 
 	let dip_origin_info = cross_chain_proof
 		.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>()
@@ -216,22 +207,16 @@ fn generate_proof_for_complete_linked_info() {
 
 	// 4. Generate a proof with only the web3name revealed.
 	let CompleteMerkleProof { proof, root } = generate_proof(&linked_info, empty(), true, empty()).unwrap();
-	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
-		root,
-		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
-	);
+	let cross_chain_proof =
+		DipDidProofWithVerifiedSubjectCommitment::new(root, proof, TimeBoundDidSignature::new(signature.into(), 100));
 	// Should verify the merkle proof successfully.
 	assert_ok!(cross_chain_proof.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>());
 
 	// 5. Generate a proof with only one linked account revealed.
 	let CompleteMerkleProof { proof, root } =
 		generate_proof(&linked_info, empty(), true, once(&linked_info.linked_accounts[0])).unwrap();
-	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
-		root,
-		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
-	);
+	let cross_chain_proof =
+		DipDidProofWithVerifiedSubjectCommitment::new(root, proof, TimeBoundDidSignature::new(signature.into(), 100));
 	// Should verify the merkle proof successfully.
 	assert_ok!(cross_chain_proof.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>());
 
@@ -244,11 +229,8 @@ fn generate_proof_for_complete_linked_info() {
 		empty(),
 	)
 	.unwrap();
-	let cross_chain_proof = DipDidProofWithVerifiedSubjectCommitment::new(
-		root,
-		proof,
-		TimeBoundDidSignature::new(signature.clone().into(), 100),
-	);
+	let cross_chain_proof =
+		DipDidProofWithVerifiedSubjectCommitment::new(root, proof, TimeBoundDidSignature::new(signature.into(), 100));
 	let dip_origin_info = cross_chain_proof
 		.verify_dip_proof::<Hasher, MAX_LEAVES_REVEALED>()
 		.and_then(|r| r.verify_signature_time(&50))

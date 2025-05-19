@@ -18,10 +18,10 @@
 
 //! Unit testing
 
-use frame_support::{assert_noop, assert_ok, storage::bounded_btree_map::BoundedBTreeMap};
+use frame_support::{assert_noop, assert_ok, storage::bounded_btree_map::BoundedBTreeMap, traits::tokens::IdAmount};
 use kilt_runtime_api_staking::StakingRates;
 use pallet_authorship::EventHandler;
-use pallet_balances::{Freezes, IdAmount};
+use pallet_balances::Freezes;
 
 use sp_runtime::{traits::Zero, Perquintill};
 

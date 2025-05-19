@@ -367,6 +367,7 @@ fn successful_on_stored_fungible_xcm_fee_asset_v3_with_input_fungible_and_non_fu
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_v2_with_input_fungible() {
+	#[allow(deprecated)]
 	let location = xcm::v2::MultiLocation {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
@@ -404,6 +405,7 @@ fn successful_on_stored_fungible_xcm_fee_asset_v2_with_input_fungible() {
 
 #[test]
 fn fails_on_stored_fungible_xcm_fee_asset_v2_with_input_non_fungible() {
+	#[allow(deprecated)]
 	let location = xcm::v2::MultiLocation {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
@@ -442,6 +444,7 @@ fn fails_on_stored_fungible_xcm_fee_asset_v2_with_input_non_fungible() {
 
 #[test]
 fn successful_on_stored_fungible_xcm_fee_asset_v2_with_input_fungible_and_non_fungible() {
+	#[allow(deprecated)]
 	let location = xcm::v2::MultiLocation {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
@@ -737,6 +740,7 @@ fn skips_on_stored_non_fungible_xcm_fee_asset_v3_with_fungible_input() {
 
 #[test]
 fn skips_on_stored_non_fungible_xcm_fee_asset_v2_with_fungible_input() {
+	#[allow(deprecated)]
 	let location = xcm::v2::MultiLocation {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
@@ -748,6 +752,7 @@ fn skips_on_stored_non_fungible_xcm_fee_asset_v2_with_fungible_input() {
 			SwitchPairStatus::Running,
 		);
 		// Set XCM fee asset to the XCM version 2.
+		#[allow(deprecated)]
 		let non_fungible_remote_xcm_fee_v2: xcm::v2::MultiAsset =
 			xcm::v2::MultiAsset::try_from(new_switch_pair_info.remote_xcm_fee)
 				.map(|asset| xcm::v2::MultiAsset {
@@ -781,6 +786,7 @@ fn skips_on_stored_non_fungible_xcm_fee_asset_v2_with_fungible_input() {
 
 #[test]
 fn skips_on_stored_non_fungible_xcm_fee_asset_v2_with_non_fungible_input() {
+	#[allow(deprecated)]
 	let location = xcm::v2::MultiLocation {
 		parents: 1,
 		interior: xcm::v2::Junctions::X1(xcm::v2::Junction::Parachain(1_000)),
@@ -792,6 +798,7 @@ fn skips_on_stored_non_fungible_xcm_fee_asset_v2_with_non_fungible_input() {
 			SwitchPairStatus::Running,
 		);
 		// Set XCM fee asset to the XCM version 2.
+		#[allow(deprecated)]
 		let non_fungible_remote_xcm_fee_v2: xcm::v2::MultiAsset =
 			xcm::v2::MultiAsset::try_from(new_switch_pair_info.remote_xcm_fee)
 				.map(|asset| xcm::v2::MultiAsset {

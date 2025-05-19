@@ -29,6 +29,7 @@ use public_credentials::CredentialEntry;
 use crate::{authorization::AuthorizationId, AccountId, Balance, BlockNumber, Hash};
 
 #[cfg(feature = "runtime-benchmarks")]
+#[allow(unused_imports)]
 pub use benchmarks::*;
 
 /// Thin wrapper around the `AssetDid` type, that implements the required

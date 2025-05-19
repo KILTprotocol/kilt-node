@@ -47,7 +47,7 @@ where
 	Beneficiary2: OnUnbalanced<CreditOf<R>>,
 	Ratio: Get<(u32, u32)>,
 {
-	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = CreditOf<R>>) {
+	fn on_unbalanceds(mut fees_then_tips: impl Iterator<Item = CreditOf<R>>) {
 		let ratio = Ratio::get();
 		if let Some(fees) = fees_then_tips.next() {
 			let mut split = fees.ration(ratio.0, ratio.1);
@@ -220,6 +220,11 @@ mod tests {
 		type SS58Prefix = ();
 		type OnSetCode = ();
 		type MaxConsumers = frame_support::traits::ConstU32<16>;
+		type MultiBlockMigrator = ();
+		type SingleBlockMigrations = ();
+		type PostInherents = ();
+		type PostTransactions = ();
+		type PreInherents = ();
 	}
 
 	impl pallet_balances::Config for Test {

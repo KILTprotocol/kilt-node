@@ -35,7 +35,7 @@ pub struct ProviderHeadStateProof<RelayBlockNumber> {
 }
 
 impl<RelayBlockNumber> ProviderHeadStateProof<RelayBlockNumber> {
-	pub fn new(relay_block_number: RelayBlockNumber, proof: Vec<Vec<u8>>) -> Self {
+	pub const fn new(relay_block_number: RelayBlockNumber, proof: Vec<Vec<u8>>) -> Self {
 		Self {
 			proof,
 			relay_block_number,
@@ -49,7 +49,7 @@ impl<RelayBlockNumber> ProviderHeadStateProof<RelayBlockNumber> {
 pub struct DipCommitmentStateProof(pub(crate) Vec<Vec<u8>>);
 
 impl DipCommitmentStateProof {
-	pub fn new(proof: Vec<Vec<u8>>) -> Self {
+	pub const fn new(proof: Vec<Vec<u8>>) -> Self {
 		Self(proof)
 	}
 }
@@ -86,7 +86,7 @@ pub struct DidMerkleProof<
 impl<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkableAccountId>
 	DidMerkleProof<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkableAccountId>
 {
-	pub fn new(
+	pub const fn new(
 		blinded: Vec<Vec<u8>>,
 		revealed: Vec<
 			RevealedDidMerkleProofLeaf<
@@ -160,7 +160,7 @@ where
 {
 	fn default() -> Self {
 		Self {
-			signature: DidSignature::Ed25519(sp_core::ed25519::Signature([0u8; 64])),
+			signature: DidSignature::Ed25519(sp_core::ed25519::Signature::from_raw([0u8; 64])),
 			valid_until: BlockNumber::default(),
 		}
 	}
