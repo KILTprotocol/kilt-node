@@ -39,7 +39,6 @@ use sc_network_sync::SyncingService;
 use sc_service::{Configuration, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
 use sp_api::ConstructRuntimeApi;
-use sp_io::SubstrateHostFunctions;
 use sp_keystore::KeystorePtr;
 use sp_runtime::traits::BlakeTwo256;
 use std::{sync::Arc, time::Duration};
@@ -55,11 +54,11 @@ type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::Blake
 pub(crate) type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
-type HostFunctions = SubstrateHostFunctions;
+type HostFunctions = cumulus_client_service::ParachainHostFunctions;
+
 #[cfg(feature = "runtime-benchmarks")]
 type HostFunctions = (
-	SubstrateHostFunctions,
-	cumulus_client_service::storage_proof_size::HostFunctions,
+	cumulus_client_service::ParachainHostFunctions,
 	frame_benchmarking::benchmarking::HostFunctions,
 );
 
