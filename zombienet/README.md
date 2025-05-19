@@ -51,5 +51,5 @@ In case the relaychain version should be updated to reflect what is deployed on 
 1. Head to the [paseo-network/runtimes repo](https://github.com/paseo-network/runtimes)
 2. Checkout the right tag corresponding to the new version to deploy in the Zombienet environment, e.g., [`v1.3.1`](https://github.com/paseo-network/runtimes/tree/v1.3.1)
 3. Run `cargo run --release --features fast-runtime -p chain-spec-generator -- paseo-local > out.json`, which saves the new chainspec into a temporary `out.json` file
-4. Move the file into `runtimes/peregrine` and rename it to `paseo-local-fast-<version_tag>-<commit_sha>.json`, e.g., `polkadot-local-fast-v1.3.1-e1fd37c`
+4. Move the file into `runtimes/peregrine` and rename it to `paseo-local-fast-<version_tag>-<commit_sha>.json`, e.g., `paseo-local-fast-v1.3.1-e1fd37c`
 5. Update the `peregrine/.env` file to set the right Docker image tag for the `RELAY_IMAGE` variable
