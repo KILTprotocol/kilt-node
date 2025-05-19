@@ -12,7 +12,7 @@ settings:
 
 relaychain:
     chain: paseo-local
-    chain_spec_path: runtimes/peregrine/paseo-local-fast-v1.4.3-3de4702.json
+    chain_spec_path: runtimes/peregrine/paseo-local-fast-v1.3.1-e1fd37c.json
     default_image: "{{RELAY_IMAGE}}"
     nodes:
         - name: "relay-alice"
