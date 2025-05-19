@@ -55,7 +55,11 @@ type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::Blake
 pub(crate) type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
-type HostFunctions = SubstrateHostFunctions;
+type HostFunctions = (
+	sp_io::SubstrateHostFunctions,
+	cumulus_client_service::storage_proof_size::HostFunctions,
+);
+
 #[cfg(feature = "runtime-benchmarks")]
 type HostFunctions = (
 	SubstrateHostFunctions,
