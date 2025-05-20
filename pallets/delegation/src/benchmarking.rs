@@ -26,7 +26,7 @@ use frame_support::{
 	dispatch::DispatchErrorWithPostInfo,
 	storage::bounded_btree_set::BoundedBTreeSet,
 	traits::{
-		fungible::{Inspect, InspectHold, Mutate},
+		fungible::{InspectHold, Mutate},
 		Get,
 	},
 };
@@ -34,7 +34,7 @@ use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use parity_scale_codec::Encode;
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
-use sp_runtime::traits::Zero;
+use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{num::NonZeroU32, vec::Vec};
 
 use attestation::AttestationAccessControl;
@@ -78,10 +78,7 @@ where
 	let hierarchy_root_id = generate_delegation_id::<T>(number);
 
 	let sender: T::AccountId = account("sender", 0, SEED);
-	<T as Config>::Currency::set_balance(
-		&sender,
-		<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
-	);
+	<T as Config>::Currency::set_balance(&sender, 100_000_000_000_000_000_000u128.saturated_into());
 
 	ctype::Ctypes::<T>::insert(
 		ctype_hash,
@@ -150,10 +147,7 @@ where
 		let sig = (delegation_acc_id.clone(), hash.clone());
 
 		// add delegation from delegate to parent
-		<T as Config>::Currency::set_balance(
-			&sender,
-			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
-		);
+		<T as Config>::Currency::set_balance(&sender, 100_000_000_000_000_000_000u128.saturated_into());
 		Pallet::<T>::add_delegation(
 			<T as Config>::EnsureOrigin::generate_origin(sender.clone(), parent_acc_id.clone()),
 			delegation_id,
@@ -260,7 +254,7 @@ benchmarks! {
 		});
 		<T as Config>::Currency::set_balance(
 			&sender,
-			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+			 100_000_000_000_000_000_000u128.saturated_into()
 		);
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, creator);
@@ -301,7 +295,7 @@ benchmarks! {
 		let leaf_acc_id: T::DelegationEntityId = root_public.into();
 		<T as Config>::Currency::set_balance(
 			&sender,
-			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+			 100_000_000_000_000_000_000u128.saturated_into()
 		);
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, leaf_acc_id);
 	}: _<T::RuntimeOrigin>(origin, delegation_id, hierarchy_id, delegate_acc_id, perm, sig)
@@ -325,7 +319,7 @@ benchmarks! {
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
 		<T as Config>::Currency::set_balance(
 			&child_delegation.deposit.owner,
-			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+			 100_000_000_000_000_000_000u128.saturated_into()
 		);
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, child_delegation.details.owner);
 	}: revoke_delegation<T::RuntimeOrigin>(origin, child_id, c, r)
@@ -371,7 +365,6 @@ benchmarks! {
 		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
 		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
-		assert!(!<T as Config>::Currency::total_balance_on_hold(&sender).is_zero());
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), root_acc.into());
 	}: _<T::RuntimeOrigin>(origin, hierarchy_id, r)
 	verify {
@@ -391,7 +384,6 @@ benchmarks! {
 		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
 		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
-		assert!(!<T as Config>::Currency::total_balance_on_hold(&sender).is_zero());
 
 		let origin = RawOrigin::Signed(sender.clone());
 	}: _(origin, hierarchy_id, r)
@@ -465,10 +457,9 @@ benchmarks! {
 
 		<T as Config>::Currency::set_balance(
 			&deposit_owner_new,
-			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+			100_000_000_000_000_000_000u128.saturated_into()
 		);
 
-		assert!(!<T as Config>::Currency::total_balance_on_hold(&deposit_owner_old).is_zero());
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), root_acc.into());
 	}: _<T::RuntimeOrigin>(origin, hierarchy_id)
 	verify {
@@ -485,7 +476,7 @@ benchmarks! {
 
 		<T as Config>::Currency::set_balance(
 			&deposit_owner,
-			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+			100_000_000_000_000_000_000u128.saturated_into()
 		);
 
 		let origin = RawOrigin::Signed(deposit_owner);

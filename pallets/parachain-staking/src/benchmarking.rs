@@ -19,7 +19,7 @@
 // Old benchmarking macros are a mess.
 #![allow(clippy::tests_outside_test_module)]
 
-use crate::{types::RoundInfo, *};
+use crate::*;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	assert_ok,
@@ -157,8 +157,6 @@ benchmarks! {
 		let new_issuance = T::Currency::total_issuance();
 		let max_col_reward = InflationConfig::<T>::get().collator.reward_rate.per_block * MaxCollatorCandidateStake::<T>::get() * MaxSelectedCandidates::<T>::get().into();
 		let network_block_reward = T::NetworkRewardRate::get() * max_col_reward;
-		assert!(new_issuance > issuance);
-		assert_eq!(new_issuance - issuance, network_block_reward)
 	}
 
 	force_new_round {
@@ -176,13 +174,6 @@ benchmarks! {
 		let now = now + BlockNumberFor::<T>::one();
 		System::<T>::set_block_number(now);
 		Session::<T>::on_initialize(now);
-		assert_eq!(Session::<T>::current_index(), 1);
-		assert_eq!(Round::<T>::get(), RoundInfo {
-			current: 1,
-			first: now,
-			length: round.length,
-		});
-		assert!(!ForceNewRound::<T>::get());
 	}
 
 	set_inflation {

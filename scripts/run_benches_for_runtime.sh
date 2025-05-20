@@ -21,7 +21,6 @@ pallets=(
 	pallet-balances
 	pallet-democracy
 	pallet-indices
-	pallet-inflation
 	pallet-preimage
 	pallet-proxy
 	pallet-scheduler

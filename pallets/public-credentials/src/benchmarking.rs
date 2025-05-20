@@ -27,6 +27,7 @@ use frame_support::{
 	BoundedVec,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
+use sp_runtime::SaturatedConversion;
 use sp_std::{boxed::Box, vec, vec::Vec};
 
 use ctype::CtypeEntryOf;
@@ -50,10 +51,7 @@ where
 	<T as Config>::Currency: Mutate<T::AccountId>,
 {
 	// Has to be more than the deposit, we do 3x just to be safe
-	CurrencyOf::<T>::set_balance(
-		acc,
-		<T as Config>::Deposit::get() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
-	);
+	CurrencyOf::<T>::set_balance(acc, 1_000_000_000_000_000_000u128.saturated_into());
 }
 
 benchmarks! {
