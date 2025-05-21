@@ -49,7 +49,7 @@ pub trait WeightInfo {
 	fn create_pool_polynomial(c: u32, ) -> Weight;
 	fn create_pool_square_root(c: u32, ) -> Weight;
 	fn create_pool_lmsr(c: u32, ) -> Weight;
-	fn reset_team() -> Weight;
+	fn reset_team(c: u32, ) -> Weight;
 	fn reset_manager() -> Weight;
 	fn set_lock() -> Weight;
 	fn unlock() -> Weight;
@@ -161,7 +161,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: `BondedCoins::Pools` (`max_values`: None, `max_size`: Some(365), added: 2840, mode: `MaxEncodedLen`)
 	/// Storage: `BondedCurrencies::Asset` (r:1 w:1)
 	/// Proof: `BondedCurrencies::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
-	fn reset_team() -> Weight {
+	fn reset_team(_c : u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `619`
 		//  Estimated: `3830`
@@ -567,7 +567,7 @@ impl WeightInfo for () {
 	/// Proof: `BondedCoins::Pools` (`max_values`: None, `max_size`: Some(365), added: 2840, mode: `MaxEncodedLen`)
 	/// Storage: `BondedCurrencies::Asset` (r:1 w:1)
 	/// Proof: `BondedCurrencies::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
-	fn reset_team() -> Weight {
+	fn reset_team(_c : u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `619`
 		//  Estimated: `3830`

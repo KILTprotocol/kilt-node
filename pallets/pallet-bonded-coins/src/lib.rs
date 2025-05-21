@@ -514,7 +514,7 @@ pub mod pallet {
 		///   the pool is larger than `currency_count`.
 		/// - Other errors depending on the types in the config.
 		#[pallet::call_index(1)]
-		#[pallet::weight(T::WeightInfo::reset_team())]
+		#[pallet::weight(T::WeightInfo::reset_team(*currency_count))]
 		pub fn reset_team(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
