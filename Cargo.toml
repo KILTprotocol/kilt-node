@@ -21,7 +21,7 @@ homepage      = "https://kilt.io/"
 license-file  = "LICENSE"
 readme        = "README.md"
 repository    = "https://github.com/KILTprotocol/kilt-node"
-version       = "1.16.0"
+version       = "1.16.1"
 
 [workspace.dependencies]
 # Build deps
@@ -246,7 +246,7 @@ substrate-build-script-utils            = { git = "https://github.com/paritytech
 substrate-frame-rpc-system              = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2409" }
 substrate-prometheus-endpoint           = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2409" }
 
-# ISMP 
+# ISMP
 ismp                       = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 ismp-parachain             = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
 ismp-parachain-inherent    = { git = "https://github.com/polytope-labs/hyperbridge", branch = "polkadot-stable2409", default-features = false }
