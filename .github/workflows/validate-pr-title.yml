@@ -6,6 +6,7 @@ on:
       - develop
       - master
       - 'refs/tags/[0-9]+.[0-9]+.[0-9]+*'
+      - ag_fix_ci_bencher
     types:
       - opened
       - edited
