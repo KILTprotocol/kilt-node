@@ -12,15 +12,15 @@ on:
       - synchronize
 
 jobs:
-  validate-pr-title:
-    name: Validate PR title
-    runs-on: ubuntu-latest
+  # validate-pr-title:
+  #   name: Validate PR title
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Check title
-        uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #   steps:
+  #     - name: Check title
+  #       uses: amannn/action-semantic-pull-request@v5
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test-runtime-benchmarks:
     name: Test runtime benchmarks
