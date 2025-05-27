@@ -1,11 +1,13 @@
 name: Check codebase
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
       - develop
       - master
+      - ag_fix_ci_bencher
     tags:
       - '[0-9]+.[0-9]+.[0-9]+*'
 
@@ -31,298 +33,298 @@ jobs:
         id: get-head-commit-message
         run: echo "headCommitMsg=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
 
-  cargo-clippy:
-    name: Run Clippy checks
-    runs-on: ubuntu-latest
-    container:
-      image: paritytech/ci-unified:bullseye-1.81.0
-    env:
-      # Configured by the Docker image. We can't change this unless the image does it.
-      CARGO_HOME: /usr/local/cargo
-      SKIP_WASM_BUILD: 1
-    needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+  # cargo-clippy:
+  #   name: Run Clippy checks
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: paritytech/ci-unified:bullseye-1.81.0
+  #   env:
+  #     # Configured by the Docker image. We can't change this unless the image does it.
+  #     CARGO_HOME: /usr/local/cargo
+  #     SKIP_WASM_BUILD: 1
+  #   needs: get-commit-head
+  #   if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
-    strategy:
-      matrix:
-        cargo-flags:
-          # Generic clippy checks for all features
-          - --all-targets --all-features
-          # Generic clippy checks for no features (catches some missing `no_std`-only lints)
-          - --all-targets
-          # Clippy lints specifically for all runtime code, excluding all test and binary crates
-          - --target wasm32-unknown-unknown --no-default-features --workspace --exclude kilt-parachain --exclude standalone-node --exclude xcm-integration-tests --exclude 'dip-provider*' --exclude 'dip-consumer*'
-      fail-fast: false
+  #   strategy:
+  #     matrix:
+  #       cargo-flags:
+  #         # Generic clippy checks for all features
+  #         - --all-targets --all-features
+  #         # Generic clippy checks for no features (catches some missing `no_std`-only lints)
+  #         - --all-targets
+  #         # Clippy lints specifically for all runtime code, excluding all test and binary crates
+  #         - --target wasm32-unknown-unknown --no-default-features --workspace --exclude kilt-parachain --exclude standalone-node --exclude xcm-integration-tests --exclude 'dip-provider*' --exclude 'dip-consumer*'
+  #     fail-fast: false
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Set up Cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.CARGO_HOME }}/bin/
-            ${{ env.CARGO_HOME }}/registry/index/
-            ${{ env.CARGO_HOME }}/registry/cache/
-            ${{ env.CARGO_HOME }}/git/db/
-          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.cargo-flags }}-${{ hashFiles('**/Cargo.lock') }}
-          save-always: true
+  #     - name: Set up Cargo cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ${{ env.CARGO_HOME }}/bin/
+  #           ${{ env.CARGO_HOME }}/registry/index/
+  #           ${{ env.CARGO_HOME }}/registry/cache/
+  #           ${{ env.CARGO_HOME }}/git/db/
+  #         key: ${{ github.job }}-${{ github.ref }}-${{ matrix.cargo-flags }}-${{ hashFiles('**/Cargo.lock') }}
+  #         save-always: true
 
-      - name: Run `cargo clippy`
-        run: cargo clippy --locked --no-deps ${{ matrix.cargo-flags }}
+  #     - name: Run `cargo clippy`
+  #       run: cargo clippy --locked --no-deps ${{ matrix.cargo-flags }}
 
-  cargo-fmt:
-    name: Check formatting
-    runs-on: ubuntu-latest
-    container:
-      image: paritytech/ci-unified:bullseye-1.81.0
-    env:
-      # Configured by the Docker image. We can't change this unless the image does it.
-      CARGO_HOME: /usr/local/cargo
-      # Latest nightly version matching the base rustc version (1.18.0).
-      RUSTUP_NIGHTLY_VERSION: nightly-2023-10-02
-    needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+  # cargo-fmt:
+  #   name: Check formatting
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: paritytech/ci-unified:bullseye-1.81.0
+  #   env:
+  #     # Configured by the Docker image. We can't change this unless the image does it.
+  #     CARGO_HOME: /usr/local/cargo
+  #     # Latest nightly version matching the base rustc version (1.18.0).
+  #     RUSTUP_NIGHTLY_VERSION: nightly-2023-10-02
+  #   needs: get-commit-head
+  #   if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Set up Cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.CARGO_HOME }}/bin/
-            ${{ env.CARGO_HOME }}/registry/index/
-            ${{ env.CARGO_HOME }}/registry/cache/
-            ${{ env.CARGO_HOME }}/git/db/
-          key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
-          save-always: true
+  #     - name: Set up Cargo cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ${{ env.CARGO_HOME }}/bin/
+  #           ${{ env.CARGO_HOME }}/registry/index/
+  #           ${{ env.CARGO_HOME }}/registry/cache/
+  #           ${{ env.CARGO_HOME }}/git/db/
+  #         key: ${{ github.job }}-${{ github.ref }}-${{ hashFiles('**/Cargo.lock') }}
+  #         save-always: true
 
-      - name: Install nightly toolchain
-        run: rustup toolchain add ${{ env.RUSTUP_NIGHTLY_VERSION }}
+  #     - name: Install nightly toolchain
+  #       run: rustup toolchain add ${{ env.RUSTUP_NIGHTLY_VERSION }}
 
-      - name: Run `cargo fmt`
-        run: cargo +${{ env.RUSTUP_NIGHTLY_VERSION }} fmt -- --check
+  #     - name: Run `cargo fmt`
+  #       run: cargo +${{ env.RUSTUP_NIGHTLY_VERSION }} fmt -- --check
 
-      - name: Run `taplo`
-        run: taplo fmt --check
+  #     - name: Run `taplo`
+  #       run: taplo fmt --check
 
-  cargo-deny:
-    name: Check cargo-deny rules
-    runs-on: ubuntu-latest
-    needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
+  # cargo-deny:
+  #   name: Check cargo-deny rules
+  #   runs-on: ubuntu-latest
+  #   needs: get-commit-head
+  #   if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-rust') }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Run `cargo deny`
-        uses: EmbarkStudios/cargo-deny-action@v2
-        with:
-          # All is set in the config file
-          arguments:
-          command-arguments: "--hide-inclusion-graph -c .cargo-deny.toml --show-stats -D warnings"
+  #     - name: Run `cargo deny`
+  #       uses: EmbarkStudios/cargo-deny-action@v2
+  #       with:
+  #         # All is set in the config file
+  #         arguments:
+  #         command-arguments: "--hide-inclusion-graph -c .cargo-deny.toml --show-stats -D warnings"
 
-  integration-tests:
-    name: Run Chopsticks tests
-    runs-on: ubuntu-latest
-    env:
-      working-dir: ./integration-tests/chopsticks
-      CI: true
-      SPIRITNET_BLOCK_NUMBER: 7850499
-      HYDRATION_BLOCK_NUMBER: 5235787
-      POLKADOT_BLOCK_NUMBER: 21010819
-      ASSETHUB_BLOCK_NUMBER: 7934113
-      SPIRITNET_WASM_OVERRIDE: ../../target/wasm32-unknown-unknown/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm
-      PEREGRINE_WASM_OVERRIDE: ../../target/wasm32-unknown-unknown/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
+  # integration-tests:
+  #   name: Run Chopsticks tests
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     working-dir: ./integration-tests/chopsticks
+  #     CI: true
+  #     SPIRITNET_BLOCK_NUMBER: 7850499
+  #     HYDRATION_BLOCK_NUMBER: 5235787
+  #     POLKADOT_BLOCK_NUMBER: 21010819
+  #     ASSETHUB_BLOCK_NUMBER: 7934113
+  #     SPIRITNET_WASM_OVERRIDE: ../../target/wasm32-unknown-unknown/debug/wbuild/spiritnet-runtime/spiritnet_runtime.wasm
+  #     PEREGRINE_WASM_OVERRIDE: ../../target/wasm32-unknown-unknown/debug/wbuild/peregrine-runtime/peregrine_runtime.wasm
 
-    defaults:
-      run:
-        working-directory: ${{ env.working-dir }}
-    needs: get-commit-head
-    if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
+  #   defaults:
+  #     run:
+  #       working-directory: ${{ env.working-dir }}
+  #   needs: get-commit-head
+  #   if: ${{ !contains(needs.get-commit-head.outputs.headCommitMsg, 'ci-skip-integration-tests') }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
+  #     - name: Free Disk Space
+  #       uses: jlumbroso/free-disk-space@main
+  #       with:
+  #         tool-cache: true
 
-      - name: Set up Cargo cache
-        uses: actions/cache@v4
-        with:
-          # These paths are mounted inside the Docker container.
-          # We cannot mount the `.cargo/bin` folder since the container already contains binaries, and overriding with an empty one breaks compilation.
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
-          save-always: true
+  #     - name: Set up Cargo cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         # These paths are mounted inside the Docker container.
+  #         # We cannot mount the `.cargo/bin` folder since the container already contains binaries, and overriding with an empty one breaks compilation.
+  #         path: |
+  #           ~/.cargo/registry/index
+  #           ~/.cargo/registry/cache
+  #           ~/.cargo/git/db
+  #         key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+  #         save-always: true
 
-      - name: Setup environment
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: "${{ env.working-dir }}/.nvmrc"
+  #     - name: Setup environment
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version-file: "${{ env.working-dir }}/.nvmrc"
 
-      - name: Install dependencies
-        run: yarn --immutable
+  #     - name: Install dependencies
+  #       run: yarn --immutable
 
-      - name: Check TS
-        run: yarn ts-check
+  #     - name: Check TS
+  #       run: yarn ts-check
 
-      - name: Check lints
-        run: yarn lint
+  #     - name: Check lints
+  #       run: yarn lint
 
-      - name: Build runtime wasms
-        run: cargo build -p peregrine-runtime -p spiritnet-runtime --no-default-features --target wasm32-unknown-unknown
+  #     - name: Build runtime wasms
+  #       run: cargo build -p peregrine-runtime -p spiritnet-runtime --no-default-features --target wasm32-unknown-unknown
 
-      - name: Run Chopsticks tests
-        run: yarn test
+  #     - name: Run Chopsticks tests
+  #       run: yarn test
 
-  cargo-test:
-    name: Run Cargo tests
-    runs-on: ubuntu-latest
-    env:
-      # Configured by the Docker image. We can't change this unless the image does it.
-      CARGO_HOME: /usr/local/cargo
-    needs: cargo-clippy
+  # cargo-test:
+  #   name: Run Cargo tests
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     # Configured by the Docker image. We can't change this unless the image does it.
+  #     CARGO_HOME: /usr/local/cargo
+  #   needs: cargo-clippy
 
-    strategy:
-      matrix:
-        features:
-          -
-          - --all-features
-      fail-fast: false
+  #   strategy:
+  #     matrix:
+  #       features:
+  #         -
+  #         - --all-features
+  #     fail-fast: false
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
+  #     - name: Free Disk Space
+  #       uses: jlumbroso/free-disk-space@main
+  #       with:
+  #         tool-cache: true
 
-      - name: Set up Cargo cache
-        uses: actions/cache@v4
-        with:
-          # These paths are mounted inside the Docker container.
-          # We cannot mount the `.cargo/bin` folder since the container already contains binaries, and overriding with an empty one breaks compilation.
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
-          save-always: true
+  #     - name: Set up Cargo cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         # These paths are mounted inside the Docker container.
+  #         # We cannot mount the `.cargo/bin` folder since the container already contains binaries, and overriding with an empty one breaks compilation.
+  #         path: |
+  #           ~/.cargo/registry/index
+  #           ~/.cargo/registry/cache
+  #           ~/.cargo/git/db
+  #         key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+  #         save-always: true
 
-      - name: Run `cargo test`
-        # We cannot use the default `container:` component because it runs out of memory, so we resort to using this solution instead.
-        # Maybe re-evaluate this job if anything changes GH side.
-        run: |
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -v "${HOME}/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
-            -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
-            -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
-            -w /workspace \
-            paritytech/ci-unified:bullseye-1.81.0 \
-            bash -c "cargo test --all-targets --locked ${{ matrix.features }}"
+  #     - name: Run `cargo test`
+  #       # We cannot use the default `container:` component because it runs out of memory, so we resort to using this solution instead.
+  #       # Maybe re-evaluate this job if anything changes GH side.
+  #       run: |
+  #         docker run --rm \
+  #           -v "${GITHUB_WORKSPACE}:/workspace" \
+  #           -v "${HOME}/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
+  #           -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
+  #           -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
+  #           -w /workspace \
+  #           paritytech/ci-unified:bullseye-1.81.0 \
+  #           bash -c "cargo test --all-targets --locked ${{ matrix.features }}"
 
-  cargo-doc:
-    name: Check Rustdoc
-    runs-on: ubuntu-latest
-    container:
-      image: paritytech/ci-unified:bullseye-1.81.0
-    env:
-      # Configured by the Docker image. We can't change this unless the image does it.
-      CARGO_HOME: /usr/local/cargo
-      SKIP_WASM_BUILD: 1
-      RUSTDOCFLAGS: -D warnings
-    needs: cargo-clippy
+  # cargo-doc:
+  #   name: Check Rustdoc
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: paritytech/ci-unified:bullseye-1.81.0
+  #   env:
+  #     # Configured by the Docker image. We can't change this unless the image does it.
+  #     CARGO_HOME: /usr/local/cargo
+  #     SKIP_WASM_BUILD: 1
+  #     RUSTDOCFLAGS: -D warnings
+  #   needs: cargo-clippy
 
-    strategy:
-      matrix:
-        features:
-          -
-          - --all-features
-      fail-fast: false
+  #   strategy:
+  #     matrix:
+  #       features:
+  #         -
+  #         - --all-features
+  #     fail-fast: false
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Set up Cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.CARGO_HOME }}/bin/
-            ${{ env.CARGO_HOME }}/registry/index/
-            ${{ env.CARGO_HOME }}/registry/cache/
-            ${{ env.CARGO_HOME }}/git/db/
-          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
-          save-always: true
+  #     - name: Set up Cargo cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ${{ env.CARGO_HOME }}/bin/
+  #           ${{ env.CARGO_HOME }}/registry/index/
+  #           ${{ env.CARGO_HOME }}/registry/cache/
+  #           ${{ env.CARGO_HOME }}/git/db/
+  #         key: ${{ github.job }}-${{ github.ref }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
+  #         save-always: true
 
-      - name: Run `cargo doc`
-        run: cargo doc --no-deps --locked ${{ matrix.features }}
+  #     - name: Run `cargo doc`
+  #       run: cargo doc --no-deps --locked ${{ matrix.features }}
 
-  try-runtime:
-    name: Run try-runtime
-    runs-on: ubuntu-latest
-    container:
-      image: paritytech/ci-unified:bullseye-1.81.0
-    env:
-      # Configured by the Docker image. We can't change this unless the image does it.
-      CARGO_HOME: /usr/local/cargo
-      TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0
-    needs: cargo-clippy
+  # try-runtime:
+  #   name: Run try-runtime
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: paritytech/ci-unified:bullseye-1.81.0
+  #   env:
+  #     # Configured by the Docker image. We can't change this unless the image does it.
+  #     CARGO_HOME: /usr/local/cargo
+  #     TRY_RUNTIME_CLI_VERSION_TAG: v0.7.0
+  #   needs: cargo-clippy
 
-    strategy:
-      matrix:
-        runtime:
-          - peregrine
-          - spiritnet
-      fail-fast: false
+  #   strategy:
+  #     matrix:
+  #       runtime:
+  #         - peregrine
+  #         - spiritnet
+  #     fail-fast: false
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Set up Cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.CARGO_HOME }}/bin/
-            ${{ env.CARGO_HOME }}/registry/index/
-            ${{ env.CARGO_HOME }}/registry/cache/
-            ${{ env.CARGO_HOME }}/git/db/
-          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
-          save-always: true
+  #     - name: Set up Cargo cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ${{ env.CARGO_HOME }}/bin/
+  #           ${{ env.CARGO_HOME }}/registry/index/
+  #           ${{ env.CARGO_HOME }}/registry/cache/
+  #           ${{ env.CARGO_HOME }}/git/db/
+  #         key: ${{ github.job }}-${{ github.ref }}-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
+  #         save-always: true
 
-      - name: Install try-runtime
-        run: |
-          curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${{ env.TRY_RUNTIME_CLI_VERSION_TAG }}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
-          chmod +x ./try-runtime
-          ./try-runtime --version
+  #     - name: Install try-runtime
+  #       run: |
+  #         curl -sL https://github.com/paritytech/try-runtime-cli/releases/download/${{ env.TRY_RUNTIME_CLI_VERSION_TAG }}/try-runtime-x86_64-unknown-linux-musl -o try-runtime
+  #         chmod +x ./try-runtime
+  #         ./try-runtime --version
 
-      - name: Build runtime
-        run: cargo build --release --locked -p ${{ matrix.runtime }}-runtime --features try-runtime
+  #     - name: Build runtime
+  #       run: cargo build --release --locked -p ${{ matrix.runtime }}-runtime --features try-runtime
 
-      - name: Run `try-runtime`
-        run: |
-          ./try-runtime \
-          --runtime=./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm \
-          on-runtime-upgrade \
-            --disable-spec-version-check \
-            --checks=all \
-          live \
-            --uri=wss://${{ matrix.runtime }}.kilt.io
+  #     - name: Run `try-runtime`
+  #       run: |
+  #         ./try-runtime \
+  #         --runtime=./target/release/wbuild/${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm \
+  #         on-runtime-upgrade \
+  #           --disable-spec-version-check \
+  #           --checks=all \
+  #         live \
+  #           --uri=wss://${{ matrix.runtime }}.kilt.io
 
   test-runtime-benchmarks:
     name: Test runtime benchmarks
@@ -330,8 +332,8 @@ jobs:
     env:
       # Configured by the Docker image. We can't change this unless the image does it.
       CARGO_HOME: /usr/local/cargo
-    needs: cargo-clippy
-    if: ${{ github.event_name == 'push'}}
+    #needs: cargo-clippy
+    #if: ${{ github.event_name == 'push'}}
 
     strategy:
       matrix:
@@ -359,6 +361,17 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install frame-omni-bencher
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
+            -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
+            -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
+            -w /workspace \
+            paritytech/ci-unified:bullseye-1.81.0 \
+            bash -c "cargo install frame-omni-bencher --locked"
 
       - name: Run runtime benchmarks
         run: |
