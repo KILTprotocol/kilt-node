@@ -360,6 +360,17 @@ jobs:
             ~/.cargo/git/db/
           key: ${{ github.job }}-${{ github.ref }}-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install frame-omni-bencher
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
+            -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
+            -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
+            -w /workspace \
+            paritytech/ci-unified:bullseye-1.81.0 \
+            bash -c "cargo install frame-omni-bencher --locked"
+
       - name: Run runtime benchmarks
         run: |
           docker run --rm \
