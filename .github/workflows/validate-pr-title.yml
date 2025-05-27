@@ -21,3 +21,61 @@ jobs:
         uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-runtime-benchmarks:
+    name: Test runtime benchmarks
+    runs-on: ubuntu-latest
+    env:
+      # Configured by the Docker image. We can't change this unless the image does it.
+      CARGO_HOME: /usr/local/cargo
+    #needs: cargo-clippy
+    #if: ${{ github.event_name == 'push'}}
+
+    strategy:
+      matrix:
+        runtime:
+          - peregrine
+          - spiritnet
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+
+      - name: Set up Cargo cache
+        uses: actions/cache@v4
+        with:
+          # These paths are mounted inside the Docker container.
+          # We cannot mount the `.cargo/bin` folder since the container already contains binaries, and overriding with an empty one breaks compilation.
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ github.job }}-${{ github.ref }}-${{ matrix.runtime }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install frame-omni-bencher
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
+            -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
+            -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
+            -w /workspace \
+            paritytech/ci-unified:bullseye-1.81.0 \
+            bash -c "cargo install frame-omni-bencher --locked"
+
+      - name: Run runtime benchmarks
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${HOME}/.cargo/registry/index:${{ env.CARGO_HOME }}/registry/index" \
+            -v "${HOME}/.cargo/registry/cache:${{ env.CARGO_HOME }}/registry/cache" \
+            -v "${HOME}/.cargo/git/db:${{ env.CARGO_HOME }}/git/db" \
+            -w /workspace \
+            paritytech/ci-unified:bullseye-1.81.0 \
+            bash -c "bash -x scripts/run_benches_for_runtime.sh ${{ matrix.runtime }} dev"
