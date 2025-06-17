@@ -29,9 +29,9 @@ use crate::{
 };
 
 parameter_types! {
-	// The hyperbridge parachain on Polkadot
-	pub const Coprocessor: Option<StateMachine> = Some(StateMachine::Polkadot(4009));
-	pub const HostStateMachine: StateMachine = StateMachine::Polkadot(2086);
+	// The hyperbridge parachain on Kusama
+	pub const Coprocessor: Option<StateMachine> = Some(StateMachine::Kusama(4009));
+	pub const HostStateMachine: StateMachine = StateMachine::Kusama(2086);
 }
 
 #[derive(Default)]
