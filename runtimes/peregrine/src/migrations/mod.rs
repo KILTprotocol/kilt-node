@@ -29,8 +29,7 @@ impl cumulus_pallet_xcmp_queue::migration::v5::V5Config for Runtime {
 	type ChannelList = ParachainSystem;
 }
 
-pub type RuntimeMigrations = (
-);
+pub type RuntimeMigrations = ();
 
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
