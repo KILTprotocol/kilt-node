@@ -258,11 +258,11 @@ exports[`Reclaim trapped assets > V4 LIVE > reclaim xcm message on relay chain 1
             "call": {
               "encoded": "(hash)",
             },
-            "originKind": "Superuser",
-            "requireWeightAtMost": {
+            "fallbackMaxWeight": {
               "proofSize": "(rounded 66000)",
               "refTime": 1000000000,
             },
+            "originKind": "Superuser",
           },
         },
       ],
