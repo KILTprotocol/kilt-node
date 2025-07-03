@@ -44,6 +44,9 @@
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
 
+// TODO: Remove once the benchmarking stuff fully supports pallet instances.
+use pallet_membership as pallet_collators;
+
 /// Weight functions for `pallet_collators`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_collators::WeightInfo for WeightInfo<T> {
