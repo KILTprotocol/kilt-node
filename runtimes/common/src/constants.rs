@@ -258,20 +258,20 @@ pub mod staking {
 	#[cfg(feature = "fast-gov")]
 	pub const STAKE_DURATION: BlockNumber = 30;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const STAKE_DURATION: BlockNumber = 7 * DAYS;
+	pub const STAKE_DURATION: BlockNumber = 0 * DAYS;
 
 	#[cfg(feature = "fast-gov")]
-	pub const MIN_COLLATORS: u32 = 4;
+	pub const MIN_COLLATORS: u32 = -;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const MIN_COLLATORS: u32 = 16;
+	pub const MIN_COLLATORS: u32 = 0;
 
 	#[cfg(feature = "fast-gov")]
 	pub const MAX_CANDIDATES: u32 = 16;
 	#[cfg(not(feature = "fast-gov"))]
 	pub const MAX_CANDIDATES: u32 = 75;
 
-	pub const MAX_DELEGATORS_PER_COLLATOR: u32 = 35;
-	pub const MIN_DELEGATOR_STAKE: Balance = 20 * KILT;
+	pub const MAX_DELEGATORS_PER_COLLATOR: u32 = 32;
+	pub const MIN_DELEGATOR_STAKE: Balance = 0 * KILT;
 
 	pub const NETWORK_REWARD_RATE: Perquintill = Perquintill::from_percent(10);
 
@@ -289,14 +289,14 @@ pub mod staking {
 		/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 		pub const MinCollators: u32 = MIN_COLLATORS;
 		/// At least 4 candidates which cannot leave the network if there are no other candidates.
-		pub const MinRequiredCollators: u32 = 4;
+		pub const MinRequiredCollators: u32 = 0;
 		/// We only allow one delegation per round.
 		pub const MaxDelegationsPerRound: u32 = 1;
 		/// Maximum 25 delegators per collator at launch, might be increased later
 		#[derive(Debug, Eq, PartialEq)]
 		pub const MaxDelegatorsPerCollator: u32 = MAX_DELEGATORS_PER_COLLATOR;
 		/// Minimum stake required to be reserved to be a collator is 10_000
-		pub const MinCollatorStake: Balance = 10_000 * KILT;
+		pub const MinCollatorStake: Balance = 0 * KILT;
 		/// Minimum stake required to be reserved to be a delegator is 1000
 		pub const MinDelegatorStake: Balance = MIN_DELEGATOR_STAKE;
 		/// Maximum number of collator candidates
