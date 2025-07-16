@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
 use frame_support::{
-	parameter_types,
-	traits::{AsEnsureOriginWithArg, Everything, PrivilegeCmp},
+	match_types, parameter_types,
+	traits::{AsEnsureOriginWithArg, EverythingBut, PrivilegeCmp},
 	weights::Weight,
 };
 use frame_system::EnsureRoot;
@@ -55,6 +55,15 @@ parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 }
 
+match_types! {
+	pub type IncreaseStakingCalls: impl Contains<RuntimeCall> = {
+		RuntimeCall::ParachainStaking(parachain_staking::Call::<Runtime>::join_candidates { .. }) |
+		RuntimeCall::ParachainStaking(parachain_staking::Call::<Runtime>::join_delegators { .. }) |
+		RuntimeCall::ParachainStaking(parachain_staking::Call::<Runtime>::delegator_stake_more { .. }) |
+		RuntimeCall::ParachainStaking(parachain_staking::Call::<Runtime>::candidate_stake_more { .. })
+	};
+}
+
 impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
@@ -87,7 +96,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = weights::rocksdb_weights::constants::RocksDbWeight;
-	type BaseCallFilter = Everything;
+	type BaseCallFilter = EverythingBut<IncreaseStakingCalls>;
 	type SystemWeightInfo = crate::weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;

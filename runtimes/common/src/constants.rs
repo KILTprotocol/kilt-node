@@ -255,10 +255,7 @@ pub mod staking {
 	#[cfg(not(feature = "fast-gov"))]
 	pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 2 * HOURS;
 
-	#[cfg(feature = "fast-gov")]
-	pub const STAKE_DURATION: BlockNumber = 30;
-	#[cfg(not(feature = "fast-gov"))]
-	pub const STAKE_DURATION: BlockNumber = 7 * DAYS;
+	pub const STAKE_DURATION: BlockNumber = 1;
 
 	#[cfg(feature = "fast-gov")]
 	pub const MIN_COLLATORS: u32 = 4;
@@ -289,7 +286,7 @@ pub mod staking {
 		/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 		pub const MinCollators: u32 = MIN_COLLATORS;
 		/// At least 4 candidates which cannot leave the network if there are no other candidates.
-		pub const MinRequiredCollators: u32 = 4;
+		pub const MinRequiredCollators: u32 = 0;
 		/// We only allow one delegation per round.
 		pub const MaxDelegationsPerRound: u32 = 1;
 		/// Maximum 25 delegators per collator at launch, might be increased later
