@@ -146,7 +146,7 @@ impl<T: frame_system::Config> pallet_bonded_coins::WeightInfo for WeightInfo<T> 
 	/// Proof: `BondedCurrencies::Pools` (`max_values`: None, `max_size`: Some(978), added: 3453, mode: `MaxEncodedLen`)
 	/// Storage: `BondedFungibles::Asset` (r:1 w:1)
 	/// Proof: `BondedFungibles::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
-	fn reset_team() -> Weight {
+	fn reset_team(_c: u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `535`
 		//  Estimated: `4443`
