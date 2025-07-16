@@ -255,9 +255,6 @@ pub mod staking {
 	#[cfg(not(feature = "fast-gov"))]
 	pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 2 * HOURS;
 
-	#[cfg(feature = "fast-gov")]
-	pub const STAKE_DURATION: BlockNumber = 1;
-	#[cfg(not(feature = "fast-gov"))]
 	pub const STAKE_DURATION: BlockNumber = 1;
 
 	#[cfg(feature = "fast-gov")]
