@@ -16,20 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at <hello@kilt.io>
 
-use frame_support::parameter_types;
 use runtime_common::constants;
 
 use crate::{weights, Balances, ParachainSystem, Runtime, RuntimeEvent};
-
-parameter_types! {
-	pub const Inflation: &'static str = "Inflation";
-}
 
 impl cumulus_pallet_xcmp_queue::migration::v5::V5Config for Runtime {
 	type ChannelList = ParachainSystem;
 }
 
-pub type RuntimeMigrations = ();
+pub type RuntimeMigrations = (pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,);
 
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
