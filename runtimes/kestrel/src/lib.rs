@@ -124,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-kestrel"),
 	impl_name: create_runtime_str!("kilt-kestrel"),
 	authoring_version: 4,
-	spec_version: 11600,
+	spec_version: 11603,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 6,
@@ -220,7 +220,7 @@ impl pallet_aura::Config for Runtime {
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxAuthorities;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type SlotDuration = ConstU64<6000>;
+	type SlotDuration = ConstU64<1000>;
 }
 
 impl pallet_grandpa::Config for Runtime {
