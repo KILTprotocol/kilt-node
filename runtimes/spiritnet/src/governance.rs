@@ -89,7 +89,7 @@ impl pallet_democracy::Config for Runtime {
 
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const Burn: Permill = Permill::zero();
+	pub const Burn: Permill = Permill::from_percent(100);
 	pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
