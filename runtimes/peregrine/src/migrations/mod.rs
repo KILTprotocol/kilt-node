@@ -18,13 +18,9 @@
 
 use runtime_common::constants;
 
-use crate::{weights, Balances, ParachainSystem, Runtime, RuntimeEvent};
+use crate::{weights, Balances, Runtime, RuntimeEvent};
 
-impl cumulus_pallet_xcmp_queue::migration::v5::V5Config for Runtime {
-	type ChannelList = ParachainSystem;
-}
-
-pub type RuntimeMigrations = (pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,);
+pub type RuntimeMigrations = (); // pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;

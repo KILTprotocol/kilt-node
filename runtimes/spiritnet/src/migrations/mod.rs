@@ -20,7 +20,7 @@ use runtime_common::constants;
 
 use crate::{weights, Balances, Runtime, RuntimeEvent};
 
-pub type RuntimeMigrations = (pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,);
+pub type RuntimeMigrations = (); // pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
