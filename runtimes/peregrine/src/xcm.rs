@@ -18,8 +18,8 @@
 
 use crate::{
 	kilt::{CheckingAccount, KiltToEKiltSwitchPallet},
-	AllPalletsWithSystem, AssetSwitchPool1, Balances, Fungibles, MessageQueue, ParachainInfo, ParachainSystem,
-	PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
+	xcm_components, AllPalletsWithSystem, AssetSwitchPool1, Balances, Fungibles, MessageQueue, ParachainInfo,
+	ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
@@ -203,12 +203,22 @@ impl xcm_executor::Config for XcmConfig {
 		>,
 		// Transactor for fungibles matching the "Here" location.
 		LocalAssetTransactor<Balances, RelayNetworkId>,
+		// Transactor for BKilts
+		FungiblesAdapter<
+			Fungibles,
+			xcm_components::matcher::MatchesBkiltAsset,
+			LocationToAccountIdConverter,
+			AccountId,
+			NoChecking,
+			CheckingAccount,
+		>,
 	);
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	type IsReserve = (
 		NativeAsset,
 		IsSwitchPairRemoteAsset<Runtime, KiltToEKiltSwitchPallet>,
 		IsSwitchPairXcmFeeAsset<Runtime, KiltToEKiltSwitchPallet>,
+		xcm_components::is_reserve::IsBKilt,
 	);
 
 	// Teleporting is disabled.

@@ -66,6 +66,7 @@ mod ismp;
 use crate::runtime_apis::RUNTIME_API_VERSION;
 mod weights;
 pub mod xcm;
+pub mod xcm_components;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;
