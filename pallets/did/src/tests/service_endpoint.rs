@@ -461,6 +461,36 @@ fn check_service_deletion_successful() {
 }
 
 #[test]
+fn check_service_deletion_successful_increasing_deposit() {
+	initialize_logger();
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let old_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+	let balance = <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
+
+	let mut old_did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
+	old_did_details.deposit.amount = balance;
+
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_balances(vec![(alice_did.clone(), balance)])
+		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint.clone()])])
+		.build_and_execute_with_sanity_tests(None, || {
+			assert_ok!(Did::remove_service_endpoint(origin, old_service_endpoint.id));
+			// Counter should be deleted from the storage.
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				0
+			);
+		});
+}
+
+#[test]
 fn check_service_not_present_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
