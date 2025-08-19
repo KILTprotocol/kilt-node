@@ -50,6 +50,7 @@ pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 #[allow(clippy::integer_division)]
 #[allow(clippy::as_conversions)]
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
+pub const HALF_MINUTE: BlockNumber = MINUTES / 2;
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 // Julian year as Substrate handles it
@@ -321,52 +322,52 @@ pub mod governance {
 	#[cfg(feature = "fast-gov")]
 	pub const LAUNCH_PERIOD: BlockNumber = 7 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const LAUNCH_PERIOD: BlockNumber = 7 * DAYS;
+	pub const LAUNCH_PERIOD: BlockNumber = HALF_MINUTE;
 
 	#[cfg(feature = "fast-gov")]
 	pub const VOTING_PERIOD: BlockNumber = 7 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const VOTING_PERIOD: BlockNumber = 7 * DAYS;
+	pub const VOTING_PERIOD: BlockNumber = HALF_MINUTE;
 
 	#[cfg(feature = "fast-gov")]
 	pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 3 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 3 * HOURS;
+	pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = HALF_MINUTE;
 
 	#[cfg(feature = "fast-gov")]
 	pub const ENACTMENT_PERIOD: BlockNumber = 8 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const ENACTMENT_PERIOD: BlockNumber = DAYS;
+	pub const ENACTMENT_PERIOD: BlockNumber = HALF_MINUTE;
 
 	#[cfg(feature = "fast-gov")]
 	pub const COOLOFF_PERIOD: BlockNumber = 7 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const COOLOFF_PERIOD: BlockNumber = 7 * DAYS;
+	pub const COOLOFF_PERIOD: BlockNumber = HALF_MINUTE;
 
 	#[cfg(feature = "fast-gov")]
 	pub const SPEND_PERIOD: BlockNumber = 6 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const SPEND_PERIOD: BlockNumber = 6 * DAYS;
+	pub const SPEND_PERIOD: BlockNumber = HALF_MINUTE;
 
 	#[cfg(feature = "fast-gov")]
 	pub const ROTATION_PERIOD: BlockNumber = 80 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const ROTATION_PERIOD: BlockNumber = 80 * HOURS;
+	pub const ROTATION_PERIOD: BlockNumber = HALF_MINUTE;
 
 	#[cfg(feature = "fast-gov")]
 	pub const TERM_DURATION: BlockNumber = 15 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const TERM_DURATION: BlockNumber = DAYS;
+	pub const TERM_DURATION: BlockNumber = HALF_MINUTE;
 
 	#[cfg(feature = "fast-gov")]
 	pub const COUNCIL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const COUNCIL_MOTION_DURATION: BlockNumber = 7 * DAYS;
+	pub const COUNCIL_MOTION_DURATION: BlockNumber = HALF_MINUTE;
 
 	#[cfg(feature = "fast-gov")]
 	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 7 * DAYS;
+	pub const TECHNICAL_MOTION_DURATION: BlockNumber = HALF_MINUTE;
 
 	parameter_types! {
 		// Democracy Pallet
